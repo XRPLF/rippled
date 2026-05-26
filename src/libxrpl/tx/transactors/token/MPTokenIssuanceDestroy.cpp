@@ -45,15 +45,15 @@ TER
 MPTokenIssuanceDestroy::doApply()
 {
     auto const mpt = view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
-    if (account_ != mpt->getAccountID(sfIssuer))
+    if (accountID_ != mpt->getAccountID(sfIssuer))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view().dirRemove(keylet::ownerDir(account_), (*mpt)[sfOwnerNode], mpt->key(), false))
+    if (!view().dirRemove(keylet::ownerDir(accountID_), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     view().erase(mpt);
 
-    adjustOwnerCount(view(), view().peek(keylet::account(account_)), -1, j_);
+    adjustOwnerCount(view(), view().peek(keylet::account(accountID_)), -1, j_);
 
     return tesSUCCESS;
 }
@@ -64,6 +64,7 @@ MPTokenIssuanceDestroy::visitInvariantEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const&)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -74,6 +75,7 @@ MPTokenIssuanceDestroy::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

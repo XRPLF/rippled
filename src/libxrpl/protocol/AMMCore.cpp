@@ -29,7 +29,7 @@ Currency
 ammLPTCurrency(Asset const& asset1, Asset const& asset2)
 {
     // AMM LPToken is 0x03 plus 19 bytes of the hash
-    std::int32_t constexpr kAMM_CURRENCY_CODE = 0x03;
+    static constexpr std::int32_t kAmmCurrencyCode = 0x03;
     auto const& [minA, maxA] = std::minmax(asset1, asset2);
     uint256 const hash = std::visit(
         [](auto&& issue1, auto&& issue2) {
@@ -44,7 +44,7 @@ ammLPTCurrency(Asset const& asset1, Asset const& asset2)
         minA.value(),
         maxA.value());
     Currency currency;
-    *currency.begin() = kAMM_CURRENCY_CODE;
+    *currency.begin() = kAmmCurrencyCode;
     std::copy(hash.begin(), hash.begin() + currency.size() - 1, currency.begin() + 1);
     return currency;
 }
@@ -60,7 +60,7 @@ invalidAMMAsset(Asset const& asset, std::optional<std::pair<Asset, Asset>> const
 {
     auto const err = asset.visit(
         [](MPTIssue const& issue) -> std::optional<NotTEC> {
-            if (issue.getIssuer() == beast::kZERO)
+            if (issue.getIssuer() == beast::kZero)
                 return temBAD_MPT;
             return std::nullopt;
         },
@@ -101,7 +101,7 @@ invalidAMMAmount(
 {
     if (auto const res = invalidAMMAsset(amount.asset(), pair))
         return res;
-    if (amount < beast::kZERO || (!validZero && amount == beast::kZERO))
+    if (amount < beast::kZero || (!validZero && amount == beast::kZero))
         return temBAD_AMOUNT;
     return tesSUCCESS;
 }
@@ -112,14 +112,13 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     // It should be impossible for expiration to be < TOTAL_TIME_SLOT_SECS,
     // but check just to be safe
     auto const expiration = auctionSlot[sfExpiration];
-    XRPL_ASSERT(
-        expiration >= kTOTAL_TIME_SLOT_SECS, "xrpl::ammAuctionTimeSlot : minimum expiration");
-    if (expiration >= kTOTAL_TIME_SLOT_SECS)
+    XRPL_ASSERT(expiration >= kTotalTimeSlotSecs, "xrpl::ammAuctionTimeSlot : minimum expiration");
+    if (expiration >= kTotalTimeSlotSecs)
     {
-        if (auto const start = expiration - kTOTAL_TIME_SLOT_SECS; current >= start)
+        if (auto const start = expiration - kTotalTimeSlotSecs; current >= start)
         {
-            if (auto const diff = current - start; diff < kTOTAL_TIME_SLOT_SECS)
-                return diff / kAUCTION_SLOT_INTERVAL_DURATION;
+            if (auto const diff = current - start; diff < kTotalTimeSlotSecs)
+                return diff / kAuctionSlotIntervalDuration;
         }
     }
     return std::nullopt;

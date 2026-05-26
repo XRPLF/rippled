@@ -141,7 +141,7 @@ Alternatively, you can pull our recipes from the repository and export them loca
 
 ```bash
 # Define which recipes to export.
-recipes=('abseil' 'ed25519' 'grpc' 'm4' 'mpt-crypto' 'openssl' 'secp256k1' 'snappy' 'soci' 'wasm-xrplf' 'wasmi')
+recipes=('abseil' 'ed25519' 'mpt-crypto' 'openssl' 'secp256k1' 'snappy' 'soci' 'wasm-xrplf' 'wasmi')
 
 # Selectively check out the recipes from our CCI fork.
 cd external
@@ -427,15 +427,18 @@ install ccache --version 4.11.3 --allow-downgrade`.
    Single-config generators:
 
    ```
-   cmake --build .
+   cmake --build . --parallel N
    ```
 
    Multi-config generators:
 
    ```
-   cmake --build . --config Release
-   cmake --build . --config Debug
+   cmake --build . --config Release --parallel N
+   cmake --build . --config Debug --parallel N
    ```
+
+   Replace the `--parallel` parameter N with the desired number of parallel jobs. A common starting point is half of the number of available CPU
+   cores.
 
 5. Test xrpld.
 
@@ -530,15 +533,15 @@ stored inside the build directory, as either of:
 ## Sanitizers
 
 To build dependencies and xrpld with sanitizer instrumentation, set the
-`SANITIZERS` environment variable (only once before running conan and cmake) and use the `sanitizers` profile in conan:
+`SANITIZERS` environment variable when running `conan install` and use the `sanitizers` profile:
 
 ```bash
 export SANITIZERS=address,undefinedbehavior
 
 conan install .. --output-folder . --profile:all sanitizers --build missing --settings build_type=Debug
-
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Debug -Dxrpld=ON -Dtests=ON ..
 ```
+
+You can then build and test as usual, with the generated `xrpld` binary containing the sanitizer instrumentation. When you run it, it will report any sanitizer errors it detects in the console output.
 
 See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 

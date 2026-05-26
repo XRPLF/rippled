@@ -54,7 +54,7 @@ AMMLiquidity<TIn, TOut>::fetchBalances(ReadView const& view) const
     auto const amountIn = ammAccountHolds(view, ammAccountID_, assetIn_);
     auto const amountOut = ammAccountHolds(view, ammAccountID_, assetOut_);
     // This should not happen.
-    if (amountIn < beast::kZERO || amountOut < beast::kZERO)
+    if (amountIn < beast::kZero || amountOut < beast::kZero)
         Throw<std::runtime_error>("AMMLiquidity: invalid balances");
 
     return TAmounts{get<TIn>(amountIn), get<TOut>(amountOut)};
@@ -68,7 +68,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
 
     cur.in = toAmount<TIn>(
         getAsset(balances.in),
-        kINITIAL_FIB_SEQ_PCT * initialBalances_.in,
+        kInitialFibSeqPct * initialBalances_.in,
         Number::RoundingMode::Upward);
     cur.out = swapAssetIn(initialBalances_, cur.in, tradingFee_);
 
@@ -76,7 +76,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
         return cur;
 
     // clang-format off
-    constexpr std::uint32_t kFIB[AMMContext::kMAX_ITERATIONS] = {
+    static constexpr std::uint32_t kFib[AMMContext::kMaxIterations] = {
         1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987,
         1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393,
         196418, 317811, 514229, 832040, 1346269};
@@ -88,7 +88,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
 
     cur.out = toAmount<TOut>(
         getAsset(balances.out),
-        cur.out * kFIB[ammContext_.curIters() - 1],
+        cur.out * kFib[ammContext_.curIters() - 1],
         Number::RoundingMode::Downward);
     // swapAssetOut() returns negative in this case
     if (cur.out >= balances.out)
@@ -106,19 +106,19 @@ maxAmount()
 {
     if constexpr (std::is_same_v<T, XRPAmount>)
     {
-        return XRPAmount(STAmount::kMAX_NATIVE);
+        return XRPAmount(STAmount::kMaxNative);
     }
     else if constexpr (std::is_same_v<T, IOUAmount>)
     {
-        return IOUAmount(STAmount::kMAX_VALUE / 2, STAmount::kMAX_OFFSET);
+        return IOUAmount(STAmount::kMaxValue / 2, STAmount::kMaxOffset);
     }
     else if constexpr (std::is_same_v<T, STAmount>)
     {
-        return STAmount(STAmount::kMAX_VALUE / 2, STAmount::kMAX_OFFSET);
+        return STAmount(STAmount::kMaxValue / 2, STAmount::kMaxOffset);
     }
     else if constexpr (std::is_same_v<T, MPTAmount>)
     {
-        return MPTAmount(kMAX_MP_TOKEN_AMOUNT);
+        return MPTAmount(kMaxMpTokenAmount);
     }
 }
 
@@ -163,7 +163,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
     auto const balances = fetchBalances(view);
 
     // Frozen accounts
-    if (balances.in == beast::kZERO || balances.out == beast::kZERO)
+    if (balances.in == beast::kZero || balances.out == beast::kZero)
     {
         JLOG(j_.debug()) << "AMMLiquidity::getOffer, frozen accounts";
         return std::nullopt;
@@ -239,7 +239,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
 
     if (offer)
     {
-        if (offer->amount().in > beast::kZERO && offer->amount().out > beast::kZERO)
+        if (offer->amount().in > beast::kZero && offer->amount().out > beast::kZero)
         {
             JLOG(j_.trace()) << "AMMLiquidity::getOffer, created " << to_string(offer->amount().in)
                              << "/" << assetIn_ << " " << to_string(offer->amount().out) << "/"

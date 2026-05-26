@@ -14,6 +14,7 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
@@ -54,6 +55,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <exception>
 #include <functional>
 #include <memory>
@@ -310,7 +312,7 @@ checkPayment(
                     std::nullopt,
                     domain,
                     app);
-                if (pf.findPaths(app.config().PATH_SEARCH_OLD))
+                if (pf.findPaths(app.config().pathSearchOld))
                 {
                     // 4 is the maximum paths
                     pf.computePathRanks(4);
@@ -322,10 +324,10 @@ checkPayment(
 
             auto j = app.getJournal("RPCHandler");
             JLOG(j.debug()) << "transactionSign: build_path: "
-                            << result.getJson(JsonOptions::KNone);
+                            << result.getJson(JsonOptions::Values::None);
 
             if (!result.empty())
-                txJson[jss::Paths] = result.getJson(JsonOptions::KNone);
+                txJson[jss::Paths] = result.getJson(JsonOptions::Values::None);
         }
     }
     return json::Value();
@@ -380,7 +382,7 @@ checkTxJsonFields(
     }
 
     // Check for current ledger.
-    if (verify && !config.standalone() && (validatedLedgerAge > Tuning::kMAX_VALIDATED_LEDGER_AGE))
+    if (verify && !config.standalone() && (validatedLedgerAge > Tuning::kMaxValidatedLedgerAge))
     {
         if (apiVersion == 1)
         {
@@ -403,6 +405,25 @@ checkTxJsonFields(
     // It's all good.  Return the AccountID.
     ret.second = *srcAddressID;
     return ret;
+}
+
+static Expected<void, json::Value>
+checkNetworkID(json::Value const& txJson, uint32_t appNetworkId)
+{
+    if (appNetworkId > 1024)
+    {
+        if (!txJson.isMember(jss::NetworkID))
+        {
+            return Unexpected(
+                RPC::makeError(RpcInvalidParams, RPC::missingFieldMessage("tx_json.NetworkID")));
+        }
+        if (!txJson[jss::NetworkID].isIntegral() || txJson[jss::NetworkID].asUInt() != appNetworkId)
+        {
+            return Unexpected(
+                RPC::makeError(RpcInvalidParams, RPC::invalidFieldMessage("tx_json.NetworkID")));
+        }
+    }
+    return Expected<void, json::Value>();
 }
 
 //------------------------------------------------------------------------------
@@ -487,7 +508,7 @@ transactionPreProcessImpl(
         validatedLedgerAge,
         app.config(),
         app.getFeeTrack(),
-        getAPIVersionNumber(params, app.config().BETA_RPC_API));
+        getAPIVersionNumber(params, app.config().betaRpcApi));
 
     if (RPC::containsError(txJsonResult))
         return std::move(txJsonResult);
@@ -760,12 +781,12 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
     {
         if (apiVersion > 1)
         {
-            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::KDisableApiPriorV2);
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::Values::DisableApiPriorV2);
             jvResult[jss::hash] = to_string(tpTrans->getID());
         }
         else
         {
-            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::KNone);
+            jvResult[jss::tx_json] = tpTrans->getJson(JsonOptions::Values::None);
         }
 
         RPC::insertDeliverMax(
@@ -825,16 +846,16 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
     if (tx.isMember(jss::Signers))
     {
         if (!tx[jss::Signers].isArray())
-            return config.FEES.reference_fee;
+            return config.fees.referenceFee;
 
-        if (tx[jss::Signers].size() > STTx::kMAX_MULTI_SIGNERS)
-            return config.FEES.reference_fee;
+        if (tx[jss::Signers].size() > STTx::kMaxMultiSigners)
+            return config.fees.referenceFee;
 
         // check multi-signed signers
         for (auto& signer : tx[jss::Signers])
         {
             if (!signer.isMember(jss::Signer) || !signer[jss::Signer].isObject())
-                return config.FEES.reference_fee;
+                return config.fees.referenceFee;
             if (!signer[jss::Signer].isMember(jss::SigningPubKey))
             {
                 // autofill SigningPubKey
@@ -851,7 +872,7 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
     STParsedJSONObject parsed(std::string(jss::tx_json), tx);
     if (!parsed.object.has_value())
     {
-        return config.FEES.reference_fee;
+        return config.fees.referenceFee;
     }
 
     try
@@ -859,13 +880,13 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
         STTx const& stTx = STTx(std::move(parsed.object.value()));
         std::string reason;
         if (!passesLocalChecks(stTx, reason))
-            return config.FEES.reference_fee;
+            return config.fees.referenceFee;
 
         return calculateBaseFee(*app.getOpenLedger().current(), stTx);
     }
     catch (std::exception& e)
     {
-        return config.FEES.reference_fee;
+        return config.fees.referenceFee;
     }
 }
 
@@ -924,8 +945,8 @@ checkFee(
     if (!doAutoFill)
         return RPC::missingFieldError("tx_json.Fee");
 
-    int mult = Tuning::kDEFAULT_AUTO_FILL_FEE_MULTIPLIER;
-    int div = Tuning::kDEFAULT_AUTO_FILL_FEE_DIVISOR;
+    int mult = Tuning::kDefaultAutoFillFeeMultiplier;
+    int div = Tuning::kDefaultAutoFillFeeDivisor;
     if (request.isMember(jss::fee_mult_max))
     {
         if (request[jss::fee_mult_max].isInt())
@@ -972,7 +993,7 @@ checkFee(
 
 //------------------------------------------------------------------------------
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSign(
     json::Value jvRequest,
@@ -1006,7 +1027,7 @@ transactionSign(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSubmit(
     json::Value jvRequest,
@@ -1129,7 +1150,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 
 }  // namespace detail
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSignFor(
     json::Value jvRequest,
@@ -1165,8 +1186,16 @@ transactionSignFor(
         if (!txJson.isObject())
             return RPC::objectFieldError(jss::tx_json);
 
-        // If the tx_json.SigningPubKey field is missing,
-        // insert an empty one.
+        if (auto checkResult =
+                detail::checkNetworkID(txJson, app.getNetworkIDService().getNetworkID());
+            !checkResult)
+        {
+            return std::move(checkResult).error();
+        }
+
+        // If the tx_json.SigningPubKey field is missing, insert an empty one,
+        // in order for the `checkMultiSignFields` to not return an error
+        // for non-multisign transactions.
         if (!txJson.isMember(sfSigningPubKey.getJsonName()))
             txJson[sfSigningPubKey.getJsonName()] = "";
     }
@@ -1226,7 +1255,9 @@ transactionSignFor(
         signers.emplaceBack(std::move(signer));
 
         // The array must be sorted and validated.
-        auto err = sortAndValidateSigners(signers, (*sttx)[sfAccount]);
+        // For delegated transactions, the delegate account is
+        // the one forbidden from appearing in its own Signers array.
+        auto err = sortAndValidateSigners(signers, sttx->getFeePayer());
         if (RPC::containsError(err))
             return err;
     }
@@ -1241,7 +1272,7 @@ transactionSignFor(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-/** Returns a json::objectValue. */
+/** Returns a json::ValueType::Object. */
 json::Value
 transactionSubmitMultiSigned(
     json::Value jvRequest,
@@ -1274,7 +1305,7 @@ transactionSubmitMultiSigned(
         validatedLedgerAge,
         app.config(),
         app.getFeeTrack(),
-        getAPIVersionNumber(jvRequest, app.config().BETA_RPC_API));
+        getAPIVersionNumber(jvRequest, app.config().betaRpcApi));
 
     if (RPC::containsError(txJsonResult))
         return std::move(txJsonResult);
@@ -1393,7 +1424,9 @@ transactionSubmitMultiSigned(
     }
 
     // The array must be sorted and validated.
-    auto err = sortAndValidateSigners(signers, srcAddressID);
+    // For delegated transactions, getFeePayer() returns sfDelegate,
+    // that account is the one forbidden from appearing in its own Signers array.
+    auto err = sortAndValidateSigners(signers, stTx->getFeePayer());
     if (RPC::containsError(err))
         return err;
 
