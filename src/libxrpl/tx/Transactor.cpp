@@ -386,10 +386,12 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
 
     auto const sponsorFlags = tx.getFieldU32(sfSponsorFlags);
 
-    if (tx.isFlag(spfSponsorFee) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForFee))
+    if (((sponsorFlags & spfSponsorFee) != 0u) &&
+        sponsorshipSle->isFlag(lsfSponsorshipRequireSignForFee))
         return terNO_SPONSORSHIP;
 
-    if (tx.isFlag(spfSponsorReserve) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForReserve))
+    if (((sponsorFlags & spfSponsorReserve) != 0u) &&
+        sponsorshipSle->isFlag(lsfSponsorshipRequireSignForReserve))
         return terNO_SPONSORSHIP;
 
     return tesSUCCESS;

@@ -172,7 +172,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     {
         STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
         // Insufficient reserve
-        if (xrpBalance <= beast::kZERO)
+        if (xrpBalance <= beast::kZero)
         {
             JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
             return tecINSUF_RESERVE_LINE;

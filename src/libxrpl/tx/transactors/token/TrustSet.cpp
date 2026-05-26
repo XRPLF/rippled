@@ -144,7 +144,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     // Currently we only support TrustlineAuthorize, TrustlineFreeze and
     // TrustlineUnfreeze granular permission. Setting other flags returns
     // error.
-    if (tx.isFlag(tfTrustSetPermissionMask))
+    if ((tx.getFlags() & tfTrustSetPermissionMask) != 0u)
         return terNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
