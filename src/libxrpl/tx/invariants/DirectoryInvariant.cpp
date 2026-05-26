@@ -40,19 +40,27 @@ badExchangeRate(SLE const& dir)
 
 void
 ValidBookDirectory::visitEntry(
-    bool,
+    bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
     // New root directories must have matching exchange-rate metadata. New
-    // child directories must point to an existing root.
+    // child directories, and modified directories that change sfRootIndex, must
+    // point to an existing root.
 
-    // Only validate newly-created directories; LedgerStateFix handles legacy
-    // bad exchange-rate metadata.
-    if (badBookDirectory_ || before || !after || after->getType() != ltDIR_NODE)
+    // Only validate newly-created directories and sfRootIndex changes;
+    // LedgerStateFix handles legacy bad exchange-rate metadata. Skip deletions
+    // because `after` is not guaranteed to be null.
+    if (badBookDirectory_ || isDelete || !after || after->getType() != ltDIR_NODE)
         return;
 
     auto const rootIndex = after->getFieldH256(sfRootIndex);
+    // Ignore ordinary modifications that do not change which root this
+    // directory belongs to. That tolerates legacy bad exchange-rate metadata
+    // during normal operation while still checking sfRootIndex changes.
+    if (before && before->getFieldH256(sfRootIndex) == rootIndex)
+        return;
+
     if (after->key() == rootIndex && !badBookDirectory_)
     {
         badBookDirectory_ = badBookDirectory_ || badExchangeRate(*after);
