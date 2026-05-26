@@ -327,7 +327,7 @@ public:
               validatorKeys.keys ? validatorKeys.keys->masterPublicKey
                                  : decltype(validatorMasterPK_){})
         , ledgerMaster_(ledgerMaster)
-        , job_queue_(jobQueue)
+        , jobQueue_(jobQueue)
         , standalone_(standalone)
         , minPeerCount_(startValid ? 0 : minPeerCount)
         , stats_(std::bind(&NetworkOPsImp::collectMetrics, this), collector)
@@ -828,7 +828,7 @@ private:
 
     ServerFeeSummary lastFeeSummary_;
 
-    JobQueue& job_queue_;
+    JobQueue& jobQueue_;
 
     // Whether we are in standalone mode.
     bool const standalone_;
@@ -853,34 +853,34 @@ private:
         template <class Handler>
         Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
             : hook(collector->makeHook(handler))
-            , disconnected_duration(
+            , disconnectedDuration(
                   collector->makeGauge("State_Accounting", "Disconnected_duration"))
-            , connected_duration(collector->makeGauge("State_Accounting", "Connected_duration"))
-            , syncing_duration(collector->makeGauge("State_Accounting", "Syncing_duration"))
-            , tracking_duration(collector->makeGauge("State_Accounting", "Tracking_duration"))
-            , full_duration(collector->makeGauge("State_Accounting", "Full_duration"))
-            , disconnected_transitions(
+            , connectedDuration(collector->makeGauge("State_Accounting", "Connected_duration"))
+            , syncingDuration(collector->makeGauge("State_Accounting", "Syncing_duration"))
+            , trackingDuration(collector->makeGauge("State_Accounting", "Tracking_duration"))
+            , fullDuration(collector->makeGauge("State_Accounting", "Full_duration"))
+            , disconnectedTransitions(
                   collector->makeGauge("State_Accounting", "Disconnected_transitions"))
-            , connected_transitions(
+            , connectedTransitions(
                   collector->makeGauge("State_Accounting", "Connected_transitions"))
-            , syncing_transitions(collector->makeGauge("State_Accounting", "Syncing_transitions"))
-            , tracking_transitions(collector->makeGauge("State_Accounting", "Tracking_transitions"))
-            , full_transitions(collector->makeGauge("State_Accounting", "Full_transitions"))
+            , syncingTransitions(collector->makeGauge("State_Accounting", "Syncing_transitions"))
+            , trackingTransitions(collector->makeGauge("State_Accounting", "Tracking_transitions"))
+            , fullTransitions(collector->makeGauge("State_Accounting", "Full_transitions"))
         {
         }
 
         beast::insight::Hook hook;
-        beast::insight::Gauge disconnected_duration;
-        beast::insight::Gauge connected_duration;
-        beast::insight::Gauge syncing_duration;
-        beast::insight::Gauge tracking_duration;
-        beast::insight::Gauge full_duration;
+        beast::insight::Gauge disconnectedDuration;
+        beast::insight::Gauge connectedDuration;
+        beast::insight::Gauge syncingDuration;
+        beast::insight::Gauge trackingDuration;
+        beast::insight::Gauge fullDuration;
 
-        beast::insight::Gauge disconnected_transitions;
-        beast::insight::Gauge connected_transitions;
-        beast::insight::Gauge syncing_transitions;
-        beast::insight::Gauge tracking_transitions;
-        beast::insight::Gauge full_transitions;
+        beast::insight::Gauge disconnectedTransitions;
+        beast::insight::Gauge connectedTransitions;
+        beast::insight::Gauge syncingTransitions;
+        beast::insight::Gauge trackingTransitions;
+        beast::insight::Gauge fullTransitions;
     };
 
     std::mutex statsMutex_;  // Mutex to lock stats_
@@ -990,7 +990,7 @@ NetworkOPsImp::setTimer(
     // Only start the timer if waitHandlerCounter_ is not yet joined.
     if (auto optionalCountedHandler =
             waitHandlerCounter_.wrap([this, onExpire, onError](boost::system::error_code const& e) {
-                if ((e.value() == boost::system::errc::success) && (!job_queue_.isStopped()))
+                if ((e.value() == boost::system::errc::success) && (!jobQueue_.isStopped()))
                 {
                     onExpire();
                 }
@@ -1017,7 +1017,7 @@ NetworkOPsImp::setHeartbeatTimer()
         heartbeatTimer_,
         consensus_.parms().ledgerGRANULARITY,
         [this]() {
-            job_queue_.addJob(JtNetopTimer, "NetHeart", [this]() { processHeartbeatTimer(); });
+            jobQueue_.addJob(JtNetopTimer, "NetHeart", [this]() { processHeartbeatTimer(); });
         },
         [this]() { setHeartbeatTimer(); });
 }
@@ -1031,7 +1031,7 @@ NetworkOPsImp::setClusterTimer()
         clusterTimer_,
         10s,
         [this]() {
-            job_queue_.addJob(JtNetopCluster, "NetCluster", [this]() { processClusterTimer(); });
+            jobQueue_.addJob(JtNetopCluster, "NetCluster", [this]() { processClusterTimer(); });
         },
         [this]() { setClusterTimer(); });
 }
@@ -1247,7 +1247,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     auto tx = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
 
-    job_queue_.addJob(JtTransaction, "SubmitTxn", [this, tx]() {
+    jobQueue_.addJob(JtTransaction, "SubmitTxn", [this, tx]() {
         auto t = tx;
         processTransaction(t, false, false, FailHard::No);
     });
@@ -1312,7 +1312,7 @@ NetworkOPsImp::processTransaction(
     bool bLocal,
     FailHard failType)
 {
-    auto ev = job_queue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
+    auto ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
 
     // preProcessTransaction can change our pointer
     if (!preProcessTransaction(transaction))
@@ -1344,7 +1344,7 @@ NetworkOPsImp::doTransactionAsync(
 
     if (dispatchState_ == DispatchState::None)
     {
-        if (job_queue_.addJob(JtBatch, "TxBatchAsync", [this]() { transactionBatch(); }))
+        if (jobQueue_.addJob(JtBatch, "TxBatchAsync", [this]() { transactionBatch(); }))
         {
             dispatchState_ = DispatchState::Scheduled;
         }
@@ -1389,7 +1389,7 @@ NetworkOPsImp::doTransactionSyncBatch(
             if (!transactions_.empty())
             {
                 // More transactions need to be applied, but by another job.
-                if (job_queue_.addJob(JtBatch, "TxBatchSync", [this]() { transactionBatch(); }))
+                if (jobQueue_.addJob(JtBatch, "TxBatchSync", [this]() { transactionBatch(); }))
                 {
                     dispatchState_ = DispatchState::Scheduled;
                 }
@@ -1401,7 +1401,7 @@ NetworkOPsImp::doTransactionSyncBatch(
 void
 NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
 {
-    auto ev = job_queue_.makeLoadEvent(JtTxnProc, "ProcessTXNSet");
+    auto ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXNSet");
     std::vector<std::shared_ptr<Transaction>> candidates;
     candidates.reserve(set.size());
     for (auto const& [_, tx] : set)
@@ -2571,7 +2571,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
 
     // We will always relay trusted validations; if configured, we will
     // also relay all untrusted validations.
-    return registry_.get().getApp().config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
+    return registry_.get().getApp().config().relayUntrustedValidations == 1 || val->isTrusted();
 }
 
 json::Value
@@ -2631,8 +2631,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         info[jss::hostid] = getHostId(admin);
 
     // domain: if configured with a domain, report it:
-    if (!registry_.get().getApp().config().SERVER_DOMAIN.empty())
-        info[jss::server_domain] = registry_.get().getApp().config().SERVER_DOMAIN;
+    if (!registry_.get().getApp().config().serverDomain.empty())
+        info[jss::server_domain] = registry_.get().getApp().config().serverDomain;
 
     info[jss::build_version] = BuildInfo::getVersionString();
 
@@ -2652,7 +2652,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         // Note: By default the node size is "tiny". When parsing it's an error if the final
         // NODE_SIZE is over 4 so below code should be safe.
         // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
-        switch (registry_.get().getApp().config().NODE_SIZE)
+        switch (registry_.get().getApp().config().nodeSize)
         {
             case 0:
                 info[jss::node_size] = "tiny";
@@ -2787,7 +2787,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     //  info[jss::consensus] = consensus_.getJson();
 
     if (admin)
-        info[jss::load] = job_queue_.getJson();
+        info[jss::load] = jobQueue_.getJson();
 
     if (auto const netid = registry_.get().getOverlay().networkID())
         info[jss::network_id] = static_cast<json::UInt>(*netid);
@@ -2952,8 +2952,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         {
             // Don't publish admin ports for non-admin users
             if (!admin &&
-                !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty() &&
-                  port.admin_user.empty() && port.admin_password.empty()))
+                !(port.adminNetsV4.empty() && port.adminNetsV6.empty() && port.adminUser.empty() &&
+                  port.adminPassword.empty()))
                 continue;
             std::vector<std::string> proto;
             // NOLINTNEXTLINE(modernize-use-ranges)
@@ -3170,14 +3170,14 @@ NetworkOPsImp::reportFeeChange()
     // only schedule the job if something has changed
     if (f != lastFeeSummary_)
     {
-        job_queue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
+        jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
     }
 }
 
 void
 NetworkOPsImp::reportConsensusStateChange(ConsensusPhase phase)
 {
-    job_queue_.addJob(JtClientConsensus, "PubCons", [this, phase]() { pubConsensus(phase); });
+    jobQueue_.addJob(JtClientConsensus, "PubCons", [this, phase]() { pubConsensus(phase); });
 }
 
 inline void
@@ -4626,26 +4626,25 @@ NetworkOPsImp::collectMetrics()
     counters[static_cast<std::size_t>(mode)].dur += current;
 
     std::scoped_lock const lock(statsMutex_);
-    stats_.disconnected_duration.set(
+    stats_.disconnectedDuration.set(
         counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].dur.count());
-    stats_.connected_duration.set(
+    stats_.connectedDuration.set(
         counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].dur.count());
-    stats_.syncing_duration.set(
+    stats_.syncingDuration.set(
         counters[static_cast<std::size_t>(OperatingMode::SYNCING)].dur.count());
-    stats_.tracking_duration.set(
+    stats_.trackingDuration.set(
         counters[static_cast<std::size_t>(OperatingMode::TRACKING)].dur.count());
-    stats_.full_duration.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].dur.count());
+    stats_.fullDuration.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].dur.count());
 
-    stats_.disconnected_transitions.set(
+    stats_.disconnectedTransitions.set(
         counters[static_cast<std::size_t>(OperatingMode::DISCONNECTED)].transitions);
-    stats_.connected_transitions.set(
+    stats_.connectedTransitions.set(
         counters[static_cast<std::size_t>(OperatingMode::CONNECTED)].transitions);
-    stats_.syncing_transitions.set(
+    stats_.syncingTransitions.set(
         counters[static_cast<std::size_t>(OperatingMode::SYNCING)].transitions);
-    stats_.tracking_transitions.set(
+    stats_.trackingTransitions.set(
         counters[static_cast<std::size_t>(OperatingMode::TRACKING)].transitions);
-    stats_.full_transitions.set(
-        counters[static_cast<std::size_t>(OperatingMode::FULL)].transitions);
+    stats_.fullTransitions.set(counters[static_cast<std::size_t>(OperatingMode::FULL)].transitions);
 }
 
 void

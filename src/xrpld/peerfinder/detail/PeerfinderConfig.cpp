@@ -63,15 +63,15 @@ Config::makeConfig(
 {
     PeerFinder::Config config;
 
-    config.peerPrivate = cfg.PEER_PRIVATE;
+    config.peerPrivate = cfg.peerPrivate;
 
     // Servers with peer privacy don't want to allow incoming connections
     config.wantIncoming = (!config.peerPrivate) && (port != 0);
 
-    if ((cfg.PEERS_OUT_MAX == 0u) && (cfg.PEERS_IN_MAX == 0u))
+    if ((cfg.peersOutMax == 0u) && (cfg.peersInMax == 0u))
     {
-        if (cfg.PEERS_MAX != 0)
-            config.maxPeers = cfg.PEERS_MAX;
+        if (cfg.peersMax != 0)
+            config.maxPeers = cfg.peersMax;
 
         config.maxPeers = std::max<std::size_t>(config.maxPeers, Tuning::kMinOutCount);
         config.outPeers = config.calcOutPeers();
@@ -94,8 +94,8 @@ Config::makeConfig(
     }
     else
     {
-        config.outPeers = cfg.PEERS_OUT_MAX;
-        config.inPeers = cfg.PEERS_IN_MAX;
+        config.outPeers = cfg.peersOutMax;
+        config.inPeers = cfg.peersInMax;
         config.maxPeers = 0;
     }
 
@@ -108,7 +108,7 @@ Config::makeConfig(
 
     // if it's a private peer or we are running as standalone
     // automatic connections would defeat the purpose.
-    config.autoConnect = !cfg.standalone() && !cfg.PEER_PRIVATE;
+    config.autoConnect = !cfg.standalone() && !cfg.peerPrivate;
     config.listeningPort = port;
     config.features = "";
     config.ipLimit = ipLimit;
