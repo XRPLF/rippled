@@ -69,8 +69,8 @@ getTxFormat(TxType type)
 
 STTx::STTx(STObject&& object) : STObject(std::move(object))
 {
-    tx_type_ = safeCast<TxType>(getFieldU16(sfTransactionType));
-    applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  //  may throw
+    txType_ = safeCast<TxType>(getFieldU16(sfTransactionType));
+    applyTemplate(getTxFormat(txType_)->getSOTemplate());  //  may throw
     tid_ = getHash(HashPrefix::TransactionId);
 }
 
@@ -84,9 +84,9 @@ STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
     if (set(sit))
         Throw<std::runtime_error>("Transaction contains an object terminator");
 
-    tx_type_ = safeCast<TxType>(getFieldU16(sfTransactionType));
+    txType_ = safeCast<TxType>(getFieldU16(sfTransactionType));
 
-    applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  // May throw
+    applyTemplate(getTxFormat(txType_)->getSOTemplate());  // May throw
     tid_ = getHash(HashPrefix::TransactionId);
 }
 
@@ -99,9 +99,9 @@ STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfT
 
     assembler(*this);
 
-    tx_type_ = safeCast<TxType>(getFieldU16(sfTransactionType));
+    txType_ = safeCast<TxType>(getFieldU16(sfTransactionType));
 
-    if (tx_type_ != type)
+    if (txType_ != type)
         logicError("Transaction type was mutated during assembly");
 
     tid_ = getHash(HashPrefix::TransactionId);
@@ -380,7 +380,7 @@ STTx::getMetaSQL(
     static boost::format const kBfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
-    auto format = TxFormats::getInstance().findByType(tx_type_);
+    auto format = TxFormats::getInstance().findByType(txType_);
     XRPL_ASSERT(format, "xrpl::STTx::getMetaSQL : non-null type format");
 
     return str(

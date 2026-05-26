@@ -12,7 +12,7 @@ class BasicApp
 private:
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     std::vector<std::thread> threads_;
-    boost::asio::io_context io_context_;
+    boost::asio::io_context ioContext_;
 
 public:
     BasicApp(std::size_t numberOfThreads);
@@ -21,7 +21,7 @@ public:
     boost::asio::io_context&
     getIoContext()
     {
-        return io_context_;
+        return ioContext_;
     }
 
     [[nodiscard]] size_t
