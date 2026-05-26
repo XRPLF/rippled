@@ -66,7 +66,7 @@ private:
 
     Handler& handler_;
     beast::Journal const j_;
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioContext_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
 
@@ -104,7 +104,7 @@ public:
     boost::asio::io_context&
     getIoContext()
     {
-        return io_context_;
+        return ioContext_;
     }
 
     bool
@@ -122,9 +122,9 @@ ServerImpl<Handler>::ServerImpl(
     beast::Journal journal)
     : handler_(handler)
     , j_(journal)
-    , io_context_(ioContext)
-    , strand_(boost::asio::make_strand(io_context_))
-    , work_(std::in_place, boost::asio::make_work_guard(io_context_))
+    , ioContext_(ioContext)
+    , strand_(boost::asio::make_strand(ioContext_))
+    , work_(std::in_place, boost::asio::make_work_guard(ioContext_))
 {
 }
 
@@ -150,7 +150,7 @@ ServerImpl<Handler>::ports(std::vector<Port> const& ports)
     {
         ports_.push_back(port);
         auto& internalPort = ports_.back();
-        if (auto sp = ios_.emplace<Door<Handler>>(handler_, io_context_, internalPort, j_))
+        if (auto sp = ios_.emplace<Door<Handler>>(handler_, ioContext_, internalPort, j_))
         {
             list_.push_back(sp);
 

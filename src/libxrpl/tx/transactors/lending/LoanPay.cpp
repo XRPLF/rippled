@@ -311,6 +311,8 @@ LoanPay::doApply()
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     auto debtTotalProxy = brokerSle->at(sfDebtTotal);
 
+    auto const vaultScale = getAssetsTotalScale(vaultSle);
+
     // Send the broker fee to the owner if they have sufficient cover available,
     // _and_ if the owner can receive funds
     // _and_ if the broker is authorized to hold funds. If not, so as not to
@@ -320,14 +322,22 @@ LoanPay::doApply()
     // Normally freeze status is checked in preclaim, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
     bool const sendBrokerFeeToOwner = [&]() {
-        // Round the minimum required cover up to be conservative. This ensures
-        // CoverAvailable never drops below the theoretical minimum, protecting
-        // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-        return coverAvailableProxy >=
-            roundToAsset(
-                   asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
-            !isDeepFrozen(view, brokerOwner, asset) &&
+        // In the fixCleanup3_2_0 path, vault-related values (for example,
+        // DebtTotal) use vaultScale. The legacy path below intentionally retains
+        // its pre-amendment loanScale behavior.
+        auto const minCover = [&]() {
+            if (view.rules().enabled(fixCleanup3_2_0))
+            {
+                return minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum, vaultSle);
+            }
+            // Round the minimum required cover up to be conservative. This ensures
+            // CoverAvailable never drops below the theoretical minimum, protecting
+            // the broker's solvency.
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            return roundToAsset(
+                asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale);
+        }();
+        return coverAvailableProxy >= minCover && !isDeepFrozen(view, brokerOwner, asset) &&
             !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
     }();
 
@@ -422,10 +432,6 @@ LoanPay::doApply()
 
     auto assetsAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto assetsTotalProxy = vaultSle->at(sfAssetsTotal);
-
-    // The vault may be at a different scale than the loan. Reduce rounding
-    // errors during the payment by rounding some of the values to that scale.
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
     auto const totalPaidToVaultRounded =
