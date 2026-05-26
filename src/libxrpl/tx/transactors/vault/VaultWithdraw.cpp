@@ -296,8 +296,7 @@ VaultWithdraw::doApply()
         {
             // LCOV_EXCL_START
             UNREACHABLE(
-                "xrpl::VaultWithdraw::doApply : final withdrawal with non-zero unrealized loss",
-                "must have been rejected by the insufficient-funds guard");
+                "xrpl::VaultWithdraw::doApply : final withdrawal with non-zero unrealized loss");
             JLOG(j_.fatal())
                 << "VaultWithdraw: "  //
                    "Cannot burn all outstanding shares while unrealized loss is non-zero";
