@@ -85,7 +85,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
