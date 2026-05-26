@@ -6706,6 +6706,91 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
+    // Bug: the equality check (vault outflow == destination inflow) was
+    // skipped whenever the destination delta rounded to zero at localMinScale,
+    // including cases where the vault outflow rounded to a non-zero value and
+    // a representable amount of value was genuinely destroyed.
+    //
+    // Scenario: Bob's IOU balance sits 5 units below the 10^16 STAmount
+    // precision boundary (atEdge2 = 9,999,999,999,999,995).  A withdrawal of
+    // 6 USD shifts his balance across that boundary: the exponent increments
+    // (0 → 1), so his effective inflow in Number space is only +5 — 1 USD is
+    // consumed by the precision-boundary rounding and cannot be credited.
+    //
+    // The destroyed amount (1 USD) is sub-ULP at destinationScale=1 (step=10),
+    // so the check treats it as an unavoidable IOU-precision artefact and
+    // lets the transaction succeed.
+    //
+    // Contrast: if 15 USD were destroyed at the same scale (destroyed ≥ step),
+    // floor(15/10)=1 ≠ 0 and the invariant would fire — that discrepancy IS
+    // representable and indicates a real accounting bug.
+    //
+    // Pre-fixCleanup3_2_0: the "must increase destination balance" check fires
+    // because roundedDestinationDelta = 0 ≤ 0.
+    void
+    testVaultWithdrawEqualityEnforced()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const aliceLimit{usd.raw(), 2, 16};
+            STAmount const bobLimit{usd.raw(), 2, 16};
+            // Bob's balance sits 5 units below the 10^16 STAmount precision
+            // boundary.  Receiving 6 USD shifts his exponent 0 → 1; the
+            // STAmount records +5, not +6 (1 USD is lost to rounding).
+            STAmount const atEdge2{usd.raw(), Number{9'999'999'999'999'995LL}};
+
+            env(trust(alice, aliceLimit));
+            env(trust(bob, bobLimit));
+            env.close();
+
+            env(pay(issuer, alice, usd(1'000)));
+            env(pay(issuer, bob, atEdge2));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(1'000)}));
+            env.close();
+
+            // Withdraw 6 USD to Bob: vault loses 6, Bob gains only 5.
+            // Destroyed amount = 1 USD, which is sub-ULP at destinationScale=1.
+            auto tx = vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(6)});
+            tx[sfDestination] = bob.human();
+            env(tx, Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultWithdraw to destination at IOU precision boundary fires "
+                "invariant (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw to destination at IOU precision boundary succeeds "
+                "when destroyed amount is sub-ULP (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tesSUCCESS);
+        }
+    }
+
     // Bug: when a depositor's IOU trustline balance is very large (e.g.
     // ~1e17), adding a small deposit (e.g. 1 USD) leaves sfAssetsTotal
     // unchanged at IOU precision because the increment is sub-ULP at the
@@ -7338,6 +7423,7 @@ public:
     void
     run() override
     {
+        testVaultWithdrawEqualityEnforced();
         testBugIssuerVaultDepositAtEdge();
         testBugMakeDeltaPosteriorScale();
         testBugMakeDeltaAnteriorScale();

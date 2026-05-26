@@ -29,7 +29,7 @@
 namespace xrpl {
 
 [[nodiscard]]
-STAmount
+static STAmount
 roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::roundToVaultScale : valid vault sle");
@@ -39,10 +39,11 @@ roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
     if (amount.integral())
         return amount;
 
-    return roundToScale(
-        amount,
-        scale(vault->at(sfAssetsTotal) + amount, vault->at(sfAsset)),
-        Number::RoundingMode::Downward);
+    int const postScale = [&]() {
+        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
+        return scale(vault->at(sfAssetsTotal) + amount, vault->at(sfAsset));
+    }();
+    return roundToScale(amount, postScale, Number::RoundingMode::Downward);
 }
 
 NotTEC

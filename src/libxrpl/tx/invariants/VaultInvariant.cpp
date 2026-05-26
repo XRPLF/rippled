@@ -849,8 +849,8 @@ ValidVault::finalize(
 
                     // the scale of destinationDelta can be coarser than
                     // minScale, so we take that into account when rounding
-                    auto const localMinScale =
-                        std::max(minScale, computeCoarsestScale({destinationDelta}));
+                    auto const destinationScale = computeCoarsestScale({destinationDelta});
+                    auto const localMinScale = std::max(minScale, destinationScale);
 
                     auto const roundedDestinationDelta =
                         roundToAsset(vaultAsset, destinationDelta.delta, localMinScale);
@@ -875,18 +875,27 @@ ValidVault::finalize(
 
                     auto const localPseudoDeltaAssets =
                         roundToAsset(vaultAsset, vaultPseudoDeltaAssets, localMinScale);
-                    // Skip the equality check when the destination delta rounded to zero: the
-                    // vault outflow is real but the receiver's trust-line scale cannot represent
-                    // it, so the mismatch is an expected rounding artifact, not a bug.
-                    if (!tolerateZeroDelta || roundedDestinationDelta != kZero)
+                    // For IOU assets near a precision boundary the destination's STAmount
+                    // exponent can shift, making part of the sent value unrepresentable at the
+                    // receiver's new scale — that portion is irreversibly absorbed by the IOU
+                    // rail.  Tolerate the mismatch only when the destroyed amount (vault outflow
+                    // minus destination inflow, in Number space) is itself sub-ULP at the
+                    // destination's scale.  Floor rounding is used so that values exactly at the
+                    // step boundary are not mistakenly dismissed.  Any representable discrepancy
+                    // indicates a real accounting bug and must be caught.
+                    auto const destroyedIsSubUlp = tolerateZeroDelta &&
+                        roundToAsset(
+                            vaultAsset,
+                            maybeVaultDeltaAssets->delta * -1 - destinationDelta.delta,
+                            destinationScale,
+                            Number::RoundingMode::Downward) == kZero;
+                    if (!destroyedIsSubUlp &&
+                        localPseudoDeltaAssets * -1 != roundedDestinationDelta)
                     {
-                        if (localPseudoDeltaAssets * -1 != roundedDestinationDelta)
-                        {
-                            JLOG(j.fatal()) << "Invariant failed: " <<  //
-                                "withdrawal must change vault and destination balance by equal "
-                                "amount";
-                            result = false;
-                        }
+                        JLOG(j.fatal()) << "Invariant failed: " <<  //
+                            "withdrawal must change vault and destination balance by equal "
+                            "amount";
+                        result = false;
                     }
                 }
 
