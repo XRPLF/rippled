@@ -79,37 +79,7 @@ IOUAmount::operator+=(IOUAmount const& other)
         return *this;
     }
 
-    if (getSTNumberSwitchover())
-    {
-        *this = IOUAmount{Number{*this} + Number{other}};
-        return *this;
-    }
-    auto m = other.mantissa_;
-    auto e = other.exponent_;
-
-    while (exponent_ < e)
-    {
-        mantissa_ /= 10;
-        ++exponent_;
-    }
-
-    while (e < exponent_)
-    {
-        m /= 10;
-        ++e;
-    }
-
-    // This addition cannot overflow an std::int64_t but we may throw from
-    // normalize if the result isn't representable.
-    mantissa_ += m;
-
-    if (mantissa_ >= -10 && mantissa_ <= 10)
-    {
-        *this = beast::kZero;
-        return *this;
-    }
-
-    normalize();
+    *this = IOUAmount{Number{*this} + Number{other}};
     return *this;
 }
 
