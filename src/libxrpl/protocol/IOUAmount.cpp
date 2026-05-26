@@ -52,15 +52,7 @@ IOUAmount::normalize()
     }
 
     Number const v{mantissa_, exponent_};
-    *this = fromNumber(v);
-    if (exponent_ > kMaxExponent)
-    {
-        Throw<std::overflow_error>("value overflow");
-    }
-    if (exponent_ < kMinExponent)
-    {
-        *this = beast::kZero;
-    }
+    *this = IOUAmount(v);
 }
 
 IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
