@@ -111,7 +111,7 @@ constexpr std::chrono::milliseconds kPeerHighLatency{300};
 constexpr std::chrono::seconds kPeerTimerInterval{60};
 
 /** How often we process duplicate incoming TMGetLedger messages */
-std::chrono::seconds constexpr getledgerInterval{15};
+std::chrono::seconds constexpr kGetLedgerInterval{15};
 
 }  // namespace
 
@@ -1536,7 +1536,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
     }
 
     // Drop duplicate requests from the same peer for at least
-    // `getLedgerInterval` seconds.
+    // `kGetLedgerInterval` seconds.
     // Append a little junk to prevent the hash of an incoming messsage
     // from matching the hash of the same outgoing message.
     // `shouldProcessForPeer` does not distingish between incoming and
@@ -1558,7 +1558,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         return std::pair{cookies.emplace(requestCookie).second, pending};
     }();
     // Check if the request has been seen from this peer.
-    if (!app_.getHashRouter().shouldProcessForPeer(messageHash, id_, getledgerInterval))
+    if (!app_.getHashRouter().shouldProcessForPeer(messageHash, id_, kGetLedgerInterval))
     {
         // This request has already been seen from this peer.
         // Has it been seen with this request cookie (or lack thereof)?
@@ -3369,7 +3369,7 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m, uint256 cons
             {
                 // Attempt to relay the request to a peer
                 // Note repeated messages will not relay to the same peer
-                // before `getLedgerInterval` seconds. This prevents one
+                // before `kGetLedgerInterval` seconds. This prevents one
                 // peer from getting flooded, and distributes the request
                 // load. If a request has been relayed to all eligible
                 // peers, then this message will not be relayed.
@@ -3380,7 +3380,7 @@ PeerImp::getLedger(std::shared_ptr<protocol::TMGetLedger> const& m, uint256 cons
                         this,
                         [&](Peer::id_t id) {
                             return app_.getHashRouter().shouldProcessForPeer(
-                                mHash, id, getledgerInterval);
+                                mHash, id, kGetLedgerInterval);
                         }))
                 {
                     m->set_requestcookie(id());
@@ -3462,12 +3462,12 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m, uint256 const
         {
             // Attempt to relay the request to a peer
             // Note repeated messages will not relay to the same peer
-            // before `getLedgerInterval` seconds. This prevents one
+            // before `kGetLedgerInterval` seconds. This prevents one
             // peer from getting flooded, and distributes the request
             // load. If a request has been relayed to all eligible
             // peers, then this message will not be relayed.
             if (auto const peer = getPeerWithTree(overlay_, txSetHash, this, [&](Peer::id_t id) {
-                    return app_.getHashRouter().shouldProcessForPeer(mHash, id, getledgerInterval);
+                    return app_.getHashRouter().shouldProcessForPeer(mHash, id, kGetLedgerInterval);
                 }))
             {
                 m->set_requestcookie(id());
