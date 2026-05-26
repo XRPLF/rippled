@@ -32,7 +32,8 @@ appendSection(std::vector<uint8_t>& out, uint8_t section, std::vector<uint8_t> c
 void
 appendBytes(std::vector<uint8_t>& out, auto const& bytes)
 {
-    out.insert(out.end(), std::begin(bytes), std::end(bytes));
+    for (auto byte : bytes)
+        out.push_back(byte);
 }
 
 std::vector<uint8_t>
