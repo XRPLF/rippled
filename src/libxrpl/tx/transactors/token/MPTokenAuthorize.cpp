@@ -133,8 +133,9 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     // Can't unauthorize the pseudo-accounts because they are implicitly
     // always authorized. No need to amendment gate since Vault and LoanBroker
-    // can only be created if the Vault amendment is enabled.
-    if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID}))
+    // can only be created if the Vault amendment is enabled; AMM with MPToken asset
+    // can only be created if MPTokensV2 is enabled.
+    if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
