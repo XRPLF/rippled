@@ -123,6 +123,7 @@ private:
 };
 
 class NumberSO;
+class NumberMantissaScaleGuard;
 
 bool
 useRulesGuards(Rules const& rules);
