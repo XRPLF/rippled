@@ -50,11 +50,15 @@ class Number_test : public beast::unit_test::Suite
     {
         T p = 1;
         if (n >= 0)
+        {
             for (int i = 0; i < n; ++i)
                 p *= 10;
+        }
         else
+        {
             for (int i = 0; i < -n; ++i)
                 p /= 10;
+        }
         return p;
     }
 

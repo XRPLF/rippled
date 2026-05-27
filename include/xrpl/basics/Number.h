@@ -40,6 +40,47 @@ isPowerOfTen(T value)
     return logTen(value).has_value();
 }
 
+namespace detail {
+
+/** Builds a table of the powers of 10
+ *
+ * This function is marked consteval, so it can only be run in
+ * a constexpr context. This assures that it is and can only be run at
+ * compile time. Doing it at runtime would be pretty wasteful and
+ * inefficient.
+ */
+constexpr std::size_t int64digits = 20;
+consteval std::array<std::uint64_t, int64digits>
+buildPowersOfTen()
+{
+    std::array<std::uint64_t, int64digits> result;
+
+    std::uint64_t power = 1;
+    std::size_t exponent = 0;
+    // end the loop early so it doesn't overflow;
+    for (; exponent < result.size() - 1; ++exponent, power *= 10)
+    {
+        result[exponent] = power;
+        if (power > std::numeric_limits<std::uint64_t>::max() / 10)
+            throw std::logic_error("Power of 10 table is too big");
+    }
+    result[exponent] = power;
+    if (power < std::numeric_limits<std::uint64_t>::max() / 10)
+        throw std::logic_error("Power of 10 table is not big enough for the uint64_t type");
+
+    return result;
+}
+
+}  // namespace detail
+
+constexpr std::array<std::uint64_t, detail::int64digits> kPowerOfTen = detail::buildPowersOfTen();
+
+static_assert(kPowerOfTen[0] == 1);
+static_assert(kPowerOfTen[1] == 10);
+static_assert(kPowerOfTen[10] == 10'000'000'000);
+static_assert(
+    isPowerOfTen(kPowerOfTen.back()) && *logTen(kPowerOfTen.back()) == detail::int64digits - 1);
+
 /** MantissaRange defines a range for the mantissa of a normalized Number.
  *
  * The mantissa is in the range [min, max], where
@@ -76,6 +117,7 @@ isPowerOfTen(T value)
 struct MantissaRange final
 {
     using rep = std::uint64_t;
+
     enum class MantissaScale {
         Small,
         // LargeLegacy can be removed when fixCleanup3_2_0 is retired
@@ -89,19 +131,15 @@ struct MantissaRange final
         Enabled = true,
     };
 
-    explicit constexpr MantissaRange(MantissaScale scale)
-        : min(getMin(scale))
-        , cuspRoundingFixEnabled(isCuspFixEnabled(scale))
-        , log(logTen(min).value_or(-1))
-        , scale(scale)
+    explicit constexpr MantissaRange(MantissaScale sc) : scale(sc)
     {
     }
 
-    rep min;
-    rep max{(min * 10) - 1};
-    CuspRoundingFix cuspRoundingFixEnabled;
-    int log;
-    MantissaScale scale;
+    MantissaScale const scale;
+    int const log{getExponent(scale)};
+    rep const min{getMin(scale, log)};
+    rep const max{(min * 10) - 1};
+    CuspRoundingFix const cuspRoundingFixEnabled{isCuspFixEnabled(scale)};
 
     static MantissaRange const&
     getMantissaRange(MantissaScale scale);
@@ -110,16 +148,34 @@ struct MantissaRange final
     getAllScales();
 
 private:
-    static constexpr rep
-    getMin(MantissaScale scale)
+    static constexpr int
+    getExponent(MantissaScale scale)
     {
         switch (scale)
         {
             case MantissaScale::Small:
-                return 1'000'000'000'000'000ULL;
+                return 15;
             case MantissaScale::LargeLegacy:
             case MantissaScale::Large:
-                return 1'000'000'000'000'000'000ULL;
+                return 18;
+            default:
+                // If called in a constexpr context, this throw assures that the build fails if an
+                // invalid scale is used.
+                throw std::runtime_error("Unknown mantissa scale");  // LCOV_EXCL_LINE
+        }
+    }
+
+    // Keep this function for future use with different ways to compute
+    // the ranges.
+    static constexpr rep
+    getMin(MantissaScale scale, int exponent)
+    {
+        switch (scale)
+        {
+            case MantissaScale::Small:
+            case MantissaScale::LargeLegacy:
+            case MantissaScale::Large:
+                return kPowerOfTen[exponent];
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
@@ -519,7 +575,8 @@ private:
         int& exponent,
         MantissaRange::rep const& minMantissa,
         MantissaRange::rep const& maxMantissa,
-        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled);
+        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
+        bool dropped);
 
     [[nodiscard]] bool
     isnormal() const noexcept;

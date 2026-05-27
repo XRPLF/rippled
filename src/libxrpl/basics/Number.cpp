@@ -178,6 +178,10 @@ public:
     setPositive() noexcept;
     void
     setNegative() noexcept;
+    // Should only be called by doNormalize, and then only for division
+    // operations with remainders.
+    void
+    setDropped() noexcept;
     [[nodiscard]] bool
     isNegative() const noexcept;
 
@@ -248,6 +252,12 @@ inline void
 Number::Guard::setNegative() noexcept
 {
     sbit_ = 1;
+}
+
+inline void
+Number::Guard::setDropped() noexcept
+{
+    xbit_ = 1;
 }
 
 inline bool
@@ -512,8 +522,6 @@ Number::one()
     return Number{false, range.min, -range.log, Number::Unchecked{}};
 }
 
-// Use the member names in this static function for now so the diff is cleaner
-// TODO: Rename the function parameters to get rid of the "_" suffix
 template <class T>
 void
 doNormalize(
@@ -522,7 +530,8 @@ doNormalize(
     int& exponent,
     MantissaRange::rep const& minMantissa,
     MantissaRange::rep const& maxMantissa,
-    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
+    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
+    bool dropped)
 {
     static constexpr auto kMinExponent = Number::kMinExponent;
     static constexpr auto kMaxExponent = Number::kMaxExponent;
@@ -547,6 +556,8 @@ doNormalize(
     Guard g;
     if (negative)
         g.setNegative();
+    if (dropped)
+        g.setDropped();
     while (m > maxMantissa)
     {
         if (exponent >= kMaxExponent)
@@ -611,7 +622,8 @@ Number::normalize<uint128_t>(
     internalrep const& maxMantissa,
     MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
 {
-    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled);
+    doNormalize(
+        negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled, false);
 }
 
 template <>
@@ -624,7 +636,8 @@ Number::normalize<unsigned long long>(
     internalrep const& maxMantissa,
     MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
 {
-    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled);
+    doNormalize(
+        negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled, false);
 }
 
 template <>
@@ -637,7 +650,8 @@ Number::normalize<unsigned long>(
     internalrep const& maxMantissa,
     MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
 {
-    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled);
+    doNormalize(
+        negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled, false);
 }
 
 void
@@ -858,32 +872,62 @@ Number::operator/=(Number const& y)
     auto const& maxMantissa = range.max;
     auto const cuspRoundingFixEnabled = range.cuspRoundingFixEnabled;
 
-    // Cache power of 10 computations to not waste time on subsequent calls
-    auto getPower10 = [](int exponent) {
-        static std::unordered_map<int, uint128_t> powersOf10;
-        if (!powersOf10.contains(exponent))
-        {
-            uint128_t result = 1;
-            for (int i = 0; i < exponent; ++i)
-                result *= 10;
-            powersOf10[exponent] = result;
-        }
-        return powersOf10.at(exponent);
-    };
-
-    // Shift by 10^17 gives greatest precision while not overflowing
-    // uint128_t or the cast back to int64_t for small mantissas.
+    // Division operates on two large integers (16-digit for small
+    // mantissas, 19-digit for large) using integer math. If the values
+    // were just divided directly, the result would be at most 9.
+    // Introduce a power-of-ten multiplication factor for the numerator
+    // which will ensure the result has a meaningful number of digits.
     //
-    // For large mantissas:
+    // Consider numbers with a 2-digit mantissa:
+    // * Assume both numbers have an exponent of 0, using "ToNearest" rounding
+    // * 23 / 67 = 0
+    // * Use a factor of 10^4
+    // * 230'000 / 67 = 3432 with an exponent of -4
+    // * The normalized result will be 34, exponent -2
+    //
+    // The most extreme results are 10/99 and 99/10
+    // * 100'000 / 99 =  1'010e-4 = 10e-2
+    // * 990'000 / 10 = 99'000e-4 = 99e-1
+    //
+    // Note that the computations give 2 or 3 digits after the
+    // decimal point to determine which way to round for most scenarios.
+    //
+    // For small mantissas (where the MantissaRange.log == 15), shifting by 10^17 gives sufficient
+    // precision while not overflowing uint128_t or the cast back to int64_t. (This is legacy
+    // behavior, which must not be changed.)
+    //
+    // For large mantissas (where the MantissaRange.log == 18), a shift by 10^20 would be optimal
+    // for most scenarios. However, larger mantissa values would overflow 2^128 (log(2^128,10)
+    // ~ 38.5).
+    //
     // * log(2^128,10) ~ 38.5
     // * largeRange.log = 18, fits in 10^19
     // * The expanded numerator must fit in 10^38
-    // * f can be up to 10^(38-19) = 10^19 safely
-    bool const small = range.scale == MantissaRange::MantissaScale::Small;
-    auto const factorExponent = small ? 17 : 19;
+    // * f not be more than 10^(38-19) = 10^19 safely
+    //
+    // So, we do the division into stages:
+    //
+    // Stage 1: Use the same factor of 10^17, for the initial division. This
+    // will frequently not result in a whole number quotient.
+    //
+    // Stage 2: If there is a remainder from the first step, repeat the
+    // process with a "correction" factor of 10^5. Shift the
+    // result of Stage 1 over by 5 places, and add the second result to it.
+    // This is equivalent to if we had used an initial factor of 10^22,
+    // a couple digits more than we actually need.
+    //
+    // Stage 3: If there is still a remainder, and the CuspRoundingFix
+    // is enabled, pass a flag indicating such to doNormalize. The Guard
+    // in doNormalize will treat that flag as if non-zero digits had
+    // been dropped from the mantissa when shrinking it into range.
+    // This is only relevant when rounding away from zero (Upward for
+    // positive numbers, Downward for negative), or if the "regular"
+    // remainder is exactly 0.5 for "ToNearest". This will give the
+    // rounding the most accurate result possible, as if infinite
+    // precision was used in the initial calculation.
+    auto constexpr factorExponent = 17;
 
-    uint128_t const f = getPower10(factorExponent);
-    XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
+    uint128_t constexpr f = kPowerOfTen[factorExponent];
 
     // unsigned denominator
     auto const dmu = static_cast<uint128_t>(dm);
@@ -892,21 +936,21 @@ Number::operator/=(Number const& y)
     auto zm = numerator / dmu;
     auto ze = ne - de - factorExponent;
     bool zn = (ns * ds) < 0;
-    if (!small)
-    {
-        // zm may now hold up to 20 digits.  The correctionFactor must be small enough to not cause
-        // overflow, but as large as possible otherwise
-        // * zm fits in 10^21
-        // * correctionFactor can be up to 10^(38-21) = 10^17 safely
-        bool const useBigCorrection =
-            cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled;
-        auto const correctionExponent = useBigCorrection ? 17 : 3;
-        uint128_t const correctionFactor = getPower10(correctionExponent);
+    // dropped is used in the same way as Guard::xbit_. In the case of
+    // division, it indicates if there's any remainder left over after
+    // we have been as precise as reasonable. If there is, it would be as
+    // if we were using infinite precision math, and a non-zero digit
+    // had been shifted off the end of the result when normalizing.
+    bool dropped = false;
 
-        // Virtually multiply numerator by correctionFactor. Since that would
-        // overflow in the existing uint128_t, we'll do that part separately.
+    if (range.scale != MantissaRange::MantissaScale::Small)
+    {
+        // Stage 2
+        //
+        // If there is a remainder, treat is as a secondary numerator.
+        // Multiply by correctionFactor separately from stage 1.
         // The math for this would work for small mantissas, but we need to
-        // preserve existing behavior.
+        // preserve legacy behavior.
         //
         // Consider:
         // ((numerator * correctionFactor) / dmu) / correctionFactor
@@ -917,24 +961,47 @@ Number::operator/=(Number const& y)
         //
         // = ((numerator / dmu * correctionFactor)
         //   + ((numerator % dmu) * correctionFactor) / dmu) / correctionFactor
+        // = ((zm * correctionFactor)
+        //   + (remainder * correctionFactor) / dmu) / correctionFactor
         //
-        // We have already set `mantissa_ = numerator / dmu`. Now we
-        // compute `remainder = numerator % dmu`, and if it is
-        // nonzero, we do the rest of the arithmetic. If it's zero, we can skip
-        // it.
+        // The trick is that multiplication by correctionFactor is done on the mantissa, but
+        // division by correctionFactor is done by modifying the exponent, so no precision is lost
+        // until we normalize.
+        //
+        // If remainder is zero, we can skip this stage entirely because
+        // the first stage gave an exact answer.
+        auto constexpr correctionExponent = 5;
+        uint128_t constexpr correctionFactor = kPowerOfTen[correctionExponent];
+        static_assert(factorExponent + correctionExponent == 22);
+
         auto const remainder = (numerator % dmu);
         if (remainder != 0)
         {
-            zm *= correctionFactor;
-            // divide by the correctionFactor by moving the exponent, so we don't lose the
-            // integer value we just computed
-            ze -= correctionExponent;
+            auto const partialNumerator = remainder * correctionFactor;
+            auto const correction = partialNumerator / dmu;
 
-            auto const correction = (remainder * correctionFactor) / dmu;
-            zm += correction;
+            if (correction != 0)
+            {
+                zm *= correctionFactor;
+                // divide by the correctionFactor by moving the exponent, so we don't lose the
+                // integer value we just computed
+                ze -= correctionExponent;
+
+                zm += correction;
+            }
+
+            // Stage 3: If there's still anything left, and the cusp
+            // rounding fix is enabled, flag if there is still
+            // a remainder from stage 2.
+            bool const useTrailingRemainder =
+                cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled;
+            if (useTrailingRemainder)
+            {
+                dropped = partialNumerator % dmu != 0;
+            }
         }
     }
-    normalize(zn, zm, ze, minMantissa, maxMantissa, cuspRoundingFixEnabled);
+    doNormalize(zn, zm, ze, minMantissa, maxMantissa, cuspRoundingFixEnabled, dropped);
     negative_ = zn;
     mantissa_ = static_cast<internalrep>(zm);
     exponent_ = ze;
