@@ -135,7 +135,7 @@ fillHandler(JsonContext& context, Handler const*& result)
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
     JLOG(context.j.trace()) << "REQUEST:" << context.params;
-    auto handler = getHandler(context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
+    auto handler = getHandler(context.apiVersion, context.app.config().betaRpcApi, strCommand);
 
     if (handler == nullptr)
         return RpcUnknownCommand;

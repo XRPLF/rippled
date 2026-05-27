@@ -67,9 +67,6 @@ public:
         backend_->sync();
     }
 
-    std::vector<std::shared_ptr<NodeObject>>
-    fetchBatch(std::vector<uint256> const& hashes);
-
     void
     asyncFetch(
         uint256 const& hash,

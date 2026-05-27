@@ -394,6 +394,9 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, AccountRoot<ReadView> co
 TER
 MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, AccountRoot<ReadView> const&)
 {
+    // The standard checks are all we can do because any remaining checks
+    // require the existence of a MPToken.  Offer crossing does not
+    // require a pre-existing MPToken.
     return tesSUCCESS;
 }
 
@@ -837,10 +840,17 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
     }
 
     // pure issue/redeem can't be frozen (issuer/holder)
+    // For the first step: check global freeze of the step's own asset.
+    // For the last step: check only the per-holder MPToken lock.
+    // Global freeze of the deliver asset is not checked here
+    // because MPT semantics allow issuer<->holder transfers even when globally
+    // locked — only holder-to-holder DEX paths are restricted.
     if (!(ctx.isLast && ctx.isFirst))
     {
         auto const& account = ctx.isFirst ? src_ : dst_;
-        if (isFrozen(ctx.view, account, mptIssue_))
+        bool const frozen = (ctx.isFirst && isGlobalFrozen(ctx.view, mptIssue_)) ||
+            isIndividualFrozen(ctx.view, account, mptIssue_);
+        if (frozen)
             return terLOCKED;
     }
 

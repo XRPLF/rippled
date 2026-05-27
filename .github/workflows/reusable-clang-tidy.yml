@@ -70,13 +70,13 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           cmake \
-            -G 'Ninja' \
-            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-            -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
-            -Dtests=ON \
-            -Dwerr=ON \
-            -Dxrpld=ON \
-            ..
+              -G 'Ninja' \
+              -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+              -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
+              -Dtests=ON \
+              -Dwerr=ON \
+              -Dxrpld=ON \
+              ..
 
       # clang-tidy needs headers generated from proto files
       - name: Build libxrpl.libpb
@@ -133,7 +133,7 @@ jobs:
       - name: Write issue header
         if: ${{ steps.run_clang_tidy.outcome != 'success' }}
         run: |
-          cat > "${ISSUE_FILE}" <<EOF
+          cat >"${ISSUE_FILE}" <<EOF
           ## Clang-tidy Check Failed
 
           ### Clang-tidy Output:
@@ -144,30 +144,30 @@ jobs:
         if: ${{ steps.run_clang_tidy.outcome != 'success' }}
         run: |
           if [ -f "${OUTPUT_FILE}" ]; then
-            # Extract lines containing 'error:', 'warning:', or 'note:'
-            grep -E '(error:|warning:|note:)' "${OUTPUT_FILE}" > filtered-output.txt || true
+              # Extract lines containing 'error:', 'warning:', or 'note:'
+              grep -E '(error:|warning:|note:)' "${OUTPUT_FILE}" >filtered-output.txt || true
 
-            # If filtered output is empty, use original (might be a different error format)
-            if [ ! -s filtered-output.txt ]; then
-              cp "${OUTPUT_FILE}" filtered-output.txt
-            fi
+              # If filtered output is empty, use original (might be a different error format)
+              if [ ! -s filtered-output.txt ]; then
+                  cp "${OUTPUT_FILE}" filtered-output.txt
+              fi
 
-            # Truncate if too large
-            head -c 60000 filtered-output.txt >> "${ISSUE_FILE}"
-            if [ "$(wc -c < filtered-output.txt)" -gt 60000 ]; then
-              echo "" >> "${ISSUE_FILE}"
-              echo "... (output truncated, see artifacts for full output)" >> "${ISSUE_FILE}"
-            fi
+              # Truncate if too large
+              head -c 60000 filtered-output.txt >>"${ISSUE_FILE}"
+              if [ "$(wc -c <filtered-output.txt)" -gt 60000 ]; then
+                  echo "" >>"${ISSUE_FILE}"
+                  echo "... (output truncated, see artifacts for full output)" >>"${ISSUE_FILE}"
+              fi
 
-            rm filtered-output.txt
+              rm filtered-output.txt
           else
-            echo "No output file found" >> "${ISSUE_FILE}"
+              echo "No output file found" >>"${ISSUE_FILE}"
           fi
 
       - name: Append issue footer
         if: ${{ steps.run_clang_tidy.outcome != 'success' }}
         run: |
-          cat >> "${ISSUE_FILE}" <<EOF
+          cat >>"${ISSUE_FILE}" <<EOF
           \`\`\`
 
           ---
@@ -176,7 +176,7 @@ jobs:
 
       - name: Create issue
         if: ${{ steps.run_clang_tidy.outcome != 'success' && inputs.create_issue_on_failure }}
-        uses: XRPLF/actions/create-issue@36d450d12d301e8410c1b7936e5de70c291cbe36
+        uses: XRPLF/actions/create-issue@2b8bc36af85b88bca0dd7bfac2e2dc05f94ad712
         with:
           title: "Clang-tidy check failed"
           body_file: ${{ env.ISSUE_FILE }}
