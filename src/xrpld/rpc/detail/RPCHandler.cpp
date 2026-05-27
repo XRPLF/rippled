@@ -185,7 +185,12 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
-        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
+        // Status::operator bool() returns true when there IS an error
+        // (code_ != OK), so the ternary correctly maps error->error, ok->success.
+        span.setAttribute(
+            rpc_span::attr::rpcStatus, ret ? rpc_span::val::error : rpc_span::val::success);
+        if (!ret)
+            span.setOk();
         return ret;
     }
     catch (std::exception& e)
@@ -224,8 +229,11 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
         {
             cmdName = "unknown";
         }
-        auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::command, rpc_span::val::unknownCommand);
+        // Use the resolved command name as the span suffix so dashboards
+        // can break out per-command error rates (e.g. rpc.command.submit
+        // for a submit that hit rpcTOO_BUSY). Falling back to a single
+        // "unknown" name only when the request truly omits both fields.
+        auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
         span.setAttribute(rpc_span::attr::command, cmdName.c_str());
         span.setError(get_error_info(error).token.c_str());
 

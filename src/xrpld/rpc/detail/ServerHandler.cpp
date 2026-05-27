@@ -564,6 +564,7 @@ ServerHandler::processSession(
         jr[jss::api_version] = jv[jss::api_version];
 
     jr[jss::type] = jss::response;
+    span.setOk();
     return jr;
 }
 
@@ -598,6 +599,7 @@ ServerHandler::processSession(
     {
         session->close(true);
     }
+    span.setOk();
 }
 
 static Json::Value
@@ -1036,6 +1038,7 @@ ServerHandler::processRequest(
         }
     }
 
+    span.setOk();
     HTTPReply(httpStatus, response, output, rpcJ);
 }
 

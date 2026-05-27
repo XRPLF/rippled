@@ -169,8 +169,7 @@ void
 GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::Coro> coro)
 {
     using namespace telemetry;
-    auto span =
-        SpanGuard::span(TraceCategory::Rpc, grpc_span::prefix::grpc, grpc_span::op::request);
+    auto span = SpanGuard::span(TraceCategory::Rpc, grpc_span::prefix::grpc, name_);
     span.setAttribute(grpc_span::attr::method, name_);
 
     try
@@ -179,6 +178,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
         bool const isUnlimited = clientIsUnlimited();
         if (!isUnlimited && usage.disconnect(app_.getJournal("gRPCServer")))
         {
+            span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::error);
             span.setError(grpc_span::val::resourceExhausted);
             grpc::Status const status{
                 grpc::StatusCode::RESOURCE_EXHAUSTED, "usage balance exceeds threshold"};
@@ -189,6 +189,10 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
             auto loadType = getLoadType();
             usage.charge(loadType);
             auto role = getRole(isUnlimited);
+
+            span.setAttribute(
+                grpc_span::attr::grpcRole,
+                role == Role::ADMIN ? grpc_span::val::admin : grpc_span::val::user);
 
             {
                 std::stringstream toLog;
@@ -225,6 +229,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
             if (conditionMetRes != rpcSUCCESS)
             {
                 RPC::ErrorInfo const errorInfo = RPC::get_error_info(conditionMetRes);
+                span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::error);
                 span.setError(errorInfo.token.c_str());
                 grpc::Status const status{
                     grpc::StatusCode::FAILED_PRECONDITION, errorInfo.message.c_str()};
@@ -234,6 +239,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
             {
                 std::pair<Response, grpc::Status> result = handler_(context);
                 setIsUnlimited(result.first, isUnlimited);
+                span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::success);
                 span.setOk();
                 responder_.Finish(result.first, result.second, this);
             }
@@ -241,6 +247,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
     }
     catch (std::exception const& ex)
     {
+        span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::error);
         span.recordException(ex);
         grpc::Status const status{grpc::StatusCode::INTERNAL, ex.what()};
         responder_.FinishWithError(status, this);
