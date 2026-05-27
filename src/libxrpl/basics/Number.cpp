@@ -864,8 +864,10 @@ Number::operator/=(Number const& y)
 
     bool const dp = y.negative_;
     int const ds = (dp ? -1 : 1);
-    auto dm = y.mantissa_;
-    auto de = y.exponent_;
+    // Create the denominator as 128-bit unsigned, since that's what we
+    // need to work with.
+    uint128_t const dm = static_cast<uint128_t>(y.mantissa_);
+    auto const de = y.exponent_;
 
     auto const& range = kRange.get();
     auto const& minMantissa = range.min;
@@ -929,11 +931,9 @@ Number::operator/=(Number const& y)
 
     uint128_t constexpr f = kPowerOfTen[factorExponent];
 
-    // unsigned denominator
-    auto const dmu = static_cast<uint128_t>(dm);
     auto const numerator = uint128_t(nm) * f;
 
-    auto zm = numerator / dmu;
+    auto zm = numerator / dm;
     auto ze = ne - de - factorExponent;
     bool zn = (ns * ds) < 0;
     // dropped is used in the same way as Guard::xbit_. In the case of
@@ -953,16 +953,16 @@ Number::operator/=(Number const& y)
         // preserve legacy behavior.
         //
         // Consider:
-        // ((numerator * correctionFactor) / dmu) / correctionFactor
-        // = ((numerator / dmu) * correctionFactor) / correctionFactor)
+        // ((numerator * correctionFactor) / dm) / correctionFactor
+        // = ((numerator / dm) * correctionFactor) / correctionFactor)
         //
         // But that assumes infinite precision. With integer math, this is
         // equivalent to
         //
-        // = ((numerator / dmu * correctionFactor)
-        //   + ((numerator % dmu) * correctionFactor) / dmu) / correctionFactor
+        // = ((numerator / dm * correctionFactor)
+        //   + ((numerator % dm) * correctionFactor) / dm) / correctionFactor
         // = ((zm * correctionFactor)
-        //   + (remainder * correctionFactor) / dmu) / correctionFactor
+        //   + (remainder * correctionFactor) / dm) / correctionFactor
         //
         // The trick is that multiplication by correctionFactor is done on the mantissa, but
         // division by correctionFactor is done by modifying the exponent, so no precision is lost
@@ -974,11 +974,11 @@ Number::operator/=(Number const& y)
         uint128_t constexpr correctionFactor = kPowerOfTen[correctionExponent];
         static_assert(factorExponent + correctionExponent == 22);
 
-        auto const remainder = (numerator % dmu);
+        auto const remainder = (numerator % dm);
         if (remainder != 0)
         {
             auto const partialNumerator = remainder * correctionFactor;
-            auto const correction = partialNumerator / dmu;
+            auto const correction = partialNumerator / dm;
 
             if (correction != 0)
             {
@@ -997,7 +997,7 @@ Number::operator/=(Number const& y)
                 cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled;
             if (useTrailingRemainder)
             {
-                dropped = partialNumerator % dmu != 0;
+                dropped = partialNumerator % dm != 0;
             }
         }
     }
