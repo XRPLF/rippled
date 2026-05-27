@@ -287,7 +287,7 @@ struct Wasm_test : public beast::unit_test::Suite
         Env env{*this};
         TestLedgerDataProvider hfs(env);
         ImportVec imports;
-        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs, 33);
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "ldgr_index", &hfs, 33);
         auto& engine = WasmEngine::instance();
 
         auto re =
@@ -316,8 +316,8 @@ struct Wasm_test : public beast::unit_test::Suite
         Env env{*this};
         TestLedgerDataProvider hfs(env);
         ImportVec imports;
-        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs, 33);
-        WASM_IMPORT_FUNC2(imports, getParentLedgerHash, "get_parent_ledger_hash", &hfs, 60);
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "ldgr_index", &hfs, 33);
+        WASM_IMPORT_FUNC2(imports, getParentLedgerHash, "parent_ldgr_hash", &hfs, 60);
         auto& engine = WasmEngine::instance();
 
         // Test exp_func1() - should return 1
@@ -329,7 +329,7 @@ struct Wasm_test : public beast::unit_test::Suite
             impExpWasm, hfs, 1'000'000, "exp_func2", wasmParams(5), imports, env.journal);
         checkResult(re, 10, 52);
 
-        // Test test_imports() - should call get_ledger_sqn and get_parent_ledger_hash
+        // Test test_imports() - should call ldgr_index and parent_ldgr_hash
         re = engine.run(impExpWasm, hfs, 1'000'000, "test_imports", {}, imports, env.journal);
         // Should return the ledger sequence number (3 by default in test env)
         checkResult(re, 3, 294);
@@ -337,15 +337,15 @@ struct Wasm_test : public beast::unit_test::Suite
         // Test corrupted import/export sections - invert each byte and expect failure
         testcase("Wasm import/export section corruption");
         {
-            // Import section(#2): bytes [26, 79) - 53 bytes
-            // Export section(#7): bytes [90, 141) - 51 bytes
+            // Import section(#2): bytes [26, 69) - 43 bytes
+            // Export section(#7): bytes [80, 131) - 51 bytes
             auto [importStart, importEnd] = getSection(impExpWasm, 2);
             auto [exportStart, exportEnd] = getSection(impExpWasm, 7);
 
             BEAST_EXPECTS(importStart == 26, std::to_string(importStart));
-            BEAST_EXPECTS(importEnd == 79, std::to_string(importEnd));
-            BEAST_EXPECTS(exportStart == 90, std::to_string(exportStart));
-            BEAST_EXPECTS(exportEnd == 141, std::to_string(exportEnd));
+            BEAST_EXPECTS(importEnd == 69, std::to_string(importEnd));
+            BEAST_EXPECTS(exportStart == 80, std::to_string(exportStart));
+            BEAST_EXPECTS(exportEnd == 131, std::to_string(exportEnd));
 
             auto testInv = [&](unsigned i) {
                 auto corruptedWasm = impExpWasm;
@@ -380,7 +380,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
         auto const re = engine.run(fibWasm, hfs, 10'000'000, "fib", wasmParams(10));
 
-        checkResult(re, 55, 1'137);
+        checkResult(re, 55, 1'184);
     }
 
     void
@@ -577,7 +577,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto const lgrSqnWasm = hexToBytes(kLedgerSqnWasmHex);
             TestLedgerDataProvider hfs(env);
             ImportVec imports;
-            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn2", &hfs);
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "ldgr_index2", &hfs);
 
             auto& engine = WasmEngine::instance();
 
@@ -592,8 +592,8 @@ struct Wasm_test : public beast::unit_test::Suite
             auto const lgrSqnWasm = hexToBytes(kLedgerSqnWasmHex);
             TestLedgerDataProvider hfs(env);
             ImportVec imports;
-            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs);
-            imports["get_ledger_sqn"].first = nullptr;
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "ldgr_index", &hfs);
+            imports["ldgr_index"].first = nullptr;
 
             auto& engine = WasmEngine::instance();
 
@@ -641,7 +641,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
             TestHostFunctions hfs(env, 0);
             auto re = runEscrowWasm(float0Wasm, hfs, 100'000, funcName, {});
-            checkResult(re, 1, 4'309);
+            checkResult(re, 1, 3'784);
             env.close();
         }
     }
@@ -658,7 +658,7 @@ struct Wasm_test : public beast::unit_test::Suite
         auto const codecovWasm = hexToBytes(kCodecovTestsWasmHex);
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 220'169;
+        auto const allowance = 204'624;
         auto re = runEscrowWasm(codecovWasm, hfs, allowance, escrowFunctionName, {});
 
         checkResult(re, 1, allowance);

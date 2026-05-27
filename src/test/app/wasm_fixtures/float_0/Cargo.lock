@@ -74,9 +74,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.183"
+version = "0.2.186"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5b646652bf6661599e1da8901b3b9522896f01e736bad5f723fe7a3a27f899d"
+checksum = "68ab91017fe16c622486840e4c83c9a37afeff978bd239b5293d61ece587de66"
 
 [[package]]
 name = "proc-macro2"
@@ -135,9 +135,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "typenum"
-version = "1.19.0"
+version = "1.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
+checksum = "40ce102ab67701b8526c123c1bab5cbe42d7040ccfd0f64af1a385808d2f43de"
 
 [[package]]
 name = "unicode-ident"
@@ -152,9 +152,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
-name = "xrpl-address-macro"
-version = "0.7.1"
-source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?rev=1e5d096f46742ef7fcf1cb6f28a2526a72ed59d8#1e5d096f46742ef7fcf1cb6f28a2526a72ed59d8"
+name = "xrpl-macros"
+version = "0.1.0"
+source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?branch=renames#9822d645870908a79d87a57b0244caa6359cb9cf"
 dependencies = [
  "bs58",
  "quote",
@@ -164,8 +164,8 @@ dependencies = [
 
 [[package]]
 name = "xrpl-wasm-stdlib"
-version = "0.7.1"
-source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?rev=1e5d096f46742ef7fcf1cb6f28a2526a72ed59d8#1e5d096f46742ef7fcf1cb6f28a2526a72ed59d8"
+version = "0.8.0"
+source = "git+https://github.com/ripple/xrpl-wasm-stdlib.git?branch=renames#9822d645870908a79d87a57b0244caa6359cb9cf"
 dependencies = [
- "xrpl-address-macro",
+ "xrpl-macros",
 ]

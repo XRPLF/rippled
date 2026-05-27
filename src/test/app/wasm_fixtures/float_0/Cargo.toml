@@ -15,7 +15,7 @@ opt-level = 's'
 panic = "abort"
 
 [dependencies]
-xrpl-std = { git = "https://github.com/ripple/xrpl-wasm-stdlib.git", package = "xrpl-wasm-stdlib", rev = "1e5d096f46742ef7fcf1cb6f28a2526a72ed59d8" }
+xrpl-std = { git = "https://github.com/ripple/xrpl-wasm-stdlib.git", package = "xrpl-wasm-stdlib", branch = "renames" }
 
 [profile.dev]
 panic = "abort"

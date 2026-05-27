@@ -1,7 +1,7 @@
 #![cfg_attr(target_arch = "wasm32", no_std)]
 
 use xrpl_std::host::trace::trace;
-use xrpl_std::host::{float_compare, float_from_int, float_subtract, FLOAT_ROUNDING_MODES_TO_NEAREST};
+use xrpl_std::host::{float_cmp, float_from_int, float_sub, FLOAT_ROUNDING_MODES_TO_NEAREST};
 
 // Float size constant (8 bytes mantissa + 4 bytes exponent)
 const FLOAT_SIZE: usize = 12;
@@ -25,7 +25,7 @@ pub extern "C" fn finish() -> i32 {
 
     // Subtract: 10 - 10 = 0
     if FLOAT_SIZE as i32 != unsafe {
-        float_subtract(
+        float_sub(
             f10.as_ptr(),
             FLOAT_SIZE,
             f10.as_ptr(),
@@ -40,14 +40,14 @@ pub extern "C" fn finish() -> i32 {
     }
 
     // Compare result with zero
-    if 0 == unsafe { float_compare(f_result.as_ptr(), FLOAT_SIZE, f_result.as_ptr(), FLOAT_SIZE) } {
+    if 0 == unsafe { float_cmp(f_result.as_ptr(), FLOAT_SIZE, f_result.as_ptr(), FLOAT_SIZE) } {
         let _ = trace("  float 0 compare: good");
     } else {
         let _ = trace("  float 0 compare: bad");
     }
 
     // Compare result with FLOAT_ZERO constant
-    if 0 == unsafe { float_compare(f_result.as_ptr(), FLOAT_SIZE, FLOAT_ZERO.as_ptr(), FLOAT_SIZE) } {
+    if 0 == unsafe { float_cmp(f_result.as_ptr(), FLOAT_SIZE, FLOAT_ZERO.as_ptr(), FLOAT_SIZE) } {
         let _ = trace("  FLOAT_ZERO compare: good");
     } else {
         let _ = trace("  FLOAT_ZERO compare: bad");
