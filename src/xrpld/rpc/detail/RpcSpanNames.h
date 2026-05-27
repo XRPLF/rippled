@@ -86,9 +86,9 @@
  *  gRPC path (see GrpcSpanNames.h for constants):
  *
  *    +-------------------------------------------------------+
- *    | grpc.request                                          |
+ *    | grpc.<MethodName>  (e.g. grpc.GetLedger)              |
  *    | CallData::process(coro)                               |
- *    |   attrs: method, grpc_status                           |
+ *    |   attrs: method, grpc_status                          |
  *    +-------------------------------------------------------+
  *
  *  Covered paths:

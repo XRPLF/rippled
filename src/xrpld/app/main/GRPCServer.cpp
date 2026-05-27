@@ -169,8 +169,7 @@ void
 GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::Coro> coro)
 {
     using namespace telemetry;
-    auto span =
-        SpanGuard::span(TraceCategory::Rpc, grpc_span::prefix::grpc, grpc_span::op::request);
+    auto span = SpanGuard::span(TraceCategory::Rpc, grpc_span::prefix::grpc, name_);
     span.setAttribute(grpc_span::attr::method, name_);
 
     try

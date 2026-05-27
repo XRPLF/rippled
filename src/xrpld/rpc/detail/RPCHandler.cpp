@@ -229,8 +229,11 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
         {
             cmdName = "unknown";
         }
-        auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::command, rpc_span::val::unknownCommand);
+        // Use the resolved command name as the span suffix so dashboards
+        // can break out per-command error rates (e.g. rpc.command.submit
+        // for a submit that hit rpcTOO_BUSY). Falling back to a single
+        // "unknown" name only when the request truly omits both fields.
+        auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
         span.setAttribute(rpc_span::attr::command, cmdName.c_str());
         span.setError(get_error_info(error).token.c_str());
 

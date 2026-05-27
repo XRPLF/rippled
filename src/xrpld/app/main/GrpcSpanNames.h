@@ -9,13 +9,16 @@
  *  Span hierarchy:
  *
  *    +-------------------------------------------------------+
- *    | grpc.request                                          |
+ *    | grpc.<MethodName>  (e.g. grpc.GetLedger)              |
  *    | CallData::process(coro)                               |
  *    |   attrs: method, grpc_role, grpc_status               |
  *    +-------------------------------------------------------+
  *
  *  Unlike the HTTP/WS RPC path, gRPC has a flat single-span structure
  *  per request since each CallData handles exactly one RPC method.
+ *  The method name is embedded in the span name (rather than only as
+ *  an attribute) so dashboards can break out per-method latency and
+ *  error rates without needing TraceQL attribute filters.
  */
 
 #include <xrpl/telemetry/SpanNames.h>
@@ -25,15 +28,10 @@ namespace xrpl::telemetry::grpc_span {
 // ===== Span prefixes =======================================================
 
 namespace prefix {
-/// "grpc" — root prefix for gRPC transport spans.
+/// "grpc" — root prefix for gRPC transport spans. The full span name is
+/// formed at the call site as `grpc.<MethodName>` (see GRPCServer.cpp).
 inline constexpr auto grpc = makeStr("grpc");
 }  // namespace prefix
-
-// ===== Span operation suffixes =============================================
-
-namespace op {
-inline constexpr auto request = makeStr("request");
-}  // namespace op
 
 // ===== Attribute keys ======================================================
 
