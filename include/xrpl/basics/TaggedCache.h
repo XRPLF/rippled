@@ -181,14 +181,14 @@ private:
             beast::insight::Collector::ptr const& collector)
             : hook(collector->makeHook(handler))
             , size(collector->makeGauge(prefix, "size"))
-            , hit_rate(collector->makeGauge(prefix, "hit_rate"))
+            , hitRate(collector->makeGauge(prefix, "hit_rate"))
 
         {
         }
 
         beast::insight::Hook hook;
         beast::insight::Gauge size;
-        beast::insight::Gauge hit_rate;
+        beast::insight::Gauge hitRate;
 
         std::size_t hits{0};
         std::size_t misses{0};
@@ -197,16 +197,16 @@ private:
     class KeyOnlyEntry
     {
     public:
-        clock_type::time_point last_access;
+        clock_type::time_point lastAccess;
 
-        explicit KeyOnlyEntry(clock_type::time_point const& lastAccess) : last_access(lastAccess)
+        explicit KeyOnlyEntry(clock_type::time_point const& lastAccess) : lastAccess(lastAccess)
         {
         }
 
         void
         touch(clock_type::time_point const& now)
         {
-            last_access = now;
+            lastAccess = now;
         }
     };
 
@@ -214,10 +214,10 @@ private:
     {
     public:
         shared_weak_combo_pointer_type ptr;
-        clock_type::time_point last_access;
+        clock_type::time_point lastAccess;
 
         ValueEntry(clock_type::time_point const& lastAccess, shared_pointer_type const& ptr)
-            : ptr(ptr), last_access(lastAccess)
+            : ptr(ptr), lastAccess(lastAccess)
         {
         }
 
@@ -246,7 +246,7 @@ private:
         void
         touch(clock_type::time_point const& now)
         {
-            last_access = now;
+            lastAccess = now;
         }
     };
 
@@ -286,13 +286,13 @@ private:
     std::string name_;
 
     // Desired number of cache entries (0 = ignore)
-    int const target_size_;
+    int const targetSize_;
 
     // Desired maximum cache age
-    clock_type::duration const target_age_;
+    clock_type::duration const targetAge_;
 
     // Number of items cached
-    int cache_count_{0};
+    int cacheCount_{0};
     cache_type cache_;  // Hold strong reference to recent objects
     std::uint64_t hits_{0};
     std::uint64_t misses_{0};

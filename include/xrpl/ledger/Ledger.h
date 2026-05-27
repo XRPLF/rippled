@@ -24,7 +24,7 @@ struct CreateGenesisT
 {
     explicit CreateGenesisT() = default;
 };
-extern CreateGenesisT const kCREATE_GENESIS;
+extern CreateGenesisT const kCreateGenesis;
 
 /** Holds a ledger.
 

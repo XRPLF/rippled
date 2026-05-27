@@ -56,7 +56,7 @@ isVaultPseudoAccountFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptShare,
-    int depth);
+    std::uint8_t depth);
 
 [[nodiscard]] bool
 isLPTokenFrozen(

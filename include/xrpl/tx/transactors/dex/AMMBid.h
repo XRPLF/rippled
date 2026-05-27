@@ -45,7 +45,7 @@ namespace xrpl {
 class AMMBid : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit AMMBid(ApplyContext& ctx) : Transactor(ctx)
     {

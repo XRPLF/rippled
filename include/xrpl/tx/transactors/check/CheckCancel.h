@@ -7,7 +7,7 @@ namespace xrpl {
 class CheckCancel : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit CheckCancel(ApplyContext& ctx) : Transactor(ctx)
     {

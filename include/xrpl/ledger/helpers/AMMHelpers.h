@@ -25,11 +25,11 @@ namespace detail {
 Number
 reduceOffer(auto const& amount)
 {
-    static Number const kREDUCED_OFFER_PCT(9999, -4);
+    static Number const kReducedOfferPct(9999, -4);
 
     // Make sure the result is always less than amount or zero.
     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
-    return amount * kREDUCED_OFFER_PCT;
+    return amount * kReducedOfferPct;
 }
 
 }  // namespace detail
@@ -177,7 +177,7 @@ getAMMOfferStartWithTakerGets(
     Quality const& targetQuality,
     std::uint16_t const& tfee)
 {
-    if (targetQuality.rate() == beast::kZERO)
+    if (targetQuality.rate() == beast::kZero)
         return std::nullopt;
 
     NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);
@@ -244,7 +244,7 @@ getAMMOfferStartWithTakerPays(
     Quality const& targetQuality,
     std::uint16_t tfee)
 {
-    if (targetQuality.rate() == beast::kZERO)
+    if (targetQuality.rate() == beast::kZero)
         return std::nullopt;
 
     NumberRoundModeGuard const mg(Number::RoundingMode::ToNearest);

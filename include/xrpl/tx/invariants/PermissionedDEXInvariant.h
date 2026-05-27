@@ -10,9 +10,10 @@ namespace xrpl {
 
 class ValidPermissionedDEX
 {
-    bool regularOffers_ = false;
-    bool badHybridsOld_ = false;  // pre-fixCleanup3_1_3: missing field/domain or size > 1
-    bool badHybrids_ = false;     // post-fixCleanup3_1_3: also catches size == 0 (size != 1)
+    bool regularOffersOld_ = false;  // pre-fixCleanup3_2_0: also flags deleted offers
+    bool regularOffers_ = false;     // post-fixCleanup3_2_0: excludes deleted offers
+    bool badHybridsOld_ = false;     // pre-fixCleanup3_1_3: missing field/domain or size > 1
+    bool badHybrids_ = false;        // post-fixCleanup3_1_3: also catches size == 0 (size != 1)
     hash_set<uint256> domains_;
 
 public:

@@ -7,7 +7,7 @@ namespace xrpl {
 class MPTokenIssuanceDestroy : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit MPTokenIssuanceDestroy(ApplyContext& ctx) : Transactor(ctx)
     {

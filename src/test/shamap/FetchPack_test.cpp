@@ -33,8 +33,8 @@ namespace xrpl::tests {
 class FetchPack_test : public beast::unit_test::Suite
 {
 public:
-    static constexpr auto kTABLE_ITEMS = 100;
-    static constexpr auto kTABLE_ITEMS_EXTRA = 20;
+    static constexpr auto kTableItems = 100;
+    static constexpr auto kTableItemsExtra = 20;
 
     using Map = hash_map<SHAMapHash, Blob>;
     using Table = SHAMap;

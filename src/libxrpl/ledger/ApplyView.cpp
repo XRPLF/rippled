@@ -125,7 +125,7 @@ insertPage(
     // Check whether we're out of pages.
     if (page == 0)
         return std::nullopt;
-    if (!view.rules().enabled(fixDirectoryLimit) && page >= kDIR_NODE_MAX_PAGES)  // Old pages limit
+    if (!view.rules().enabled(fixDirectoryLimit) && page >= kDirNodeMaxPages)  // Old pages limit
         return std::nullopt;
 
     // We are about to create a new node; we'll link it to
@@ -179,7 +179,7 @@ ApplyView::dirAdd(
     auto [page, node, indexes] = directory::findPreviousPage(*this, directory, root);
 
     // If there's space, we use it:
-    if (indexes.size() < kDIR_NODE_MAX_ENTRIES)
+    if (indexes.size() < kDirNodeMaxEntries)
     {
         return directory::insertKey(*this, node, page, preserveOrder, indexes, key);
     }
@@ -208,19 +208,19 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     if (!node->getFieldV256(sfIndexes).empty())
         return false;
 
-    std::uint64_t constexpr kROOT_PAGE = 0;
+    static constexpr std::uint64_t kRootPage = 0;
     auto prevPage = node->getFieldU64(sfIndexPrevious);
     auto nextPage = node->getFieldU64(sfIndexNext);
 
-    if (nextPage == kROOT_PAGE && prevPage != kROOT_PAGE)
+    if (nextPage == kRootPage && prevPage != kRootPage)
         Throw<std::logic_error>("Directory chain: fwd link broken");  // LCOV_EXCL_LINE
 
-    if (prevPage == kROOT_PAGE && nextPage != kROOT_PAGE)
+    if (prevPage == kRootPage && nextPage != kRootPage)
         Throw<std::logic_error>("Directory chain: rev link broken");  // LCOV_EXCL_LINE
 
     // Older versions of the code would, in some cases, allow the last
     // page to be empty. Remove such pages:
-    if (nextPage == prevPage && nextPage != kROOT_PAGE)
+    if (nextPage == prevPage && nextPage != kRootPage)
     {
         auto last = peek(keylet::page(directory, nextPage));
 
@@ -232,8 +232,8 @@ ApplyView::emptyDirDelete(Keylet const& directory)
 
         // Update the first page's linked list and
         // mark it as updated.
-        node->setFieldU64(sfIndexNext, kROOT_PAGE);
-        node->setFieldU64(sfIndexPrevious, kROOT_PAGE);
+        node->setFieldU64(sfIndexNext, kRootPage);
+        node->setFieldU64(sfIndexPrevious, kRootPage);
         update(node);
 
         // And erase the empty last page:
@@ -241,12 +241,12 @@ ApplyView::emptyDirDelete(Keylet const& directory)
 
         // Make sure our local values reflect the
         // updated information:
-        nextPage = kROOT_PAGE;
-        prevPage = kROOT_PAGE;
+        nextPage = kRootPage;
+        prevPage = kRootPage;
     }
 
     // If there are no other pages, erase the root:
-    if (nextPage == kROOT_PAGE && prevPage == kROOT_PAGE)
+    if (nextPage == kRootPage && prevPage == kRootPage)
         erase(node);
 
     return true;
@@ -260,7 +260,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
     if (!node)
         return false;
 
-    std::uint64_t constexpr kROOT_PAGE = 0;
+    static constexpr std::uint64_t kRootPage = 0;
 
     {
         auto entries = node->getFieldV256(sfIndexes);
@@ -289,7 +289,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
     // treated specially: it can never be deleted even if
     // it is empty, unless we plan on removing the entire
     // directory.
-    if (page == kROOT_PAGE)
+    if (page == kRootPage)
     {
         if (nextPage == page && prevPage != page)
             Throw<std::logic_error>("Directory chain: fwd link broken");  // LCOV_EXCL_LINE
@@ -360,30 +360,30 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
 
     // Check whether the next page is the last page and, if
     // so, whether it's empty. If it is, delete it.
-    if (nextPage != kROOT_PAGE && next->getFieldU64(sfIndexNext) == kROOT_PAGE &&
+    if (nextPage != kRootPage && next->getFieldU64(sfIndexNext) == kRootPage &&
         next->getFieldV256(sfIndexes).empty())
     {
         // Since next doesn't point to the root, it can't be pointing to prev.
         erase(next);
 
         // The previous page is now the last page:
-        prev->setFieldU64(sfIndexNext, kROOT_PAGE);
+        prev->setFieldU64(sfIndexNext, kRootPage);
         update(prev);
 
         // And the root points to the last page:
-        auto root = peek(keylet::page(directory, kROOT_PAGE));
+        auto root = peek(keylet::page(directory, kRootPage));
         if (!root)
             Throw<std::logic_error>("Directory chain: root link broken.");  // LCOV_EXCL_LINE
 
         root->setFieldU64(sfIndexPrevious, prevPage);
         update(root);
 
-        nextPage = kROOT_PAGE;
+        nextPage = kRootPage;
     }
 
     // If we're not keeping the root, then check to see if
     // it's left empty. If so, delete it as well.
-    if (!keepRoot && nextPage == kROOT_PAGE && prevPage == kROOT_PAGE)
+    if (!keepRoot && nextPage == kRootPage && prevPage == kRootPage)
     {
         if (prev->getFieldV256(sfIndexes).empty())
             erase(prev);

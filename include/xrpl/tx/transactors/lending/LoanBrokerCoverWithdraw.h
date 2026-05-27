@@ -7,7 +7,7 @@ namespace xrpl {
 class LoanBrokerCoverWithdraw : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit LoanBrokerCoverWithdraw(ApplyContext& ctx) : Transactor(ctx)
     {

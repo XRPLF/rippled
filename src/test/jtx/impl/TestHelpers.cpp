@@ -172,9 +172,9 @@ pathTestEnv(beast::unit_test::Suite& suite)
     // with the search parameters that the tests were written for.
     using namespace jtx;
     return Env(suite, envconfig([](std::unique_ptr<Config> cfg) {
-                   cfg->PATH_SEARCH_OLD = 7;
-                   cfg->PATH_SEARCH = 7;
-                   cfg->PATH_SEARCH_MAX = 10;
+                   cfg->pathSearchOld = 7;
+                   cfg->pathSearch = 7;
+                   cfg->pathSearchMax = 10;
                    return cfg;
                }));
 }
@@ -193,7 +193,7 @@ findPathsRequest(
     using namespace jtx;
 
     auto& app = env.app();
-    Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
+    Resource::Charge loadType = Resource::kFeeReferenceRpc;
     Resource::Consumer c;
 
     RPC::JsonContext context{
@@ -206,7 +206,7 @@ findPathsRequest(
          .role = Role::USER,
          .coro = {},
          .infoSub = {},
-         .apiVersion = RPC::kAPI_VERSION_IF_UNSPECIFIED},
+         .apiVersion = RPC::kApiVersionIfUnspecified},
         {},
         {}};
 
@@ -262,7 +262,7 @@ findPaths(
 
     STAmount da;
     if (result.isMember(jss::destination_amount))
-        da = amountFromJson(kSF_GENERIC, result[jss::destination_amount]);
+        da = amountFromJson(sfGeneric, result[jss::destination_amount]);
 
     STAmount sa;
     STPathSet paths;
@@ -274,10 +274,10 @@ findPaths(
             auto const& path = alts[0u];
 
             if (path.isMember(jss::source_amount))
-                sa = amountFromJson(kSF_GENERIC, path[jss::source_amount]);
+                sa = amountFromJson(sfGeneric, path[jss::source_amount]);
 
             if (path.isMember(jss::destination_amount))
-                da = amountFromJson(kSF_GENERIC, path[jss::destination_amount]);
+                da = amountFromJson(sfGeneric, path[jss::destination_amount]);
 
             if (path.isMember(jss::paths_computed))
             {
@@ -332,7 +332,7 @@ PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 {
     auto feeDrops = env.current()->fees().base;
-    return drops(kJTX_DROPS_PER_XRP * xrpAmount - feeDrops);
+    return drops(kJtxDropsPerXrp * xrpAmount - feeDrops);
 };
 
 [[nodiscard]] bool

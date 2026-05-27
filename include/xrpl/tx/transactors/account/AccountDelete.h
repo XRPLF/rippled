@@ -7,7 +7,7 @@ namespace xrpl {
 class AccountDelete : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Blocker;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Blocker;
 
     explicit AccountDelete(ApplyContext& ctx) : Transactor(ctx)
     {

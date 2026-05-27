@@ -5,14 +5,14 @@
 
 namespace xrpl {
 
-constexpr size_t kXBRIDGE_MAX_ACCOUNT_CREATE_CLAIMS = 128;
+constexpr size_t kXbridgeMaxAccountCreateClaims = 128;
 
 // Attach a new bridge to a door account. Once this is done, the cross-chain
 // transfer transactions may be used to transfer funds from this account.
 class XChainCreateBridge : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit XChainCreateBridge(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -42,7 +42,7 @@ public:
 class BridgeModify : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit BridgeModify(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -89,7 +89,7 @@ class XChainClaim : public Transactor
 {
 public:
     // Blocker since we cannot accurately calculate the consequences
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Blocker;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Blocker;
 
     explicit XChainClaim(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -124,7 +124,7 @@ public:
 class XChainCommit : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Custom;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
@@ -167,7 +167,7 @@ public:
 class XChainCreateClaimID : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit XChainCreateClaimID(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -207,7 +207,7 @@ class XChainAddClaimAttestation : public Transactor
 {
 public:
     // Blocker since we cannot accurately calculate the consequences
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Blocker;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Blocker;
 
     explicit XChainAddClaimAttestation(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -238,7 +238,7 @@ class XChainAddAccountCreateAttestation : public Transactor
 {
 public:
     // Blocker since we cannot accurately calculate the consequences
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Blocker;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Blocker;
 
     explicit XChainAddAccountCreateAttestation(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -293,7 +293,7 @@ public:
 class XChainCreateAccountCommit : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit XChainCreateAccountCommit(ApplyContext& ctx) : Transactor(ctx)
     {

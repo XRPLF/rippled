@@ -28,14 +28,14 @@ bool
 passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
 {
     XRPL_ASSERT(
-        !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()),
+        !(port.adminNetsV4.empty() && port.adminNetsV6.empty()),
         "xrpl::passwordUnrequiredOrSentCorrect : non-empty admin nets");
-    bool const passwordRequired = (!port.admin_user.empty() || !port.admin_password.empty());
+    bool const passwordRequired = (!port.adminUser.empty() || !port.adminPassword.empty());
 
     return !passwordRequired ||
         ((params["admin_password"].isString() &&
-          params["admin_password"].asString() == port.admin_password) &&
-         (params["admin_user"].isString() && params["admin_user"].asString() == port.admin_user));
+          params["admin_password"].asString() == port.adminPassword) &&
+         (params["admin_user"].isString() && params["admin_user"].asString() == port.adminUser));
 }
 
 bool
@@ -80,7 +80,7 @@ ipAllowed(
 bool
 isAdmin(Port const& port, json::Value const& params, beast::IP::Address const& remoteIp)
 {
-    return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
+    return ipAllowed(remoteIp, port.adminNetsV4, port.adminNetsV6) &&
         passwordUnrequiredOrSentCorrect(port, params);
 }
 
@@ -98,7 +98,7 @@ requestRole(
     if (required == Role::ADMIN)
         return Role::FORBID;
 
-    if (ipAllowed(remoteIp.address(), port.secure_gateway_nets_v4, port.secure_gateway_nets_v6))
+    if (ipAllowed(remoteIp.address(), port.secureGatewayNetsV4, port.secureGatewayNetsV6))
     {
         if (!user.empty())
             return Role::IDENTIFIED;
@@ -259,7 +259,7 @@ forwardedFor(http_request_type const& request)
 
         // Look for the first (case insensitive) "for=" at a directive
         // boundary (start of value, or preceded by , ; or OWS).
-        static constexpr std::string_view kFOR_STR{"for="};
+        static constexpr std::string_view kForStr{"for="};
         auto const atFieldBoundary = [begin = it->value().begin()](auto p) {
             return p == begin || p[-1] == ';' || p[-1] == ',' || p[-1] == ' ' || p[-1] == '\t';
         };
@@ -269,8 +269,8 @@ forwardedFor(http_request_type const& request)
             found = std::search(
                 found,
                 it->value().end(),
-                kFOR_STR.begin(),
-                kFOR_STR.end(),
+                kForStr.begin(),
+                kForStr.end(),
                 [&asciiToLower](char c1, char c2) { return asciiToLower(c1) == asciiToLower(c2); });
 
             if (found == it->value().end())
@@ -282,7 +282,7 @@ forwardedFor(http_request_type const& request)
             ++found;
         }
 
-        std::advance(found, kFOR_STR.size());
+        std::advance(found, kForStr.size());
 
         // We found a "for=".  Scan for the end of the IP address.
         auto const end = it->value().end();

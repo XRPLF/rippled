@@ -7,7 +7,7 @@ namespace xrpl {
 class PermissionedDomainDelete : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit PermissionedDomainDelete(ApplyContext& ctx) : Transactor(ctx)
     {

@@ -38,15 +38,15 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 
     auto const& tx = ctx.tx;
     if (auto const data = tx[~sfData];
-        data && !data->empty() && !validDataLength(tx[~sfData], kMAX_DATA_PAYLOAD_LENGTH))
+        data && !data->empty() && !validDataLength(tx[~sfData], kMaxDataPayloadLength))
         return temINVALID;
-    if (!validNumericRange(tx[~sfManagementFeeRate], kMAX_MANAGEMENT_FEE_RATE))
+    if (!validNumericRange(tx[~sfManagementFeeRate], kMaxManagementFeeRate))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateMinimum], kMAX_COVER_RATE))
+    if (!validNumericRange(tx[~sfCoverRateMinimum], kMaxCoverRate))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateLiquidation], kMAX_COVER_RATE))
+    if (!validNumericRange(tx[~sfCoverRateLiquidation], kMaxCoverRate))
         return temINVALID;
-    if (!validNumericRange(tx[~sfDebtMaximum], Number(kMAX_MP_TOKEN_AMOUNT), Number(0)))
+    if (!validNumericRange(tx[~sfDebtMaximum], Number(kMaxMpTokenAmount), Number(0)))
         return temINVALID;
 
     if (tx.isFieldPresent(sfLoanBrokerID))
@@ -57,13 +57,13 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
             tx.isFieldPresent(sfCoverRateLiquidation))
             return temINVALID;
 
-        if (tx[sfLoanBrokerID] == beast::kZERO)
+        if (tx[sfLoanBrokerID] == beast::kZero)
             return temINVALID;
     }
 
     if (auto const vaultID = tx.at(~sfVaultID))
     {
-        if (*vaultID == beast::kZERO)
+        if (*vaultID == beast::kZero)
             return temINVALID;
     }
 
@@ -83,9 +83,9 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
 std::vector<OptionaledField<STNumber>> const&
 LoanBrokerSet::getValueFields()
 {
-    static std::vector<OptionaledField<STNumber>> const kVALUE_FIELDS{~sfDebtMaximum};
+    static std::vector<OptionaledField<STNumber>> const kValueFields{~sfDebtMaximum};
 
-    return kVALUE_FIELDS;
+    return kValueFields;
 }
 
 TER
@@ -220,7 +220,7 @@ LoanBrokerSet::doApply()
         auto const vaultAsset = sleVault->at(sfAsset);
         auto const sequence = tx.getSeqValue();
 
-        auto owner = view.peek(keylet::account(account_));
+        auto owner = view.peek(keylet::account(accountID_));
         if (!owner)
         {
             // This should be impossible
@@ -229,9 +229,9 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto broker = std::make_shared<SLE>(keylet::loanbroker(account_, sequence));
+        auto broker = std::make_shared<SLE>(keylet::loanbroker(accountID_, sequence));
 
-        if (auto const ter = dirLink(view, account_, broker))
+        if (auto const ter = dirLink(view, accountID_, broker))
             return ter;  // LCOV_EXCL_LINE
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
             return ter;  // LCOV_EXCL_LINE
@@ -255,7 +255,7 @@ LoanBrokerSet::doApply()
         // Initialize data fields:
         broker->at(sfSequence) = sequence;
         broker->at(sfVaultID) = vaultID;
-        broker->at(sfOwner) = account_;
+        broker->at(sfOwner) = accountID_;
         broker->at(sfAccount) = pseudoId;
         // The LoanSequence indexes loans created by this broker, starting at 1
         broker->at(sfLoanSequence) = 1;

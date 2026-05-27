@@ -50,7 +50,7 @@ enum class WithdrawAll : bool { No = false, Yes };
 class AMMWithdraw : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit AMMWithdraw(ApplyContext& ctx) : Transactor(ctx)
     {

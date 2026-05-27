@@ -7,7 +7,7 @@ namespace xrpl {
 class EscrowCreate : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Custom;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
     explicit EscrowCreate(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -15,6 +15,9 @@ public:
 
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);

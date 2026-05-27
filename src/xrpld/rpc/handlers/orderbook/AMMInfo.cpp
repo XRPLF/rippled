@@ -57,7 +57,7 @@ toIso8601(NetClock::time_point tp)
     return date::format(
         "%Y-%Om-%dT%H:%M:%OS%z",
         date::sys_time<system_clock::duration>(
-            system_clock::time_point{tp.time_since_epoch() + kEPOCH_OFFSET}));
+            system_clock::time_point{tp.time_since_epoch() + kEpochOffset}));
 }
 
 json::Value
@@ -85,13 +85,13 @@ doAMMInfo(RPC::JsonContext& context)
         std::optional<Asset> asset2;
         std::optional<uint256> ammID;
 
-        constexpr auto kINVALID = [](json::Value const& params) -> bool {
+        static constexpr auto kInvalid = [](json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
                 (params.isMember(jss::asset) == params.isMember(jss::amm_account));
         };
 
         // NOTE, identical check for apVersion >= 3 below
-        if (context.apiVersion < 3 && kINVALID(params))
+        if (context.apiVersion < 3 && kInvalid(params))
             return Unexpected(RpcInvalidParams);
 
         if (params.isMember(jss::asset))
@@ -139,7 +139,7 @@ doAMMInfo(RPC::JsonContext& context)
         }
 
         // NOTE, identical check for apVersion < 3 above
-        if (context.apiVersion >= 3 && kINVALID(params))
+        if (context.apiVersion >= 3 && kInvalid(params))
             return Unexpected(RpcInvalidParams);
 
         XRPL_ASSERT(
@@ -219,7 +219,7 @@ doAMMInfo(RPC::JsonContext& context)
             json::Value auction;
             auto const timeSlot = ammAuctionTimeSlot(
                 ledger->header().parentCloseTime.time_since_epoch().count(), auctionSlot);
-            auction[jss::time_interval] = timeSlot ? *timeSlot : kAUCTION_SLOT_TIME_INTERVALS;
+            auction[jss::time_interval] = timeSlot ? *timeSlot : kAuctionSlotTimeIntervals;
             auctionSlot[sfPrice].setJson(auction[jss::price]);
             auction[jss::discounted_fee] = auctionSlot[sfDiscountedFee];
             auction[jss::account] = to_string(auctionSlot.getAccountID(sfAccount));

@@ -136,7 +136,7 @@ AccountSet::preflight(PreflightContext const& ctx)
     {
         auto uTickSize = tx[sfTickSize];
         if ((uTickSize != 0u) &&
-            ((uTickSize < Quality::kMIN_TICK_SIZE) || (uTickSize > Quality::kMAX_TICK_SIZE)))
+            ((uTickSize < Quality::kMinTickSize) || (uTickSize > Quality::kMaxTickSize)))
         {
             JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
             return temBAD_TICK_SIZE;
@@ -152,7 +152,7 @@ AccountSet::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const domain = tx[~sfDomain]; domain && domain->size() > kMAX_DOMAIN_LENGTH)
+    if (auto const domain = tx[~sfDomain]; domain && domain->size() > kMaxDomainLength)
     {
         JLOG(j.trace()) << "domain too long";
         return telBAD_DOMAIN;
@@ -278,7 +278,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
 TER
 AccountSet::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -297,7 +297,7 @@ AccountSet::doApply()
     bool const bSetDisallowXRP{tx.isFlag(tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
     bool const bClearDisallowXRP{tx.isFlag(tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
 
-    bool const sigWithMaster{[&tx, &acct = account_]() {
+    bool const sigWithMaster{[&tx, &acct = accountID_]() {
         auto const spk = tx.getSigningPubKey();
 
         if (publicKeyType(makeSlice(spk)))
@@ -366,7 +366,7 @@ AccountSet::doApply()
             return tecNEED_MASTER_KEY;
         }
 
-        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signers(account_))))
+        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signers(accountID_))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
@@ -558,7 +558,7 @@ AccountSet::doApply()
     if (tx.isFieldPresent(sfTickSize))
     {
         auto uTickSize = tx[sfTickSize];
-        if ((uTickSize == 0) || (uTickSize == Quality::kMAX_TICK_SIZE))
+        if ((uTickSize == 0) || (uTickSize == Quality::kMaxTickSize))
         {
             JLOG(j_.trace()) << "unset tick size";
             sle->makeFieldAbsent(sfTickSize);
