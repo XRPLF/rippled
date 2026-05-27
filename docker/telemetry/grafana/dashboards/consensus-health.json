@@ -657,7 +657,7 @@
     },
     {
       "title": "Ledger Total Processing Time (Round Open -> Next Round Start)",
-      "description": "Per-node duration of the consensus.round span — covers the full local round (open phase, establish/proposal exchange, accept request) and ends only when the next round's startRoundTracing() resets it. Spans multiple consensus retries when MovedOn or Expired forces another round before a ledger is fully accepted. Series: Total = every consensus.round; Accepted Apply = consensus.accept.apply with consensus_state=finished (apply-phase duration only, plotted as a marker for accepted ledgers); Rejected Apply = consensus.accept.apply with consensus_state in (moved_on, expired). NOTE: accept.apply and consensus.round currently land in separate Tempo traces (jtACCEPT thread context propagation), so descendant joins return empty — queries are kept single-span.",
+      "description": "p95/p50 duration of the consensus.round span (full local round: open + establish + accept request) sourced from spanmetrics histograms — values are stable across refreshes because Prometheus rate() over a fixed time window is deterministic, unlike TraceQL search which pages through traces. Accepted vs Rejected apply rates derived from consensus.accept.apply spanmetrics partitioned by consensus_state (finished | moved_on | expired). Note: histogram bucket ceiling is currently 5s (otel-collector-config.yaml spanmetrics histogram.explicit.buckets) — durations longer than 5s land in the +Inf bucket and inflate p95.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -669,33 +669,15 @@
         "defaults": {
           "unit": "ms",
           "custom": {
-            "drawStyle": "points",
-            "pointSize": 6,
-            "showPoints": "always",
-            "axisLabel": "Total Processing Time (ms)",
-            "spanNulls": false
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "pointSize": 4,
+            "showPoints": "auto",
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true
           }
         },
         "overrides": [
-          {
-            "matcher": {
-              "id": "byFrameRefID",
-              "options": "A"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Round Total"
-              },
-              {
-                "id": "color",
-                "value": {
-                  "mode": "fixed",
-                  "fixedColor": "blue"
-                }
-              }
-            ]
-          },
           {
             "matcher": {
               "id": "byFrameRefID",
@@ -704,7 +686,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Accepted (apply)"
+                "value": "Accepted apply p95"
               },
               {
                 "id": "color",
@@ -723,7 +705,7 @@
             "properties": [
               {
                 "id": "displayName",
-                "value": "Rejected (apply)"
+                "value": "Rejected apply p95"
               },
               {
                 "id": "color",
@@ -750,29 +732,38 @@
       "targets": [
         {
           "datasource": {
-            "type": "tempo",
-            "uid": "tempo"
+            "type": "prometheus",
+            "uid": "prometheus"
           },
-          "queryType": "traceql",
-          "query": "{ resource.service.instance.id=~\"$node\" && name=\"consensus.round\" } | select(span:duration)",
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.round\"}[5m])))",
+          "legendFormat": "Round Total p95 [{{exported_instance}}]",
           "refId": "A"
         },
         {
           "datasource": {
-            "type": "tempo",
-            "uid": "tempo"
+            "type": "prometheus",
+            "uid": "prometheus"
           },
-          "queryType": "traceql",
-          "query": "{ resource.service.instance.id=~\"$node\" && name=\"consensus.accept.apply\" && span.consensus_state=\"finished\" } | select(span:duration)",
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.round\"}[5m])))",
+          "legendFormat": "Round Total p50 [{{exported_instance}}]",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\", consensus_state=\"finished\"}[5m])))",
+          "legendFormat": "Accepted apply p95 [{{exported_instance}}]",
           "refId": "B"
         },
         {
           "datasource": {
-            "type": "tempo",
-            "uid": "tempo"
+            "type": "prometheus",
+            "uid": "prometheus"
           },
-          "queryType": "traceql",
-          "query": "{ resource.service.instance.id=~\"$node\" && name=\"consensus.accept.apply\" && span.consensus_state!=\"finished\" } | select(span:duration)",
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\", consensus_state=~\"moved_on|expired\"}[5m])))",
+          "legendFormat": "Rejected apply p95 [{{exported_instance}}]",
           "refId": "C"
         }
       ]
