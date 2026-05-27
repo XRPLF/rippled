@@ -48,17 +48,23 @@ class Number_test : public beast::unit_test::Suite
     static T
     pow10(int n)
     {
+        if (n == 0)
+            return 1;
+        if (n == 1)
+            return 10;
+
+        if (n > 1)
+        {
+            auto r = pow10<T>(n / 2);
+            r *= r;
+            if (n % 2 != 0)
+                r *= 10;
+            return r;
+        }
+
+        // n < 0
         T p = 1;
-        if (n >= 0)
-        {
-            for (int i = 0; i < n; ++i)
-                p *= 10;
-        }
-        else
-        {
-            for (int i = 0; i < -n; ++i)
-                p /= 10;
-        }
+        p /= pow10<T>(-n);
         return p;
     }
 
