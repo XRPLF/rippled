@@ -1,12 +1,14 @@
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -162,9 +164,9 @@ VaultCreate::doApply()
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
         return maybePseudo.error();  // LCOV_EXCL_LINE
-    auto& pseudo = *maybePseudo;
-    auto pseudoId = pseudo->at(sfAccount);
-    auto asset = tx[sfAsset];
+    auto const& pseudo = *maybePseudo;
+    AccountID const pseudoId = pseudo->at(sfAccount);
+    auto const asset = tx[sfAsset];
 
     if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
         return ter;
@@ -182,13 +184,24 @@ VaultCreate::doApply()
     // Note, here we are **not** creating an MPToken for the assets held in
     // the vault. That MPToken or TrustLine/RippleState is created above, in
     // addEmptyHolding. Here we are creating MPTokenIssuance for the shares
-    // in the vault
-    auto maybeShare = MPTokenIssuanceCreate::create(
+    // in the vault.
+    //
+    // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
+    // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
+    // XRP underlyings leave it unset.
+    auto const referenceHolding = [&]() -> std::optional<uint256> {
+        if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
+            return std::nullopt;
+        return asset.holds<MPTIssue>()
+            ? keylet::mptoken(asset.get<MPTIssue>().getMptID(), pseudoId).key
+            : keylet::line(pseudoId, asset.get<Issue>()).key;
+    }();
+    auto const maybeShare = MPTokenIssuanceCreate::create(
         view(),
         j_,
         {
             .priorBalance = std::nullopt,
-            .account = pseudoId->value(),
+            .account = pseudoId,
             .sequence = 1,
             .flags = mptFlags,
             .assetScale = scale,
@@ -196,6 +209,7 @@ VaultCreate::doApply()
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
             .mutableFlags = std::nullopt,
+            .referenceHolding = referenceHolding,
         });
     if (!maybeShare)
         return maybeShare.error();  // LCOV_EXCL_LINE
