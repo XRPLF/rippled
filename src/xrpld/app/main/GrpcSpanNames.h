@@ -51,6 +51,8 @@ inline constexpr auto grpcStatus = makeStr("grpc_status");
 namespace val {
 using telemetry::attr_val::error;
 using telemetry::attr_val::success;
+inline constexpr auto admin = makeStr("admin");
+inline constexpr auto user = makeStr("user");
 inline constexpr auto resourceExhausted = makeStr("resource_exhausted");
 inline constexpr auto failedPrecondition = makeStr("failed_precondition");
 }  // namespace val

@@ -20,6 +20,7 @@
  *  - Per-span attribute keys: bare field name (span name carries the domain).
  *  - Collision qualifier: <domain>_<field> when bare name collides across
  *    domains or with OTel reserved `status` (e.g. rpc_status, grpc_status).
+ *  - Shared cross-span attributes: <domain>_<field> (underscore) form.
  *  - Resource attribute keys: xrpl.<subsystem>.<field> (process-identity).
  *  - Span prefixes: <subsystem>[.<component>].
  */

@@ -185,7 +185,12 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
-        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
+        // Status::operator bool() returns true when there IS an error
+        // (code_ != OK), so the ternary correctly maps error->error, ok->success.
+        span.setAttribute(
+            rpc_span::attr::rpcStatus, ret ? rpc_span::val::error : rpc_span::val::success);
+        if (!ret)
+            span.setOk();
         return ret;
     }
     catch (std::exception& e)

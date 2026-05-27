@@ -3,13 +3,15 @@
 /** Abstract interface for OpenTelemetry distributed tracing.
 
     Provides the Telemetry base class that all components use to create trace
-    spans. Two concrete implementations exist, selected at construction time
+    spans. Three concrete implementations exist, selected at construction time
     by make_Telemetry():
 
       - TelemetryImpl (Telemetry.cpp): real OTel SDK integration, compiled
         only when XRPL_ENABLE_TELEMETRY is defined and enabled at runtime.
       - NullTelemetry (NullTelemetry.cpp): no-op stub used when telemetry is
         disabled at compile time or runtime.
+      - NullTelemetryOtel (Telemetry.cpp): no-op stub that still depends on
+        the OTel API (used during transition or for testing).
 
     Inheritance / dependency diagram:
 
@@ -37,32 +39,33 @@
 
     1. Root span at a subsystem entry point (typical usage):
     @code
+        #include <xrpld/rpc/detail/RpcSpanNames.h>
+        using namespace xrpl::telemetry;
+
         // In an RPC handler dispatch:
-        auto guard = SpanGuard::span(TraceCategory::Rpc, "rpc", commandName);
-        guard.setAttribute("xrpl.rpc.command", commandName);
+        auto guard = SpanGuard::span(
+            TraceCategory::Rpc, rpc_span::prefix::command, commandName);
+        guard.setAttribute(rpc_span::attr::command, commandName);
         // ... process request
         // guard destructor automatically ends the span on scope exit
     @endcode
 
-    2. Child span for a sub-operation (cross-scope):
-    @code
-        auto parent = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
-        {
-            SpanGuard guard(telemetry.startSpan("rpc.command.submit"));
-            guard.setAttribute("command", "submit");
-            // ... guard ends span automatically on scope exit
-        }
-    @endcode
-
-    3. Child span for a sub-operation (cross-scope):
+    2. Child span for a sub-operation (scoped child):
     @code
         auto parent = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
         {
             auto child = parent.childSpan("tx.apply");
-            child.setAttribute("xrpl.tx.type", txType);
+            child.setAttribute("tx_type", txType);
             // child ends here
         }
-        // parent continues, then ends here
+    @endcode
+
+    3. Unrelated span (cross-scope, same thread):
+    @code
+        // Transactions and RPC can be active simultaneously
+        auto txSpan = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
+        auto rpcSpan = SpanGuard::span(TraceCategory::Rpc, "rpc", "info");
+        // both spans end on scope exit
     @endcode
 
     4. Cross-thread context propagation:
