@@ -150,7 +150,7 @@ TxQ::FeeMetrics::update(
             // current size limit, use a limit that is
             // 90% of the way from max_element to the
             // current size limit.
-            return (txnsExpected_ * 9 + *iter) / 10;
+            return ((txnsExpected_ * 9) + *iter) / 10;
         }();
         // Ledgers are processing in a timely manner,
         // so keep the limit high, but don't let it
@@ -218,7 +218,7 @@ sumOfFirstSquares(std::size_t xIn)
     // in a ledger, this is the least of our problems.
     if (x >= (1 << 21))
         return {false, std::numeric_limits<std::uint64_t>::max()};
-    return {true, (x * (x + 1) * (2 * x + 1)) / 6};
+    return {true, (x * (x + 1) * ((2 * x) + 1)) / 6};
 }
 
 // Unit tests for sumOfSquares()
