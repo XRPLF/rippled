@@ -8,6 +8,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/vault/VaultInvariantData.h>
 
 #include <cstdint>
 
@@ -47,6 +48,9 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
+
+private:
+    VaultInvariantData invariantData_;
 };
 
 }  // namespace xrpl
