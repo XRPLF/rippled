@@ -1149,22 +1149,27 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     //        should be used, making it possible to do more useful work
     //        when transactions fail with a `tec` code.
 
+    auto typesForResult = [](TER const ter) {
+        std::unordered_set<LedgerEntryType> types;
+        if ((ter == tecOVERSIZE) || (ter == tecKILLED))
+            types.insert(ltOFFER);
+        if (ter == tecINCOMPLETE)
+        {
+            types.insert(ltRIPPLE_STATE);
+            types.insert(ltMPTOKEN);
+        }
+        if (ter == tecEXPIRED)
+        {
+            types.insert(ltNFTOKEN_OFFER);
+            types.insert(ltCREDENTIAL);
+        }
+        return types;
+    };
+
     // Build a list of ledger entry types to collect, based on the
     // result code. Only deleted objects of these types will be
     // re-applied after the context is reset.
-    std::unordered_set<LedgerEntryType> typesToCollect;
-    if ((result == tecOVERSIZE) || (result == tecKILLED))
-        typesToCollect.insert(ltOFFER);
-    if (result == tecINCOMPLETE)
-    {
-        typesToCollect.insert(ltRIPPLE_STATE);
-        typesToCollect.insert(ltMPTOKEN);
-    }
-    if (result == tecEXPIRED)
-    {
-        typesToCollect.insert(ltNFTOKEN_OFFER);
-        typesToCollect.insert(ltCREDENTIAL);
-    }
+    auto const typesToCollect = typesForResult(result);
 
     std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
     if (!typesToCollect.empty())
@@ -1208,14 +1213,15 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
         fee = resetResult.second;
     }
 
-    // Re-apply the collected deletions, but only if the reset
-    // succeeded (i.e. result is still a tec code).
-    if (isTecClaim(result))
+    // Re-apply the collected deletions, but only if the reset succeeded
+    // and the post-reset result still allows the same deletion type.
+    auto const typesToApply = typesForResult(result);
+    if (isTecClaim(result) && !typesToApply.empty())
     {
         auto const viewJ = ctx_.registry.get().getJournal("View");
         for (auto const& [type, ids] : deletedObjects)
         {
-            if (ids.empty())
+            if (ids.empty() || !typesToApply.contains(type))
                 continue;
 
             switch (type)
