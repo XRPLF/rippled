@@ -408,7 +408,7 @@ Number::Guard::doRoundUp(
                 // _don't_ increment the mantissa. Instead, divide and round recursively. It should
                 // be impossible to recurse more than once, because once the mantissa is divided by
                 // 10, it will be _well_ under maxMantissa and kMaxRep, so adding 1 will have no
-                // change of bringing it back over.
+                // chance of bringing it back over.
                 doDropDigit(mantissa, exponent);
                 XRPL_ASSERT_PARTS(
                     safeToIncrement(mantissa),

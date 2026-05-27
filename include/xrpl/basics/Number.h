@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -53,7 +54,7 @@ constexpr std::size_t int64digits = 20;
 consteval std::array<std::uint64_t, int64digits>
 buildPowersOfTen()
 {
-    std::array<std::uint64_t, int64digits> result;
+    std::array<std::uint64_t, int64digits> result{};
 
     std::uint64_t power = 1;
     std::size_t exponent = 0;
