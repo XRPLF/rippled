@@ -71,9 +71,8 @@ isPowerOfTen(T value)
  *
  * The mantissa is in the range [min, max], where
  *
- * The MantissaScale enum indicates properties of the range: size, and
- * some behavioral options.  This intentionally prevents the creation of
- * any MantissaRanges representing other values.
+ * The MantissaScale enum indicates properties of the range: size, and some behavioral options.
+ * This intentionally prevents the creation of any MantissaRanges representing other values.
  *
  * The "Small" scale is based on the behavior of STAmount for IOUs. It has a min
  * value of 10^15, and a max value of 10^16-1. This was sufficient for
