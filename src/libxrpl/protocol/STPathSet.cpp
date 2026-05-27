@@ -90,8 +90,12 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             if (hasAccount)
                 account = sit.get160();
 
-            XRPL_ASSERT(
-                !(hasCurrency && hasMPT), "xrpl::STPathSet::STPathSet : not has Currency and MPT");
+            if (hasCurrency && hasMPT)
+            {
+                JLOG(debugLog().error()) << "Bad path element MPT and Currency in pathset";
+                Throw<std::runtime_error>("bad path element: MPT and Currency");
+            }
+
             if (hasCurrency)
                 asset = Currency::fromRaw(sit.get160());
 
@@ -101,7 +105,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             if (hasIssuer)
                 issuer = sit.get160();
 
-            path.emplace_back(account, asset, issuer, hasCurrency);
+            path.emplace_back(account, asset, issuer, hasCurrency || hasMPT);
         }
     }
 }

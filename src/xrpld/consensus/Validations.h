@@ -33,7 +33,7 @@ struct ValidationParms
         This is a safety to protect against very old validations and the time
         it takes to adjust the close time accuracy window.
     */
-    std::chrono::seconds validationCURRENT_WALL = std::chrono::minutes{5};
+    std::chrono::seconds validationCurrentWall = std::chrono::minutes{5};
 
     /** Duration a validation remains current after first observed.
 
@@ -41,14 +41,14 @@ struct ValidationParms
         first saw it. This provides faster recovery in very rare cases where the
         number of validations produced by the network is lower than normal
     */
-    std::chrono::seconds validationCURRENT_LOCAL = std::chrono::minutes{3};
+    std::chrono::seconds validationCurrentLocal = std::chrono::minutes{3};
 
     /** Duration pre-close in which validations are acceptable.
 
         The number of seconds before a close time that we consider a validation
         acceptable. This protects against extreme clock errors
     */
-    std::chrono::seconds validationCURRENT_EARLY = std::chrono::minutes{3};
+    std::chrono::seconds validationCurrentEarly = std::chrono::minutes{3};
 
     /** Duration a set of validations for a given ledger hash remain valid
 
@@ -56,7 +56,7 @@ struct ValidationParms
         hash can expire.  This keeps validations for recent ledgers available
         for a reasonable interval.
     */
-    std::chrono::seconds validationSET_EXPIRES = std::chrono::minutes{10};
+    std::chrono::seconds validationSetExpires = std::chrono::minutes{10};
 
     /** How long we consider a validation fresh.
      *
@@ -98,7 +98,7 @@ public:
     bool
     operator()(time_point now, Seq s, ValidationParms const& p)
     {
-        if (now > (when_ + p.validationSET_EXPIRES))
+        if (now > (when_ + p.validationSetExpires))
             seq_ = Seq{0};
         if (s <= seq_)
             return false;
@@ -139,9 +139,9 @@ isCurrent(
     // promoted from unsigned 32 bit to signed 64 bit prior
     // to computation.
 
-    return (signTime > (now - p.validationCURRENT_EARLY)) &&
-        (signTime < (now + p.validationCURRENT_WALL)) &&
-        ((seenTime == NetClock::time_point{}) || (seenTime < (now + p.validationCURRENT_LOCAL)));
+    return (signTime > (now - p.validationCurrentEarly)) &&
+        (signTime < (now + p.validationCurrentWall)) &&
+        ((seenTime == NetClock::time_point{}) || (seenTime < (now + p.validationCurrentLocal)));
 }
 
 /** Status of validation we received */
@@ -610,7 +610,7 @@ public:
                 auto const diff = std::max(seqit->second.signTime(), val.signTime()) -
                     std::min(seqit->second.signTime(), val.signTime());
 
-                if (diff > parms_.validationCURRENT_WALL &&
+                if (diff > parms_.validationCurrentWall &&
                     val.signTime() > seqit->second.signTime())
                     seqit->second = val;
             }
@@ -707,7 +707,7 @@ public:
                 {
                     // The next refresh time is shortly before the expiration
                     // time from now.
-                    kRefreshTime = now + parms_.validationSET_EXPIRES - parms_.validationFRESHNESS;
+                    kRefreshTime = now + parms_.validationSetExpires - parms_.validationFRESHNESS;
 
                     for (auto i = byLedger_.begin(); i != byLedger_.end(); ++i)
                     {
@@ -732,8 +732,8 @@ public:
                 }
             }
 
-            beast::expire(byLedger_, parms_.validationSET_EXPIRES);
-            beast::expire(bySequence_, parms_.validationSET_EXPIRES);
+            beast::expire(byLedger_, parms_.validationSetExpires);
+            beast::expire(bySequence_, parms_.validationSetExpires);
         }
         JLOG(j.debug()) << "Validations sets sweep lock duration "
                         << std::chrono::duration_cast<std::chrono::milliseconds>(

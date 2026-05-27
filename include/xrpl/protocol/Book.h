@@ -140,8 +140,8 @@ private:
     using issue_hasher = std::hash<xrpl::Issue>;
     using mptissue_hasher = std::hash<xrpl::MPTIssue>;
 
-    issue_hasher m_issue_hasher_;
-    mptissue_hasher m_mptissue_hasher_;
+    issue_hasher mIssueHasher_;
+    mptissue_hasher mMptissueHasher_;
 
 public:
     explicit hash() = default;
@@ -151,11 +151,11 @@ public:
     {
         return asset.visit(
             [&](xrpl::Issue const& issue) {
-                value_type const result(m_issue_hasher_(issue));
+                value_type const result(mIssueHasher_(issue));
                 return result;
             },
             [&](xrpl::MPTIssue const& issue) {
-                value_type const result(m_mptissue_hasher_(issue));
+                value_type const result(mMptissueHasher_(issue));
                 return result;
             });
     }
@@ -170,8 +170,8 @@ private:
     using asset_hasher = std::hash<xrpl::Asset>;
     using uint256_hasher = xrpl::uint256::hasher;
 
-    asset_hasher issue_hasher_;
-    uint256_hasher uint256_hasher_;
+    asset_hasher issueHasher_;
+    uint256_hasher uint256Hasher_;
 
 public:
     hash() = default;
@@ -182,11 +182,11 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(issue_hasher_(value.in));
-        boost::hash_combine(result, issue_hasher_(value.out));
+        value_type result(issueHasher_(value.in));
+        boost::hash_combine(result, issueHasher_(value.out));
 
         if (value.domain)
-            boost::hash_combine(result, uint256_hasher_(*value.domain));
+            boost::hash_combine(result, uint256Hasher_(*value.domain));
 
         return result;
     }

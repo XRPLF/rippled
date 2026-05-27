@@ -24,6 +24,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -50,6 +51,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
@@ -182,7 +184,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // Invariants normally run in the Transaction's "apply" (operator()) context, and can always
         // access global Rules.
-        CurrentTransactionRulesGuard const rg(ov.rules());
+        CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
         BEAST_EXPECT(precheck(a1, a2, ac));
 
@@ -1783,7 +1785,7 @@ class Invariants_test : public beast::unit_test::Suite
         for (std::size_t n = 0; n < numCreds; ++n)
         {
             auto credType = "cred_type" + std::to_string(n);
-            credentials.push_back({a2, credType});
+            credentials.push_back({.issuer = a2, .credType = credType});
         }
 
         std::uint32_t const seq = env.seq(a1);
@@ -2034,6 +2036,170 @@ class Invariants_test : public beast::unit_test::Suite
                         tx.setFieldAmount(sfTakerGets, XRP(1));
                     }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+        }
+    }
+
+    void
+    testBookDirectoryExchangeRate()
+    {
+        using namespace test::jtx;
+        testcase << "book directory exchange rate";
+
+        auto const getBookRootKey = [](Account const& account, std::uint64_t quality) {
+            Book const book{xrpIssue(), account["USD"], std::nullopt};
+            return keylet::quality(keylet::kBook(book), quality);
+        };
+
+        // Root book-directory pages carry exchange-rate metadata that must
+        // match the quality encoded in the directory key.
+        auto const makeRootPage = [](Keylet const& dir, std::uint64_t exchangeRate) {
+            auto sleDir = std::make_shared<SLE>(dir);
+            sleDir->setFieldH256(sfRootIndex, dir.key);
+            STVector256 indexes;
+            indexes.pushBack(uint256{1});
+            sleDir->setFieldV256(sfIndexes, indexes);
+            sleDir->setFieldU64(sfExchangeRate, exchangeRate);
+            return sleDir;
+        };
+
+        // Child pages do not carry quality metadata; they only point back to
+        // the root directory.
+        auto const makeChildPage = [](Keylet const& rootDir) {
+            auto sleDir = std::make_shared<SLE>(keylet::page(rootDir, 1));
+            sleDir->setFieldH256(sfRootIndex, rootDir.key);
+            STVector256 indexes;
+            indexes.pushBack(uint256{2});
+            sleDir->setFieldV256(sfIndexes, indexes);
+            return sleDir;
+        };
+
+        auto const makeOfferCreateTx = [] {
+            return STTx{ttOFFER_CREATE, [](STObject& tx) {
+                            Account const account{"A1"};
+                            tx.setFieldAmount(sfTakerPays, XRP(1));
+                            tx.setFieldAmount(sfTakerGets, account["USD"](1));
+                        }};
+        };
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+
+        // Creating a root book directory with mismatched exchange-rate
+        // metadata violates the invariant.
+        doInvariantCheck(
+            {{"book directory exchange rate does not match directory quality"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const directoryQuality = STAmount::kURateOne;
+                auto const dir = getBookRootKey(a1, directoryQuality);
+                ac.view().insert(makeRootPage(dir, directoryQuality + 1));
+                return true;
+            },
+            XRPAmount{},
+            makeOfferCreateTx(),
+            failTers);
+
+        // A new child page must point to an existing root page.
+        doInvariantCheck(
+            {{"book directory root missing"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const directoryQuality = STAmount::kURateOne;
+                auto const rootDir = getBookRootKey(a1, directoryQuality);
+                // Insert only the child page.  It points at rootDir, but the
+                // corresponding root page is intentionally missing.
+                ac.view().insert(makeChildPage(rootDir));
+                return true;
+            },
+            XRPAmount{},
+            makeOfferCreateTx(),
+            failTers);
+
+        // Legacy bad-root tolerance:
+        // - The view contains a pre-existing root page with bad sfExchangeRate
+        //   metadata.
+        // - The simulated transaction only creates a child page pointing to
+        //   that root.
+        // - The invariant must pass because this transaction did not create
+        //   the bad root, only adding a child page.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1);
+            env.close();
+
+            OpenView view{*env.current()};
+            auto const directoryQuality = STAmount::kURateOne;
+            auto const rootDir = getBookRootKey(a1, directoryQuality);
+            view.rawInsert(makeRootPage(rootDir, directoryQuality + 1));
+
+            ValidBookDirectory invariant;
+            invariant.visitEntry(false, nullptr, makeChildPage(rootDir));
+
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            BEAST_EXPECT(
+                invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+        }
+
+        // A bad root is rejected when added, ignored when a legacy bad root is
+        // modified without changing sfRootIndex or deleted, and checked when a
+        // modified directory changes sfRootIndex.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1);
+            env.close();
+
+            OpenView view{*env.current()};
+            auto const directoryQuality = STAmount::kURateOne;
+            auto const rootDir = getBookRootKey(a1, directoryQuality);
+            auto const missingRootDir = getBookRootKey(a1, directoryQuality + 1);
+            auto const badRoot = makeRootPage(rootDir, directoryQuality + 1);
+            view.rawInsert(badRoot);
+
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+
+            {
+                // add
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, nullptr, badRoot);
+
+                BEAST_EXPECT(
+                    !invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                // modify (without changing the sfRootIndex)
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, badRoot, badRoot);
+
+                BEAST_EXPECT(
+                    invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                // modify (changing sfRootIndex to a missing root)
+                auto const childBefore = makeChildPage(rootDir);
+                auto const childAfter = std::make_shared<SLE>(*childBefore, childBefore->key());
+                childAfter->setFieldH256(sfRootIndex, missingRootDir.key);
+
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, childBefore, childAfter);
+
+                test::StreamSink missingRootSink{beast::Severity::Warning};
+                beast::Journal const missingRootJlog{missingRootSink};
+                BEAST_EXPECT(!invariant.finalize(
+                    makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, missingRootJlog));
+                BEAST_EXPECT(
+                    missingRootSink.messages().str().find("book directory root missing") !=
+                    std::string::npos);
+            }
+            {
+                // delete
+                view.rawErase(badRoot);
+                BEAST_EXPECT(!view.exists(rootDir));
+
+                ValidBookDirectory invariant;
+                invariant.visitEntry(true, badRoot, badRoot);
+                BEAST_EXPECT(
+                    invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
         }
     }
 
@@ -3963,6 +4129,63 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace test::jtx;
         testcase << "MPT";
 
+        MPTIssue const nonCanonicalMPTIssue{makeMptID(1, AccountID(0x4985601))};
+        auto const nonCanonicalMPTAmount = [&](SField const& field) {
+            return STAmount{
+                field,
+                nonCanonicalMPTIssue,
+                kMaxMpTokenAmount + std::uint64_t{1},
+                0,
+                false,
+                STAmount::Unchecked{}};
+        };
+        auto const negativeMPTAmount = [&](SField const& field) {
+            return STAmount{field, nonCanonicalMPTIssue, 2, 0, true, STAmount::Unchecked{}};
+        };
+        auto const nonCanonicalMPTPayment = [&]() {
+            return STTx{ttPAYMENT, [&](STObject& tx) {
+                            tx.setFieldAmount(sfAmount, nonCanonicalMPTAmount(sfAmount));
+                        }};
+        };
+
+        doInvariantCheck(
+            Env{*this, defaultAmendments() - fixCleanup3_2_0},
+            {},
+            [](Account const&, Account const&, ApplyContext&) { return true; },
+            XRPAmount{},
+            nonCanonicalMPTPayment(),
+            {tesSUCCESS, tesSUCCESS});
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, nonCanonicalMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, negativeMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
         // MPT OutstandingAmount > MaximumAmount
         doInvariantCheck(
             {{"OutstandingAmount overflow"}},
@@ -4102,6 +4325,297 @@ class Invariants_test : public beast::unit_test::Suite
                     id = mpt.issuanceID();
                     return true;
                 });
+        }
+
+        // sfReferenceHolding can only be set on creation by VaultCreate. A
+        // non-VaultCreate transaction that creates an MPTokenIssuance with
+        // sfReferenceHolding present must trip the invariant.
+        doInvariantCheck(
+            {{"sfReferenceHolding set on a new MPTokenIssuance by a "
+              "non-VaultCreate transaction"}},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sleAcct = ac.view().peek(keylet::account(a1.id()));
+                if (!sleAcct)
+                    return false;
+                MPTIssue const mpt{makeMptID(sleAcct->getFieldU32(sfSequence), a1)};
+                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                sleNew->setFieldH256(sfReferenceHolding, uint256{1});
+                ac.view().insert(sleNew);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}});
+
+        // sfReferenceHolding is immutable: changing the field on an
+        // existing MPTokenIssuance must trip the invariant. Set up a real
+        // vault via preclose (so the share issuance carries
+        // sfReferenceHolding), then mutate it in precheck to produce a
+        // before/after pair.
+        {
+            uint256 vaultKey;
+            doInvariantCheck(
+                {{"sfReferenceHolding was modified on an existing "
+                  "MPTokenIssuance"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
+                    if (!sleVault)
+                        return false;
+                    auto sleIssuance =
+                        ac.view().peek(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+                    if (!sleIssuance)
+                        return false;
+                    sleIssuance->setFieldH256(sfReferenceHolding, uint256{2});
+                    ac.view().update(sleIssuance);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&](Account const& a1, Account const&, Env& env) {
+                    Account const issuer{"issuer"};
+                    env.fund(XRP(10'000), issuer);
+                    env.close();
+                    MPTTester mptt{env, issuer, kMptInitNoFund};
+                    mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+                    PrettyAsset const asset = mptt.issuanceID();
+                    mptt.authorize({.account = a1});
+                    env.close();
+
+                    Vault const vault{env};
+                    auto [tx, keylet] = vault.create({.owner = a1, .asset = asset});
+                    env(tx);
+                    env.close();
+                    vaultKey = keylet.key;
+                    return true;
+                });
+        }
+
+        // A vault pseudo-account's MPToken cannot be deleted by anything
+        // other than a VaultDelete transaction. Set up a vault, then have
+        // an arbitrary tx erase the pseudo's MPToken in precheck.
+        {
+            uint256 vaultKey;
+            doInvariantCheck(
+                {{"vault pseudo-account holding deleted by a "
+                  "non-VaultDelete transaction"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto const sleVault = ac.view().peek(keylet::vault(vaultKey));
+                    if (!sleVault)
+                        return false;
+                    auto const sleIssuance =
+                        ac.view().peek(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+                    if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
+                        return false;
+                    auto sleHolding = ac.view().peek(
+                        keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+                    if (!sleHolding)
+                        return false;
+                    ac.view().erase(sleHolding);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                [&](Account const& a1, Account const&, Env& env) {
+                    Account const issuer{"issuer"};
+                    env.fund(XRP(10'000), issuer);
+                    env.close();
+                    MPTTester mptt{env, issuer, kMptInitNoFund};
+                    mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+                    PrettyAsset const asset = mptt.issuanceID();
+                    mptt.authorize({.account = a1});
+                    env.close();
+
+                    Vault const vault{env};
+                    auto [tx, keylet] = vault.create({.owner = a1, .asset = asset});
+                    env(tx);
+                    env.close();
+                    vaultKey = keylet.key;
+                    return true;
+                });
+        }
+
+        // Invalid transfer
+        std::array<std::pair<TxType, bool>, 3> const invalidTransferTests = {
+            std::make_pair(ttAMM_WITHDRAW, false),
+            std::make_pair(ttPAYMENT, false),
+            std::make_pair(ttPAYMENT, true)};
+        for (auto const enabled : {true, false})
+        {
+            for (auto const& [tx, crossCurrencyPayment] : invalidTransferTests)
+            {
+                for (auto const flag :
+                     {static_cast<std::uint32_t>(lsfMPTLocked),
+                      ~lsfMPTCanTransfer,
+                      ~lsfMPTCanTrade,
+                      0u})
+                {
+                    MPTID id{};
+                    auto const isSuccess = !enabled || flag == 0 ||
+                        (tx == ttPAYMENT && !crossCurrencyPayment && (flag == ~lsfMPTCanTrade)) ||
+                        (tx == ttAMM_WITHDRAW &&
+                         (flag == ~lsfMPTCanTrade || flag == ~lsfMPTCanTransfer));
+                    std::pair<TER, TER> const error = isSuccess
+                        ? std::make_pair(TER(tesSUCCESS), TER(tesSUCCESS))
+                        : std::make_pair(TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED));
+                    doInvariantCheck(
+                        {{isSuccess ? "" : "invalid MPToken transfer between holders"}},
+                        [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                            auto update = [&](AccountID const& a, std::uint64_t v) {
+                                auto sle = ac.view().peek(keylet::mptoken(id, a));
+                                if (!sle)
+                                    return false;
+                                sle->at(sfMPTAmount) = v;
+                                ac.view().update(sle);
+                                return true;
+                            };
+                            auto issuanceSle = ac.view().peek(keylet::mptIssuance(id));
+                            if (!issuanceSle)
+                                return false;
+                            auto const flags = issuanceSle->at(sfFlags);
+                            if (flag == lsfMPTLocked)
+                            {
+                                issuanceSle->at(sfFlags) = flags | lsfMPTLocked;
+                            }
+                            else if (flag != 0u)
+                            {
+                                issuanceSle->at(sfFlags) = flags & flag;
+                            }
+                            issuanceSle->at(sfOutstandingAmount) = 200;
+                            ac.view().update(issuanceSle);
+                            return update(a1, 101) && update(a2, 99);
+                        },
+                        XRPAmount{},
+                        STTx{
+                            tx,
+                            [&](STObject& tx) {
+                                if (crossCurrencyPayment)
+                                {
+                                    tx.setFieldAmount(
+                                        sfSendMax, STAmount(MPTAmount{100}, MPTIssue{id}));
+                                }
+                            }},
+                        {error.first, error.second},
+                        [&](Account const& a1, Account const& a2, Env& env) {
+                            Account const gw("gw");
+                            env.fund(XRP(1'000), gw);
+                            MPTTester const usd(
+                                {.env = env, .issuer = gw, .holders = {a1, a2}, .pay = 100});
+                            id = usd.issuanceID();
+                            if (!enabled)
+                            {
+                                env.disableFeature(featureMPTokensV2);
+                            }
+                            return true;
+                        });
+                }
+            }
+        }
+    }
+
+    void
+    testAMM()
+    {
+        testcase << "AMM";
+        using namespace jtx;
+
+        MPTID mptID{};
+        uint256 ammID{};
+        AccountID ammAccountID{};
+        Account const gw{"gw"};
+        Issue lptIssue{};
+        PrettyAsset poolAsset{xrpIssue()};
+
+        auto deleteAMMAccount = [&](ApplyContext& ac, bool) {
+            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            if (!sle)
+                return false;
+            ac.view().erase(sle);
+            return true;
+        };
+
+        auto updateLPTokensBalance = [&](ApplyContext& ac, std::int64_t amount) {
+            auto sle = ac.view().peek(keylet::amm(ammID));
+            if (!sle)
+                return false;
+            sle->setFieldAmount(sfLPTokenBalance, STAmount{lptIssue, amount});
+            ac.view().update(sle);
+            return true;
+        };
+        auto updateLPTokensBadAmount = [&](ApplyContext& ac, bool) {
+            return updateLPTokensBalance(ac, -1);
+        };
+        auto updateLPTokensBadBalance = [&](ApplyContext& ac, bool) {
+            return updateLPTokensBalance(ac, 200'000'000);
+        };
+        auto updateAMM = [&](ApplyContext& ac, bool) { return updateLPTokensBalance(ac, 10); };
+
+        auto updateAMMPool = [&](ApplyContext& ac, bool isMPT) {
+            if (isMPT)
+            {
+                auto sle = ac.view().peek(keylet::mptoken(mptID, ammAccountID));
+                if (!sle)
+                    return false;
+                sle->setFieldU64(sfMPTAmount, 1);
+                ac.view().update(sle);
+                return true;
+            }
+            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            if (!sle)
+                return false;
+            sle->setFieldAmount(sfBalance, XRP(1));
+            ac.view().update(sle);
+            return true;
+        };
+
+        auto test = [&](auto const txType,
+                        auto&& update,
+                        bool isMPT,
+                        TER error = tecINVARIANT_FAILED) {
+            doInvariantCheck(
+                {{"AMM"}},
+                [&](Account const&, Account const&, ApplyContext& ac) { return update(ac, isMPT); },
+                XRPAmount{},
+                STTx{txType, [&](STObject& tx) {}},
+                {tecINVARIANT_FAILED, error},
+                [&](Account const&, Account const&, Env& env) {
+                    env.fund(XRP(1'000), gw);
+                    poolAsset = [&]() -> PrettyAsset {
+                        if (isMPT)
+                        {
+                            MPT const mpt = MPTTester({.env = env, .issuer = gw});
+                            mptID = mpt.issuanceID;
+                            return mpt;
+                        }
+                        return gw["USD"];
+                    }();
+                    AMM const amm(env, gw, XRP(100), poolAsset(100));
+                    ammAccountID = amm.ammAccount();
+                    ammID = amm.ammID();
+                    lptIssue = amm.lptIssue();
+                    return true;
+                });
+        };
+
+        for (bool const isMPT : {false, true})
+        {
+            auto const error = isMPT ? TER(tecINVARIANT_FAILED) : TER(tefINVARIANT_FAILED);
+            for (auto txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
+            {
+                test(txType, deleteAMMAccount, isMPT, tefINVARIANT_FAILED);
+                test(txType, updateLPTokensBadAmount, isMPT);
+                test(txType, updateLPTokensBadBalance, isMPT);
+            }
+            for (auto txType : {ttAMM_BID, ttAMM_VOTE})
+            {
+                test(txType, updateAMMPool, isMPT, error);
+                test(txType, updateLPTokensBadAmount, isMPT);
+                test(txType, updateLPTokensBadBalance, isMPT);
+            }
+            for (auto txType : {ttAMM_DELETE, ttCHECK_CASH, ttOFFER_CREATE, ttPAYMENT})
+            {
+                test(txType, updateAMM, isMPT);
+            }
         }
     }
 
@@ -4253,109 +4767,119 @@ class Invariants_test : public beast::unit_test::Suite
             std::vector<ValidVault::DeltaInfo> values;
         };
 
-        NumberMantissaScaleGuard const g{MantissaRange::MantissaScale::Large};
-
-        auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
-            return {.delta = n, .scale = scale(n, vaultAsset.raw())};
-        };
-
-        auto const testCases = std::vector<TestCase>{
-            {
-                .name = "No values",
-                .expectedMinScale = 0,
-                .values = {},
-            },
-            {
-                .name = "Mixed integer and Number values",
-                .expectedMinScale = -15,
-                .values = {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
-            },
-            {
-                .name = "Mixed scales",
-                .expectedMinScale = -17,
-                .values =
-                    {makeDelta(Number{1, -2}), makeDelta(Number{5, -3}), makeDelta(Number{3, -2})},
-            },
-            {
-                .name = "Equal scales",
-                .expectedMinScale = -16,
-                .values =
-                    {makeDelta(Number{1, -1}), makeDelta(Number{5, -1}), makeDelta(Number{1, -1})},
-            },
-            {
-                .name = "Mixed mantissa sizes",
-                .expectedMinScale = -12,
-                .values =
-                    {makeDelta(Number{1}),
-                     makeDelta(Number{1234, -3}),
-                     makeDelta(Number{12345, -6}),
-                     makeDelta(Number{123, 1})},
-            },
-        };
-
-        for (auto const& tc : testCases)
+        for (auto const mantissaScale : {
+                 MantissaRange::MantissaScale::LargeLegacy,
+                 MantissaRange::MantissaScale::Large,
+             })
         {
-            testcase("vault computeCoarsestScale: " + tc.name);
+            NumberMantissaScaleGuard const g{mantissaScale};
 
-            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+            auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
+                return {.delta = n, .scale = scale(n, vaultAsset.raw())};
+            };
 
-            BEAST_EXPECTS(
-                actualScale == tc.expectedMinScale,
-                "expected: " + std::to_string(tc.expectedMinScale) +
-                    ", actual: " + std::to_string(actualScale));
-            for (auto const& num : tc.values)
-            {
-                // None of these scales are far enough apart that rounding the
-                // values would lose information, so check that the rounded
-                // value matches the original.
-                auto const actualRounded = roundToAsset(vaultAsset, num.delta, actualScale);
-                BEAST_EXPECTS(
-                    actualRounded == num.delta,
-                    "number " + to_string(num.delta) + " rounded to scale " +
-                        std::to_string(actualScale) + " is " + to_string(actualRounded));
-            }
-        }
-
-        auto const testCases2 = std::vector<TestCase>{
-            {
-                .name = "False equivalence",
-                .expectedMinScale = -15,
-                .values =
-                    {
-                        makeDelta(Number{1234567890123456789, -18}),
-                        makeDelta(Number{12345, -4}),
-                        makeDelta(Number{1}),
-                    },
-            },
-        };
-
-        // Unlike the first set of test cases, the values in these test could
-        // look equivalent if using the wrong scale.
-        for (auto const& tc : testCases2)
-        {
-            testcase("vault computeCoarsestScale: " + tc.name);
-
-            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
-
-            BEAST_EXPECTS(
-                actualScale == tc.expectedMinScale,
-                "expected: " + std::to_string(tc.expectedMinScale) +
-                    ", actual: " + std::to_string(actualScale));
-            std::optional<Number> first;
-            Number firstRounded;
-            for (auto const& num : tc.values)
-            {
-                if (!first)
+            auto const testCases = std::vector<TestCase>{
                 {
-                    first = num.delta;
-                    firstRounded = roundToAsset(vaultAsset, num.delta, actualScale);
-                    continue;
-                }
-                auto const numRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    .name = "No values",
+                    .expectedMinScale = 0,
+                    .values = {},
+                },
+                {
+                    .name = "Mixed integer and Number values",
+                    .expectedMinScale = -15,
+                    .values = {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
+                },
+                {
+                    .name = "Mixed scales",
+                    .expectedMinScale = -17,
+                    .values =
+                        {makeDelta(Number{1, -2}),
+                         makeDelta(Number{5, -3}),
+                         makeDelta(Number{3, -2})},
+                },
+                {
+                    .name = "Equal scales",
+                    .expectedMinScale = -16,
+                    .values =
+                        {makeDelta(Number{1, -1}),
+                         makeDelta(Number{5, -1}),
+                         makeDelta(Number{1, -1})},
+                },
+                {
+                    .name = "Mixed mantissa sizes",
+                    .expectedMinScale = -12,
+                    .values =
+                        {makeDelta(Number{1}),
+                         makeDelta(Number{1234, -3}),
+                         makeDelta(Number{12345, -6}),
+                         makeDelta(Number{123, 1})},
+                },
+            };
+
+            for (auto const& tc : testCases)
+            {
+                testcase("vault computeCoarsestScale: " + tc.name);
+
+                auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
                 BEAST_EXPECTS(
-                    numRounded != firstRounded,
-                    "at a scale of " + std::to_string(actualScale) + " " + to_string(num.delta) +
-                        " == " + to_string(*first));
+                    actualScale == tc.expectedMinScale,
+                    "expected: " + std::to_string(tc.expectedMinScale) +
+                        ", actual: " + std::to_string(actualScale));
+                for (auto const& num : tc.values)
+                {
+                    // None of these scales are far enough apart that rounding the
+                    // values would lose information, so check that the rounded
+                    // value matches the original.
+                    auto const actualRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    BEAST_EXPECTS(
+                        actualRounded == num.delta,
+                        "number " + to_string(num.delta) + " rounded to scale " +
+                            std::to_string(actualScale) + " is " + to_string(actualRounded));
+                }
+            }
+
+            auto const testCases2 = std::vector<TestCase>{
+                {
+                    .name = "False equivalence",
+                    .expectedMinScale = -15,
+                    .values =
+                        {
+                            makeDelta(Number{1234567890123456789, -18}),
+                            makeDelta(Number{12345, -4}),
+                            makeDelta(Number{1}),
+                        },
+                },
+            };
+
+            // Unlike the first set of test cases, the values in these test could
+            // look equivalent if using the wrong scale.
+            for (auto const& tc : testCases2)
+            {
+                testcase("vault computeCoarsestScale: " + tc.name);
+
+                auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
+                BEAST_EXPECTS(
+                    actualScale == tc.expectedMinScale,
+                    "expected: " + std::to_string(tc.expectedMinScale) +
+                        ", actual: " + std::to_string(actualScale));
+                std::optional<Number> first;
+                Number firstRounded;
+                for (auto const& num : tc.values)
+                {
+                    if (!first)
+                    {
+                        first = num.delta;
+                        firstRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                        continue;
+                    }
+                    auto const numRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    BEAST_EXPECTS(
+                        numRounded != firstRounded,
+                        "at a scale of " + std::to_string(actualScale) + " " +
+                            to_string(num.delta) + " == " + to_string(*first));
+                }
             }
         }
     }
@@ -4381,6 +4905,7 @@ public:
         testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
+        testBookDirectoryExchangeRate();
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
         testValidLoanBroker();
@@ -4389,6 +4914,7 @@ public:
         testInvariantOverwrite(defaultAmendments());
         testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
         testVaultComputeCoarsestScale();
+        testAMM();
     }
 };
 

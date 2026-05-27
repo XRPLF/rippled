@@ -51,7 +51,6 @@ iteratePriceData(
     std::shared_ptr<SLE const> const& sle,
     std::function<bool(STObject const&)> const& f)
 {
-    using Meta = std::shared_ptr<STObject const>;
     static constexpr std::uint8_t kMaxHistory = 3;
     bool isNew = false;
     std::uint8_t history = 0;
@@ -73,7 +72,7 @@ iteratePriceData(
     // for the Oracle is not found in the inner loop
     STObject const* prevChain = nullptr;
 
-    Meta meta = nullptr;
+    std::shared_ptr<STObject const> meta = nullptr;
     while (true)
     {
         if (prevChain == chain)
@@ -93,6 +92,8 @@ iteratePriceData(
             return;  // LCOV_EXCL_LINE
 
         meta = ledger->txRead(prevTx).second;
+        if (!meta)
+            return;
 
         prevChain = chain;
         for (STObject const& node : meta->getFieldArray(sfAffectedNodes))
