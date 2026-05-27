@@ -1,25 +1,37 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverDeposit.h>
-//
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
 
 namespace xrpl {
 
 bool
 LoanBrokerCoverDeposit::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
 LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::zero)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::zero)
+    if (dstAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))
@@ -79,10 +91,10 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             vaultAsset,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j,
-            SpendableHandling::shFULL_BALANCE) < amount)
+            SpendableHandling::FullBalance) < amount)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -109,7 +121,8 @@ LoanBrokerCoverDeposit::doApply()
     auto const brokerPseudoID = broker->at(sfAccount);
 
     // Transfer assets from depositor to pseudo-account.
-    if (auto ter = accountSend(view(), account_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
+    if (auto ter =
+            accountSend(view(), accountID_, brokerPseudoID, amount, j_, WaiveTransferFee::Yes))
         return ter;
 
     // Increase the LoanBroker's CoverAvailable by Amount
@@ -119,6 +132,27 @@ LoanBrokerCoverDeposit::doApply()
     associateAsset(*broker, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+LoanBrokerCoverDeposit::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+LoanBrokerCoverDeposit::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 //------------------------------------------------------------------------------

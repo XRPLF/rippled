@@ -53,7 +53,7 @@ public:
         TER calculationResult_ = temUNKNOWN;
 
     public:
-        TER
+        [[nodiscard]] TER
         result() const
         {
             return calculationResult_;
@@ -102,7 +102,7 @@ public:
     // unfunded offers in a deterministic order (hence the ordered container).
     //
     // Offers that were found unfunded.
-    boost::container::flat_set<uint256> permanentlyUnfundedOffers_;
+    boost::container::flat_set<uint256> permanentlyUnfundedOffers;
 };
 
 }  // namespace path

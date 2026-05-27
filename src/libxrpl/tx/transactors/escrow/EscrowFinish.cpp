@@ -1,30 +1,55 @@
+#include <xrpl/tx/transactors/escrow/EscrowFinish.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/conditions/Condition.h>
 #include <xrpl/conditions/Fulfillment.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/escrow/EscrowFinish.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmVM.h>
+
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <string>
+#include <system_error>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
 // fulfillment matches and validates the condition.
-constexpr HashRouterFlags SF_CF_INVALID = HashRouterFlags::PRIVATE5;
-constexpr HashRouterFlags SF_CF_VALID = HashRouterFlags::PRIVATE6;
+constexpr HashRouterFlags kSfCfInvalid = HashRouterFlags::PRIVATE5;
+constexpr HashRouterFlags kSfCfValid = HashRouterFlags::PRIVATE6;
 
 //------------------------------------------------------------------------------
 
@@ -114,15 +139,15 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         // If we haven't checked the condition, check it
         // now. Whether it passes or not isn't important
         // in preflight.
-        if (!any(flags & (SF_CF_INVALID | SF_CF_VALID)))
+        if (!any(flags & (kSfCfInvalid | kSfCfValid)))
         {
             if (checkCondition(*fb, *cb))
             {
-                router.setFlags(id, SF_CF_VALID);
+                router.setFlags(id, kSfCfValid);
             }
             else
             {
-                router.setFlags(id, SF_CF_INVALID);
+                router.setFlags(id, kSfCfInvalid);
             }
         }
     }
@@ -145,7 +170,7 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
         // whole drop.
         // Integer math rounds down by default, so we add 1 to round up.
         uint64_t const allowanceFee =
-            ((*allowance) * view.fees().gasPrice) / MICRO_DROPS_PER_DROP + 1;
+            (((*allowance) * view.fees().gasPrice) / microDropsPerDrop) + 1;
         extraFee += allowanceFee;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
@@ -307,7 +332,7 @@ EscrowFinish::doApply()
             return tecNO_DST;
 
         if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
@@ -322,7 +347,7 @@ EscrowFinish::doApply()
         // It's unlikely that the results of the check will
         // expire from the hash router, but if it happens,
         // simply re-run the check.
-        if (cb && !any(flags & (SF_CF_INVALID | SF_CF_VALID)))
+        if (cb && !any(flags & (kSfCfInvalid | kSfCfValid)))
         {
             // LCOV_EXCL_START
             auto const fb = ctx_.tx[~sfFulfillment];
@@ -332,11 +357,11 @@ EscrowFinish::doApply()
 
             if (checkCondition(*fb, *cb))
             {
-                flags = SF_CF_VALID;
+                flags = kSfCfValid;
             }
             else
             {
-                flags = SF_CF_INVALID;
+                flags = kSfCfInvalid;
             }
 
             ctx_.registry.get().getHashRouter().setFlags(id, flags);
@@ -345,7 +370,7 @@ EscrowFinish::doApply()
 
         // If the check failed, then simply return an error
         // and don't look at anything else.
-        if (any(flags & SF_CF_INVALID))
+        if (any(flags & kSfCfInvalid))
             return tecCRYPTOCONDITION_ERROR;
 
         // Check against condition in the ledger entry:
@@ -372,7 +397,7 @@ EscrowFinish::doApply()
             return tecNO_DST;
 
         if (auto err =
-                verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
@@ -393,7 +418,7 @@ EscrowFinish::doApply()
             return tecINTERNAL;
         }
         std::uint32_t const allowance = ctx_.tx[sfComputationAllowance];
-        auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, ESCROW_FUNCTION_NAME);
+        auto re = runEscrowWasm(wasm, ledgerDataProvider, allowance, escrowFunctionName);
         JLOG(j_.trace()) << "Escrow WASM ran";
 
         if (auto const& data = ledgerDataProvider.getData(); data.has_value())
@@ -470,9 +495,9 @@ EscrowFinish::doApply()
 
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
             ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
-            : parityRate;
+            : kParityRate;
         auto const issuer = amount.getIssuer();
-        bool const createAsset = destID == account_;
+        bool const createAsset = destID == accountID_;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
@@ -518,4 +543,24 @@ EscrowFinish::doApply()
     return tesSUCCESS;
 }
 
+void
+EscrowFinish::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+EscrowFinish::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
 }  // namespace xrpl

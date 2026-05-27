@@ -193,7 +193,7 @@ public:
     virtual OpenLedger&
     getOpenLedger() = 0;
 
-    virtual OpenLedger const&
+    [[nodiscard]] virtual OpenLedger const&
     getOpenLedger() const = 0;
 
     // Transaction and operation services
@@ -220,7 +220,7 @@ public:
     getPerfLog() = 0;
 
     // Configuration and state
-    virtual bool
+    [[nodiscard]] virtual bool
     isStopping() const = 0;
 
     virtual beast::Journal
@@ -232,14 +232,14 @@ public:
     virtual Logs&
     getLogs() = 0;
 
-    virtual std::optional<uint256> const&
+    [[nodiscard]] virtual std::optional<uint256> const&
     getTrapTxID() const = 0;
 
     /** Retrieve the "wallet database" */
     virtual DatabaseCon&
     getWalletDB() = 0;
 
-    virtual Fees
+    [[nodiscard]] virtual Fees
     getFees() const = 0;
 
     // Temporary: Get the underlying Application for functions that haven't

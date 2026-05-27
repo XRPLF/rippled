@@ -13,8 +13,8 @@ class WasmHostFunctionsImpl : public HostFunctions
     Keylet leKey_;
     mutable std::optional<std::shared_ptr<SLE const>> currentLedgerObj_;
 
-    static int constexpr MAX_CACHE = 256;
-    std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache_;
+    static int constexpr maxCache = 256;
+    std::array<std::shared_ptr<SLE const>, maxCache> cache_;
 
     std::optional<Bytes> data_;
 
@@ -27,17 +27,17 @@ class WasmHostFunctionsImpl : public HostFunctions
             currentLedgerObj_ = ctx_.view().read(leKey_);
         if (*currentLedgerObj_)
             return *currentLedgerObj_;
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+        return Unexpected(HostFunctionError::LedgerObjNotFound);
     }
 
     Expected<int32_t, HostFunctionError>
     normalizeCacheIndex(int32_t cacheIdx) const
     {
         --cacheIdx;
-        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-            return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+        if (cacheIdx < 0 || cacheIdx >= maxCache)
+            return Unexpected(HostFunctionError::SlotOutRange);
         if (!cache_[cacheIdx])
-            return Unexpected(HostFunctionError::EMPTY_SLOT);
+            return Unexpected(HostFunctionError::EmptySlot);
         return cacheIdx;
     }
 
@@ -48,11 +48,11 @@ class WasmHostFunctionsImpl : public HostFunctions
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
-        if (!getJournal().active(beast::severities::kTrace))
+        if (!getJournal().active(beast::Severity::Trace))
             return;
         auto j = getJournal().trace();
 #endif
-        j << "WasmTrace[" << to_short_string(leKey_.key) << "]: " << msg << " " << dataFn();
+        j << "WasmTrace[" << toShortString(leKey_.key) << "]: " << msg << " " << dataFn();
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
@@ -65,23 +65,23 @@ public:
     {
     }
 
-    virtual void
+    void
     setRT(void* rt) override
     {
         rt_ = rt;
     }
 
-    virtual void*
+    void*
     getRT() const override
     {
         return rt_;
     }
 
-    virtual bool
+    bool
     checkSelf() const override
     {
         return !currentLedgerObj_ && !data_ &&
-            std::ranges::find_if(cache_, [](auto& p) { return !!p; }) == cache_.end();
+            std::ranges::none_of(cache_, [](auto const& p) { return !!p; });
     }
 
     std::optional<Bytes> const&
@@ -266,16 +266,10 @@ public:
     floatToInt(Slice const& x, int32_t mode) const override;
 
     Expected<FloatPair, HostFunctionError>
-    floatToMantissaAndExponent(Slice const& x) const override;
+    floatToMantExp(Slice const& x) const override;
 
     Expected<Bytes, HostFunctionError>
-    floatNegate(Slice const& x) const override;
-
-    Expected<Bytes, HostFunctionError>
-    floatAbs(Slice const& x) const override;
-
-    Expected<Bytes, HostFunctionError>
-    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const override;
+    floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const override;
 
     Expected<int32_t, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y) const override;
@@ -297,9 +291,6 @@ public:
 
     Expected<Bytes, HostFunctionError>
     floatPower(Slice const& x, int32_t n, int32_t mode) const override;
-
-    Expected<Bytes, HostFunctionError>
-    floatLog(Slice const& x, int32_t mode) const override;
 };
 
 }  // namespace xrpl
