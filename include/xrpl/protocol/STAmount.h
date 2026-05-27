@@ -189,7 +189,6 @@ public:
     /**
      * Checks if this amount evaluates to zero when constrained to a specific
      * accounting scale.
-     *
      * For XRP and MPT `roundToScale` is a no-op, returns true only when the amount itself is zero.
      * The `scale` argument is ignored in that case.
      * For IOU, the amount is rounded to the given scale using Number::RoundingMode::ToNearest mode

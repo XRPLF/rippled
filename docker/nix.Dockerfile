@@ -45,8 +45,30 @@ COPY --from=builder /tmp/build/result /nix/ci-env
 
 ENV PATH="/nix/ci-env/bin:$PATH"
 
+# Externally-built dynamically-linked ELF binaries hard-code the loader path
+# (e.g. /lib64/ld-linux-x86-64.so.2) in their PT_INTERP header. Copy the
+# loader from the Nix store to that path when the base image doesn't already
+# provide one (i.e. on nixos/nix).
+RUN <<EOF
+case "$(uname -m)" in
+    x86_64)  target=/lib64/ld-linux-x86-64.so.2 ;;
+    aarch64) target=/lib/ld-linux-aarch64.so.1 ;;
+    *) echo "Unsupported arch: $(uname -m)" >&2; exit 1 ;;
+esac
+if [ ! -e "$target" ]; then
+    # Use the loader from the same glibc that gcc links libc against, so
+    # ld-linux and libc/libpthread share GLIBC_PRIVATE symbols at runtime.
+    src="$(dirname "$(gcc -print-file-name=libc.so.6)")/$(basename "$target")"
+    [ -e "$src" ] || { echo "ld-linux not found at $src" >&2; exit 1; }
+    mkdir -p "$(dirname "$target")"
+    cp "$src" "$target"
+fi
+EOF
+
 RUN <<EOF
 ccache --version
+clang --version
+clang++ --version
 clang-format --version
 cmake --version
 conan --version
@@ -64,3 +86,10 @@ python3 --version
 run-clang-tidy --help
 vim --version
 EOF
+
+# Sanity-check that the sanitizer runtimes shipped with g++/clang++ work
+# end-to-end against the system loader.
+COPY docker/cpp_files/ /tmp/cpp_files/
+COPY docker/check-sanitizers.sh /tmp/check-sanitizers.sh
+
+RUN grep -qi ubuntu /etc/os-release 2>/dev/null && /tmp/check-sanitizers.sh /tmp/cpp_files || true
