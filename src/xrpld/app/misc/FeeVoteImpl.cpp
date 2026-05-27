@@ -117,6 +117,12 @@ public:
 FeeVoteImpl::FeeVoteImpl(FeeSetup const& setup, beast::Journal journal)
     : target_(setup), journal_(journal)
 {
+    XRPL_ASSERT(
+        target_.extension_compute_limit <= kMaxExtensionComputeLimit,
+        "xrpl::FeeVoteImpl::FeeVoteImpl : extension compute limit in range");
+    XRPL_ASSERT(
+        target_.extension_size_limit <= kMaxExtensionSizeLimit,
+        "xrpl::FeeVoteImpl::FeeVoteImpl : extension size limit in range");
 }
 
 void
@@ -287,10 +293,14 @@ FeeVoteImpl::doVoting(
     {
         auto doVote = [](std::shared_ptr<STValidation> const& val,
                          detail::VotableValue<std::uint32_t>& value,
-                         SF_UINT32 const& extensionField) {
+                         SF_UINT32 const& extensionField,
+                         std::uint32_t maxValue) {
             if (auto const field = ~val->at(~extensionField); field)
             {
-                value.addVote(field.value());
+                if (field.value() <= maxValue)
+                    value.addVote(field.value());
+                else
+                    value.noVote();
             }
             else
             {
@@ -302,9 +312,9 @@ FeeVoteImpl::doVoting(
         {
             if (!val->isTrusted())
                 continue;
-            doVote(val, extensionComputeVote, sfExtensionComputeLimit);
-            doVote(val, extensionSizeVote, sfExtensionSizeLimit);
-            doVote(val, gasPriceVote, sfGasPrice);
+            doVote(val, extensionComputeVote, sfExtensionComputeLimit, kMaxExtensionComputeLimit);
+            doVote(val, extensionSizeVote, sfExtensionSizeLimit, kMaxExtensionSizeLimit);
+            doVote(val, gasPriceVote, sfGasPrice, std::numeric_limits<std::uint32_t>::max());
         }
     }
 
