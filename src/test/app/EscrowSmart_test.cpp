@@ -833,7 +833,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         env.close();
         env.close();
 
-        if (BEAST_EXPECT(env.ownerCount(alice) == (1 + kUpdateDataWasmHex.size() / 2 / 500)))
+        if (BEAST_EXPECT(env.ownerCount(alice) == (1 + (kUpdateDataWasmHex.size() / 2 / 500))))
         {
             env.require(Balance(alice, XRP(4000) - txnFees));
 
@@ -991,7 +991,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             env.close();
 
             if (BEAST_EXPECT(
-                    env.ownerCount(alice) == (1 + kAllHostFunctionsWasmHex.size() / 2 / 500)))
+                    env.ownerCount(alice) == (1 + (kAllHostFunctionsWasmHex.size() / 2 / 500))))
             {
                 env.require(Balance(alice, XRP(4000) - txnFees));
                 env.require(Balance(carol, XRP(5000)));

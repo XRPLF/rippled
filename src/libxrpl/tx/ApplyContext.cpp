@@ -60,8 +60,10 @@ ApplyContext::apply(TER ter)
 {
     if (wasmReturnCode_.has_value())
     {
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
         view_->setWasmReturnCode(*wasmReturnCode_);
     }
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     view_->setGasUsed(gasUsed_);
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
