@@ -35,19 +35,18 @@
 
     Usage examples:
 
-    1. Check before tracing (typical guard pattern):
+    1. Root span at a subsystem entry point (typical usage):
     @code
-        auto& telemetry = registry.getTelemetry();
-        if (telemetry.isEnabled() && telemetry.shouldTraceRpc())
-        {
-            auto span = telemetry.startSpan("rpc.command.server_info");
-            // ... do work, span ends when shared_ptr refcount drops to 0
-        }
+        // In an RPC handler dispatch:
+        auto guard = SpanGuard::span(TraceCategory::Rpc, "rpc", commandName);
+        guard.setAttribute("xrpl.rpc.command", commandName);
+        // ... process request
+        // guard destructor automatically ends the span on scope exit
     @endcode
 
-    2. RAII tracing with SpanGuard (preferred):
+    2. Child span for a sub-operation (cross-scope):
     @code
-        if (telemetry.isEnabled() && telemetry.shouldTraceRpc())
+        auto parent = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
         {
             SpanGuard guard(telemetry.startSpan("rpc.command.submit"));
             guard.setAttribute("command", "submit");
@@ -55,12 +54,24 @@
         }
     @endcode
 
-    3. Cross-thread context propagation:
+    3. Child span for a sub-operation (cross-scope):
     @code
-        // On thread A: capture context
-        auto ctx = guard.context();
-        // On thread B: create child span with explicit parent
-        auto child = telemetry.startSpan("async.work", ctx);
+        auto parent = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
+        {
+            auto child = parent.childSpan("tx.apply");
+            child.setAttribute("xrpl.tx.type", txType);
+            // child ends here
+        }
+        // parent continues, then ends here
+    @endcode
+
+    4. Cross-thread context propagation:
+    @code
+        // Thread A: capture the active context while span is in scope
+        auto ctx = parentGuard.captureContext();
+
+        // Thread B: create child span with explicit parent
+        auto child = SpanGuard::childSpan("async.work", ctx);
     @endcode
 
     @note Thread safety: The Telemetry interface is safe for concurrent reads
