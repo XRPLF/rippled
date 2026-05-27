@@ -133,9 +133,8 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 bool
 EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return !(
-        (ctx.tx.isFieldPresent(sfFinishFunction) || ctx.tx.isFieldPresent(sfData)) &&
-        !ctx.rules.enabled(featureSmartEscrow));
+    return (!ctx.tx.isFieldPresent(sfFinishFunction) && !ctx.tx.isFieldPresent(sfData)) ||
+        ctx.rules.enabled(featureSmartEscrow);
 }
 
 NotTEC

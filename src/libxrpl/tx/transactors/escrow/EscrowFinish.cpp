@@ -18,6 +18,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -37,6 +38,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <string>
 #include <system_error>
 #include <variant>
 #include <vector>
@@ -167,7 +169,8 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
         // The extra fee is the allowance in drops, rounded up to the nearest
         // whole drop.
         // Integer math rounds down by default, so we add 1 to round up.
-        uint64_t const allowanceFee = ((*allowance) * view.fees().gasPrice) / microDropsPerDrop + 1;
+        uint64_t const allowanceFee =
+            (((*allowance) * view.fees().gasPrice) / microDropsPerDrop) + 1;
         extraFee += allowanceFee;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;

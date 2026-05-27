@@ -5,7 +5,6 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
-#include <test/jtx/check.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
@@ -14,6 +13,7 @@
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
@@ -27,7 +27,9 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -49,6 +51,8 @@
 #include <optional>
 #include <source_location>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -917,7 +921,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
                 auto const bigAllowance = 996'433;
                 uint64_t const partialFeeCalc =
-                    (static_cast<uint64_t>(bigAllowance) * 1'000'000) / microDropsPerDrop + 1;
+                    ((static_cast<uint64_t>(bigAllowance) * 1'000'000) / microDropsPerDrop) + 1;
                 auto finishFee = env.current()->fees().base + partialFeeCalc;
                 BEAST_EXPECT(finishFee.drops() > bigAllowance);
 

@@ -2,7 +2,9 @@
 
 #include <test/app/wasm_fixtures/fixtures.h>
 
+#include <cstdint>
 #include <string>
+#include <vector>
 
 namespace wasm_constants {
 
@@ -15,10 +17,10 @@ appendU32Leb(std::vector<uint8_t>& out, uint32_t value)
     {
         auto byte = static_cast<uint8_t>(value & 0x7f);
         value >>= 7;
-        if (value)
+        if (value != 0u)
             byte |= 0x80;
         out.push_back(byte);
-    } while (value);
+    } while (value != 0u);
 }
 
 void
