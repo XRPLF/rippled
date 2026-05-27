@@ -13,6 +13,8 @@ on:
       - ready_for_review
     branches:
       - develop
+      - "release-*"
+      - "release/*"
       - "staging/*"
 
 jobs:
