@@ -280,8 +280,7 @@ struct STNumber_test : public beast::unit_test::Suite
     {
         static_assert(!std::is_convertible_v<STNumber*, Number*>);
 
-        for (auto const scale :
-             {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+        for (auto const scale : MantissaRange::getAllScales())
         {
             NumberMantissaScaleGuard const sg(scale);
             testcase << to_string(Number::getMantissaScale());

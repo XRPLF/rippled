@@ -63,8 +63,14 @@ enum class AuthType { StrongAuth, WeakAuth, Legacy };
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, Asset const& asset);
 
+[[nodiscard]] TER
+checkGlobalFrozen(ReadView const& view, Asset const& asset);
+
 [[nodiscard]] bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
+
+[[nodiscard]] TER
+checkIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
 /**
  *   isFrozen check is recursive for MPT shares in a vault, descending to

@@ -312,7 +312,7 @@ checkPayment(
                     std::nullopt,
                     domain,
                     app);
-                if (pf.findPaths(app.config().PATH_SEARCH_OLD))
+                if (pf.findPaths(app.config().pathSearchOld))
                 {
                     // 4 is the maximum paths
                     pf.computePathRanks(4);
@@ -508,7 +508,7 @@ transactionPreProcessImpl(
         validatedLedgerAge,
         app.config(),
         app.getFeeTrack(),
-        getAPIVersionNumber(params, app.config().BETA_RPC_API));
+        getAPIVersionNumber(params, app.config().betaRpcApi));
 
     if (RPC::containsError(txJsonResult))
         return std::move(txJsonResult);
@@ -846,16 +846,16 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
     if (tx.isMember(jss::Signers))
     {
         if (!tx[jss::Signers].isArray())
-            return config.FEES.reference_fee;
+            return config.fees.referenceFee;
 
         if (tx[jss::Signers].size() > STTx::kMaxMultiSigners)
-            return config.FEES.reference_fee;
+            return config.fees.referenceFee;
 
         // check multi-signed signers
         for (auto& signer : tx[jss::Signers])
         {
             if (!signer.isMember(jss::Signer) || !signer[jss::Signer].isObject())
-                return config.FEES.reference_fee;
+                return config.fees.referenceFee;
             if (!signer[jss::Signer].isMember(jss::SigningPubKey))
             {
                 // autofill SigningPubKey
@@ -872,7 +872,7 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
     STParsedJSONObject parsed(std::string(jss::tx_json), tx);
     if (!parsed.object.has_value())
     {
-        return config.FEES.reference_fee;
+        return config.fees.referenceFee;
     }
 
     try
@@ -880,13 +880,13 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
         STTx const& stTx = STTx(std::move(parsed.object.value()));
         std::string reason;
         if (!passesLocalChecks(stTx, reason))
-            return config.FEES.reference_fee;
+            return config.fees.referenceFee;
 
         return calculateBaseFee(*app.getOpenLedger().current(), stTx);
     }
     catch (std::exception& e)
     {
-        return config.FEES.reference_fee;
+        return config.fees.referenceFee;
     }
 }
 
@@ -1305,7 +1305,7 @@ transactionSubmitMultiSigned(
         validatedLedgerAge,
         app.config(),
         app.getFeeTrack(),
-        getAPIVersionNumber(jvRequest, app.config().BETA_RPC_API));
+        getAPIVersionNumber(jvRequest, app.config().betaRpcApi));
 
     if (RPC::containsError(txJsonResult))
         return std::move(txJsonResult);

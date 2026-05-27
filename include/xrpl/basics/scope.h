@@ -24,20 +24,20 @@ namespace xrpl {
 template <class EF>
 class ScopeExit
 {
-    EF exit_function_;
-    bool execute_on_destruction_{true};
+    EF exitFunction_;
+    bool executeOnDestruction_{true};
 
 public:
     ~ScopeExit()
     {
-        if (execute_on_destruction_)
-            exit_function_();
+        if (executeOnDestruction_)
+            exitFunction_();
     }
 
     ScopeExit(ScopeExit&& rhs) noexcept(
         std::is_nothrow_move_constructible_v<EF> || std::is_nothrow_copy_constructible_v<EF>)
-        : exit_function_{std::forward<EF>(rhs.exit_function_)}
-        , execute_on_destruction_{rhs.execute_on_destruction_}
+        : exitFunction_{std::forward<EF>(rhs.exitFunction_)}
+        , executeOnDestruction_{rhs.executeOnDestruction_}
     {
         rhs.release();
     }
@@ -51,7 +51,7 @@ public:
         std::enable_if_t<
             !std::is_same_v<std::remove_cv_t<EFP>, ScopeExit> &&
             std::is_constructible_v<EF, EFP>>* = 0) noexcept
-        : exit_function_{std::forward<EFP>(f)}
+        : exitFunction_{std::forward<EFP>(f)}
     {
         static_assert(std::is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
     }
@@ -59,7 +59,7 @@ public:
     void
     release() noexcept
     {
-        execute_on_destruction_ = false;
+        executeOnDestruction_ = false;
     }
 };
 
@@ -69,22 +69,22 @@ ScopeExit(EF) -> ScopeExit<EF>;
 template <class EF>
 class ScopeFail
 {
-    EF exit_function_;
-    bool execute_on_destruction_{true};
-    int uncaught_on_creation_{std::uncaught_exceptions()};
+    EF exitFunction_;
+    bool executeOnDestruction_{true};
+    int uncaughtOnCreation_{std::uncaught_exceptions()};
 
 public:
     ~ScopeFail()
     {
-        if (execute_on_destruction_ && std::uncaught_exceptions() > uncaught_on_creation_)
-            exit_function_();
+        if (executeOnDestruction_ && std::uncaught_exceptions() > uncaughtOnCreation_)
+            exitFunction_();
     }
 
     ScopeFail(ScopeFail&& rhs) noexcept(
         std::is_nothrow_move_constructible_v<EF> || std::is_nothrow_copy_constructible_v<EF>)
-        : exit_function_{std::forward<EF>(rhs.exit_function_)}
-        , execute_on_destruction_{rhs.execute_on_destruction_}
-        , uncaught_on_creation_{rhs.uncaught_on_creation_}
+        : exitFunction_{std::forward<EF>(rhs.exitFunction_)}
+        , executeOnDestruction_{rhs.executeOnDestruction_}
+        , uncaughtOnCreation_{rhs.uncaughtOnCreation_}
     {
         rhs.release();
     }
@@ -98,7 +98,7 @@ public:
         std::enable_if_t<
             !std::is_same_v<std::remove_cv_t<EFP>, ScopeFail> &&
             std::is_constructible_v<EF, EFP>>* = 0) noexcept
-        : exit_function_{std::forward<EFP>(f)}
+        : exitFunction_{std::forward<EFP>(f)}
     {
         static_assert(std::is_nothrow_constructible_v<EF, decltype(std::forward<EFP>(f))>);
     }
@@ -106,7 +106,7 @@ public:
     void
     release() noexcept
     {
-        execute_on_destruction_ = false;
+        executeOnDestruction_ = false;
     }
 };
 
@@ -116,22 +116,22 @@ ScopeFail(EF) -> ScopeFail<EF>;
 template <class EF>
 class ScopeSuccess
 {
-    EF exit_function_;
-    bool execute_on_destruction_{true};
-    int uncaught_on_creation_{std::uncaught_exceptions()};
+    EF exitFunction_;
+    bool executeOnDestruction_{true};
+    int uncaughtOnCreation_{std::uncaught_exceptions()};
 
 public:
-    ~ScopeSuccess() noexcept(noexcept(exit_function_()))
+    ~ScopeSuccess() noexcept(noexcept(exitFunction_()))
     {
-        if (execute_on_destruction_ && std::uncaught_exceptions() <= uncaught_on_creation_)
-            exit_function_();
+        if (executeOnDestruction_ && std::uncaught_exceptions() <= uncaughtOnCreation_)
+            exitFunction_();
     }
 
     ScopeSuccess(ScopeSuccess&& rhs) noexcept(
         std::is_nothrow_move_constructible_v<EF> || std::is_nothrow_copy_constructible_v<EF>)
-        : exit_function_{std::forward<EF>(rhs.exit_function_)}
-        , execute_on_destruction_{rhs.execute_on_destruction_}
-        , uncaught_on_creation_{rhs.uncaught_on_creation_}
+        : exitFunction_{std::forward<EF>(rhs.exitFunction_)}
+        , executeOnDestruction_{rhs.executeOnDestruction_}
+        , uncaughtOnCreation_{rhs.uncaughtOnCreation_}
     {
         rhs.release();
     }
@@ -146,14 +146,14 @@ public:
             !std::is_same_v<std::remove_cv_t<EFP>, ScopeSuccess> &&
             std::is_constructible_v<EF, EFP>>* =
             0) noexcept(std::is_nothrow_constructible_v<EF, EFP> || std::is_nothrow_constructible_v<EF, EFP&>)
-        : exit_function_{std::forward<EFP>(f)}
+        : exitFunction_{std::forward<EFP>(f)}
     {
     }
 
     void
     release() noexcept
     {
-        execute_on_destruction_ = false;
+        executeOnDestruction_ = false;
     }
 };
 
