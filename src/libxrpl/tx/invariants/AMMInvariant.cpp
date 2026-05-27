@@ -24,6 +24,9 @@
 
 namespace xrpl {
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 ValidAMM::visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after)
 {

@@ -66,7 +66,10 @@ public:
      *
      * @param isDelete true if the SLE is being deleted
      * @param before ledger entry before modification by the transaction
-     * @param after ledger entry after modification by the transaction
+     * @param after ledger entry after modification by the transaction. `after`
+     * is never null. `isDelete` is the only correct way to check for
+     * deletions. Check for null defensively, but do not make any logic
+     * decisions based on whether `after` is set.
      */
     void
     visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after);
@@ -106,6 +109,9 @@ public:
 class TransactionFeeCheck
 {
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -126,6 +132,9 @@ class XRPNotCreated
     std::int64_t drops_ = 0;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -146,6 +155,9 @@ class AccountRootsNotDeleted
     std::uint32_t accountsDeleted_ = 0;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -173,6 +185,9 @@ class AccountRootsDeletedClean
     std::vector<std::pair<std::shared_ptr<SLE const>, SLE const*>> accountsDeleted_;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -192,6 +207,9 @@ class XRPBalanceChecks
     bool bad_ = false;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -209,6 +227,9 @@ class LedgerEntryTypesMatch
     bool invalidTypeAdded_ = false;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -227,6 +248,9 @@ class NoXRPTrustLines
     bool xrpTrustLine_ = false;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -246,6 +270,9 @@ class NoDeepFreezeTrustLinesWithoutFreeze
     bool deepFreezeWithoutFreeze_ = false;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -265,6 +292,9 @@ class NoBadOffers
     bool bad_ = false;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -281,6 +311,9 @@ class NoZeroEscrow
     bool bad_ = false;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -301,6 +334,9 @@ class ValidNewAccountRoot
     std::uint32_t flags_ = 0;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -322,6 +358,9 @@ class ValidClawback
     std::uint32_t mptokensChanged_ = 0;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -342,6 +381,9 @@ class ValidPseudoAccounts
     std::vector<std::string> errors_;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 
@@ -362,6 +404,9 @@ class NoModifiedUnmodifiableFields
     std::set<std::pair<SLE::const_pointer, SLE const*>> changedEntries_;
 
 public:
+    // `after` is never null. `isDelete` is the only correct way to check for deletions.
+    // Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&);
 

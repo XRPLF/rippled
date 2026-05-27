@@ -63,6 +63,9 @@ hasPrivilege(STTx const& tx, Privilege priv)
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 TransactionFeeCheck::visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const&)
 {
@@ -106,6 +109,9 @@ TransactionFeeCheck::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 XRPNotCreated::visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
@@ -182,6 +188,9 @@ XRPNotCreated::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 XRPBalanceChecks::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
@@ -229,6 +238,9 @@ XRPBalanceChecks::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 NoBadOffers::visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
@@ -270,6 +282,9 @@ NoBadOffers::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 NoZeroEscrow::visitEntry(bool isDelete, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
@@ -374,6 +389,9 @@ NoZeroEscrow::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 AccountRootsNotDeleted::visitEntry(
     bool isDelete,
@@ -427,6 +445,9 @@ AccountRootsNotDeleted::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 AccountRootsDeletedClean::visitEntry(
     bool isDelete,
@@ -547,6 +568,9 @@ AccountRootsDeletedClean::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 LedgerEntryTypesMatch::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
@@ -598,6 +622,9 @@ LedgerEntryTypesMatch::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 NoXRPTrustLines::visitEntry(bool, std::shared_ptr<SLE const> const&, SLE const& after)
 {
@@ -638,6 +665,9 @@ NoXRPTrustLines::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     bool,
@@ -685,6 +715,9 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 ValidNewAccountRoot::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const& after)
 {
@@ -759,6 +792,9 @@ ValidNewAccountRoot::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 ValidClawback::visitEntry(bool, std::shared_ptr<SLE const> const& before, SLE const&)
 {
@@ -844,6 +880,9 @@ ValidClawback::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 ValidPseudoAccounts::visitEntry(
     bool isDelete,
@@ -935,6 +974,9 @@ ValidPseudoAccounts::finalize(
 
 //------------------------------------------------------------------------------
 
+// `after` is never null. `isDelete` is the only correct way to check for deletions.
+// Check for null defensively, but do not make any logic decisions
+// based on whether `after` is set.
 void
 NoModifiedUnmodifiableFields::visitEntry(
     bool isDelete,
