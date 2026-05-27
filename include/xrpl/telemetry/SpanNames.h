@@ -20,8 +20,13 @@
  *  - Per-span attribute keys: bare field name (span name carries the domain).
  *  - Collision qualifier: <domain>_<field> when bare name collides across
  *    domains or with OTel reserved `status` (e.g. rpc_status, grpc_status).
- *  - Shared cross-span attributes: <domain>_<field> (underscore) form.
- *  - Resource attribute keys: xrpl.<subsystem>.<field> (process-identity).
+ *  - Shared cross-span attributes: <domain>_<field> (underscore) form
+ *    (e.g. tx_hash, peer_id, ledger_seq, consensus_round).
+ *  - Resource attribute keys: xrpl.<subsystem>.<field> (dotted) form is
+ *    RESERVED for process-identity attributes set once at startup on the
+ *    OTel resource (e.g. xrpl.network.id, xrpl.network.type). Do not use
+ *    this form for span attributes — it parses awkwardly in TraceQL and
+ *    blurs the resource/span scope distinction.
  *  - Span prefixes: <subsystem>[.<component>].
  */
 
