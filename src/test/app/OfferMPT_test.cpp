@@ -5102,6 +5102,73 @@ public:
         }
     }
 
+    // getBookBase hashes raw concatenations of fixed-width fields, so the
+    // (Issue,MPT) preimage `currency(20)||mptID(24)||account(20)` and the
+    // (MPT,Issue) preimage `mptID(24)||currency(20)||account(20)` are both
+    // 64 bytes and collide when the bytes align. An attacker picks the IOU
+    // currency, reuses an IOU issuer, and grinds an MPT issuer / sequence;
+    // the per-branch discriminator in getBookBase blocks this.
+    void
+    testBookBaseMixedAssetCollision(FeatureBitset /*features*/)
+    {
+        testcase("getBookBase: (Issue,MPT) vs (MPT,Issue) preimage collision");
+
+        // Construction recipe:
+        //   issuerB last 4 bytes == seq_A; mptID_B = BE(5) || issuerB
+        //   currencyA            == mptID_B[0..19] = BE(5) || issuerB[0..15]
+        //   issuerA              == currencyB (both 20-byte all-0xBB)
+        //   sharedIOUIssuer      == acct_A == acct_B
+        AccountID issuerB;
+        AccountID issuerA;
+        Currency currencyB;
+        Currency currencyA;
+        AccountID sharedIOUIssuer;
+        BEAST_EXPECT(issuerB.parseHex("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA00000007"));
+        BEAST_EXPECT(issuerA.parseHex("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"));
+        BEAST_EXPECT(currencyB.parseHex("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"));
+        BEAST_EXPECT(currencyA.parseHex("00000005AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
+        BEAST_EXPECT(sharedIOUIssuer.parseHex("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"));
+
+        Book const bookA{
+            Asset{Issue{currencyA, sharedIOUIssuer}},
+            Asset{MPTIssue{0x00000007u, issuerA}},
+            std::nullopt};
+        Book const bookB{
+            Asset{MPTIssue{0x00000005u, issuerB}},
+            Asset{Issue{currencyB, sharedIOUIssuer}},
+            std::nullopt};
+
+        BEAST_EXPECT(bookA != bookB);
+        BEAST_EXPECT(getBookBase(bookA) != getBookBase(bookB));
+    }
+
+    // (MPT,MPT) bodies are 48 bytes and can't length-match the 64-byte
+    // mixed branches, but tag them too for symmetry/future-proofing; this
+    // test also pins the directional asymmetry of an (MPT,MPT) book.
+    void
+    testBookBaseMptMptDistinct(FeatureBitset /*features*/)
+    {
+        testcase("getBookBase: (MPT,MPT) distinguishes from mixed branches");
+
+        AccountID issuerX;
+        AccountID issuerY;
+        Currency currency;
+        AccountID iouIssuer;
+        BEAST_EXPECT(issuerX.parseHex("1111111111111111111111111111111111111111"));
+        BEAST_EXPECT(issuerY.parseHex("2222222222222222222222222222222222222222"));
+        BEAST_EXPECT(currency.parseHex("3333333333333333333333333333333333333333"));
+        BEAST_EXPECT(iouIssuer.parseHex("4444444444444444444444444444444444444444"));
+
+        Asset const mptX{MPTIssue{1u, issuerX}};
+        Asset const mptY{MPTIssue{2u, issuerY}};
+        Book const mptBook{mptX, mptY, std::nullopt};
+        Book const mixedBook{mptX, Asset{Issue{currency, iouIssuer}}, std::nullopt};
+        Book const reversedMptBook{mptY, mptX, std::nullopt};
+
+        BEAST_EXPECT(getBookBase(mptBook) != getBookBase(mixedBook));
+        BEAST_EXPECT(getBookBase(mptBook) != getBookBase(reversedMptBook));
+    }
+
     void
     testAll(FeatureBitset features)
     {
@@ -5160,6 +5227,8 @@ public:
         testTickSize(features);
         testBookOffersMPTFunding(features);
         testAutoCreateReserve(features);
+        testBookBaseMixedAssetCollision(features);
+        testBookBaseMptMptDistinct(features);
     }
 
     void
