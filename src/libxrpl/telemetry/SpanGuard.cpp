@@ -35,6 +35,7 @@
 #include <opentelemetry/trace/tracer.h>
 
 #include <string>
+#include <typeinfo>
 #include <utility>
 
 namespace xrpl {
@@ -327,7 +328,7 @@ SpanGuard::recordException(std::exception const& e)
         return;
     impl_->span->AddEvent(
         "exception",
-        {{"exception.type", "std::exception"}, {"exception.message", std::string(e.what())}});
+        {{"exception.type", typeid(e).name()}, {"exception.message", std::string(e.what())}});
     impl_->span->SetStatus(otel_trace::StatusCode::kError, e.what());
 }
 
