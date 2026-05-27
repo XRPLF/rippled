@@ -205,7 +205,19 @@ escrowCreatePreclaimHelper<Issue>(
     if (!sleIssuer)
         return tecNO_ISSUER;
     if (!sleIssuer->isFlag(lsfAllowTrustLineLocking))
-        return tecNO_PERMISSION;
+    {
+        if (ctx.view.rules().enabled(fixTokenEscrowV1_1))
+        {
+            bool const isAMM = isPseudoAccount(sleIssuer, {&sfAMMID});
+            bool const isBlackholedIssuer = isBlackholed(ctx.view, sleIssuer);
+            if (!isAMM && !isBlackholedIssuer)
+                return tecNO_PERMISSION;
+        }
+        else
+        {
+            return tecNO_PERMISSION;
+        }
+    }
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
     auto const sleRippleState = ctx.view.read(keylet::line(account, issuer, issue.currency));
@@ -479,6 +491,23 @@ EscrowCreate::doApply()
         auto const xferRate = transferRate(ctx_.view(), amount);
         if (xferRate != kParityRate)
             (*slep)[sfTransferRate] = xferRate.value;
+
+        if (ctx_.view().rules().enabled(fixTokenEscrowV1_1))
+        {
+            AccountID const issuer = amount.getIssuer();
+            auto sleIssuer = ctx_.view().peek(keylet::account(issuer));
+            if (sleIssuer && !sleIssuer->isFlag(lsfAllowTrustLineLocking))
+            {
+                bool const isAMM = isPseudoAccount(sleIssuer, {&sfAMMID});
+                bool const isBlackholedIssuer = isBlackholed(ctx_.view(), sleIssuer);
+                if (isAMM || isBlackholedIssuer)
+                {
+                    sleIssuer->setFieldU32(
+                        sfFlags, sleIssuer->getFlags() | lsfAllowTrustLineLocking);
+                    ctx_.view().update(sleIssuer);
+                }
+            }
+        }
     }
 
     ctx_.view().insert(slep);
