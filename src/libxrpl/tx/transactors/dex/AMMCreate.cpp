@@ -308,7 +308,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& creatorAccountID, b
             [&](MPTIssue const& issue) -> TER {
                 auto const& mptIssue = issue;
                 auto const& mptID = mptIssue.getMptID();
-                std::uint32_t flags = lsfMPTAMM | lsfMPTAuthorized;
+                std::uint32_t const flags = lsfMPTAMM | lsfMPTAuthorized;
                 if (auto const err =
                         requireAuth(ctx.view(), mptIssue, ammAccountID, AuthType::WeakAuth);
                     !isTesSuccess(err))
