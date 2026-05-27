@@ -1,31 +1,38 @@
 #include <test/jtx/escrow.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cstdint>
 
 /** Escrow operations. */
-namespace escrow {
+namespace xrpl::test::jtx::escrow {
 
-Json::Value
+json::Value
 create(AccountID const& account, AccountID const& to, STAmount const& amount)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::EscrowCreate;
     jv[jss::Flags] = tfFullyCanonicalSig;
     jv[jss::Account] = to_string(account);
     jv[jss::Destination] = to_string(to);
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
+    jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
     return jv;
 }
 
-Json::Value
+json::Value
 finish(AccountID const& account, AccountID const& from, std::uint32_t seq)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::EscrowFinish;
     jv[jss::Flags] = tfFullyCanonicalSig;
     jv[jss::Account] = to_string(account);
@@ -34,10 +41,10 @@ finish(AccountID const& account, AccountID const& from, std::uint32_t seq)
     return jv;
 }
 
-Json::Value
+json::Value
 cancel(AccountID const& account, Account const& from, std::uint32_t seq)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::EscrowCancel;
     jv[jss::Flags] = tfFullyCanonicalSig;
     jv[jss::Account] = to_string(account);
@@ -55,9 +62,4 @@ rate(Env& env, Account const& account, std::uint32_t const& seq)
     return Rate{0};
 }
 
-}  // namespace escrow
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::escrow

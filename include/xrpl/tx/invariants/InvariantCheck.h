@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
 #include <xrpl/tx/invariants/LoanInvariant.h>
@@ -132,7 +133,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -152,7 +153,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -198,7 +199,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -215,7 +216,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -233,7 +234,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -252,7 +253,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -271,7 +272,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -287,7 +288,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -307,7 +308,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -321,14 +322,14 @@ public:
  */
 class ValidClawback
 {
-    std::uint32_t trustlinesChanged = 0;
-    std::uint32_t mptokensChanged = 0;
+    std::uint32_t trustlinesChanged_ = 0;
+    std::uint32_t mptokensChanged_ = 0;
 
 public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -372,6 +373,21 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
+/** Verify that MPT/XRP STAmounts are canonical in any ledger entries left after the
+ * transaction applies.
+ */
+class ValidAmounts
+{
+    std::vector<std::shared_ptr<SLE const>> afterEntries_;
+
+public:
+    void
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -393,12 +409,16 @@ using InvariantChecks = std::tuple<
     ValidMPTIssuance,
     ValidPermissionedDomain,
     ValidPermissionedDEX,
+    ValidBookDirectory,
     ValidAMM,
     NoModifiedUnmodifiableFields,
     ValidPseudoAccounts,
     ValidLoanBroker,
     ValidLoan,
-    ValidVault>;
+    ValidVault,
+    ValidMPTPayment,
+    ValidAmounts,
+    ValidMPTTransfer>;
 
 /**
  * @brief get a tuple of all invariant checks

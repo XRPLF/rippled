@@ -19,9 +19,9 @@ class NFTokenCreateOfferBuilder;
  * @brief Transaction: NFTokenCreateOffer
  *
  * Type: ttNFTOKEN_CREATE_OFFER (27)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenCreateOfferBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfNFTokenID (soeREQUIRED)
+     * @brief Get sfNFTokenID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestination (soeOPTIONAL)
+     * @brief Get sfDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -96,7 +96,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -122,7 +122,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -152,7 +152,7 @@ public:
  * @brief Builder for NFTokenCreateOffer transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class NFTokenCreateOfferBuilder : public TransactionBuilderBase<NFTokenCreateOfferBuilder>
@@ -193,7 +193,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfNFTokenID (soeREQUIRED)
+     * @brief Set sfNFTokenID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
@@ -204,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
@@ -215,7 +215,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
@@ -226,7 +226,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&
@@ -237,7 +237,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenCreateOfferBuilder&

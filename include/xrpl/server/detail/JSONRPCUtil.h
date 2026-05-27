@@ -7,6 +7,6 @@
 namespace xrpl {
 
 void
-HTTPReply(int nStatus, std::string const& strMsg, Json::Output const&, beast::Journal j);
+httpReply(int nStatus, std::string const& strMsg, json::Output const&, beast::Journal j);
 
 }  // namespace xrpl

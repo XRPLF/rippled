@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfOwner (soeOPTIONAL)
+     * @brief Get sfOwner (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * @brief Get sfSignerQuorum (soeREQUIRED)
+     * @brief Get sfSignerQuorum (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -92,7 +92,7 @@ public:
     }
 
     /**
-     * @brief Get sfSignerEntries (soeREQUIRED)
+     * @brief Get sfSignerEntries (SoeRequired)
      * @note This is an untyped field (unknown).
      * @return The field value.
      */
@@ -104,7 +104,7 @@ public:
     }
 
     /**
-     * @brief Get sfSignerListID (soeREQUIRED)
+     * @brief Get sfSignerListID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -115,7 +115,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -141,7 +141,7 @@ public:
  * @brief Builder for SignerList ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class SignerListBuilder : public LedgerEntryBuilderBase<SignerListBuilder>
@@ -184,7 +184,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfOwner (soeOPTIONAL)
+     * @brief Set sfOwner (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -195,7 +195,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -206,7 +206,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignerQuorum (soeREQUIRED)
+     * @brief Set sfSignerQuorum (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -217,7 +217,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignerEntries (soeREQUIRED)
+     * @brief Set sfSignerEntries (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -228,7 +228,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignerListID (soeREQUIRED)
+     * @brief Set sfSignerListID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -239,7 +239,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&
@@ -250,7 +250,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SignerListBuilder&

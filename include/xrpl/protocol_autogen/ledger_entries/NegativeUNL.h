@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfDisabledValidators (soeOPTIONAL)
+     * @brief Get sfDisabledValidators (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -71,7 +71,7 @@ public:
     }
 
     /**
-     * @brief Get sfValidatorToDisable (soeOPTIONAL)
+     * @brief Get sfValidatorToDisable (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -95,7 +95,7 @@ public:
     }
 
     /**
-     * @brief Get sfValidatorToReEnable (soeOPTIONAL)
+     * @brief Get sfValidatorToReEnable (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -119,7 +119,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeOPTIONAL)
+     * @brief Get sfPreviousTxnID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -143,7 +143,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Get sfPreviousTxnLgrSeq (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -171,7 +171,7 @@ public:
  * @brief Builder for NegativeUNL ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class NegativeUNLBuilder : public LedgerEntryBuilderBase<NegativeUNLBuilder>
@@ -202,7 +202,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfDisabledValidators (soeOPTIONAL)
+     * @brief Set sfDisabledValidators (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
@@ -213,7 +213,7 @@ public:
     }
 
     /**
-     * @brief Set sfValidatorToDisable (soeOPTIONAL)
+     * @brief Set sfValidatorToDisable (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
@@ -224,7 +224,7 @@ public:
     }
 
     /**
-     * @brief Set sfValidatorToReEnable (soeOPTIONAL)
+     * @brief Set sfValidatorToReEnable (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
@@ -235,7 +235,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeOPTIONAL)
+     * @brief Set sfPreviousTxnID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&
@@ -246,7 +246,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeOPTIONAL)
+     * @brief Set sfPreviousTxnLgrSeq (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NegativeUNLBuilder&

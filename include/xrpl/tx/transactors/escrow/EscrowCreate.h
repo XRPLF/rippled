@@ -7,7 +7,7 @@ namespace xrpl {
 class EscrowCreate : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
     explicit EscrowCreate(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -15,6 +15,9 @@ public:
 
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
+
+    static bool
+    checkExtraFeatures(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);
@@ -24,6 +27,20 @@ public:
 
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 };
 
 }  // namespace xrpl

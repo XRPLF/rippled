@@ -93,7 +93,7 @@ isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 // Overload with depth parameter for uniformity with MPTIssue version.
 // The depth parameter is ignored for IOUs since they don't have vault recursion.
 [[nodiscard]] inline bool
-isFrozen(ReadView const& view, AccountID const& account, Issue const& issue, int /*depth*/)
+isFrozen(ReadView const& view, AccountID const& account, Issue const& issue, std::uint8_t /*depth*/)
 {
     return isFrozen(view, account, issue);
 }
@@ -110,7 +110,7 @@ isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
     Issue const& issue,
-    int = 0 /*ignored*/)
+    std::uint8_t = 0 /*ignored*/)
 {
     return isDeepFrozen(view, account, issue.currency, issue.account);
 }
@@ -250,6 +250,16 @@ deleteAMMTrustLine(
     ApplyView& view,
     std::shared_ptr<SLE> sleState,
     std::optional<AccountID> const& ammAccountID,
+    beast::Journal j);
+
+/** Delete AMMs MPToken. The passed `sle` must be obtained from a prior
+ * call to view.peek().
+ */
+[[nodiscard]] TER
+deleteAMMMPToken(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleMPT,
+    AccountID const& ammAccountID,
     beast::Journal j);
 
 }  // namespace xrpl

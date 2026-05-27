@@ -1,17 +1,23 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/basics/rocksdb.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Types.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <string>
 
-namespace xrpl {
-
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 // Tests the Backend interface
 //
@@ -26,7 +32,7 @@ public:
         testcase("Backend type=" + type);
 
         Section params;
-        beast::temp_dir const tempDir;
+        beast::TempDir const tempDir;
         params.set("type", type);
         params.set("path", tempDir.path());
 
@@ -35,13 +41,13 @@ public:
         // Create a batch
         auto batch = createPredictableBatch(numObjsToTest, rng());
 
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("Backend_test", *this);
 
         {
             // Open the backend
             std::unique_ptr<Backend> backend =
-                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             backend->open();
 
             // Write the batch
@@ -66,15 +72,15 @@ public:
         {
             // Re-open the backend
             std::unique_ptr<Backend> backend =
-                Manager::instance().make_Backend(params, megabytes(4), scheduler, journal);
+                Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             backend->open();
 
             // Read it back in
             Batch copy;
             fetchCopyOfBatch(*backend, &copy, batch);
             // Canonicalize the source and destination batches
-            std::sort(batch.begin(), batch.end(), LessThan{});
-            std::sort(copy.begin(), copy.end(), LessThan{});
+            std::ranges::sort(batch, LessThan{});
+            std::ranges::sort(copy, LessThan{});
             BEAST_EXPECT(areBatchesEqual(batch, copy));
         }
     }
@@ -100,5 +106,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Backend, nodestore, xrpl);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore
