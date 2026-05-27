@@ -12,9 +12,11 @@
 #include <test/jtx/ter.h>
 
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/CTID.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -706,6 +708,91 @@ class LedgerRPC_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testLedgerExpandedTransactionsCTID()
+    {
+        testcase("Expanded Transactions CTID");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
+
+        // API v2 non-binary: CTID present
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::transactions] = true;
+            jvParams[jss::expand] = true;
+            jvParams[jss::api_version] = 2;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            auto const& txns = jrr[jss::ledger][jss::transactions];
+            BEAST_EXPECT(txns.isArray() && txns.size() > 0);
+            for (unsigned i = 0; i < txns.size(); ++i)
+            {
+                BEAST_EXPECT(txns[i].isMember(jss::ctid));
+                auto const expectedCtid =
+                    RPC::encodeCTID(jrr[jss::ledger][jss::ledger_index].asUInt(), i, netID);
+                BEAST_EXPECT(expectedCtid.has_value());
+                BEAST_EXPECT(txns[i][jss::ctid] == *expectedCtid);
+            }
+        }
+
+        // API v1 non-binary: CTID present
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::transactions] = true;
+            jvParams[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            auto const& txns = jrr[jss::ledger][jss::transactions];
+            BEAST_EXPECT(txns.isArray() && txns.size() > 0);
+            for (unsigned i = 0; i < txns.size(); ++i)
+            {
+                BEAST_EXPECT(txns[i].isMember(jss::ctid));
+            }
+        }
+
+        // Binary expanded: CTID present
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::transactions] = true;
+            jvParams[jss::expand] = true;
+            jvParams[jss::binary] = true;
+            jvParams[jss::api_version] = 2;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            auto const& txns = jrr[jss::ledger][jss::transactions];
+            BEAST_EXPECT(txns.isArray() && txns.size() > 0);
+            for (unsigned i = 0; i < txns.size(); ++i)
+            {
+                BEAST_EXPECT(txns[i].isMember(jss::ctid));
+            }
+        }
+
+        // Non-expanded: transactions are plain hash strings, no CTID
+        {
+            json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::transactions] = true;
+            jvParams[jss::api_version] = 2;
+            auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::status] == "success");
+            auto const& txns = jrr[jss::ledger][jss::transactions];
+            BEAST_EXPECT(txns.isArray() && txns.size() > 0);
+            for (unsigned i = 0; i < txns.size(); ++i)
+            {
+                BEAST_EXPECT(txns[i].isString());
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -720,6 +807,7 @@ public:
         testNoQueue();
         testQueue();
         testLedgerAccountsOption();
+        testLedgerExpandedTransactionsCTID();
     }
 };
 
