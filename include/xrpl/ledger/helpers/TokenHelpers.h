@@ -214,6 +214,13 @@ accountFunds(
 
 /** Returns the transfer fee as Rate based on the type of token
  * @param view The ledger view
+ * @param asset The asset being transferred
+ */
+[[nodiscard]] Rate
+transferRate(ReadView const& view, Asset const& asset);
+
+/** Returns the transfer fee as Rate based on the type of token
+ * @param view The ledger view
  * @param amount The amount to transfer
  */
 [[nodiscard]] Rate

@@ -76,6 +76,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -4310,8 +4311,7 @@ NetworkOPsImp::getBookPage(
 
     ReadView const& view = *lpLedger;
 
-    bool const bGlobalFreeze =
-        isGlobalFrozen(view, book.out.getIssuer()) || isGlobalFrozen(view, book.in.getIssuer());
+    bool const bGlobalFreeze = isGlobalFrozen(view, book.out) || isGlobalFrozen(view, book.in);
 
     bool bDone = false;
     bool bDirectAdvance = true;
@@ -4321,7 +4321,7 @@ NetworkOPsImp::getBookPage(
     unsigned int uBookEntry = 0;
     STAmount saDirRate;
 
-    auto const rate = transferRate(view, book.out.getIssuer());
+    auto const rate = transferRate(view, book.out);
     auto viewJ = registry_.get().getJournal("View");
 
     while (!bDone && iLimit-- > 0)
@@ -4370,12 +4370,37 @@ NetworkOPsImp::getBookPage(
                 auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
+                auto foundBalance = [&]() {
+                    auto umBalanceEntry = umBalance.find(uOfferOwnerID);
+                    if (umBalanceEntry == umBalance.end())
+                        return false;
+
+                    // Found in running balance table.
+                    saOwnerFunds = umBalanceEntry->second;
+                    firstOwnerOffer = false;
+                    return true;
+                };
 
                 if (book.out.getIssuer() == uOfferOwnerID)
                 {
-                    // If an offer is selling issuer's own IOUs, it is fully
-                    // funded.
-                    saOwnerFunds = saTakerGets;
+                    book.out.visit(
+                        [&](Issue const&) {
+                            // If an offer is selling issuer's own IOUs, it is
+                            // fully funded.
+                            saOwnerFunds = saTakerGets;
+                        },
+                        [&](MPTIssue const& issue) {
+                            // MPT issuers have bounded self-issuance. Use the
+                            // running balance table so multiple issuer-owned
+                            // offers share the same remaining issuance
+                            // headroom.
+                            if (!foundBalance())
+                            {
+                                // Did not find balance in table.
+
+                                saOwnerFunds = issuerFundsToSelfIssue(view, issue);
+                            }
+                        });
                 }
                 else if (bGlobalFreeze)
                 {
@@ -4385,15 +4410,7 @@ NetworkOPsImp::getBookPage(
                 }
                 else
                 {
-                    auto umBalanceEntry = umBalance.find(uOfferOwnerID);
-                    if (umBalanceEntry != umBalance.end())
-                    {
-                        // Found in running balance table.
-
-                        saOwnerFunds = umBalanceEntry->second;
-                        firstOwnerOffer = false;
-                    }
-                    else
+                    if (!foundBalance())
                     {
                         // Did not find balance in table.
 
@@ -4486,6 +4503,8 @@ NetworkOPsImp::getBookPage(
 
 // This is the new code that uses the book iterators
 // It has temporarily been disabled
+// If this path is re-enabled, add MPT support mirroring the functional
+// getBookPage() implementation above.
 
 void
 NetworkOPsImp::getBookPage(

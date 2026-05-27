@@ -4889,6 +4889,220 @@ public:
     }
 
     void
+    testBookOffersMPTFunding(FeatureBitset features)
+    {
+        testcase("book_offers uses MPT issuer capacity, transfer fees, and locks");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const maker{"maker"};
+        Account const buyer{"buyer"};
+
+        // Issuer-owned MPT offers are funded only by remaining issuance
+        // capacity. Once ordinary issuance consumes the cap, book_offers must
+        // report the stale issuer offer as zero-funded.
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10'000), issuer, maker, buyer);
+            env.close();
+
+            MPTTester musd(
+                {.env = env, .issuer = issuer, .holders = {maker, buyer}, .maxAmt = 100});
+            MPT const usd = musd;
+
+            auto const issuerOfferSeq = env.seq(issuer);
+            env(offer(issuer, XRP(100), usd(100)));
+
+            musd.pay(issuer, maker, 100);
+
+            auto const issuance = env.le(keylet::mptIssuance(usd.mpt()));
+            if (!BEAST_EXPECT(issuance))
+                return;
+            BEAST_EXPECT(issuance->getFieldU64(sfOutstandingAmount) == 100);
+            BEAST_EXPECT(issuance->getFieldU64(sfMaximumAmount) == 100);
+
+            env(offer(maker, XRP(200), usd(100)));
+
+            json::Value const jrr = getBookOffers(env, XRP, usd);
+            json::Value const& bookOffers = jrr[jss::offers];
+            BEAST_EXPECT(bookOffers.isArray());
+            if (!BEAST_EXPECT(bookOffers.size() >= 2))
+                return;
+
+            json::Value const& issuerOffer = bookOffers[0u];
+            BEAST_EXPECT(issuerOffer[sfAccount.jsonName] == issuer.human());
+            BEAST_EXPECT(issuerOffer[sfSequence.jsonName] == issuerOfferSeq);
+            BEAST_EXPECT(issuerOffer[jss::owner_funds] == "0");
+            BEAST_EXPECT(issuerOffer.isMember(jss::taker_gets_funded));
+            BEAST_EXPECT(issuerOffer[jss::taker_gets_funded][jss::value] == "0");
+            BEAST_EXPECT(issuerOffer.isMember(jss::taker_pays_funded));
+            BEAST_EXPECT(issuerOffer[jss::taker_pays_funded] == "0");
+        }
+
+        // Multiple issuer-owned MPT offers share the same bounded self-issue
+        // capacity. The second offer exercises the cached running balance path
+        // after the first offer has consumed part of the issuer's capacity.
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10'000), issuer, buyer);
+            env.close();
+
+            MPTTester const musd({.env = env, .issuer = issuer, .holders = {buyer}, .maxAmt = 150});
+            MPT const usd = musd;
+
+            auto const firstIssuerOfferSeq = env.seq(issuer);
+            env(offer(issuer, XRP(100), usd(100)));
+            auto const secondIssuerOfferSeq = env.seq(issuer);
+            env(offer(issuer, XRP(100), usd(100)));
+
+            json::Value const jrr = getBookOffers(env, XRP, usd);
+            json::Value const& bookOffers = jrr[jss::offers];
+            BEAST_EXPECT(bookOffers.isArray());
+            if (!BEAST_EXPECT(bookOffers.size() >= 2))
+                return;
+
+            json::Value const& firstOffer = bookOffers[0u];
+            BEAST_EXPECT(firstOffer[sfAccount.jsonName] == issuer.human());
+            BEAST_EXPECT(firstOffer[sfSequence.jsonName] == firstIssuerOfferSeq);
+            BEAST_EXPECT(firstOffer[jss::owner_funds] == "150");
+            BEAST_EXPECT(!firstOffer.isMember(jss::taker_gets_funded));
+            BEAST_EXPECT(!firstOffer.isMember(jss::taker_pays_funded));
+
+            json::Value const& secondOffer = bookOffers[1u];
+            BEAST_EXPECT(secondOffer[sfAccount.jsonName] == issuer.human());
+            BEAST_EXPECT(secondOffer[sfSequence.jsonName] == secondIssuerOfferSeq);
+            BEAST_EXPECT(!secondOffer.isMember(jss::owner_funds));
+            BEAST_EXPECT(secondOffer.isMember(jss::taker_gets_funded));
+            BEAST_EXPECT(secondOffer[jss::taker_gets_funded][jss::value] == "50");
+            BEAST_EXPECT(secondOffer.isMember(jss::taker_pays_funded));
+            BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "50000000");
+        }
+
+        auto checkTransferFeeBookOffers = [&](std::uint16_t transferFee, auto&& checkOffers) {
+            Env env{*this, features};
+
+            env.fund(XRP(10'000), issuer, maker, buyer);
+            env.close();
+
+            MPTTester const musd(
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {maker, buyer},
+                 .transferFee = transferFee,
+                 .pay = 3'000});
+            MPT const usd = musd;
+            if (transferFee != 0)
+                BEAST_EXPECT(musd.checkTransferFee(transferFee));
+
+            auto const firstOfferSeq = env.seq(maker);
+            env(offer(maker, XRP(1'500), usd(1'500)));
+            auto const secondOfferSeq = env.seq(maker);
+            env(offer(maker, XRP(1'500), usd(1'500)));
+
+            json::Value const jrr = getBookOffers(env, XRP, usd);
+            json::Value const& bookOffers = jrr[jss::offers];
+            BEAST_EXPECT(bookOffers.isArray());
+            if (!BEAST_EXPECT(bookOffers.size() == 2))
+                return;
+
+            checkOffers(bookOffers, firstOfferSeq, secondOfferSeq);
+        };
+
+        // With no MPT transfer fee, two identical maker offers backed by 3000
+        // owner funds are both fully funded for 1500 MPT.
+        checkTransferFeeBookOffers(
+            0,
+            [&](json::Value const& bookOffers,
+                std::uint32_t firstOfferSeq,
+                std::uint32_t secondOfferSeq) {
+                for (auto const i : {0u, 1u})
+                {
+                    json::Value const& offer = bookOffers[i];
+                    BEAST_EXPECT(offer[sfAccount.jsonName] == maker.human());
+                    BEAST_EXPECT(
+                        offer[sfSequence.jsonName] == (i == 0u ? firstOfferSeq : secondOfferSeq));
+                    BEAST_EXPECT(!offer.isMember(jss::taker_gets_funded));
+                    BEAST_EXPECT(!offer.isMember(jss::taker_pays_funded));
+                }
+                BEAST_EXPECT(bookOffers[0u][jss::owner_funds] == "3000");
+            });
+
+        // With a 50% MPT transfer fee, the first identical maker offer consumes
+        // 2250 owner funds, so the second offer can deliver only 500 MPT.
+        checkTransferFeeBookOffers(
+            50'000,
+            [&](json::Value const& bookOffers,
+                std::uint32_t firstOfferSeq,
+                std::uint32_t secondOfferSeq) {
+                json::Value const& firstOffer = bookOffers[0u];
+                BEAST_EXPECT(firstOffer[sfAccount.jsonName] == maker.human());
+                BEAST_EXPECT(firstOffer[sfSequence.jsonName] == firstOfferSeq);
+                BEAST_EXPECT(firstOffer[jss::owner_funds] == "3000");
+                BEAST_EXPECT(!firstOffer.isMember(jss::taker_gets_funded));
+                BEAST_EXPECT(!firstOffer.isMember(jss::taker_pays_funded));
+
+                json::Value const& secondOffer = bookOffers[1u];
+                BEAST_EXPECT(secondOffer[sfAccount.jsonName] == maker.human());
+                BEAST_EXPECT(secondOffer[sfSequence.jsonName] == secondOfferSeq);
+                // A 50% MPT transfer fee leaves only 750 owner funds after
+                // the first offer. That can fund 500 MPT delivered to the
+                // taker on the same second offer that was fully funded without
+                // the transfer fee.
+                BEAST_EXPECT(secondOffer.isMember(jss::taker_gets_funded));
+                BEAST_EXPECT(secondOffer[jss::taker_gets_funded][jss::value] == "500");
+                BEAST_EXPECT(secondOffer.isMember(jss::taker_pays_funded));
+                BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "500000000");
+            });
+
+        // An MPT global lock removes the locked MPT book liquidity from the
+        // public snapshot instead of reporting it as funded.
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10'000), issuer, maker, buyer);
+            env.close();
+
+            MPTTester musd(
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {maker, buyer},
+                 .pay = 100,
+                 .flags = kMptDexFlags | tfMPTCanLock});
+            MPT const usd = musd;
+
+            auto const offerSeq = env.seq(maker);
+            env(offer(maker, XRP(100), usd(100)));
+
+            {
+                json::Value const jrr = getBookOffers(env, XRP, usd);
+                json::Value const& bookOffers = jrr[jss::offers];
+                BEAST_EXPECT(bookOffers.isArray());
+                if (!BEAST_EXPECT(bookOffers.size() == 1))
+                    return;
+
+                json::Value const& offer = bookOffers[0u];
+                BEAST_EXPECT(offer[sfAccount.jsonName] == maker.human());
+                BEAST_EXPECT(offer[sfSequence.jsonName] == offerSeq);
+                BEAST_EXPECT(offer[jss::owner_funds] == "100");
+                BEAST_EXPECT(!offer.isMember(jss::taker_gets_funded));
+                BEAST_EXPECT(!offer.isMember(jss::taker_pays_funded));
+            }
+
+            musd.set({.flags = tfMPTLock});
+
+            {
+                json::Value const jrr = getBookOffers(env, XRP, usd);
+                json::Value const& bookOffers = jrr[jss::offers];
+                BEAST_EXPECT(bookOffers.isArray());
+                BEAST_EXPECT(bookOffers.size() == 0);
+            }
+        }
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         testCanceledOffer(features);
@@ -4944,6 +5158,7 @@ public:
         testRmSmallIncreasedQOffersMPT(features);
         testFillOrKill(features);
         testTickSize(features);
+        testBookOffersMPTFunding(features);
         testAutoCreateReserve(features);
     }
 
