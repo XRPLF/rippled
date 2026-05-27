@@ -93,6 +93,7 @@ words:
   - daria
   - dcmake
   - dearmor
+  - dedented
   - deleteme
   - demultiplexer
   - deserializaton
@@ -256,6 +257,7 @@ words:
   - sfields
   - shamap
   - shamapitem
+  - shfmt
   - shlibs
   - sidechain
   - SIGGOOD
