@@ -534,8 +534,7 @@ public:
     template <
         auto MinMantissa,
         auto MaxMantissa,
-        Integral64 T = std::decay_t<decltype(MinMantissa)>,
-        Integral64 TMax = std::decay_t<decltype(MaxMantissa)>>
+        Integral64 T = std::decay_t<decltype(MinMantissa)>>
     [[nodiscard]]
     std::pair<T, int>
     normalizeToRange() const;
@@ -783,16 +782,18 @@ Number::isnormal() const noexcept
          kMinExponent <= exponent_ && exponent_ <= kMaxExponent);
 }
 
-template <auto MinMantissa, auto MaxMantissa, Integral64 T, Integral64 TMax>
+template <auto MinMantissa, auto MaxMantissa, Integral64 T>
 std::pair<T, int>
 Number::normalizeToRange() const
 {
     static_assert(std::is_same_v<T, std::uint64_t> || std::is_same_v<T, std::int64_t>);
-    static_assert(std::is_same_v<T, TMax>);
+    static_assert(std::is_same_v<T, std::decay_t<decltype(MinMantissa)>>);
+    static_assert(std::is_same_v<T, std::decay_t<decltype(MaxMantissa)>>);
     auto constexpr kMIN = static_cast<T>(MinMantissa);
     auto constexpr kMAX = static_cast<T>(MaxMantissa);
     static_assert(kMIN > 0);
     static_assert(kMIN % 10 == 0);
+    static_assert(isPowerOfTen(kMIN));
     static_assert(kMAX % 10 == 9);
     static_assert((kMAX + 1) / 10 == kMIN);
 
