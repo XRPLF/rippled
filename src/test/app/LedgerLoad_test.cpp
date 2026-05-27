@@ -40,9 +40,9 @@ class LedgerLoad_test : public beast::unit_test::Suite
         StartUpType type,
         std::optional<uint256> trapTxHash)
     {
-        cfg->START_LEDGER = ledger;
-        cfg->START_UP = type;
-        cfg->TRAP_TX_HASH = trapTxHash;
+        cfg->startLedger = ledger;
+        cfg->startUp = type;
+        cfg->trapTxHash = trapTxHash;
         assert(!dbPath.empty());
         cfg->legacy("database_path", dbPath);
         return cfg;

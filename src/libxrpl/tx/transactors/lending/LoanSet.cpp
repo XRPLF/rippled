@@ -388,7 +388,7 @@ LoanSet::doApply()
     Asset const vaultAsset = vaultSle->at(sfAsset);
 
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
-    auto const borrower = counterparty == brokerOwner ? account_ : counterparty;
+    auto const borrower = counterparty == brokerOwner ? accountID_ : counterparty;
     auto const borrowerSle = view.peek(keylet::account(borrower));
     if (!borrowerSle)
     {
@@ -493,11 +493,19 @@ LoanSet::doApply()
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
-        // Round the minimum required cover up to be conservative. This ensures
-        // CoverAvailable never drops below the theoretical minimum, protecting
-        // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-        if (brokerSle->at(sfCoverAvailable) < tenthBipsOfValue(newDebtTotal, coverRateMinimum))
+        auto const minCover = [&]() {
+            if (ctx_.view().rules().enabled(fixCleanup3_2_0))
+            {
+                return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
+            }
+
+            // Round the minimum required cover up to be conservative. This ensures
+            // CoverAvailable never drops below the theoretical minimum, protecting
+            // the broker's solvency.
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            return tenthBipsOfValue(newDebtTotal, coverRateMinimum);
+        }();
+        if (brokerSle->at(sfCoverAvailable) < minCover)
         {
             JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";
             return tecINSUFFICIENT_FUNDS;
@@ -508,7 +516,7 @@ LoanSet::doApply()
     {
         auto const ownerCount = borrowerSle->at(sfOwnerCount);
         auto const balance =
-            account_ == borrower ? preFeeBalance_ : borrowerSle->at(sfBalance).value().xrp();
+            accountID_ == borrower ? preFeeBalance_ : borrowerSle->at(sfBalance).value().xrp();
         if (balance < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
     }
@@ -520,7 +528,7 @@ LoanSet::doApply()
     // Create a holding for the borrower if one does not already exist.
 
     XRPL_ASSERT_PARTS(
-        borrower == account_ || borrower == counterparty,
+        borrower == accountID_ || borrower == counterparty,
         "xrpl::LoanSet::doApply",
         "borrower signed transaction");
     if (auto const ter = addEmptyHolding(
@@ -542,7 +550,7 @@ LoanSet::doApply()
         // Create the holding if it doesn't already exist (necessary for MPTs).
         // The owner may have deleted their MPT / line at some point.
         XRPL_ASSERT_PARTS(
-            brokerOwner == account_ || brokerOwner == counterparty,
+            brokerOwner == accountID_ || brokerOwner == counterparty,
             "xrpl::LoanSet::doApply",
             "broker owner signed transaction");
 

@@ -201,7 +201,7 @@ setPriceDataInnerObjTemplate(STObject& obj)
 TER
 OracleSet::doApply()
 {
-    auto const oracleID = keylet::oracle(account_, ctx_.tx[sfOracleDocumentID]);
+    auto const oracleID = keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]);
 
     auto populatePriceData = [](STObject& priceData, STObject const& entry) {
         setPriceDataInnerObjTemplate(priceData);
@@ -311,7 +311,7 @@ OracleSet::doApply()
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
 
         auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_), sle->key(), describeOwnerDir(account_));
+            keylet::ownerDir(accountID_), sle->key(), describeOwnerDir(accountID_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 

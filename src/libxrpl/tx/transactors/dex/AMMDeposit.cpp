@@ -21,7 +21,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -267,12 +266,12 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                 return ter;
             }
 
-            if (isFrozen(ctx.view, accountID, asset))
+            if (auto const ter = checkFrozen(ctx.view, accountID, asset); !isTesSuccess(ter))
             {
-                JLOG(ctx.j.debug()) << "AMM Deposit: account or currency is frozen, "
+                JLOG(ctx.j.debug()) << "AMM Deposit: account or currency is frozen or locked, "
                                     << to_string(accountID) << " " << to_string(asset);
 
-                return tecFROZEN;
+                return ter;
             }
 
             return tesSUCCESS;
@@ -304,18 +303,20 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                 // LCOV_EXCL_STOP
             }
             // AMM account or currency frozen
-            if (isFrozen(ctx.view, ammAccountID, amount->asset()))
+            if (auto const ter = checkFrozen(ctx.view, ammAccountID, amount->asset());
+                !isTesSuccess(ter))
             {
-                JLOG(ctx.j.debug())
-                    << "AMM Deposit: AMM account or currency is frozen, " << to_string(accountID);
-                return tecFROZEN;
+                JLOG(ctx.j.debug()) << "AMM Deposit: AMM account or currency is frozen or locked, "
+                                    << to_string(accountID);
+                return ter;
             }
             // Account frozen
-            if (isIndividualFrozen(ctx.view, accountID, amount->asset()))
+            if (auto const ter = checkIndividualFrozen(ctx.view, accountID, amount->asset());
+                !isTesSuccess(ter))
             {
-                JLOG(ctx.j.debug()) << "AMM Deposit: account is frozen, " << to_string(accountID)
-                                    << " " << to_string(amount->asset());
-                return tecFROZEN;
+                JLOG(ctx.j.debug()) << "AMM Deposit: account is frozen or locked, "
+                                    << to_string(accountID) << " " << to_string(amount->asset());
+                return ter;
             }
             if (checkBalance)
             {
@@ -368,10 +369,10 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const ter = checkMPTTxAllowed(ctx.view, ttAMM_DEPOSIT, ctx.tx[sfAsset], accountID);
+    if (auto const ter = canMPTTradeAndTransfer(ctx.view, ctx.tx[sfAsset], accountID, accountID);
         !isTesSuccess(ter))
         return ter;
-    if (auto const ter = checkMPTTxAllowed(ctx.view, ttAMM_DEPOSIT, ctx.tx[sfAsset2], accountID);
+    if (auto const ter = canMPTTradeAndTransfer(ctx.view, ctx.tx[sfAsset2], accountID, accountID);
         !isTesSuccess(ter))
         return ter;
 
@@ -403,7 +404,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
     auto const tfee = (lptAMMBalance == beast::kZero)
         ? ctx_.tx[~sfTradingFee].value_or(0)
-        : getTradingFee(ctx_.view(), *ammSle, account_);
+        : getTradingFee(ctx_.view(), *ammSle, accountID_);
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 
@@ -474,7 +475,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         // LP depositing into AMM empty state gets the auction slot
         // and the voting
         if (lptAMMBalance == beast::kZero)
-            initializeFeeAuctionVote(sb, ammSle, account_, lptAMMBalance.asset(), tfee);
+            initializeFeeAuctionVote(sb, ammSle, accountID_, lptAMMBalance.asset(), tfee);
 
         sb.update(ammSle);
     }
@@ -519,14 +520,14 @@ AMMDeposit::deposit(
         {
             auto const& lpIssue = lpTokensDeposit.get<Issue>();
             // Adjust the reserve if LP doesn't have LPToken trustline
-            auto const sle = view.read(keylet::line(account_, lpIssue.account, lpIssue.currency));
-            if (xrpLiquid(view, account_, !sle, j_) >= depositAmount)
+            auto const sle = view.read(keylet::line(accountID_, lpIssue.account, lpIssue.currency));
+            if (xrpLiquid(view, accountID_, !sle, j_) >= depositAmount)
                 return tesSUCCESS;
         }
         else if (
             accountFunds(
                 view,
-                account_,
+                accountID_,
                 depositAmount,
                 FreezeHandling::IgnoreFreeze,
                 AuthHandling::IgnoreAuth,
@@ -574,7 +575,7 @@ AMMDeposit::deposit(
     }
 
     auto res = accountSend(
-        view, account_, ammAccount, amountDepositActual, ctx_.journal, WaiveTransferFee::Yes);
+        view, accountID_, ammAccount, amountDepositActual, ctx_.journal, WaiveTransferFee::Yes);
     if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit " << amountDepositActual;
@@ -593,7 +594,12 @@ AMMDeposit::deposit(
         }
 
         res = accountSend(
-            view, account_, ammAccount, *amount2DepositActual, ctx_.journal, WaiveTransferFee::Yes);
+            view,
+            accountID_,
+            ammAccount,
+            *amount2DepositActual,
+            ctx_.journal,
+            WaiveTransferFee::Yes);
         if (!isTesSuccess(res))
         {
             JLOG(ctx_.journal.debug())
@@ -603,7 +609,7 @@ AMMDeposit::deposit(
     }
 
     // Deposit LP tokens
-    res = accountSend(view, ammAccount, account_, lpTokensDepositActual, ctx_.journal);
+    res = accountSend(view, ammAccount, accountID_, lpTokensDepositActual, ctx_.journal);
     if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit LPTokens";
