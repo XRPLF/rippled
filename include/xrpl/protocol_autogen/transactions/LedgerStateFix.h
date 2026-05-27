@@ -83,6 +83,32 @@ public:
     {
         return this->tx_->isFieldPresent(sfOwner);
     }
+
+    /**
+     * @brief Get sfBookDirectory (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getBookDirectory() const
+    {
+        if (hasBookDirectory())
+        {
+            return this->tx_->at(sfBookDirectory);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBookDirectory is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBookDirectory() const
+    {
+        return this->tx_->isFieldPresent(sfBookDirectory);
+    }
 };
 
 /**
@@ -146,6 +172,17 @@ public:
     setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
     {
         object_[sfOwner] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBookDirectory (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    LedgerStateFixBuilder&
+    setBookDirectory(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfBookDirectory] = value;
         return *this;
     }
 
