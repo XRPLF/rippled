@@ -1384,8 +1384,8 @@ BookStep<TIn, TOut, TDerived>::rate(
     AccountID const& dstAccount) const
 {
     return asset.visit(
-        [&](Issue const&) { return AccountRoot(issuer, view).transferRate(); },
-        [&](MPTIssue const& issue) {
+        [&](Issue const& issue) { return AccountRoot(issue.account, view).transferRate(); },
+        [&](MPTIssue const& mptIssue) {
             // For MPT, parity applies only when this asset is the final strand
             // delivery AND the destination is the MPT issuer (holder → issuer,
             // which is fee-free). Using strandDst_ alone is wrong because it
