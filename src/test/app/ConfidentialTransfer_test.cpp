@@ -1,5 +1,4 @@
 #include <test/jtx/AMM.h>
-#include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
@@ -7606,4 +7605,5 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(ConfidentialTransfer, app, xrpl);
+
 }  // namespace xrpl

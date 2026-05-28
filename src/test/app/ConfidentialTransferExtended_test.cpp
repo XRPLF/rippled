@@ -2444,7 +2444,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             .ticketSeq = ticketSeq,
         });
     }
-    
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -2496,4 +2496,5 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(ConfidentialTransferExtended, app, xrpl);
+
 }  // namespace xrpl
