@@ -1626,10 +1626,11 @@ public:
     void
     testUpwardRoundsDown()
     {
+        auto const scale = Number::getMantissaScale();
         {
-            testcase << "upward rounding produces a value below exact at kMaxRep cusp";
+            testcase << "upward rounding produces a value below exact at kMaxRep cusp "
+                     << to_string(scale);
 
-            NumberMantissaScaleGuard const mg{MantissaRange::MantissaScale::Large};
             NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
 
             constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
@@ -1655,13 +1656,41 @@ public:
                 << "  exact a*b      = " << fmt(exactProduct) << "\n"
                 << "  stored         = " << fmt(storedValue) << "\n"
                 << "  stored - exact = " << fmt(signedDifference) << "\n"
-                << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n";
-
-            BEAST_EXPECT(signedDifference >= 0);
-            BEAST_EXPECT(signedDifference < pow10<BigInt>(product.exponent()));
-            BEAST_EXPECT(product.mantissa() == (std::numeric_limits<std::int64_t>::max() / 10) + 1);
-            BEAST_EXPECT(product.exponent() == 19);
+                << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n"
+                << " stored.mantissa = " << product.mantissa() << "\n"
+                << " stored.exponent = " << product.exponent() << "\n";
             log.flush();
+
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(signedDifference >= 0);
+                    BEAST_EXPECT(signedDifference < pow10<BigInt>(product.exponent()));
+                    BEAST_EXPECT(
+                        product.mantissa() == (std::numeric_limits<std::int64_t>::max() / 10) + 1);
+                    BEAST_EXPECT(product.exponent() == 19);
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(signedDifference < 0);
+                    BEAST_EXPECT(
+                        product.mantissa() ==
+                        (std::numeric_limits<std::int64_t>::max() / 100) * 100);
+                    BEAST_EXPECT(product.exponent() == 18);
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // The seemingly weird rounding here is because
+                    // a & b are both normalized, and both round up when
+                    // being converted to Number, so you're really
+                    // getting 1_000_000_000_000_050 * 9_223_372_036_854_316
+                    BEAST_EXPECT(signedDifference >= 0);
+                    BEAST_EXPECT(
+                        product.mantissa() ==
+                        (std::numeric_limits<std::int64_t>::max() / 1000) + 3);
+                    BEAST_EXPECT(product.exponent() == 21);
+                    break;
+            }
         }
 
         {
@@ -1687,9 +1716,8 @@ public:
              *   4. Under Upward + positive, `round()` returns -1 (no round-up), and
              *      the algorithm returns the truncated zm
              */
-            testcase << "operator/= Upward on Large returns value < truth ";
+            testcase << "operator/= Upward on Large returns value < truth " << to_string(scale);
 
-            NumberMantissaScaleGuard const scaleGuard{MantissaRange::MantissaScale::Large};
             NumberRoundModeGuard const roundGuard{Number::RoundingMode::Upward};
 
             constexpr std::int64_t aValue = 2LL;
@@ -1713,10 +1741,27 @@ public:
                 << "    (negative => Upward gave value BELOW truth)\n"
                 << "  quotient.mantissa = " << quotient.mantissa() << "\n"
                 << "  quotient.exponent = " << quotient.exponent() << "\n";
+            log.flush();
 
             // Upward invariant: stored >= exact. Bug: stored < exact.
-            BEAST_EXPECT(stored >= exact);
-            BEAST_EXPECT(diff < pow10(quotient.exponent()));
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(stored >= exact);
+                    BEAST_EXPECT(diff < pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(stored < exact);
+                    BEAST_EXPECT(diff >= -pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // Small mantissa doesn't have the correction for
+                    // dropped remainders
+                    BEAST_EXPECT(stored < exact);
+                    break;
+            }
         }
     }
 
@@ -1747,9 +1792,9 @@ public:
             testTruncate();
             testRounding();
             testInt64();
+
+            testUpwardRoundsDown();
         }
-        // This test sets its own number range
-        testUpwardRoundsDown();
     }
 };
 
