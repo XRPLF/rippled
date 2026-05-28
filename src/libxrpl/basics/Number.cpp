@@ -622,8 +622,12 @@ Number::normalize<uint128_t>(
     internalrep const& maxMantissa,
     MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
 {
+    // Not used by every compiler version, and thus not necessarily
+    // counted by coverage build
+    // LCOV_EXCL_START
     doNormalize(
         negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled, false);
+    // LCOV_EXCL_STOP
 }
 
 template <>
@@ -636,8 +640,12 @@ Number::normalize<unsigned long long>(
     internalrep const& maxMantissa,
     MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
 {
+    // Not used by every compiler version, and thus not necessarily
+    // counted by coverage build
+    // LCOV_EXCL_START
     doNormalize(
         negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled, false);
+    // LCOV_EXCL_STOP
 }
 
 template <>
@@ -852,7 +860,9 @@ Number::operator/=(Number const& y)
         return *this;
     // n* = numerator
     // d* = denominator
-    // *p = negative (positive?)
+    // z* = result (quotient)
+    // *p = negative (p for positive, even though the value means not
+    //      positive?)
     // *s = sign
     // *m = mantissa
     // *e = exponent
@@ -876,7 +886,10 @@ Number::operator/=(Number const& y)
 
     // Division operates on two large integers (16-digit for small
     // mantissas, 19-digit for large) using integer math. If the values
-    // were just divided directly, the result would be at most 9.
+    // were just divided directly, the result would be only ever be one
+    // digit or zero - not very useful.
+    // e.g. 9'876'543'210'987'654 / 1'234'567'890'123'456 = 8
+    //      1'234'567'890'123'456 / 9'876'543'210'987'654 = 0
     // Introduce a power-of-ten multiplication factor for the numerator
     // which will ensure the result has a meaningful number of digits.
     //
@@ -885,11 +898,11 @@ Number::operator/=(Number const& y)
     // * 23 / 67 = 0
     // * Use a factor of 10^4
     // * 230'000 / 67 = 3432 with an exponent of -4
-    // * The normalized result will be 34, exponent -2
+    // * The normalized result will be 34, exponent -2, or 0.34
     //
     // The most extreme results are 10/99 and 99/10
-    // * 100'000 / 99 =  1'010e-4 = 10e-2
-    // * 990'000 / 10 = 99'000e-4 = 99e-1
+    // * 100'000 / 99 =  1'010e-4 = 10e-2 or 0.10
+    // * 990'000 / 10 = 99'000e-4 = 99e-1 or 9.9
     //
     // Note that the computations give 2 or 3 digits after the
     // decimal point to determine which way to round for most scenarios.
@@ -899,8 +912,7 @@ Number::operator/=(Number const& y)
     // behavior, which must not be changed.)
     //
     // For large mantissas (where the MantissaRange.log == 18), a shift by 10^20 would be optimal
-    // for most scenarios. However, larger mantissa values would overflow 2^128 (log(2^128,10)
-    // ~ 38.5).
+    // for most scenarios. However, larger mantissa values would overflow 2^128.
     //
     // * log(2^128,10) ~ 38.5
     // * largeRange.log = 18, fits in 10^19
@@ -927,6 +939,8 @@ Number::operator/=(Number const& y)
     // remainder is exactly 0.5 for "ToNearest". This will give the
     // rounding the most accurate result possible, as if infinite
     // precision was used in the initial calculation.
+
+    // Stage 1: Do the initial division with a factor of 10^17.
     auto constexpr factorExponent = 17;
 
     uint128_t constexpr f = kPowerOfTen[factorExponent];
@@ -935,7 +949,7 @@ Number::operator/=(Number const& y)
 
     auto zm = numerator / dm;
     auto ze = ne - de - factorExponent;
-    bool zn = (ns * ds) < 0;
+    bool zp = (ns * ds) < 0;
     // dropped is used in the same way as Guard::xbit_. In the case of
     // division, it indicates if there's any remainder left over after
     // we have been as precise as reasonable. If there is, it would be as
@@ -947,7 +961,7 @@ Number::operator/=(Number const& y)
     {
         // Stage 2
         //
-        // If there is a remainder, treat is as a secondary numerator.
+        // If there is a remainder, treat it as a secondary numerator.
         // Multiply by correctionFactor separately from stage 1.
         // The math for this would work for small mantissas, but we need to
         // preserve legacy behavior.
@@ -980,6 +994,12 @@ Number::operator/=(Number const& y)
             auto const partialNumerator = remainder * correctionFactor;
             auto const correction = partialNumerator / dm;
 
+            // If the correction is zero, we do not have to make any
+            // modifications to z*, because it will not have any
+            // effect on the final result. (We'd be adding a bunch of
+            // zeros to the end of zm that would just be removed in
+            // normalize.) However, if that is the case, then Stage 3 is
+            // even more important for accuracy.
             if (correction != 0)
             {
                 zm *= correctionFactor;
@@ -1001,8 +1021,8 @@ Number::operator/=(Number const& y)
             }
         }
     }
-    doNormalize(zn, zm, ze, minMantissa, maxMantissa, cuspRoundingFixEnabled, dropped);
-    negative_ = zn;
+    doNormalize(zp, zm, ze, minMantissa, maxMantissa, cuspRoundingFixEnabled, dropped);
+    negative_ = zp;
     mantissa_ = static_cast<internalrep>(zm);
     exponent_ = ze;
     XRPL_ASSERT_PARTS(isnormal(), "xrpl::Number::operator/=", "result is normalized");

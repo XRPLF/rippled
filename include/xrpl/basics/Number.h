@@ -9,6 +9,7 @@
 #include <optional>
 #include <ostream>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -50,11 +51,11 @@ namespace detail {
  * compile time. Doing it at runtime would be pretty wasteful and
  * inefficient.
  */
-constexpr std::size_t int64digits = 20;
-consteval std::array<std::uint64_t, int64digits>
+constexpr std::size_t kInt64Digits = 20;
+consteval std::array<std::uint64_t, kInt64Digits>
 buildPowersOfTen()
 {
-    std::array<std::uint64_t, int64digits> result{};
+    std::array<std::uint64_t, kInt64Digits> result{};
 
     std::uint64_t power = 1;
     std::size_t exponent = 0;
@@ -74,13 +75,13 @@ buildPowersOfTen()
 
 }  // namespace detail
 
-constexpr std::array<std::uint64_t, detail::int64digits> kPowerOfTen = detail::buildPowersOfTen();
+constexpr std::array<std::uint64_t, detail::kInt64Digits> kPowerOfTen = detail::buildPowersOfTen();
 
 static_assert(kPowerOfTen[0] == 1);
 static_assert(kPowerOfTen[1] == 10);
 static_assert(kPowerOfTen[10] == 10'000'000'000);
 static_assert(
-    isPowerOfTen(kPowerOfTen.back()) && *logTen(kPowerOfTen.back()) == detail::int64digits - 1);
+    isPowerOfTen(kPowerOfTen.back()) && *logTen(kPowerOfTen.back()) == detail::kInt64Digits - 1);
 
 /** MantissaRange defines a range for the mantissa of a normalized Number.
  *
@@ -159,10 +160,12 @@ private:
             case MantissaScale::LargeLegacy:
             case MantissaScale::Large:
                 return 18;
+            // LCOV_EXCL_START
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
-                throw std::runtime_error("Unknown mantissa scale");  // LCOV_EXCL_LINE
+                throw std::runtime_error("Unknown mantissa scale");
+                // LCOV_EXCL_STOP
         }
     }
 
@@ -171,17 +174,9 @@ private:
     static constexpr rep
     getMin(MantissaScale scale, int exponent)
     {
-        switch (scale)
-        {
-            case MantissaScale::Small:
-            case MantissaScale::LargeLegacy:
-            case MantissaScale::Large:
-                return kPowerOfTen[exponent];
-            default:
-                // If called in a constexpr context, this throw assures that the build fails if an
-                // invalid scale is used.
-                throw std::runtime_error("Unknown mantissa scale");  // LCOV_EXCL_LINE
-        }
+        if (exponent < 0 || exponent >= kPowerOfTen.size())
+            throw std::runtime_error("Invalid exponent");  // LCOV_EXCL_LINE
+        return kPowerOfTen[exponent];
     }
 
     static constexpr CuspRoundingFix
