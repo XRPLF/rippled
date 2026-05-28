@@ -188,7 +188,9 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         // Status::operator bool() returns true when there IS an error
         // (code_ != OK), so the ternary correctly maps error->error, ok->success.
         span.setAttribute(
-            rpc_span::attr::rpcStatus, ret ? rpc_span::val::error : rpc_span::val::success);
+            rpc_span::attr::rpcStatus,
+            ret ? std::string_view(rpc_span::val::error)
+                : std::string_view(rpc_span::val::success));
         if (!ret)
             span.setOk();
         return ret;

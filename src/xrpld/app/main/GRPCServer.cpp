@@ -192,7 +192,8 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
 
             span.setAttribute(
                 grpc_span::attr::grpcRole,
-                role == Role::ADMIN ? grpc_span::val::admin : grpc_span::val::user);
+                role == Role::ADMIN ? std::string_view(grpc_span::val::admin)
+                                    : std::string_view(grpc_span::val::user));
 
             {
                 std::stringstream toLog;
