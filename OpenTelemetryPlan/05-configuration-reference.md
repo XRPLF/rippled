@@ -405,7 +405,7 @@ endif()
 
 > **OTLP** = OpenTelemetry Protocol | **APM** = Application Performance Monitoring
 
-> **Production hardening**: The configurations in this section are starting points. For production deployments where rippled ships telemetry across a network to a centrally-hosted collector, see [Securing the OTel Pipeline](./secure-OTel.md) for the required mTLS receiver config, NetworkPolicy, and peer trace-context validation.
+> **Production hardening**: The configurations in this section are starting points. For production deployments where xrpld ships telemetry across a network to a centrally-hosted collector, see [Securing the OTel Pipeline](./secure-OTel.md) for the required mTLS receiver config, NetworkPolicy, and peer trace-context validation.
 
 ### 5.5.1 Development Configuration
 

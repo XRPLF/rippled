@@ -226,7 +226,7 @@ The appendix contains a glossary of OpenTelemetry and xrpld-specific terms, refe
 
 ## Securing the OTel Pipeline
 
-Threat model and hardening guidance for production deployments where rippled nodes ship telemetry to a centrally-hosted collector across an untrusted network. Covers the two attack surfaces (collector ingress and peer trace-context spoofing) and the chosen defenses: mTLS as primary collector auth, NetworkPolicy as defense-in-depth, and source-side validation plus per-peer rate limiting for the `protocol::TraceContext` field on peer messages.
+Threat model and hardening guidance for production deployments where xrpld nodes ship telemetry to a centrally-hosted collector across an untrusted network. Covers the two attack surfaces (collector ingress and peer trace-context spoofing) and the chosen defenses: mTLS as primary collector auth, NetworkPolicy as defense-in-depth, and source-side validation plus per-peer rate limiting for the `protocol::TraceContext` field on peer messages.
 
 ➡️ **[View Securing the OTel Pipeline](./secure-OTel.md)**
 
