@@ -153,23 +153,23 @@ Available routes to build on top of: https://github.com/XRPLF/rippled/pull/6425#
 
 ---
 
-# Analysis: Applying the Guide to rippled
+# Analysis: Applying the Guide to xrpld
 
-The guide above is written for HTTP-fronted web services. rippled is a P2P node daemon, so the threat model and the applicable defenses differ. This section captures how each approach maps to rippled and the chosen direction.
+The guide above is written for HTTP-fronted web services. xrpld is a P2P node daemon, so the threat model and the applicable defenses differ. This section captures how each approach maps to xrpld and the chosen direction.
 
 ## Threat Model
 
-rippled has **two distinct attack surfaces**, not one. The original guide conflates them under "trace context spoofing"; for rippled they need separate defenses.
+xrpld has **two distinct attack surfaces**, not one. The original guide conflates them under "trace context spoofing"; for xrpld they need separate defenses.
 
-| Surface                                     | Attacker                                                 | Vector                                                                                                                                                                                     | Defense                                       |
-| ------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
-| **Collector ingress** (rippled → collector) | Anyone who can reach `4317`/`4318` on the collector host | Forged OTLP traffic, telemetry exfiltration, DoS on collector                                                                                                                              | mTLS + network policy                         |
-| **Peer trace context** (peer → rippled)     | Malicious peer in the XRPL overlay                       | Crafted `protocol::TraceContext` field inside peer protobuf messages (TMTransaction, consensus, etc.) — used to forge `trace_id`/`span_id`, pollute p99, attach spans to historical traces | Validate + rate-limit at the receive boundary |
+| Surface                                   | Attacker                                                 | Vector                                                                                                                                                                                     | Defense                                       |
+| ----------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------- |
+| **Collector ingress** (xrpld → collector) | Anyone who can reach `4317`/`4318` on the collector host | Forged OTLP traffic, telemetry exfiltration, DoS on collector                                                                                                                              | mTLS + network policy                         |
+| **Peer trace context** (peer → xrpld)     | Malicious peer in the XRPL overlay                       | Crafted `protocol::TraceContext` field inside peer protobuf messages (TMTransaction, consensus, etc.) — used to forge `trace_id`/`span_id`, pollute p99, attach spans to historical traces | Validate + rate-limit at the receive boundary |
 
-**Deployment context:** Across-network. rippled nodes (potentially run by external operators or in different DCs) ship telemetry to a centrally-hosted collector across an untrusted network. The collector is NOT on the same host or private VPC as every node.
+**Deployment context:** Across-network. xrpld nodes (potentially run by external operators or in different DCs) ship telemetry to a centrally-hosted collector across an untrusted network. The collector is NOT on the same host or private VPC as every node.
 
 ```
-                ┌── peer (untrusted) ── TMTransaction{trace_context} ──▶ rippled
+                ┌── peer (untrusted) ── TMTransaction{trace_context} ──▶ xrpld
                 │                                                            │
                 │                                              [validate + rate-limit]
                 │                                                            │
@@ -186,12 +186,12 @@ rippled has **two distinct attack surfaces**, not one. The original guide confla
 
 ## Part 1 Applicability — Peer Trace-Context Validation
 
-The guide's NGINX header stripping and OTTL stale-span filtering target HTTP gateways and post-hoc cleanup. Neither fits rippled directly:
+The guide's NGINX header stripping and OTTL stale-span filtering target HTTP gateways and post-hoc cleanup. Neither fits xrpld directly:
 
-- **NGINX header stripping** — N/A. There is no HTTP gateway between peers and rippled; trace context arrives inside protobuf peer messages (`protocol::TraceContext`), not as W3C `traceparent` headers. See [src/xrpld/telemetry/PropagationHelpers.h](../src/xrpld/telemetry/PropagationHelpers.h).
+- **NGINX header stripping** — N/A. There is no HTTP gateway between peers and xrpld; trace context arrives inside protobuf peer messages (`protocol::TraceContext`), not as W3C `traceparent` headers. See [src/xrpld/telemetry/PropagationHelpers.h](../src/xrpld/telemetry/PropagationHelpers.h).
 - **OTTL stale-span filtering** — Weak fit. Post-hoc cleanup at the collector loses peer identity (you can't tell _which_ peer poisoned the trace). Validation at the receive site is stronger.
 
-**rippled-specific Part 1 mitigations:**
+**xrpld-specific Part 1 mitigations:**
 
 1. **Validate extracted context at the boundary** in [src/xrpld/telemetry/ConsensusReceiveTracing.h](../src/xrpld/telemetry/ConsensusReceiveTracing.h) and any other peer-message receive site. Reject if `trace_id` is all-zero, wrong length, or fails W3C format checks. Treat invalid context as "no propagated context" — start a fresh span — rather than dropping the message.
 2. **Per-peer sample rate limiting** so a hostile peer cannot flood the collector with spans bearing a fabricated `trace_id`. Use probabilistic sampling on the receive path keyed by peer identity.
@@ -200,11 +200,11 @@ The guide's NGINX header stripping and OTTL stale-span filtering target HTTP gat
 
 Evaluated for the across-network deployment shape:
 
-| Approach                        | Across-network fit                                                                                                                                                                                                                                                                              | Cost                                                                 | Verdict                            |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
-| **A. NetworkPolicy / firewall** | Necessary baseline (don't expose `4317`/`4318` to the internet), but insufficient on its own when traffic genuinely crosses networks — you cannot NetworkPolicy the public internet.                                                                                                            | Cheap.                                                               | **Defense-in-depth, not primary.** |
-| **B. mTLS**                     | Strongest fit. Every rippled node holds a client cert; collector verifies with `require_and_verify_client_cert`. Encrypts in transit (raw OTLP over the internet leaks transaction patterns and validator identity). Compromised node = revoke one cert, no shared secret to rotate everywhere. | Cert issuance + rotation pipeline.                                   | **Primary.**                       |
-| **C. Basic Auth**               | Worst shape for this topology. Single shared password across all rippled nodes — one leaked node config compromises the whole fleet. Doesn't encrypt; you'd need TLS underneath anyway, at which point you're 80% of the way to mTLS.                                                           | Cheap to set up, expensive to operate (rotation across N operators). | **Skip.**                          |
+| Approach                        | Across-network fit                                                                                                                                                                                                                                                                            | Cost                                                                 | Verdict                            |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------- |
+| **A. NetworkPolicy / firewall** | Necessary baseline (don't expose `4317`/`4318` to the internet), but insufficient on its own when traffic genuinely crosses networks — you cannot NetworkPolicy the public internet.                                                                                                          | Cheap.                                                               | **Defense-in-depth, not primary.** |
+| **B. mTLS**                     | Strongest fit. Every xrpld node holds a client cert; collector verifies with `require_and_verify_client_cert`. Encrypts in transit (raw OTLP over the internet leaks transaction patterns and validator identity). Compromised node = revoke one cert, no shared secret to rotate everywhere. | Cert issuance + rotation pipeline.                                   | **Primary.**                       |
+| **C. Basic Auth**               | Worst shape for this topology. Single shared password across all xrpld nodes — one leaked node config compromises the whole fleet. Doesn't encrypt; you'd need TLS underneath anyway, at which point you're 80% of the way to mTLS.                                                           | Cheap to set up, expensive to operate (rotation across N operators). | **Skip.**                          |
 
 ## Decision
 
@@ -214,7 +214,7 @@ Evaluated for the across-network deployment shape:
 
 **Skipped:** Basic Auth (Approach C) — wrong shape for an across-network, multi-operator topology.
 
-**Plus rippled-specific Part 1 work:** trace-context validation and per-peer rate limiting at peer-message receive sites.
+**Plus xrpld-specific Part 1 work:** trace-context validation and per-peer rate limiting at peer-message receive sites.
 
 ## Decisions Made
 
@@ -226,7 +226,7 @@ Evaluated for the across-network deployment shape:
 
 ## Out of Scope
 
-- NGINX/Envoy header stripping (no HTTP gateway in front of rippled-to-collector traffic).
+- NGINX/Envoy header stripping (no HTTP gateway in front of xrpld-to-collector traffic).
 - OTTL stale-span filtering at the collector (weaker than source validation; loses peer identity).
 - Local development docker-compose hardening.
 - Telemetry backend (Tempo) hardening — separate concern, downstream of the collector.
