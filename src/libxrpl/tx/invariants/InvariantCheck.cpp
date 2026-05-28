@@ -1032,6 +1032,11 @@ NoModifiedUnmodifiableFields::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    // LedgerStateFix repairs ledger invariants, so it may need to modify
+    // fields that are otherwise immutable.
+    if (tx.getTxnType() == ttLEDGER_STATE_FIX)
+        return true;
+
     static auto const kFieldChanged = [](auto const& before, auto const& after, auto const& field) {
         bool const beforeField = before->isFieldPresent(field);
         bool const afterField = after->isFieldPresent(field);
