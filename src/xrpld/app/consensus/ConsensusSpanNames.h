@@ -24,7 +24,7 @@
 
 #include <xrpl/telemetry/SpanNames.h>
 
-namespace xrpl::telemetry::consensus_span {
+namespace xrpl::telemetry::cons_span {
 
 // ===== Span prefixes =======================================================
 
@@ -64,4 +64,4 @@ inline constexpr auto trusted = makeStr("trusted");
 inline constexpr auto round = makeStr("consensus_round");
 }  // namespace attr
 
-}  // namespace xrpl::telemetry::consensus_span
+}  // namespace xrpl::telemetry::cons_span
