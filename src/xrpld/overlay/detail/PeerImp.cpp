@@ -1,6 +1,5 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 
-#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -1979,9 +1978,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // Create a receive span that links to the sender's trace context
     // (if propagated). shared_ptr keeps it alive across the job boundary.
     auto span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
-    span->setAttribute(telemetry::consensus_span::attr::trusted, isTrusted);
-    span->setAttribute(
-        telemetry::consensus_span::attr::round, static_cast<int64_t>(set.proposeseq()));
+    span->setAttribute("xrpl.consensus.trusted", isTrusted);
+    span->setAttribute("xrpl.consensus.round", static_cast<int64_t>(set.proposeseq()));
 
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
@@ -2565,11 +2563,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // Create a receive span that links to the sender's trace context
         // (if propagated). shared_ptr keeps it alive across the job boundary.
         auto span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
-        span->setAttribute(telemetry::consensus_span::attr::trusted, isTrusted);
+        span->setAttribute("xrpl.consensus.trusted", isTrusted);
         if (val->isFieldPresent(sfLedgerSequence))
         {
             span->setAttribute(
-                telemetry::consensus_span::attr::ledgerSeq,
+                "xrpl.consensus.ledger.seq",
                 static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
         }
 
