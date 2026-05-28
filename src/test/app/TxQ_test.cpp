@@ -1228,7 +1228,7 @@ public:
         // Try to replace a middle item in the queue
         // with enough fee to bankrupt bob and make the
         // later transactions unable to pay their fees
-        std::int64_t bobFee = env.le(bob)->getFieldAmount(sfBalance).xrp().drops() - (9 * 10 - 1);
+        std::int64_t bobFee = env.le(bob)->getFieldAmount(sfBalance).xrp().drops() - ((9 * 10) - 1);
         env(noop(bob), Seq(bobSeq + 5), Fee(bobFee), Ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 10, 12, 7, 6);
 
@@ -1365,7 +1365,7 @@ public:
             charlieSeq + 2 == env.seq(charlie),
             "charlie: "s + std::to_string(charlieSeq) + ", " + std::to_string(env.seq(charlie)));
         BEAST_EXPECTS(
-            dariaSeq + 1 == env.seq(daria),
+            dariaSeq == env.seq(daria),
             "daria: "s + std::to_string(dariaSeq) + ", " + std::to_string(env.seq(daria)));
         BEAST_EXPECTS(
             elmoSeq + 1 == env.seq(elmo),
@@ -1374,7 +1374,7 @@ public:
             fredSeq == env.seq(fred),
             "fred: "s + std::to_string(fredSeq) + ", " + std::to_string(env.seq(fred)));
         BEAST_EXPECTS(
-            gwenSeq == env.seq(gwen),
+            gwenSeq + 1 == env.seq(gwen),
             "gwen: "s + std::to_string(gwenSeq) + ", " + std::to_string(env.seq(gwen)));
         BEAST_EXPECTS(
             hankSeq + 1 == env.seq(hank),
@@ -1385,10 +1385,10 @@ public:
         //++aliceSeq;
         ++bobSeq;
         ++(++charlieSeq);
-        ++dariaSeq;
+        // ++dariaSeq;
         ++elmoSeq;
         // ++fredSeq;
-        //++gwenSeq;
+        ++gwenSeq;
         ++hankSeq;
 
         auto getTxsQueued = [&]() {
@@ -2758,18 +2758,24 @@ public:
         // may not reduce to 8.
         env.close();
         checkMetrics(*this, env, 9, 50, 6, 5);
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 15);
+        BEAST_EXPECTS(
+            env.seq(alice) == aliceSeq + 16,
+            "alice: " + std::to_string(aliceSeq + 16) + ", " + std::to_string(env.seq(alice)));
 
         // Close ledger 7.  That should remove 4 more of alice's transactions.
         env.close();
         checkMetrics(*this, env, 2, 60, 7, 6);
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 19);
+        BEAST_EXPECTS(
+            env.seq(alice) == aliceSeq + 19,
+            "alice: " + std::to_string(aliceSeq + 19) + ", " + std::to_string(env.seq(alice)));
 
         // Close one last ledger to see all of alice's transactions moved
         // into the ledger, including the tickets
         env.close();
         checkMetrics(*this, env, 0, 70, 2, 7);
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 21);
+        BEAST_EXPECTS(
+            env.seq(alice) == aliceSeq + 21,
+            "alice: " + std::to_string(aliceSeq + 21) + ", " + std::to_string(env.seq(alice)));
     }
 
     void

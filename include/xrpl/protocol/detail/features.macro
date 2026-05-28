@@ -65,7 +65,6 @@ XRPL_FEATURE(XChainBridge,               Supported::Yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(AMM,                        Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Clawback,                   Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (UniversalNumber,            Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(XRPFees,                    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::Yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
@@ -140,3 +139,4 @@ XRPL_RETIRE_FEATURE(SortedDirectories)
 XRPL_RETIRE_FEATURE(TicketBatch)
 XRPL_RETIRE_FEATURE(TickSize)
 XRPL_RETIRE_FEATURE(TrustSetAuth)
+XRPL_RETIRE_FEATURE(XRPFees)
