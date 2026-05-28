@@ -704,7 +704,7 @@ Consensus<Adaptor>::startRoundInternal(
         telemetry::SpanGuard::span(
             telemetry::TraceCategory::Consensus,
             telemetry::seg::consensus,
-            telemetry::cons_span::op::phaseOpen));
+            telemetry::consensus::span::op::phaseOpen));
     mode_.set(mode, adaptor_);
     now_ = now;
     prevLedgerID_ = prevLedgerID;
@@ -1488,12 +1488,14 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
     XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
-    auto span =
-        SpanGuard::span(TraceCategory::Consensus, seg::consensus, cons_span::op::updatePositions);
-    span.setAttribute(cons_span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
-    span.setAttribute(cons_span::attr::proposers, static_cast<int64_t>(currPeerPositions_.size()));
+    auto span = SpanGuard::span(
+        TraceCategory::Consensus, seg::consensus, consensus::span::op::updatePositions);
     span.setAttribute(
-        cons_span::attr::disputesCount, static_cast<int64_t>(result_->disputes.size()));
+        consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+    span.setAttribute(
+        consensus::span::attr::proposers, static_cast<int64_t>(currPeerPositions_.size()));
+    span.setAttribute(
+        consensus::span::attr::disputesCount, static_cast<int64_t>(result_->disputes.size()));
     ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1557,11 +1559,11 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
                 auto const yaysStr = std::to_string(dispute.getYays());
                 auto const naysStr = std::to_string(dispute.getNays());
                 span.addEvent(
-                    cons_span::event::disputeResolve,
-                    {{cons_span::attr::txId, to_string(txId)},
-                     {cons_span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"},
-                     {cons_span::attr::disputeYays, yaysStr},
-                     {cons_span::attr::disputeNays, naysStr}});
+                    consensus::span::event::disputeResolve,
+                    {{consensus::span::attr::txId, to_string(txId)},
+                     {consensus::span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"},
+                     {consensus::span::attr::disputeYays, yaysStr},
+                     {consensus::span::attr::disputeNays, naysStr}});
             }
         }
 
@@ -1586,7 +1588,8 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         if (newState)
             closeTimeAvalancheState_ = *newState;
         CLOG(clog) << "neededWeight " << neededWeight << ". ";
-        span.setAttribute(cons_span::attr::avalancheThreshold, static_cast<int64_t>(neededWeight));
+        span.setAttribute(
+            consensus::span::attr::avalancheThreshold, static_cast<int64_t>(neededWeight));
 
         int participants = currPeerPositions_.size();
         if (mode_.get() == ConsensusMode::proposing)
@@ -1635,9 +1638,9 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         }
     }
 
-    span.setAttribute(cons_span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
+    span.setAttribute(consensus::span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
     span.setAttribute(
-        cons_span::attr::closeTimeThreshold, static_cast<int64_t>(parms.avCT_CONSENSUS_PCT));
+        consensus::span::attr::closeTimeThreshold, static_cast<int64_t>(parms.avCT_CONSENSUS_PCT));
 
     if (!ourNewSet &&
         ((consensusCloseTime != asCloseTime(result_->position.closeTime())) ||
@@ -1691,7 +1694,8 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
-    auto span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, cons_span::op::check);
+    auto span =
+        SpanGuard::span(TraceCategory::Consensus, seg::consensus, consensus::span::op::check);
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1791,12 +1795,13 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         CLOG(clog) << "Unable to reach consensus " << Json::Compact{getJson(true)} << ". ";
     }
 
-    span.setAttribute(cons_span::attr::agreeCount, static_cast<int64_t>(agree));
-    span.setAttribute(cons_span::attr::disagreeCount, static_cast<int64_t>(disagree));
-    span.setAttribute(cons_span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
-    span.setAttribute(cons_span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
+    span.setAttribute(consensus::span::attr::agreeCount, static_cast<int64_t>(agree));
+    span.setAttribute(consensus::span::attr::disagreeCount, static_cast<int64_t>(disagree));
     span.setAttribute(
-        cons_span::attr::thresholdPercent,
+        consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+    span.setAttribute(consensus::span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
+    span.setAttribute(
+        consensus::span::attr::thresholdPercent,
         static_cast<int64_t>(adaptor_.parms().avCT_CONSENSUS_PCT));
 
     char const* stateStr = "no";
@@ -1812,7 +1817,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     {
         stateStr = "expired";
     }
-    span.setAttribute(cons_span::attr::consensusResult, stateStr);
+    span.setAttribute(consensus::span::attr::consensusResult, stateStr);
 
     CLOG(clog) << "Consensus has been reached. ";
     // NOLINTEND(bugprone-unchecked-optional-access)
@@ -1945,7 +1950,7 @@ Consensus<Adaptor>::startEstablishTracing()
         telemetry::SpanGuard::span(
             telemetry::TraceCategory::Consensus,
             telemetry::seg::consensus,
-            telemetry::cons_span::op::establish));
+            telemetry::consensus::span::op::establish));
 }
 
 template <class Adaptor>
@@ -1955,11 +1960,12 @@ Consensus<Adaptor>::updateEstablishTracing()
     if (!establishSpan_)
         return;
     establishSpan_->setAttribute(
-        telemetry::cons_span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+        telemetry::consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
     establishSpan_->setAttribute(
-        telemetry::cons_span::attr::establishCount, static_cast<int64_t>(establishCounter_));
+        telemetry::consensus::span::attr::establishCount, static_cast<int64_t>(establishCounter_));
     establishSpan_->setAttribute(
-        telemetry::cons_span::attr::proposers, static_cast<int64_t>(currPeerPositions_.size()));
+        telemetry::consensus::span::attr::proposers,
+        static_cast<int64_t>(currPeerPositions_.size()));
 }
 
 template <class Adaptor>

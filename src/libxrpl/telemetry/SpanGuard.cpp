@@ -424,11 +424,24 @@ SpanGuard::addEvent(std::string_view name, std::initializer_list<EventAttribute>
 {
     if (!impl_)
         return;
-    std::vector<std::pair<std::string_view, opentelemetry::common::AttributeValue>> otelAttrs;
+    // OTel's AddEvent template requires a key-value-iterable; a plain
+    // std::vector<std::pair<...>> doesn't satisfy is_key_value_iterable.
+    // Wrap in nostd::span over the vector's storage so the SDK accepts it.
+    std::vector<std::pair<opentelemetry::nostd::string_view, opentelemetry::common::AttributeValue>>
+        otelAttrs;
     otelAttrs.reserve(attrs.size());
     for (auto const& [k, v] : attrs)
-        otelAttrs.emplace_back(k, opentelemetry::common::AttributeValue{v});
-    impl_->span->AddEvent(std::string(name), otelAttrs);
+    {
+        otelAttrs.emplace_back(
+            opentelemetry::nostd::string_view{k.data(), k.size()},
+            opentelemetry::common::AttributeValue{
+                opentelemetry::nostd::string_view{v.data(), v.size()}});
+    }
+    impl_->span->AddEvent(
+        std::string(name),
+        opentelemetry::nostd::span<std::pair<
+            opentelemetry::nostd::string_view,
+            opentelemetry::common::AttributeValue> const>{otelAttrs.data(), otelAttrs.size()});
 }
 
 void
