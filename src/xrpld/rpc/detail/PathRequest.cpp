@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -579,6 +580,20 @@ PathRequest::findPaths(
 
     auto const dst_amount = convertAmount(saDstAmount, convert_all_);
     hash_map<PathAsset, std::unique_ptr<Pathfinder>> pathasset_map;
+
+    // One `pathfind.discover` span wraps the entire per-source-asset loop so
+    // that a single RPC call produces one discover span instead of N (one per
+    // candidate source asset). Trade-off: per-asset discovery/ranking timing
+    // is no longer split into individual spans — span count and Tempo storage
+    // are bounded per RPC at the cost of per-asset visibility. If per-asset
+    // breakdown is needed in the future, add child spans inside the loop body
+    // (`Pathfinder::findPaths`/`computePathRanks`) parented off this span.
+    using namespace telemetry;
+    auto span = SpanGuard::span(
+        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::discover);
+    span.setAttribute(pathfind_span::attr::searchLevel, static_cast<int64_t>(level));
+
+    std::int64_t totalPaths = 0;
     for (auto const& asset : sourceAssets)
     {
         if (continueCallback && !continueCallback())
@@ -598,6 +613,7 @@ PathRequest::findPaths(
         auto ps = pathfinder->getBestPaths(
             max_paths_, fullLiquidityPath, mContext[asset], asset.getIssuer(), continueCallback);
         mContext[asset] = ps;
+        totalPaths += static_cast<std::int64_t>(ps.size());
 
         auto const& sourceAccount = [&] {
             if (!isXRP(asset.getIssuer()))
@@ -696,6 +712,8 @@ PathRequest::findPaths(
                 << iIdentifier << " rippleCalc returns " << transHuman(rc.result());
         }
     }
+
+    span.setAttribute(pathfind_span::attr::numPaths, totalPaths);
 
     /*  The resource fee is based on the number of source currencies used.
         The minimum cost is 50 and the maximum is 400. The cost increases

@@ -355,7 +355,7 @@ ServerHandler::onWSMessage(
         Json::Value jvResult(Json::objectValue);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
-        jvResult[jss::value] = buffers_to_string(buffers);
+        jvResult[jss::value] = ::xrpl::buffers_to_string(buffers);
         boost::beast::multi_buffer sb;
         Json::stream(jvResult, [&sb](auto const p, auto const n) {
             sb.commit(boost::asio::buffer_copy(sb.prepare(n), boost::asio::buffer(p, n)));
@@ -564,6 +564,7 @@ ServerHandler::processSession(
         jr[jss::api_version] = jv[jss::api_version];
 
     jr[jss::type] = jss::response;
+    span.setOk();
     return jr;
 }
 
@@ -578,7 +579,7 @@ ServerHandler::processSession(
 
     processRequest(
         session->port(),
-        buffers_to_string(session->request().body().data()),
+        ::xrpl::buffers_to_string(session->request().body().data()),
         session->remoteAddress().at_port(0),
         makeOutput(*session),
         coro,
@@ -598,6 +599,7 @@ ServerHandler::processSession(
     {
         session->close(true);
     }
+    span.setOk();
 }
 
 static Json::Value
@@ -1036,6 +1038,7 @@ ServerHandler::processRequest(
         }
     }
 
+    span.setOk();
     HTTPReply(httpStatus, response, output, rpcJ);
 }
 

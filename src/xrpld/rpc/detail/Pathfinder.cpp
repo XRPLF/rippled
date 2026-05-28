@@ -2,7 +2,6 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
-#include <xrpld/rpc/detail/PathFindSpanNames.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/RippleLineCache.h>
 #include <xrpld/rpc/detail/TrustLine.h>
@@ -30,7 +29,6 @@
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
-#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
 #include <algorithm>
@@ -229,11 +227,6 @@ Pathfinder::Pathfinder(
 bool
 Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continueCallback)
 {
-    using namespace telemetry;
-    auto span = SpanGuard::span(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::discover);
-    span.setAttribute(pathfind_span::attr::searchLevel, static_cast<int64_t>(searchLevel));
-
     JLOG(j_.trace()) << "findPaths start";
     if (mDstAmount == beast::zero)
     {
@@ -444,11 +437,6 @@ Pathfinder::getPathLiquidity(
 void
 Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback)
 {
-    using namespace telemetry;
-    auto span = SpanGuard::span(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::rank);
-    span.setAttribute(pathfind_span::attr::numPaths, static_cast<int64_t>(maxPaths));
-
     mRemainingAmount = convertAmount(mDstAmount, convert_all_);
 
     // Must subtract liquidity in default path from remaining amount.

@@ -103,6 +103,7 @@ words:
   - enabled
   - endmacro
   - exceptioned
+  - exfiltration
   - Falco
   - fcontext
   - finalizers
@@ -118,6 +119,7 @@ words:
   - gpgkey
   - hotwallet
   - hicpp
+  - htpasswd
   - hwaddress
   - hwrap
   - ifndef

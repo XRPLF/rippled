@@ -3,13 +3,15 @@
 /** Abstract interface for OpenTelemetry distributed tracing.
 
     Provides the Telemetry base class that all components use to create trace
-    spans. Two concrete implementations exist, selected at construction time
+    spans. Three concrete implementations exist, selected at construction time
     by make_Telemetry():
 
       - TelemetryImpl (Telemetry.cpp): real OTel SDK integration, compiled
         only when XRPL_ENABLE_TELEMETRY is defined and enabled at runtime.
       - NullTelemetry (NullTelemetry.cpp): no-op stub used when telemetry is
         disabled at compile time or runtime.
+      - NullTelemetryOtel (Telemetry.cpp): no-op stub that still depends on
+        the OTel API (used during transition or for testing).
 
     Inheritance / dependency diagram:
 
@@ -35,32 +37,44 @@
 
     Usage examples:
 
-    1. Check before tracing (typical guard pattern):
+    1. Root span at a subsystem entry point (typical usage):
     @code
-        auto& telemetry = registry.getTelemetry();
-        if (telemetry.isEnabled() && telemetry.shouldTraceRpc())
+        #include <xrpld/rpc/detail/RpcSpanNames.h>
+        using namespace xrpl::telemetry;
+
+        // In an RPC handler dispatch:
+        auto guard = SpanGuard::span(
+            TraceCategory::Rpc, rpc_span::prefix::command, commandName);
+        guard.setAttribute(rpc_span::attr::command, commandName);
+        // ... process request
+        // guard destructor automatically ends the span on scope exit
+    @endcode
+
+    2. Child span for a sub-operation (scoped child):
+    @code
+        auto parent = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
         {
-            auto span = telemetry.startSpan("rpc.command.server_info");
-            // ... do work, span ends when shared_ptr refcount drops to 0
+            auto child = parent.childSpan("tx.apply");
+            child.setAttribute("tx_type", txType);
+            // child ends here
         }
     @endcode
 
-    2. RAII tracing with SpanGuard (preferred):
+    3. Unrelated span (cross-scope, same thread):
     @code
-        if (telemetry.isEnabled() && telemetry.shouldTraceRpc())
-        {
-            SpanGuard guard(telemetry.startSpan("rpc.command.submit"));
-            guard.setAttribute("command", "submit");
-            // ... guard ends span automatically on scope exit
-        }
+        // Transactions and RPC can be active simultaneously
+        auto txSpan = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
+        auto rpcSpan = SpanGuard::span(TraceCategory::Rpc, "rpc", "info");
+        // both spans end on scope exit
     @endcode
 
-    3. Cross-thread context propagation:
+    4. Cross-thread context propagation:
     @code
-        // On thread A: capture context
-        auto ctx = guard.context();
-        // On thread B: create child span with explicit parent
-        auto child = telemetry.startSpan("async.work", ctx);
+        // Thread A: capture the active context while span is in scope
+        auto ctx = parentGuard.captureContext();
+
+        // Thread B: create child span with explicit parent
+        auto child = SpanGuard::childSpan("async.work", ctx);
     @endcode
 
     @note Thread safety: The Telemetry interface is safe for concurrent reads

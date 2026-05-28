@@ -388,9 +388,15 @@ public:
      * @param transaction Transaction object.
      * @param bUnlimited Whether a privileged client connection submitted it.
      * @param failType fail_hard setting from transaction submission.
+     * @param span Optional tx.process span to keep alive across the
+     *             batch boundary so its context propagates to peers.
      */
     void
-    doTransactionSync(std::shared_ptr<Transaction> transaction, bool bUnlimited, FailHard failType);
+    doTransactionSync(
+        std::shared_ptr<Transaction> transaction,
+        bool bUnlimited,
+        FailHard failType,
+        std::shared_ptr<telemetry::SpanGuard> span = nullptr);
 
     /**
      * For transactions not submitted by a locally connected client, fire and
@@ -1337,7 +1343,7 @@ NetworkOPsImp::processTransaction(
     if (bLocal)
     {
         span->setAttribute(tx_span::attr::path, tx_span::val::sync);
-        doTransactionSync(transaction, bUnlimited, failType);
+        doTransactionSync(transaction, bUnlimited, failType, std::move(span));
     }
     else
     {
@@ -1374,13 +1380,14 @@ void
 NetworkOPsImp::doTransactionSync(
     std::shared_ptr<Transaction> transaction,
     bool bUnlimited,
-    FailHard failType)
+    FailHard failType,
+    std::shared_ptr<telemetry::SpanGuard> span)
 {
     std::unique_lock<std::mutex> lock(mMutex);
 
     if (!transaction->getApplying())
     {
-        mTransactions.emplace_back(transaction, bUnlimited, true, failType);
+        mTransactions.emplace_back(transaction, bUnlimited, true, failType, std::move(span));
         transaction->setApplying();
     }
 

@@ -43,6 +43,7 @@
 
 #include <cstring>
 #include <string>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 
@@ -265,10 +266,10 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
 
 SpanGuard
 SpanGuard::hashSpan(
-    TraceCategory cat,
-    std::string_view name,
-    std::uint8_t const* hashData,
-    std::size_t hashSize)
+    TraceCategory const cat,
+    std::string_view const name,
+    std::uint8_t const* const hashData,
+    std::size_t const hashSize)
 {
     if (hashSize < 16)
         return {};
@@ -296,13 +297,13 @@ SpanGuard::hashSpan(
 
 SpanGuard
 SpanGuard::hashSpan(
-    TraceCategory cat,
-    std::string_view name,
-    std::uint8_t const* hashData,
-    std::size_t hashSize,
-    std::uint8_t const* parentSpanId,
-    std::size_t parentSpanSize,
-    std::uint8_t traceFlags)
+    TraceCategory const cat,
+    std::string_view const name,
+    std::uint8_t const* const hashData,
+    std::size_t const hashSize,
+    std::uint8_t const* const parentSpanId,
+    std::size_t const parentSpanSize,
+    std::uint8_t const traceFlags)
 {
     if (hashSize < 16 || parentSpanSize != 8)
         return {};
@@ -437,7 +438,7 @@ SpanGuard::recordException(std::exception const& e)
         return;
     impl_->span->AddEvent(
         "exception",
-        {{"exception.type", "std::exception"}, {"exception.message", std::string(e.what())}});
+        {{"exception.type", typeid(e).name()}, {"exception.message", std::string(e.what())}});
     impl_->span->SetStatus(otel_trace::StatusCode::kError, e.what());
 }
 

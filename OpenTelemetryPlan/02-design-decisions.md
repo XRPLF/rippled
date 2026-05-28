@@ -362,20 +362,20 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 
 The following table summarizes what data is collected by category:
 
-| Category        | Attributes Collected                                                   | Purpose                      |
-| --------------- | ---------------------------------------------------------------------- | ---------------------------- |
-| **Transaction** | `tx.hash`, `tx.type`, `tx.result`, `tx.fee`, `ledger_index`            | Trace transaction lifecycle  |
-| **Consensus**   | `round`, `phase`, `mode`, `proposers` (public keys), `duration_ms`     | Analyze consensus timing     |
-| **RPC**         | `command`, `version`, `status`, `duration_ms`                          | Monitor RPC performance      |
-| **Peer**        | `peer.id` (public key), `latency_ms`, `message.type`, `message.size`   | Network topology analysis    |
-| **Ledger**      | `ledger.hash`, `ledger.index`, `close_time`, `tx_count`                | Ledger progression tracking  |
-| **Job**         | `job.type`, `queue_ms`, `worker`                                       | JobQueue performance         |
-| **PathFinding** | `pathfind.source_currency`, `dest_currency`, `path_count`, `cache_hit` | Payment path analysis        |
-| **TxQ**         | `txq.queue_depth`, `fee_level`, `eviction_reason`                      | Queue depth and fee tracking |
-| **Fee**         | `fee.load_factor`, `escalation_level`                                  | Fee escalation monitoring    |
-| **Validator**   | `validator.list_size`, `list_age_sec`                                  | UNL health monitoring        |
-| **Amendment**   | `amendment.name`, `status`                                             | Protocol upgrade tracking    |
-| **SHAMap**      | `shamap.type`, `missing_nodes`, `duration_ms`                          | State tree sync performance  |
+| Category        | Attributes Collected                                                                                             | Purpose                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **Transaction** | `tx.hash`, `tx.type`, `tx.result`, `tx.fee`, `ledger_index`                                                      | Trace transaction lifecycle  |
+| **Consensus**   | `round`, `phase`, `mode`, `proposers` (public keys), `duration_ms`                                               | Analyze consensus timing     |
+| **RPC**         | `command`, `version`, `status`, `duration_ms`                                                                    | Monitor RPC performance      |
+| **Peer**        | `peer.id` (public key), `latency_ms`, `message.type`, `message.size`                                             | Network topology analysis    |
+| **Ledger**      | `ledger.hash`, `ledger.index`, `close_time`, `tx_count`                                                          | Ledger progression tracking  |
+| **Job**         | `job.type`, `queue_ms`, `worker`                                                                                 | JobQueue performance         |
+| **PathFinding** | `pathfind_fast`, `pathfind_search_level`, `pathfind_num_paths`, `pathfind_ledger_index`, `pathfind_num_requests` | Payment path analysis        |
+| **TxQ**         | `txq.queue_depth`, `fee_level`, `eviction_reason`                                                                | Queue depth and fee tracking |
+| **Fee**         | `fee.load_factor`, `escalation_level`                                                                            | Fee escalation monitoring    |
+| **Validator**   | `validator.list_size`, `list_age_sec`                                                                            | UNL health monitoring        |
+| **Amendment**   | `amendment.name`, `status`                                                                                       | Protocol upgrade tracking    |
+| **SHAMap**      | `shamap.type`, `missing_nodes`, `duration_ms`                                                                    | State tree sync performance  |
 
 ### 2.4.4 Privacy & Sensitive Data Policy
 
@@ -448,6 +448,8 @@ redact_peer_address=1 # Remove peer IP addresses
 > **Note**: The `redact_account` configuration in `xrpld.cfg` controls SDK-level redaction before export, while collector-level filtering (see [Collector-Level Data Protection](#collector-level-data-protection) above) provides an additional defense-in-depth layer. Both can operate independently.
 
 > **Key Principle**: Telemetry collects **operational metadata** (timing, counts, hashes) — never **sensitive content** (keys, balances, amounts, raw payloads).
+
+> **See also**: [Securing the OTel Pipeline](./secure-OTel.md) covers transport-level protection for telemetry leaving the node — mTLS to the collector and validation of incoming peer trace context. Privacy controls in this section keep sensitive data out of spans; the security doc keeps the spans themselves out of untrusted hands.
 
 ---
 

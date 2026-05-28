@@ -18,8 +18,13 @@ Json::Value
 doPathFind(RPC::JsonContext& context)
 {
     using namespace telemetry;
-    [[maybe_unused]] auto span = SpanGuard::span(
+    auto span = SpanGuard::span(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
+    if (auto const& src = context.params[jss::source_account]; src.isString())
+        span.setAttribute(pathfind_span::attr::sourceAccount, src.asString());
+    if (auto const& dst = context.params[jss::destination_account]; dst.isString())
+        span.setAttribute(pathfind_span::attr::destAccount, dst.asString());
+
     if (context.app.config().PATH_SEARCH_MAX == 0)
         return rpcError(rpcNOT_SUPPORTED);
 
