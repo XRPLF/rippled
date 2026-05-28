@@ -427,13 +427,28 @@ public:
     getJson(bool full) const;
 
 private:
+    /** Why startRoundInternal is being entered.
+     *
+     *  Distinguishes the normal Initial entry (from public startRound)
+     *  from a Recovered re-entry (from handleWrongLedger after the
+     *  correct prior ledger was acquired mid-round). The Recovered path
+     *  resets phase to Open within the SAME round, which is a state
+     *  transition that would otherwise be invisible in traces — the
+     *  recovery flag drives a `phase.recovery` event on the round span.
+     */
+    enum class StartRoundReason : std::uint8_t {
+        Initial,
+        Recovered,
+    };
+
     void
     startRoundInternal(
         NetClock::time_point const& now,
         typename Ledger_t::ID const& prevLedgerID,
         Ledger_t const& prevLedger,
         ConsensusMode mode,
-        std::unique_ptr<std::stringstream> const& clog);
+        std::unique_ptr<std::stringstream> const& clog,
+        StartRoundReason reason = StartRoundReason::Initial);
 
     // Change our view of the previous ledger
     void
@@ -693,8 +708,21 @@ Consensus<Adaptor>::startRoundInternal(
     typename Ledger_t::ID const& prevLedgerID,
     Ledger_t const& prevLedger,
     ConsensusMode mode,
-    std::unique_ptr<std::stringstream> const& clog)
+    std::unique_ptr<std::stringstream> const& clog,
+    StartRoundReason const reason)
 {
+    // Recovery path: handleWrongLedger acquired the correct prior ledger
+    // and re-entered startRoundInternal mid-round. The roundSpan_ owned by
+    // the adaptor is still the SAME span as before — startRoundTracing is
+    // not called on the recovery path, so we record the recovery as an
+    // event on the surviving round span. Pass empty phaseLabel to leave
+    // consensus_phase unchanged (the actual phase reset to open is marked
+    // separately by the new openSpan_ being emplaced below).
+    if (reason == StartRoundReason::Recovered)
+    {
+        adaptor_.onPhaseEvent(telemetry::consensus::span::event::phaseRecovery, "");
+    }
+
     phase_ = ConsensusPhase::open;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::open ";
     CLOG(clog) << "startRoundInternal transitioned to ConsensusPhase::open, "
@@ -709,6 +737,15 @@ Consensus<Adaptor>::startRoundInternal(
             telemetry::TraceCategory::Consensus,
             telemetry::seg::consensus,
             telemetry::consensus::span::op::phaseOpen));
+    // On the Recovered path, fire phase.open here because startRoundTracing
+    // (which fires it for the Initial path) is not called on re-entry. On
+    // the Initial path this is a no-op because the round span hasn't been
+    // created yet — the phase.open event is fired later by startRoundTracing
+    // after the new round span is in place.
+    if (reason == StartRoundReason::Recovered)
+    {
+        adaptor_.onPhaseEvent(telemetry::consensus::span::event::phaseOpen, "open");
+    }
     mode_.set(mode, adaptor_);
     now_ = now;
     prevLedgerID_ = prevLedgerID;
@@ -957,6 +994,7 @@ Consensus<Adaptor>::simulate(
     result_->proposers = prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
     phase_ = ConsensusPhase::accepted;
+    adaptor_.onPhaseEvent(telemetry::consensus::span::event::phaseAccepted, "accepted");
     adaptor_.onForceAccept(
         *result_, previousLedger_, closeResolution_, rawCloseTimes_, mode_.get(), getJson(true));
     // NOLINTEND(bugprone-unchecked-optional-access)
@@ -1105,7 +1143,13 @@ Consensus<Adaptor>::handleWrongLedger(
     {
         JLOG(j_.info()) << "Have the consensus ledger " << prevLedgerID_;
         CLOG(clog) << "Have the consensus ledger " << prevLedgerID_ << ". ";
-        startRoundInternal(now_, lgrId, *newLedger, ConsensusMode::switchedLedger, clog);
+        startRoundInternal(
+            now_,
+            lgrId,
+            *newLedger,
+            ConsensusMode::switchedLedger,
+            clog,
+            StartRoundReason::Recovered);
     }
     else
     {
@@ -1414,7 +1458,23 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
     prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
     endEstablishTracing();
+    {
+        namespace cs = telemetry::consensus::span;
+        if (result_->state == ConsensusState::Yes)
+        {
+            adaptor_.onOutcomeEvent(cs::event::outcomeYes);
+        }
+        else if (result_->state == ConsensusState::MovedOn)
+        {
+            adaptor_.onOutcomeEvent(cs::event::outcomeMovedOn);
+        }
+        else if (result_->state == ConsensusState::Expired)
+        {
+            adaptor_.onOutcomeEvent(cs::event::outcomeExpired);
+        }
+    }
     phase_ = ConsensusPhase::accepted;
+    adaptor_.onPhaseEvent(telemetry::consensus::span::event::phaseAccepted, "accepted");
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::accepted";
     adaptor_.onAccept(
         *result_,
@@ -1434,8 +1494,21 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
     // We should not be closing if we already have a position
     XRPL_ASSERT(!result_, "xrpl::Consensus::closeLedger : result is not set");
 
+    // Annotate the open-phase span with end-of-phase metadata before
+    // ending it, so a Tempo/Jaeger query for consensus.phase.open shows
+    // how long the phase ran and how many peer positions arrived during it.
+    openTime_.tick(clock_.now());
+    if (openSpan_ && *openSpan_)
+    {
+        namespace cs = telemetry::consensus::span;
+        openSpan_->setAttribute(
+            cs::attr::openDurationMs, static_cast<int64_t>(openTime_.read().count()));
+        openSpan_->setAttribute(
+            cs::attr::peerPositionsAtClose, static_cast<int64_t>(currPeerPositions_.size()));
+    }
     openSpan_.reset();
     phase_ = ConsensusPhase::establish;
+    adaptor_.onPhaseEvent(telemetry::consensus::span::event::phaseEstablish, "establish");
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::establish";
     rawCloseTimes_.self = now_;
     peerUnchangedCounter_ = 0;
@@ -1807,6 +1880,11 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     span.setAttribute(
         consensus::span::attr::thresholdPercent,
         static_cast<int64_t>(adaptor_.parms().avCT_CONSENSUS_PCT));
+    span.setAttribute(
+        consensus::span::attr::proposersFinished, static_cast<int64_t>(currentFinished));
+    span.setAttribute(consensus::span::attr::consensusStalled, stalled);
+    span.setAttribute(
+        consensus::span::attr::establishCounter, static_cast<int64_t>(establishCounter_));
 
     char const* stateStr = "no";
     if (result_->state == ConsensusState::Yes)
@@ -1963,13 +2041,16 @@ Consensus<Adaptor>::updateEstablishTracing()
 {
     if (!establishSpan_)
         return;
+    namespace cs = telemetry::consensus::span;
+    establishSpan_->setAttribute(cs::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+    establishSpan_->setAttribute(cs::attr::establishCount, static_cast<int64_t>(establishCounter_));
     establishSpan_->setAttribute(
-        telemetry::consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
-    establishSpan_->setAttribute(
-        telemetry::consensus::span::attr::establishCount, static_cast<int64_t>(establishCounter_));
-    establishSpan_->setAttribute(
-        telemetry::consensus::span::attr::proposers,
-        static_cast<int64_t>(currPeerPositions_.size()));
+        cs::attr::proposers, static_cast<int64_t>(currPeerPositions_.size()));
+    if (result_)
+    {
+        establishSpan_->setAttribute(
+            cs::attr::disputesCount, static_cast<int64_t>(result_->disputes.size()));
+    }
 }
 
 template <class Adaptor>

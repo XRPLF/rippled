@@ -279,17 +279,22 @@ public:
         TraceCategory. All nodes using the same hash independently produce
         spans under the same trace_id, enabling cross-node correlation
         without context propagation.
-        @param cat       Trace subsystem category.
-        @param name      Full span name (e.g. "tx.receive").
-        @param hashData  Pointer to at least 16 bytes of hash data.
-        @param hashSize  Size of the hash buffer (must be >= 16).
+        @param cat          Trace subsystem category.
+        @param name         Full span name (e.g. "tx.receive").
+        @param hashData     Pointer to at least 16 bytes of hash data.
+        @param hashSize     Size of the hash buffer (must be >= 16).
+        @param followsFrom  Optional captured context to attach as a
+                            follows-from link. Use to stitch sequential
+                            top-level spans (e.g. consecutive consensus
+                            rounds). Ignored if nullptr or invalid.
     */
     static SpanGuard
     hashSpan(
         TraceCategory const cat,
         std::string_view const name,
         std::uint8_t const* const hashData,
-        std::size_t const hashSize);
+        std::size_t const hashSize,
+        SpanContext const* followsFrom = nullptr);
 
     /** Create a hash-derived span with a remote parent.
         trace_id = hashData[0:16], parent span_id from protobuf context
@@ -460,7 +465,12 @@ public:
     }
 
     [[nodiscard]] static SpanGuard
-    hashSpan(TraceCategory, std::string_view, std::uint8_t const*, std::size_t)
+    hashSpan(
+        TraceCategory,
+        std::string_view,
+        std::uint8_t const*,
+        std::size_t,
+        SpanContext const* = nullptr)
     {
         return {};
     }

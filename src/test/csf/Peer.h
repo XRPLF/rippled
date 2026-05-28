@@ -19,6 +19,7 @@
 #include <boost/container/flat_set.hpp>
 
 #include <algorithm>
+#include <string_view>
 
 namespace xrpl::test::csf {
 
@@ -613,6 +614,20 @@ struct Peer
     // Not interested in tracking consensus mode changes for now
     void
     onModeChange(ConsensusMode, ConsensusMode)
+    {
+    }
+
+    // Telemetry hooks — no-ops in the simulator. The generic engine calls
+    // these at every phase transition / outcome resolution so the
+    // production adaptor (RCLConsensus::Adaptor) can record events on the
+    // round span; the simulator runs without telemetry.
+    void
+    onPhaseEvent(std::string_view, std::string_view)
+    {
+    }
+
+    void
+    onOutcomeEvent(std::string_view)
     {
     }
 

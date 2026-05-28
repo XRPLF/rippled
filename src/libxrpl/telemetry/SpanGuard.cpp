@@ -270,7 +270,8 @@ SpanGuard::hashSpan(
     TraceCategory const cat,
     std::string_view const name,
     std::uint8_t const* const hashData,
-    std::size_t const hashSize)
+    std::size_t const hashSize,
+    SpanContext const* const followsFrom)
 {
     if (hashSize < 16)
         return {};
@@ -292,6 +293,25 @@ SpanGuard::hashSpan(
         otel_trace::kSpanKey,
         opentelemetry::nostd::shared_ptr<otel_trace::Span>(
             new otel_trace::DefaultSpan(syntheticCtx)));
+
+    if (followsFrom != nullptr && followsFrom->isValid())
+    {
+        auto linkSpan = otel_trace::GetSpan(followsFrom->impl_->ctx);
+        if (linkSpan && linkSpan->GetContext().IsValid())
+        {
+            auto tracer = tel->getTracer("xrpld");
+            otel_trace::StartSpanOptions opts;
+            opts.parent = parentCtx;
+            opts.kind = categoryToSpanKind(cat);
+            return SpanGuard(
+                std::make_unique<Impl>(tracer->StartSpan(
+                    std::string(name),
+                    {},
+                    {{linkSpan->GetContext(),
+                      {{std::string(attr::linkType), std::string(attr_val::followsFrom)}}}},
+                    opts)));
+        }
+    }
 
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(std::string(name), parentCtx)));
 }

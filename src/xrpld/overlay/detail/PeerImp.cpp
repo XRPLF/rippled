@@ -1982,6 +1982,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     span->setAttribute(telemetry::consensus::span::attr::trusted, isTrusted);
     span->setAttribute(
         telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
+    // First 16 hex chars (8 bytes) of each hash — enough to disambiguate
+    // peer positions and prior ledgers without exporting full 32-byte
+    // hashes on every receive event.
+    span->setAttribute(
+        telemetry::consensus::span::attr::prevLedgerPrefix,
+        to_string(prevLedger).substr(0, 16).c_str());
+    span->setAttribute(
+        telemetry::consensus::span::attr::positionHashPrefix,
+        to_string(proposeHash).substr(0, 16).c_str());
 
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
@@ -2572,6 +2581,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 telemetry::consensus::span::attr::ledgerSeq,
                 static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
         }
+        span->setAttribute(telemetry::consensus::span::attr::fullValidation, val->isFull());
+        span->setAttribute(
+            telemetry::consensus::span::attr::validationSignTime,
+            static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
 
         if (!isTrusted && (tracking_.load() == Tracking::diverged))
         {

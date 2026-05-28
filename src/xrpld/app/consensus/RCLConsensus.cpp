@@ -349,6 +349,13 @@ RCLConsensus::Adaptor::onClose(
         telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::ledgerClose);
     span.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(ledger.ledger_->header().seq) + 1);
     span.setAttribute(cs::attr::mode, toDisplayString(mode).c_str());
+    span.setAttribute(
+        cs::attr::txCountOpen, static_cast<int64_t>(app_.getOpenLedger().current()->txCount()));
+    span.setAttribute(
+        cs::attr::closeTimeResolutionMs,
+        static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(ledger.closeTimeResolution())
+                .count()));
 
     bool const wrongLCL = mode == ConsensusMode::wrongLedger;
     bool const proposing = mode == ConsensusMode::proposing;
@@ -502,6 +509,15 @@ RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
     span->setAttribute(
         cs::attr::roundTimeMs, static_cast<int64_t>(result.roundTime.read().count()));
     span->setAttribute(cs::attr::quorum, static_cast<int64_t>(app_.getValidators().quorum()));
+
+    // Capture the accept span's context so createValidationSpan() — which
+    // runs on the jtACCEPT worker thread — can link the validation.send
+    // span to the accept span (matching the design diagram and the
+    // "validation follows acceptance" causal model).
+    if (*span)
+    {
+        acceptSpanContext_ = span->captureContext();
+    }
     return span;
 }
 
@@ -567,6 +583,8 @@ RCLConsensus::Adaptor::doAccept(
         static_cast<int64_t>(rawCloseTimes.self.time_since_epoch().count()));
     doAcceptSpan.setAttribute(
         cs::attr::closeTimeVoteBins, static_cast<int64_t>(rawCloseTimes.peers.size()));
+    doAcceptSpan.setAttribute(
+        cs::attr::disputesResolvedCount, static_cast<int64_t>(result.disputes.size()));
     {
         auto const prevRes = prevLedger.closeTimeResolution();
         auto const dir = [&]() -> std::string {
@@ -908,9 +926,12 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     auto valSpan = createValidationSpan();
     if (valSpan)
     {
-        valSpan->setAttribute(
-            telemetry::consensus::span::attr::ledgerSeq, static_cast<int64_t>(ledger.seq()));
-        valSpan->setAttribute(telemetry::consensus::span::attr::proposing, proposing);
+        namespace cs = telemetry::consensus::span;
+        valSpan->setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(ledger.seq()));
+        valSpan->setAttribute(cs::attr::proposing, proposing);
+        // proposing implies a full validation (vfFullValidation is set on
+        // the STValidation only when proposing — see below).
+        valSpan->setAttribute(cs::attr::fullValidation, proposing);
     }
 
     using namespace std::chrono_literals;
@@ -919,6 +940,13 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     if (validationTime <= lastValidationTime_)
         validationTime = lastValidationTime_ + 1s;
     lastValidationTime_ = validationTime;
+
+    if (valSpan)
+    {
+        valSpan->setAttribute(
+            telemetry::consensus::span::attr::validationSignTime,
+            static_cast<int64_t>(validationTime.time_since_epoch().count()));
+    }
 
     if (!validatorKeys_.keys)
     {
@@ -1191,10 +1219,22 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
 {
     namespace cs = telemetry::consensus::span;
 
+    // Capture the prior round's context BEFORE the new span overwrites
+    // roundSpanContext_; used to add a follows-from link from the new
+    // round's span so consecutive rounds remain navigable.
+    prevRoundSpanContext_ = roundSpanContext_;
+
+    // Reset the prior accept context so a stale value can't be used to
+    // link a validation that fires before this round's accept span exists.
+    acceptSpanContext_ = telemetry::SpanContext{};
+
     if (roundSpan_)
         roundSpan_.reset();
 
     auto const& strategy = app_.getTelemetry().getConsensusTraceStrategy();
+
+    telemetry::SpanContext const* const link =
+        prevRoundSpanContext_.isValid() ? &prevRoundSpanContext_ : nullptr;
 
     if (strategy == "deterministic")
     {
@@ -1203,7 +1243,8 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
                 telemetry::TraceCategory::Consensus,
                 cs::round,
                 prevLgr.id().data(),
-                prevLgr.id().bytes));
+                prevLgr.id().bytes,
+                link));
     }
     else
     {
@@ -1220,6 +1261,13 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     roundSpan_->setAttribute(cs::attr::mode, toDisplayString(mode_.load()).c_str());
     roundSpan_->setAttribute(cs::attr::traceStrategy, strategy.c_str());
     roundSpan_->setAttribute(cs::attr::roundId, static_cast<int64_t>(prevLgr.seq()) + 1);
+    roundSpan_->setAttribute(cs::attr::previousLedgerSeq, static_cast<int64_t>(prevLgr.seq()));
+    roundSpan_->setAttribute(cs::attr::previousProposers, static_cast<int64_t>(prevProposers_));
+    roundSpan_->setAttribute(
+        cs::attr::previousRoundTimeMs, static_cast<int64_t>(prevRoundTime_.load().count()));
+    roundSpan_->setAttribute(cs::attr::consensusPhase, "open");
+
+    roundSpan_->addEvent(cs::event::phaseOpen);
 
     roundSpanContext_ = roundSpan_->captureContext();
 }
@@ -1229,10 +1277,49 @@ RCLConsensus::Adaptor::createValidationSpan()
 {
     namespace cs = telemetry::consensus::span;
 
+    // Prefer linking to the accept span (matches the design diagram and
+    // the "validation follows acceptance" causal model). Fall back to the
+    // round span only if the accept context isn't yet captured (e.g.
+    // tracing started after onAccept, or makeAcceptSpan returned a null
+    // guard).
+    if (acceptSpanContext_.isValid())
+    {
+        return telemetry::SpanGuard::linkedSpan(cs::validationSend, acceptSpanContext_);
+    }
+
     if (!roundSpanContext_.isValid())
+    {
         return std::nullopt;
+    }
 
     return telemetry::SpanGuard::linkedSpan(cs::validationSend, roundSpanContext_);
+}
+
+void
+RCLConsensus::Adaptor::onPhaseEvent(std::string_view eventName, std::string_view phaseLabel)
+{
+    namespace cs = telemetry::consensus::span;
+
+    if (!roundSpan_ || !*roundSpan_)
+    {
+        return;
+    }
+
+    roundSpan_->addEvent(eventName);
+    if (!phaseLabel.empty())
+    {
+        roundSpan_->setAttribute(cs::attr::consensusPhase, phaseLabel);
+    }
+}
+
+void
+RCLConsensus::Adaptor::onOutcomeEvent(std::string_view eventName)
+{
+    if (!roundSpan_ || !*roundSpan_)
+    {
+        return;
+    }
+    roundSpan_->addEvent(eventName);
 }
 
 void

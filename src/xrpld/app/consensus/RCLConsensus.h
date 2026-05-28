@@ -88,6 +88,34 @@ class RCLConsensus
          */
         telemetry::SpanContext roundSpanContext_;
 
+        /** SpanContext of the prior round, captured before roundSpanContext_
+         *  is overwritten by the next round's startRoundTracing().
+         *
+         *  Used as a follows-from link target on the new round's span so
+         *  consecutive rounds (each with its own deterministic trace-id)
+         *  remain navigable in trace UIs as a connected sequence.
+         */
+        telemetry::SpanContext prevRoundSpanContext_;
+
+        /** SpanContext snapshot of the current round's accept span.
+         *
+         *  Captured in makeAcceptSpan() and consumed by createValidationSpan()
+         *  on the jtACCEPT worker thread so the validation.send span can be
+         *  follows-from linked to consensus.accept (matching the design doc
+         *  and span hierarchy diagram). Reset on each startRoundTracing()
+         *  to prevent a stale prior-round context from being linked.
+         *
+         *  Thread safety: same model as roundSpanContext_. The write in
+         *  makeAcceptSpan happens on the main consensus thread under
+         *  mutex_, and the read in createValidationSpan happens on the
+         *  jtACCEPT worker thread that was posted by makeAcceptSpan.
+         *  The job queue dispatch establishes a happens-before relation,
+         *  so no atomic synchronization is needed. The next reset (in
+         *  startRoundTracing) only runs after endConsensus → startRound,
+         *  which by Consensus design only fires after doAccept completes.
+         */
+        telemetry::SpanContext acceptSpanContext_;
+
     public:
         using Ledger_t = RCLCxLedger;
         using NodeID_t = NodeID;
@@ -196,6 +224,32 @@ class RCLConsensus
          */
         std::optional<telemetry::SpanGuard>
         createValidationSpan();
+
+        /** Record a phase-transition event on the active round span.
+         *
+         * Called from the engine at each phase boundary
+         * (open/establish/accepted/recovery) so the round span carries a
+         * complete timeline of state changes. Also updates the
+         * `consensus_phase` attribute to the current phase name.
+         *
+         * @param eventName   Event name (e.g. "phase.establish").
+         * @param phaseLabel  String value for the consensus_phase attr
+         *                    ("open"/"establish"/"accepted"). Empty to skip
+         *                    the attribute update (e.g. for "recovery").
+         */
+        void
+        onPhaseEvent(std::string_view eventName, std::string_view phaseLabel);
+
+        /** Record a checkConsensus outcome event on the round span.
+         *
+         * Called from the engine at the establish→accepted transition so
+         * the path that drove acceptance (Yes / MovedOn / Expired) is
+         * queryable from the round-level trace.
+         *
+         * @param eventName  Event name (e.g. "outcome.yes").
+         */
+        void
+        onOutcomeEvent(std::string_view eventName);
 
     private:
         //---------------------------------------------------------------------

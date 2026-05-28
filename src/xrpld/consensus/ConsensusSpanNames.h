@@ -137,11 +137,37 @@ inline constexpr auto ledgerId = makeStr("consensus_ledger_id");
 inline constexpr auto mode = makeStr("consensus_mode");
 inline constexpr auto round = makeStr("consensus_round");
 inline constexpr auto roundId = makeStr("consensus_round_id");
+/// Current phase name attached to consensus.round; updated on each
+/// phase transition event (open/establish/accepted).
+inline constexpr auto consensusPhase = makeStr("consensus_phase");
+/// Boolean flag set on consensus.check when checkConsensus reports stalled.
+inline constexpr auto consensusStalled = makeStr("consensus_stalled");
 
 /// Domain-owned bare attrs.
 inline constexpr auto proposers = makeStr("proposers");
 inline constexpr auto roundTimeMs = makeStr("round_time_ms");
 inline constexpr auto proposing = makeStr("proposing");
+/// Round continuity / context attrs (set on consensus.round at round start).
+inline constexpr auto previousProposers = makeStr("previous_proposers");
+inline constexpr auto previousRoundTimeMs = makeStr("previous_round_time_ms");
+inline constexpr auto previousLedgerSeq = makeStr("previous_ledger_seq");
+inline constexpr auto closeTimeResolutionMs = makeStr("close_time_resolution_ms");
+/// Open-phase end metadata (set on consensus.phase.open before reset).
+inline constexpr auto openDurationMs = makeStr("open_duration_ms");
+inline constexpr auto peerPositionsAtClose = makeStr("peer_positions_at_close");
+/// Ledger-close inputs.
+inline constexpr auto txCountOpen = makeStr("tx_count_open");
+/// Establish/check additional state.
+inline constexpr auto proposersFinished = makeStr("proposers_finished");
+inline constexpr auto establishCounter = makeStr("establish_counter");
+/// Accept/apply enrichment.
+inline constexpr auto disputesResolvedCount = makeStr("disputes_resolved_count");
+/// Validation send/receive enrichment.
+inline constexpr auto fullValidation = makeStr("full_validation");
+inline constexpr auto validationSignTime = makeStr("validation_sign_time");
+/// Receive-side hash prefixes for cross-peer correlation.
+inline constexpr auto prevLedgerPrefix = makeStr("prev_ledger_prefix");
+inline constexpr auto positionHashPrefix = makeStr("position_hash_prefix");
 /// "consensus_state" — domain-qualified (collides with other domains' state).
 inline constexpr auto consensusState = makeStr("consensus_state");
 inline constexpr auto parentCloseTime = makeStr("parent_close_time");
@@ -180,6 +206,20 @@ namespace event {
 inline constexpr auto disputeResolve = join(makeStr("dispute"), makeStr("resolve"));
 /// "tx.included"
 inline constexpr auto txIncluded = join(makeStr("tx"), makeStr("included"));
+
+/// Phase transition events — fired on consensus.round at each transition
+/// so the round-level span carries a complete timeline of phase changes,
+/// including the handleWrongLedger recovery edge that re-enters Open.
+inline constexpr auto phaseOpen = join(makeStr("phase"), makeStr("open"));
+inline constexpr auto phaseEstablish = join(makeStr("phase"), makeStr("establish"));
+inline constexpr auto phaseAccepted = join(makeStr("phase"), makeStr("accepted"));
+inline constexpr auto phaseRecovery = join(makeStr("phase"), makeStr("recovery"));
+
+/// Outcome events — fired on consensus.round at the establish→accepted
+/// transition so the path that drove acceptance is queryable.
+inline constexpr auto outcomeYes = join(makeStr("outcome"), makeStr("yes"));
+inline constexpr auto outcomeMovedOn = join(makeStr("outcome"), makeStr("moved_on"));
+inline constexpr auto outcomeExpired = join(makeStr("outcome"), makeStr("expired"));
 }  // namespace event
 
 // ===== Attribute values ======================================================
