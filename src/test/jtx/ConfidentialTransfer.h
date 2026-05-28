@@ -55,6 +55,7 @@
 
 namespace xrpl {
 
+// NOLINTBEGIN(misc-const-correctness, bugprone-unchecked-optional-access)
 class ConfidentialTransferTestBase : public beast::unit_test::Suite
 {
 protected:
@@ -428,5 +429,6 @@ protected:
         mpt.convert({.account = dave, .amt = 0, .holderPubKey = mpt.getPubKey(dave)});
     }
 };
+// NOLINTEND(misc-const-correctness, bugprone-unchecked-optional-access)
 
 }  // namespace xrpl
