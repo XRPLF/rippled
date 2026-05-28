@@ -108,15 +108,6 @@ namespace attr {
 inline constexpr auto networkId = join(join(seg::xrpl, seg::network), makeStr("id"));
 inline constexpr auto networkType = join(join(seg::xrpl, seg::network), makeStr("type"));
 inline constexpr auto linkType = makeStr("link_type");
-
-/// Node health attributes — RESOURCE-ONLY (process identity, not per-span).
-/// Set at Tracer init via resource::Resource::Create and refreshed on state
-/// transitions. Do NOT use with span.setAttribute().
-inline constexpr auto xrplNode = join(seg::xrpl, makeStr("node"));
-/// "xrpl.node.amendment_blocked" — resource attribute key.
-inline constexpr auto nodeAmendmentBlocked = join(xrplNode, makeStr("amendment_blocked"));
-/// "xrpl.node.server_state" — resource attribute key.
-inline constexpr auto nodeServerState = join(xrplNode, makeStr("server_state"));
 }  // namespace attr
 
 // ===== Shared attribute values =============================================

@@ -9,34 +9,36 @@
  *
  *    RPC entry (one-shot or subscription):
  *
- *    +-------------------------------------------------------+
- *    | pathfind.request                                      |
- *    | doPathFind() / doRipplePathFind()                     |
- *    |   attrs: source_account, dest_account                 |
- *    |                                                       |
- *    |  +--------------------------------------------------+ |
- *    |  | pathfind.compute                                 | |
- *    |  | PathRequest::doUpdate()                          | |
- *    |  | attrs: fast, search_level                        | |
- *    |  |                                                  | |
- *    |  |  +---------------------+ +--------------------+  | |
- *    |  |  | pathfind.discover   | | pathfind.rank      |  | |
- *    |  |  | Pathfinder::find()  | | computePathRanks() |  | |
- *    |  |  +---------------------+ +--------------------+  | |
- *    |  +--------------------------------------------------+ |
- *    +-------------------------------------------------------+
+ *    +----------------------------------------------------------------+
+ *    | pathfind.request                                               |
+ *    | doPathFind() / doRipplePathFind()                              |
+ *    |   attrs: pathfind_source_account, pathfind_dest_account        |
+ *    |          (set when present in request params)                  |
+ *    |                                                                |
+ *    |  +-----------------------------------------------------------+ |
+ *    |  | pathfind.compute                                          | |
+ *    |  | PathRequest::doUpdate()                                   | |
+ *    |  | attrs: pathfind_fast                                      | |
+ *    |  |                                                           | |
+ *    |  |  +-----------------------------------------------------+  | |
+ *    |  |  | pathfind.discover  (one per RPC call, hoisted above | |
+ *    |  |  | the per-source-asset loop in PathRequest::findPaths)| |
+ *    |  |  |   attrs: pathfind_search_level, pathfind_num_paths  | |
+ *    |  |  +-----------------------------------------------------+ | |
+ *    |  +-----------------------------------------------------------+ |
+ *    +----------------------------------------------------------------+
  *
  *    Async recomputation (ledger close):
  *
- *    +-------------------------------------------------------+
- *    | pathfind.update_all                                   |
- *    | PathRequestManager::updateAll()                       |
- *    |   attrs: ledger_index, num_requests                   |
- *    |                                                       |
- *    |  +--------------------------------------------------+ |
- *    |  | pathfind.compute  (per active request)            | |
- *    |  +--------------------------------------------------+ |
- *    +-------------------------------------------------------+
+ *    +----------------------------------------------------------------+
+ *    | pathfind.update_all                                            |
+ *    | PathRequestManager::updateAll()                                |
+ *    |   attrs: pathfind_ledger_index, pathfind_num_requests          |
+ *    |                                                                |
+ *    |  +-----------------------------------------------------------+ |
+ *    |  | pathfind.compute  (per active request)                    | |
+ *    |  +-----------------------------------------------------------+ |
+ *    +----------------------------------------------------------------+
  */
 
 #include <xrpl/telemetry/SpanNames.h>
@@ -57,30 +59,31 @@ inline constexpr auto request = makeStr("request");
 inline constexpr auto compute = makeStr("compute");
 inline constexpr auto updateAll = makeStr("update_all");
 inline constexpr auto discover = makeStr("discover");
-inline constexpr auto rank = makeStr("rank");
 }  // namespace op
 
 // ===== Attribute keys ======================================================
+//
+// All pathfind attributes are namespaced under `pathfind_*` (underscore form,
+// per Phase 1c naming spec rule 5). Avoids collisions with bare keys like
+// `fast` or `num_paths` that other subsystems may introduce.
 
 namespace attr {
-/// "source_account" — originating account for path search.
-inline constexpr auto sourceAccount = makeStr("source_account");
-/// "dest_account" — destination account.
-inline constexpr auto destAccount = makeStr("dest_account");
-/// "fast" — whether fast pathfinding mode enabled.
-inline constexpr auto fast = makeStr("fast");
-/// "search_level" — depth of graph exploration.
-inline constexpr auto searchLevel = makeStr("search_level");
-/// "num_complete_paths" — complete paths found.
-inline constexpr auto numCompletePaths = makeStr("num_complete_paths");
-/// "num_paths" — total paths returned.
-inline constexpr auto numPaths = makeStr("num_paths");
-/// "num_requests" — active path requests.
-inline constexpr auto numRequests = makeStr("num_requests");
-/// "xrpl.pathfind.ledger_index" — kept qualified (rule 5): pathfind target
-/// ledger is distinct from xrpl.ledger.seq.
-inline constexpr auto ledgerIndex =
-    join(join(seg::xrpl, makeStr("pathfind")), makeStr("ledger_index"));
+/// "pathfind_source_account" — originating account for path search.
+inline constexpr auto sourceAccount = makeStr("pathfind_source_account");
+/// "pathfind_dest_account" — destination account.
+inline constexpr auto destAccount = makeStr("pathfind_dest_account");
+/// "pathfind_fast" — whether fast pathfinding mode enabled.
+inline constexpr auto fast = makeStr("pathfind_fast");
+/// "pathfind_search_level" — depth of graph exploration.
+inline constexpr auto searchLevel = makeStr("pathfind_search_level");
+/// "pathfind_num_paths" — total paths produced across the per-source-asset
+/// loop in PathRequest::findPaths (sum of getBestPaths().size() per asset).
+inline constexpr auto numPaths = makeStr("pathfind_num_paths");
+/// "pathfind_num_requests" — snapshot size of requests_ at update_all start
+/// (may include weak_ptrs that subsequently expire during processing).
+inline constexpr auto numRequests = makeStr("pathfind_num_requests");
+/// "pathfind_ledger_index" — pathfind target ledger index.
+inline constexpr auto ledgerIndex = makeStr("pathfind_ledger_index");
 }  // namespace attr
 
 }  // namespace xrpl::telemetry::pathfind_span

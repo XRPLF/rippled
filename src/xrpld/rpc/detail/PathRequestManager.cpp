@@ -61,11 +61,6 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 void
 PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
-    using namespace telemetry;
-    auto span = SpanGuard::span(
-        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::updateAll);
-    span.setAttribute(pathfind_span::attr::ledgerIndex, static_cast<int64_t>(inLedger->seq()));
-
     auto event = app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "PathRequest::updateAll");
 
     std::vector<PathRequest::wptr> requests;
@@ -77,6 +72,18 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         requests = requests_;
         cache = getAssetCache(inLedger, true);
     }
+
+    // updateAll runs on every ledger close; skip span emission entirely when
+    // there are no active path subscriptions to avoid a steady stream of empty
+    // spans at mainnet close cadence.
+    if (requests.empty())
+        return;
+
+    using namespace telemetry;
+    auto span = SpanGuard::span(
+        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::updateAll);
+    span.setAttribute(pathfind_span::attr::ledgerIndex, static_cast<int64_t>(inLedger->seq()));
+    span.setAttribute(pathfind_span::attr::numRequests, static_cast<int64_t>(requests.size()));
 
     bool newRequests = app_.getLedgerMaster().isNewPathRequest();
     bool mustBreak = false;
