@@ -25,7 +25,7 @@
  *      overlay.relay(txID, tx, toSkip);
  *  @endcode
  *
- *  @see ConsensusReceiveTracing.h for receive-side extraction helpers.
+ *  @see TxTracing.h for receive-side extraction helpers.
  *  @see TraceContextPropagator.h for low-level OTel context serialization.
  */
 
