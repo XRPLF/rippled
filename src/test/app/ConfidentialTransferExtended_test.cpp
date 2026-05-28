@@ -553,7 +553,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         }
     }
 
-     // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
+    // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
     // Convert, MergeInbox, Send, ConvertBack) using tickets instead of regular account
     // sequence numbers.
     void

@@ -1,6 +1,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
@@ -7575,11 +7576,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // TransferFee (transfer rate) Tests
         testTransferFee(features);
-
-
-
-
-
 
         // Zero knowledge proof tests
         testForgedEqualityProof(features);
