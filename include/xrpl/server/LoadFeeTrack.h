@@ -92,7 +92,7 @@ public:
     }
 
     bool
-    raiseLocalFee();
+    raiseLocalFee(uint32_t iterations = 1);
     bool
     lowerLocalFee();
 

@@ -14,28 +14,33 @@
 namespace xrpl {
 
 bool
-LoadFeeTrack::raiseLocalFee()
+LoadFeeTrack::raiseLocalFee(uint32_t iterations)
 {
     std::scoped_lock const sl(lock_);
+    auto changed = false;
+    for (auto i = uint32_t{}; i < iterations; ++i)
+    {
+        if (++raiseCount_ < 2)
+            continue;
 
-    if (++raiseCount_ < 2)
-        return false;
+        std::uint32_t const origFee = localTxnLoadFee_;
 
-    std::uint32_t const origFee = localTxnLoadFee_;
+        // make sure this fee takes effect
+        localTxnLoadFee_ = std::max(localTxnLoadFee_, remoteTxnLoadFee_);
 
-    // make sure this fee takes effect
-    localTxnLoadFee_ = std::max(localTxnLoadFee_, remoteTxnLoadFee_);
+        // Increase slowly
+        localTxnLoadFee_ += (localTxnLoadFee_ / kLftFeeIncFraction);
 
-    // Increase slowly
-    localTxnLoadFee_ += (localTxnLoadFee_ / kLftFeeIncFraction);
+        localTxnLoadFee_ = std::min(localTxnLoadFee_, kLftFeeMax);
 
-    localTxnLoadFee_ = std::min(localTxnLoadFee_, kLftFeeMax);
-
-    if (origFee == localTxnLoadFee_)
-        return false;
-
-    JLOG(j_.debug()) << "Local load fee raised from " << origFee << " to " << localTxnLoadFee_;
-    return true;
+        if (origFee != localTxnLoadFee_)
+        {
+            changed = true;
+            JLOG(j_.debug()) << "Local load fee raised from " << origFee << " to "
+                             << localTxnLoadFee_;
+        }
+    }
+    return changed;
 }
 
 bool

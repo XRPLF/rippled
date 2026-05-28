@@ -4354,8 +4354,7 @@ public:
         // asynchronously lowered by LoadManager.  Here we're just
         // pushing the local fee up really high and then hoping that we
         // outrace LoadManager undoing our work.
-        for (int i = 0; i < 30; ++i)
-            env.app().getFeeTrack().raiseLocalFee();
+        env.app().getFeeTrack().raiseLocalFee(30);
 
         // Now close the ledger, which will attempt to process alice's
         // and bob's queued transactions.
