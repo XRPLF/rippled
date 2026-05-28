@@ -898,6 +898,15 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     val.set_validation(serialized.data(), serialized.size());
     // Inject the current thread's active span context so receiving
     // peers can link their validation.receive span as a child.
+    //
+    // TODO(observability/secure-OTel): the trace_context appended below is
+    // outside the cryptographic signature on `serialized` and is therefore
+    // unauthenticated. Receivers cannot prove it was not tampered with by
+    // a relay. A signed trace context (either folded into the validation
+    // payload or carried by an authenticated trace_state token) is tracked
+    // as a follow-up — see PR #6425 discussion r3317273388 and
+    // OpenTelemetryPlan/secure-OTel.md. Until then, downstream consumers
+    // must treat the validation trace_context as advisory only.
 #ifdef XRPL_ENABLE_TELEMETRY
     {
         auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();

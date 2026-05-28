@@ -1,5 +1,6 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 
+#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -1474,6 +1475,7 @@ PeerImp::handleTransaction(
         */
         if (stx->isFlag(tfInnerBatchTxn))
         {
+            span->setAttribute(tx_span::attr::txStatus, tx_span::val::rejectedInnerBatch);
             JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
                                        "tfInnerBatchTxn (handleTransaction).";
             fee_.update(Resource::feeModerateBurdenPeer, "inner batch txn");
@@ -1494,12 +1496,20 @@ PeerImp::handleTransaction(
                 fee_.update(Resource::feeUselessData, "known bad");
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
             }
-
-            // Erase only if the server has seen this tx. If the server has not
-            // seen this tx then the tx could not has been queued for this peer.
-            else if (eraseTxQueue && txReduceRelayEnabled())
+            else
             {
-                removeTxQueue(txID);
+                // Recently-seen but not flagged bad — this is the plain
+                // duplicate-suppression path. Mark it explicitly so the
+                // span never exits as "new".
+                span->setAttribute(tx_span::attr::txStatus, tx_span::val::suppressed);
+
+                // Erase only if the server has seen this tx. If the server
+                // has not seen this tx then the tx could not have been
+                // queued for this peer.
+                if (eraseTxQueue && txReduceRelayEnabled())
+                {
+                    removeTxQueue(txID);
+                }
             }
 
             overlay_.reportInboundTraffic(
@@ -1532,10 +1542,12 @@ PeerImp::handleTransaction(
 
         if (app_.getLedgerMaster().getValidatedLedgerAge() > 4min)
         {
+            span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedNoSync);
             JLOG(p_journal_.trace()) << "No new transactions until synchronized";
         }
         else if (app_.getJobQueue().getJobCount(jtTRANSACTION) > app_.config().MAX_TRANSACTIONS)
         {
+            span->setAttribute(tx_span::attr::txStatus, tx_span::val::droppedQueueFull);
             overlay_.incJqTransOverflow();
             JLOG(p_journal_.info()) << "Transaction queue is full";
         }
@@ -1967,8 +1979,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // Create a receive span that links to the sender's trace context
     // (if propagated). shared_ptr keeps it alive across the job boundary.
     auto span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
-    span->setAttribute("xrpl.consensus.trusted", isTrusted);
-    span->setAttribute("xrpl.consensus.round", static_cast<int64_t>(set.proposeseq()));
+    span->setAttribute(telemetry::consensus_span::attr::trusted, isTrusted);
+    span->setAttribute(
+        telemetry::consensus_span::attr::round, static_cast<int64_t>(set.proposeseq()));
 
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
@@ -2552,11 +2565,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // Create a receive span that links to the sender's trace context
         // (if propagated). shared_ptr keeps it alive across the job boundary.
         auto span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
-        span->setAttribute("xrpl.consensus.trusted", isTrusted);
+        span->setAttribute(telemetry::consensus_span::attr::trusted, isTrusted);
         if (val->isFieldPresent(sfLedgerSequence))
         {
             span->setAttribute(
-                "xrpl.consensus.ledger.seq",
+                telemetry::consensus_span::attr::ledgerSeq,
                 static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
         }
 

@@ -109,11 +109,17 @@ inline constexpr auto networkId = join(join(seg::xrpl, seg::network), makeStr("i
 inline constexpr auto networkType = join(join(seg::xrpl, seg::network), makeStr("type"));
 inline constexpr auto linkType = makeStr("link_type");
 
-/// Canonical shared attrs (rule 5 — kept xrpl.<domain>.* form).
-/// Defined once here, aliased by domain-specific headers.
-inline constexpr auto txHash = join(join(seg::xrpl, seg::tx), makeStr("hash"));
-inline constexpr auto peerId = join(join(seg::xrpl, seg::peer), makeStr("id"));
-inline constexpr auto ledgerSeq = join(join(seg::xrpl, seg::ledger), makeStr("seq"));
+/// Canonical shared attrs (rule 5 — <domain>_<field> underscore form).
+///
+/// Per the naming convention header note: shared cross-span attribute
+/// keys use the underscore form, reserving the dotted xrpl.<domain>.<field>
+/// form for resource attributes set on the OTel resource at startup.
+/// Defined once here, aliased by domain-specific headers. These are
+/// literal underscore-joined names, not dot-joined via `join()`, since
+/// `join()` always inserts `.` between its arguments.
+inline constexpr auto txHash = makeStr("tx_hash");
+inline constexpr auto peerId = makeStr("peer_id");
+inline constexpr auto ledgerSeq = makeStr("ledger_seq");
 }  // namespace attr
 
 // ===== Shared attribute values =============================================

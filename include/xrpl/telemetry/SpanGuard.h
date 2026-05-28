@@ -275,10 +275,10 @@ public:
     */
     static SpanGuard
     hashSpan(
-        TraceCategory cat,
-        std::string_view name,
-        std::uint8_t const* hashData,
-        std::size_t hashSize);
+        TraceCategory const cat,
+        std::string_view const name,
+        std::uint8_t const* const hashData,
+        std::size_t const hashSize);
 
     /** Create a hash-derived span with a remote parent.
         trace_id = hashData[0:16], parent span_id from protobuf context
@@ -294,13 +294,13 @@ public:
     */
     static SpanGuard
     hashSpan(
-        TraceCategory cat,
-        std::string_view name,
-        std::uint8_t const* hashData,
-        std::size_t hashSize,
-        std::uint8_t const* parentSpanId,
-        std::size_t parentSpanSize,
-        std::uint8_t traceFlags);
+        TraceCategory const cat,
+        std::string_view const name,
+        std::uint8_t const* const hashData,
+        std::size_t const hashSize,
+        std::uint8_t const* const parentSpanId,
+        std::size_t const parentSpanSize,
+        std::uint8_t const traceFlags);
 
     // --- Context capture -----------------------------------------------
 

@@ -109,7 +109,7 @@ datasources:
             type: dynamic
           # Phase 3: Transaction tracing filters
           - id: tx-hash
-            tag: xrpl.tx.hash
+            tag: tx_hash
             operator: "="
             scope: span
             type: static
