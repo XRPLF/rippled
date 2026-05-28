@@ -24,6 +24,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <random>
 #include <vector>
@@ -42,21 +43,38 @@ static std::vector<char> const data = []() {
     return strV;
 }();
 
+// Fold 8 bytes of a uint256 into a sink so the optimizer cannot
+// dead-code-eliminate the hash call. Each test CHECKs the sink to
+// keep it observable.
+static inline std::uint64_t
+absorb(uint256 const& h)
+{
+    std::uint64_t word;
+    std::memcpy(&word, h.data(), sizeof(word));
+    return word;
+}
+
 TEST_SUITE_BEGIN("OpenSSL");
 
 TEST_CASE("SingleHashFullSlice")
 {
+    constexpr int kIterations = 10'000;
     Slice const s{data.data(), data.size()};
-    auto hash = sha512Half(s);
+    std::uint64_t sink = 0;
+    for (int i = 0; i < kIterations; ++i)
+        sink ^= absorb(sha512Half(s));
+    CHECK(sink != 0xDEADBEEFDEADBEEFull);
 }
 
 TEST_CASE("MultihashAllSlices")
 {
+    std::uint64_t sink = 0;
     for (std::size_t i = 0; i < data.size(); ++i)
     {
         Slice s(&data[i], data.size() - i);
-        auto hash = sha512Half(s);
+        sink ^= absorb(sha512Half(s));
     }
+    CHECK(sink != 0xDEADBEEFDEADBEEFull);
 }
 
 TEST_SUITE_END();
