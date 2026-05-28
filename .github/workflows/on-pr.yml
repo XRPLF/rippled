@@ -98,7 +98,7 @@ jobs:
           READY: ${{ contains(github.event.pull_request.labels.*.name, 'Ready to merge') }}
           MERGE: ${{ github.event_name == 'merge_group' }}
         run: |
-          echo "go=${{ (env.DRAFT != 'true' && env.READY == 'true') || env.FILES == 'true' || env.MERGE == 'true' }}" >> "${GITHUB_OUTPUT}"
+          echo "go=${{ (env.DRAFT != 'true' && env.READY == 'true') || env.FILES == 'true' || env.MERGE == 'true' }}" >>"${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
@@ -168,9 +168,9 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
-          -F "client_payload[ref]=${{ needs.upload-recipe.outputs.recipe_ref }}" \
-          -F "client_payload[pr_url]=${PR_URL}"
+              /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
+              -F "client_payload[ref]=${{ needs.upload-recipe.outputs.recipe_ref }}" \
+              -F "client_payload[pr_url]=${PR_URL}"
 
   passed:
     if: failure() || cancelled()
