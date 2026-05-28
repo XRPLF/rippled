@@ -37,12 +37,12 @@ runs:
       run: |
         echo 'Installing dependencies.'
         conan install \
-          --profile ci \
-          --build="${BUILD_OPTION}" \
-          --options:host='&:tests=True' \
-          --options:host='&:xrpld=True' \
-          --settings:all build_type="${BUILD_TYPE}" \
-          --conf:all tools.build:jobs=${BUILD_NPROC} \
-          --conf:all tools.build:verbosity="${LOG_VERBOSITY}" \
-          --conf:all tools.compilation:verbosity="${LOG_VERBOSITY}" \
-          .
+            --profile ci \
+            --build="${BUILD_OPTION}" \
+            --options:host='&:tests=True' \
+            --options:host='&:xrpld=True' \
+            --settings:all build_type="${BUILD_TYPE}" \
+            --conf:all tools.build:jobs=${BUILD_NPROC} \
+            --conf:all tools.build:verbosity="${LOG_VERBOSITY}" \
+            --conf:all tools.compilation:verbosity="${LOG_VERBOSITY}" \
+            .

@@ -123,7 +123,7 @@ void
 TxTest::createAccount(Account const& account, XRPAmount xrp, uint32_t accountFlags)
 {
     auto const paymentTer =
-        submit(transactions::PaymentBuilder{Account::master, account, xrp}, Account::master).ter;
+        submit(transactions::PaymentBuilder{Account::kMaster, account, xrp}, Account::kMaster).ter;
 
     if (paymentTer != tesSUCCESS)
     {
