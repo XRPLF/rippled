@@ -36,7 +36,8 @@ such as Grafana Tempo.
 Telemetry is **off by default** at both compile time and runtime:
 
 - **Compile time**: The Conan option `telemetry` and CMake option `telemetry` must be set to `True`/`ON`.
-  When disabled, all tracing macros compile to `((void)0)` with zero overhead.
+  When disabled, all `SpanGuard` calls compile to inline no-ops (defined in `SpanGuard.h`)
+  with zero overhead — no OTel SDK dependency required.
 - **Runtime**: The `[telemetry]` config section must set `enabled=1`.
   When disabled at runtime, a no-op implementation is used.
 

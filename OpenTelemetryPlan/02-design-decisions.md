@@ -346,20 +346,20 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 
 The following table summarizes what data is collected by category:
 
-| Category        | Attributes Collected                                                   | Purpose                      |
-| --------------- | ---------------------------------------------------------------------- | ---------------------------- |
-| **Transaction** | `tx.hash`, `tx.type`, `tx.result`, `tx.fee`, `ledger_index`            | Trace transaction lifecycle  |
-| **Consensus**   | `round`, `phase`, `mode`, `proposers` (public keys), `duration_ms`     | Analyze consensus timing     |
-| **RPC**         | `command`, `version`, `status`, `duration_ms`                          | Monitor RPC performance      |
-| **Peer**        | `peer.id` (public key), `latency_ms`, `message.type`, `message.size`   | Network topology analysis    |
-| **Ledger**      | `ledger.hash`, `ledger.index`, `close_time`, `tx_count`                | Ledger progression tracking  |
-| **Job**         | `job.type`, `queue_ms`, `worker`                                       | JobQueue performance         |
-| **PathFinding** | `pathfind.source_currency`, `dest_currency`, `path_count`, `cache_hit` | Payment path analysis        |
-| **TxQ**         | `txq.queue_depth`, `fee_level`, `eviction_reason`                      | Queue depth and fee tracking |
-| **Fee**         | `fee.load_factor`, `escalation_level`                                  | Fee escalation monitoring    |
-| **Validator**   | `validator.list_size`, `list_age_sec`                                  | UNL health monitoring        |
-| **Amendment**   | `amendment.name`, `status`                                             | Protocol upgrade tracking    |
-| **SHAMap**      | `shamap.type`, `missing_nodes`, `duration_ms`                          | State tree sync performance  |
+| Category        | Attributes Collected                                                                                             | Purpose                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **Transaction** | `tx.hash`, `tx.type`, `tx.result`, `tx.fee`, `ledger_index`                                                      | Trace transaction lifecycle  |
+| **Consensus**   | `round`, `phase`, `mode`, `proposers` (public keys), `duration_ms`                                               | Analyze consensus timing     |
+| **RPC**         | `command`, `version`, `status`, `duration_ms`                                                                    | Monitor RPC performance      |
+| **Peer**        | `peer.id` (public key), `latency_ms`, `message.type`, `message.size`                                             | Network topology analysis    |
+| **Ledger**      | `ledger.hash`, `ledger.index`, `close_time`, `tx_count`                                                          | Ledger progression tracking  |
+| **Job**         | `job.type`, `queue_ms`, `worker`                                                                                 | JobQueue performance         |
+| **PathFinding** | `pathfind_fast`, `pathfind_search_level`, `pathfind_num_paths`, `pathfind_ledger_index`, `pathfind_num_requests` | Payment path analysis        |
+| **TxQ**         | `txq.queue_depth`, `fee_level`, `eviction_reason`                                                                | Queue depth and fee tracking |
+| **Fee**         | `fee.load_factor`, `escalation_level`                                                                            | Fee escalation monitoring    |
+| **Validator**   | `validator.list_size`, `list_age_sec`                                                                            | UNL health monitoring        |
+| **Amendment**   | `amendment.name`, `status`                                                                                       | Protocol upgrade tracking    |
+| **SHAMap**      | `shamap.type`, `missing_nodes`, `duration_ms`                                                                    | State tree sync performance  |
 
 ### 2.4.4 Privacy & Sensitive Data Policy
 
