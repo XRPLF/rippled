@@ -5024,12 +5024,12 @@ private:
             env.close();
 
             BEAST_EXPECT(
-                amm.expectBalances(XRPAmount(909'090'909), btc(550'000000055001), amm.tokens()));
-            // Offer ~91XRP/49.99e12BTC
+                amm.expectBalances(XRPAmount(909'090'910), btc(549'999999450001), amm.tokens()));
+            // Offer ~91XRP/50e12BTC
             BEAST_EXPECT(expectOffers(
-                env, carol_, 1, {{Amounts{XRPAmount{9'090'909}, btc(4'999999950000)}}}));
-            // Carol pays 0.1% fee on 50'000000055000BTC = 50'000000055BTC
-            env.require(Balance(carol_, btc(29'949'949'999'944'943)));
+                env, carol_, 1, {{Amounts{XRPAmount{9'090'910}, btc(5'000000500000)}}}));
+            // Carol pays 0.1% fee on 49'999999450001BTC.
+            env.require(Balance(carol_, btc(29'949'950'000'550'548)));
         }
 
         {

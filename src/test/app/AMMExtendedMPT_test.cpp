@@ -188,20 +188,28 @@ private:
             {features});
 
         // tfPassive -- place the offer without crossing it.
-        testAMM(
-            [&](AMM& ammAlice, Env& env) {
-                // Carol creates a passive offer that could cross AMM.
-                // Carol's offer should stay in the ledger.
-                auto const& btc = MPT(ammAlice[1]);
-                env(offer(carol_, XRP(100), btc(100), tfPassive));
-                env.close();
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), btc(10'000), ammAlice.tokens()));
-                BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), btc(100)}}}));
-            },
-            {{XRP(10'100), gAmmmpt(10'000)}},
-            0,
-            std::nullopt,
-            {features});
+        {
+            Env env{*this, features};
+            fund(env, gw_, {alice_, carol_}, XRP(30'000'000));
+
+            MPTTester const btc(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000'000,
+                 .flags = kMptDexFlags});
+
+            AMM const ammAlice(env, alice_, XRP(10'100'000), btc(10'000'000));
+
+            // Scale the exact-quality fixture up so the visual relationship
+            // stays clear: the passive CLOB offer has the same 1:1 quality as
+            // the generated AMM offer, so it should not cross.
+            env(offer(carol_, XRP(100'000), btc(100'000), tfPassive));
+            env.close();
+            BEAST_EXPECT(
+                ammAlice.expectBalances(XRP(10'100'000), btc(10'000'000), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100'000), btc(100'000)}}}));
+        }
 
         // tfPassive -- cross only offers of better quality.
         testAMM(

@@ -1,3 +1,4 @@
+#include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
 #include <test/jtx/TestHelpers.h>
@@ -1051,6 +1052,161 @@ public:
                 auto const& offer = *offerPtr;
                 BEAST_EXPECT(offer[sfTakerGets] == usd(4'995));
                 BEAST_EXPECT(offer[sfTakerPays] == XRP(999));
+            }
+        }
+    }
+
+    void
+    testMPTAMMLimitQualityRounding(FeatureBitset features)
+    {
+        testcase("MPT AMM limitQuality checks rounded integral output");
+
+        using namespace jtx;
+
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        // IOC used to reject the AMM strand with tecKILLED.  The continuous
+        // limitQuality target is about 32.88 MPT; rounding to nearest requested
+        // 33 MPT and made the realized AMM quality miss Bob's limit.  The
+        // discrete fallback takes the largest satisfying integer output: 32.
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPTTester const btc(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, bob},
+                 .pay = 100'000,
+                 .flags = kMptDexFlags});
+            AMM const amm(env, alice, XRP(100), btc(1'000));
+
+            auto const bobBTCBefore = btc.getBalance(bob);
+            auto const [xrpBefore, btcBefore, lpBefore] = amm.balances();
+
+            env(offer(bob, btc(100), drops(10'340'000)), Txflags(tfImmediateOrCancel));
+            env.close();
+
+            auto const [xrpAfter, btcAfter, lpAfter] = amm.balances();
+            BEAST_EXPECT(btc.getBalance(bob) == bobBTCBefore + 32);
+            BEAST_EXPECT(xrpAfter > xrpBefore);
+            BEAST_EXPECT(btcAfter < btcBefore);
+            BEAST_EXPECT(lpAfter == lpBefore);
+            BEAST_EXPECT(expectOffers(env, bob, 0));
+        }
+
+        // A standard OfferCreate at the same limit used to bypass the AMM and
+        // rest unchanged on the book.  It should now take the largest
+        // satisfying 32-MPT AMM fill first, then leave only the remainder on
+        // the book.
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPTTester const btc(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, bob},
+                 .pay = 100'000,
+                 .flags = kMptDexFlags});
+            AMM const amm(env, alice, XRP(100), btc(1'000));
+
+            auto const bobBTCBefore = btc.getBalance(bob);
+            auto const [xrpBefore, btcBefore, lpBefore] = amm.balances();
+
+            env(offer(bob, btc(100), drops(10'340'000)));
+            env.close();
+
+            auto const [xrpAfter, btcAfter, lpAfter] = amm.balances();
+            BEAST_EXPECT(btc.getBalance(bob) == bobBTCBefore + 32);
+            BEAST_EXPECT(xrpAfter > xrpBefore);
+            BEAST_EXPECT(btcAfter < btcBefore);
+            BEAST_EXPECT(lpAfter == lpBefore);
+            BEAST_EXPECT(expectOffers(env, bob, 1));
+
+            auto const bobOffers = offersOnAccount(env, bob);
+            if (BEAST_EXPECT(bobOffers.size() == 1))
+            {
+                BEAST_EXPECT((*bobOffers[0])[sfTakerPays] != btc(100));
+                BEAST_EXPECT((*bobOffers[0])[sfTakerGets] != drops(10'340'000));
+            }
+        }
+
+        // Mirror the IOC case with the integral output flipped from MPT units
+        // to XRP drops.  The same continuous target (~32.88) used to round up
+        // to 33 drops and miss limitQuality; the discrete fallback allows the
+        // largest satisfying 32-drop AMM fill.
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPTTester const btc(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, bob},
+                 .pay = 200'000'000,
+                 .flags = kMptDexFlags});
+            AMM const amm(env, alice, drops(1'000), btc(100'000'000));
+
+            auto const bobXRPBefore = env.balance(bob, XRP);
+            auto const baseFee = env.current()->fees().base;
+            auto const [xrpBefore, btcBefore, lpBefore] = amm.balances();
+
+            env(offer(bob, drops(100), btc(10'340'000)), Txflags(tfImmediateOrCancel));
+            env.close();
+
+            auto const [xrpAfter, btcAfter, lpAfter] = amm.balances();
+            env.require(Balance(bob, bobXRPBefore + drops(32) - baseFee));
+            BEAST_EXPECT(xrpAfter < xrpBefore);
+            BEAST_EXPECT(btcAfter > btcBefore);
+            BEAST_EXPECT(lpAfter == lpBefore);
+            BEAST_EXPECT(expectOffers(env, bob, 0));
+        }
+
+        // Mirror the standard OfferCreate case as well.  It should consume the
+        // largest satisfying 32-drop AMM fill before leaving only the remainder
+        // on the book.
+        {
+            Env env{*this, features};
+
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPTTester const btc(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, bob},
+                 .pay = 200'000'000,
+                 .flags = kMptDexFlags});
+            AMM const amm(env, alice, drops(1'000), btc(100'000'000));
+
+            auto const bobXRPBefore = env.balance(bob, XRP);
+            auto const baseFee = env.current()->fees().base;
+            auto const [xrpBefore, btcBefore, lpBefore] = amm.balances();
+
+            env(offer(bob, drops(100), btc(10'340'000)));
+            env.close();
+
+            auto const [xrpAfter, btcAfter, lpAfter] = amm.balances();
+            env.require(Balance(bob, bobXRPBefore + drops(32) - baseFee));
+            BEAST_EXPECT(xrpAfter < xrpBefore);
+            BEAST_EXPECT(btcAfter > btcBefore);
+            BEAST_EXPECT(lpAfter == lpBefore);
+            BEAST_EXPECT(expectOffers(env, bob, 1));
+
+            auto const bobOffers = offersOnAccount(env, bob);
+            if (BEAST_EXPECT(bobOffers.size() == 1))
+            {
+                BEAST_EXPECT((*bobOffers[0])[sfTakerPays] != drops(100));
+                BEAST_EXPECT((*bobOffers[0])[sfTakerGets] != btc(10'340'000));
             }
         }
     }
@@ -5272,6 +5428,7 @@ public:
         testDeletedOfferIssuer(features);
         testTicketOffer(features);
         testTicketCancelOffer(features);
+        testMPTAMMLimitQualityRounding(features);
         testRmSmallIncreasedQOffersXRP(features);
         testRmSmallIncreasedQOffersMPT(features);
         testPartiallyFundedMPTInputOfferZeroInput(features);

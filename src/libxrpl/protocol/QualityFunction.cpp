@@ -41,4 +41,12 @@ QualityFunction::outFromAvgQ(Quality const& quality)
     return std::nullopt;
 }
 
+bool
+QualityFunction::satisfiesAvgQ(Quality const& quality, Number const& out) const
+{
+    if (quality.rate() == beast::kZero)
+        return false;
+    return m_ * out + b_ >= 1 / quality.rate();
+}
+
 }  // namespace xrpl
