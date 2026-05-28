@@ -6,9 +6,12 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <boost/multiprecision/number.hpp>
+
 #include <gtest/gtest.h>
 
 #include <array>
+#include <cctype>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -19,10 +22,27 @@
 
 namespace xrpl {
 
+using BigInt = boost::multiprecision::cpp_int;
+
+static std::string
+fmt(BigInt const& value)
+{
+    auto s = to_string(value);
+    std::string out;
+    int count = 0;
+    for (auto it = s.rbegin(); it != s.rend(); ++it)
+    {
+        if (count != 0 && count % 3 == 0 && (std::isdigit(static_cast<unsigned char>(*it)) != 0))
+            out.insert(out.begin(), '_');
+        out.insert(out.begin(), *it);
+        ++count;
+    }
+    return out;
+}
+
 TEST(NumberTest, zero)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -40,8 +60,7 @@ TEST(NumberTest, zero)
 
 TEST(NumberTest, limits)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -113,8 +132,7 @@ TEST(NumberTest, limits)
 
 TEST(NumberTest, add)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -187,7 +205,6 @@ TEST(NumberTest, add)
                 {Number{true, 9'999'999'999'999'999'999ULL, -37, Number::Normalized{}},
                  Number{1'000'000'000'000'000'000, -18},
                  Number{false, 9'999'999'999'999'999'990ULL, -19, Number::Normalized{}}},
-                {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep / 10, 1}},
                 {Number{Number::kMaxRep - 1}, Number{1, 0}, Number{Number::kMaxRep}},
                 // Test extremes
                 {
@@ -208,6 +225,12 @@ TEST(NumberTest, add)
                     Number{false, 1'999'999'999'999'999'998ULL, 1, Number::Normalized{}},
                 },
             });
+        auto const cLargeLegacy = std::to_array<Case>({
+            {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep / 10, 1}},
+        });
+        auto const cLargeCorrected = std::to_array<Case>({
+            {Number{Number::kMaxRep}, Number{6, -1}, Number{(Number::kMaxRep / 10) + 1, 1}},
+        });
         auto test = [](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
@@ -224,6 +247,14 @@ TEST(NumberTest, add)
         else
         {
             test(cLarge);
+            if (scale == MantissaRange::MantissaScale::LargeLegacy)
+            {
+                test(cLargeLegacy);
+            }
+            else
+            {
+                test(cLargeCorrected);
+            }
         }
         {
             bool caught = false;
@@ -243,8 +274,7 @@ TEST(NumberTest, add)
 
 TEST(NumberTest, sub)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -330,8 +360,7 @@ TEST(NumberTest, sub)
 
 TEST(NumberTest, mul)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -641,8 +670,7 @@ TEST(NumberTest, mul)
 
 TEST(NumberTest, div)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -832,8 +860,7 @@ TEST(NumberTest, div)
 
 TEST(NumberTest, root)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -910,8 +937,7 @@ TEST(NumberTest, root)
 
 TEST(NumberTest, root2)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -953,8 +979,7 @@ TEST(NumberTest, root2)
 
 TEST(NumberTest, power1)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -975,8 +1000,7 @@ TEST(NumberTest, power1)
 
 TEST(NumberTest, power2)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1025,8 +1049,7 @@ TEST(NumberTest, power2)
 
 TEST(NumberTest, conversions)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1054,8 +1077,7 @@ TEST(NumberTest, conversions)
 
 TEST(NumberTest, to_integer)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1226,8 +1248,7 @@ TEST(NumberTest, to_integer)
 
 TEST(NumberTest, squelch)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1243,8 +1264,7 @@ TEST(NumberTest, squelch)
 
 TEST(NumberTest, to_string)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1306,6 +1326,7 @@ TEST(NumberTest, to_string)
                         "9223372036854775e3");
                 }
                 break;
+            case MantissaRange::MantissaScale::LargeLegacy:
             case MantissaRange::MantissaScale::Large:
                 // Test the edges
                 // ((exponent < -(28)) || (exponent > -(8)))))
@@ -1353,8 +1374,7 @@ TEST(NumberTest, to_string)
 
 TEST(NumberTest, relationals)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1367,8 +1387,7 @@ TEST(NumberTest, relationals)
 
 TEST(NumberTest, stream)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1381,8 +1400,7 @@ TEST(NumberTest, stream)
 
 TEST(NumberTest, inc_dec)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1398,8 +1416,7 @@ TEST(NumberTest, inc_dec)
 
 TEST(NumberTest, to_st_amount)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1426,8 +1443,7 @@ TEST(NumberTest, to_st_amount)
 
 TEST(NumberTest, truncate)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1455,8 +1471,7 @@ TEST(NumberTest, truncate)
 
 TEST(NumberTest, rounding)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1566,8 +1581,7 @@ TEST(NumberTest, rounding)
 
 TEST(NumberTest, int64)
 {
-    for (auto const mantissaScale :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaScale : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
@@ -1619,6 +1633,38 @@ TEST(NumberTest, int64)
                 (power(max, 2)), (Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}));
         }
     }
+}
+
+TEST(NumberTest, upward_rounding_produces_value_not_below_exact_at_k_max_rep_cusp)
+{
+    NumberMantissaScaleGuard const mg{MantissaRange::MantissaScale::Large};
+    NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
+
+    constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
+    constexpr std::int64_t kBValue = 9'223'372'036'854'315'903LL;
+
+    Number const a = kAValue;
+    Number const b = kBValue;
+    Number const product = a * b;
+
+    BigInt const exactProduct = BigInt(kAValue) * BigInt(kBValue);
+
+    BigInt storedValue = BigInt(product.mantissa());
+    for (int i = 0; i < product.exponent(); ++i)
+        storedValue *= 10;
+
+    BigInt const signedDifference = storedValue - exactProduct;
+
+    EXPECT_TRUE(signedDifference >= 0)
+        << "\n"
+        << "  a              = " << fmt(BigInt(kAValue)) << "\n"
+        << "  b              = " << fmt(BigInt(kBValue)) << "\n"
+        << "  exact a*b      = " << fmt(exactProduct) << "\n"
+        << "  stored         = " << fmt(storedValue) << "\n"
+        << "  stored - exact = " << fmt(signedDifference) << "\n"
+        << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n";
+    EXPECT_EQ(product.mantissa(), (std::numeric_limits<std::int64_t>::max() / 10) + 1);
+    EXPECT_EQ(product.exponent(), 19);
 }
 
 }  // namespace xrpl

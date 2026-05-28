@@ -142,8 +142,7 @@ TEST(IOUAmountTest, to_string)
         EXPECT_EQ(result, expected) << ss.str();
     };
 
-    for (auto const mantissaSize :
-         {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+    for (auto const mantissaSize : MantissaRange::getAllScales())
     {
         NumberMantissaScaleGuard const mg(mantissaSize);
 
