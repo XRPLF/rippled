@@ -8,12 +8,12 @@ set -e
 SED_COMMAND=sed
 HEAD_COMMAND=head
 if [[ "${OSTYPE}" == 'darwin'* ]]; then
-    if ! command -v gsed &> /dev/null; then
+    if ! command -v gsed &>/dev/null; then
         echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
         exit 1
     fi
     SED_COMMAND=gsed
-    if ! command -v ghead &> /dev/null; then
+    if ! command -v ghead &>/dev/null; then
         echo "Error: ghead is not installed. Please install it using 'brew install coreutils'."
         exit 1
     fi
@@ -74,10 +74,10 @@ if grep -q '"xrpld"' cmake/XrplCore.cmake; then
     # The script has been rerun, so just restore the name of the binary.
     ${SED_COMMAND} -i 's/"xrpld"/"rippled"/' cmake/XrplCore.cmake
 elif ! grep -q '"rippled"' cmake/XrplCore.cmake; then
-    ${HEAD_COMMAND} -n -1 cmake/XrplCore.cmake > cmake.tmp
-    echo '  # For the time being, we will keep the name of the binary as it was.' >> cmake.tmp
-    echo '  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")' >> cmake.tmp
-    tail -1 cmake/XrplCore.cmake >> cmake.tmp
+    ${HEAD_COMMAND} -n -1 cmake/XrplCore.cmake >cmake.tmp
+    echo '  # For the time being, we will keep the name of the binary as it was.' >>cmake.tmp
+    echo '  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")' >>cmake.tmp
+    tail -1 cmake/XrplCore.cmake >>cmake.tmp
     mv cmake.tmp cmake/XrplCore.cmake
 fi
 

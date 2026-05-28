@@ -7,6 +7,9 @@
 #include <test/jtx/balance.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/domain.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/ledgerStateFix.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/paths.h>
@@ -34,6 +37,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 #include <chrono>
 #include <cstddef>
@@ -1455,6 +1459,311 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testHybridOfferCrossingQuality(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_2_0];
+        testcase << "Hybrid offer crossing quality"
+                 << (fixEnabled ? " (fixCleanup3_2_0)" : " (pre-fix)");
+
+        // Partially-crossed hybrid offer should have consistent quality
+        // across both book directories.
+        //
+        // Steps:
+        //   - Bob places a hybrid offer.
+        //   - Alice places an opposing hybrid offer that partially crosses.
+        //
+        // Verify:
+        //   - Domain-book key quality == its sfExchangeRate.
+        //   - Post-fix: open-book key quality == domain-book key quality.
+        //   - Pre-fix: open-book key quality != domain-book key quality
+        //     (key used post-crossing rate, sfExchangeRate used pre-crossing).
+
+        Env env(*this, features);
+        auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
+            PermissionedDEX(env);
+
+        // Bob places a hybrid offer: TakerPays = XRP(100), TakerGets = USD(40)
+        auto const bobOfferSeq{env.seq(bob_)};
+        env(offer(bob_, XRP(100), USD(40)), Txflags(tfHybrid), Domain(domainID));
+        env.close();
+        BEAST_EXPECT(offerExists(env, bob_, bobOfferSeq));
+
+        // Alice places a hybrid offer in the opposite direction that
+        // partially crosses Bob's offer.
+        // Alice: TakerPays = USD(100), TakerGets = XRP(300) (rate = 3 XRP/USD)
+        // Bob's offer is at a better rate (2.5 XRP/USD) so crossing occurs.
+        auto const aliceOfferSeq{env.seq(alice_)};
+        env(offer(alice_, USD(100), XRP(300)), Txflags(tfHybrid), Domain(domainID));
+        env.close();
+
+        // After crossing, Alice's remaining offer should be placed.
+        auto const sle = env.le(keylet::offer(alice_.id(), aliceOfferSeq));
+        BEAST_EXPECT(sle);
+        BEAST_EXPECT(sle->isFieldPresent(sfAdditionalBooks));
+        BEAST_EXPECT(sle->getFieldArray(sfAdditionalBooks).size() == 1);
+
+        auto const domainDirKey = sle->getFieldH256(sfBookDirectory);
+        auto const openDirKey =
+            sle->getFieldArray(sfAdditionalBooks)[0].getFieldH256(sfBookDirectory);
+
+        auto const domainQuality = getQuality(domainDirKey);
+        auto const openQuality = getQuality(openDirKey);
+
+        // Read the directory SLEs and check sfExchangeRate vs key quality.
+        auto const domainDirSle = env.le(Keylet(ltDIR_NODE, domainDirKey));
+        auto const openDirSle = env.le(Keylet(ltDIR_NODE, openDirKey));
+        BEAST_EXPECT(domainDirSle);
+        BEAST_EXPECT(openDirSle);
+
+        auto const domainExRate = domainDirSle->getFieldU64(sfExchangeRate);
+        auto const openExRate = openDirSle->getFieldU64(sfExchangeRate);
+        auto const preCrossingQuality = std::uint64_t{5623825668291712342ULL};
+        auto const postCrossingQuality = std::uint64_t{5623825668291712341ULL};
+
+        // Domain directory: sfExchangeRate should always match key quality
+        // (both use the pre-crossing rate). Correct behavior.
+        BEAST_EXPECT(domainQuality == preCrossingQuality);
+        BEAST_EXPECT(domainExRate == preCrossingQuality);
+        BEAST_EXPECT(domainExRate == domainQuality);
+
+        if (fixEnabled)
+        {
+            // Correct behavior: both directory keys use the pre-crossing rate.
+            BEAST_EXPECT(openQuality == preCrossingQuality);
+            BEAST_EXPECT(domainQuality == openQuality);
+
+            // sfExchangeRate matches key quality on both directories.
+            BEAST_EXPECT(openExRate == preCrossingQuality);
+            BEAST_EXPECT(openExRate == openQuality);
+        }
+        else
+        {
+            // Wrong legacy behavior: the open-book directory key uses the
+            // post-crossing rate instead of the domain-book rate.
+            BEAST_EXPECT(openQuality == postCrossingQuality);
+            BEAST_EXPECT(domainQuality != openQuality);
+
+            // The open-book sfExchangeRate still uses the pre-crossing rate,
+            // so it no longer matches the actual quality encoded in the
+            // open-book directory key.
+            BEAST_EXPECT(openExRate == preCrossingQuality);
+            BEAST_EXPECT(openExRate != openQuality);
+            BEAST_EXPECT(openExRate == domainQuality);
+        }
+    }
+
+    void
+    testBookExchangeRateFix(FeatureBitset features)
+    {
+        testcase("LedgerStateFix BookExchangeRate");
+
+        // Use the pre-fix path to create a hybrid offer with a mismatched
+        // sfExchangeRate, then apply LedgerStateFix to correct it.
+        //
+        // Steps:
+        //   - Create a partially-crossed hybrid offer (pre-fixCleanup3_2_0)
+        //     so the open-book directory has wrong sfExchangeRate.
+        //   - Re-enable fixCleanup3_2_0 and submit a LedgerStateFix to
+        //     repair the open-book directory's sfExchangeRate.
+        //
+        // Verify:
+        //   - Before fix: sfExchangeRate != getQuality(key).
+        //   - After fix: sfExchangeRate == getQuality(key).
+
+        {
+            // Amendment gate: BookExchangeRate fixes require fixCleanup3_2_0.
+            Env env(*this, features - fixCleanup3_2_0);
+            Account const carol{"carol"};
+
+            env.fund(XRP(1000), carol);
+            env.close();
+
+            env(ledgerStateFix::bookExchangeRate(carol, uint256{1}), Ter(temDISABLED));
+        }
+
+        {
+            // Preflight check: BookExchangeRate fixes only accept their
+            // required fix-specific field.
+            Env env(*this, features);
+            Account const carol{"carol"};
+
+            env.fund(XRP(1000), carol);
+            env.close();
+
+            // BookExchangeRate fixes require sfBookDirectory.
+            auto missingBookDirectory = ledgerStateFix::bookExchangeRate(carol, uint256{1});
+            missingBookDirectory.removeMember(sfBookDirectory.jsonName);
+            env(missingBookDirectory, Ter(temINVALID));
+
+            // BookExchangeRate fixes reject fields that belong to other
+            // LedgerStateFix types.
+            auto extraOwner = ledgerStateFix::bookExchangeRate(carol, uint256{1});
+            extraOwner[sfOwner.jsonName] = carol.human();
+            env(extraOwner, Ter(temINVALID));
+        }
+
+        {
+            Env env(*this, features);
+            auto const setup = PermissionedDEX(env);
+            auto const fixFee = drops(env.current()->fees().increment);
+
+            {
+                // Preclaim check: the target directory must exist.
+                env(ledgerStateFix::bookExchangeRate(setup.carol, uint256{1}),
+                    Fee(fixFee),
+                    Ter(tecOBJECT_NOT_FOUND));
+            }
+
+            {
+                // Preclaim check: the target directory must be a book root
+                // page. Owner directories are ltDIR_NODE entries, but they do
+                // not carry sfExchangeRate.
+                auto const ownerDir = keylet::ownerDir(setup.bob.id());
+                auto const ownerDirSle = env.le(ownerDir);
+                BEAST_EXPECT(ownerDirSle);
+                BEAST_EXPECT(!ownerDirSle->isFieldPresent(sfExchangeRate));
+
+                env(ledgerStateFix::bookExchangeRate(setup.carol, ownerDir.key),
+                    Fee(fixFee),
+                    Ter(tecNO_PERMISSION));
+            }
+
+            {
+                // Preclaim check: a correct sfExchangeRate leaves nothing to
+                // repair.
+                auto const bobOfferSeq{env.seq(setup.bob)};
+                env(offer(setup.bob, XRP(100), setup.usd(40)));
+                env.close();
+
+                auto const sle = env.le(keylet::offer(setup.bob.id(), bobOfferSeq));
+                BEAST_EXPECT(sle);
+
+                auto const dirKey = sle->getFieldH256(sfBookDirectory);
+                {
+                    auto const dirSle = env.le(Keylet(ltDIR_NODE, dirKey));
+                    BEAST_EXPECT(dirSle);
+                    auto const exchangeRate = dirSle->getFieldU64(sfExchangeRate);
+                    auto const quality = getQuality(dirKey);
+                    BEAST_EXPECT(exchangeRate == quality);
+                }
+
+                env(ledgerStateFix::bookExchangeRate(setup.carol, dirKey),
+                    Fee(fixFee),
+                    Ter(tecNO_PERMISSION));
+            }
+        }
+
+        {
+            // Repair path: start without fixCleanup3_2_0 to produce the
+            // mismatch, then enable the amendment and fix it.
+            Env env(*this, features - fixCleanup3_2_0);
+            auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            // Bob places a hybrid offer.
+            env(offer(bob_, XRP(100), USD(40)), Txflags(tfHybrid), Domain(domainID));
+            env.close();
+
+            // Alice partially crosses Bob.
+            auto const aliceOfferSeq{env.seq(alice_)};
+            env(offer(alice_, USD(100), XRP(300)), Txflags(tfHybrid), Domain(domainID));
+            env.close();
+
+            auto const sle = env.le(keylet::offer(alice_.id(), aliceOfferSeq));
+            BEAST_EXPECT(sle);
+
+            auto const openDirKey =
+                sle->getFieldArray(sfAdditionalBooks)[0].getFieldH256(sfBookDirectory);
+
+            auto const preCrossingQuality = std::uint64_t{5623825668291712342ULL};
+            auto const postCrossingQuality = std::uint64_t{5623825668291712341ULL};
+
+            // Confirm mismatch exists.
+            {
+                auto const dirSle = env.le(Keylet(ltDIR_NODE, openDirKey));
+                BEAST_EXPECT(dirSle);
+                auto const exchangeRate = dirSle->getFieldU64(sfExchangeRate);
+                auto const quality = getQuality(openDirKey);
+                BEAST_EXPECT(exchangeRate == preCrossingQuality);
+                BEAST_EXPECT(quality == postCrossingQuality);
+                BEAST_EXPECT(exchangeRate != quality);
+            }
+
+            // Enable fixCleanup3_2_0 and apply the LedgerStateFix.
+            env.enableFeature(fixCleanup3_2_0);
+            env.close();
+
+            auto const fixFee = drops(env.current()->fees().increment);
+            env(ledgerStateFix::bookExchangeRate(carol_, openDirKey), Fee(fixFee));
+            env.close();
+
+            // Confirm sfExchangeRate now matches the key quality.
+            {
+                auto const dirSle = env.le(Keylet(ltDIR_NODE, openDirKey));
+                BEAST_EXPECT(dirSle);
+                auto const exchangeRate = dirSle->getFieldU64(sfExchangeRate);
+                auto const quality = getQuality(openDirKey);
+                BEAST_EXPECT(exchangeRate == postCrossingQuality);
+                BEAST_EXPECT(quality == postCrossingQuality);
+                BEAST_EXPECT(exchangeRate == quality);
+            }
+
+            // Submitting again should fail — nothing to fix.
+            env(ledgerStateFix::bookExchangeRate(carol_, openDirKey),
+                Fee(fixFee),
+                Ter(tecNO_PERMISSION));
+        }
+    }
+
+    void
+    testCancelRegularOfferWithDomainCreate(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_2_0];
+
+        testcase << "Cancel regular offer via domain OfferCreate"
+                 << (fixEnabled ? " (fixCleanup3_2_0 enabled)" : " (fixCleanup3_2_0 disabled)");
+
+        // An OfferCreate with sfDomainID and sfOfferSequence pointing to
+        // the user's own non-domain offer should atomically cancel the
+        // regular offer and place the new domain offer.
+        //
+        // Pre-fixCleanup3_2_0: ValidPermissionedDEX flagged the deleted
+        // regular offer, so the transaction failed with tecINVARIANT_FAILED.
+        // Post-fixCleanup3_2_0: the invariant ignores deletions and the
+        // transaction succeeds.
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            PermissionedDEX(env);
+
+        auto const regularSeq = env.seq(bob);
+        env(offer(bob, XRP(10), USD(10)));
+        env.close();
+        BEAST_EXPECT(checkOffer(env, bob, regularSeq, XRP(10), USD(10), 0, false));
+
+        auto const domainSeq = env.seq(bob);
+        if (fixEnabled)
+        {
+            env(offer(bob, XRP(20), USD(20)),
+                Domain(domainID),
+                Json(jss::OfferSequence, regularSeq));
+            env.close();
+            BEAST_EXPECT(!offerExists(env, bob, regularSeq));
+            BEAST_EXPECT(checkOffer(env, bob, domainSeq, XRP(20), USD(20), 0, true));
+        }
+        else
+        {
+            env(offer(bob, XRP(20), USD(20)),
+                Domain(domainID),
+                Json(jss::OfferSequence, regularSeq),
+                Ter(tecINVARIANT_FAILED));
+            env.close();
+            BEAST_EXPECT(offerExists(env, bob, regularSeq));
+            BEAST_EXPECT(!offerExists(env, bob, domainSeq));
+        }
+    }
+
 public:
     void
     run() override
@@ -1478,6 +1787,14 @@ public:
         testHybridOfferDirectories(all);
         testHybridMalformedOffer(all);
         testHybridMalformedOffer(all - fixCleanup3_1_3);
+        testHybridOfferCrossingQuality(all);
+        testHybridOfferCrossingQuality(all - fixCleanup3_2_0);
+        testBookExchangeRateFix(all);
+
+        // Cancelling a regular offer in a domain OfferCreate is allowed
+        // only after fixCleanup3_2_0.
+        testCancelRegularOfferWithDomainCreate(all);
+        testCancelRegularOfferWithDomainCreate(all - fixCleanup3_2_0);
     }
 };
 

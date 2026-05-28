@@ -226,7 +226,7 @@ Pathfinder::Pathfinder(
     , srcPathAsset_(uSrcPathAsset)
     , srcIssuer_(uSrcIssuer)
     , srcAmount_(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount))
-    , convert_all_(convertAllCheck(dstAmount_))
+    , convertAll_(convertAllCheck(dstAmount_))
     , domain_(domain)
     , ledger_(cache->getLedger())
     , rLCache_(cache)
@@ -398,7 +398,7 @@ Pathfinder::getPathLiquidity(
     try
     {
         // Compute a path that provides at least the minimum liquidity.
-        if (convert_all_)
+        if (convertAll_)
             rcInput.partialPaymentAllowed = true;
 
         auto rc = path::RippleCalc::rippleCalculate(
@@ -418,7 +418,7 @@ Pathfinder::getPathLiquidity(
         qualityOut = getRate(rc.actualAmountOut, rc.actualAmountIn);
         amountOut = rc.actualAmountOut;
 
-        if (!convert_all_)
+        if (!convertAll_)
         {
             // Now try to compute the remaining liquidity.
             rcInput.partialPaymentAllowed = true;
@@ -451,7 +451,7 @@ Pathfinder::getPathLiquidity(
 void
 Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback)
 {
-    remainingAmount_ = convertAmount(dstAmount_, convert_all_);
+    remainingAmount_ = convertAmount(dstAmount_, convertAll_);
 
     // Must subtract liquidity in default path from remaining amount.
     try
@@ -536,7 +536,7 @@ Pathfinder::rankPaths(
     rankedPaths.reserve(paths.size());
 
     auto const saMinDstAmount = [&]() -> STAmount {
-        if (!convert_all_)
+        if (!convertAll_)
         {
             // Ignore paths that move only very small amounts.
             return smallestUsefulAmount(dstAmount_, maxPaths);
@@ -581,7 +581,7 @@ Pathfinder::rankPaths(
     std::ranges::sort(
         rankedPaths, [&](Pathfinder::PathRank const& a, Pathfinder::PathRank const& b) {
             // 1) Higher quality (lower cost) is better
-            if (!convert_all_ && a.quality != b.quality)
+            if (!convertAll_ && a.quality != b.quality)
                 return a.quality < b.quality;
 
             // 2) More liquidity (higher volume) is better

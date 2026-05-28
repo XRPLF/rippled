@@ -1361,18 +1361,17 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
                         return terNO_RIPPLE;
                     return std::nullopt;
                 },
-                [&](MPTIssue const& issue) -> std::optional<TER> {
-                    // Check if can trade on DEX.
-                    if (auto const ter = canTrade(view, book_.in); !isTesSuccess(ter))
-                        return ter;
-                    if (auto const ter = canTrade(view, book_.out); !isTesSuccess(ter))
-                        return ter;
-                    return std::nullopt;
-                });
+                [&](MPTIssue const& issue) -> std::optional<TER> { return std::nullopt; });
             if (err)
                 return *err;
         }
     }
+
+    // Check if the offer can be traded on DEX.
+    if (auto const ter = canTrade(ctx.view, book_.in); !isTesSuccess(ter))
+        return ter;
+    if (auto const ter = canTrade(ctx.view, book_.out); !isTesSuccess(ter))
+        return ter;
 
     return tesSUCCESS;
 }
@@ -1384,12 +1383,22 @@ BookStep<TIn, TOut, TDerived>::rate(
     Asset const& asset,
     AccountID const& dstAccount) const
 {
-    auto const& issuer = asset.getIssuer();
-    if (isXRP(issuer) || issuer == dstAccount)
-        return kParityRate;
     return asset.visit(
-        [&](Issue const&) { return transferRate(view, issuer); },
-        [&](MPTIssue const& issue) { return transferRate(view, issue.getMptID()); });
+        [&](Issue const& issue) -> Rate {
+            if (isXRP(issue.account) || issue.account == dstAccount)
+                return kParityRate;
+            return transferRate(view, issue.account);
+        },
+        [&](MPTIssue const& mptIssue) -> Rate {
+            // For MPT, parity applies only when this asset is the final strand
+            // delivery AND the destination is the MPT issuer (holder → issuer,
+            // which is fee-free). Using strandDst_ alone is wrong because it
+            // incorrectly suppresses the fee when MPT is an intermediate or
+            // the in-side of a book that precedes the issuer's XRP receipt.
+            if (asset == strandDeliver_ && mptIssue.getIssuer() == dstAccount)
+                return kParityRate;
+            return transferRate(view, mptIssue.getMptID());
+        });
 };
 
 template <class TIn, class TOut, class TDerived>

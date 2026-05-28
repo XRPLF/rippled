@@ -1702,19 +1702,19 @@ rpcClient(
                 // line client works without a config file
             }
 
-            if (config.rpc_ip)
+            if (config.rpcIp)
             {
-                setup.client.ip = config.rpc_ip->address().to_string();
-                setup.client.port = config.rpc_ip->port();
+                setup.client.ip = config.rpcIp->address().to_string();
+                setup.client.port = config.rpcIp->port();
             }
 
             json::Value jvParams(json::ValueType::Array);
 
-            if (!setup.client.admin_user.empty())
-                jvRequest["admin_user"] = setup.client.admin_user;
+            if (!setup.client.adminUser.empty())
+                jvRequest["admin_user"] = setup.client.adminUser;
 
-            if (!setup.client.admin_password.empty())
-                jvRequest["admin_password"] = setup.client.admin_password;
+            if (!setup.client.adminPassword.empty())
+                jvRequest["admin_password"] = setup.client.adminPassword;
 
             if (jvRequest.isObject())
             {

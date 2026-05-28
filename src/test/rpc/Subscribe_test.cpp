@@ -321,7 +321,7 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             cfg = singleThreadIo(std::move(cfg));
             return cfg;
         }));
@@ -1319,7 +1319,7 @@ public:
         auto const carol = permDex.carol;
         auto const domainID = permDex.domainID;
         auto const gw = permDex.gw;
-        auto const usd = permDex.USD;
+        auto const usd = permDex.usd;
 
         auto wsc = makeWSClient(env.app().config());
 

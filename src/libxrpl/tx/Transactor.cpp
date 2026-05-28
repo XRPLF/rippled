@@ -27,6 +27,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>  // IWYU pragma: keep
@@ -252,6 +253,15 @@ Transactor::preflight2(PreflightContext const& ctx)
 
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
+
+    return tesSUCCESS;
+}
+
+NotTEC
+Transactor::preflightUniversal(PreflightContext const& ctx)
+{
+    if (ctx.rules.enabled(fixCleanup3_2_0) && hasInvalidAmount(ctx.tx, ctx.j))
+        return temBAD_AMOUNT;
 
     return tesSUCCESS;
 }

@@ -21,7 +21,7 @@ struct Entry : public beast::List<Entry>::Node
        @param now Construction time of Entry.
     */
     explicit Entry(clock_type::time_point const now)
-        : refcount(0), local_balance(now), remote_balance(0)
+        : refcount(0), localBalance(now), remoteBalance(0)
     {
     }
 
@@ -46,7 +46,7 @@ struct Entry : public beast::List<Entry>::Node
     int
     balance(clock_type::time_point const now)
     {
-        return local_balance.value(now) + remote_balance;
+        return localBalance.value(now) + remoteBalance;
     }
 
     // Add a charge and return normalized balance
@@ -54,7 +54,7 @@ struct Entry : public beast::List<Entry>::Node
     int
     add(int charge, clock_type::time_point const now)
     {
-        return local_balance.add(charge, now) + remote_balance;
+        return localBalance.add(charge, now) + remoteBalance;
     }
 
     // The public key of the peer
@@ -67,10 +67,10 @@ struct Entry : public beast::List<Entry>::Node
     int refcount;
 
     // Exponentially decaying balance of resource consumption
-    DecayingSample<kDecayWindowSeconds, clock_type> local_balance;
+    DecayingSample<kDecayWindowSeconds, clock_type> localBalance;
 
     // Normalized balance contribution from imports
-    int remote_balance;
+    int remoteBalance;
 
     // Time of the last warning
     clock_type::time_point lastWarningTime;

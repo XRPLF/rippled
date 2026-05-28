@@ -26,7 +26,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
@@ -120,11 +119,16 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     }
 
     // Globally or individually frozen
-    if (isFrozen(ctx.view, accountID, amount.asset()) ||
-        isFrozen(ctx.view, accountID, amount2.asset()))
+    if (auto const ter = checkFrozen(ctx.view, accountID, amount.asset()); !isTesSuccess(ter))
+
     {
-        JLOG(ctx.j.debug()) << "AMM Instance: involves frozen asset.";
-        return tecFROZEN;
+        JLOG(ctx.j.debug()) << "AMM Instance: involves frozen or locked asset.";
+        return ter;
+    }
+    if (auto const ter = checkFrozen(ctx.view, accountID, amount2.asset()); !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.debug()) << "AMM Instance: involves frozen or locked asset.";
+        return ter;
     }
 
     auto noDefaultRipple = [](ReadView const& view, Asset const& asset) {
@@ -191,10 +195,10 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             return terADDRESS_COLLISION;
     }
 
-    if (auto const ter = checkMPTTxAllowed(ctx.view, ttAMM_CREATE, amount.asset(), accountID);
+    if (auto const ter = canMPTTradeAndTransfer(ctx.view, amount.asset(), accountID, accountID);
         !isTesSuccess(ter))
         return ter;
-    if (auto const ter = checkMPTTxAllowed(ctx.view, ttAMM_CREATE, amount2.asset(), accountID);
+    if (auto const ter = canMPTTradeAndTransfer(ctx.view, amount2.asset(), accountID, accountID);
         !isTesSuccess(ter))
         return ter;
 
@@ -301,22 +305,14 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
         // Authorize MPT
         return amount.asset().visit(
             [&](MPTIssue const& issue) -> TER {
-                // Authorize MPT
                 auto const& mptIssue = issue;
                 auto const& mptID = mptIssue.getMptID();
-                std::uint32_t flags = lsfMPTAMM;
-                if (auto const err =
-                        requireAuth(ctx.view(), mptIssue, accountId, AuthType::WeakAuth);
+                // Implicitly authorize MPT asset for AMM pseudo-account.
+                std::uint32_t const flags = lsfMPTAMM | lsfMPTAuthorized;
+                if (auto const err = requireAuth(sb, mptIssue, accountId, AuthType::WeakAuth);
                     !isTesSuccess(err))
                 {
-                    if (err == tecNO_AUTH)
-                    {
-                        flags |= lsfMPTAuthorized;
-                    }
-                    else
-                    {
-                        return err;
-                    }
+                    return err;
                 }
 
                 if (auto const err = createMPToken(sb, mptID, accountId, flags); !isTesSuccess(err))

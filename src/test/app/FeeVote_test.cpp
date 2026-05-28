@@ -213,18 +213,18 @@ class FeeVote_test : public beast::unit_test::Suite
             // defaults
             Section const config;
             auto setup = setupFeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
-            BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
-            BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
+            BEAST_EXPECT(setup.referenceFee == defaultSetup.referenceFee);
+            BEAST_EXPECT(setup.accountReserve == defaultSetup.accountReserve);
+            BEAST_EXPECT(setup.ownerReserve == defaultSetup.ownerReserve);
         }
         {
             Section config;
             config.append(
                 {"reference_fee = 50", "account_reserve = 1234567", "owner_reserve = 1234"});
             auto setup = setupFeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == 50);
-            BEAST_EXPECT(setup.account_reserve == 1234567);
-            BEAST_EXPECT(setup.owner_reserve == 1234);
+            BEAST_EXPECT(setup.referenceFee == 50);
+            BEAST_EXPECT(setup.accountReserve == 1234567);
+            BEAST_EXPECT(setup.ownerReserve == 1234);
         }
         {
             Section config;
@@ -232,9 +232,9 @@ class FeeVote_test : public beast::unit_test::Suite
                 {"reference_fee = blah", "account_reserve = yada", "owner_reserve = foo"});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setupFeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
-            BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
-            BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
+            BEAST_EXPECT(setup.referenceFee == defaultSetup.referenceFee);
+            BEAST_EXPECT(setup.accountReserve == defaultSetup.accountReserve);
+            BEAST_EXPECT(setup.ownerReserve == defaultSetup.ownerReserve);
         }
         {
             Section config;
@@ -242,9 +242,9 @@ class FeeVote_test : public beast::unit_test::Suite
                 {"reference_fee = -50", "account_reserve = -1234567", "owner_reserve = -1234"});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setupFeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
-            BEAST_EXPECT(setup.account_reserve == static_cast<std::uint32_t>(-1234567));
-            BEAST_EXPECT(setup.owner_reserve == static_cast<std::uint32_t>(-1234));
+            BEAST_EXPECT(setup.referenceFee == defaultSetup.referenceFee);
+            BEAST_EXPECT(setup.accountReserve == static_cast<std::uint32_t>(-1234567));
+            BEAST_EXPECT(setup.ownerReserve == static_cast<std::uint32_t>(-1234));
         }
         {
             auto const big64 = std::to_string(
@@ -256,9 +256,9 @@ class FeeVote_test : public beast::unit_test::Suite
                  "owner_reserve = " + big64});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setupFeeVote(config);
-            BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
-            BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
-            BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
+            BEAST_EXPECT(setup.referenceFee == defaultSetup.referenceFee);
+            BEAST_EXPECT(setup.accountReserve == defaultSetup.accountReserve);
+            BEAST_EXPECT(setup.ownerReserve == defaultSetup.ownerReserve);
         }
     }
 
@@ -273,7 +273,7 @@ class FeeVote_test : public beast::unit_test::Suite
             auto ledger = std::make_shared<Ledger>(
                 kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -303,7 +303,7 @@ class FeeVote_test : public beast::unit_test::Suite
             auto ledger = std::make_shared<Ledger>(
                 kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -336,7 +336,7 @@ class FeeVote_test : public beast::unit_test::Suite
             auto ledger = std::make_shared<Ledger>(
                 kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -358,7 +358,7 @@ class FeeVote_test : public beast::unit_test::Suite
             auto ledger = std::make_shared<Ledger>(
                 kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -385,7 +385,7 @@ class FeeVote_test : public beast::unit_test::Suite
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -424,7 +424,7 @@ class FeeVote_test : public beast::unit_test::Suite
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -472,7 +472,7 @@ class FeeVote_test : public beast::unit_test::Suite
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -503,7 +503,7 @@ class FeeVote_test : public beast::unit_test::Suite
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -549,7 +549,7 @@ class FeeVote_test : public beast::unit_test::Suite
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -578,9 +578,9 @@ class FeeVote_test : public beast::unit_test::Suite
         using namespace jtx;
 
         FeeSetup setup;
-        setup.reference_fee = 42;
-        setup.account_reserve = 1234567;
-        setup.owner_reserve = 7654321;
+        setup.referenceFee = 42;
+        setup.accountReserve = 1234567;
+        setup.ownerReserve = 7654321;
 
         // Test with XRPFees enabled
         {
@@ -590,7 +590,7 @@ class FeeVote_test : public beast::unit_test::Suite
             auto ledger = std::make_shared<Ledger>(
                 kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -609,7 +609,7 @@ class FeeVote_test : public beast::unit_test::Suite
             feeVote->doValidation(currentFees, ledger->rules(), *val);
 
             BEAST_EXPECT(val->isFieldPresent(sfBaseFeeDrops));
-            BEAST_EXPECT(val->getFieldAmount(sfBaseFeeDrops) == XRPAmount(setup.reference_fee));
+            BEAST_EXPECT(val->getFieldAmount(sfBaseFeeDrops) == XRPAmount(setup.referenceFee));
         }
 
         // Test with XRPFees disabled (legacy format)
@@ -620,7 +620,7 @@ class FeeVote_test : public beast::unit_test::Suite
             auto ledger = std::make_shared<Ledger>(
                 kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
@@ -638,7 +638,7 @@ class FeeVote_test : public beast::unit_test::Suite
 
             // In legacy mode, should vote using legacy fields
             BEAST_EXPECT(val->isFieldPresent(sfBaseFee));
-            BEAST_EXPECT(val->getFieldU64(sfBaseFee) == setup.reference_fee);
+            BEAST_EXPECT(val->getFieldU64(sfBaseFee) == setup.referenceFee);
         }
     }
 
@@ -650,9 +650,9 @@ class FeeVote_test : public beast::unit_test::Suite
         using namespace jtx;
 
         FeeSetup setup;
-        setup.reference_fee = 42;
-        setup.account_reserve = 1234567;
-        setup.owner_reserve = 7654321;
+        setup.referenceFee = 42;
+        setup.accountReserve = 1234567;
+        setup.ownerReserve = 7654321;
 
         Env env(*this, testableAmendments() | featureXRPFees);
 
@@ -665,7 +665,7 @@ class FeeVote_test : public beast::unit_test::Suite
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
@@ -689,9 +689,9 @@ class FeeVote_test : public beast::unit_test::Suite
                 env.app().getTimeKeeper().now(), pub, sec, calcNodeID(pub), [&](STValidation& v) {
                     v.setFieldU32(sfLedgerSequence, ledger->seq());
                     // Vote for different fees than current
-                    v.setFieldAmount(sfBaseFeeDrops, XRPAmount{setup.reference_fee});
-                    v.setFieldAmount(sfReserveBaseDrops, XRPAmount{setup.account_reserve});
-                    v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.owner_reserve});
+                    v.setFieldAmount(sfBaseFeeDrops, XRPAmount{setup.referenceFee});
+                    v.setFieldAmount(sfReserveBaseDrops, XRPAmount{setup.accountReserve});
+                    v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.ownerReserve});
                 });
             if ((i % 2) != 0)
                 val->setTrusted();
@@ -723,10 +723,10 @@ class FeeVote_test : public beast::unit_test::Suite
         BEAST_EXPECT(!feeTx.isFieldPresent(sfReferenceFeeUnits));
 
         // Check the values
-        BEAST_EXPECT(feeTx.getFieldAmount(sfBaseFeeDrops) == XRPAmount{setup.reference_fee});
-        BEAST_EXPECT(feeTx.getFieldAmount(sfReserveBaseDrops) == XRPAmount{setup.account_reserve});
+        BEAST_EXPECT(feeTx.getFieldAmount(sfBaseFeeDrops) == XRPAmount{setup.referenceFee});
+        BEAST_EXPECT(feeTx.getFieldAmount(sfReserveBaseDrops) == XRPAmount{setup.accountReserve});
         BEAST_EXPECT(
-            feeTx.getFieldAmount(sfReserveIncrementDrops) == XRPAmount{setup.owner_reserve});
+            feeTx.getFieldAmount(sfReserveIncrementDrops) == XRPAmount{setup.ownerReserve});
     }
 
     void

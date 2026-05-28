@@ -7,7 +7,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -26,7 +25,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -242,24 +240,21 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                 return ter;
             }
             // AMM account or currency frozen
-            if (isFrozen(ctx.view, ammAccountID, amount->asset()))
+            if (auto const ter = checkFrozen(ctx.view, ammAccountID, amount->asset());
+                !isTesSuccess(ter))
             {
-                JLOG(ctx.j.debug())
-                    << "AMM Withdraw: AMM account or currency is frozen, " << to_string(accountID);
-                return tecFROZEN;
+                JLOG(ctx.j.debug()) << "AMM Withdraw: AMM account or currency is frozen or locked, "
+                                    << to_string(accountID);
+                return ter;
             }
             // Account frozen
-            if (isIndividualFrozen(ctx.view, accountID, amount->asset()))
-            {
-                JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen, " << to_string(accountID)
-                                    << " " << to_string(amount->asset());
-                return tecFROZEN;
-            }
-
-            if (auto const ter =
-                    checkMPTTxAllowed(ctx.view, ttAMM_WITHDRAW, amount->asset(), accountID);
+            if (auto const ter = checkIndividualFrozen(ctx.view, accountID, amount->asset());
                 !isTesSuccess(ter))
+            {
+                JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen or locked, "
+                                    << to_string(accountID) << " " << to_string(amount->asset());
                 return ter;
+            }
         }
         return tesSUCCESS;
     };
@@ -635,10 +630,6 @@ AMMWithdraw::withdraw(
             auto const balanceAdj = isIssue ? std::max(priorBalance, balance.xrp()) : priorBalance;
             if (balanceAdj < reserve)
                 return tecINSUFFICIENT_RESERVE;
-
-            // Update owner count.
-            if (!isIssue)
-                adjustOwnerCount(view, sleAccount, 1, journal);
         }
         return tesSUCCESS;
     };

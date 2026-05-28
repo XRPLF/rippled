@@ -493,11 +493,19 @@ LoanSet::doApply()
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
-        // Round the minimum required cover up to be conservative. This ensures
-        // CoverAvailable never drops below the theoretical minimum, protecting
-        // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-        if (brokerSle->at(sfCoverAvailable) < tenthBipsOfValue(newDebtTotal, coverRateMinimum))
+        auto const minCover = [&]() {
+            if (ctx_.view().rules().enabled(fixCleanup3_2_0))
+            {
+                return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
+            }
+
+            // Round the minimum required cover up to be conservative. This ensures
+            // CoverAvailable never drops below the theoretical minimum, protecting
+            // the broker's solvency.
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+            return tenthBipsOfValue(newDebtTotal, coverRateMinimum);
+        }();
+        if (brokerSle->at(sfCoverAvailable) < minCover)
         {
             JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";
             return tecINSUFFICIENT_FUNDS;
