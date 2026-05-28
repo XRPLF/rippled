@@ -100,8 +100,8 @@ jobs:
 
       - name: Create multi-arch manifests
         run: |
-          for tag in $(jq -cr '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON"); do
-            docker buildx imagetools create -t "$tag" "${tag}-amd64" "${tag}-arm64"
+          for tag in $(jq -cr '.tags[]' <<<"$DOCKER_METADATA_OUTPUT_JSON"); do
+              docker buildx imagetools create -t "$tag" "${tag}-amd64" "${tag}-arm64"
           done
 
       - name: Inspect image
