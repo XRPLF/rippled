@@ -1,24 +1,16 @@
-#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/batch.h>
-#include <test/jtx/credentials.h>
-#include <test/jtx/delegate.h>
-#include <test/jtx/deposit.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/ticket.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -36,11 +28,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-
-#include <utility/mpt_utility.h>
-
-#include <secp256k1.h>
-#include <secp256k1_mpt.h>
 
 #include <algorithm>
 #include <array>
@@ -1627,7 +1614,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
-        ConfidentialEnv const confEnv{env, alice, {{bob, 100, 40}}};
+        ConfidentialEnv const confEnv{
+            env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
     }
 
     void
@@ -1951,7 +1939,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{bob, 100, 60}, {carol, 50, 20}},
+            {{.account = bob, .payAmount = 100, .convertAmount = 60},
+             {.account = carol, .payAmount = 50, .convertAmount = 20}},
             tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             auditor};
         auto& mptAlice = confEnv.mpt;
@@ -2611,7 +2600,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{bob, 100, 60}, {carol, 50, 20}},
+                {{.account = bob, .payAmount = 100, .convertAmount = 60},
+                 {.account = carol, .payAmount = 50, .convertAmount = 20}},
                 tfMPTCanLock | tfMPTCanConfidentialAmount};
             auto& mptAlice = confEnv.mpt;
 
@@ -2630,7 +2620,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const alice("alice");
             Account const bob("bob");
             Account const carol("carol");
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}, {carol, 50, 20}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 60},
+                 {.account = carol, .payAmount = 50, .convertAmount = 20}}};
             auto& mptAlice = confEnv.mpt;
 
             mptAlice.send({
@@ -3074,7 +3068,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 100}}};
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 100}}};
             auto& mptAlice = confEnv.mpt;
 
             mptAlice.convertBack({
@@ -3182,7 +3177,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
             auto& mptAlice = confEnv.mpt;
 
             mptAlice.convertBack({
@@ -3201,7 +3197,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{env, alice, {{bob, 2, 2}}};
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 2, .convertAmount = 2}}};
             auto& mptAlice = confEnv.mpt;
 
             mptAlice.convertBack({
@@ -3342,7 +3339,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{bob, 100, 40}},
+            {{.account = bob, .payAmount = 100, .convertAmount = 40}},
             tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             auditor};
         auto& mptAlice = confEnv.mpt;
@@ -3389,7 +3386,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
             auto& mptAlice = confEnv.mpt;
 
             mptAlice.convertBack({
@@ -3739,7 +3737,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 50}}};
             auto& mptAlice = confEnv.mpt;
 
             // Holder encrypted amount is valid format but mathematically incorrect for this
@@ -3767,7 +3766,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 50}}};
             auto& mptAlice = confEnv.mpt;
 
             mptAlice.convertBack({
@@ -3788,7 +3788,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{bob, 100, 50}},
+                {{.account = bob, .payAmount = 100, .convertAmount = 50}},
                 tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
                 auditor};
             auto& mptAlice = confEnv.mpt;
@@ -4324,7 +4324,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}}, setupFlags};
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 60}}, setupFlags};
             auto& mptAlice = confEnv.mpt;
             mptAlice.set({
                 .account = alice,
@@ -4345,7 +4346,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}}, setupFlags};
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 60}}, setupFlags};
             auto& mptAlice = confEnv.mpt;
             mptAlice.set({
                 .account = alice,
@@ -4365,7 +4367,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}}, setupFlags};
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 60}}, setupFlags};
             auto& mptAlice = confEnv.mpt;
 
             // unauthorize bob
@@ -4388,7 +4391,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 60}}, setupFlags};
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 60}}, setupFlags};
             auto& mptAlice = confEnv.mpt;
 
             mptAlice.confidentialClaw({
@@ -4950,7 +4954,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
-        ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
+        ConfidentialEnv confEnv{
+            env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
         auto& mptAlice = confEnv.mpt;
 
         // for ease of understanding, generate all the fields here instead of
@@ -5168,7 +5173,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
-        ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
+        ConfidentialEnv confEnv{
+            env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
         auto& mptAlice = confEnv.mpt;
 
         // for ease of understanding, generate all the fields here instead of
@@ -6266,7 +6272,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{bob, 100, 50}, {carol, 50, 50}},
+            {{.account = bob, .payAmount = 100, .convertAmount = 50},
+             {.account = carol, .payAmount = 50, .convertAmount = 50}},
             tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer,
             auditor};
         auto& mptAlice = confEnv.mpt;

@@ -1,12 +1,35 @@
+#include <test/jtx/AMM.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/ConfidentialTransfer.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/delegate.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+
+#include <chrono>
+#include <cstdint>
+#include <vector>
 
 namespace xrpl {
 
@@ -54,7 +77,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         // TEST 1: Direct Account Authorization
         {
             Env env(*this, features);
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -100,7 +127,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.fund(XRP(50000), dpIssuer);
             env.close();
 
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -141,7 +172,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.fund(XRP(50000), dpIssuer);
             env.close();
 
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -230,7 +265,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.fund(XRP(50000), dpIssuer);
             env.close();
 
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -267,7 +306,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.fund(XRP(50000), dpIssuer);
             env.close();
 
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
             auto const credIdx = createExpiringCredential(env, carol);
@@ -304,7 +347,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.fund(XRP(50000), dpIssuer);
             env.close();
 
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -357,7 +404,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         // TEST 1: Preflight - Empty Credentials Array
         {
             Env env(*this, features);
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
             mpt.send({
@@ -372,7 +423,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         // TEST 2: Preflight - Credentials Array Too Large
         {
             Env env(*this, features);
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
             std::vector<std::string> tooManyCredentials;
@@ -394,7 +449,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             Env env(*this, features);
             env.fund(XRP(50000), dpIssuer);
             env.close();
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
             env(credentials::create(carol, dpIssuer, credType));
@@ -417,7 +476,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         // TEST 4: Preclaim - Credential Doesn't Exist
         {
             Env env(*this, features);
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
             std::string const fakeCredIdx = to_string(uint256(999));
@@ -435,7 +498,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             Env env(*this, features);
             env.fund(XRP(50000), dpIssuer);
             env.close();
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
             // Create credential for BOB (not carol)
@@ -461,7 +528,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             Env env(*this, features);
             env.fund(XRP(50000), dpIssuer);
             env.close();
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
             // Create credential but DON'T accept it
@@ -486,7 +557,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         // rejected in preflight via checkExtraFeatures.
         {
             Env env(*this, features - featureCredentials);
-            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 50},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
             auto constexpr kCRED_IDX =
@@ -1802,7 +1877,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         ConfidentialEnv confEnv{
             env,
             alice,
-            {{bob, 100, 50}, {carol, 100, 100}},
+            {{.account = bob, .payAmount = 100, .convertAmount = 50},
+             {.account = carol, .payAmount = 100, .convertAmount = 100}},
             tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanConfidentialAmount};
         auto& mptAlice = confEnv.mpt;
         env.fund(XRP(10000), dave);
