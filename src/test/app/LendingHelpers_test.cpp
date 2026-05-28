@@ -8,9 +8,15 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -287,9 +293,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 std::uint32_t n;
             };
             auto const cases = std::vector<AboveThreshold>{
-                {"r=5%, n=3", Number{5, -2}, 3},
-                {"r=0.1%, n=1000", Number{1, -3}, 1'000},
-                {"r=1e-7, n=100 (above threshold by 10x)", Number{1, -7}, 100},
+                {.name = "r=5%, n=3", .r = Number{5, -2}, .n = 3},
+                {.name = "r=0.1%, n=1000", .r = Number{1, -3}, .n = 1'000},
+                {.name = "r=1e-7, n=100 (above threshold by 10x)", .r = Number{1, -7}, .n = 100},
             };
             for (auto const& tc : cases)
             {
@@ -318,8 +324,10 @@ class LendingHelpers_test : public beast::unit_test::Suite
             auto const cases = std::vector<BelowThreshold>{
                 // bug regime: r = 1 TenthBips32 over 600s payment interval
                 // → r ≈ 1.9e-10, r*n ≈ 3.8e-10 < 1e-9.
-                {"bug regime: r~1.9e-10, n=2", loanPeriodicRate(TenthBips32{1}, 600), 2},
-                {"r=1e-12, n=100", Number{1, -12}, 100},
+                {.name = "bug regime: r~1.9e-10, n=2",
+                 .r = loanPeriodicRate(TenthBips32{1}, 600),
+                 .n = 2},
+                {.name = "r=1e-12, n=100", .r = Number{1, -12}, .n = 100},
             };
             for (auto const& tc : cases)
             {
@@ -356,8 +364,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 std::uint32_t n;
             };
             auto const cases = std::vector<Boundary>{
-                {"r=1e-9, n=1", Number{1, -9}, 1},
-                {"r=1e-12, n=1000", Number{1, -12}, 1'000},
+                {.name = "r=1e-9, n=1", .r = Number{1, -9}, .n = 1},
+                {.name = "r=1e-12, n=1000", .r = Number{1, -12}, .n = 1'000},
             };
 
             for (auto const& tc : cases)
@@ -1440,6 +1448,84 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
 public:
     void
+    testCanApplyToBrokerCover()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        PrettyAsset const iou = issuer["IOU"];
+
+        // sfCoverAvailable = Number{10} on an IOU → STAmount exponent = -14,
+        // so coverScale = -14.  The ULP boundary is 5e-15; anything below
+        // that rounds to zero at cover scale.  Number{1,-16} = 1e-16 is our
+        // representative sub-ULP probe.
+        struct TestCase
+        {
+            std::string name;
+            Number coverAvailable;
+            STAmount amount;
+            TER expected;
+        };
+
+        auto const testCases = std::vector<TestCase>{
+            {
+                .name = "Zero amount",
+                .coverAvailable = Number{10},
+                .amount = STAmount{iou, Number{0}},
+                .expected = tecPRECISION_LOSS,
+            },
+            {
+                .name = "Rounds to zero at cover scale",
+                .coverAvailable = Number{10},
+                .amount = STAmount{iou, Number{1, -16}},
+                .expected = tecPRECISION_LOSS,
+            },
+            {
+                .name = "Zero coverAvailable, whole-unit amount",
+                // coverScale = 0 (zero STAmount exponent); 1 IOU is not
+                // zero at integer scale → tesSUCCESS.
+                .coverAvailable = Number{0},
+                .amount = STAmount{iou, Number{1}},
+                .expected = tesSUCCESS,
+            },
+            {
+                .name = "Supra-ULP amount",
+                .coverAvailable = Number{10},
+                .amount = STAmount{iou, Number{1, -13}},
+                .expected = tesSUCCESS,
+            },
+        };
+
+        Env const env{*this};
+
+        for (auto const& tc : testCases)
+        {
+            testcase("canApplyToBrokerCover: " + tc.name);
+            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
+            sle->at(sfCoverAvailable) = tc.coverAvailable;
+            BEAST_EXPECT(
+                canApplyToBrokerCover(*env.current(), sle, iou, tc.amount, env.journal, "test") ==
+                tc.expected);
+        }
+
+        // Amendment off → guard is bypassed regardless of amount.
+        {
+            testcase("canApplyToBrokerCover: amendment disabled");
+            Env const envOff{*this, testableAmendments() - fixCleanup3_2_0};
+            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
+            sle->at(sfCoverAvailable) = Number{10};
+            BEAST_EXPECT(
+                canApplyToBrokerCover(
+                    *envOff.current(),
+                    sle,
+                    iou,
+                    STAmount{iou, Number{0}},
+                    envOff.journal,
+                    "test") == tesSUCCESS);
+        }
+    }
+
+    void
     run() override
     {
         testTryOverpaymentNoInterestNoFee();
@@ -1462,6 +1548,7 @@ public:
         testComputePaymentFactorNearZeroRate();
         testComputeOverpaymentComponents();
         testComputeInterestAndFeeParts();
+        testCanApplyToBrokerCover();
     }
 };
 

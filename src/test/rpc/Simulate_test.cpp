@@ -492,7 +492,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->NETWORK_ID = 0;
+                    cfg->networkId = 0;
                     return cfg;
                 })};
         static auto const kNewDomain = "123ABC";
@@ -1032,7 +1032,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->NETWORK_ID = 1025;
+                    cfg->networkId = 1025;
                     return cfg;
                 })};
         static auto const kNewDomain = "123ABC";
@@ -1097,7 +1097,7 @@ class Simulate_test : public beast::unit_test::Suite
         using namespace jtx;
         using namespace std::chrono_literals;
         Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
-                    cfg->NETWORK_ID = 1025;
+                    cfg->networkId = 1025;
                     return cfg;
                 })};
 
