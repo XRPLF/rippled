@@ -1,4 +1,12 @@
 #include <test/jtx/ConfidentialTransfer.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/delegate.h>
+
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 
 namespace xrpl {
 
