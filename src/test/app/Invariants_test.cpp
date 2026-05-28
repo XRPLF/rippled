@@ -2052,7 +2052,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         auto const getBookRootKey = [](Account const& account, std::uint64_t quality) {
             Book const book{xrpIssue(), account["USD"], std::nullopt};
-            return keylet::quality(keylet::kBook(book), quality);
+            return keylet::quality(keylet::book(book), quality);
         };
 
         // Root book-directory pages carry exchange-rate metadata that must
@@ -4344,7 +4344,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sleAcct)
                     return false;
                 MPTIssue const mpt{makeMptID(sleAcct->getFieldU32(sfSequence), a1)};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldH256(sfReferenceHolding, uint256{1});
                 ac.view().insert(sleNew);
                 return true;
@@ -4367,7 +4367,7 @@ class Invariants_test : public beast::unit_test::Suite
                     if (!sleVault)
                         return false;
                     auto sleIssuance =
-                        ac.view().peek(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+                        ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
                     if (!sleIssuance)
                         return false;
                     sleIssuance->setFieldH256(sfReferenceHolding, uint256{2});
@@ -4409,7 +4409,7 @@ class Invariants_test : public beast::unit_test::Suite
                     if (!sleVault)
                         return false;
                     auto const sleIssuance =
-                        ac.view().peek(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+                        ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
                     if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
                         return false;
                     auto sleHolding = ac.view().peek(
@@ -4475,7 +4475,7 @@ class Invariants_test : public beast::unit_test::Suite
                                 ac.view().update(sle);
                                 return true;
                             };
-                            auto issuanceSle = ac.view().peek(keylet::mptIssuance(id));
+                            auto issuanceSle = ac.view().peek(keylet::mptokenIssuance(id));
                             if (!issuanceSle)
                                 return false;
                             auto const flags = issuanceSle->at(sfFlags);

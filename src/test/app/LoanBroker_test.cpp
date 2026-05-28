@@ -1615,7 +1615,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create loan broker
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, vaultKeylet.key));
         env.close();
 
@@ -1731,7 +1731,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create loan broker
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, vaultKeylet.key));
         env.close();
 
@@ -2065,7 +2065,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(createTx);
             env.close();
 
-            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
             env(set(alice, vaultKeylet.key));
             env.close();
 
@@ -2212,7 +2212,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 env(createTx);
                 env.close();
 
-                auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+                auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
                 env(set(alice, vaultKeylet.key));
                 env.close();
 

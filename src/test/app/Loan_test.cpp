@@ -7701,7 +7701,7 @@ protected:
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5'000)}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        auto const brokerKeylet = keylet::loanBroker(lender.id(), env.seq(lender));
         env(loanBroker::set(lender, vaultKeylet.key),
             loanBroker::kDebtMaximum(Number{100}),
             Fee(env.current()->fees().base * 2));
@@ -8033,7 +8033,7 @@ protected:
                 // Create the TINY loan first (while vaultScale is still
                 // small).  principal 0.01, 0% interest, 1 payment =>
                 // loanScale = vaultScale.
-                auto const brokerSle1 = env.le(keylet::loanbroker(c.broker.brokerID));
+                auto const brokerSle1 = env.le(keylet::loanBroker(c.broker.brokerID));
                 if (!BEAST_EXPECT(brokerSle1))
                     return std::nullopt;
                 auto const tinyLoanSeq = brokerSle1->at(sfLoanSequence);
@@ -8050,7 +8050,7 @@ protected:
                 // Create the BIG loan second.  100% annual interest over 20
                 // payments pushes totalValueOutstanding high enough that
                 // loanScale > vaultScale.
-                auto const brokerSle2 = env.le(keylet::loanbroker(c.broker.brokerID));
+                auto const brokerSle2 = env.le(keylet::loanBroker(c.broker.brokerID));
                 if (!BEAST_EXPECT(brokerSle2))
                     return std::nullopt;
                 auto const bigLoanSeq = brokerSle2->at(sfLoanSequence);
@@ -8101,7 +8101,7 @@ protected:
                     kAmount(STAmount{asset, clawbackAmount}));
                 env.close();
 
-                auto const brokerSle = env.le(keylet::loanbroker(c.broker.brokerID));
+                auto const brokerSle = env.le(keylet::loanBroker(c.broker.brokerID));
                 if (!BEAST_EXPECT(brokerSle) ||
                     !BEAST_EXPECT(brokerSle->at(sfCoverAvailable) == expectedCoverAfter))
                     return std::nullopt;
@@ -8114,7 +8114,7 @@ protected:
             // than to the owner.
             auto feeGoesToPseudo = [&](Env& env, Ctx const& c, Keylet const& loanKeylet) -> bool {
                 Asset const asset{c.iou};
-                auto const brokerSle = env.le(keylet::loanbroker(c.broker.brokerID));
+                auto const brokerSle = env.le(keylet::loanBroker(c.broker.brokerID));
                 if (!BEAST_EXPECT(brokerSle))
                     return false;
                 auto const pseudoAcct = Account("pseudo", brokerSle->at(sfAccount));
@@ -8196,7 +8196,7 @@ protected:
                 env.close();
 
                 // Read broker state and compute both old and new minimums.
-                auto const brokerSle = env.le(keylet::loanbroker(c.broker.brokerID));
+                auto const brokerSle = env.le(keylet::loanBroker(c.broker.brokerID));
                 auto const vaultSle = env.le(keylet::vault(c.broker.vaultID));
                 if (!BEAST_EXPECT(brokerSle) || !BEAST_EXPECT(vaultSle))
                     return;

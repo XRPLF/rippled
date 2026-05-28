@@ -6539,7 +6539,7 @@ class Vault_test : public beast::unit_test::Suite
         env.close();
 
         // Loan broker: no cover, no management fee, debt cap 10x principal.
-        f.brokerID = keylet::loanbroker(f.lender.id(), env.seq(f.lender)).key;
+        f.brokerID = keylet::loanBroker(f.lender.id(), env.seq(f.lender)).key;
         {
             using namespace loanBroker;
             env(set(f.lender, vaultKeylet.key),
@@ -6548,7 +6548,7 @@ class Vault_test : public beast::unit_test::Suite
         }
 
         // Loan: 3,333 USD principal, impaired immediately.
-        auto const sleBroker = env.le(keylet::loanbroker(f.brokerID));
+        auto const sleBroker = env.le(keylet::loanBroker(f.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return f;
         f.loanKeylet = keylet::loan(f.brokerID, sleBroker->at(sfLoanSequence));
@@ -6593,7 +6593,7 @@ class Vault_test : public beast::unit_test::Suite
             return f;
         f.sharesLender = tokenLender->getFieldU64(sfMPTAmount);
 
-        auto const sleIssuance = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const sleIssuance = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(sleIssuance))
             return f;
         BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == f.sharesLender);
@@ -6682,7 +6682,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
-        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceAfter = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceAfter))
             return;
 
@@ -6779,7 +6779,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
-        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceAfter = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceAfter))
             return;
         BEAST_EXPECT(issuanceAfter->getFieldU64(sfOutstandingAmount) == f.sharesLender);
@@ -6870,7 +6870,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultFinal = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultFinal))
             return;
-        auto const issuanceFinal = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceFinal = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceFinal))
             return;
 
@@ -6952,7 +6952,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultFinal = env.le(vaultKeylet);
         if (!BEAST_EXPECT(vaultFinal))
             return;
-        auto const issuanceFinal = env.le(keylet::mptIssuance(shareAsset));
+        auto const issuanceFinal = env.le(keylet::mptokenIssuance(shareAsset));
         if (!BEAST_EXPECT(issuanceFinal))
             return;
         BEAST_EXPECT(issuanceFinal->getFieldU64(sfOutstandingAmount) == 0);
@@ -7035,7 +7035,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
-        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceAfter = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceAfter))
             return;
 
@@ -7548,7 +7548,7 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(vaultKeylet);
             if (!sleVault)
                 return std::nullopt;
-            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
             if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
                 return std::nullopt;
             return sleIssuance->getFieldH256(sfReferenceHolding);
@@ -7608,13 +7608,14 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(keylet);
             BEAST_EXPECT(sleVault != nullptr);
             auto const pseudoId = sleVault->at(sfAccount);
-            auto const expected = keylet::line(pseudoId, asset.raw().get<Issue>()).key;
+            auto const expected = keylet::rippleState(pseudoId, asset.raw().get<Issue>()).key;
 
             auto const stored = readReferenceHolding(env, keylet);
             BEAST_EXPECT(stored.has_value());
             BEAST_EXPECT(stored && *stored == expected);
             // The pointed-to RippleState must actually exist.
-            BEAST_EXPECT(env.le(keylet::line(pseudoId, asset.raw().get<Issue>())) != nullptr);
+            BEAST_EXPECT(
+                env.le(keylet::rippleState(pseudoId, asset.raw().get<Issue>())) != nullptr);
         }
 
         // XRP-backed vaults leave the field absent: XRP has no separate
@@ -7672,7 +7673,7 @@ class Vault_test : public beast::unit_test::Suite
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             env.close();
 
-            auto const sleIssuance = env.le(keylet::mptIssuance(mptt.issuanceID()));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptt.issuanceID()));
             if (BEAST_EXPECT(sleIssuance))
                 BEAST_EXPECT(!sleIssuance->isFieldPresent(sfReferenceHolding));
         }
@@ -7698,7 +7699,7 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(vaultKeylet);
             if (!sleVault)
                 return false;
-            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
             if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
                 return false;
             auto const holdingKey = sleIssuance->getFieldH256(sfReferenceHolding);
@@ -7934,7 +7935,7 @@ class Vault_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(env.le(keylet) == nullptr);
             BEAST_EXPECT(env.le(holdingKeylet) == nullptr);
-            BEAST_EXPECT(env.le(keylet::mptIssuance(sharedMptId)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::mptokenIssuance(sharedMptId)) == nullptr);
         }
     }
 
