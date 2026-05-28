@@ -309,8 +309,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& creatorAccountID, b
                 auto const& mptIssue = issue;
                 auto const& mptID = mptIssue.getMptID();
                 std::uint32_t const flags = lsfMPTAMM | lsfMPTAuthorized;
-                if (auto const err =
-                        requireAuth(ctx.view(), mptIssue, ammAccountID, AuthType::WeakAuth);
+                if (auto const err = requireAuth(sb, mptIssue, ammAccountID, AuthType::WeakAuth);
                     !isTesSuccess(err))
                 {
                     return err;
