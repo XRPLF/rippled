@@ -823,8 +823,8 @@ public:
                 Balance(bob, usd(kNone)),
                 Owners(bob, 1),
                 offers(bob, 1));
-            BEAST_EXPECT(!env.closed()->exists(expiredBobOffer));
-            BEAST_EXPECT(env.closed()->exists(crossedBobOffer));
+            BEAST_EXPECT(!env.current()->exists(expiredBobOffer));
+            BEAST_EXPECT(env.current()->exists(crossedBobOffer));
 
             // Order that can be filled
             env(offer(alice, XRP(500), usd(500)), Txflags(tfFillOrKill), Ter(tesSUCCESS));
