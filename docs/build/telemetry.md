@@ -64,7 +64,7 @@ cd .build
 
 #### Install dependencies
 
-The `telemetry` option adds `opentelemetry-cpp/1.18.0` as a dependency.
+The `telemetry` option adds `opentelemetry-cpp/1.26.0` as a dependency.
 If the Conan lockfile does not yet include this package, bypass it with `--lockfile=""`.
 
 ```bash
@@ -236,7 +236,7 @@ curl -s -X POST http://127.0.0.1:5005/ \
 
 ### Conan lockfile error
 
-If you see `ERROR: Requirement 'opentelemetry-cpp/1.18.0' not in lockfile 'requires'`,
+If you see `ERROR: Requirement 'opentelemetry-cpp/1.26.0' not in lockfile 'requires'`,
 the lockfile was generated without the telemetry dependency.
 Pass `--lockfile=""` to bypass the lockfile, or regenerate it with telemetry enabled.
 
