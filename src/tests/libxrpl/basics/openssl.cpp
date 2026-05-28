@@ -20,7 +20,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/digest.h>
 
-#include <doctest/doctest.h>
+#include <gtest/gtest.h>
 
 #include <cmath>
 #include <cstdint>
@@ -29,7 +29,7 @@
 #include <random>
 #include <vector>
 
-using namespace ripple;
+using namespace xrpl;
 
 static std::vector<char> const data = []() {
     std::vector<char> strV(pow(10, 5));
@@ -54,19 +54,17 @@ absorb(uint256 const& h)
     return word;
 }
 
-TEST_SUITE_BEGIN("OpenSSL");
-
-TEST_CASE("SingleHashFullSlice")
+TEST(OpenSSL, SingleHashFullSlice)
 {
     constexpr int kIterations = 10'000;
     Slice const s{data.data(), data.size()};
     std::uint64_t sink = 0;
     for (int i = 0; i < kIterations; ++i)
         sink ^= absorb(sha512Half(s));
-    CHECK(sink != 0xDEADBEEFDEADBEEFull);
+    EXPECT_NE(sink, 0xDEADBEEFDEADBEEFull);
 }
 
-TEST_CASE("MultihashAllSlices")
+TEST(OpenSSL, MultihashAllSlices)
 {
     std::uint64_t sink = 0;
     for (std::size_t i = 0; i < data.size(); ++i)
@@ -74,7 +72,5 @@ TEST_CASE("MultihashAllSlices")
         Slice s(&data[i], data.size() - i);
         sink ^= absorb(sha512Half(s));
     }
-    CHECK(sink != 0xDEADBEEFDEADBEEFull);
+    EXPECT_NE(sink, 0xDEADBEEFDEADBEEFull);
 }
-
-TEST_SUITE_END();
