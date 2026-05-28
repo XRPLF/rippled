@@ -79,20 +79,20 @@ public:
         // enough, so there's room for change. Check the times in case the state
         // machine is altered to allow states to loop.
         if (nextCutoff.consensusTime > currentCutoff.consensusTime ||
-            avalancheCounter_ < p.avMIN_ROUNDS)
+            avalancheCounter_ < p.avMinRounds)
             return false;
 
         // We've haven't had this vote for minimum rounds yet. Things could
         // change.
-        if (proposing && currentVoteCounter_ < p.avMIN_ROUNDS)
+        if (proposing && currentVoteCounter_ < p.avMinRounds)
             return false;
 
         // If we or any peers have changed a vote in several rounds, then
         // things could still change. But if _either_ has not changed in that
         // long, we're unlikely to change our vote any time soon. (This prevents
         // a malicious peer from flip-flopping a vote to prevent consensus.)
-        if (peersUnchanged < p.avSTALLED_ROUNDS &&
-            (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
+        if (peersUnchanged < p.avStalledRounds &&
+            (proposing && currentVoteCounter_ < p.avStalledRounds))
             return false;
 
         // Does this transaction have more than 80% agreement
@@ -108,7 +108,7 @@ public:
         int const weight = support / total;
         // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
         // agreement. Either voting for _or_ voting against the tx.
-        bool const stalled = weight > p.minCONSENSUS_PCT || weight < (100 - p.minCONSENSUS_PCT);
+        bool const stalled = weight > p.minConsensusPct || weight < (100 - p.minConsensusPct);
 
         if (stalled)
         {
@@ -276,7 +276,7 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
     // Proposing or not, we need to keep track of which state we've reached so
     // we can determine if the vote has stalled.
     auto const [requiredPct, newState] =
-        getNeededWeight(p, avalancheState_, percentTime, ++avalancheCounter_, p.avMIN_ROUNDS);
+        getNeededWeight(p, avalancheState_, percentTime, ++avalancheCounter_, p.avMinRounds);
     if (newState)
     {
         avalancheState_ = *newState;

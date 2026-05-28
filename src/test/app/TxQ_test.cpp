@@ -1259,7 +1259,7 @@ public:
         testcase("tie breaking");
 
         auto cfg = makeConfig({{"minimum_txn_in_ledger_standalone", "4"}});
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env(*this, std::move(cfg));
 
         auto alice = Account("alice");
@@ -2653,7 +2653,7 @@ public:
             {{"minimum_txn_in_ledger_standalone", "1"},
              {"ledgers_in_queue", "10"},
              {"maximum_txn_per_account", "11"}});
-        cfg->FEES.reference_fee = 10;
+        cfg->fees.referenceFee = 10;
         Env env(*this, std::move(cfg));
 
         auto const baseFee = env.current()->fees().base.drops();
@@ -4069,9 +4069,9 @@ public:
             {{"account_reserve", "1000"}, {"owner_reserve", "50"}});
 
         auto& votingSection = cfg->section("voting");
-        votingSection.set("account_reserve", std::to_string(cfg->FEES.reference_fee.drops() * 100));
+        votingSection.set("account_reserve", std::to_string(cfg->fees.referenceFee.drops() * 100));
 
-        votingSection.set("reference_fee", std::to_string(cfg->FEES.reference_fee.drops()));
+        votingSection.set("reference_fee", std::to_string(cfg->fees.referenceFee.drops()));
 
         Env env(*this, std::move(cfg));
 

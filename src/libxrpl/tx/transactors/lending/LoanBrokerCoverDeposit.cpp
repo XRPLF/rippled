@@ -1,9 +1,11 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverDeposit.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -87,6 +89,29 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ret = requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
         return ret;
 
+    // Deposit must round the amount Downward to cover scale and then reuse that rounded
+    // value for the actual transfer in doApply — otherwise implicit round-to-nearest during
+    // `sfCoverAvailable  +=` could credit the broker more than the depositor paid  Computing it
+    // here in preclaim lets  us reject sub-cover-scale dust early with tecPRECISION_LOSS instead of
+    // failing only in  doApply.
+    bool const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const roundedAmount = [&]() -> STAmount {
+        if (!fix320Enabled)
+            return tx[sfAmount];
+
+        return roundToScale(
+            tx[sfAmount],
+            scale(sleBroker->at(sfCoverAvailable), vaultAsset),
+            Number::RoundingMode::Downward);
+    }();
+
+    if (fix320Enabled && roundedAmount == beast::kZero)
+    {
+        JLOG(ctx.j.warn()) << "LoanBrokerCoverDeposit: deposit amount: " << tx[sfAmount]
+                           << " is zero at loan broker scale";
+        return tecPRECISION_LOSS;
+    }
+
     if (accountHolds(
             ctx.view,
             account,
@@ -94,7 +119,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
             FreezeHandling::ZeroIfFrozen,
             AuthHandling::ZeroIfUnauthorized,
             ctx.j,
-            SpendableHandling::FullBalance) < amount)
+            SpendableHandling::FullBalance) < roundedAmount)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -106,8 +131,6 @@ LoanBrokerCoverDeposit::doApply()
     auto const& tx = ctx_.tx;
 
     auto const brokerID = tx[sfLoanBrokerID];
-    auto const amount = tx[sfAmount];
-
     auto broker = view().peek(keylet::loanbroker(brokerID));
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -117,8 +140,31 @@ LoanBrokerCoverDeposit::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const vaultAsset = vault->at(sfAsset);
-
     auto const brokerPseudoID = broker->at(sfAccount);
+
+    // Re-round here (matches preclaim) so the same cover-scale-quantized
+    // value drives both the trustline transfer and the cover increment;
+    // see the rationale comment in preclaim.
+    bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
+    auto const amount = [&]() -> STAmount {
+        if (!fix320Enabled)
+            return tx[sfAmount];
+
+        return roundToScale(
+            tx[sfAmount],
+            scale(broker->at(sfCoverAvailable), vaultAsset),
+            Number::RoundingMode::Downward);
+    }();
+
+    // We validated zero-amount in preclaim, if we ended up with zero now, fail hard.
+    if (amount == beast::kZero)
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "LoanBrokerCoverDeposit: deposit amount: " << tx[sfAmount]
+                         << " is zero";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Transfer assets from depositor to pseudo-account.
     if (auto ter =

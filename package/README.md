@@ -74,10 +74,10 @@ VERSION=2.4.0-local
 PKG_RELEASE=1
 
 docker run --rm \
-  -v "$(pwd):/src" \
-  -w /src \
-  "$IMAGE" \
-  ./package/build_pkg.sh --pkg-version "$VERSION" --pkg-release "$PKG_RELEASE"
+    -v "$(pwd):/src" \
+    -w /src \
+    "$IMAGE" \
+    ./package/build_pkg.sh --pkg-version "$VERSION" --pkg-release "$PKG_RELEASE"
 
 # Output:
 #   build/debbuild/*.deb         (DEB + dbgsym .ddeb)
@@ -92,12 +92,12 @@ needed, but the host toolchain replaces the pinned CI image:
 
 ```bash
 cmake \
-  -Dxrpld=ON \
-  -Dxrpld_version=2.4.0-local \
-  -Dtests=OFF \
-  ..
+    -Dxrpld=ON \
+    -Dxrpld_version=2.4.0-local \
+    -Dtests=OFF \
+    ..
 
-cmake --build . --target package       # deb on Debian/Ubuntu, rpm on RHEL
+cmake --build . --target package # deb on Debian/Ubuntu, rpm on RHEL
 ```
 
 The `cmake/XrplPackaging.cmake` module defines the target only if at least one

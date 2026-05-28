@@ -140,7 +140,7 @@ private:
 
     std::optional<uint256> domain_;
 
-    bool convert_all_{};
+    bool convertAll_{};
 
     std::recursive_mutex indexLock_;
     LedgerIndex lastIndex_;
@@ -152,8 +152,8 @@ private:
     int const iIdentifier_;
 
     std::chrono::steady_clock::time_point const created_;
-    std::chrono::steady_clock::time_point quick_reply_;
-    std::chrono::steady_clock::time_point full_reply_;
+    std::chrono::steady_clock::time_point quickReply_;
+    std::chrono::steady_clock::time_point fullReply_;
 
     static unsigned int const kMaxPaths = 4;
 };

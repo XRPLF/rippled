@@ -5843,7 +5843,7 @@ makeNetworkConfig(uint32_t networkID)
 {
     using namespace test::jtx;
     return envconfig([&](std::unique_ptr<Config> cfg) {
-        cfg->NETWORK_ID = networkID;
+        cfg->networkId = networkID;
         return cfg;
     });
 }

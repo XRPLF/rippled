@@ -44,30 +44,30 @@ operator<<(std::ostream& os, Port const& p)
 {
     os << "'" << p.name << "' (ip=" << p.ip << ":" << p.port << ", ";
 
-    if (!p.admin_nets_v4.empty() || !p.admin_nets_v6.empty())
+    if (!p.adminNetsV4.empty() || !p.adminNetsV6.empty())
     {
         os << "admin nets:";
-        for (auto const& net : p.admin_nets_v4)
+        for (auto const& net : p.adminNetsV4)
         {
             os << net.to_string();
             os << ", ";
         }
-        for (auto const& net : p.admin_nets_v6)
+        for (auto const& net : p.adminNetsV6)
         {
             os << net.to_string();
             os << ", ";
         }
     }
 
-    if (!p.secure_gateway_nets_v4.empty() || !p.secure_gateway_nets_v6.empty())
+    if (!p.secureGatewayNetsV4.empty() || !p.secureGatewayNetsV6.empty())
     {
         os << "secure_gateway nets:";
-        for (auto const& net : p.secure_gateway_nets_v4)
+        for (auto const& net : p.secureGatewayNetsV4)
         {
             os << net.to_string();
             os << ", ";
         }
-        for (auto const& net : p.secure_gateway_nets_v6)
+        for (auto const& net : p.secureGatewayNetsV6)
         {
             os << net.to_string();
             os << ", ";
@@ -265,10 +265,10 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
         {
             try
             {
-                port.ws_queue_limit = beast::lexicalCastThrow<std::uint16_t>(*optResult);
+                port.wsQueueLimit = beast::lexicalCastThrow<std::uint16_t>(*optResult);
 
                 // Queue must be greater than 0
-                if (port.ws_queue_limit == 0)
+                if (port.wsQueueLimit == 0)
                     Throw<std::exception>();
             }
             catch (std::exception const&)
@@ -281,32 +281,31 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
         else
         {
             // Default Websocket send queue size limit
-            port.ws_queue_limit = 100;
+            port.wsQueueLimit = 100;
         }
     }
 
-    populate(section, "admin", log, port.admin_nets_v4, port.admin_nets_v6);
-    populate(
-        section, "secure_gateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
+    populate(section, "admin", log, port.adminNetsV4, port.adminNetsV6);
+    populate(section, "secure_gateway", log, port.secureGatewayNetsV4, port.secureGatewayNetsV6);
 
     set(port.user, "user", section);
     set(port.password, "password", section);
-    set(port.admin_user, "admin_user", section);
-    set(port.admin_password, "admin_password", section);
-    set(port.ssl_key, "ssl_key", section);
-    set(port.ssl_cert, "ssl_cert", section);
-    set(port.ssl_chain, "ssl_chain", section);
-    set(port.ssl_ciphers, "ssl_ciphers", section);
+    set(port.adminUser, "admin_user", section);
+    set(port.adminPassword, "admin_password", section);
+    set(port.sslKey, "ssl_key", section);
+    set(port.sslCert, "ssl_cert", section);
+    set(port.sslChain, "ssl_chain", section);
+    set(port.sslCiphers, "ssl_ciphers", section);
 
-    port.pmd_options.server_enable = section.valueOr("permessage_deflate", true);
-    port.pmd_options.client_max_window_bits = section.valueOr("client_max_window_bits", 15);
-    port.pmd_options.server_max_window_bits = section.valueOr("server_max_window_bits", 15);
-    port.pmd_options.client_no_context_takeover =
+    port.pmdOptions.server_enable = section.valueOr("permessage_deflate", true);
+    port.pmdOptions.client_max_window_bits = section.valueOr("client_max_window_bits", 15);
+    port.pmdOptions.server_max_window_bits = section.valueOr("server_max_window_bits", 15);
+    port.pmdOptions.client_no_context_takeover =
         section.valueOr("client_no_context_takeover", false);
-    port.pmd_options.server_no_context_takeover =
+    port.pmdOptions.server_no_context_takeover =
         section.valueOr("server_no_context_takeover", false);
-    port.pmd_options.compLevel = section.valueOr("compress_level", 8);
-    port.pmd_options.memLevel = section.valueOr("memory_level", 4);
+    port.pmdOptions.compLevel = section.valueOr("compress_level", 8);
+    port.pmdOptions.memLevel = section.valueOr("memory_level", 4);
 }
 
 }  // namespace xrpl

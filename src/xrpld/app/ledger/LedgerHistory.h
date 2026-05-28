@@ -30,7 +30,7 @@ public:
     float
     getCacheHitRate()
     {
-        return ledgers_by_hash_.getHitRate();
+        return ledgersByHash_.getHitRate();
     }
 
     /** Get a ledger given its sequence number */
@@ -53,8 +53,8 @@ public:
     void
     sweep()
     {
-        ledgers_by_hash_.sweep();
-        consensus_validated_.sweep();
+        ledgersByHash_.sweep();
+        consensusValidated_.sweep();
     }
 
     /** Report that we have locally built a particular ledger */
@@ -99,11 +99,11 @@ private:
 
     Application& app_;
     beast::insight::Collector::ptr collector_;
-    beast::insight::Counter mismatch_counter_;
+    beast::insight::Counter mismatchCounter_;
 
     using LedgersByHash = TaggedCache<LedgerHash, Ledger const>;
 
-    LedgersByHash ledgers_by_hash_;
+    LedgersByHash ledgersByHash_;
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
@@ -121,7 +121,7 @@ private:
         std::optional<json::Value> consensus;
     };
     using ConsensusValidated = TaggedCache<LedgerIndex, CvEntry>;
-    ConsensusValidated consensus_validated_;
+    ConsensusValidated consensusValidated_;
 
     // Maps ledger indexes to the corresponding hash.
     std::map<LedgerIndex, LedgerHash> ledgersByIndex_;  // validated ledgers

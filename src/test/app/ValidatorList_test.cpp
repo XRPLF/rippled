@@ -81,7 +81,7 @@ private:
         SecretKey const& ssk,
         int seq)
     {
-        STObject st(kSfGeneric);
+        STObject st(sfGeneric);
         st[sfSequence] = seq;
         st[sfPublicKey] = pk;
 
@@ -104,7 +104,7 @@ private:
     static std::string
     makeRevocationString(PublicKey const& pk, SecretKey const& sk)
     {
-        STObject st(kSfGeneric);
+        STObject st(sfGeneric);
         st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
         st[sfPublicKey] = pk;
 
@@ -2312,7 +2312,7 @@ private:
         auto extractProtocolMessage1 = [this, &extractHeader](Message& message) {
             auto [header, buffers] = extractHeader(message);
             if (BEAST_EXPECT(header) &&
-                BEAST_EXPECT(header->message_type == protocol::mtVALIDATOR_LIST))
+                BEAST_EXPECT(header->messageType == protocol::mtVALIDATOR_LIST))
             {
                 auto const msg =
                     detail::parseMessageContent<protocol::TMValidatorList>(*header, buffers.data());
@@ -2324,7 +2324,7 @@ private:
         auto extractProtocolMessage2 = [this, &extractHeader](Message& message) {
             auto [header, buffers] = extractHeader(message);
             if (BEAST_EXPECT(header) &&
-                BEAST_EXPECT(header->message_type == protocol::mtVALIDATOR_LIST_COLLECTION))
+                BEAST_EXPECT(header->messageType == protocol::mtVALIDATOR_LIST_COLLECTION))
             {
                 auto const msg = detail::parseMessageContent<protocol::TMValidatorListCollection>(
                     *header, buffers.data());

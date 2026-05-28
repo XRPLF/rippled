@@ -862,7 +862,7 @@ ValidClawback::finalize(
                 [&](MPTIssue const& issue) {
                     return accountHolds(
                         view,
-                        issuer,
+                        holder,
                         issue,
                         FreezeHandling::IgnoreFreeze,
                         AuthHandling::IgnoreAuth,
@@ -1107,6 +1107,37 @@ NoModifiedUnmodifiableFields::finalize(
                 return false;
         }
     }
+    return true;
+}
+
+void
+ValidAmounts::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (!isDelete && after)
+        afterEntries_.push_back(after);
+}
+
+bool
+ValidAmounts::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j) const
+{
+    bool const badLedgerEntry = std::ranges::any_of(
+        afterEntries_, [&](auto const& sle) { return hasInvalidAmount(*sle, j); });
+
+    if (badLedgerEntry)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: ledger entry contains non-canonical MPT or XRP amount";
+        return !view.rules().enabled(fixCleanup3_2_0);
+    }
+
     return true;
 }
 
