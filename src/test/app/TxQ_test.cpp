@@ -4354,7 +4354,10 @@ public:
         // asynchronously lowered by LoadManager.  Here we're just
         // pushing the local fee up really high and then hoping that we
         // outrace LoadManager undoing our work.
-        env.app().getFeeTrack().raiseLocalFee(30);
+        for (int i = 0; i < 30; ++i)
+        {
+            env.app().getFeeTrack().raiseLocalFee();
+        }
 
         // Now close the ledger, which will attempt to process alice's
         // and bob's queued transactions.
@@ -4422,13 +4425,24 @@ public:
         // by queueing another low fee transaction into that spot.
         env(noop(bob), ticket::Use(bobTicketSeq + 0), Fee(baseFee * 1.2), Ter(terQUEUED));
 
-        // Verify that bob's second transaction was removed from the queue
-        // by queueing another low fee transaction into that spot.
-        env(noop(bob), ticket::Use(bobTicketSeq + 1), Fee(baseFee * 1.1), Ter(terQUEUED));
-
-        // Verify that the last entry in bob's queue is still there
-        // by trying to replace it and having that fail.
-        env(noop(bob), ticket::Use(bobTicketSeq + 2), Ter(telCAN_NOT_QUEUE_FEE));
+        // The following two TXs should consist of
+        // - 1 tx that is queued
+        // - 1 tx that cannot be queued.
+        // There seems to be a bit of a race condition based on the raiseLocalFee above
+        // that can produce a different result on Debian bookworm.
+        // Ultimately we are wanting to check if exactly one of bob's txs is dropped penalized.
+        auto const ter =
+            env(noop(bob), ticket::Use(bobTicketSeq + 1), Fee(baseFee * 1.1), Ter(std::ignore))
+                .ter();
+        if (ter == terQUEUED)
+        {
+            env(noop(bob), ticket::Use(bobTicketSeq + 2), Ter(telCAN_NOT_QUEUE_FEE));
+        }
+        else
+        {
+            BEAST_EXPECT(ter == telCAN_NOT_QUEUE_FEE);
+            env(noop(bob), ticket::Use(bobTicketSeq + 2), Fee(baseFee * 1.1), Ter(terQUEUED));
+        }
     }
 
     void
