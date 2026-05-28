@@ -151,8 +151,8 @@ git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
 for recipe in "${recipes[@]}"; do
-  echo "Checking out recipe '${recipe}'..."
-  git sparse-checkout add recipes/${recipe}
+    echo "Checking out recipe '${recipe}'..."
+    git sparse-checkout add recipes/${recipe}
 done
 git fetch origin master
 git checkout master
@@ -180,7 +180,7 @@ the new recipe will be automatically pulled from the official Conan Center.
 
 If you see an error similar to the following after running `conan profile show`:
 
-```bash
+```text
 ERROR: Invalid setting '17' is not a valid 'settings.compiler.version' value.
 Possible values are ['5.0', '5.1', '6.0', '6.1', '7.0', '7.3', '8.0', '8.1',
 '9.0', '9.1', '10.0', '11.0', '12.0', '13', '13.0', '13.1', '14', '14.0', '15',
