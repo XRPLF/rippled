@@ -700,6 +700,10 @@ Consensus<Adaptor>::startRoundInternal(
     CLOG(clog) << "startRoundInternal transitioned to ConsensusPhase::open, "
                   "previous ledgerID: "
                << prevLedgerID << ", seq: " << prevLedger.seq() << ". ";
+    // Reset establishSpan_ so a wrongLedger recovery mid-establish doesn't
+    // leak the prior round's span into the new one (startEstablishTracing
+    // early-returns when establishSpan_ is populated).
+    establishSpan_.reset();
     openSpan_.emplace(
         telemetry::SpanGuard::span(
             telemetry::TraceCategory::Consensus,
