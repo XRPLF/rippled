@@ -3,7 +3,6 @@ import os
 import sys
 import subprocess
 import re
-import shutil
 import tempfile
 import zipfile
 from difflib import get_close_matches
@@ -167,65 +166,17 @@ def process_c(project_name):
     update_fixture(project_name, read_wasm_hex(wasm_path))
 
 
-def compile_wat(wat_path, wasm_path):
-    wat2wasm = shutil.which("wat2wasm")
-    wasm_tools = shutil.which("wasm-tools")
-    wasm_as = shutil.which("wasm-as")
-    normalized_tmpdir = None
-
-    if wat2wasm:
-        build_cmd = [wat2wasm, wat_path, "-o", wasm_path]
-    elif wasm_tools:
-        wat_path, normalized_tmpdir = normalize_wat_for_wasm_tools(wat_path)
-        build_cmd = [wasm_tools, "parse", wat_path, "-o", wasm_path]
-    elif wasm_as:
-        build_cmd = [wasm_as, wat_path, "-o", wasm_path]
-    else:
-        print(
-            "exec error: wat2wasm, wasm-tools, or wasm-as is required to build WAT fixtures"
-        )
-        sys.exit(1)
-
+def wat2Wasm(wat_path, wasm_path):
+    build_cmd = ["wat2wasm", wat_path, "-o", wasm_path]
     try:
         subprocess.run(build_cmd, check=True)
-        strip_custom_sections(wasm_path)
         print(f"WASM file for {os.path.basename(wat_path)} has been built.")
+    except FileNotFoundError:
+        print("exec error: wat2wasm is required to build WAT fixtures")
+        sys.exit(1)
     except subprocess.CalledProcessError as e:
         print(f"exec error: {e}")
         sys.exit(1)
-    finally:
-        if normalized_tmpdir:
-            shutil.rmtree(normalized_tmpdir)
-
-
-def strip_custom_sections(wasm_path):
-    wasm_tools = shutil.which("wasm-tools")
-    if not wasm_tools:
-        return
-
-    stripped_path = wasm_path + ".stripped"
-    subprocess.run(
-        [wasm_tools, "strip", "--all", wasm_path, "-o", stripped_path],
-        check=True,
-    )
-    os.replace(stripped_path, wasm_path)
-
-
-def normalize_wat_for_wasm_tools(wat_path):
-    with open(wat_path, "r", encoding="utf8") as f:
-        wat = f.read()
-
-    wat = re.sub(
-        r"\(elem(\s+\(table\s+\$[A-Za-z0-9_]+\)\s+\(i32\.const\s+\d+\))\s+\$([A-Za-z0-9_]+)\)",
-        r"(elem\1 funcref (ref.func $\2))",
-        wat,
-    )
-
-    tmpdir = tempfile.mkdtemp()
-    normalized_path = os.path.join(tmpdir, os.path.basename(wat_path))
-    with open(normalized_path, "w", encoding="utf8") as f:
-        f.write(wat)
-    return normalized_path, tmpdir
 
 
 def process_wat_file(wat_path):
@@ -237,7 +188,7 @@ def process_wat_file(wat_path):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         wasm_path = os.path.join(tmpdir, f"{project_name}.wasm")
-        compile_wat(wat_path, wasm_path)
+        wat2Wasm(wat_path, wasm_path)
         update_fixture(project_name, read_wasm_hex(wasm_path), "Hex")
 
 
@@ -252,7 +203,7 @@ def process_wat_zip(zip_path):
             archive.extract(wat_names[0], tmpdir)
 
         wasm_path = os.path.join(tmpdir, f"{project_name}.wasm")
-        compile_wat(os.path.join(tmpdir, wat_names[0]), wasm_path)
+        wat2Wasm(os.path.join(tmpdir, wat_names[0]), wasm_path)
         update_fixture(project_name, read_wasm_hex(wasm_path), "Hex")
 
 
