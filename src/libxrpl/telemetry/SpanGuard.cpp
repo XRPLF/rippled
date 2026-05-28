@@ -26,6 +26,7 @@
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
+#include <xrpl/telemetry/TraceContextPropagator.h>
 
 #include <opentelemetry/common/attribute_value.h>
 #include <opentelemetry/context/runtime_context.h>
@@ -356,6 +357,13 @@ SpanGuard::getTraceBytes() const
     result.traceFlags = spanCtx.trace_flags().flags();
     result.valid = true;
     return result;
+}
+
+void
+SpanGuard::injectCurrentContextToProtobuf(protocol::TraceContext& proto)
+{
+    auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+    injectToProtobuf(ctx, proto);
 }
 
 // ===== Attribute setters ===================================================

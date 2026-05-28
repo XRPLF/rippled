@@ -125,6 +125,10 @@
 #include <string_view>
 #include <utility>
 
+namespace protocol {
+class TraceContext;
+}  // namespace protocol
+
 namespace xrpl::telemetry {
 
 /** Trace subsystem categories for conditional span creation.
@@ -329,6 +333,19 @@ public:
     [[nodiscard]] TraceBytes
     getTraceBytes() const;
 
+    /** Inject the calling thread's currently-active OTel context into a
+        protobuf TraceContext message for cross-node propagation.
+
+        Encapsulates `RuntimeContext::GetCurrent()` + `injectToProtobuf`
+        so callers in app-layer code (e.g. RCLConsensus broadcasting
+        TMProposeSet / TMValidation) don't depend on any OTel headers.
+        No-op if telemetry is disabled or no span is active.
+
+        @param proto The protobuf TraceContext to populate.
+    */
+    static void
+    injectCurrentContextToProtobuf(protocol::TraceContext& proto);
+
     // --- Attribute setters (explicit overloads, no OTel types) ---------
 
     /** Set a string attribute. No-op on a null guard. */
@@ -469,6 +486,11 @@ public:
     getTraceBytes() const
     {
         return {};
+    }
+
+    static void
+    injectCurrentContextToProtobuf(protocol::TraceContext&)
+    {
     }
     // NOLINTEND(readability-convert-member-functions-to-static)
 

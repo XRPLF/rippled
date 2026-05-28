@@ -280,12 +280,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     // Inject the current thread's active span context (e.g. the
     // consensus round span from Phase 4) so receiving peers can link
     // their proposal.receive span as a child of this trace.
-#ifdef XRPL_ENABLE_TELEMETRY
-    {
-        auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
-        telemetry::injectToProtobuf(ctx, *prop.mutable_trace_context());
-    }
-#endif
+    telemetry::SpanGuard::injectCurrentContextToProtobuf(*prop.mutable_trace_context());
 
     app_.getOverlay().broadcast(prop);
 }
@@ -1012,12 +1007,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     // as a follow-up — see PR #6425 discussion r3317273388 and
     // OpenTelemetryPlan/secure-OTel.md. Until then, downstream consumers
     // must treat the validation trace_context as advisory only.
-#ifdef XRPL_ENABLE_TELEMETRY
-    {
-        auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
-        telemetry::injectToProtobuf(ctx, *val.mutable_trace_context());
-    }
-#endif
+    telemetry::SpanGuard::injectCurrentContextToProtobuf(*val.mutable_trace_context());
     app_.getOverlay().broadcast(val);
 
     // Publish to all our subscribers:
