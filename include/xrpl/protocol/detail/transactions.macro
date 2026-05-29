@@ -423,7 +423,7 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
 #endif
 TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     Delegation::Delegable,
-    featureAMM,
+    uint256{},
     CreatePseudoAcct | MayCreateMpt,
     ({
     {sfAmount, SoeRequired, SoeMptSupported},
@@ -437,7 +437,7 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
 #endif
 TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
     Delegation::Delegable,
-    featureAMM,
+    uint256{},
     NoPriv,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -455,7 +455,7 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
 #endif
 TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
     Delegation::Delegable,
-    featureAMM,
+    uint256{},
     MayDeleteAcct | MayAuthorizeMpt,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -472,7 +472,7 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
 #endif
 TRANSACTION(ttAMM_VOTE, 38, AMMVote,
     Delegation::Delegable,
-    featureAMM,
+    uint256{},
     NoPriv,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -486,7 +486,7 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
 #endif
 TRANSACTION(ttAMM_BID, 39, AMMBid,
     Delegation::Delegable,
-    featureAMM,
+    uint256{},
     NoPriv,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -502,7 +502,7 @@ TRANSACTION(ttAMM_BID, 39, AMMBid,
 #endif
 TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     Delegation::Delegable,
-    featureAMM,
+    uint256{},
     MustDeleteAcct | MayDeleteMpt,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},

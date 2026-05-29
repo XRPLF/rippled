@@ -3,7 +3,6 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
@@ -1341,7 +1340,6 @@ public:
         // proper lifetime.
         std::unordered_set<uint256, beast::Uhash<>> const presets;
         Rules const defaultRules{presets};
-        BEAST_EXPECT(!defaultRules.enabled(featureAMM));
 
         unexpected(!j.checkSign(defaultRules), "Transaction fails signature test");
 

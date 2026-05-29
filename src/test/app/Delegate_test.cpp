@@ -2075,12 +2075,6 @@ class Delegate_test : public beast::unit_test::Suite
         std::unordered_map<std::string, uint256> txRequiredFeatures{
             {"Clawback", featureClawback},
             {"AMMClawback", featureAMMClawback},
-            {"AMMCreate", featureAMM},
-            {"AMMDeposit", featureAMM},
-            {"AMMWithdraw", featureAMM},
-            {"AMMVote", featureAMM},
-            {"AMMBid", featureAMM},
-            {"AMMDelete", featureAMM},
             {"XChainCreateClaimID", featureXChainBridge},
             {"XChainCommit", featureXChainBridge},
             {"XChainClaim", featureXChainBridge},

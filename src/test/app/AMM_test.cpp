@@ -20,6 +20,8 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpld/core/Config.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -3154,16 +3156,6 @@ private:
 
             {
                 auto jtx = env.jt(tx, Seq(1), Fee(baseFee));
-                env.app().config().features.erase(featureAMM);
-                PreflightContext const pfCtx(
-                    env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
-                auto pf = Transactor::invokePreflight<AMMBid>(pfCtx);
-                BEAST_EXPECT(pf == temDISABLED);
-                env.app().config().features.insert(featureAMM);
-            }
-
-            {
-                auto jtx = env.jt(tx, Seq(1), Fee(baseFee));
                 jtx.jv["TxnSignature"] = "deadbeef";
                 jtx.stx = env.ust(jtx);
                 PreflightContext const pfCtx(
@@ -4343,12 +4335,10 @@ private:
     {
         testcase("Amendment");
         FeatureBitset const all{testableAmendments()};
-        FeatureBitset const noAMM{all - featureAMM};
         FeatureBitset const noNumber{all - fixUniversalNumber};
-        FeatureBitset const noAMMAndNumber{all - featureAMM - fixUniversalNumber};
         using namespace jtx;
 
-        for (auto const& feature : {noAMM, noNumber, noAMMAndNumber})
+        for (auto const& feature : {noNumber})
         {
             Env env{*this, feature};
             fund(env, gw_, {alice_}, {USD(1'000)}, Fund::All);
