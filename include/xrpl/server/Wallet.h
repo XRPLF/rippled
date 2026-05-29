@@ -31,14 +31,14 @@ makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname, bea
  * @param session Session with the database.
  * @param dbTable Name of the database table from which the manifest will be
  *        extracted.
- * @param mCache Cache for storing the manifest.
+ * @param cache_ Cache for storing the manifest.
  * @param j Journal.
  */
 void
 getManifests(
     soci::session& session,
     std::string const& dbTable,
-    ManifestCache& mCache,
+    ManifestCache& cache,
     beast::Journal j);
 
 /**
@@ -89,7 +89,7 @@ getNodeIdentity(soci::session& session);
  * @param j Journal.
  * @return Peer reservation hash table.
  */
-std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual>
+std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual>
 getPeerReservationTable(soci::session& session, beast::Journal j);
 
 /**
@@ -123,7 +123,7 @@ createFeatureVotes(soci::session& session);
 
 // For historical reasons the up-vote and down-vote integer representations
 // are unintuitive.
-enum class AmendmentVote : int { obsolete = -1, up = 0, down = 1 };
+enum class AmendmentVote : int { Obsolete = -1, Up = 0, Down = 1 };
 
 /**
  * @brief readAmendments Reads all amendments from the FeatureVotes table.
@@ -135,8 +135,8 @@ void
 readAmendments(
     soci::session& session,
     std::function<void(
-        boost::optional<std::string> amendment_hash,
-        boost::optional<std::string> amendment_name,
+        boost::optional<std::string> amendmentHash,
+        boost::optional<std::string> amendmentName,
         boost::optional<AmendmentVote> vote)> const& callback);
 
 /**
