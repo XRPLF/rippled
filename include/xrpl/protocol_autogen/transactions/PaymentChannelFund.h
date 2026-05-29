@@ -19,9 +19,9 @@ class PaymentChannelFundBuilder;
  * @brief Transaction: PaymentChannelFund
  *
  * Type: ttPAYCHAN_FUND (14)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PaymentChannelFundBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfChannel (soeREQUIRED)
+     * @brief Get sfChannel (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -100,7 +100,7 @@ public:
  * @brief Builder for PaymentChannelFund transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class PaymentChannelFundBuilder : public TransactionBuilderBase<PaymentChannelFundBuilder>
@@ -141,7 +141,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfChannel (soeREQUIRED)
+     * @brief Set sfChannel (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelFundBuilder&
@@ -152,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelFundBuilder&
@@ -163,7 +163,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     PaymentChannelFundBuilder&

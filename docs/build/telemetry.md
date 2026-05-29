@@ -36,7 +36,8 @@ such as Grafana Tempo.
 Telemetry is **off by default** at both compile time and runtime:
 
 - **Compile time**: The Conan option `telemetry` and CMake option `telemetry` must be set to `True`/`ON`.
-  When disabled, all tracing macros compile to `((void)0)` with zero overhead.
+  When disabled, all `SpanGuard` calls compile to inline no-ops (defined in `SpanGuard.h`)
+  with zero overhead — no OTel SDK dependency required.
 - **Runtime**: The `[telemetry]` config section must set `enabled=1`.
   When disabled at runtime, a no-op implementation is used.
 
@@ -63,7 +64,7 @@ cd .build
 
 #### Install dependencies
 
-The `telemetry` option adds `opentelemetry-cpp/1.18.0` as a dependency.
+The `telemetry` option adds `opentelemetry-cpp/1.26.0` as a dependency.
 If the Conan lockfile does not yet include this package, bypass it with `--lockfile=""`.
 
 ```bash
@@ -235,7 +236,7 @@ curl -s -X POST http://127.0.0.1:5005/ \
 
 ### Conan lockfile error
 
-If you see `ERROR: Requirement 'opentelemetry-cpp/1.18.0' not in lockfile 'requires'`,
+If you see `ERROR: Requirement 'opentelemetry-cpp/1.26.0' not in lockfile 'requires'`,
 the lockfile was generated without the telemetry dependency.
 Pass `--lockfile=""` to bypass the lockfile, or regenerate it with telemetry enabled.
 
@@ -257,7 +258,7 @@ The Conan package provides a single umbrella target
 | `include/xrpl/telemetry/SpanGuard.h`          | RAII span guard with `discard()` for dropping unwanted spans |
 | `include/xrpl/telemetry/DiscardFlag.h`        | Thread-local discard flag (zero-dependency header)           |
 | `src/libxrpl/telemetry/Telemetry.cpp`         | OTel SDK setup, `FilteringSpanProcessor`, provider lifecycle |
-| `src/libxrpl/telemetry/TelemetryConfig.cpp`   | Config parser (`setup_Telemetry()`)                          |
+| `src/libxrpl/telemetry/TelemetryConfig.cpp`   | Config parser (`setupTelemetry()`)                           |
 | `src/libxrpl/telemetry/NullTelemetry.cpp`     | No-op implementation (used when disabled)                    |
 | `src/libxrpl/telemetry/SpanGuard.cpp`         | Pimpl implementation for SpanGuard (all OTel types confined) |
 | `src/xrpld/rpc/detail/ServerHandler.cpp`      | RPC entry point instrumentation                              |

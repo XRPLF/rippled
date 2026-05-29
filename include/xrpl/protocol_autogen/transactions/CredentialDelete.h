@@ -19,9 +19,9 @@ class CredentialDeleteBuilder;
  * @brief Transaction: CredentialDelete
  *
  * Type: ttCREDENTIAL_DELETE (60)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureCredentials
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CredentialDeleteBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfSubject (soeOPTIONAL)
+     * @brief Get sfSubject (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfIssuer (soeOPTIONAL)
+     * @brief Get sfIssuer (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -100,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfCredentialType (soeREQUIRED)
+     * @brief Get sfCredentialType (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -115,7 +115,7 @@ public:
  * @brief Builder for CredentialDelete transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class CredentialDeleteBuilder : public TransactionBuilderBase<CredentialDeleteBuilder>
@@ -154,7 +154,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfSubject (soeOPTIONAL)
+     * @brief Set sfSubject (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CredentialDeleteBuilder&
@@ -165,7 +165,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuer (soeOPTIONAL)
+     * @brief Set sfIssuer (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     CredentialDeleteBuilder&
@@ -176,7 +176,7 @@ public:
     }
 
     /**
-     * @brief Set sfCredentialType (soeREQUIRED)
+     * @brief Set sfCredentialType (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     CredentialDeleteBuilder&

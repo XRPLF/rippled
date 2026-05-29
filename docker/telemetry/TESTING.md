@@ -50,7 +50,7 @@ Wait for services to be ready:
 curl -sf http://localhost:13133/ && echo "collector ready"
 
 # Tempo readiness
-curl -sf http://localhost:3200/ready > /dev/null && echo "tempo ready"
+curl -sf http://localhost:3200/ready >/dev/null && echo "tempo ready"
 ```
 
 ### Step 2: Start xrpld in standalone mode
@@ -66,16 +66,16 @@ Wait a few seconds for the node to initialize.
 ```bash
 # server_info
 curl -s http://localhost:5005 \
-  -d '{"method":"server_info"}' | jq .result.info.server_state
+    -d '{"method":"server_info"}' | jq .result.info.server_state
 
 # server_state
 curl -s http://localhost:5005 \
-  -d '{"method":"server_state"}' | jq .result.state.server_state
+    -d '{"method":"server_state"}' | jq .result.state.server_state
 
 # ledger
 curl -s http://localhost:5005 \
-  -d '{"method":"ledger","params":[{"ledger_index":"current"}]}' \
-  | jq .result.ledger_current_index
+    -d '{"method":"ledger","params":[{"ledger_index":"current"}]}' |
+    jq .result.ledger_current_index
 ```
 
 ### Step 4: Submit a transaction
@@ -123,21 +123,21 @@ curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues
 
 # Check RPC spans
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.http_request"}' \
-  --data-urlencode 'limit=5' | jq '.traces | length'
+    --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.http_request"}' \
+    --data-urlencode 'limit=5' | jq '.traces | length'
 
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.process"}' \
-  --data-urlencode 'limit=5' | jq '.traces | length'
+    --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.process"}' \
+    --data-urlencode 'limit=5' | jq '.traces | length'
 
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.command.server_info"}' \
-  --data-urlencode 'limit=5' | jq '.traces | length'
+    --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.command.server_info"}' \
+    --data-urlencode 'limit=5' | jq '.traces | length'
 
 # Check transaction spans
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="xrpld" && name="tx.process"}' \
-  --data-urlencode 'limit=5' | jq '.traces | length'
+    --data-urlencode 'q={resource.service.name="xrpld" && name="tx.process"}' \
+    --data-urlencode 'limit=5' | jq '.traces | length'
 ```
 
 Or open Grafana Explore with Tempo datasource: http://localhost:3000
@@ -221,8 +221,8 @@ Generate 6 key pairs:
 
 ```bash
 for i in $(seq 1 6); do
-  curl -s http://localhost:5005 \
-    -d '{"method":"validation_create"}' | jq '.result'
+    curl -s http://localhost:5005 \
+        -d '{"method":"validation_create"}' | jq '.result'
 done
 ```
 
@@ -318,8 +318,8 @@ trace_ledger=1
 
 ```bash
 for i in $(seq 1 6); do
-  .build/xrpld --conf /tmp/xrpld-integration/node$i/xrpld.cfg --start &
-  echo $! > /tmp/xrpld-integration/node$i/xrpld.pid
+    .build/xrpld --conf /tmp/xrpld-integration/node$i/xrpld.cfg --start &
+    echo $! >/tmp/xrpld-integration/node$i/xrpld.pid
 done
 ```
 
@@ -329,14 +329,14 @@ Poll each node until `server_state` = `"proposing"`:
 
 ```bash
 for port in 5005 5006 5007 5008 5009 5010; do
-  while true; do
-    state=$(curl -s http://localhost:$port \
-      -d '{"method":"server_info"}' \
-      | jq -r '.result.info.server_state')
-    echo "Port $port: $state"
-    [ "$state" = "proposing" ] && break
-    sleep 5
-  done
+    while true; do
+        state=$(curl -s http://localhost:$port \
+            -d '{"method":"server_info"}' |
+            jq -r '.result.info.server_state')
+        echo "Port $port: $state"
+        [ "$state" = "proposing" ] && break
+        sleep 5
+    done
 done
 ```
 
@@ -412,18 +412,18 @@ curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues
 
 # Query traces by operation
 for op in "rpc.http_request" "rpc.ws_upgrade" "rpc.ws_message" "rpc.process" \
-          "rpc.command.server_info" "rpc.command.server_state" "rpc.command.ledger" \
-          "tx.process" "tx.receive" "tx.apply" \
-          "consensus.proposal.send" "consensus.ledger_close" \
-          "consensus.accept" "consensus.accept.apply" \
-          "consensus.validation.send" \
-          "ledger.build" "ledger.validate" "ledger.store" \
-          "peer.proposal.receive" "peer.validation.receive"; do
-  count=$(curl -s "$TEMPO/api/search" \
-    --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
-    --data-urlencode "limit=5" \
-    | jq '.traces | length')
-  printf "%-35s %s traces\n" "$op" "$count"
+    "rpc.command.server_info" "rpc.command.server_state" "rpc.command.ledger" \
+    "tx.process" "tx.receive" "tx.apply" \
+    "consensus.proposal.send" "consensus.ledger_close" \
+    "consensus.accept" "consensus.accept.apply" \
+    "consensus.validation.send" \
+    "ledger.build" "ledger.validate" "ledger.store" \
+    "peer.proposal.receive" "peer.validation.receive"; do
+    count=$(curl -s "$TEMPO/api/search" \
+        --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
+        --data-urlencode "limit=5" |
+        jq '.traces | length')
+    printf "%-35s %s traces\n" "$op" "$count"
 done
 ```
 
@@ -435,16 +435,16 @@ Base URL: `http://localhost:9090`
 PROM="http://localhost:9090"
 
 # Span call counts (from spanmetrics connector)
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" \
-  | jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
+curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+    jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
 # Latency histogram
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" \
-  | jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
+curl -s "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" |
+    jq '.data.result[] | {span: .metric.span_name, count: .value[1]}'
 
 # RPC calls by command
-curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}" \
-  | jq '.data.result[] | {command: .metric["xrpl.rpc.command"], count: .value[1]}'
+curl -s "$PROM/api/v1/query?query=traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}" |
+    jq '.data.result[] | {command: .metric["xrpl.rpc.command"], count: .value[1]}'
 ```
 
 ### Grafana
@@ -512,8 +512,8 @@ exports parsed entries to Loki. Verify Loki has received entries:
 ```bash
 # Query Loki for any xrpld logs
 curl -sG "http://localhost:3100/loki/api/v1/query" \
-  --data-urlencode 'query={job="xrpld"}' \
-  --data-urlencode 'limit=5' | jq '.data.result | length'
+    --data-urlencode 'query={job="xrpld"}' \
+    --data-urlencode 'limit=5' | jq '.data.result | length'
 ```
 
 Expected: > 0 results.
@@ -567,7 +567,7 @@ Expected: > 0 results.
 1. Check that all peer ports (51235-51240) are not in use:
    ```bash
    for p in 51235 51236 51237 51238 51239 51240; do
-     ss -tlnp | grep ":$p " && echo "port $p in use"
+       ss -tlnp | grep ":$p " && echo "port $p in use"
    done
    ```
 2. Verify `[ips_fixed]` lists all 6 peer ports
@@ -580,8 +580,8 @@ Expected: > 0 results.
 1. Verify genesis account exists:
    ```bash
    curl -s http://localhost:5005 \
-     -d '{"method":"account_info","params":[{"account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"}]}' \
-     | jq .result.account_data.Balance
+       -d '{"method":"account_info","params":[{"account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"}]}' |
+       jq .result.account_data.Balance
    ```
 2. Check submit response for error codes
 3. In standalone mode, remember to call `ledger_accept` after submitting

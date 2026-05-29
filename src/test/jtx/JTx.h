@@ -21,15 +21,15 @@ class Env;
 */
 struct JTx
 {
-    Json::Value jv;
+    json::Value jv;
     requires_t require;
     std::optional<TER> ter = TER{tesSUCCESS};
-    std::optional<std::pair<error_code_i, std::string>> rpcCode = std::nullopt;
+    std::optional<std::pair<ErrorCodeI, std::string>> rpcCode = std::nullopt;
     std::optional<std::pair<std::string, std::optional<std::string>>> rpcException = std::nullopt;
-    bool fill_fee = true;
-    bool fill_seq = true;
-    bool fill_sig = true;
-    bool fill_netid = true;
+    bool fillFee = true;
+    bool fillSeq = true;
+    bool fillSig = true;
+    bool fillNetid = true;
     std::shared_ptr<STTx const> stx;
     // Functions that sign the transaction from the Account
     std::vector<std::function<void(Env&, JTx&)>> mainSigners;
@@ -45,16 +45,16 @@ struct JTx
     JTx&
     operator=(JTx&&) = default;
 
-    JTx(Json::Value&& jv_) : jv(std::move(jv_))
+    JTx(json::Value&& jv) : jv(std::move(jv))
     {
     }
 
-    JTx(Json::Value const& jv_) : jv(jv_)
+    JTx(json::Value const& jv) : jv(jv)
     {
     }
 
     template <class Key>
-    Json::Value&
+    json::Value&
     operator[](Key const& key)
     {
         return jv[key];
@@ -71,7 +71,7 @@ struct JTx
     {
         for (auto& prop : props_.list)
         {
-            if (auto test = dynamic_cast<prop_type<Prop>*>(prop.get()))
+            if (auto test = dynamic_cast<PropType<Prop>*>(prop.get()))
                 return &test->t;
         }
         return nullptr;
@@ -83,7 +83,7 @@ struct JTx
     {
         for (auto& prop : props_.list)
         {
-            if (auto test = dynamic_cast<prop_type<Prop> const*>(prop.get()))
+            if (auto test = dynamic_cast<PropType<Prop> const*>(prop.get()))
                 return &test->t;
         }
         return nullptr;
@@ -96,7 +96,7 @@ struct JTx
     */
     /** @{ */
     void
-    set(std::unique_ptr<basic_prop> p)
+    set(std::unique_ptr<BasicProp> p)
     {
         for (auto& prop : props_.list)
         {
@@ -113,23 +113,23 @@ struct JTx
     void
     set(Args&&... args)
     {
-        set(std::make_unique<prop_type<Prop>>(std::forward<Args>(args)...));
+        set(std::make_unique<PropType<Prop>>(std::forward<Args>(args)...));
     }
     /** @} */
 
 private:
-    struct prop_list
+    struct PropList
     {
-        prop_list() = default;
+        PropList() = default;
 
-        prop_list(prop_list const& other)
+        PropList(PropList const& other)
         {
             for (auto const& prop : other.list)
                 list.emplace_back(prop->clone());
         }
 
-        prop_list&
-        operator=(prop_list const& other)
+        PropList&
+        operator=(PropList const& other)
         {
             if (this != &other)
             {
@@ -140,14 +140,14 @@ private:
             return *this;
         }
 
-        prop_list(prop_list&& src) = default;
-        prop_list&
-        operator=(prop_list&& src) = default;
+        PropList(PropList&& src) = default;
+        PropList&
+        operator=(PropList&& src) = default;
 
-        std::vector<std::unique_ptr<basic_prop>> list;
+        std::vector<std::unique_ptr<BasicProp>> list;
     };
 
-    prop_list props_;
+    PropList props_;
 };
 
 }  // namespace xrpl::test::jtx

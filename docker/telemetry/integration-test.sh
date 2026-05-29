@@ -34,7 +34,7 @@ RPC_PORT_BASE=5005
 CONSENSUS_TIMEOUT=120
 GENESIS_ACCOUNT="rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
 GENESIS_SEED="snoPBrXtMeMyMHUVTgbuqAfg1SUTb"
-DEST_ACCOUNT=""  # Generated dynamically via wallet_propose
+DEST_ACCOUNT="" # Generated dynamically via wallet_propose
 TEMPO="http://localhost:3200"
 PROM="http://localhost:9090"
 
@@ -45,18 +45,27 @@ FAIL=0
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-log()  { printf "\033[1;34m[INFO]\033[0m  %s\n" "$*"; }
-ok()   { printf "\033[1;32m[PASS]\033[0m  %s\n" "$*"; PASS=$((PASS + 1)); }
-fail() { printf "\033[1;31m[FAIL]\033[0m  %s\n" "$*"; FAIL=$((FAIL + 1)); }
-die()  { printf "\033[1;31m[ERROR]\033[0m %s\n" "$*" >&2; exit 1; }
+log() { printf "\033[1;34m[INFO]\033[0m  %s\n" "$*"; }
+ok() {
+    printf "\033[1;32m[PASS]\033[0m  %s\n" "$*"
+    PASS=$((PASS + 1))
+}
+fail() {
+    printf "\033[1;31m[FAIL]\033[0m  %s\n" "$*"
+    FAIL=$((FAIL + 1))
+}
+die() {
+    printf "\033[1;31m[ERROR]\033[0m %s\n" "$*" >&2
+    exit 1
+}
 
 check_span() {
     local op="$1"
     local count
     count=$(curl -sf "$TEMPO/api/search" \
         --data-urlencode "q={resource.service.name=\"rippled\" && name=\"$op\"}" \
-        --data-urlencode "limit=5" \
-        | jq '.traces | length' 2>/dev/null || echo 0)
+        --data-urlencode "limit=5" |
+        jq '.traces | length' 2>/dev/null || echo 0)
     if [ "$count" -gt 0 ]; then
         ok "$op  ($count traces)"
     else
@@ -104,8 +113,8 @@ check_log_correlation() {
     if [ -n "$sample_trace_id" ]; then
         local trace_found
         # Tempo /api/traces/{id} returns OTLP shape: {"batches":[...]}
-        trace_found=$(curl -sf "$TEMPO/api/traces/$sample_trace_id" \
-            | jq '.batches | length' 2>/dev/null) || trace_found=0
+        trace_found=$(curl -sf "$TEMPO/api/traces/$sample_trace_id" |
+            jq '.batches | length' 2>/dev/null) || trace_found=0
         if [ "$trace_found" -gt 0 ]; then
             ok "Log-Tempo cross-check: trace_id=$sample_trace_id found in Tempo"
         else
@@ -216,7 +225,7 @@ mkdir -p "$TEMP_DATA"
 
 # Create a minimal temp config for key generation
 TEMP_CFG="$TEMP_DATA/xrpld.cfg"
-cat > "$TEMP_CFG" <<EOCFG
+cat >"$TEMP_CFG" <<EOCFG
 [server]
 port_rpc_temp
 
@@ -241,7 +250,7 @@ $TEMP_DATA/debug.log
 0
 EOCFG
 
-"$XRPLD" --conf "$TEMP_CFG" -a --start > "$TEMP_DATA/stdout.log" 2>&1 &
+"$XRPLD" --conf "$TEMP_CFG" -a --start >"$TEMP_DATA/stdout.log" 2>&1 &
 TEMP_PID=$!
 log "Temporary xrpld started (PID $TEMP_PID), waiting for RPC..."
 
@@ -290,7 +299,7 @@ VALIDATORS_FILE="$WORKDIR/validators.txt"
     for i in $(seq 0 $((NUM_NODES - 1))); do
         echo "${PUBKEYS[$i]}"
     done
-} > "$VALIDATORS_FILE"
+} >"$VALIDATORS_FILE"
 
 # Create per-node configs
 for i in $(seq 1 "$NUM_NODES"); do
@@ -310,7 +319,7 @@ for i in $(seq 1 "$NUM_NODES"); do
         fi
     done
 
-    cat > "$NODE_DIR/xrpld.cfg" <<EOCFG
+    cat >"$NODE_DIR/xrpld.cfg" <<EOCFG
 [server]
 port_rpc
 port_peer
@@ -385,8 +394,8 @@ log "Starting $NUM_NODES xrpld nodes..."
 
 for i in $(seq 1 "$NUM_NODES"); do
     NODE_DIR="$WORKDIR/node$i"
-    "$XRPLD" --conf "$NODE_DIR/xrpld.cfg" --start > "$NODE_DIR/stdout.log" 2>&1 &
-    echo $! > "$NODE_DIR/xrpld.pid"
+    "$XRPLD" --conf "$NODE_DIR/xrpld.cfg" --start >"$NODE_DIR/stdout.log" 2>&1 &
+    echo $! >"$NODE_DIR/xrpld.pid"
     log "  Node $i started (PID $(cat "$NODE_DIR/xrpld.pid"))"
 done
 
@@ -402,7 +411,7 @@ start_time=$(date +%s)
 nodes_ready=0
 
 while [ "$nodes_ready" -lt "$NUM_NODES" ]; do
-    elapsed=$(( $(date +%s) - start_time ))
+    elapsed=$(($(date +%s) - start_time))
     if [ "$elapsed" -ge "$CONSENSUS_TIMEOUT" ]; then
         fail "Consensus timeout after ${CONSENSUS_TIMEOUT}s ($nodes_ready/$NUM_NODES nodes ready)"
         log "Continuing with partial consensus..."
@@ -413,8 +422,8 @@ while [ "$nodes_ready" -lt "$NUM_NODES" ]; do
     for i in $(seq 1 "$NUM_NODES"); do
         RPC_PORT=$((RPC_PORT_BASE + i - 1))
         state=$(curl -sf "http://localhost:$RPC_PORT" \
-            -d '{"method":"server_info"}' 2>/dev/null \
-            | jq -r '.result.info.server_state' 2>/dev/null || echo "unreachable")
+            -d '{"method":"server_info"}' 2>/dev/null |
+            jq -r '.result.info.server_state' 2>/dev/null || echo "unreachable")
         if [ "$state" = "proposing" ]; then
             nodes_ready=$((nodes_ready + 1))
         fi
@@ -438,8 +447,8 @@ fi
 log "Waiting for first validated ledger..."
 for attempt in $(seq 1 60); do
     val_seq=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
-        -d '{"method":"server_info"}' 2>/dev/null \
-        | jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
+        -d '{"method":"server_info"}' 2>/dev/null |
+        jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
     if [ "$val_seq" -gt 2 ] 2>/dev/null; then
         ok "First validated ledger: seq $val_seq"
         break
@@ -456,11 +465,11 @@ done
 log "Exercising RPC spans..."
 
 curl -sf "http://localhost:$RPC_PORT_BASE" \
-    -d '{"method":"server_info"}' > /dev/null
+    -d '{"method":"server_info"}' >/dev/null
 curl -sf "http://localhost:$RPC_PORT_BASE" \
-    -d '{"method":"server_state"}' > /dev/null
+    -d '{"method":"server_state"}' >/dev/null
 curl -sf "http://localhost:$RPC_PORT_BASE" \
-    -d '{"method":"ledger","params":[{"ledger_index":"current"}]}' > /dev/null
+    -d '{"method":"ledger","params":[{"ledger_index":"current"}]}' >/dev/null
 
 log "RPC commands sent. Waiting 5s for batch export..."
 sleep 5
@@ -477,7 +486,7 @@ wallet_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
 DEST_ACCOUNT=$(echo "$wallet_result" | jq -r '.result.account_id' 2>/dev/null)
 if [ -z "$DEST_ACCOUNT" ] || [ "$DEST_ACCOUNT" = "null" ]; then
     fail "Could not generate destination wallet"
-    DEST_ACCOUNT="rrrrrrrrrrrrrrrrrrrrrhoLvTp"  # ACCOUNT_ZERO fallback
+    DEST_ACCOUNT="rrrrrrrrrrrrrrrrrrrrrhoLvTp" # ACCOUNT_ZERO fallback
 fi
 log "  Destination: $DEST_ACCOUNT"
 
@@ -510,8 +519,8 @@ sleep 15
 log "Verifying spans in Tempo..."
 
 # Check service registration
-services=$(curl -sf "$TEMPO/api/v2/search/tag/resource.service.name/values" \
-    | jq -r '.tagValues[].value' 2>/dev/null || echo "")
+services=$(curl -sf "$TEMPO/api/v2/search/tag/resource.service.name/values" |
+    jq -r '.tagValues[].value' 2>/dev/null || echo "")
 if echo "$services" | grep -q "rippled"; then
     ok "Service 'rippled' registered in Tempo"
 else
@@ -565,16 +574,16 @@ log "--- Phase 5: Spanmetrics ---"
 log "Waiting 20s for Prometheus scrape cycle..."
 sleep 20
 
-calls_count=$(curl -sf "$PROM/api/v1/query?query=traces_span_metrics_calls_total" \
-    | jq '.data.result | length' 2>/dev/null || echo 0)
+calls_count=$(curl -sf "$PROM/api/v1/query?query=traces_span_metrics_calls_total" |
+    jq '.data.result | length' 2>/dev/null || echo 0)
 if [ "$calls_count" -gt 0 ]; then
     ok "Prometheus: traces_span_metrics_calls_total ($calls_count series)"
 else
     fail "Prometheus: traces_span_metrics_calls_total (0 series)"
 fi
 
-duration_count=$(curl -sf "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" \
-    | jq '.data.result | length' 2>/dev/null || echo 0)
+duration_count=$(curl -sf "$PROM/api/v1/query?query=traces_span_metrics_duration_milliseconds_count" |
+    jq '.data.result | length' 2>/dev/null || echo 0)
 if [ "$duration_count" -gt 0 ]; then
     ok "Prometheus: duration histogram ($duration_count series)"
 else
@@ -582,7 +591,7 @@ else
 fi
 
 # Check Grafana
-if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+if curl -sf http://localhost:3000/api/health >/dev/null 2>&1; then
     ok "Grafana: healthy at localhost:3000"
 else
     fail "Grafana: not reachable at localhost:3000"
@@ -599,8 +608,8 @@ sleep 20
 check_otel_metric() {
     local metric_name="$1"
     local result
-    result=$(curl -sf "$PROM/api/v1/query?query=$metric_name" \
-        | jq '.data.result | length' 2>/dev/null || echo 0)
+    result=$(curl -sf "$PROM/api/v1/query?query=$metric_name" |
+        jq '.data.result | length' 2>/dev/null || echo 0)
     if [ "$result" -gt 0 ]; then
         ok "OTel: $metric_name ($result series)"
     else

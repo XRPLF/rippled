@@ -26,6 +26,7 @@
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
+#include <xrpl/telemetry/TraceContextPropagator.h>
 
 #include <opentelemetry/common/attribute_value.h>
 #include <opentelemetry/common/key_value_iterable_view.h>
@@ -42,13 +43,17 @@
 #include <opentelemetry/trace/trace_id.h>
 #include <opentelemetry/trace/tracer.h>
 
+#include <cstdint>
 #include <cstring>
+#include <exception>
+#include <memory>
 #include <string>
+#include <string_view>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 namespace otel_trace = opentelemetry::trace;
 
@@ -172,7 +177,7 @@ SpanGuard
 SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view name)
 {
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
+    if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
     auto fullName = std::string(prefix) + "." + std::string(name);
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName, categoryToSpanKind(cat))));
@@ -186,7 +191,7 @@ SpanGuard::childSpan(std::string_view name) const
     if (!impl_)
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled())
+    if ((tel == nullptr) || !tel->isEnabled())
         return {};
     auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(name, ctx)));
@@ -198,7 +203,7 @@ SpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx)
     if (!parentCtx.isValid())
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled())
+    if ((tel == nullptr) || !tel->isEnabled())
         return {};
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(name, parentCtx.impl_->ctx)));
 }
@@ -209,7 +214,7 @@ SpanGuard::linkedSpan(std::string_view name) const
     if (!impl_)
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled())
+    if ((tel == nullptr) || !tel->isEnabled())
         return {};
 
     auto tracer = tel->getTracer("xrpld");
@@ -236,7 +241,7 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
     if (!linkCtx.isValid())
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled())
+    if ((tel == nullptr) || !tel->isEnabled())
         return {};
 
     auto tracer = tel->getTracer("xrpld");
@@ -266,10 +271,11 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
 
 SpanGuard
 SpanGuard::hashSpan(
-    TraceCategory cat,
-    std::string_view name,
-    std::uint8_t const* hashData,
-    std::size_t hashSize)
+    TraceCategory const cat,
+    std::string_view const name,
+    std::uint8_t const* const hashData,
+    std::size_t const hashSize,
+    SpanContext const* const followsFrom)
 {
     if (hashSize < 16)
         return {};
@@ -292,18 +298,37 @@ SpanGuard::hashSpan(
         opentelemetry::nostd::shared_ptr<otel_trace::Span>(
             new otel_trace::DefaultSpan(syntheticCtx)));
 
+    if (followsFrom != nullptr && followsFrom->isValid())
+    {
+        auto linkSpan = otel_trace::GetSpan(followsFrom->impl_->ctx);
+        if (linkSpan && linkSpan->GetContext().IsValid())
+        {
+            auto tracer = tel->getTracer("xrpld");
+            otel_trace::StartSpanOptions opts;
+            opts.parent = parentCtx;
+            opts.kind = categoryToSpanKind(cat);
+            return SpanGuard(
+                std::make_unique<Impl>(tracer->StartSpan(
+                    std::string(name),
+                    {},
+                    {{linkSpan->GetContext(),
+                      {{std::string(attr::linkType), std::string(attr_val::followsFrom)}}}},
+                    opts)));
+        }
+    }
+
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(std::string(name), parentCtx)));
 }
 
 SpanGuard
 SpanGuard::hashSpan(
-    TraceCategory cat,
-    std::string_view name,
-    std::uint8_t const* hashData,
-    std::size_t hashSize,
-    std::uint8_t const* parentSpanId,
-    std::size_t parentSpanSize,
-    std::uint8_t traceFlags)
+    TraceCategory const cat,
+    std::string_view const name,
+    std::uint8_t const* const hashData,
+    std::size_t const hashSize,
+    std::uint8_t const* const parentSpanId,
+    std::size_t const parentSpanSize,
+    std::uint8_t const traceFlags)
 {
     if (hashSize < 16 || parentSpanSize != 8)
         return {};
@@ -358,15 +383,24 @@ SpanGuard::getTraceBytes() const
     return result;
 }
 
+void
+SpanGuard::injectCurrentContextToProtobuf(protocol::TraceContext& proto)
+{
+    auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+    injectToProtobuf(ctx, proto);
+}
+
 // ===== Attribute setters ===================================================
 
 void
 SpanGuard::setAttribute(std::string_view key, std::string_view value)
 {
     if (impl_)
+    {
         impl_->span->SetAttribute(
             opentelemetry::nostd::string_view(key.data(), key.size()),
             opentelemetry::nostd::string_view(value.data(), value.size()));
+    }
 }
 
 void
@@ -424,17 +458,27 @@ SpanGuard::addEvent(std::string_view name, std::initializer_list<EventAttribute>
 {
     if (!impl_)
         return;
-    std::vector<std::pair<opentelemetry::nostd::string_view, opentelemetry::common::AttributeValue>>
+    // OTel's AddEvent template requires a key-value-iterable; a plain
+    // std::vector<std::pair<...>> doesn't satisfy is_key_value_iterable.
+    // Wrap in nostd::span over the vector's storage so the SDK accepts it.
+    std::vector<std::pair<
+        opentelemetry::noopentelemetry::nostd::string_view,
+        opentelemetry::common::AttributeValue>>
+
         otelAttrs;
     otelAttrs.reserve(attrs.size());
     for (auto const& [k, v] : attrs)
+    {
         otelAttrs.emplace_back(
             opentelemetry::nostd::string_view{k.data(), k.size()},
             opentelemetry::common::AttributeValue{
                 opentelemetry::nostd::string_view{v.data(), v.size()}});
+    }
     impl_->span->AddEvent(
-        opentelemetry::nostd::string_view{name.data(), name.size()},
-        opentelemetry::common::KeyValueIterableView<decltype(otelAttrs)>(otelAttrs));
+        std::string(name),
+        opentelemetry::nostd::span<std::pair<
+            opentelemetry::nostd::string_view,
+            opentelemetry::common::AttributeValue> const>{otelAttrs.data(), otelAttrs.size()});
 }
 
 void
@@ -444,7 +488,7 @@ SpanGuard::recordException(std::exception const& e)
         return;
     impl_->span->AddEvent(
         "exception",
-        {{"exception.type", "std::exception"}, {"exception.message", std::string(e.what())}});
+        {{"exception.type", typeid(e).name()}, {"exception.message", std::string(e.what())}});
     impl_->span->SetStatus(otel_trace::StatusCode::kError, e.what());
 }
 
@@ -453,14 +497,13 @@ SpanGuard::discard()
 {
     if (impl_)
     {
-        tl_discardCurrentSpan = true;
+        gTlDiscardCurrentSpan = true;
         impl_->span->End();
         impl_->span = nullptr;  // prevent ~Impl from calling End() again
         impl_.reset();
     }
 }
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry
 
 #endif  // XRPL_ENABLE_TELEMETRY

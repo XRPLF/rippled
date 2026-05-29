@@ -445,8 +445,8 @@ direct method calls, which is cleaner and avoids macro control-flow issues.
    // Actual usage in Consensus.h::updateOurPositions():
    span.addEvent(
        "dispute.resolve",
-       {{cons_span::attr::txId, to_string(txId)},
-        {cons_span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"}});
+       {{consensus::span::attr::txId, to_string(txId)},
+        {consensus::span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"}});
    ```
 
 2. **Span link support** — implemented via `SpanGuard::linkedSpan()` static factory
@@ -624,10 +624,10 @@ details.
   ```cpp
   span.addEvent(
       "dispute.resolve",
-      {{cons_span::attr::txId, to_string(txId)},
-       {cons_span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"},
-       {cons_span::attr::disputeYays, std::to_string(dispute.getYays())},
-       {cons_span::attr::disputeNays, std::to_string(dispute.getNays())}});
+      {{consensus::span::attr::txId, to_string(txId)},
+       {consensus::span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"},
+       {consensus::span::attr::disputeYays, std::to_string(dispute.getYays())},
+       {consensus::span::attr::disputeNays, std::to_string(dispute.getNays())}});
   ```
 
 **Not implemented**:
@@ -687,8 +687,8 @@ wrongLedger, switchedLedger).
   ```cpp
   auto span = telemetry::SpanGuard::span(
       telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "mode_change");
-  span.setAttribute(cons_span::attr::modeOld, to_string(before).c_str());   // "mode_old"
-  span.setAttribute(cons_span::attr::modeNew, to_string(after).c_str());   // "mode_new"
+  span.setAttribute(consensus::span::attr::modeOld, to_string(before).c_str());   // "mode_old"
+  span.setAttribute(consensus::span::attr::modeNew, to_string(after).c_str());   // "mode_new"
   ```
 
 - `MonitoredMode::set()` in `Consensus.h` calls `adaptor_.onModeChange(before, after)`.

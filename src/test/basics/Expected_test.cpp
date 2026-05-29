@@ -16,7 +16,7 @@
 
 namespace xrpl::test {
 
-struct Expected_test : beast::unit_test::suite
+struct Expected_test : beast::unit_test::Suite
 {
     void
     run() override
