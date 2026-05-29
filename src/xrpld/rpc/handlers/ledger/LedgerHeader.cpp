@@ -17,7 +17,7 @@ namespace xrpl {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
 // }
-Json::Value
+json::Value
 doLedgerHeader(RPC::JsonContext& context)
 {
     std::shared_ptr<ReadView const> lpLedger;

@@ -10,12 +10,12 @@
 #include <exception>
 #include <optional>
 
-namespace Json {
+namespace json {
 struct JsonMissingKeyError : std::exception
 {
     char const* const key;
     mutable std::string msg;
-    JsonMissingKeyError(Json::StaticString const& k) : key{k.c_str()}
+    JsonMissingKeyError(json::StaticString const& k) : key{k.cStr()}
     {
     }
     char const*
@@ -34,8 +34,8 @@ struct JsonTypeMismatchError : std::exception
     char const* const key;
     std::string const expectedType;
     mutable std::string msg;
-    JsonTypeMismatchError(Json::StaticString const& k, std::string et)
-        : key{k.c_str()}, expectedType{std::move(et)}
+    JsonTypeMismatchError(json::StaticString const& k, std::string et)
+        : key{k.cStr()}, expectedType{std::move(et)}
     {
     }
     char const*
@@ -52,21 +52,21 @@ struct JsonTypeMismatchError : std::exception
 
 template <class T>
 T
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     static_assert(sizeof(T) == -1, "This function must be specialized");
 }
 
 template <>
 inline std::string
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
-    Json::StaticString const& key = field.getJsonName();
+    json::StaticString const& key = field.getJsonName();
     if (!v.isMember(key))
         Throw<JsonMissingKeyError>(key);
 
-    Json::Value const& inner = v[key];
+    json::Value const& inner = v[key];
     if (!inner.isString())
         Throw<JsonTypeMismatchError>(key, "string");
     return inner.asString();
@@ -75,13 +75,13 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
 // Note, this allows integer numeric fields to act as bools
 template <>
 inline bool
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
-    Json::StaticString const& key = field.getJsonName();
+    json::StaticString const& key = field.getJsonName();
     if (!v.isMember(key))
         Throw<JsonMissingKeyError>(key);
-    Json::Value const& inner = v[key];
+    json::Value const& inner = v[key];
     if (inner.isBool())
         return inner.asBool();
     if (!inner.isIntegral())
@@ -92,13 +92,13 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
 
 template <>
 inline std::uint64_t
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
-    Json::StaticString const& key = field.getJsonName();
+    json::StaticString const& key = field.getJsonName();
     if (!v.isMember(key))
         Throw<JsonMissingKeyError>(key);
-    Json::Value const& inner = v[key];
+    json::Value const& inner = v[key];
     if (inner.isUInt())
         return inner.asUInt();
     if (inner.isInt())
@@ -125,7 +125,7 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
 
 template <>
 inline xrpl::Buffer
-getOrThrow(Json::Value const& v, xrpl::SField const& field)
+getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
     std::string const hex = getOrThrow<std::string>(v, field);
@@ -140,7 +140,7 @@ getOrThrow(Json::Value const& v, xrpl::SField const& field)
 // This function may be used by external projects (like the witness server).
 template <class T>
 std::optional<T>
-getOptional(Json::Value const& v, xrpl::SField const& field)
+getOptional(json::Value const& v, xrpl::SField const& field)
 {
     try
     {
@@ -152,4 +152,4 @@ getOptional(Json::Value const& v, xrpl::SField const& field)
     return {};
 }
 
-}  // namespace Json
+}  // namespace json
