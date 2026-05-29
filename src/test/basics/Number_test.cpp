@@ -1762,6 +1762,113 @@ public:
                     break;
             }
         }
+        {
+            /* Companion test case for Upward positive operator/=: Downward negative
+             */
+            testcase << "operator/= Downward on Large returns value < truth " << to_string(scale);
+
+            NumberRoundModeGuard const roundGuard{Number::RoundingMode::Downward};
+
+            constexpr std::int64_t aValue = -2LL;
+            constexpr std::int64_t bValue = 1'000'000'000'000'000'007LL;
+            // bValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+            Number const a{aValue, 0};
+            Number const b{bValue, 0};
+            Number const quotient = a / b;
+
+            dec const exact = dec(aValue) / dec(bValue);
+            dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
+            dec const diff = stored - exact;
+
+            log << "\n"
+                << "  a                 = " << aValue << "\n"
+                << "  b                 = " << bValue << "\n"
+                << "  exact a/b         = " << fmt(exact) << "\n"
+                << "  stored a/b        = " << fmt(stored) << "\n"
+                << "  stored - exact    = " << fmt(diff)
+                << "    (positive => Downward gave value ABOVE truth)\n"
+                << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+                << "  quotient.exponent = " << quotient.exponent() << "\n";
+            log.flush();
+
+            // invariant: stored <= exact. Bug: stored > exact.
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(stored <= exact);
+                    BEAST_EXPECT(diff > -pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(stored > exact);
+                    BEAST_EXPECT(diff <= pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // Small mantissa doesn't have the correction for
+                    // dropped remainders
+                    BEAST_EXPECT(stored < exact);
+                    break;
+            }
+        }
+        {
+            /* Companion test case for Upward positive operator/=: ToNearest
+             *
+             * With ToNearest, if the dropped digits are exactly "5", then the mantissa will be
+             * rounded to even. The numbers below result in a value where the unrounded mantissa
+             * ends in an even digit, and "infinite precision" would drop
+             * "500000000000000000145...", but doNormalize only sees "5". Without the rounding fix,
+             * doNormalize rounds down to the even value. With the rounding fix, doNormalize knows
+             * there are more digits beyond "5", and so rounds _up_ to the odd value.
+             */
+            testcase << "operator/= ToNearest on Large returns value < truth " << to_string(scale);
+
+            NumberRoundModeGuard const roundGuard{Number::RoundingMode::ToNearest};
+
+            constexpr std::int64_t aValue = 1'269'917'268'816'087'809LL;
+            constexpr std::int64_t bValue = 3'458'525'013'821'685'511LL;
+            // bValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+            Number const a{aValue, 0};
+            Number const b{bValue, 0};
+            Number const quotient = a / b;
+
+            dec const exact = dec(aValue) / dec(bValue);
+            dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
+            dec const diff = stored - exact;
+
+            log << "\n"
+                << "  a                 = " << aValue << "\n"
+                << "  b                 = " << bValue << "\n"
+                << "  exact a/b         = " << fmt(exact) << "\n"
+                << "  stored a/b        = " << fmt(stored) << "\n"
+                << "  stored - exact    = " << fmt(diff)
+                << "    (negative => ToNearest gave value BELOW truth)\n"
+                << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+                << "  quotient.exponent = " << quotient.exponent() << "\n";
+            log.flush();
+
+            // invariant: stored >= exact. Bug: stored < exact.
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(stored >= exact);
+                    BEAST_EXPECT(diff < pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(stored < exact);
+                    BEAST_EXPECT(diff >= -pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // Small mantissa doesn't have the correction for
+                    // dropped remainders
+                    BEAST_EXPECT(stored < exact);
+                    break;
+            }
+        }
     }
 
     void
