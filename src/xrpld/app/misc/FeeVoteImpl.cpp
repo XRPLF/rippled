@@ -298,9 +298,13 @@ FeeVoteImpl::doVoting(
             if (auto const field = ~val->at(~extensionField); field)
             {
                 if (field.value() <= maxValue)
+                {
                     value.addVote(field.value());
+                }
                 else
+                {
                     value.noVote();
+                }
             }
             else
             {
