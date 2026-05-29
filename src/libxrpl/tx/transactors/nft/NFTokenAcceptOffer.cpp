@@ -375,28 +375,22 @@ NFTokenAcceptOffer::transferNFToken(
 
     auto const insertRet = nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
 
-    // if fixNFTokenReserve is enabled, check if the buyer has sufficient
-    // reserve to own a new object, if their OwnerCount changed.
-    //
     // There was an issue where the buyer accepts a sell offer, the ledger
     // didn't check if the buyer has enough reserve, meaning that buyer can get
     // NFTs free of reserve.
-    if (view().rules().enabled(fixNFTokenReserve))
-    {
-        // To check if there is sufficient reserve, we cannot use preFeeBalance_
-        // because NFT is sold for a price. So we must use the balance after
-        // the deduction of the potential offer price. A small caveat here is
-        // that the balance has already deducted the transaction fee, meaning
-        // that the reserve requirement is a few drops higher.
-        auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
+    // To check if there is sufficient reserve, we cannot use preFeeBalance_
+    // because NFT is sold for a price. So we must use the balance after
+    // the deduction of the potential offer price. A small caveat here is
+    // that the balance has already deducted the transaction fee, meaning
+    // that the reserve requirement is a few drops higher.
+    auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
 
-        auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
-        if (buyerOwnerCountAfter > buyerOwnerCountBefore)
-        {
-            if (auto const reserve = view().fees().accountReserve(buyerOwnerCountAfter);
-                buyerBalance < reserve)
-                return tecINSUFFICIENT_RESERVE;
-        }
+    auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
+    if (buyerOwnerCountAfter > buyerOwnerCountBefore)
+    {
+        if (auto const reserve = view().fees().accountReserve(buyerOwnerCountAfter);
+            buyerBalance < reserve)
+            return tecINSUFFICIENT_RESERVE;
     }
 
     return insertRet;
