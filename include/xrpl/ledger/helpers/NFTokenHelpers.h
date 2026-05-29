@@ -30,8 +30,8 @@ struct TokenAndPage
     STObject token;
     std::shared_ptr<SLE> page;
 
-    TokenAndPage(STObject token_, std::shared_ptr<SLE> page_)
-        : token(std::move(token_)), page(std::move(page_))
+    TokenAndPage(STObject token, std::shared_ptr<SLE> page)
+        : token(std::move(token)), page(std::move(page))
     {
     }
 };

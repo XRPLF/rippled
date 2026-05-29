@@ -165,12 +165,12 @@ public:
 
 // Factory functions
 std::unique_ptr<Telemetry>
-make_Telemetry(
+makeTelemetry(
     Telemetry::Setup const& setup,
     beast::Journal journal);
 
 Telemetry::Setup
-setup_Telemetry(
+setupTelemetry(
     Section const& section,
     std::string const& nodePublicKey,
     std::string const& version);

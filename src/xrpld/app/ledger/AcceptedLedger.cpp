@@ -8,7 +8,7 @@
 
 namespace xrpl {
 
-AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> const& ledger) : mLedger(ledger)
+AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> const& ledger) : ledger_(ledger)
 {
     transactions_.reserve(256);
 

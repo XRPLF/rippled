@@ -128,7 +128,7 @@ namespace xrpl {
 namespace telemetry {
 
 Telemetry::Setup
-setup_Telemetry(
+setupTelemetry(
     Section const& section,
     std::string const& nodePublicKey,
     std::string const& version)
@@ -213,8 +213,8 @@ class ApplicationImp : public Application, public BasicApp
     // Member initializer list (excerpt):
     // ...
     // , telemetry_(
-    //       telemetry::make_Telemetry(
-    //           telemetry::setup_Telemetry(
+    //       telemetry::makeTelemetry(
+    //           telemetry::setupTelemetry(
     //               config_->section("telemetry"),
     //               "",  // Updated later via setServiceInstanceId()
     //               BuildInfo::getVersionString()),
@@ -404,6 +404,8 @@ endif()
 ## 5.5 OpenTelemetry Collector Configuration
 
 > **OTLP** = OpenTelemetry Protocol | **APM** = Application Performance Monitoring
+
+> **Production hardening**: The configurations in this section are starting points. For production deployments where xrpld ships telemetry across a network to a centrally-hosted collector, see [Securing the OTel Pipeline](./secure-OTel.md) for the required mTLS receiver config, NetworkPolicy, and peer trace-context validation.
 
 ### 5.5.1 Development Configuration
 
@@ -627,8 +629,8 @@ flowchart TB
     end
 
     subgraph init["Initialization"]
-        parse["setup_Telemetry()"]
-        factory["make_Telemetry()"]
+        parse["setupTelemetry()"]
+        factory["makeTelemetry()"]
     end
 
     subgraph runtime["Runtime Components"]
@@ -661,7 +663,7 @@ flowchart TB
 **Reading the diagram:**
 
 - **Configuration Sources**: `xrpld.cfg` provides runtime settings (endpoint, sampling) while the CMake flag controls whether telemetry is compiled in at all.
-- **Initialization**: `setup_Telemetry()` parses config values, then `make_Telemetry()` constructs the provider, processor, and exporter objects.
+- **Initialization**: `setupTelemetry()` parses config values, then `makeTelemetry()` constructs the provider, processor, and exporter objects.
 - **Runtime Components**: The `TracerProvider` creates spans, the `BatchProcessor` buffers them, and the `OTLP Exporter` serializes and sends them over the wire.
 - **OTLP arrow to Collector**: Trace data leaves the xrpld process via OTLP (gRPC or HTTP) and enters the external Collector pipeline.
 - **Collector Pipeline**: `Receivers` ingest OTLP data, `Processors` apply sampling/filtering/enrichment, and `Exporters` forward traces to storage backends (Tempo, etc.).

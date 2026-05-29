@@ -19,6 +19,7 @@
 #include <boost/container/flat_set.hpp>
 
 #include <algorithm>
+#include <string_view>
 
 namespace xrpl::test::csf {
 
@@ -55,7 +56,7 @@ struct Peer
             return proposal_;
         }
 
-        Json::Value
+        json::Value
         getJson() const
         {
             return proposal_.getJson();
@@ -496,7 +497,7 @@ struct Peer
         return Result(
             TxSet{openTxs},
             Proposal(
-                prevLedger.id(), Proposal::seqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
+                prevLedger.id(), Proposal::kSeqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
     }
 
     void
@@ -506,7 +507,7 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value const& consensusJson)
+        json::Value const& consensusJson)
     {
         onAccept(
             result, prevLedger, closeResolution, rawCloseTimes, mode, consensusJson, validating());
@@ -519,11 +520,11 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value const& consensusJson,
+        json::Value const& consensusJson,
         bool const validating)
     {
         schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
-            bool const proposing = mode == ConsensusMode::proposing;
+            bool const proposing = mode == ConsensusMode::Proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 
             TxSet const acceptedTxs = injectTxs(prevLedger, result.txns);
@@ -591,7 +592,7 @@ struct Peer
 
         if (netLgr != ledgerID)
         {
-            JLOG(j.trace()) << Json::Compact(validations.getJsonTrie());
+            JLOG(j.trace()) << json::Compact(validations.getJsonTrie());
             issue(WrongPrevLedger{.wrong = ledgerID, .right = netLgr});
         }
 
@@ -613,6 +614,20 @@ struct Peer
     // Not interested in tracking consensus mode changes for now
     void
     onModeChange(ConsensusMode, ConsensusMode)
+    {
+    }
+
+    // Telemetry hooks — no-ops in the simulator. The generic engine calls
+    // these at every phase transition / outcome resolution so the
+    // production adaptor (RCLConsensus::Adaptor) can record events on the
+    // round span; the simulator runs without telemetry.
+    void
+    onPhaseEvent(std::string_view, std::string_view)
+    {
+    }
+
+    void
+    onOutcomeEvent(std::string_view)
     {
     }
 
@@ -643,7 +658,7 @@ struct Peer
         v.setSeen(now());
         ValStatus const res = validations.add(v.nodeID(), v);
 
-        if (res == ValStatus::stale)
+        if (res == ValStatus::Stale)
             return false;
 
         // Acquire will try to get from network if not already local

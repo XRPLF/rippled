@@ -86,7 +86,7 @@
  *  gRPC path (see GrpcSpanNames.h for constants):
  *
  *    +-------------------------------------------------------+
- *    | grpc.request                                          |
+ *    | grpc.<MethodName>  (e.g. grpc.GetLedger)              |
  *    | CallData::process(coro)                               |
  *    |   attrs: method, grpc_status                          |
  *    +-------------------------------------------------------+
@@ -154,6 +154,8 @@ using telemetry::attr_val::success;
 inline constexpr auto admin = makeStr("admin");
 inline constexpr auto user = makeStr("user");
 inline constexpr auto unknownCommand = makeStr("unknown_command");
+/// "invalid_json" — WS message parse failure or oversize.
+inline constexpr auto invalidJson = makeStr("invalid_json");
 }  // namespace val
 
 }  // namespace xrpl::telemetry::rpc_span

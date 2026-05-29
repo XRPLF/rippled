@@ -54,13 +54,13 @@ public:
 % if field.get('supports_mpt'):
      * @note This field supports MPT (Multi-Purpose Token) amounts.
 % endif
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
      * @return The field value.
 % else:
      * @return The field value, or std::nullopt if not present.
 % endif
      */
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
     [[nodiscard]]
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const
@@ -97,13 +97,13 @@ public:
      * @note This field supports MPT (Multi-Purpose Token) amounts.
 % endif
      * @note This is an untyped field.
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
      * @return The field value.
 % else:
      * @return The field value, or std::nullopt if not present.
 % endif
      */
-% if field['requirement'] == 'soeREQUIRED':
+% if field['requirement'] == 'SoeRequired':
     [[nodiscard]]
     ${field['typeData']['return_type']}
     get${field['name'][2:]}() const
@@ -136,13 +136,13 @@ public:
 };
 
 <%
-    required_fields = [f for f in fields if f['requirement'] == 'soeREQUIRED']
+    required_fields = [f for f in fields if f['requirement'] == 'SoeRequired']
 %>\
 /**
  * @brief Builder for ${name} transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ${name}Builder : public TransactionBuilderBase<${name}Builder>

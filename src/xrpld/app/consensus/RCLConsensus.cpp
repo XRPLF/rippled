@@ -66,13 +66,8 @@
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
-#include <xrpl/telemetry/TraceContextPropagator.h>  // IWYU pragma: keep
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
-
-#ifdef XRPL_ENABLE_TELEMETRY
-#include <opentelemetry/context/runtime_context.h>
-#endif
 
 #include <xrpl.pb.h>
 
@@ -132,14 +127,14 @@ RCLConsensus::Adaptor::Adaptor(
     , inboundTransactions_{inboundTransactions}
     , j_(journal)
     , validatorKeys_(validatorKeys)
-    , valCookie_(1 + rand_int(crypto_prng(), std::numeric_limits<std::uint64_t>::max() - 1))
+    , valCookie_(1 + randInt(cryptoPrng(), std::numeric_limits<std::uint64_t>::max() - 1))
     , nUnlVote_(validatorKeys_.nodeID, j_)
 {
     XRPL_ASSERT(valCookie_, "xrpl::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " + std::to_string(valCookie_) + ")";
 
-    if (validatorKeys_.nodeID != beast::zero && validatorKeys_.keys)
+    if (validatorKeys_.nodeID != beast::kZero && validatorKeys_.keys)
     {
         JLOG(j_.info()) << "Validator identity: "
                         << toBase58(TokenType::NodePublic, validatorKeys_.keys->masterPublicKey);
@@ -168,7 +163,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
             // Tell the ledger acquire system that we need the consensus ledger
             acquiringLedger_ = hash;
 
-            app_.getJobQueue().addJob(jtADVANCE, "GetConsL1", [id = hash, &app = app_, this]() {
+            app_.getJobQueue().addJob(JtAdvance, "GetConsL1", [id = hash, &app = app_, this]() {
                 JLOG(j_.debug()) << "JOB advanceLedger getConsensusLedger1 started";
                 app.getInboundLedgers().acquireAsync(id, 0, InboundLedger::Reason::CONSENSUS);
             });
@@ -218,13 +213,13 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
     if (app_.getHashRouter().shouldRelay(tx.id()))
     {
         JLOG(j_.debug()) << "Relaying disputed tx " << tx.id();
-        auto const slice = tx.tx_->slice();
+        auto const slice = tx.tx->slice();
         protocol::TMTransaction msg;
         msg.set_rawtransaction(slice.data(), slice.size());
         msg.set_status(protocol::tsNEW);
         msg.set_receivetimestamp(app_.getTimeKeeper().now().time_since_epoch().count());
-        static std::set<Peer::id_t> const skip{};
-        app_.getOverlay().relay(tx.id(), msg, skip);
+        static std::set<Peer::id_t> const kSkip{};
+        app_.getOverlay().relay(tx.id(), msg, kSkip);
     }
     else
     {
@@ -237,9 +232,9 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     auto span = telemetry::SpanGuard::span(
         telemetry::TraceCategory::Consensus,
         telemetry::seg::consensus,
-        telemetry::cons_span::op::proposalSend);
+        telemetry::consensus::span::op::proposalSend);
     span.setAttribute(
-        telemetry::cons_span::attr::round, static_cast<int64_t>(proposal.proposeSeq()));
+        telemetry::consensus::span::attr::round, static_cast<int64_t>(proposal.proposeSeq()));
 
     JLOG(j_.trace()) << (proposal.isBowOut() ? "We bow out: " : "We propose: ")
                      << xrpl::to_string(proposal.prevLedger()) << " -> "
@@ -280,12 +275,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
     // Inject the current thread's active span context (e.g. the
     // consensus round span from Phase 4) so receiving peers can link
     // their proposal.receive span as a child of this trace.
-#ifdef XRPL_ENABLE_TELEMETRY
-    {
-        auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
-        telemetry::injectToProtobuf(ctx, *prop.mutable_trace_context());
-    }
-#endif
+    telemetry::SpanGuard::injectCurrentContextToProtobuf(*prop.mutable_trace_context());
 
     app_.getOverlay().broadcast(prop);
 }
@@ -293,7 +283,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 void
 RCLConsensus::Adaptor::share(RCLTxSet const& txns)
 {
-    inboundTransactions_.giveSet(txns.id(), txns.map_, false);
+    inboundTransactions_.giveSet(txns.id(), txns.map, false);
 }
 
 std::optional<RCLTxSet>
@@ -322,7 +312,7 @@ std::size_t
 RCLConsensus::Adaptor::proposersFinished(RCLCxLedger const& ledger, LedgerHash const& h) const
 {
     RCLValidations& vals = app_.getValidations();
-    return vals.getNodesAfter(RCLValidatedLedger(ledger.ledger_, vals.adaptor().journal()), h);
+    return vals.getNodesAfter(RCLValidatedLedger(ledger.ledger, vals.adaptor().journal()), h);
 }
 
 uint256
@@ -333,15 +323,15 @@ RCLConsensus::Adaptor::getPrevLedger(
 {
     RCLValidations& vals = app_.getValidations();
     uint256 netLgr = vals.getPreferred(
-        RCLValidatedLedger{ledger.ledger_, vals.adaptor().journal()},
+        RCLValidatedLedger{ledger.ledger, vals.adaptor().journal()},
         ledgerMaster_.getValidLedgerIndex());
 
     if (netLgr != ledgerID)
     {
-        if (mode != ConsensusMode::wrongLedger)
+        if (mode != ConsensusMode::WrongLedger)
             app_.getOPs().consensusViewChange();
 
-        JLOG(j_.debug()) << Json::Compact(app_.getValidations().getJsonTrie());
+        JLOG(j_.debug()) << json::Compact(app_.getValidations().getJsonTrie());
     }
 
     return netLgr;
@@ -353,21 +343,26 @@ RCLConsensus::Adaptor::onClose(
     NetClock::time_point const& closeTime,
     ConsensusMode mode) -> Result
 {
-    auto span = telemetry::SpanGuard::span(
-        telemetry::TraceCategory::Consensus,
-        telemetry::seg::consensus,
-        telemetry::cons_span::op::ledgerClose);
-    span.setAttribute(
-        telemetry::cons_span::attr::ledgerSeq,
-        static_cast<int64_t>(ledger.ledger_->header().seq) + 1);
-    span.setAttribute(telemetry::cons_span::attr::mode, toDisplayString(mode).c_str());
+    namespace cs = telemetry::consensus::span;
 
-    bool const wrongLCL = mode == ConsensusMode::wrongLedger;
-    bool const proposing = mode == ConsensusMode::proposing;
+    auto span = telemetry::SpanGuard::span(
+        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::ledgerClose);
+    span.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(ledger.ledger->header().seq) + 1);
+    span.setAttribute(cs::attr::mode, toDisplayString(mode).c_str());
+    span.setAttribute(
+        cs::attr::txCountOpen, static_cast<int64_t>(app_.getOpenLedger().current()->txCount()));
+    span.setAttribute(
+        cs::attr::closeTimeResolutionMs,
+        static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(ledger.closeTimeResolution())
+                .count()));
+
+    bool const wrongLCL = mode == ConsensusMode::WrongLedger;
+    bool const proposing = mode == ConsensusMode::Proposing;
 
     notify(protocol::neCLOSING_LEDGER, ledger, !wrongLCL);
 
-    auto const& prevLedger = ledger.ledger_;
+    auto const& prevLedger = ledger.ledger;
 
     ledgerMaster_.applyHeldTransactions();
     // Tell the ledger master not to acquire the ledger we're probably building
@@ -385,8 +380,8 @@ RCLConsensus::Adaptor::onClose(
         Serializer s(2048);
         tx.first->add(s);
         initialSet->addItem(
-            SHAMapNodeType::tnTRANSACTION_NM,
-            make_shamapitem(tx.first->getTransactionID(), s.slice()));
+            SHAMapNodeType::TnTransactionNm,
+            makeShamapitem(tx.first->getTransactionID(), s.slice()));
     }
 
     // Add pseudo-transactions to the set
@@ -435,13 +430,13 @@ RCLConsensus::Adaptor::onClose(
     }
 
     // Needed because of the move below.
-    auto const setHash = initialSet->getHash().as_uint256();
+    auto const setHash = initialSet->getHash().asUInt256();
 
     return Result{
         std::move(initialSet),
         RCLCxPeerPos::Proposal{
             initialLedger->header().parentHash,
-            RCLCxPeerPos::Proposal::seqJoin,
+            RCLCxPeerPos::Proposal::kSeqJoin,
             setHash,
             closeTime,
             app_.getTimeKeeper().closeTime(),
@@ -455,7 +450,7 @@ RCLConsensus::Adaptor::onForceAccept(
     NetClock::duration const& closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson)
+    json::Value&& consensusJson)
 {
     auto acceptSpan = makeAcceptSpan(result);
     doAccept(
@@ -475,13 +470,13 @@ RCLConsensus::Adaptor::onAccept(
     NetClock::duration const& closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson,
+    json::Value&& consensusJson,
     bool const validating)
 {
     auto acceptSpan = makeAcceptSpan(result);
 
     app_.getJobQueue().addJob(
-        jtACCEPT,
+        JtAccept,
         "AcceptLedger",
         // NOLINTNEXTLINE(cppcoreguidelines-misleading-capture-default-by-value)
         [=, this, cj = std::move(consensusJson), sp = std::move(acceptSpan)]() mutable {
@@ -506,15 +501,23 @@ RCLConsensus::Adaptor::onAccept(
 std::shared_ptr<telemetry::SpanGuard>
 RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
 {
+    namespace cs = telemetry::consensus::span;
+
     auto span = std::make_shared<telemetry::SpanGuard>(
-        telemetry::SpanGuard::childSpan(telemetry::cons_span::accept, roundSpanContext_));
+        telemetry::SpanGuard::childSpan(cs::accept, roundSpanContext_));
+    span->setAttribute(cs::attr::proposers, static_cast<int64_t>(result.proposers));
     span->setAttribute(
-        telemetry::cons_span::attr::proposers, static_cast<int64_t>(result.proposers));
-    span->setAttribute(
-        telemetry::cons_span::attr::roundTimeMs,
-        static_cast<int64_t>(result.roundTime.read().count()));
-    span->setAttribute(
-        telemetry::cons_span::attr::quorum, static_cast<int64_t>(app_.getValidators().quorum()));
+        cs::attr::roundTimeMs, static_cast<int64_t>(result.roundTime.read().count()));
+    span->setAttribute(cs::attr::quorum, static_cast<int64_t>(app_.getValidators().quorum()));
+
+    // Capture the accept span's context so createValidationSpan() — which
+    // runs on the jtACCEPT worker thread — can link the validation.send
+    // span to the accept span (matching the design diagram and the
+    // "validation follows acceptance" causal model).
+    if (*span)
+    {
+        acceptSpanContext_ = span->captureContext();
+    }
     return span;
 }
 
@@ -525,16 +528,18 @@ RCLConsensus::Adaptor::doAccept(
     NetClock::duration closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson,
+    json::Value&& consensusJson,
     std::shared_ptr<telemetry::SpanGuard> acceptSpan)
 {
+    namespace cs = telemetry::consensus::span;
+
     prevProposers_ = result.proposers;
     prevRoundTime_ = result.roundTime.read();
 
     bool closeTimeCorrect = false;
 
-    bool const proposing = mode == ConsensusMode::proposing;
-    bool const haveCorrectLCL = mode != ConsensusMode::wrongLedger;
+    bool const proposing = mode == ConsensusMode::Proposing;
+    bool const haveCorrectLCL = mode != ConsensusMode::WrongLedger;
     bool const consensusFail = result.state == ConsensusState::MovedOn;
 
     auto consensusCloseTime = result.position.closeTime();
@@ -555,34 +560,31 @@ RCLConsensus::Adaptor::doAccept(
     }
 
     auto doAcceptSpan = acceptSpan
-        ? acceptSpan->childSpan(telemetry::cons_span::acceptApply)
-        : telemetry::SpanGuard::childSpan(telemetry::cons_span::acceptApply, roundSpanContext_);
+        ? acceptSpan->childSpan(cs::acceptApply)
+        : telemetry::SpanGuard::childSpan(cs::acceptApply, roundSpanContext_);
+    doAcceptSpan.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq()) + 1);
     doAcceptSpan.setAttribute(
-        telemetry::cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq()) + 1);
+        cs::attr::closeTime, static_cast<int64_t>(consensusCloseTime.time_since_epoch().count()));
+    doAcceptSpan.setAttribute(cs::attr::closeTimeCorrect, closeTimeCorrect);
     doAcceptSpan.setAttribute(
-        telemetry::cons_span::attr::closeTime,
-        static_cast<int64_t>(consensusCloseTime.time_since_epoch().count()));
-    doAcceptSpan.setAttribute(telemetry::cons_span::attr::closeTimeCorrect, closeTimeCorrect);
-    doAcceptSpan.setAttribute(
-        telemetry::cons_span::attr::closeResolutionMs,
+        cs::attr::closeResolutionMs,
         static_cast<int64_t>(
             std::chrono::duration_cast<std::chrono::milliseconds>(closeResolution).count()));
     doAcceptSpan.setAttribute(
-        telemetry::cons_span::attr::consensusState,
-        std::string(consensusFail ? "moved_on" : "finished"));
-    doAcceptSpan.setAttribute(telemetry::cons_span::attr::proposing, proposing);
+        cs::attr::consensusState, std::string(consensusFail ? "moved_on" : "finished"));
+    doAcceptSpan.setAttribute(cs::attr::proposing, proposing);
     doAcceptSpan.setAttribute(
-        telemetry::cons_span::attr::roundTimeMs,
-        static_cast<int64_t>(result.roundTime.read().count()));
+        cs::attr::roundTimeMs, static_cast<int64_t>(result.roundTime.read().count()));
     doAcceptSpan.setAttribute(
-        telemetry::cons_span::attr::parentCloseTime,
+        cs::attr::parentCloseTime,
         static_cast<int64_t>(prevLedger.closeTime().time_since_epoch().count()));
     doAcceptSpan.setAttribute(
-        telemetry::cons_span::attr::closeTimeSelf,
+        cs::attr::closeTimeSelf,
         static_cast<int64_t>(rawCloseTimes.self.time_since_epoch().count()));
     doAcceptSpan.setAttribute(
-        telemetry::cons_span::attr::closeTimeVoteBins,
-        static_cast<int64_t>(rawCloseTimes.peers.size()));
+        cs::attr::closeTimeVoteBins, static_cast<int64_t>(rawCloseTimes.peers.size()));
+    doAcceptSpan.setAttribute(
+        cs::attr::disputesResolvedCount, static_cast<int64_t>(result.disputes.size()));
     {
         auto const prevRes = prevLedger.closeTimeResolution();
         auto const dir = [&]() -> std::string {
@@ -596,7 +598,7 @@ RCLConsensus::Adaptor::doAccept(
             }
             return "unchanged";
         }();
-        doAcceptSpan.setAttribute(telemetry::cons_span::attr::resolutionDirection, std::move(dir));
+        doAcceptSpan.setAttribute(cs::attr::resolutionDirection, std::move(dir));
     }
 
     JLOG(j_.debug()) << "Report: Prop=" << (proposing ? "yes" : "no")
@@ -612,12 +614,12 @@ RCLConsensus::Adaptor::doAccept(
     // we use the hash of the set.
     //
     // FIXME: Use a std::vector and a custom sorter instead of CanonicalTXSet?
-    CanonicalTXSet retriableTxs{result.txns.map_->getHash().as_uint256()};
+    CanonicalTXSet retriableTxs{result.txns.map->getHash().asUInt256()};
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 
     int64_t txCount = 0;
-    for (auto const& item : *result.txns.map_)
+    for (auto const& item : *result.txns.map)
     {
         try
         {
@@ -625,9 +627,7 @@ RCLConsensus::Adaptor::doAccept(
             JLOG(j_.debug()) << "    Tx: " << item.key();
             ++txCount;
             auto const txHash = to_string(item.key());
-            doAcceptSpan.addEvent(
-                telemetry::cons_span::event::txIncluded,
-                {{telemetry::cons_span::attr::txId, txHash}});
+            doAcceptSpan.addEvent(cs::event::txIncluded, {{cs::attr::txId, txHash}});
         }
         catch (std::exception const& ex)
         {
@@ -635,7 +635,7 @@ RCLConsensus::Adaptor::doAccept(
             JLOG(j_.warn()) << "    Tx: " << item.key() << " throws: " << ex.what();
         }
     }
-    doAcceptSpan.setAttribute(telemetry::cons_span::attr::txCount, txCount);
+    doAcceptSpan.setAttribute(cs::attr::txCount, txCount);
 
     auto built = buildLCL(
         prevLedger,
@@ -659,7 +659,7 @@ RCLConsensus::Adaptor::doAccept(
     {
         std::vector<TxID> accepted;
 
-        result.txns.map_->visitLeaves(
+        result.txns.map->visitLeaves(
             [&accepted](boost::intrusive_ptr<SHAMapItem const> const& item) {
                 accepted.push_back(item->key());
             });
@@ -677,7 +677,7 @@ RCLConsensus::Adaptor::doAccept(
 
                 auto const wait = curr - seq;
 
-                if (wait && (wait % censorshipWarnInternal == 0))
+                if (wait && (wait % kCensorshipWarnInternal == 0))
                 {
                     std::ostringstream ss;
                     ss << "Potential Censorship: Eligible tx " << id
@@ -692,7 +692,7 @@ RCLConsensus::Adaptor::doAccept(
     }
 
     if (validating_)
-        validating_ = ledgerMaster_.isCompatible(*built.ledger_, j_.warn(), "Not validating");
+        validating_ = ledgerMaster_.isCompatible(*built.ledger, j_.warn(), "Not validating");
 
     if (validating_ && !consensusFail && app_.getValidations().canValidateSeq(built.seq()))
     {
@@ -703,7 +703,7 @@ RCLConsensus::Adaptor::doAccept(
         JLOG(j_.info()) << "CNF buildLCL " << newLCLHash;
 
     // See if we can accept a ledger as fully-validated
-    ledgerMaster_.consensusBuilt(built.ledger_, result.txns.id(), std::move(consensusJson));
+    ledgerMaster_.consensusBuilt(built.ledger, result.txns.id(), std::move(consensusJson));
 
     //-------------------------------------------------------------------------
     {
@@ -730,7 +730,7 @@ RCLConsensus::Adaptor::doAccept(
                     JLOG(j_.debug()) << "Test applying disputed transaction that did"
                                      << " not get in " << dispute.tx().id();
 
-                    SerialIter sit(dispute.tx().tx_->slice());
+                    SerialIter sit(dispute.tx().tx->slice());
                     auto txn = std::make_shared<STTx const>(sit);
 
                     // Disputed pseudo-transactions that were not accepted
@@ -769,11 +769,11 @@ RCLConsensus::Adaptor::doAccept(
         app_.getOpenLedger().accept(
             app_,
             *rules,
-            built.ledger_,
+            built.ledger,
             localTxs_.getTxSet(),
             anyDisputes,
             retriableTxs,
-            tapNONE,
+            TapNone,
             "consensus",
             [&](OpenView& view, beast::Journal j) {
                 // Stuff the ledger with transactions from the queue.
@@ -787,7 +787,7 @@ RCLConsensus::Adaptor::doAccept(
 
     //-------------------------------------------------------------------------
     {
-        ledgerMaster_.switchLCL(built.ledger_);
+        ledgerMaster_.switchLCL(built.ledger);
 
         // Do these need to exist?
         XRPL_ASSERT(
@@ -802,7 +802,7 @@ RCLConsensus::Adaptor::doAccept(
     // we entered the round with the network,
     // see how close our close time is to other node's
     //  close time reports, and update our clock.
-    if ((mode == ConsensusMode::proposing || mode == ConsensusMode::observing) && !consensusFail)
+    if ((mode == ConsensusMode::Proposing || mode == ConsensusMode::Observing) && !consensusFail)
     {
         auto closeTime = rawCloseTimes.self;
 
@@ -853,8 +853,8 @@ RCLConsensus::Adaptor::notify(
     s.set_ledgerseq(ledger.seq());
     s.set_networktime(app_.getTimeKeeper().now().time_since_epoch().count());
     s.set_ledgerhashprevious(
-        ledger.parentID().begin(), std::decay_t<decltype(ledger.parentID())>::bytes);
-    s.set_ledgerhash(ledger.id().begin(), std::decay_t<decltype(ledger.id())>::bytes);
+        ledger.parentID().begin(), std::decay_t<decltype(ledger.parentID())>::kBytes);
+    s.set_ledgerhash(ledger.id().begin(), std::decay_t<decltype(ledger.id())>::kBytes);
 
     std::uint32_t uMin = 0, uMax = 0;
     if (!ledgerMaster_.getFullValidatedRange(uMin, uMax))
@@ -869,7 +869,7 @@ RCLConsensus::Adaptor::notify(
     }
     s.set_firstseq(uMin);
     s.set_lastseq(uMax);
-    app_.getOverlay().foreach(send_always(std::make_shared<Message>(s, protocol::mtSTATUS_CHANGE)));
+    app_.getOverlay().foreach(SendAlways(std::make_shared<Message>(s, protocol::mtSTATUS_CHANGE)));
     JLOG(j_.trace()) << "send status change to peer";
 }
 
@@ -889,10 +889,10 @@ RCLConsensus::Adaptor::buildLCL(
             XRPL_ASSERT(
                 replayData->parent()->header().hash == previousLedger.id(),
                 "xrpl::RCLConsensus::Adaptor::buildLCL : parent hash match");
-            return buildLedger(*replayData, tapNONE, app_, j_);
+            return buildLedger(*replayData, TapNone, app_, j_);
         }
         return buildLedger(
-            previousLedger.ledger_,
+            previousLedger.ledger,
             closeTime,
             closeTimeCorrect,
             closeResolution,
@@ -926,9 +926,12 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     auto valSpan = createValidationSpan();
     if (valSpan)
     {
-        valSpan->setAttribute(
-            telemetry::cons_span::attr::ledgerSeq, static_cast<int64_t>(ledger.seq()));
-        valSpan->setAttribute(telemetry::cons_span::attr::proposing, proposing);
+        namespace cs = telemetry::consensus::span;
+        valSpan->setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(ledger.seq()));
+        valSpan->setAttribute(cs::attr::proposing, proposing);
+        // proposing implies a full validation (vfFullValidation is set on
+        // the STValidation only when proposing — see below).
+        valSpan->setAttribute(cs::attr::fullValidation, proposing);
     }
 
     using namespace std::chrono_literals;
@@ -937,6 +940,13 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     if (validationTime <= lastValidationTime_)
         validationTime = lastValidationTime_ + 1s;
     lastValidationTime_ = validationTime;
+
+    if (valSpan)
+    {
+        valSpan->setAttribute(
+            telemetry::consensus::span::attr::validationSignTime,
+            static_cast<int64_t>(validationTime.time_since_epoch().count()));
+    }
 
     if (!validatorKeys_.keys)
     {
@@ -959,7 +969,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
             v.setFieldU32(sfLedgerSequence, ledger.seq());
 
             if (proposing)
-                v.setFlag(vfFullValidation);
+                v.setFlag(kVfFullValidation);
 
             // Attest to the hash of what we consider to be the last fully
             // validated ledger. This may be the hash of the ledger we are
@@ -970,7 +980,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
             v.setFieldU64(sfCookie, valCookie_);
 
             // Report our server version every flag ledger:
-            if (ledger.ledger_->isVotingLedger())
+            if (ledger.ledger->isVotingLedger())
                 v.setFieldU64(sfServerVersion, BuildInfo::getEncodedVersion());
 
             // Report our load
@@ -983,16 +993,16 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 
             // If the next ledger is a flag ledger, suggest fee changes and
             // new features:
-            if (ledger.ledger_->isVotingLedger())
+            if (ledger.ledger->isVotingLedger())
             {
                 // Fees:
-                feeVote_->doValidation(ledger.ledger_->fees(), ledger.ledger_->rules(), v);
+                feeVote_->doValidation(ledger.ledger->fees(), ledger.ledger->rules(), v);
 
                 // Amendments
                 // FIXME: pass `v` and have the function insert the array
                 // directly?
                 auto const amendments =
-                    app_.getAmendmentTable().doValidation(getEnabledAmendments(*ledger.ledger_));
+                    app_.getAmendmentTable().doValidation(getEnabledAmendments(*ledger.ledger));
 
                 if (!amendments.empty())
                     v.setFieldV256(sfAmendments, STVector256(sfAmendments, amendments));
@@ -1011,12 +1021,16 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     val.set_validation(serialized.data(), serialized.size());
     // Inject the current thread's active span context so receiving
     // peers can link their validation.receive span as a child.
-#ifdef XRPL_ENABLE_TELEMETRY
-    {
-        auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
-        telemetry::injectToProtobuf(ctx, *val.mutable_trace_context());
-    }
-#endif
+    //
+    // TODO(observability/secure-OTel): the trace_context appended below is
+    // outside the cryptographic signature on `serialized` and is therefore
+    // unauthenticated. Receivers cannot prove it was not tampered with by
+    // a relay. A signed trace context (either folded into the validation
+    // payload or carried by an authenticated trace_state token) is tracked
+    // as a follow-up — see PR #6425 discussion r3317273388 and
+    // OpenTelemetryPlan/secure-OTel.md. Until then, downstream consumers
+    // must treat the validation trace_context as advisory only.
+    telemetry::SpanGuard::injectCurrentContextToProtobuf(*val.mutable_trace_context());
     app_.getOverlay().broadcast(val);
 
     // Publish to all our subscribers:
@@ -1026,31 +1040,31 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 void
 RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
 {
+    namespace cs = telemetry::consensus::span;
+
     auto span = telemetry::SpanGuard::span(
-        telemetry::TraceCategory::Consensus,
-        telemetry::seg::consensus,
-        telemetry::cons_span::op::modeChange);
-    span.setAttribute(telemetry::cons_span::attr::modeOld, toDisplayString(before).c_str());
-    span.setAttribute(telemetry::cons_span::attr::modeNew, toDisplayString(after).c_str());
+        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::modeChange);
+    span.setAttribute(cs::attr::modeOld, toDisplayString(before).c_str());
+    span.setAttribute(cs::attr::modeNew, toDisplayString(after).c_str());
 
     JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
                     << ", after=" << to_string(after);
 
     // If we were proposing but aren't any longer, we need to reset the
     // censorship tracking to avoid bogus warnings.
-    if ((before == ConsensusMode::proposing || before == ConsensusMode::observing) &&
+    if ((before == ConsensusMode::Proposing || before == ConsensusMode::Observing) &&
         before != after)
         censorshipDetector_.reset();
 
     mode_ = after;
 }
 
-Json::Value
+json::Value
 RCLConsensus::getJson(bool full) const
 {
-    Json::Value ret;
+    json::Value ret;
     {
-        std::lock_guard const _{mutex_};
+        std::scoped_lock const _{mutex_};
         ret = consensus_.getJson(full);
     }
     ret["validating"] = adaptor_.validating();
@@ -1064,7 +1078,7 @@ RCLConsensus::timerEntry(
 {
     try
     {
-        std::lock_guard const _{mutex_};
+        std::scoped_lock const _{mutex_};
         consensus_.timerEntry(now, clog);
     }
     catch (SHAMapMissingNode const& mn)
@@ -1074,7 +1088,7 @@ RCLConsensus::timerEntry(
         ss << "During consensus timerEntry: " << mn.what();
         JLOG(j_.error()) << ss.str();
         CLOG(clog) << ss.str();
-        Rethrow();
+        rethrow();
     }
 }
 
@@ -1083,14 +1097,14 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
 {
     try
     {
-        std::lock_guard const _{mutex_};
+        std::scoped_lock const _{mutex_};
         consensus_.gotTxSet(now, txSet);
     }
     catch (SHAMapMissingNode const& mn)
     {
         // This should never happen
         JLOG(j_.error()) << "During consensus gotTxSet: " << mn.what();
-        Rethrow();
+        rethrow();
     }
 }
 
@@ -1101,14 +1115,14 @@ RCLConsensus::simulate(
     NetClock::time_point const& now,
     std::optional<std::chrono::milliseconds> consensusDelay)
 {
-    std::lock_guard const _{mutex_};
+    std::scoped_lock const _{mutex_};
     consensus_.simulate(now, consensusDelay);
 }
 
 bool
 RCLConsensus::peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal)
 {
-    std::lock_guard const _{mutex_};
+    std::scoped_lock const _{mutex_};
     return consensus_.peerProposal(now, newProposal);
 }
 
@@ -1203,36 +1217,57 @@ RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
 void
 RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
 {
-    using namespace telemetry;
+    namespace cs = telemetry::consensus::span;
+
+    // Capture the prior round's context BEFORE the new span overwrites
+    // roundSpanContext_; used to add a follows-from link from the new
+    // round's span so consecutive rounds remain navigable.
+    prevRoundSpanContext_ = roundSpanContext_;
+
+    // Reset the prior accept context so a stale value can't be used to
+    // link a validation that fires before this round's accept span exists.
+    acceptSpanContext_ = telemetry::SpanContext{};
 
     if (roundSpan_)
         roundSpan_.reset();
 
     auto const& strategy = app_.getTelemetry().getConsensusTraceStrategy();
 
+    telemetry::SpanContext const* const link =
+        prevRoundSpanContext_.isValid() ? &prevRoundSpanContext_ : nullptr;
+
     if (strategy == "deterministic")
     {
         roundSpan_.emplace(
-            SpanGuard::hashSpan(
-                TraceCategory::Consensus,
-                cons_span::round,
+            telemetry::SpanGuard::hashSpan(
+                telemetry::TraceCategory::Consensus,
+                cs::round,
                 prevLgr.id().data(),
-                prevLgr.id().bytes));
+                prevLgr.id().kBytes,
+                link));
     }
     else
     {
         roundSpan_.emplace(
-            SpanGuard::span(TraceCategory::Consensus, seg::consensus, cons_span::op::round));
+            telemetry::SpanGuard::span(
+                telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::round));
     }
 
     if (!*roundSpan_)
         return;
 
-    roundSpan_->setAttribute(cons_span::attr::ledgerId, to_string(prevLgr.id()).c_str());
-    roundSpan_->setAttribute(cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq()) + 1);
-    roundSpan_->setAttribute(cons_span::attr::mode, toDisplayString(mode_.load()).c_str());
-    roundSpan_->setAttribute(cons_span::attr::traceStrategy, strategy.c_str());
-    roundSpan_->setAttribute(cons_span::attr::roundId, static_cast<int64_t>(prevLgr.seq()) + 1);
+    roundSpan_->setAttribute(cs::attr::ledgerId, to_string(prevLgr.id()).c_str());
+    roundSpan_->setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq()) + 1);
+    roundSpan_->setAttribute(cs::attr::mode, toDisplayString(mode_.load()).c_str());
+    roundSpan_->setAttribute(cs::attr::traceStrategy, strategy.c_str());
+    roundSpan_->setAttribute(cs::attr::roundId, static_cast<int64_t>(prevLgr.seq()) + 1);
+    roundSpan_->setAttribute(cs::attr::previousLedgerSeq, static_cast<int64_t>(prevLgr.seq()));
+    roundSpan_->setAttribute(cs::attr::previousProposers, static_cast<int64_t>(prevProposers_));
+    roundSpan_->setAttribute(
+        cs::attr::previousRoundTimeMs, static_cast<int64_t>(prevRoundTime_.load().count()));
+    roundSpan_->setAttribute(cs::attr::consensusPhase, "open");
+
+    roundSpan_->addEvent(cs::event::phaseOpen);
 
     roundSpanContext_ = roundSpan_->captureContext();
 }
@@ -1240,12 +1275,51 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
 std::optional<telemetry::SpanGuard>
 RCLConsensus::Adaptor::createValidationSpan()
 {
-    using namespace telemetry;
+    namespace cs = telemetry::consensus::span;
+
+    // Prefer linking to the accept span (matches the design diagram and
+    // the "validation follows acceptance" causal model). Fall back to the
+    // round span only if the accept context isn't yet captured (e.g.
+    // tracing started after onAccept, or makeAcceptSpan returned a null
+    // guard).
+    if (acceptSpanContext_.isValid())
+    {
+        return telemetry::SpanGuard::linkedSpan(cs::validationSend, acceptSpanContext_);
+    }
 
     if (!roundSpanContext_.isValid())
+    {
         return std::nullopt;
+    }
 
-    return SpanGuard::linkedSpan(cons_span::validationSend, roundSpanContext_);
+    return telemetry::SpanGuard::linkedSpan(cs::validationSend, roundSpanContext_);
+}
+
+void
+RCLConsensus::Adaptor::onPhaseEvent(std::string_view eventName, std::string_view phaseLabel)
+{
+    namespace cs = telemetry::consensus::span;
+
+    if (!roundSpan_ || !*roundSpan_)
+    {
+        return;
+    }
+
+    roundSpan_->addEvent(eventName);
+    if (!phaseLabel.empty())
+    {
+        roundSpan_->setAttribute(cs::attr::consensusPhase, phaseLabel);
+    }
+}
+
+void
+RCLConsensus::Adaptor::onOutcomeEvent(std::string_view eventName)
+{
+    if (!roundSpan_ || !*roundSpan_)
+    {
+        return;
+    }
+    roundSpan_->addEvent(eventName);
 }
 
 void
@@ -1257,7 +1331,7 @@ RCLConsensus::startRound(
     hash_set<NodeID> const& nowTrusted,
     std::unique_ptr<std::stringstream> const& clog)
 {
-    std::lock_guard const _{mutex_};
+    std::scoped_lock const _{mutex_};
     consensus_.startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr, nowTrusted), clog);
 }
@@ -1283,7 +1357,7 @@ RclConsensusLogger::~RclConsensusLogger()
     std::stringstream outSs;
     outSs << header_ << "duration " << (duration.count() / 1000) << '.' << std::setw(3)
           << std::setfill('0') << (duration.count() % 1000) << "s. " << ss_->str();
-    j_.sink().writeAlways(beast::severities::kInfo, outSs.str());
+    j_.sink().writeAlways(beast::Severity::Info, outSs.str());
 }
 
 }  // namespace xrpl

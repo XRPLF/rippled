@@ -20,7 +20,13 @@
  *  - Per-span attribute keys: bare field name (span name carries the domain).
  *  - Collision qualifier: <domain>_<field> when bare name collides across
  *    domains or with OTel reserved `status` (e.g. rpc_status, grpc_status).
- *  - Resource attribute keys: xrpl.<subsystem>.<field> (process-identity).
+ *  - Shared cross-span attributes: <domain>_<field> (underscore) form
+ *    (e.g. tx_hash, peer_id, ledger_seq, consensus_round).
+ *  - Resource attribute keys: xrpl.<subsystem>.<field> (dotted) form is
+ *    RESERVED for process-identity attributes set once at startup on the
+ *    OTel resource (e.g. xrpl.network.id, xrpl.network.type). Do not use
+ *    this form for span attributes — it parses awkwardly in TraceQL and
+ *    blurs the resource/span scope distinction.
  *  - Span prefixes: <subsystem>[.<component>].
  */
 
@@ -103,20 +109,17 @@ inline constexpr auto networkId = join(join(seg::xrpl, seg::network), makeStr("i
 inline constexpr auto networkType = join(join(seg::xrpl, seg::network), makeStr("type"));
 inline constexpr auto linkType = makeStr("link_type");
 
-/// Node health attributes — RESOURCE-ONLY (process identity, not per-span).
-/// Set at Tracer init via resource::Resource::Create and refreshed on state
-/// transitions. Do NOT use with span.setAttribute().
-inline constexpr auto xrplNode = join(seg::xrpl, makeStr("node"));
-/// "xrpl.node.amendment_blocked" — resource attribute key.
-inline constexpr auto nodeAmendmentBlocked = join(xrplNode, makeStr("amendment_blocked"));
-/// "xrpl.node.server_state" — resource attribute key.
-inline constexpr auto nodeServerState = join(xrplNode, makeStr("server_state"));
-
-/// Canonical shared attrs (rule 5 — kept xrpl.<domain>.* form).
-/// Defined once here, aliased by domain-specific headers.
-inline constexpr auto txHash = join(join(seg::xrpl, seg::tx), makeStr("hash"));
-inline constexpr auto peerId = join(join(seg::xrpl, seg::peer), makeStr("id"));
-inline constexpr auto ledgerSeq = join(join(seg::xrpl, seg::ledger), makeStr("seq"));
+/// Canonical shared attrs (rule 5 — <domain>_<field> underscore form).
+///
+/// Per the naming convention header note: shared cross-span attribute
+/// keys use the underscore form, reserving the dotted xrpl.<domain>.<field>
+/// form for resource attributes set on the OTel resource at startup.
+/// Defined once here, aliased by domain-specific headers. These are
+/// literal underscore-joined names, not dot-joined via `join()`, since
+/// `join()` always inserts `.` between its arguments.
+inline constexpr auto txHash = makeStr("tx_hash");
+inline constexpr auto peerId = makeStr("peer_id");
+inline constexpr auto ledgerSeq = makeStr("ledger_seq");
 
 /// Shared close-time attrs — bare names, reused by consensus and ledger.
 inline constexpr auto closeTime = makeStr("close_time");

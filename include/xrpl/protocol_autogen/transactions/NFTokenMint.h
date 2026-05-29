@@ -19,9 +19,9 @@ class NFTokenMintBuilder;
  * @brief Transaction: NFTokenMint
  *
  * Type: ttNFTOKEN_MINT (25)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: uint256{}
- * Privileges: changeNFTCounts
+ * Privileges: ChangeNftCounts
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use NFTokenMintBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfNFTokenTaxon (soeREQUIRED)
+     * @brief Get sfNFTokenTaxon (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfTransferFee (soeOPTIONAL)
+     * @brief Get sfTransferFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +85,7 @@ public:
     }
 
     /**
-     * @brief Get sfIssuer (soeOPTIONAL)
+     * @brief Get sfIssuer (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -111,7 +111,7 @@ public:
     }
 
     /**
-     * @brief Get sfURI (soeOPTIONAL)
+     * @brief Get sfURI (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -137,7 +137,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
+     * @brief Get sfAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -163,7 +163,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestination (soeOPTIONAL)
+     * @brief Get sfDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -189,7 +189,7 @@ public:
     }
 
     /**
-     * @brief Get sfExpiration (soeOPTIONAL)
+     * @brief Get sfExpiration (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -219,7 +219,7 @@ public:
  * @brief Builder for NFTokenMint transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class NFTokenMintBuilder : public TransactionBuilderBase<NFTokenMintBuilder>
@@ -258,7 +258,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfNFTokenTaxon (soeREQUIRED)
+     * @brief Set sfNFTokenTaxon (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -269,7 +269,7 @@ public:
     }
 
     /**
-     * @brief Set sfTransferFee (soeOPTIONAL)
+     * @brief Set sfTransferFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -280,7 +280,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuer (soeOPTIONAL)
+     * @brief Set sfIssuer (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -291,7 +291,7 @@ public:
     }
 
     /**
-     * @brief Set sfURI (soeOPTIONAL)
+     * @brief Set sfURI (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -302,7 +302,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -313,7 +313,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
@@ -324,7 +324,7 @@ public:
     }
 
     /**
-     * @brief Set sfExpiration (soeOPTIONAL)
+     * @brief Set sfExpiration (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
