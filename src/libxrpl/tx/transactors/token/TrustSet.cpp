@@ -221,11 +221,9 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     {
         // The original implementation of featureDisallowIncoming was
         // too restrictive. If
-        //   o fixDisallowIncomingV1 is enabled and
         //   o The trust line already exists
         // Then allow the TrustSet.
-        if (ctx.view.rules().enabled(fixDisallowIncomingV1) &&
-            ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+        if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
         {
             // pass
         }
