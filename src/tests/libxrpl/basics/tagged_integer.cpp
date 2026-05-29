@@ -16,9 +16,9 @@ struct Tag2
 
 // Static checks that types are not interoperable
 
-using TagUInt1 = tagged_integer<std::uint32_t, Tag1>;
-using TagUInt2 = tagged_integer<std::uint32_t, Tag2>;
-using TagUInt3 = tagged_integer<std::uint64_t, Tag1>;
+using TagUInt1 = TaggedInteger<std::uint32_t, Tag1>;
+using TagUInt2 = TaggedInteger<std::uint32_t, Tag2>;
+using TagUInt3 = TaggedInteger<std::uint64_t, Tag1>;
 
 // Check construction of tagged_integers
 static_assert(
@@ -103,7 +103,7 @@ static_assert(
     !std::is_convertible_v<TagUInt2, TagUInt3>,
     "TagUInt2 should not be convertible to a TagUInt3");
 
-using TagInt = tagged_integer<std::int32_t, Tag1>;
+using TagInt = TaggedInteger<std::int32_t, Tag1>;
 
 TEST(tagged_integer, comparison_operators)
 {

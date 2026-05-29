@@ -12,7 +12,7 @@ namespace xrpl::test::jtx {
 namespace check {
 
 /** Cash a check requiring that a specific amount be delivered. */
-Json::Value
+json::Value
 cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount);
 
 /** Type used to specify DeliverMin for cashing a check. */
@@ -25,16 +25,16 @@ struct DeliverMin
 };
 
 /** Cash a check requiring that at least a minimum amount be delivered. */
-Json::Value
+json::Value
 cash(jtx::Account const& dest, uint256 const& checkId, DeliverMin const& atLeast);
 
 /** Cancel a check. */
-Json::Value
+json::Value
 cancel(jtx::Account const& dest, uint256 const& checkId);
 
 }  // namespace check
 
 /** Match the number of checks on the account. */
-using checks = owner_count<ltCHECK>;
+using checks = OwnerCount<ltCHECK>;
 
 }  // namespace xrpl::test::jtx

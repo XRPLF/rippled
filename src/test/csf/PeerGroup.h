@@ -278,7 +278,7 @@ randomRankedGroups(
     groups.reserve(numGroups);
     std::vector<Peer*> rawPeers(peers.begin(), peers.end());
     std::generate_n(std::back_inserter(groups), numGroups, [&]() {
-        std::vector<Peer*> res = random_weighted_shuffle(rawPeers, ranks, g);
+        std::vector<Peer*> res = randomWeightedShuffle(rawPeers, ranks, g);
         res.resize(sizeDist(g));
         return PeerGroup(std::move(res));
     });

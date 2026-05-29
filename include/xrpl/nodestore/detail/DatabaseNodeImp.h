@@ -67,9 +67,6 @@ public:
         backend_->sync();
     }
 
-    std::vector<std::shared_ptr<NodeObject>>
-    fetchBatch(std::vector<uint256> const& hashes);
-
     void
     asyncFetch(
         uint256 const& hash,
@@ -85,9 +82,9 @@ private:
         override;
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
-        backend_->for_each(f);
+        backend_->forEach(f);
     }
 };
 
