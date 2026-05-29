@@ -67,6 +67,12 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
             if (!node->isEmptyBranch(pos))
             {
                 intr_ptr::SharedPtr<SHAMapTreeNode> const child = descendNoStore(*node, pos);
+                if (!child)
+                {
+                    // Node was evicted after rotation; skip this subtree.
+                    ++pos;
+                    continue;
+                }
                 if (!function(*child))
                     return;
 
