@@ -773,7 +773,6 @@ flow(
      *   even if it means obtaining more than TakerPays. Since the pays and gets
      *   are reversed, the owner must send the entire TakerGets.
      */
-    bool const fillOrKillEnabled = baseView.rules().enabled(fixFillOrKill);
 
     if (actualOut != outReq)
     {
@@ -794,8 +793,7 @@ flow(
             //   That case is handled below; not here.
             // fixFillOrKill amendment:
             //   That case is handled here if tfSell is also not set; i.e, case 1.
-            if (offerCrossing == OfferCrossing::No ||
-                (fillOrKillEnabled && offerCrossing != OfferCrossing::Sell))
+            if (offerCrossing == OfferCrossing::No || offerCrossing != OfferCrossing::Sell)
             {
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
             }
@@ -806,7 +804,7 @@ flow(
         }
     }
     if (offerCrossing != OfferCrossing::No &&
-        (!partialPayment && (!fillOrKillEnabled || offerCrossing == OfferCrossing::Sell)))
+        (!partialPayment && offerCrossing == OfferCrossing::Sell))
     {
         // If we're offer crossing and partialPayment is *not* true, then
         // we're handling a FillOrKill offer.  In this case remainingIn must
