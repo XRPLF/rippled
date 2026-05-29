@@ -1703,14 +1703,14 @@ public:
              * violating Upward's directional invariant.
              *
              * Mechanism (fix-enabled path):
-             *   1. `operator/=` computes `numerator = nm * 10^19` and
+             *   1. `operator/=` computes `numerator = nm * 10^17` and
              *      `zm = numerator / dm` (integer division, truncates remainder).
              *   2. If `remainder != 0`, the correction block runs:
-             *        zm *= 1000
-             *        correction = (remainder * 1000) / dm    // also truncates
+             *        zm *= 100000
+             *        correction = (remainder * 100000) / dm  // also truncates
              *        zm += correction
-             *        ze -= 3
-             *      The truncation in `correction` discards a sub-1/1000 residual.
+             *        ze -= 5
+             *      The truncation in `correction` discards a sub-1/100000 residual.
              *   3. `normalize`'s shift loop reduces zm to fit, but the discarded
              *      residual is BELOW the Guard's visibility, so the Guard sees fraction = 0.
              *   4. Under Upward + positive, `round()` returns -1 (no round-up), and
