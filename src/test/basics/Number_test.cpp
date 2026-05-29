@@ -1965,6 +1965,47 @@ public:
                     break;
             }
         }
+
+        {
+            testcase << "normalization cusp: ToNearest and Downward disagree" << to_string(scale);
+
+            constexpr auto kMaxRep = Number::kMaxRep;
+
+            // Both ToNearest and Downward should round to `below`
+            auto const actual = static_cast<std::uint64_t>(kMaxRep) + 1;
+            Number const below{static_cast<std::int64_t>(kMaxRep), 0};
+            Number const above{
+                false, static_cast<std::uint64_t>(kMaxRep) + 3, 0, Number::Unchecked{}};
+
+            Number toNearest;
+            {
+                NumberRoundModeGuard const roundGuard{Number::RoundingMode::ToNearest};
+                toNearest = Number(false, actual, 0, Number::Normalized{});
+            }
+
+            Number downward;
+            {
+                NumberRoundModeGuard const roundGuard{Number::RoundingMode::Downward};
+                downward = Number(false, actual, 0, Number::Normalized{});
+            }
+
+            log << "\n"
+                << "  actual     = " << actual << "  (kMaxRep + 1)\n"
+                << "  below      = " << below << "  (kMaxRep, distance 1)\n"
+                << "  above      = " << above << "  (kMaxRep + 3, distance 2)\n"
+                << "  ToNearest  = " << toNearest << "\n"
+                << "  Downward   = " << downward << "\n\n";
+
+            // ToNearest rounds UP when the DOWN neighbor is strictly closer
+            BEAST_EXPECT(toNearest == above);
+            BEAST_EXPECT(toNearest != below);
+
+            // Downward undershoots: it returns a value below `below`
+            BEAST_EXPECT(downward < below);
+
+            // Both should have given the same answer, but they differ
+            BEAST_EXPECT(toNearest != downward);
+        }
     }
 
     void
