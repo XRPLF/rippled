@@ -135,15 +135,6 @@ template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
 AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const
 {
-    if (!rules.enabled(fixAMMOverflowOffer))
-    {
-        return AMMOffer<TIn, TOut>(
-            *this,
-            {maxAmount<TIn>(), swapAssetIn(balances, maxAmount<TIn>(), tradingFee_)},
-            balances,
-            Quality{balances});
-    }
-
     auto const out = maxOut<TOut>(balances.out, assetOut());
     if (out <= TOut{0} || out >= balances.out)
         return std::nullopt;
@@ -223,11 +214,6 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
         catch (std::overflow_error const& e)
         {
             JLOG(j_.error()) << "AMMLiquidity::getOffer overflow " << e.what();
-            if (!view.rules().enabled(fixAMMOverflowOffer))
-            {
-                return maxOffer(balances, view.rules());
-            }
-
             return std::nullopt;
         }
         catch (std::exception const& e)

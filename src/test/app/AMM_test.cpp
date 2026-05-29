@@ -6209,7 +6209,7 @@ private:
              })
         {
             testcase(input.testCase);
-            for (auto const& features : {all - fixAMMOverflowOffer - fixAMMv1_1 - fixAMMv1_3, all})
+            for (auto const& features : {all - fixAMMv1_1 - fixAMMv1_3, all})
             {
                 Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
 
@@ -6258,32 +6258,25 @@ private:
                     return input.lpTokenBalanceAlt.value_or(input.lpTokenBalance);
                 }();
 
-                if (!features[fixAMMOverflowOffer])
-                {
-                    BEAST_EXPECT(amm.expectBalances(failUsdGH, failUsdBIT, lpTokenBalance));
-                }
-                else
-                {
-                    BEAST_EXPECT(amm.expectBalances(goodUsdGH, goodUsdBIT, lpTokenBalance));
+                BEAST_EXPECT(amm.expectBalances(goodUsdGH, goodUsdBIT, lpTokenBalance));
 
-                    // Invariant: LPToken balance must not change in a
-                    // payment or a swap transaction
-                    BEAST_EXPECT(amm.getLPTokensBalance() == preSwapLPTokenBalance);
+                // Invariant: LPToken balance must not change in a
+                // payment or a swap transaction
+                BEAST_EXPECT(amm.getLPTokensBalance() == preSwapLPTokenBalance);
 
-                    // Invariant: The square root of (product of the pool
-                    // balances) must be at least the LPTokenBalance
-                    Number const sqrtPoolProduct = root2(goodUsdGH * goodUsdBIT);
+                // Invariant: The square root of (product of the pool
+                // balances) must be at least the LPTokenBalance
+                Number const sqrtPoolProduct = root2(goodUsdGH * goodUsdBIT);
 
-                    // Include a tiny tolerance for the test cases using
-                    //   .goodUsdGH{usdGH, uint64_t(35'44113971506987),
-                    //   -14}, .goodUsdBIT{usdBIT,
-                    //   uint64_t(2'821579689703915), -15},
-                    // These two values multiply
-                    // to 99.99999999999994227040383754105 which gets
-                    // internally rounded to 100, due to representation
-                    // error.
-                    BEAST_EXPECT((sqrtPoolProduct + Number{1, -14} >= input.lpTokenBalance));
-                }
+                // Include a tiny tolerance for the test cases using
+                //   .goodUsdGH{usdGH, uint64_t(35'44113971506987),
+                //   -14}, .goodUsdBIT{usdBIT,
+                //   uint64_t(2'821579689703915), -15},
+                // These two values multiply
+                // to 99.99999999999994227040383754105 which gets
+                // internally rounded to 100, due to representation
+                // error.
+                BEAST_EXPECT((sqrtPoolProduct + Number{1, -14} >= input.lpTokenBalance));
             }
         }
     }

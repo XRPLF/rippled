@@ -864,12 +864,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
 {
     if (!offer.checkInvariant(ofrAmt, j_))
     {
-        // purposely written as separate if statements so we get logging even
-        // when the amendment isn't active.
-        if (sb.rules().enabled(fixAMMOverflowOffer))
-        {
-            Throw<FlowException>(tecINVARIANT_FAILED, "AMM pool product invariant failed.");
-        }
+        Throw<FlowException>(tecINVARIANT_FAILED, "AMM pool product invariant failed.");
     }
 
     // The offer owner gets the ofrAmt. The difference between ofrAmt and
