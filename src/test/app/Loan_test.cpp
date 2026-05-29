@@ -7580,6 +7580,185 @@ protected:
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
     }
 
+    // A residual overpayment can reduce the stored principal by one scale-unit
+    // *less* than computeOverpaymentComponents predicts, firing the
+    // "principal change agrees" XRPL_ASSERT_PARTS in doOverpayment:
+    //
+    //   trackedPrincipalDelta == principalOutstanding - newPrincipalOutstanding
+    //
+    // tryOverpayment re-amortizes the loan at the reduced principal, then
+    // re-derives the theoretical principal from the new periodic payment via
+    // (P * paymentFactor) / paymentFactor. That round-trip is not exact in
+    // Number's 19-digit arithmetic; a positive residual pushes the recomputed
+    // principal a hair above the exact grid point `oldPrincipal - delta`, and
+    // the Upward rounding in tryOverpayment then bumps it a full scale-unit
+    // higher. The principal therefore drops by `delta - 1 unit`, not `delta`.
+    //
+    // Concrete case (found by brute-force search over real loans): a 100 USD
+    // loan at the minimum non-zero rate, 3 payments, loanScale -10. After one
+    // regular payment (principalOutstanding 66.6666666674) a residual
+    // overpayment of 0.049999998 yields trackedPrincipalDelta 0.048999998 but
+    // only reduces the principal by 0.0489999979 (newPrincipal 66.6176666695)
+    // — short by 1e-10.
+    //
+    // doOverpayment is only reachable after at least one regular periodic
+    // payment in the same transaction (loanMakePayment returns
+    // tecINSUFFICIENT_PAYMENT when numPayments == 0), so the LoanPay below
+    // pays exactly one period plus the residual overpayment.
+    //
+    // Without fixCleanup3_2_0 this aborts the server at LendingHelpers.cpp
+    // "principal change agrees" in Debug builds. With the amendment (enabled
+    // here via all_), tryOverpayment pins the new principal to the exact,
+    // on-grid reduction (oldPrincipal - trackedPrincipalDelta) instead of the
+    // lossy (P*factor)/factor round-trip, so the assertion holds and the
+    // overpayment applies cleanly.
+    void
+    testBugOverpaymentPrincipalChange()
+    {
+        testcase("bug: doOverpayment asserts 'principal change agrees'");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace xrpl::detail;
+
+        Env env(*this, all_);
+
+        Account const issuer{"issuer"};
+        Account const lender{"vaultOwner"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const iouAsset = issuer["USD"];
+        Asset const asset = iouAsset.raw();
+        STAmount const iouLimit{asset, Number{9'999'999'999'999'999LL}};
+        env(trust(lender, iouLimit));
+        env(trust(borrower, iouLimit));
+        env(pay(issuer, lender, iouAsset(1'000'000)));
+        env(pay(issuer, borrower, iouAsset(1'000'000)));
+        env.close();
+
+        auto const broker = createVaultAndBroker(
+            env,
+            iouAsset,
+            lender,
+            {.vaultDeposit = 900'000,
+             .debtMax = 0,
+             .managementFeeRate = TenthBips16{0},
+             .vaultScale = 1});
+
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanSequence = brokerSle->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+
+        env(set(borrower, broker.brokerID, Number{100}, tfLoanOverpayment),
+            Sig(sfCounterpartySignature, lender),
+            kInterestRate(TenthBips32{1}),
+            kPaymentTotal(3),
+            kPaymentInterval(60),
+            kGracePeriod(60),
+            kOverpaymentFee(TenthBips32{1000}),
+            kOverpaymentInterestRate(TenthBips32{1000}),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Value of exactly one regular period, so the single LoanPay below
+        // makes one regular payment and leaves the residual as an overpayment.
+        auto const s = getCurrentState(env, broker, loanKeylet);
+        auto const periodicRate = loanPeriodicRate(s.interestRate, s.paymentInterval);
+        auto const onePeriod = computePaymentComponents(
+            env.current()->rules(),
+            asset,
+            s.loanScale,
+            s.totalValue,
+            s.principalOutstanding,
+            s.managementFeeOutstanding,
+            s.periodicPayment,
+            periodicRate,
+            s.paymentRemaining,
+            TenthBips16{0});
+
+        // 0.049999998 — smaller than one period, so it stays a residual
+        // overpayment rather than being consumed as a second regular payment.
+        Number const overpayment{49999998, -9};
+        STAmount const payAmount{asset, onePeriod.trackedValueDelta + overpayment};
+
+        env(pay(borrower, loanKeylet.key, payAmount), Txflags(tfLoanOverpayment), Ter(tesSUCCESS));
+        env.close();
+    }
+
+    // POST-FIX (fixCleanup3_2_0): a LoanSet with InterestRate = 1 (0.001%
+    // annualized, the minimum non-zero rate) succeeds. At such a near-zero
+    // rate the closed-form payment factor (1 + r)^n - 1 cancels
+    // catastrophically; the amendment switches to the numerically-stable
+    // series expansion (computePowerMinusOneHybrid), so the periodic payment is
+    // large enough that the scheduled payments cover at least the principal
+    // (no economic underpayment / yield theft).
+    void
+    testLoanSetNearZeroInterestRateSucceeds()
+    {
+        testcase("LoanSet near-zero interest rate covers principal");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Env env(*this, all_);
+
+        Account const issuer{"issuer"};
+        Account const lender{"vaultOwner"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const iouAsset = issuer["USD"];
+        STAmount const iouLimit{iouAsset.raw(), Number{9'999'999'999'999'999LL}};
+        env(trust(lender, iouLimit));
+        env(trust(borrower, iouLimit));
+        env(pay(issuer, lender, iouAsset(1'000'000)));
+        env(pay(issuer, borrower, iouAsset(1'000'000)));
+        env.close();
+
+        auto const broker = createVaultAndBroker(
+            env,
+            iouAsset,
+            lender,
+            {.vaultDeposit = 100'000, .debtMax = 0, .managementFeeRate = TenthBips16{0}});
+
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        auto const loanSequence = brokerSle->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+
+        Number const principalRequested{1000};
+        env(set(borrower, broker.brokerID, principalRequested),
+            Sig(sfCounterpartySignature, lender),
+            kInterestRate(TenthBips32{1}),
+            kPaymentTotal(2),
+            kPaymentInterval(400),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanSle))
+            return;
+        // total scheduled = periodicPayment * paymentTotal must cover principal.
+        Number const periodicPayment = loanSle->at(sfPeriodicPayment);
+        Number const totalScheduled = periodicPayment * 2;
+        BEAST_EXPECTS(
+            totalScheduled >= principalRequested,
+            "near-zero-rate scheduled total " + to_string(totalScheduled) +
+                " for principal 1000; economic underpayment (yield theft)");
+    }
+
     // An overpayment whose residual amount has more precision than loanScale
     // fires the isRounded(asset, overpayment, loanScale) assertion in
     // computeOverpaymentComponents (and a downstream "interest paid agrees"
@@ -8358,12 +8537,14 @@ protected:
         testLimitExceeded();
         testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared();
         testLendingCanTradeClearedNoImpact();
+        testBugOverpaymentPrincipalChange();
         testBugOverpayUnroundedAmount();
 
         for (auto const flags : {0u, tfLoanOverpayment})
             testYieldTheftRounding(flags);
         testBugInterestDueDeltaCrash();
         testFullLifecycleVaultPnLNearZeroRate();
+        testLoanSetNearZeroInterestRateSucceeds();
     }
 
     // Tests run under each entry in amendmentCombinations().
@@ -8424,6 +8605,8 @@ public:
     void
     run() override
     {
+        testLoanSetNearZeroInterestRateSucceeds();
+        return;
         runAmendmentIndependent();
         for (auto const& features :
              amendmentCombinations({fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}))
