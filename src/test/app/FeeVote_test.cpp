@@ -1073,6 +1073,21 @@ class FeeVote_test : public beast::unit_test::Suite
 
             checkFeeTx(setup, feeTx, ledger);
         }
+
+        {
+            FeeSetup setup;
+            setup.reference_fee = 42;
+            setup.account_reserve = 1234567;
+            setup.owner_reserve = 7654321;
+            setup.extension_compute_limit = kMaxExtensionComputeLimit + 1;
+            setup.extension_size_limit = kMaxExtensionSizeLimit + 1;
+            setup.gas_price = 300;
+            auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
+
+            setup.extension_compute_limit = ledger->fees().extensionComputeLimit;
+            setup.extension_size_limit = ledger->fees().extensionSizeLimit;
+            checkFeeTx(setup, feeTx, ledger);
+        }
     }
 
     void
