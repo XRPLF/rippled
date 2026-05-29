@@ -5,16 +5,45 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
 #include <memory>
+#include <optional>
 
 namespace xrpl {
+
+namespace {
+
+// Reconstruct the Book this offer was placed on. The primary directory uses
+// the offer's sfDomainID (if any); the open-book directory of a hybrid offer
+// is the same in/out assets with no domain.
+Book
+primaryBookFromOffer(SLE const& sle)
+{
+    auto const takerPays = sle.getFieldAmount(sfTakerPays);
+    auto const takerGets = sle.getFieldAmount(sfTakerGets);
+    std::optional<uint256> domain;
+    if (sle.isFieldPresent(sfDomainID))
+        domain = sle.getFieldH256(sfDomainID);
+    return Book{takerPays.asset(), takerGets.asset(), domain};
+}
+
+Book
+openBookFromOffer(SLE const& sle)
+{
+    auto const takerPays = sle.getFieldAmount(sfTakerPays);
+    auto const takerGets = sle.getFieldAmount(sfTakerGets);
+    return Book{takerPays.asset(), takerGets.asset(), std::nullopt};
+}
+
+}  // namespace
 
 TER
 offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
@@ -37,6 +66,12 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
+    // Plan 8: notify the top-of-book cache that the primary book lost an
+    // offer at `uDirectory`. If this was the cached top page the cache
+    // invalidates; otherwise no-op. uDirectory is the first-page keylet of
+    // the offer's quality bucket — i.e. exactly what the cache stores.
+    view.notifyOfferDeleted(primaryBookFromOffer(*sle), uDirectory, offerIndex);
+
     if (sle->isFieldPresent(sfAdditionalBooks))
     {
         XRPL_ASSERT(
@@ -54,6 +89,10 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
             {
                 return tefBAD_LEDGER;  // LCOV_EXCL_LINE
             }
+
+            // Hybrid offers also live on the open (no-domain) book — notify
+            // that cache too.
+            view.notifyOfferDeleted(openBookFromOffer(*sle), dirIndex, offerIndex);
         }
     }
 

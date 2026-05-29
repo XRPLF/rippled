@@ -1,7 +1,9 @@
 #pragma once
 
+#include <xrpl/ledger/OrderBookIndex.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/TopOfBookCache.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -88,6 +90,17 @@ private:
     std::size_t baseTxCount_ = 0;
 
     bool open_ = true;
+
+    // Per-view top-of-book cache. Lifetime is the view's lifetime; on
+    // OpenView copy (used to snapshot for parallel apply / batch views),
+    // the underlying data is copied but counters reset.
+    mutable TopOfBookCache topOfBookCache_;
+
+    // Per-view ordered order-book index (Plan 9). Generalizes the cache from
+    // "best page" to the full quality-ordered offer sequence, letting the
+    // crossing path iterate via an in-memory cursor instead of re-walking the
+    // SHAMap with succ() per offer. Maintained off the same notifications.
+    mutable OrderBookIndex orderBookIndex_;
 
 public:
     OpenView() = delete;
@@ -199,6 +212,46 @@ public:
 
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
+
+    // Top-of-book cache hooks
+
+    [[nodiscard]] std::optional<uint256>
+    topOfBookFirstPage(Book const& book) const override;
+
+    void
+    recordTopOfBook(Book const& book, uint256 const& firstPageKey) const override;
+
+    void
+    notifyOfferInserted(Book const& book, uint256 const& dirKey, uint256 const& offerKey)
+        const override;
+
+    void
+    notifyOfferDeleted(Book const& book, uint256 const& dirKey, uint256 const& offerKey)
+        const override;
+
+    [[nodiscard]] std::optional<std::vector<uint256>>
+    orderedBook(Book const& book) const override;
+
+    [[nodiscard]] TopOfBookCache const&
+    topOfBookCache() const noexcept
+    {
+        return topOfBookCache_;
+    }
+
+    [[nodiscard]] OrderBookIndex const&
+    orderBookIndex() const noexcept
+    {
+        return orderBookIndex_;
+    }
+
+    // Non-const access for seeding (rebuild-from-state at attach time) and for
+    // the cursor's lazy populate. The index is auxiliary, so this never affects
+    // the authoritative state.
+    [[nodiscard]] OrderBookIndex&
+    orderBookIndex() noexcept
+    {
+        return orderBookIndex_;
+    }
 
     std::unique_ptr<SlesType::iter_base>
     slesBegin() const override;

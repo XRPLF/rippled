@@ -3,6 +3,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/ledger/detail/ReadViewFwdRange.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
@@ -16,6 +17,7 @@
 #include <cstdint>
 #include <optional>
 #include <unordered_set>
+#include <vector>
 
 namespace xrpl {
 
@@ -186,6 +188,68 @@ public:
     ownerCountHook(AccountID const& account, std::uint32_t count) const
     {
         return count;
+    }
+
+    //
+    // Top-of-book cache hooks
+    //
+    // The default implementations make every non-overriding view a no-op
+    // pass-through, so non-orderbook code is unaffected. OpenView overrides
+    // these to maintain a real `TopOfBookCache`; views that wrap a base
+    // (ApplyViewBase, PaymentSandbox, ...) delegate to that base.
+
+    /** Return the cached keylet of the best (lowest-keyed) directory page
+        for `book`, if known. std::nullopt forces a `succ()` fallback.
+    */
+    [[nodiscard]] virtual std::optional<uint256>
+    topOfBookFirstPage(Book const& book) const
+    {
+        return std::nullopt;
+    }
+
+    /** Populate the cache after a `succ()`-driven discovery. Called from
+        the cold path of `BookTip::step()`.
+    */
+    virtual void
+    recordTopOfBook(Book const& book, uint256 const& firstPageKey) const
+    {
+    }
+
+    /** Apply-path notification: an offer was inserted into `book` at
+        directory keylet `dirKey`. The cache may use this to update or
+        invalidate its entry; the call must be safe under any base view.
+    */
+    virtual void
+    notifyOfferInserted(Book const& book, uint256 const& dirKey, uint256 const& offerKey) const
+    {
+    }
+
+    /** Apply-path notification: an offer was deleted from `book` at
+        directory keylet `dirKey`. If the deleted offer was on the
+        cached top page, the cache invalidates that entry.
+
+        `offerKey` is the deleted offer's ledger key — unused by the cache,
+        consumed by the order-book index.
+    */
+    virtual void
+    notifyOfferDeleted(Book const& book, uint256 const& dirKey, uint256 const& offerKey) const
+    {
+    }
+
+    /** Return `book`'s offer keys best-quality-first (the order the crossing
+        path consumes them), or std::nullopt to force the `succ()`-based walk.
+
+        Lets `BookTip` iterate the book from an in-memory cursor instead of
+        re-walking the SHAMap with `succ()` per offer. A returned vector is
+        guaranteed complete for `book` — implementations rebuild from the
+        authoritative state on a miss, so the cursor can never under-include.
+        Empty/absent books return nullopt (the cheap `succ()` path finds
+        nothing). Default: no index, always nullopt.
+    */
+    [[nodiscard]] virtual std::optional<std::vector<uint256>>
+    orderedBook(Book const& book) const
+    {
+        return std::nullopt;
     }
 
     // used by the implementation

@@ -453,6 +453,7 @@ PaymentSandbox::apply(RawView& to)
 {
     XRPL_ASSERT(!ps_, "xrpl::PaymentSandbox::apply : non-null sandbox");
     items_.apply(to);
+    flushTopOfBookNotifications();
 }
 
 void
@@ -461,6 +462,7 @@ PaymentSandbox::apply(PaymentSandbox& to)
     XRPL_ASSERT(ps_ == &to, "xrpl::PaymentSandbox::apply : matching sandbox");
     items_.apply(to);
     tab_.apply(to.tab_);
+    flushTopOfBookNotifications();
 }
 
 XRPAmount

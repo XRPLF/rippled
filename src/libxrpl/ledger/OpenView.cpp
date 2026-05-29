@@ -86,7 +86,12 @@ OpenView::OpenView(OpenView const& rhs)
     , base_{rhs.base_}
     , items_{rhs.items_}
     , hold_{rhs.hold_}
-    , open_{rhs.open_} {};
+    , open_{rhs.open_}
+    // Plan 9 P9.6: carry the persistent order-book index forward on the
+    // open-ledger COW (modify() copies the OpenView per tx). clone() is O(#books)
+    // shared_ptr copies sharing all offer nodes, so the index stays warm across
+    // transactions instead of cold-starting and rebuilding per tx.
+    , orderBookIndex_{rhs.orderBookIndex_.clone()} {};
 
 OpenView::OpenView(OpenLedgerT, ReadView const* base, Rules rules, std::shared_ptr<void const> hold)
     : monotonicResource_{
@@ -167,6 +172,71 @@ std::shared_ptr<SLE const>
 OpenView::read(Keylet const& k) const
 {
     return items_.read(*base_, k);
+}
+
+std::optional<uint256>
+OpenView::topOfBookFirstPage(Book const& book) const
+{
+    if (!TopOfBookCache::enabled())
+        return std::nullopt;
+    if (auto const entry = topOfBookCache_.get(book))
+        return entry->firstPageKey;
+    return std::nullopt;
+}
+
+void
+OpenView::recordTopOfBook(Book const& book, uint256 const& firstPageKey) const
+{
+    if (!TopOfBookCache::enabled())
+        return;
+    topOfBookCache_.record(book, firstPageKey, header_.seq);
+}
+
+void
+OpenView::notifyOfferInserted(Book const& book, uint256 const& dirKey, uint256 const& offerKey)
+    const
+{
+    // Maintain only books already in the index: a book enters the index only
+    // via rebuildBook (which captures the full authoritative state), so it is
+    // always complete. Inserting into an absent book would create a PARTIAL
+    // entry (missing pre-existing offers) that a later crossing would trust —
+    // wrong. Absent books are populated completely on first read (orderedBook's
+    // rebuild-on-absent). This mirrors TopOfBookCache::onOfferInsert's no-op.
+    if (OrderBookIndex::enabled() && orderBookIndex_.contains(book))
+        orderBookIndex_.insertOffer(book, dirKey, offerKey);
+    if (!TopOfBookCache::enabled())
+        return;
+    topOfBookCache_.onOfferInsert(book, dirKey, header_.seq);
+}
+
+void
+OpenView::notifyOfferDeleted(Book const& book, uint256 const& dirKey, uint256 const& offerKey)
+    const
+{
+    if (OrderBookIndex::enabled())
+        orderBookIndex_.deleteOffer(book, dirKey, offerKey);
+    if (!TopOfBookCache::enabled())
+        return;
+    topOfBookCache_.onOfferDelete(book, dirKey);
+}
+
+std::optional<std::vector<uint256>>
+OpenView::orderedBook(Book const& book) const
+{
+    if (!OrderBookIndex::enabled())
+        return std::nullopt;
+
+    // Guarantee completeness: if the index has no entry for `book`, populate it
+    // from the authoritative state before serving the cursor. A maintained,
+    // already-present book skips this (the steady-state fast path). The index
+    // never holds a partial book, so the cursor can't under-include.
+    if (!orderBookIndex_.contains(book))
+        orderBookIndex_.rebuildBook(*this, book);
+
+    auto offers = orderBookIndex_.flatten(book);
+    if (offers.empty())
+        return std::nullopt;  // genuinely empty book — let succ() find nothing
+    return offers;
 }
 
 auto

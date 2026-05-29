@@ -31,7 +31,9 @@ ApplyViewImpl::apply(
     bool isDryRun,
     beast::Journal j)
 {
-    return items_.apply(to, tx, ter, deliver_, parentBatchId, isDryRun, j);
+    auto meta = items_.apply(to, tx, ter, deliver_, parentBatchId, isDryRun, j);
+    flushTopOfBookNotifications();
+    return meta;
 }
 
 std::size_t

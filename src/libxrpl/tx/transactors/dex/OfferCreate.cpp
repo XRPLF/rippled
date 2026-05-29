@@ -593,6 +593,11 @@ OfferCreate::applyHybrid(
     if (!bookExists)
         ctx_.registry.get().getOrderBookDB().addOrderBook(book);
 
+    // Plan 8: notify the top-of-book cache that the open book just got a
+    // new offer at `dir.key`. The cache updates its top only if this is
+    // at-or-better than the current cached top; otherwise no-op.
+    sb.notifyOfferInserted(book, dir.key, offerKey.key);
+
     sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
     return tesSUCCESS;
 }
@@ -914,6 +919,11 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tecDIR_FULL, true};
         // LCOV_EXCL_STOP
     }
+
+    // Plan 8: notify the top-of-book cache that `book` got a new offer at
+    // `dir.key`. The cache updates its top only if this is at-or-better
+    // than the current cached top; otherwise no-op.
+    sb.notifyOfferInserted(book, dir.key, offerIndex.key);
 
     auto sleOffer = std::make_shared<SLE>(offerIndex);
     sleOffer->setAccountID(sfAccount, accountID_);

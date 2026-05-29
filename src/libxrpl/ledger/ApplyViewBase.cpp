@@ -64,6 +64,75 @@ ApplyViewBase::read(Keylet const& k) const
     return items_.read(*base_, k);
 }
 
+std::optional<uint256>
+ApplyViewBase::topOfBookFirstPage(Book const& book) const
+{
+    // Reads inside a sandbox that has already mutated `book` cannot use
+    // the parent's cache: the parent's view of the top doesn't reflect
+    // our buffered changes yet. Fall back to succ() in that case.
+    if (dirtyBooks_.find(book) != dirtyBooks_.end())
+        return std::nullopt;
+    return base_->topOfBookFirstPage(book);
+}
+
+void
+ApplyViewBase::recordTopOfBook(Book const& book, uint256 const& firstPageKey) const
+{
+    // Don't populate the parent cache from inside a dirty sandbox view —
+    // our succ() result may reflect uncommitted mutations from the parent's
+    // perspective.
+    if (dirtyBooks_.find(book) != dirtyBooks_.end())
+        return;
+    base_->recordTopOfBook(book, firstPageKey);
+}
+
+void
+ApplyViewBase::notifyOfferInserted(Book const& book, uint256 const& dirKey, uint256 const& offerKey)
+    const
+{
+    dirtyBooks_.insert(book);
+    pendingTopOfBookNotifications_.emplace_back(book, dirKey, offerKey, /*isDelete=*/false);
+}
+
+void
+ApplyViewBase::notifyOfferDeleted(Book const& book, uint256 const& dirKey, uint256 const& offerKey)
+    const
+{
+    dirtyBooks_.insert(book);
+    pendingTopOfBookNotifications_.emplace_back(book, dirKey, offerKey, /*isDelete=*/true);
+}
+
+std::optional<std::vector<uint256>>
+ApplyViewBase::orderedBook(Book const& book) const
+{
+    // Unlike topOfBookFirstPage, do NOT skip dirty books: the cursor is taken
+    // once and iterated locally, and it self-heals any offer this sandbox has
+    // buffered-deleted via peek()-null-skip in BookTip. So always delegate to
+    // the (immutable-for-this-crossing) base index.
+    return base_->orderedBook(book);
+}
+
+void
+ApplyViewBase::flushTopOfBookNotifications() const
+{
+    for (auto const& note : pendingTopOfBookNotifications_)
+    {
+        if (note.isDelete)
+            base_->notifyOfferDeleted(note.book, note.dirKey, note.offerKey);
+        else
+            base_->notifyOfferInserted(note.book, note.dirKey, note.offerKey);
+    }
+    pendingTopOfBookNotifications_.clear();
+    dirtyBooks_.clear();
+}
+
+void
+ApplyViewBase::discardTopOfBookNotifications() const noexcept
+{
+    pendingTopOfBookNotifications_.clear();
+    dirtyBooks_.clear();
+}
+
 auto
 ApplyViewBase::slesBegin() const -> std::unique_ptr<SlesType::iter_base>
 {

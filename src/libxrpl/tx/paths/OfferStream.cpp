@@ -95,6 +95,12 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     p->setFieldV256(sfIndexes, v);
     view.update(p);
 
+    // Plan 9: this stale-entry cleanup strips sfIndexes directly (not via
+    // dirRemove, which would be a protocol-breaking change), so it bypasses
+    // the usual offerDelete notification. Notify the order-book index here so
+    // it doesn't retain a phantom key. Auxiliary only — no ledger-state change.
+    view.notifyOfferDeleted(book_, tip_.dir(), tip_.index());
+
     JLOG(j_.trace()) << "Missing offer " << tip_.index() << " removed from directory "
                      << tip_.dir();
 }

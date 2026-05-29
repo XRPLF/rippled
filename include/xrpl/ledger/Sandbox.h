@@ -35,6 +35,7 @@ public:
     apply(RawView& to)
     {
         items_.apply(to);
+        flushTopOfBookNotifications();
     }
 };
 

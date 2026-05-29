@@ -39,6 +39,10 @@ xrpl_add_test(tx)
 target_link_libraries(xrpl.test.tx PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.tx)
 
+xrpl_add_test(ledger)
+target_link_libraries(xrpl.test.ledger PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.ledger)
+
 xrpl_add_test(protocol_autogen)
 target_link_libraries(xrpl.test.protocol_autogen PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.protocol_autogen)

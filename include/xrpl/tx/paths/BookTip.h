@@ -4,6 +4,10 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <vector>
+
 namespace xrpl {
 
 class Logs;
@@ -17,12 +21,22 @@ class BookTip
 private:
     ApplyView& view_;
     bool valid_{false};
+    Book originalBook_;
     uint256 book_;
     uint256 end_;
     uint256 dir_;
     uint256 index_;
     std::shared_ptr<SLE> entry_;
     Quality quality_{};
+
+    // Plan 9: when the order-book index supplies an ordered offer-key snapshot
+    // for this book, iterate it instead of re-walking the SHAMap with succ()
+    // per offer. `useCursor_` is decided on the first step; thereafter the two
+    // paths are mutually exclusive for the iterator's lifetime.
+    std::vector<uint256> cursor_;
+    std::size_t cursorPos_{0};
+    bool useCursor_{false};
+    std::uint64_t lastCursorQuality_{0};
 
 public:
     /** Create the iterator. */

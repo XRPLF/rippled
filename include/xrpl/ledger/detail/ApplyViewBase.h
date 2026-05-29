@@ -3,7 +3,12 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/ApplyStateTable.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/XRPAmount.h>
+
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace xrpl::detail {
 
@@ -42,6 +47,26 @@ public:
 
     [[nodiscard]] std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
+
+    // Top-of-book cache hooks — delegated to the wrapped base view so
+    // sandboxed views share the underlying open-ledger cache.
+
+    [[nodiscard]] std::optional<uint256>
+    topOfBookFirstPage(Book const& book) const override;
+
+    void
+    recordTopOfBook(Book const& book, uint256 const& firstPageKey) const override;
+
+    void
+    notifyOfferInserted(Book const& book, uint256 const& dirKey, uint256 const& offerKey)
+        const override;
+
+    void
+    notifyOfferDeleted(Book const& book, uint256 const& dirKey, uint256 const& offerKey)
+        const override;
+
+    [[nodiscard]] std::optional<std::vector<uint256>>
+    orderedBook(Book const& book) const override;
 
     [[nodiscard]] std::unique_ptr<SlesType::iter_base>
     slesBegin() const override;
@@ -95,10 +120,45 @@ public:
     void
     rawDestroyXRP(XRPAmount const& feeDrops) override;
 
+    /** Flush buffered top-of-book notifications to the wrapped base view.
+
+        Called by `Sandbox::apply` (and similar commit points) after the
+        state table itself has been applied. Notifications buffered during
+        the sandbox's lifetime are replayed against `base_` in insertion
+        order so the parent cache only sees changes that actually commit.
+    */
+    void
+    flushTopOfBookNotifications() const;
+
+    /** Discard buffered notifications (e.g. when a sandbox is dropped
+        without applying). Safe to call multiple times.
+    */
+    void
+    discardTopOfBookNotifications() const noexcept;
+
 protected:
     ApplyFlags flags_;
     ReadView const* base_;
     detail::ApplyStateTable items_;
+
+    // Top-of-book cache notifications are buffered here for the lifetime
+    // of the sandbox and only flushed to `base_` on `apply()`. This keeps
+    // rolled-back transactions (e.g. FillOrKill via the sbCancel branch
+    // of OfferCreate) from polluting the parent's cache.
+    //
+    // `dirtyBooks_` records every book mutated by buffered notifications;
+    // reads against `topOfBookFirstPage` skip the cache for these books so
+    // we never observe our own un-committed state. Outside of the dirty
+    // set, the parent's cache is trusted as usual.
+    struct OfferNote
+    {
+        Book book;
+        uint256 dirKey;
+        uint256 offerKey;
+        bool isDelete;
+    };
+    mutable std::vector<OfferNote> pendingTopOfBookNotifications_;
+    mutable std::unordered_set<Book> dirtyBooks_;
 };
 
 }  // namespace xrpl::detail
