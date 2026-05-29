@@ -19,6 +19,11 @@ namespace xrpl::permissioned_dex {
 bool
 accountInDomain(ReadView const& view, AccountID const& account, Domain const& domainID)
 {
+    // Avoid constructing a zero-key PermissionedDomain keylet.
+    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    if (view.rules().enabled(fixCleanup3_2_0) && domainID == beast::kZero)
+        return false;
+
     auto const sleDomain = view.read(keylet::permissionedDomain(domainID));
     if (!sleDomain)
         return false;
