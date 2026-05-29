@@ -983,34 +983,34 @@ NoModifiedImmutableFields::visitEntry(
     changedEntries_.emplace(before, after);
 }
 
-// Check whether any constant (or unannotated) fields in the given template
+// Check whether any immutable (or unannotated) fields in the given template
 // have been modified between before and after.
 // TODO(future): recurse into STObject and STArray fields using InnerObjectFormats
 static bool
-hasConstantFieldChanged(STObject const& before, STObject const& after, SOTemplate const& tmpl)
+hasImmutableFieldChanged(STObject const& before, STObject const& after, SOTemplate const& tmpl)
 {
     for (auto const& elem : tmpl)
     {
         auto const& sf = elem.sField();
-        auto const constant = elem.constant();
+        auto const mutability = elem.mutability();
 
         auto const* bField = before.peekAtPField(sf);
         auto const* aField = after.peekAtPField(sf);
         bool const bPresent = (bField != nullptr) && bField->getSType() != STI_NOTPRESENT;
         bool const aPresent = (aField != nullptr) && aField->getSType() != STI_NOTPRESENT;
 
-        if (constant == SoeImmutable)
+        if (mutability == SoeImmutable)
         {
             // Field must not change at all, including transitions between
             // default (not-present) and explicit values.
             if (bPresent != aPresent || (bPresent && aPresent && *bField != *aField))
                 return true;
         }
-        else if (constant == SoeImmutableSetOnce)
+        else if (mutability == SoeImmutableSetOnce)
         {
             XRPL_ASSERT(
                 elem.style() == SoeOptional,
-                "xrpl::hasConstantFieldChanged : set-once fields must be optional");
+                "xrpl::hasImmutableFieldChanged : set-once fields must be optional");
 
             // Field may be set once, but cannot be removed or changed after
             // it is present.
@@ -1043,7 +1043,7 @@ NoModifiedImmutableFields::finalize(
         return beforeField != afterField || (afterField && before->at(field) != after->at(field));
     };
 
-    bool const useTemplate = view.rules().enabled(fixConstantInvariant);
+    bool const useTemplate = view.rules().enabled(fixImmutableInvariant);
 
     for (auto const& slePair : changedEntries_)
     {
@@ -1061,7 +1061,7 @@ NoModifiedImmutableFields::finalize(
             bool bad = false;
             auto const* format = LedgerFormats::getInstance().findByType(type);
             if (format != nullptr)
-                bad = hasConstantFieldChanged(*before, *after, format->getSOTemplate());
+                bad = hasImmutableFieldChanged(*before, *after, format->getSOTemplate());
 
             // sfLedgerIndex is a non-serialized (discardable) field
             // that is not reliably present via peekAtPField, so we
