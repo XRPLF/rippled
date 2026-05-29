@@ -278,6 +278,17 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
         }
 
+        // preflight - a present but zero DomainID is malformed.
+        // Regression test for "Ledger::read : zero key" assertion.
+        {
+            Env env(*this, features);
+            auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            env(offer(bob_, XRP(10), USD(10)), Domain(uint256{}), Ter(temMALFORMED));
+            env.close();
+        }
+
         // apply - offer can be created even if takergets issuer is not in
         // domain
         {
@@ -410,6 +421,21 @@ class PermissionedDEX_test : public beast::unit_test::Suite
                 Sendmax(XRP(10)),
                 Domain(badDomain),
                 Ter(tecNO_PERMISSION));
+            env.close();
+        }
+
+        // preflight - a present but zero DomainID is malformed.
+        // Regression test for "Ledger::read : zero key" assertion.
+        {
+            Env env(*this, features);
+            auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            env(pay(bob_, alice_, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(uint256{}),
+                Ter(temMALFORMED));
             env.close();
         }
 
