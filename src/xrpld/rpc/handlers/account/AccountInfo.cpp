@@ -169,11 +169,8 @@ doAccountInfo(RPC::JsonContext& context)
         for (auto const& lsf : kDisallowIncomingFlags)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        if (ledger->rules().enabled(featureClawback))
-        {
-            acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
-                sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
-        }
+        acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
+            sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
 
         if (ledger->rules().enabled(featureTokenEscrow))
         {

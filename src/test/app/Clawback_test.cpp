@@ -161,35 +161,6 @@ class Clawback_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
         }
-
-        // Test that one cannot enable asfAllowTrustLineClawback when
-        // featureClawback amendment is disabled
-        {
-            Env env(*this, features - featureClawback);
-
-            Account const alice{"alice"};
-
-            env.fund(XRP(1000), alice);
-            env.close();
-
-            env.require(Nflags(alice, asfAllowTrustLineClawback));
-
-            // alice attempts to set asfAllowTrustLineClawback flag while
-            // amendment is disabled. no error is returned, but the flag remains
-            // to be unset.
-            env(fset(alice, asfAllowTrustLineClawback));
-            env.close();
-            env.require(Nflags(alice, asfAllowTrustLineClawback));
-
-            // now enable clawback amendment
-            env.enableFeature(featureClawback);
-            env.close();
-
-            // asfAllowTrustLineClawback can be set
-            env(fset(alice, asfAllowTrustLineClawback));
-            env.close();
-            env.require(Flags(alice, asfAllowTrustLineClawback));
-        }
     }
 
     void
@@ -199,10 +170,9 @@ class Clawback_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         // Test that Clawback tx fails for the following:
-        // 1. when amendment is disabled
-        // 2. when asfAllowTrustLineClawback flag has not been set
+        // 1. when asfAllowTrustLineClawback flag has not been set
         {
-            Env env(*this, features - featureClawback);
+            Env env(*this, features);
 
             Account const alice{"alice"};
             Account const bob{"bob"};
@@ -221,14 +191,6 @@ class Clawback_test : public beast::unit_test::Suite
 
             env.require(Balance(bob, alice["USD"](10)));
             env.require(Balance(alice, bob["USD"](-10)));
-
-            // clawback fails because amendment is disabled
-            env(claw(alice, bob["USD"](5)), Ter(temDISABLED));
-            env.close();
-
-            // now enable clawback amendment
-            env.enableFeature(featureClawback);
-            env.close();
 
             // clawback fails because asfAllowTrustLineClawback has not been set
             env(claw(alice, bob["USD"](5)), Ter(tecNO_PERMISSION));
