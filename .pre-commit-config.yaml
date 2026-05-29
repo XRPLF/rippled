@@ -66,6 +66,19 @@ repos:
       - id: shfmt
         args: [--write, --indent=4, --case-indent=true]
 
+  - repo: local
+    hooks:
+      - id: format-inline-bash-workflows
+        name: "format `run:` blocks in workflows/actions"
+        entry: ./.github/scripts/format-inline-bash.py
+        language: python
+        files: ^\.github/(workflows|actions)/.*\.ya?ml$
+      - id: format-inline-bash-markdown
+        name: "format ```bash blocks in markdown"
+        entry: ./.github/scripts/format-inline-bash.py
+        language: python
+        files: \.md$
+
   - repo: https://github.com/streetsidesoftware/cspell-cli
     rev: 4643f154907327ee0a2c7038f0296e0dd77d9776 # frozen: v10.0.0
     hooks:
