@@ -78,7 +78,7 @@ setupTelemetry(
     setup.traceLedger = section.valueOr<int>("trace_ledger", 1) != 0;
 
     setup.consensusTraceStrategy =
-        section.value_or<std::string>("consensus_trace_strategy", "deterministic");
+        section.valueOr<std::string>("consensus_trace_strategy", "deterministic");
 
     return setup;
 }

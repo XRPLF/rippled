@@ -1717,7 +1717,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
 
     span.setAttribute(consensus::span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
     span.setAttribute(
-        consensus::span::attr::closeTimeThreshold, static_cast<int64_t>(parms.avCT_CONSENSUS_PCT));
+        consensus::span::attr::closeTimeThreshold, static_cast<int64_t>(parms.avCtConsensusPct));
 
     if (!ourNewSet &&
         ((consensusCloseTime != asCloseTime(result_->position.closeTime())) ||
@@ -1879,7 +1879,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     span.setAttribute(consensus::span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
     span.setAttribute(
         consensus::span::attr::thresholdPercent,
-        static_cast<int64_t>(adaptor_.parms().avCT_CONSENSUS_PCT));
+        static_cast<int64_t>(adaptor_.parms().avCtConsensusPct));
     span.setAttribute(
         consensus::span::attr::proposersFinished, static_cast<int64_t>(currentFinished));
     span.setAttribute(consensus::span::attr::consensusStalled, stalled);

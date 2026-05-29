@@ -73,13 +73,13 @@ toDisplayString(ConsensusMode m)
 {
     switch (m)
     {
-        case ConsensusMode::proposing:
+        case ConsensusMode::Proposing:
             return "Proposing";
-        case ConsensusMode::observing:
+        case ConsensusMode::Observing:
             return "Observing";
-        case ConsensusMode::wrongLedger:
+        case ConsensusMode::WrongLedger:
             return "Wrong Ledger";
-        case ConsensusMode::switchedLedger:
+        case ConsensusMode::SwitchedLedger:
             return "Switched Ledger";
         default:
             return "Unknown";

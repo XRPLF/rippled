@@ -347,7 +347,7 @@ RCLConsensus::Adaptor::onClose(
 
     auto span = telemetry::SpanGuard::span(
         telemetry::TraceCategory::Consensus, telemetry::seg::consensus, cs::op::ledgerClose);
-    span.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(ledger.ledger_->header().seq) + 1);
+    span.setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(ledger.ledger->header().seq) + 1);
     span.setAttribute(cs::attr::mode, toDisplayString(mode).c_str());
     span.setAttribute(
         cs::attr::txCountOpen, static_cast<int64_t>(app_.getOpenLedger().current()->txCount()));
@@ -1243,7 +1243,7 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
                 telemetry::TraceCategory::Consensus,
                 cs::round,
                 prevLgr.id().data(),
-                prevLgr.id().bytes,
+                prevLgr.id().kBytes,
                 link));
     }
     else

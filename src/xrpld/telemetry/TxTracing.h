@@ -36,7 +36,7 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
                 TraceCategory::Transactions,
                 tx_span::receive,
                 txID.data(),
-                txID.bytes,
+                txID.kBytes,
                 reinterpret_cast<std::uint8_t const*>(tc.span_id().data()),
                 tc.span_id().size(),
                 tc.has_trace_flags() ? static_cast<std::uint8_t>(tc.trace_flags())
@@ -45,7 +45,7 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
     }
 #endif
     return SpanGuard::hashSpan(
-        TraceCategory::Transactions, tx_span::receive, txID.data(), txID.bytes);
+        TraceCategory::Transactions, tx_span::receive, txID.data(), txID.kBytes);
 }
 
 /** Create a "tx.process" span for transaction processing in NetworkOPs.
@@ -55,7 +55,7 @@ inline SpanGuard
 txProcessSpan(uint256 const& txID)
 {
     return SpanGuard::hashSpan(
-        TraceCategory::Transactions, tx_span::process, txID.data(), txID.bytes);
+        TraceCategory::Transactions, tx_span::process, txID.data(), txID.kBytes);
 }
 
 }  // namespace xrpl::telemetry

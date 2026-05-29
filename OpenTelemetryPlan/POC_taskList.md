@@ -143,8 +143,8 @@
     - `virtual bool shouldTraceRpc() const = 0;`
     - `virtual bool shouldTraceTransactions() const = 0;`
     - `virtual bool shouldTraceConsensus() const = 0;`
-  - Factory: `std::unique_ptr<Telemetry> make_Telemetry(Setup const&, beast::Journal);`
-  - Config parser: `Telemetry::Setup setup_Telemetry(Section const&, std::string const& nodePublicKey, std::string const& version);`
+  - Factory: `std::unique_ptr<Telemetry> makeTelemetry(Setup const&, beast::Journal);`
+  - Config parser: `Telemetry::Setup setupTelemetry(Section const&, std::string const& nodePublicKey, std::string const& version);`
 
 - Create `include/xrpl/telemetry/SpanGuard.h`:
   - RAII guard with static factory methods (`rpcSpan()`, `txSpan()`, `consensusSpan()`, etc.) that access the global `Telemetry::getInstance()` singleton internally.
@@ -196,10 +196,10 @@
     - `shouldTraceRpc()` etc. read from `Setup` fields
 
 - Create `src/libxrpl/telemetry/TelemetryConfig.cpp`:
-  - `setup_Telemetry()` parses the `[telemetry]` config section from `xrpld.cfg`
+  - `setupTelemetry()` parses the `[telemetry]` config section from `xrpld.cfg`
   - Maps config keys: `enabled`, `exporter`, `endpoint`, `sampling_ratio`, `trace_rpc`, `trace_transactions`, `trace_consensus`, `trace_peer`
 
-- Wire `make_Telemetry()` factory:
+- Wire `makeTelemetry()` factory:
   - If `setup.enabled` is true AND `XRPL_ENABLE_TELEMETRY` is defined: return `TelemetryImpl`
   - Otherwise: return `NullTelemetry`
 
@@ -217,7 +217,7 @@
 **Reference**:
 
 - [04-code-samples.md §4.1](./04-code-samples.md) — `Telemetry` interface that `TelemetryImpl` must implement
-- [05-configuration-reference.md §5.2](./05-configuration-reference.md) — `setup_Telemetry()` config parser implementation
+- [05-configuration-reference.md §5.2](./05-configuration-reference.md) — `setupTelemetry()` config parser implementation
 - [02-design-decisions.md §2.2](./02-design-decisions.md) — OTLP/gRPC exporter config (endpoint, TLS options)
 - [02-design-decisions.md §2.4.1](./02-design-decisions.md) — Resource attributes: `service.name`, `service.version`, `service.instance.id`, `xrpl.network.id`
 - [03-implementation-strategy.md §3.4](./03-implementation-strategy.md) — Per-operation CPU costs and overhead budget for span creation
@@ -242,8 +242,8 @@
     `serviceInstanceId` (node identity is not yet known):
     ```cpp
     , telemetry_(
-          telemetry::make_Telemetry(
-              telemetry::setup_Telemetry(
+          telemetry::makeTelemetry(
+              telemetry::setupTelemetry(
                   config_->section("telemetry"),
                   "",  // Updated later via setServiceInstanceId()
                   BuildInfo::getVersionString()),
