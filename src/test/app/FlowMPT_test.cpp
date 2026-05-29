@@ -27,6 +27,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
@@ -633,6 +634,77 @@ struct FlowMPT_test : public beast::unit_test::Suite
             env(offer(gw, XRP(125), usd(125)));
             env(pay(alice, bob, usd(100)), Sendmax(XRP(200)));
             env.require(Balance(alice, XRP(10'000 - 125) - txFee(env, 2)), Balance(bob, usd(100)));
+        }
+    }
+
+    void
+    testMPTEndpointTransferRateOverflow(FeatureBitset features)
+    {
+        testcase("MPT Endpoint transfer rate overflow");
+
+        using namespace jtx;
+
+        Account const iouGW("iou_gateway");
+        Account const mptGW("mpt_gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+
+        {
+            // Control: the same issuer-owned offer path works when the
+            // transfer-fee-adjusted input amount remains representable.
+            Env env(*this, features);
+
+            std::int64_t constexpr deliverAmount = 1'000'000'000'000'000'000LL;
+            std::int64_t constexpr offerAmount = deliverAmount + (deliverAmount / 2);
+
+            env.fund(XRP(10'000), iouGW, mptGW, alice, bob);
+
+            auto const usd = iouGW["USD"];
+            env.trust(usd(offerAmount), alice);
+            env.trust(usd(offerAmount), mptGW);
+            env(pay(iouGW, alice, usd(offerAmount)));
+
+            MPTTester const mpt(
+                {.env = env, .issuer = mptGW, .holders = {bob}, .transferFee = kMaxTransferFee});
+
+            env(offer(mptGW, usd(offerAmount), mpt(offerAmount)));
+
+            env(pay(alice, bob, mpt(deliverAmount)),
+                Path(~mpt),
+                Sendmax(usd(offerAmount)),
+                Txflags(tfNoRippleDirect | tfPartialPayment));
+
+            env.require(Balance(alice, usd(0)), Balance(bob, mpt(deliverAmount)));
+            BEAST_EXPECT(!isOffer(env, mptGW, usd(offerAmount), mpt(offerAmount)));
+        }
+        {
+            // Regression: an extreme transfer-fee-adjusted MPT amount used to
+            // throw from MPTAmount::mulRatio during the endpoint reverse pass.
+            // It should now make the strand dry without mutating the offer.
+            Env env(*this, features);
+
+            std::int64_t constexpr overflowAmount = 7'000'000'000'000'000'000LL;
+
+            env.fund(XRP(10'000), iouGW, mptGW, alice, bob);
+
+            auto const usd = iouGW["USD"];
+            env.trust(usd(overflowAmount), alice);
+            env.trust(usd(overflowAmount), mptGW);
+            env(pay(iouGW, alice, usd(overflowAmount)));
+
+            MPTTester const mpt(
+                {.env = env, .issuer = mptGW, .holders = {bob}, .transferFee = kMaxTransferFee});
+
+            env(offer(mptGW, usd(overflowAmount), mpt(overflowAmount)));
+
+            env(pay(alice, bob, mpt(overflowAmount)),
+                Path(~mpt),
+                Sendmax(usd(overflowAmount)),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tecPATH_DRY));
+
+            env.require(Balance(alice, usd(overflowAmount)), Balance(bob, mpt(0)));
+            BEAST_EXPECT(isOffer(env, mptGW, usd(overflowAmount), mpt(overflowAmount)));
         }
     }
 
@@ -2121,6 +2193,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         testDirectStep(features);
         testBookStep(features);
         testTransferRate(features);
+        testMPTEndpointTransferRateOverflow(features);
         testSelfPayment1(features);
         testSelfPayment2(features);
         testSelfFundedXRPEndpoint(false, features);

@@ -8,12 +8,19 @@
 #include <test/jtx/permissioned_dex.h>
 #include <test/jtx/sendmax.h>
 
+#include <xrpld/rpc/BookChanges.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/jss.h>
+
+#include <unordered_set>
 
 namespace xrpl::test {
 
@@ -116,12 +123,90 @@ public:
     }
 
     void
+    testMPTV2SkipsOverflowingRate()
+    {
+        testcase("MPTokensV2 skips overflowing book-change rate");
+        using namespace jtx;
+
+        Env env(*this);
+        Account const gw{"gw"};
+        Account const iouGw{"iouGw"};
+
+        auto const BIG = MPT{gw.id(), 1};
+        auto const USD = iouGw["USD"];
+
+        // This metadata represents a partial MPT/IOU offer fill whose deltas
+        // make divide(deltaGets, deltaPays) overflow before MPTokensV2 skips
+        // the unrepresentable book-change rate.
+        STObject finalFields = STObject::makeInnerObject(sfFinalFields);
+        finalFields.setFieldU32(sfSequence, 1);
+        finalFields.setFieldAmount(sfTakerGets, BIG(1'800'000'000'000'000'000ull));
+        finalFields.setFieldAmount(sfTakerPays, USD(9));
+
+        STObject previousFields = STObject::makeInnerObject(sfPreviousFields);
+        previousFields.setFieldU32(sfSequence, 1);
+        previousFields.setFieldAmount(sfTakerGets, BIG(3'600'000'000'000'000'000ull));
+        previousFields.setFieldAmount(sfTakerPays, USD(18));
+
+        STObject modifiedOffer{sfModifiedNode};
+        modifiedOffer.setFieldU16(sfLedgerEntryType, ltOFFER);
+        modifiedOffer.setFieldObject(sfFinalFields, finalFields);
+        modifiedOffer.setFieldObject(sfPreviousFields, previousFields);
+
+        STArray affectedNodes{sfAffectedNodes};
+        affectedNodes.pushBack(std::move(modifiedOffer));
+
+        auto metadata = std::make_shared<STObject>(sfTransactionMetaData);
+        metadata->setFieldArray(sfAffectedNodes, affectedNodes);
+
+        auto tx = std::make_shared<STTx const>(ttOFFER_CREATE, [](STObject&) {});
+
+        auto const makeLedger = [&](std::unordered_set<uint256, beast::Uhash<>> const& features) {
+            auto ledger = std::make_shared<Ledger>(
+                2,
+                NetClock::time_point{},
+                Rules{features},
+                env.current()->fees(),
+                env.app().getNodeFamily());
+
+            auto txSerializer = std::make_shared<Serializer>();
+            tx->add(*txSerializer);
+
+            auto metaSerializer = std::make_shared<Serializer>();
+            metadata->add(*metaSerializer);
+
+            ledger->rawTxInsert(uint256{1}, txSerializer, metaSerializer);
+            ledger->setImmutable();
+            ledger->setValidated();
+            return std::static_pointer_cast<Ledger const>(ledger);
+        };
+
+        auto const enabledResult = RPC::computeBookChanges(
+            makeLedger(std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2}));
+
+        BEAST_EXPECT(enabledResult[jss::type] == "bookChanges");
+        BEAST_EXPECT(enabledResult[jss::changes].size() == 0);
+
+        try
+        {
+            (void)RPC::computeBookChanges(
+                makeLedger(std::unordered_set<uint256, beast::Uhash<>>{}));
+            fail("Expected overflowing book-change rate to throw without MPTokensV2");
+        }
+        catch (std::overflow_error const&)
+        {
+            pass();
+        }
+    }
+
+    void
     run() override
     {
         testConventionalLedgerInputStrings();
         testLedgerInputDefaultBehavior();
 
         testDomainOffer();
+        testMPTV2SkipsOverflowingRate();
         // Note: Other aspects of the book_changes rpc are fertile grounds
         // for unit-testing purposes. It can be included in future work
     }

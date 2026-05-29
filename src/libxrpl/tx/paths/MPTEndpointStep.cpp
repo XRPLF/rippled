@@ -89,6 +89,13 @@ protected:
     void
     resetCache(DebtDirection dir);
 
+    [[nodiscard]] TER
+    sendWithMPTCreate(
+        ApplyView& view,
+        AccountID const& src,
+        AccountID const& dst,
+        MPTAmount const& amount);
+
 private:
     MPTEndpointStep(
         StrandContext const& ctx,
@@ -274,7 +281,7 @@ public:
 
     // Not applicable for payment
     static TER
-    checkCreateMPT(ApplyView&, DebtDirection)
+    checkCreateMPT(ApplyView&)
     {
         return tesSUCCESS;
     }
@@ -322,7 +329,7 @@ public:
 
     // Can be created in rev or fwd (if limiting step) direction.
     TER
-    checkCreateMPT(ApplyView& view, DebtDirection srcDebtDir);
+    checkCreateMPT(ApplyView& view);
 };
 
 //------------------------------------------------------------------------------
@@ -402,7 +409,7 @@ MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, std::shared_ptr<co
 }
 
 TER
-MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view, xrpl::DebtDirection srcDebtDir)
+MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view)
 {
     // TakerPays is the last step if offer crossing
     if (isLast_)
@@ -414,11 +421,32 @@ MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view, xrpl::DebtDirectio
         if (auto const err = xrpl::checkCreateMPT(view, mptIssue_, dst_, j_); !isTesSuccess(err))
         {
             JLOG(j_.trace()) << "MPTEndpointStep::checkCreateMPT: failed create MPT";
-            resetCache(srcDebtDir);
             return err;
         }
     }
     return tesSUCCESS;
+}
+
+//------------------------------------------------------------------------------
+
+template <class TDerived>
+TER
+MPTEndpointStep<TDerived>::sendWithMPTCreate(
+    ApplyView& view,
+    AccountID const& src,
+    AccountID const& dst,
+    MPTAmount const& amount)
+{
+    if (auto const err = static_cast<TDerived*>(this)->checkCreateMPT(view); !isTesSuccess(err))
+        return err;
+
+    return directSendNoFee(
+        view,
+        src,
+        dst,
+        toSTAmount(amount, mptIssue_),
+        /*checkIssuer*/ false,
+        j_);
 }
 
 //------------------------------------------------------------------------------
@@ -479,8 +507,6 @@ MPTEndpointStep<TDerived>::revImp(
     auto const [srcQOut, dstQIn] = qualities(sb, srcDebtDir, StrandDirection::Reverse);
     (void)dstQIn;
 
-    MPTIssue const srcToDstIss(mptIssue_);
-
     JLOG(j_.trace()) << "MPTEndpointStep::rev"
                      << " srcRedeems: " << redeems(srcDebtDir) << " outReq: " << to_string(out)
                      << " maxSrcToDst: " << to_string(maxSrcToDst) << " srcQOut: " << srcQOut
@@ -493,24 +519,23 @@ MPTEndpointStep<TDerived>::revImp(
         return {beast::kZero, beast::kZero};
     }
 
-    if (auto const err = static_cast<TDerived*>(this)->checkCreateMPT(sb, srcDebtDir);
-        !isTesSuccess(err))
-        return {beast::kZero, beast::kZero};
-
     // Don't have to factor in dstQIn since it is always QUALITY_ONE
     MPTAmount const srcToDst = out;
 
     if (srcToDst <= maxSrcToDst)
     {
-        MPTAmount const in = mulRatio(srcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
+        auto const maybeIn = tryMulRatio(srcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
+        if (!maybeIn)
+        {
+            JLOG(j_.trace()) << "MPTEndpointStep::rev: overflow";
+            resetCache(srcDebtDir);
+            return {beast::kZero, beast::kZero};
+        }
+
+        MPTAmount const in = *maybeIn;
+
         cache_.emplace(in, srcToDst, srcToDst, srcDebtDir);
-        auto const ter = directSendNoFee(
-            sb,
-            src_,
-            dst_,
-            toSTAmount(srcToDst, srcToDstIss),
-            /*checkIssuer*/ false,
-            j_);
+        auto const ter = sendWithMPTCreate(sb, src_, dst_, srcToDst);
         if (!isTesSuccess(ter))
         {
             JLOG(j_.trace()) << "MPTEndpointStep::rev: error " << ter;
@@ -524,18 +549,21 @@ MPTEndpointStep<TDerived>::revImp(
     }
 
     // limiting node
-    MPTAmount const in = mulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
+    auto const maybeIn = tryMulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
+    if (!maybeIn)
+    {
+        JLOG(j_.trace()) << "MPTEndpointStep::rev: overflow";
+        resetCache(srcDebtDir);
+        return {beast::kZero, beast::kZero};
+    }
+
+    MPTAmount const in = *maybeIn;
+
     // Don't have to factor in dsqQIn since it's always QUALITY_ONE
     MPTAmount const actualOut = maxSrcToDst;
     cache_.emplace(in, maxSrcToDst, actualOut, srcDebtDir);
 
-    auto const ter = directSendNoFee(
-        sb,
-        src_,
-        dst_,
-        toSTAmount(maxSrcToDst, srcToDstIss),
-        /*checkIssuer*/ false,
-        j_);
+    auto const ter = sendWithMPTCreate(sb, src_, dst_, maxSrcToDst);
     if (!isTesSuccess(ter))
     {
         JLOG(j_.trace()) << "MPTEndpointStep::rev: error " << ter;
@@ -610,8 +638,6 @@ MPTEndpointStep<TDerived>::fwdImp(
     auto const [srcQOut, dstQIn] = qualities(sb, srcDebtDir, StrandDirection::Forward);
     (void)dstQIn;
 
-    MPTIssue const srcToDstIss(mptIssue_);
-
     JLOG(j_.trace()) << "MPTEndpointStep::fwd"
                      << " srcRedeems: " << redeems(srcDebtDir) << " inReq: " << to_string(in)
                      << " maxSrcToDst: " << to_string(maxSrcToDst) << " srcQOut: " << srcQOut
@@ -624,24 +650,22 @@ MPTEndpointStep<TDerived>::fwdImp(
         return {beast::kZero, beast::kZero};
     }
 
-    if (auto const err = static_cast<TDerived*>(this)->checkCreateMPT(sb, srcDebtDir);
-        !isTesSuccess(err))
+    auto const maybeSrcToDst = tryMulRatio(in, QUALITY_ONE, srcQOut, /*roundUp*/ false);
+    if (!maybeSrcToDst)
+    {
+        JLOG(j_.trace()) << "MPTEndpointStep::fwd: overflow";
+        resetCache(srcDebtDir);
         return {beast::kZero, beast::kZero};
+    }
 
-    MPTAmount const srcToDst = mulRatio(in, QUALITY_ONE, srcQOut, /*roundUp*/ false);
+    MPTAmount const srcToDst = *maybeSrcToDst;
 
     if (srcToDst <= maxSrcToDst)
     {
         // Don't have to factor in dstQIn since it's always QUALITY_ONE
         MPTAmount const out = srcToDst;
         setCacheLimiting(in, srcToDst, out, srcDebtDir);
-        auto const ter = directSendNoFee(
-            sb,
-            src_,
-            dst_,
-            toSTAmount(cache_->srcToDst, srcToDstIss),
-            /*checkIssuer*/ false,
-            j_);
+        auto const ter = sendWithMPTCreate(sb, src_, dst_, cache_->srcToDst);
         if (!isTesSuccess(ter))
         {
             JLOG(j_.trace()) << "MPTEndpointStep::fwd: error " << ter;
@@ -655,17 +679,20 @@ MPTEndpointStep<TDerived>::fwdImp(
     else
     {
         // limiting node
-        MPTAmount const actualIn = mulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
+        auto const maybeActualIn = tryMulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
+        if (!maybeActualIn)
+        {
+            JLOG(j_.trace()) << "MPTEndpointStep::fwd: overflow";
+            resetCache(srcDebtDir);
+            return {beast::kZero, beast::kZero};
+        }
+
+        MPTAmount const actualIn = *maybeActualIn;
+
         // Don't have to factor in dstQIn since it's always QUALITY_ONE
         MPTAmount const out = maxSrcToDst;
         setCacheLimiting(actualIn, maxSrcToDst, out, srcDebtDir);
-        auto const ter = directSendNoFee(
-            sb,
-            src_,
-            dst_,
-            toSTAmount(cache_->srcToDst, srcToDstIss),
-            /*checkIssuer*/ false,
-            j_);
+        auto const ter = sendWithMPTCreate(sb, src_, dst_, cache_->srcToDst);
         if (!isTesSuccess(ter))
         {
             JLOG(j_.trace()) << "MPTEndpointStep::fwd: error " << ter;

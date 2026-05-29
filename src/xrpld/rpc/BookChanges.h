@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
@@ -8,6 +9,8 @@
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
+#include <optional>
+#include <stdexcept>
 
 namespace json {
 class Value;
@@ -111,7 +114,18 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             if (second == beast::kZero)
                 continue;
 
-            STAmount const rate = divide(first, second, noIssue());
+            std::optional<STAmount> maybeRate;
+            try
+            {
+                maybeRate = divide(first, second, noIssue());
+            }
+            catch (std::overflow_error const&)
+            {
+                if (lpAccepted->rules().enabled(featureMPTokensV2))
+                    continue;
+                throw;
+            }
+            STAmount const rate = *maybeRate;
 
             if (first < beast::kZero)
                 first = -first;
