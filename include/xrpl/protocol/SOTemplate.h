@@ -28,7 +28,7 @@ enum SOEStyle {
 enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-enum SOEConstant {
+enum SOEMutability {
     SoeImmutable,
     SoeMutable,
     SoeImmutableSetOnce,
@@ -42,7 +42,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOEConstant constant_ = SoeImmutable;
+    SOEMutability mutability_ = SoeImmutable;
     SOETxMPTIssue supportMpt_ = SoeMptNone;
 
 private:
@@ -58,10 +58,10 @@ private:
         }
 
         XRPL_ASSERT(
-            constant_ != SoeImmutableSetOnce || style_ == SoeOptional,
+            mutability_ != SoeImmutableSetOnce || style_ == SoeOptional,
             "xrpl::SOElement::init : set-once fields must be optional");
         XRPL_ASSERT(
-            constant_ != SoeMutable || style_ == SoeRequired || style_ == SoeOptional ||
+            mutability_ != SoeMutable || style_ == SoeRequired || style_ == SoeOptional ||
                 style_ == SoeDefault,
             "xrpl::SOElement::init : mutable fields must have a valid style");
     }
@@ -72,8 +72,8 @@ public:
         init(fieldName);
     }
 
-    SOElement(SField const& fieldName, SOEStyle style, SOEConstant constant)
-        : sField_(fieldName), style_(style), constant_(constant)
+    SOElement(SField const& fieldName, SOEStyle style, SOEMutability mutability)
+        : sField_(fieldName), style_(style), mutability_(mutability)
     {
         init(fieldName);
     }
@@ -94,9 +94,9 @@ public:
     SOElement(
         TypedField<T> const& fieldName,
         SOEStyle style,
-        SOEConstant constant,
+        SOEMutability mutability,
         SOETxMPTIssue supportMpt = SoeMptNotSupported)
-        : sField_(fieldName), style_(style), constant_(constant), supportMpt_(supportMpt)
+        : sField_(fieldName), style_(style), mutability_(mutability), supportMpt_(supportMpt)
     {
         init(fieldName);
     }
@@ -113,10 +113,10 @@ public:
         return style_;
     }
 
-    [[nodiscard]] SOEConstant
-    constant() const
+    [[nodiscard]] SOEMutability
+    mutability() const
     {
-        return constant_;
+        return mutability_;
     }
 
     [[nodiscard]] SOETxMPTIssue
