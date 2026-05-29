@@ -25,7 +25,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -383,10 +382,11 @@ requireAuth(
         // belong to someone who is explicitly authorized e.g. a vault owner.
     }
 
-    if (featureSAVEnabled)
+    bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
+    if (featureSAVEnabled || featureMPTV2Enabled)
     {
-        // Implicitly authorize Vault and LoanBroker pseudo-accounts
-        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID}))
+        // Implicitly authorize Vault, LoanBroker, and AMM pseudo-accounts
+        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
             return tesSUCCESS;
     }
 
@@ -616,6 +616,22 @@ canTrade(ReadView const& view, Asset const& asset, std::uint8_t depth)
 
             return tesSUCCESS;
         });
+}
+
+TER
+canMPTTradeAndTransfer(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to)
+{
+    if (!asset.holds<MPTIssue>())
+        return tesSUCCESS;
+
+    if (auto const ter = canTrade(view, asset); !isTesSuccess(ter))
+        return ter;
+
+    return canTransfer(view, asset, from, to);
 }
 
 TER
@@ -983,98 +999,6 @@ issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amo
 {
     auto const available = availableMPTAmount(view, issue);
     view.issuerSelfDebitHookMPT(issue, amount, available);
-}
-
-static TER
-checkMPTAllowed(
-    ReadView const& view,
-    TxType txType,
-    Asset const& asset,
-    AccountID const& accountID,
-    std::uint8_t depth = 0)
-{
-    if (!asset.holds<MPTIssue>())
-        return tesSUCCESS;
-
-    auto const& issuanceID = asset.get<MPTIssue>().getMptID();
-    auto const validTx = txType == ttAMM_CREATE || txType == ttAMM_DEPOSIT ||
-        txType == ttAMM_WITHDRAW || txType == ttOFFER_CREATE || txType == ttCHECK_CREATE ||
-        txType == ttCHECK_CASH || txType == ttPAYMENT;
-    XRPL_ASSERT(validTx, "xrpl::checkMPTAllowed : all MPT tx or DEX");
-    if (!validTx)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    auto const& issuer = asset.getIssuer();
-    if (!view.exists(keylet::account(issuer)))
-        return tecNO_ISSUER;  // LCOV_EXCL_LINE
-
-    auto const issuanceKey = keylet::mptIssuance(issuanceID);
-    auto const issuanceSle = view.read(issuanceKey);
-    if (!issuanceSle)
-        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
-
-    if (issuanceSle->isFlag(lsfMPTLocked))
-        return tecLOCKED;  // LCOV_EXCL_LINE
-    // Offer crossing and Payment
-    if (!issuanceSle->isFlag(lsfMPTCanTrade))
-        return tecNO_PERMISSION;
-
-    if (accountID != issuer)
-    {
-        if (!issuanceSle->isFlag(lsfMPTCanTransfer))
-            return tecNO_PERMISSION;
-
-        auto const mptSle = view.read(keylet::mptoken(issuanceKey.key, accountID));
-        // Allow to succeed since some tx create MPToken if it doesn't exist.
-        // Tx's have their own check for missing MPToken.
-        if (!mptSle)
-            return tesSUCCESS;
-
-        if (mptSle->isFlag(lsfMPTLocked))
-            return tecLOCKED;
-
-        // Post-fixCleanup3_2_0: vault shares inherit the underlying
-        // asset's checks here too. Without this, a share could be
-        // placed on the AMM, in an Offer, or in a Check even after
-        // the issuer has restricted the underlying. Mirrors the
-        // canTransfer / canTrade inheritance for path-find-adjacent
-        // operations that don't go through canTransfer directly.
-        if (view.rules().enabled(fixCleanup3_2_0) &&
-            issuanceSle->isFieldPresent(sfReferenceHolding))
-        {
-            // Defensive depth bound on the inheritance recursion.
-            // Reachable only post-fixCleanup3_2_0 and unreachable in
-            // practice (vault-of-vault-shares forbidden at VaultCreate).
-            if (depth >= kMaxAssetCheckDepth)
-            {
-                // LCOV_EXCL_START
-                UNREACHABLE("xrpl::MPTokenHelpers::checkMPTAllowed : reached asset check depth");
-                return tecINTERNAL;
-                // LCOV_EXCL_STOP
-            }
-            auto const sleHolding =
-                view.read(keylet::unchecked(issuanceSle->getFieldH256(sfReferenceHolding)));
-            if (!sleHolding)
-                return tefINTERNAL;  // LCOV_EXCL_LINE
-
-            return checkMPTAllowed(
-                view, txType, assetOfHolding(*issuanceSle, *sleHolding), accountID, depth + 1);
-        }
-    }
-
-    return tesSUCCESS;
-}
-
-TER
-checkMPTTxAllowed(
-    ReadView const& view,
-    TxType txType,
-    Asset const& asset,
-    AccountID const& accountID)
-{
-    // use isDEXAllowed for payment/offer crossing
-    XRPL_ASSERT(txType != ttPAYMENT, "xrpl::checkMPTTxAllowed : not payment");
-    return checkMPTAllowed(view, txType, asset, accountID);
 }
 
 }  // namespace xrpl

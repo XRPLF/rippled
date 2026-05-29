@@ -83,10 +83,6 @@ public:
     virtual Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) = 0;
 
-    /** Fetch a batch synchronously. */
-    virtual std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256> const& hashes) = 0;
-
     /** Store a single object.
         Depending on the implementation this may happen immediately
         or deferred using a scheduled task.

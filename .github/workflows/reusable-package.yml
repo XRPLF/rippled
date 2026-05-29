@@ -39,7 +39,7 @@ jobs:
         id: generate
         working-directory: .github/scripts/strategy-matrix
         run: |
-          ./generate.py --packaging --config=linux.json >> "${GITHUB_OUTPUT}"
+          ./generate.py --packaging --config=linux.json >>"${GITHUB_OUTPUT}"
 
   generate-version:
     runs-on: ubuntu-latest

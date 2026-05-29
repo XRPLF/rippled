@@ -93,6 +93,7 @@ words:
   - daria
   - dcmake
   - dearmor
+  - dedented
   - deleteme
   - demultiplexer
   - deserializaton
@@ -199,11 +200,13 @@ words:
   - nonxrp
   - noreplace
   - noripple
+  - nostdinc
   - notifempty
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
+  - onlatest
   - ostr
   - pargs
   - partitioner
@@ -254,6 +257,7 @@ words:
   - sfields
   - shamap
   - shamapitem
+  - shfmt
   - shlibs
   - sidechain
   - SIGGOOD
@@ -298,6 +302,7 @@ words:
   - unauthorizing
   - unergonomic
   - unfetched
+  - unfindable
   - unflatten
   - unfund
   - unimpair
