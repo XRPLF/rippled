@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuthorize (soeOPTIONAL)
+     * @brief Get sfAuthorize (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -92,7 +92,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -103,7 +103,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -114,7 +114,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuthorizeCredentials (soeOPTIONAL)
+     * @brief Get sfAuthorizeCredentials (SoeOptional)
      * @note This is an untyped field (unknown).
      * @return The field value, or std::nullopt if not present.
      */
@@ -143,7 +143,7 @@ public:
  * @brief Builder for DepositPreauth ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class DepositPreauthBuilder : public LedgerEntryBuilderBase<DepositPreauthBuilder>
@@ -182,7 +182,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -193,7 +193,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuthorize (soeOPTIONAL)
+     * @brief Set sfAuthorize (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -204,7 +204,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -215,7 +215,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -226,7 +226,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&
@@ -237,7 +237,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuthorizeCredentials (soeOPTIONAL)
+     * @brief Set sfAuthorizeCredentials (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     DepositPreauthBuilder&

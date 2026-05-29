@@ -8,7 +8,7 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doLogRotate(RPC::JsonContext& context)
 {
     context.app.getPerfLog().rotate();

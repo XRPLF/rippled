@@ -7,11 +7,12 @@ namespace xrpl {
 class LedgerStateFix : public Transactor
 {
 public:
-    enum FixType : std::uint16_t {
-        nfTokenPageLink = 1,
+    enum class FixType : std::uint16_t {
+        NfTokenPageLink = 1,
+        BookExchangeRate = 2,
     };
 
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit LedgerStateFix(ApplyContext& ctx) : Transactor(ctx)
     {

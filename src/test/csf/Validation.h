@@ -12,7 +12,7 @@ namespace xrpl::test::csf {
 
 struct PeerIDTag;
 //< Uniquely identifies a peer
-using PeerID = tagged_integer<std::uint32_t, PeerIDTag>;
+using PeerID = TaggedInteger<std::uint32_t, PeerIDTag>;
 
 /** The current key of a peer
 

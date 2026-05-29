@@ -56,8 +56,8 @@ LedgerReplayMsgHandler::processProofPathRequest(
     reply.set_ledgerhash(packet.ledgerhash());
     reply.set_type(packet.type());
 
-    uint256 const key(packet.key());
-    uint256 const ledgerHash(packet.ledgerhash());
+    uint256 const key = uint256::fromRaw(packet.key());
+    uint256 const ledgerHash = uint256::fromRaw(packet.ledgerhash());
     auto ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
     if (!ledger)
     {
@@ -107,7 +107,8 @@ LedgerReplayMsgHandler::processProofPathResponse(
 {
     protocol::TMProofPathResponse const& reply = *msg;
     if (reply.has_error() || !reply.has_key() || !reply.has_ledgerhash() || !reply.has_type() ||
-        !reply.has_ledgerheader() || reply.path_size() == 0)
+        !reply.has_ledgerheader() || reply.path_size() == 0 ||
+        reply.ledgerhash().size() != uint256::size() || reply.key().size() != uint256::size())
     {
         JLOG(journal_.debug()) << "Bad message: Error reply";
         return false;
@@ -121,7 +122,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
 
     // deserialize the header
     auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
-    uint256 const replyHash(reply.ledgerhash());
+    uint256 const replyHash = uint256::fromRaw(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
         JLOG(journal_.debug()) << "Bad message: Hash mismatch";
@@ -129,7 +130,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
     }
     info.hash = replyHash;
 
-    uint256 const key(reply.key());
+    uint256 const key = uint256::fromRaw(reply.key());
     if (key != keylet::skip().key)
     {
         JLOG(journal_.debug()) << "Bad message: we only support the short skip list for now. "
@@ -160,7 +161,7 @@ LedgerReplayMsgHandler::processProofPathResponse(
         return false;
     }
 
-    if (auto item = safe_downcast<SHAMapLeafNode*>(node.get())->peekItem())
+    if (auto item = safeDowncast<SHAMapLeafNode*>(node.get())->peekItem())
     {
         replayer_.gotSkipList(info, item);
         return true;
@@ -185,7 +186,7 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     }
     reply.set_ledgerhash(packet.ledgerhash());
 
-    uint256 const ledgerHash{packet.ledgerhash()};
+    uint256 const ledgerHash = uint256::fromRaw(packet.ledgerhash());
     auto ledger = app_.getLedgerMaster().getLedgerByHash(ledgerHash);
     if (!ledger || !ledger->isImmutable())
     {
@@ -205,7 +206,7 @@ LedgerReplayMsgHandler::processReplayDeltaRequest(
     });
 
     JLOG(journal_.debug()) << "getReplayDelta for ledger " << ledgerHash << " txMap hash "
-                           << txMap.getHash().as_uint256();
+                           << txMap.getHash().asUInt256();
     return reply;
 }
 
@@ -214,14 +215,15 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
     std::shared_ptr<protocol::TMReplayDeltaResponse> const& msg)
 {
     protocol::TMReplayDeltaResponse const& reply = *msg;
-    if (reply.has_error() || !reply.has_ledgerheader())
+    if (reply.has_error() || !reply.has_ledgerheader() || !reply.has_ledgerhash() ||
+        reply.ledgerhash().size() != uint256::size())
     {
         JLOG(journal_.debug()) << "Bad message: Error reply";
         return false;
     }
 
     auto info = deserializeHeader({reply.ledgerheader().data(), reply.ledgerheader().size()});
-    uint256 const replyHash(reply.ledgerhash());
+    uint256 const replyHash = uint256::fromRaw(reply.ledgerhash());
     if (calculateLedgerHash(info) != replyHash)
     {
         JLOG(journal_.debug()) << "Bad message: Hash mismatch";
@@ -258,7 +260,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
             orderedTxns.emplace(meta[sfTransactionIndex], std::move(tx));
 
             if (!txMap.addGiveItem(
-                    SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(tid, shaMapItemData.slice())))
+                    SHAMapNodeType::TnTransactionMd, makeShamapitem(tid, shaMapItemData.slice())))
             {
                 JLOG(journal_.debug()) << "Bad message: Cannot deserialize";
                 return false;
@@ -271,7 +273,7 @@ LedgerReplayMsgHandler::processReplayDeltaResponse(
         return false;
     }
 
-    if (txMap.getHash().as_uint256() != info.txHash)
+    if (txMap.getHash().asUInt256() != info.txHash)
     {
         JLOG(journal_.debug()) << "Bad message: Transactions verify failed";
         return false;

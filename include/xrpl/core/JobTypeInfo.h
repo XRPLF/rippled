@@ -8,19 +8,19 @@ namespace xrpl {
 class JobTypeInfo
 {
 private:
-    JobType const m_type;
-    std::string const m_name;
+    JobType const type_;
+    std::string const name_;
 
     /** The limit on the number of running jobs for this job type.
 
         A limit of 0 marks this as a "special job" which is not
         dispatched via the job queue.
      */
-    int const m_limit;
+    int const limit_;
 
     /** Average and peak latencies for this job type. 0 is none specified */
-    std::chrono::milliseconds const m_avgLatency;
-    std::chrono::milliseconds const m_peakLatency;
+    std::chrono::milliseconds const avgLatency_;
+    std::chrono::milliseconds const peakLatency_;
 
 public:
     // Not default constructible
@@ -32,48 +32,48 @@ public:
         int limit,
         std::chrono::milliseconds avgLatency,
         std::chrono::milliseconds peakLatency)
-        : m_type(type)
-        , m_name(std::move(name))
-        , m_limit(limit)
-        , m_avgLatency(avgLatency)
-        , m_peakLatency(peakLatency)
+        : type_(type)
+        , name_(std::move(name))
+        , limit_(limit)
+        , avgLatency_(avgLatency)
+        , peakLatency_(peakLatency)
     {
     }
 
     [[nodiscard]] JobType
     type() const
     {
-        return m_type;
+        return type_;
     }
 
     [[nodiscard]] std::string const&
     name() const
     {
-        return m_name;
+        return name_;
     }
 
     [[nodiscard]] int
     limit() const
     {
-        return m_limit;
+        return limit_;
     }
 
     [[nodiscard]] bool
     special() const
     {
-        return m_limit == 0;
+        return limit_ == 0;
     }
 
     [[nodiscard]] std::chrono::milliseconds
     getAverageLatency() const
     {
-        return m_avgLatency;
+        return avgLatency_;
     }
 
     [[nodiscard]] std::chrono::milliseconds
     getPeakLatency() const
     {
-        return m_peakLatency;
+        return peakLatency_;
     }
 };
 

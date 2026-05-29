@@ -9,13 +9,13 @@
 namespace xrpl::test::jtx {
 
 /** Sets the SendMax on a JTx. */
-class sendmax
+class Sendmax
 {
 private:
     STAmount amount_;
 
 public:
-    sendmax(STAmount amount) : amount_(std::move(amount))
+    Sendmax(STAmount amount) : amount_(std::move(amount))
     {
     }
 

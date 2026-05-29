@@ -25,7 +25,7 @@ concept IsStrand = std::
  *
  * @param ePtr The exception that was caught on the coroutine
  */
-inline constexpr auto kPROPAGATE_EXCEPTIONS = [](std::exception_ptr ePtr) {
+inline constexpr auto kPropagateExceptions = [](std::exception_ptr ePtr) {
     if (ePtr)
     {
         try
@@ -50,7 +50,7 @@ inline constexpr auto kPROPAGATE_EXCEPTIONS = [](std::exception_ptr ePtr) {
 /**
  * @brief Spawns a coroutine using `boost::asio::spawn`
  *
- * @note This uses kPROPAGATE_EXCEPTIONS to force asio to propagate exceptions
+ * @note This uses kPropagateExceptions to force asio to propagate exceptions
  * through `io_context`
  * @note Since implicit strand was removed from boost::asio::spawn this helper
  * function adds the strand back
@@ -68,14 +68,14 @@ spawn(Ctx&& ctx, F&& func)
     if constexpr (impl::IsStrand<Ctx>)
     {
         boost::asio::spawn(
-            std::forward<Ctx>(ctx), std::forward<F>(func), impl::kPROPAGATE_EXCEPTIONS);
+            std::forward<Ctx>(ctx), std::forward<F>(func), impl::kPropagateExceptions);
     }
     else
     {
         boost::asio::spawn(
             boost::asio::make_strand(boost::asio::get_associated_executor(std::forward<Ctx>(ctx))),
             std::forward<F>(func),
-            impl::kPROPAGATE_EXCEPTIONS);
+            impl::kPropagateExceptions);
     }
 }
 

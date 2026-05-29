@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfSignatureReward (soeREQUIRED)
+     * @brief Get sfSignatureReward (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfMinAccountCreateAmount (soeOPTIONAL)
+     * @brief Get sfMinAccountCreateAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -92,7 +92,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -103,7 +103,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainClaimID (soeREQUIRED)
+     * @brief Get sfXChainClaimID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -114,7 +114,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainAccountCreateCount (soeREQUIRED)
+     * @brief Get sfXChainAccountCreateCount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -125,7 +125,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainAccountClaimCount (soeREQUIRED)
+     * @brief Get sfXChainAccountClaimCount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -136,7 +136,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -147,7 +147,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -158,7 +158,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -173,7 +173,7 @@ public:
  * @brief Builder for Bridge ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class BridgeBuilder : public LedgerEntryBuilderBase<BridgeBuilder>
@@ -222,7 +222,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -233,7 +233,7 @@ public:
     }
 
     /**
-     * @brief Set sfSignatureReward (soeREQUIRED)
+     * @brief Set sfSignatureReward (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -244,7 +244,7 @@ public:
     }
 
     /**
-     * @brief Set sfMinAccountCreateAmount (soeOPTIONAL)
+     * @brief Set sfMinAccountCreateAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -255,7 +255,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -266,7 +266,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainClaimID (soeREQUIRED)
+     * @brief Set sfXChainClaimID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -277,7 +277,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainAccountCreateCount (soeREQUIRED)
+     * @brief Set sfXChainAccountCreateCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -288,7 +288,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainAccountClaimCount (soeREQUIRED)
+     * @brief Set sfXChainAccountClaimCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -299,7 +299,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -310,7 +310,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&
@@ -321,7 +321,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     BridgeBuilder&

@@ -42,13 +42,13 @@ public:
     /** @{ */
     template <class Handler>
     Hook
-    make_hook(Handler handler)
+    makeHook(Handler handler)
     {
-        return make_hook(HookImpl::HandlerType(handler));
+        return makeHook(HookImpl::HandlerType(handler));
     }
 
     virtual Hook
-    make_hook(HookImpl::HandlerType const& handler) = 0;
+    makeHook(HookImpl::HandlerType const& handler) = 0;
     /** @} */
 
     /** Create a counter with the specified name.
@@ -56,14 +56,14 @@ public:
     */
     /** @{ */
     virtual Counter
-    make_counter(std::string const& name) = 0;
+    makeCounter(std::string const& name) = 0;
 
     Counter
-    make_counter(std::string const& prefix, std::string const& name)
+    makeCounter(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_counter(name);
-        return make_counter(prefix + "." + name);
+            return makeCounter(name);
+        return makeCounter(prefix + "." + name);
     }
     /** @} */
 
@@ -72,14 +72,14 @@ public:
     */
     /** @{ */
     virtual Event
-    make_event(std::string const& name) = 0;
+    makeEvent(std::string const& name) = 0;
 
     Event
-    make_event(std::string const& prefix, std::string const& name)
+    makeEvent(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_event(name);
-        return make_event(prefix + "." + name);
+            return makeEvent(name);
+        return makeEvent(prefix + "." + name);
     }
     /** @} */
 
@@ -88,14 +88,14 @@ public:
     */
     /** @{ */
     virtual Gauge
-    make_gauge(std::string const& name) = 0;
+    makeGauge(std::string const& name) = 0;
 
     Gauge
-    make_gauge(std::string const& prefix, std::string const& name)
+    makeGauge(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_gauge(name);
-        return make_gauge(prefix + "." + name);
+            return makeGauge(name);
+        return makeGauge(prefix + "." + name);
     }
     /** @} */
 
@@ -104,14 +104,14 @@ public:
     */
     /** @{ */
     virtual Meter
-    make_meter(std::string const& name) = 0;
+    makeMeter(std::string const& name) = 0;
 
     Meter
-    make_meter(std::string const& prefix, std::string const& name)
+    makeMeter(std::string const& prefix, std::string const& name)
     {
         if (prefix.empty())
-            return make_meter(name);
-        return make_meter(prefix + "." + name);
+            return makeMeter(name);
+        return makeMeter(prefix + "." + name);
     }
     /** @} */
 };

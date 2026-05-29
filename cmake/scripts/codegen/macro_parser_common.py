@@ -152,10 +152,10 @@ def parse_sfields_macro(sfields_path):
 
 def create_field_list_parser():
     """Create a pyparsing parser for field lists like '({...})'."""
-    # A field identifier (e.g., sfDestination, soeREQUIRED, soeMPTSupported)
+    # A field identifier (e.g., sfDestination, SoeRequired, SoeMptSupported)
     field_identifier = pp.Word(pp.alphas + "_", pp.alphanums + "_")
 
-    # A single field definition: {sfName, soeREQUIRED, ...}
+    # A single field definition: {sfName, SoeRequired, ...}
     # Allow optional trailing comma inside the braces
     field_def = (
         pp.Suppress("{")
@@ -185,8 +185,8 @@ def parse_field_list(fields_str):
 
     Args:
         fields_str: A string like '({
-            {sfDestination, soeREQUIRED},
-            {sfAmount, soeREQUIRED, soeMPTSupported}
+            {sfDestination, SoeRequired},
+            {sfAmount, SoeRequired, SoeMptSupported}
         })'
 
     Returns:
@@ -205,7 +205,7 @@ def parse_field_list(fields_str):
             field_name = field_parts[0]
             requirement = field_parts[1]
             flags = list(field_parts[2:]) if len(field_parts) > 2 else []
-            supports_mpt = "soeMPTSupported" in flags
+            supports_mpt = "SoeMptSupported" in flags
 
             fields.append(
                 {
