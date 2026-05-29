@@ -41,7 +41,7 @@ TEST(TaggedCacheTest, tagged_cache)
     {
         EXPECT_EQ(c.getCacheSize(), 0);
         EXPECT_EQ(c.getTrackSize(), 0);
-        EXPECT_TRUE(!c.insert(1, "one"));
+        EXPECT_FALSE(c.insert(1, "one"));
         EXPECT_EQ(c.getCacheSize(), 1);
         EXPECT_EQ(c.getTrackSize(), 1);
 
@@ -60,7 +60,7 @@ TEST(TaggedCacheTest, tagged_cache)
     // Insert an item, maintain a strong pointer, age it, and
     // verify that the entry still exists.
     {
-        EXPECT_TRUE(!c.insert(2, "two"));
+        EXPECT_FALSE(c.insert(2, "two"));
         EXPECT_EQ(c.getCacheSize(), 1);
         EXPECT_EQ(c.getTrackSize(), 1);
 
@@ -82,7 +82,7 @@ TEST(TaggedCacheTest, tagged_cache)
 
     // Insert the same key/value pair and make sure we get the same result
     {
-        EXPECT_TRUE(!c.insert(3, "three"));
+        EXPECT_FALSE(c.insert(3, "three"));
 
         {
             auto const p1 = c.fetch(3);
@@ -101,7 +101,7 @@ TEST(TaggedCacheTest, tagged_cache)
     // get the original object.
     {
         // Put an object in
-        EXPECT_TRUE(!c.insert(4, "four"));
+        EXPECT_FALSE(c.insert(4, "four"));
         EXPECT_EQ(c.getCacheSize(), 1);
         EXPECT_EQ(c.getTrackSize(), 1);
 

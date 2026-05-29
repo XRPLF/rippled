@@ -200,7 +200,7 @@ TEST(IntrusiveSharedTest, basics)
         EXPECT_EQ(b.useCount(), 0);
         TIBase const* pb = &b;
         partialDestructorFinished(&pb);
-        EXPECT_TRUE(!pb);
+        EXPECT_FALSE(pb);
         auto w = b.releaseWeakRef();
         EXPECT_EQ(w, ReleaseWeakRefAction::Destroy);
     }
@@ -270,7 +270,7 @@ TEST(IntrusiveSharedTest, basics)
         s = w.lock();
         // Cannot convert a weak pointer to a strong pointer if object is
         // already partially deleted
-        EXPECT_TRUE(!s);
+        EXPECT_FALSE(s);
         w.reset();
         EXPECT_EQ(TIBase::getState(id), Deleted);
     }
@@ -295,7 +295,7 @@ TEST(IntrusiveSharedTest, basics)
         b.reset();
         EXPECT_EQ(TIBase::getState(id), Alive);
         EXPECT_EQ(s.useCount(), 1);
-        EXPECT_TRUE(!w.expired());
+        EXPECT_FALSE(w.expired());
         s.reset();
         EXPECT_EQ(TIBase::getState(id), PartiallyDeleted);
         EXPECT_TRUE(w.expired());
@@ -400,12 +400,12 @@ TEST(IntrusiveSharedTest, partial_delete)
         }
         if (next == PartiallyDeleted)
         {
-            EXPECT_TRUE(!partialDeleteRan && !destructorRan);
+            EXPECT_FALSE(partialDeleteRan || destructorRan);
             partialDeleteRan = true;
         }
         if (next == Deleted)
         {
-            EXPECT_TRUE(!destructorRan);
+            EXPECT_FALSE(destructorRan);
             destructorRan = true;
         }
     };
@@ -446,12 +446,12 @@ TEST(IntrusiveSharedTest, destructor)
         using enum TrackedState;
         if (next == PartiallyDeleted)
         {
-            EXPECT_TRUE(!partialDeleteRan && !destructorRan);
+            EXPECT_FALSE(partialDeleteRan || destructorRan);
             partialDeleteRan = true;
         }
         if (next == Deleted)
         {
-            EXPECT_TRUE(!destructorRan);
+            EXPECT_FALSE(destructorRan);
             destructorRan = true;
         }
     };
@@ -496,12 +496,12 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
         auto [destructorRan, partialDeleteRan] = getDestructorState();
         if (next == PartiallyDeleted)
         {
-            EXPECT_TRUE(!partialDeleteRan && !destructorRan);
+            EXPECT_FALSE(partialDeleteRan || destructorRan);
             setPartialDeleteRan();
         }
         if (next == Deleted)
         {
-            EXPECT_TRUE(!destructorRan);
+            EXPECT_FALSE(destructorRan);
             setDestructorRan();
         }
     };
@@ -560,7 +560,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
 
                 rsg.emplace(false);
                 auto [destructorRan, partialDeleteRan] = getDestructorState();
-                EXPECT_TRUE(!i || destructorRan);
+                EXPECT_TRUE(i == 0 || destructorRan);
                 destructionState.store(0, std::memory_order_release);
 
                 toClone.clear();
@@ -627,12 +627,12 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
         auto [destructorRan, partialDeleteRan] = getDestructorState();
         if (next == PartiallyDeleted)
         {
-            EXPECT_TRUE(!partialDeleteRan && !destructorRan);
+            EXPECT_FALSE(partialDeleteRan || destructorRan);
             setPartialDeleteRan();
         }
         if (next == Deleted)
         {
-            EXPECT_TRUE(!destructorRan);
+            EXPECT_FALSE(destructorRan);
             setDestructorRan();
         }
     };
@@ -684,7 +684,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
                 // clear the temporary variables.
                 rsg.emplace(false);
                 auto [destructorRan, partialDeleteRan] = getDestructorState();
-                EXPECT_TRUE(!i || destructorRan);
+                EXPECT_TRUE(i == 0 || destructorRan);
                 destructionState.store(0, std::memory_order_release);
 
                 toClone.clear();
@@ -765,12 +765,12 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
         auto [destructorRan, partialDeleteRan] = getDestructorState();
         if (next == PartiallyDeleted)
         {
-            EXPECT_TRUE(!partialDeleteRan && !destructorRan);
+            EXPECT_FALSE(partialDeleteRan || destructorRan);
             setPartialDeleteRan();
         }
         if (next == Deleted)
         {
-            EXPECT_TRUE(!destructorRan);
+            EXPECT_FALSE(destructorRan);
             setDestructorRan();
         }
     };
@@ -802,7 +802,7 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
                 // clear the temporary variables.
                 rsg.emplace(false);
                 auto [destructorRan, partialDeleteRan] = getDestructorState();
-                EXPECT_TRUE(!i || destructorRan);
+                EXPECT_TRUE(i == 0 || destructorRan);
                 destructionState.store(0, std::memory_order_release);
 
                 toLock.clear();
@@ -820,7 +820,7 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
             WeakIntrusive const weak{toLock[threadId]};
             for (int wi = 0; wi < kLockWeakLoopIters; ++wi)
             {
-                EXPECT_TRUE(!weak.expired());
+                EXPECT_FALSE(weak.expired());
                 auto strong = weak.lock();
                 EXPECT_TRUE(strong);
             }

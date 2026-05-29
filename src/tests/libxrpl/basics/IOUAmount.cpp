@@ -18,7 +18,7 @@ TEST(IOUAmountTest, zero)
 
     EXPECT_EQ(z.mantissa(), 0);
     EXPECT_EQ(z.exponent(), -100);
-    EXPECT_TRUE(!z);
+    EXPECT_FALSE(z);
     EXPECT_EQ(z.signum(), 0);
     EXPECT_EQ(z, beast::kZero);
 

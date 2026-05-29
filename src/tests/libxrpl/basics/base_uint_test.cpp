@@ -70,18 +70,18 @@ struct BaseUintTest : public ::testing::Test
             for (auto const& arg : kTestArgs)
             {
                 xrpl::BaseUInt<64> const u{arg.first}, v{arg.second};
-                // For code readability, we want to use general
-                // EXPECT_TRUE instead of specific EXPECT_LT etc.
+                // For code readability, we want to use general boolean
+                // expectations instead of specific EXPECT_LT etc.
                 EXPECT_TRUE(u < v);
                 EXPECT_TRUE(u <= v);
                 EXPECT_TRUE(u != v);
-                EXPECT_TRUE(!(u == v));
-                EXPECT_TRUE(!(u > v));
-                EXPECT_TRUE(!(u >= v));
-                EXPECT_TRUE(!(v < u));
-                EXPECT_TRUE(!(v <= u));
+                EXPECT_FALSE(u == v);
+                EXPECT_FALSE(u > v);
+                EXPECT_FALSE(u >= v);
+                EXPECT_FALSE(v < u);
+                EXPECT_FALSE(v <= u);
                 EXPECT_TRUE(v != u);
-                EXPECT_TRUE(!(v == u));
+                EXPECT_FALSE(v == u);
                 EXPECT_TRUE(v > u);
                 EXPECT_TRUE(v >= u);
                 EXPECT_TRUE(u == u);
@@ -106,13 +106,13 @@ struct BaseUintTest : public ::testing::Test
                 EXPECT_TRUE(u < v);
                 EXPECT_TRUE(u <= v);
                 EXPECT_TRUE(u != v);
-                EXPECT_TRUE(!(u == v));
-                EXPECT_TRUE(!(u > v));
-                EXPECT_TRUE(!(u >= v));
-                EXPECT_TRUE(!(v < u));
-                EXPECT_TRUE(!(v <= u));
+                EXPECT_FALSE(u == v);
+                EXPECT_FALSE(u > v);
+                EXPECT_FALSE(u >= v);
+                EXPECT_FALSE(v < u);
+                EXPECT_FALSE(v <= u);
                 EXPECT_TRUE(v != u);
-                EXPECT_TRUE(!(v == u));
+                EXPECT_FALSE(v == u);
                 EXPECT_TRUE(v > u);
                 EXPECT_TRUE(v >= u);
                 EXPECT_TRUE(u == u);
@@ -142,8 +142,8 @@ TEST_F(BaseUintTest, base_uint)
     EXPECT_EQ(toShortString(u), "01020304...");
     EXPECT_EQ(*u.data(), 1);
     EXPECT_EQ(u.signum(), 1);
-    EXPECT_TRUE(!!u);
-    EXPECT_TRUE(!u.isZero());
+    EXPECT_FALSE(!u);
+    EXPECT_FALSE(u.isZero());
     EXPECT_TRUE(u.isNonZero());
     unsigned char t = 0;
     for (auto& d : u)
@@ -165,8 +165,8 @@ TEST_F(BaseUintTest, base_uint)
     EXPECT_EQ(toShortString(v), "FEFDFCFB...");
     EXPECT_EQ(*v.data(), 0xfe);
     EXPECT_EQ(v.signum(), 1);
-    EXPECT_TRUE(!!v);
-    EXPECT_TRUE(!v.isZero());
+    EXPECT_FALSE(!v);
+    EXPECT_FALSE(v.isZero());
     EXPECT_TRUE(v.isNonZero());
     t = 0xff;
     for (auto& d : v)
@@ -190,7 +190,7 @@ TEST_F(BaseUintTest, base_uint)
     EXPECT_EQ(z.signum(), 0);
     EXPECT_TRUE(!z);
     EXPECT_TRUE(z.isZero());
-    EXPECT_TRUE(!z.isNonZero());
+    EXPECT_FALSE(z.isNonZero());
     for (auto& d : z)
     {
         EXPECT_EQ(d, 0);
@@ -225,11 +225,11 @@ TEST_F(BaseUintTest, base_uint)
     tmp = z;
 
     // fails with extra char
-    EXPECT_TRUE(!tmp.parseHex("A" + to_string(u)));
+    EXPECT_FALSE(tmp.parseHex("A" + to_string(u)));
     tmp = z;
 
     // fails with extra char at end
-    EXPECT_TRUE(!tmp.parseHex(to_string(u) + "A"));
+    EXPECT_FALSE(tmp.parseHex(to_string(u) + "A"));
 
     // fails with a non-hex character at some point in the string:
     tmp = z;
@@ -238,7 +238,7 @@ TEST_F(BaseUintTest, base_uint)
     {
         std::string x = to_string(z);
         x[i] = ('G' + (i % 10));
-        EXPECT_TRUE(!tmp.parseHex(x));
+        EXPECT_FALSE(tmp.parseHex(x));
     }
 
     // Walking 1s:

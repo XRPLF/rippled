@@ -229,7 +229,7 @@ TEST(UnitsTest, functions)
 
         EXPECT_TRUE(test);
         test = 0;
-        EXPECT_TRUE(!test);
+        EXPECT_FALSE(test);
         EXPECT_EQ(test.signum(), 0);
         test = targetSame;
         EXPECT_EQ(test.signum(), 1);
@@ -311,7 +311,7 @@ TEST(UnitsTest, functions)
 
         EXPECT_TRUE(test);
         test = 0;
-        EXPECT_TRUE(!test);
+        EXPECT_FALSE(test);
         EXPECT_EQ(test.signum(), 0);
         test = targetSame;
         EXPECT_EQ(test.signum(), 1);

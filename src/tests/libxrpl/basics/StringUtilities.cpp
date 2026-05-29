@@ -26,7 +26,7 @@ public:
     testUnHexFailure(std::string const& strIn)
     {
         auto rv = strUnHex(strIn);
-        EXPECT_TRUE(!rv);
+        EXPECT_FALSE(rv);
     }
 };
 
@@ -56,7 +56,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_TRUE(pUrl.username.empty());
         EXPECT_TRUE(pUrl.password.empty());
         EXPECT_TRUE(pUrl.domain.empty());
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         // RFC 3986:
         // > In general, a URI that uses the generic syntax for authority
         //   with an empty path should be normalized to a path of "/".
@@ -71,7 +71,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_TRUE(pUrl.username.empty());
         EXPECT_TRUE(pUrl.password.empty());
         EXPECT_TRUE(pUrl.domain.empty());
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/");
     }
 
@@ -82,7 +82,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_TRUE(pUrl.username.empty());
         EXPECT_TRUE(pUrl.password.empty());
         EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_TRUE(pUrl.path.empty());
     }
 
@@ -104,7 +104,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_TRUE(pUrl.username.empty());
         EXPECT_TRUE(pUrl.password.empty());
         EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/path");
     }
 
@@ -170,7 +170,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_EQ(pUrl.username, "user");
         EXPECT_EQ(pUrl.password, "pass");
         EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/abc:321");
     }
 
@@ -181,7 +181,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_EQ(pUrl.username, "user");
         EXPECT_TRUE(pUrl.password.empty());
         EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/abc:321");
     }
 
@@ -192,7 +192,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_TRUE(pUrl.username.empty());
         EXPECT_EQ(pUrl.password, "pass");
         EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/abc:321");
     }
 
@@ -203,7 +203,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_TRUE(pUrl.username.empty());
         EXPECT_TRUE(pUrl.password.empty());
         EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/abc:321");
     }
 
@@ -214,7 +214,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_TRUE(pUrl.username.empty());
         EXPECT_TRUE(pUrl.password.empty());
         EXPECT_TRUE(pUrl.domain.empty());
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/path/to/file");
     }
 
@@ -225,7 +225,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_EQ(pUrl.username, "user");
         EXPECT_EQ(pUrl.password, "pass");
         EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/path/with/an@sign");
     }
 
@@ -236,7 +236,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_TRUE(pUrl.username.empty());
         EXPECT_TRUE(pUrl.password.empty());
         EXPECT_EQ(pUrl.domain, "domain");
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/path/with/an@sign");
     }
 
@@ -247,7 +247,7 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_TRUE(pUrl.username.empty());
         EXPECT_TRUE(pUrl.password.empty());
         EXPECT_EQ(pUrl.domain, ":999");
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/");
     }
 
@@ -258,29 +258,29 @@ TEST_F(StringUtilitiesTest, parse_url)
         EXPECT_TRUE(pUrl.username.empty());
         EXPECT_TRUE(pUrl.password.empty());
         EXPECT_EQ(pUrl.domain, "::0.1.18.52");
-        EXPECT_TRUE(!pUrl.port);
+        EXPECT_FALSE(pUrl.port);
         EXPECT_EQ(pUrl.path, "/validators");
     }
 
     // Expected fails.
     {
         ParsedUrl pUrl;
-        EXPECT_TRUE(!parseUrl(pUrl, ""));
-        EXPECT_TRUE(!parseUrl(pUrl, "nonsense"));
-        EXPECT_TRUE(!parseUrl(pUrl, "://"));
-        EXPECT_TRUE(!parseUrl(pUrl, ":///"));
-        EXPECT_TRUE(!parseUrl(pUrl, "scheme://user:pass@domain:65536/abc:321"));
-        EXPECT_TRUE(!parseUrl(pUrl, "UPPER://domain:23498765/"));
-        EXPECT_TRUE(!parseUrl(pUrl, "UPPER://domain:0/"));
-        EXPECT_TRUE(!parseUrl(pUrl, "UPPER://domain:+7/"));
-        EXPECT_TRUE(!parseUrl(pUrl, "UPPER://domain:-7234/"));
-        EXPECT_TRUE(!parseUrl(pUrl, "UPPER://domain:@#$56!/"));
+        EXPECT_FALSE(parseUrl(pUrl, ""));
+        EXPECT_FALSE(parseUrl(pUrl, "nonsense"));
+        EXPECT_FALSE(parseUrl(pUrl, "://"));
+        EXPECT_FALSE(parseUrl(pUrl, ":///"));
+        EXPECT_FALSE(parseUrl(pUrl, "scheme://user:pass@domain:65536/abc:321"));
+        EXPECT_FALSE(parseUrl(pUrl, "UPPER://domain:23498765/"));
+        EXPECT_FALSE(parseUrl(pUrl, "UPPER://domain:0/"));
+        EXPECT_FALSE(parseUrl(pUrl, "UPPER://domain:+7/"));
+        EXPECT_FALSE(parseUrl(pUrl, "UPPER://domain:-7234/"));
+        EXPECT_FALSE(parseUrl(pUrl, "UPPER://domain:@#$56!/"));
     }
 
     {
         std::string const strUrl("s://" + std::string(8192, ':'));
         ParsedUrl pUrl;
-        EXPECT_TRUE(!parseUrl(pUrl, strUrl));
+        EXPECT_FALSE(parseUrl(pUrl, strUrl));
     }
 }
 

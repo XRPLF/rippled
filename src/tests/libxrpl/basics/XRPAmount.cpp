@@ -152,10 +152,10 @@ TEST(XRPAmountTest, functions)
     EXPECT_EQ(*testOther, 200);  // NOLINT(bugprone-unchecked-optional-access)
     test = std::numeric_limits<std::uint64_t>::max();
     testOther = test.dropsAs<std::uint32_t>();
-    EXPECT_TRUE(!testOther);
+    EXPECT_FALSE(testOther);
     test = -1;
     testOther = test.dropsAs<std::uint32_t>();
-    EXPECT_TRUE(!testOther);
+    EXPECT_FALSE(testOther);
 
     test = targetSame * 2;
     EXPECT_EQ(test.drops(), 400);
@@ -185,7 +185,7 @@ TEST(XRPAmountTest, functions)
 
     EXPECT_TRUE(test);
     test = 0;
-    EXPECT_TRUE(!test);
+    EXPECT_FALSE(test);
     EXPECT_EQ(test.signum(), 0);
     test = targetSame;
     EXPECT_EQ(test.signum(), 1);

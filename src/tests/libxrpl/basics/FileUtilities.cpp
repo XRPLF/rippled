@@ -67,19 +67,19 @@ TEST(FileUtilitiesTest, get_file_contents)
     auto const path = file.file();
 
     writeFileContents(ec, path, kExpectedContents);
-    EXPECT_TRUE(!ec);
+    EXPECT_FALSE(ec);
 
     {
         // Test with no max
         auto const good = getFileContents(ec, path);
-        EXPECT_TRUE(!ec);
+        EXPECT_FALSE(ec);
         EXPECT_EQ(good, kExpectedContents);
     }
 
     {
         // Test with large max
         auto const good = getFileContents(ec, path, kilobytes(1));
-        EXPECT_TRUE(!ec);
+        EXPECT_FALSE(ec);
         EXPECT_EQ(good, kExpectedContents);
     }
 

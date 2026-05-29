@@ -1378,10 +1378,10 @@ TEST(NumberTest, relationals)
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
-        EXPECT_TRUE(!(Number{100} < Number{10}));
+        EXPECT_FALSE(Number{100} < Number{10});
         EXPECT_TRUE(Number{100} > Number{10});
         EXPECT_TRUE(Number{100} >= Number{10});
-        EXPECT_TRUE(!(Number{100} <= Number{10}));
+        EXPECT_FALSE(Number{100} <= Number{10});
     }
 }
 

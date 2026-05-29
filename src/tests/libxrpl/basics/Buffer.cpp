@@ -39,18 +39,18 @@ TEST_F(BufferTest, buffer)
     EXPECT_TRUE(b1.empty());
     std::memcpy(b1.alloc(16), data, 16);
     EXPECT_TRUE(sane(b1));
-    EXPECT_TRUE(!b1.empty());
+    EXPECT_FALSE(b1.empty());
     EXPECT_EQ(b1.size(), 16);
 
     Buffer b2{b1.size()};
     EXPECT_TRUE(sane(b2));
-    EXPECT_TRUE(!b2.empty());
+    EXPECT_FALSE(b2.empty());
     EXPECT_EQ(b2.size(), b1.size());
     std::memcpy(b2.data(), data + 16, 16);
 
     Buffer b3{data, sizeof(data)};
     EXPECT_TRUE(sane(b3));
-    EXPECT_TRUE(!b3.empty());
+    EXPECT_FALSE(b3.empty());
     EXPECT_EQ(b3.size(), sizeof(data));
     EXPECT_EQ(std::memcmp(b3.data(), data, b3.size()), 0);
 
@@ -164,13 +164,13 @@ TEST_F(BufferTest, buffer)
 
             x = std::move(y);
             EXPECT_TRUE(sane(x));
-            EXPECT_TRUE(!x.empty());
+            EXPECT_FALSE(x.empty());
             EXPECT_TRUE(sane(y));    // NOLINT(bugprone-use-after-move)
             EXPECT_TRUE(y.empty());  // NOLINT(bugprone-use-after-move)
 
             x = std::move(z);
             EXPECT_TRUE(sane(x));
-            EXPECT_TRUE(!x.empty());
+            EXPECT_FALSE(x.empty());
             EXPECT_TRUE(sane(z));    // NOLINT(bugprone-use-after-move)
             EXPECT_TRUE(z.empty());  // NOLINT(bugprone-use-after-move)
         }

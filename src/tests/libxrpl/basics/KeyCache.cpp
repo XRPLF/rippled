@@ -33,7 +33,7 @@ TEST_F(KeyCacheTest, key_cache)
 
         EXPECT_EQ(c.size(), 0);
         EXPECT_TRUE(c.insert("one"));
-        EXPECT_TRUE(!c.insert("one"));
+        EXPECT_FALSE(c.insert("one"));
         EXPECT_EQ(c.size(), 1);
         EXPECT_TRUE(c.touchIfExists("one"));
         ++clock;
@@ -42,7 +42,7 @@ TEST_F(KeyCacheTest, key_cache)
         ++clock;
         c.sweep();
         EXPECT_EQ(c.size(), 0);
-        EXPECT_TRUE(!c.touchIfExists("one"));
+        EXPECT_FALSE(c.touchIfExists("one"));
     }
 
     // Insert two items, have one expire

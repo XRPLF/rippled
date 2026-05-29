@@ -9,13 +9,10 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <utility>
-
-#if BOOST_VERSION >= 107500
-#endif  // BOOST_VERSION
-#include <cstdint>
 
 namespace xrpl::test {
 
@@ -66,8 +63,8 @@ TEST(ExpectedTest, error_construction_from_rvalue)
     auto const expected = []() -> Expected<std::string, TER> {
         return Unexpected(telLOCAL_ERROR);
     }();
-    EXPECT_TRUE(!expected);
-    EXPECT_TRUE(!expected.has_value());
+    EXPECT_FALSE(expected);
+    EXPECT_FALSE(expected.has_value());
     EXPECT_EQ(expected.error(), telLOCAL_ERROR);
 
     EXPECT_THAT(
@@ -79,8 +76,8 @@ TEST(ExpectedTest, error_construction_from_lvalue)
 {
     auto const err(telLOCAL_ERROR);
     auto expected = [&err]() -> Expected<std::string, TER> { return Unexpected(err); }();
-    EXPECT_TRUE(!expected);
-    EXPECT_TRUE(!expected.has_value());
+    EXPECT_FALSE(expected);
+    EXPECT_FALSE(expected.has_value());
     EXPECT_EQ(expected.error(), telLOCAL_ERROR);
     EXPECT_THAT(
         [&expected] { [[maybe_unused]] std::size_t const s = expected->size(); },
@@ -92,8 +89,8 @@ TEST(ExpectedTest, error_construction_from_const_char)
     auto const expected = []() -> Expected<int, char const*> {
         return Unexpected("Not what is expected!");
     }();
-    EXPECT_TRUE(!expected);
-    EXPECT_TRUE(!expected.has_value());
+    EXPECT_FALSE(expected);
+    EXPECT_FALSE(expected.has_value());
     EXPECT_EQ(expected.error(), std::string("Not what is expected!"));
 }
 
@@ -102,8 +99,8 @@ TEST(ExpectedTest, error_string_construction_from_const_char)
     auto expected = []() -> Expected<int, std::string> {
         return Unexpected("Not what is expected!");
     }();
-    EXPECT_TRUE(!expected);
-    EXPECT_TRUE(!expected.has_value());
+    EXPECT_FALSE(expected);
+    EXPECT_FALSE(expected.has_value());
     EXPECT_EQ(expected.error(), "Not what is expected!");
     std::string const s(std::move(expected.error()));
     EXPECT_EQ(s, "Not what is expected!");
@@ -134,7 +131,7 @@ TEST(ExpectedTest, error_const_void_construction)
     auto const expected = []() -> Expected<void, std::string> {
         return Unexpected("Not what is expected!");
     }();
-    EXPECT_TRUE(!expected);
+    EXPECT_FALSE(expected);
     EXPECT_EQ(expected.error(), "Not what is expected!");
 }
 
@@ -143,7 +140,7 @@ TEST(ExpectedTest, error_non_const_void_construction)
     auto expected = []() -> Expected<void, std::string> {
         return Unexpected("Not what is expected!");
     }();
-    EXPECT_TRUE(!expected);
+    EXPECT_FALSE(expected);
     EXPECT_EQ(expected.error(), "Not what is expected!");
     std::string const s(std::move(expected.error()));
     EXPECT_EQ(s, "Not what is expected!");
@@ -156,7 +153,7 @@ TEST(ExpectedTest, json_object_value_construction)
         return boost::json::object{{"oops", "me array now"}};
     }();
     EXPECT_TRUE(expected);
-    EXPECT_TRUE(!expected.value().is_array());
+    EXPECT_FALSE(expected.value().is_array());
 }
 #endif  // BOOST_VERSION
 
