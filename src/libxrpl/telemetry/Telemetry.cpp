@@ -22,7 +22,6 @@
 
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
-#include <opentelemetry/sdk/resource/semantic_conventions.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_factory.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_options.h>
 #include <opentelemetry/sdk/trace/processor.h>
@@ -30,6 +29,7 @@
 #include <opentelemetry/sdk/trace/samplers/trace_id_ratio.h>
 #include <opentelemetry/sdk/trace/tracer_provider.h>
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
+#include <opentelemetry/semconv/incubating/service_attributes.h>
 #include <opentelemetry/trace/noop.h>
 #include <opentelemetry/trace/provider.h>
 
@@ -281,9 +281,9 @@ public:
 
         // Configure resource attributes
         auto resourceAttrs = resource::Resource::Create({
-            {resource::SemanticConventions::kServiceName, setup_.serviceName},
-            {resource::SemanticConventions::kServiceVersion, setup_.serviceVersion},
-            {resource::SemanticConventions::kServiceInstanceId, setup_.serviceInstanceId},
+            {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
+            {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
+            {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
             {"xrpl.network.id", static_cast<int64_t>(setup_.networkId)},
             {"xrpl.network.type", setup_.networkType},
         });
