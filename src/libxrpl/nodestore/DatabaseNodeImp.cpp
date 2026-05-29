@@ -41,7 +41,7 @@ DatabaseNodeImp::asyncFetch(
 {
     if (cache_)
     {
-        std::shared_ptr<NodeObject> obj = cache_->fetch(hash);
+        std::shared_ptr<NodeObject> const obj = cache_->fetch(hash);
         if (obj)
         {
             callback(obj->getType() == NodeObjectType::Dummy ? nullptr : obj);
