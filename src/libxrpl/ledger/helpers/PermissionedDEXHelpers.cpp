@@ -23,7 +23,12 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
     // Avoid constructing a zero-key PermissionedDomain keylet.
     // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
     if (view.rules().enabled(fixCleanup3_2_0) && domainID == beast::kZero)
-        return false;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::permissioned_dex::accountInDomain : domainID is zero");
+        return false;
+        // LCOV_EXCL_STOP
+    }
 
     auto const sleDomain = view.read(keylet::permissionedDomain(domainID));
     if (!sleDomain)
