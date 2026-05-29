@@ -453,18 +453,18 @@
    ```bash
    # server_info
    curl -s -X POST http://localhost:5005 \
-     -H "Content-Type: application/json" \
-     -d '{"method":"server_info","params":[{}]}'
+       -H "Content-Type: application/json" \
+       -d '{"method":"server_info","params":[{}]}'
 
    # ledger
    curl -s -X POST http://localhost:5005 \
-     -H "Content-Type: application/json" \
-     -d '{"method":"ledger","params":[{"ledger_index":"current"}]}'
+       -H "Content-Type: application/json" \
+       -d '{"method":"ledger","params":[{"ledger_index":"current"}]}'
 
    # account_info (will error in standalone, that's fine — we trace errors too)
    curl -s -X POST http://localhost:5005 \
-     -H "Content-Type: application/json" \
-     -d '{"method":"account_info","params":[{"account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"}]}'
+       -H "Content-Type: application/json" \
+       -d '{"method":"account_info","params":[{"account":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"}]}'
    ```
 
 6. **Verify in Grafana (Tempo)**:

@@ -199,6 +199,7 @@ tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
 tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
+tests.libxrpl > xrpl.telemetry
 tests.libxrpl > xrpl.tx
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol

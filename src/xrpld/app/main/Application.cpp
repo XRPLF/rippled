@@ -330,7 +330,7 @@ public:
                       config_->section("telemetry"),
                       "",  // Updated later via setServiceInstanceId()
                       BuildInfo::getVersionString(),
-                      config_->NETWORK_ID),
+                      config_->networkId),
                   logs_->journal("Telemetry")))
 
         , txMaster_(*this)
