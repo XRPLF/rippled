@@ -1,6 +1,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/Oracle.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
@@ -2320,7 +2321,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tesSUCCESS, tesSUCCESS});
         }
 
-        // Without fixConstantInvariant, old hardcoded path should
+        // Without fixImmutableInvariant, old hardcoded path should
         // still catch sfLedgerEntryType/sfLedgerIndex changes
         {
             auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
@@ -2331,7 +2332,7 @@ class Invariants_test : public beast::unit_test::Suite
             for (auto const& mod : mods)
             {
                 doInvariantCheck(
-                    Env(*this, defaultAmendments() - fixConstantInvariant),
+                    Env(*this, defaultAmendments() - fixImmutableInvariant),
                     {{"changed an unchangeable field"}},
                     [&](Account const& a1, Account const&, ApplyContext& ac) {
                         auto sle = ac.view().peek(keylet::account(a1.id()));
@@ -2344,12 +2345,12 @@ class Invariants_test : public beast::unit_test::Suite
             }
         }
 
-        // Without fixConstantInvariant, modifying a SoeImmutable field
+        // Without fixImmutableInvariant, modifying a SoeImmutable field
         // that is NOT sfLedgerEntryType/sfLedgerIndex on a non-loan
         // type should NOT fail (old code doesn't check it)
         {
             doInvariantCheck(
-                Env(*this, defaultAmendments() - fixConstantInvariant),
+                Env(*this, defaultAmendments() - fixImmutableInvariant),
                 {},
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     auto sle = ac.view().peek(keylet::account(a1.id()));
@@ -2362,6 +2363,70 @@ class Invariants_test : public beast::unit_test::Suite
                 XRPAmount{},
                 STTx{ttACCOUNT_SET, [](STObject&) {}},
                 {tesSUCCESS, tesSUCCESS});
+        }
+
+        // Template-based checks: SoeImmutableSetOnce field on Oracle.
+        {
+            Keylet oracleKeylet = keylet::amendments();
+            Preclose const createLegacyOracle = [this, &oracleKeylet](
+                                                    Account const& a, Account const&, Env& env) {
+                jtx::oracle::Oracle const oracle{env, {.owner = a.id()}};
+                oracleKeylet = keylet::oracle(a.id(), oracle.documentID());
+
+                auto const sle = env.le(oracleKeylet);
+                return BEAST_EXPECT(sle && !sle->isFieldPresent(sfOracleDocumentID));
+            };
+
+            doInvariantCheck(
+                Env(*this, defaultAmendments() - fixIncludeKeyletFields),
+                {},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(oracleKeylet);
+                    if (!sle)
+                        return false;
+                    sle->at(sfOracleDocumentID) = std::uint32_t{1};
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                createLegacyOracle);
+        }
+
+        {
+            Keylet oracleKeylet = keylet::amendments();
+            Preclose const createOracle = [this, &oracleKeylet](
+                                              Account const& a, Account const&, Env& env) {
+                jtx::oracle::Oracle const oracle{env, {.owner = a.id()}};
+                oracleKeylet = keylet::oracle(a.id(), oracle.documentID());
+
+                auto const sle = env.le(oracleKeylet);
+                return BEAST_EXPECT(sle && sle->isFieldPresent(sfOracleDocumentID));
+            };
+
+            auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
+                [](SLE::pointer& sle) { sle->at(sfOracleDocumentID) = std::uint32_t{2}; },
+                [](SLE::pointer& sle) { sle->makeFieldAbsent(sfOracleDocumentID); },
+            });
+
+            for (auto const& mod : mods)
+            {
+                doInvariantCheck(
+                    {{"changed an unchangeable field"}},
+                    [&](Account const&, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(oracleKeylet);
+                        if (!sle)
+                            return false;
+                        mod(sle);
+                        ac.view().update(sle);
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{ttACCOUNT_SET, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    createOracle);
+            }
         }
     }
 

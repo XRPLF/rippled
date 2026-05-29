@@ -101,7 +101,7 @@ LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
 // All fields are SoeRequired because there is always a SignerEntries.
 // If there are no SignerEntries the node is deleted.
 LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, ({
-    {sfOwner,                SoeOptional, SoeImmutable},
+    {sfOwner,                SoeOptional, SoeImmutableSetOnce},
     {sfOwnerNode,            SoeRequired, SoeImmutable},
     {sfSignerQuorum,         SoeRequired, SoeMutable},
     {sfSignerEntries,        SoeRequired, SoeMutable},
@@ -391,7 +391,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfSequence,                 SoeRequired, SoeImmutable},
     {sfTransferFee,              SoeDefault,  SoeMutable},
     {sfOwnerNode,                SoeRequired, SoeImmutable},
-    {sfAssetScale,               SoeDefault,  SoeMutable},
+    {sfAssetScale,               SoeDefault,  SoeImmutable},
     {sfMaximumAmount,            SoeOptional, SoeImmutable},
     {sfOutstandingAmount,        SoeRequired, SoeMutable},
     {sfLockedAmount,             SoeOptional, SoeMutable},
@@ -421,10 +421,10 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
  */
 LEDGER_ENTRY(ltORACLE, 0x0080, Oracle, oracle, ({
     {sfOwner,                SoeRequired, SoeImmutable},
-    {sfOracleDocumentID,     SoeOptional, SoeImmutable},
+    {sfOracleDocumentID,     SoeOptional, SoeImmutableSetOnce},
     {sfProvider,             SoeRequired, SoeImmutable},
     {sfPriceDataSeries,      SoeRequired, SoeMutable},
-    {sfAssetClass,           SoeRequired, SoeMutable},
+    {sfAssetClass,           SoeRequired, SoeImmutable},
     {sfLastUpdateTime,       SoeRequired, SoeMutable},
     {sfURI,                  SoeOptional, SoeMutable},
     {sfOwnerNode,            SoeRequired, SoeImmutable},
