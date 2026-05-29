@@ -54,10 +54,10 @@ public:
  */
 class NFTokenCountTracking
 {
-    std::uint32_t beforeMintedTotal = 0;
-    std::uint32_t beforeBurnedTotal = 0;
-    std::uint32_t afterMintedTotal = 0;
-    std::uint32_t afterBurnedTotal = 0;
+    std::uint32_t beforeMintedTotal_ = 0;
+    std::uint32_t beforeBurnedTotal_ = 0;
+    std::uint32_t afterMintedTotal_ = 0;
+    std::uint32_t afterBurnedTotal_ = 0;
 
 public:
     void

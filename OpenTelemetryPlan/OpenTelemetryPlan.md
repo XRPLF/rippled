@@ -54,6 +54,7 @@ flowchart TB
         phases["06-implementation-phases.md"]
         backends["07-observability-backends.md"]
         appendix["08-appendix.md"]
+        secure["secure-OTel.md"]
         poc["POC_taskList.md"]
         dataref["09-data-collection-reference.md"]
     end
@@ -71,6 +72,7 @@ flowchart TB
     config --> phases
     phases --> backends
     backends --> appendix
+    backends --> secure
     phases --> poc
     appendix --> dataref
 
@@ -88,6 +90,7 @@ flowchart TB
     style phases fill:#4a148c,stroke:#2e0d57,color:#fff
     style backends fill:#4a148c,stroke:#2e0d57,color:#fff
     style appendix fill:#4a148c,stroke:#2e0d57,color:#fff
+    style secure fill:#4a148c,stroke:#2e0d57,color:#fff
     style poc fill:#4a148c,stroke:#2e0d57,color:#fff
     style dataref fill:#4a148c,stroke:#2e0d57,color:#fff
 ```
@@ -110,6 +113,7 @@ flowchart TB
 | **7**   | [Observability Backends](./07-observability-backends.md)       | Backend selection guide and production architecture                    |
 | **8**   | [Appendix](./08-appendix.md)                                   | Glossary, references, version history                                  |
 | **9**   | [Data Collection Reference](./09-data-collection-reference.md) | Complete inventory of spans, attributes, metrics, and dashboards       |
+| **Sec** | [Securing the OTel Pipeline](./secure-OTel.md)                 | Threat model and hardening (mTLS, peer trace-context validation)       |
 | **POC** | [POC Task List](./POC_taskList.md)                             | Proof of concept tasks for RPC tracing end-to-end demo                 |
 
 ---
@@ -229,6 +233,14 @@ The appendix contains a glossary of OpenTelemetry and xrpld-specific terms, refe
 A single-source-of-truth reference documenting every piece of telemetry data collected by xrpld. Covers all 16 OpenTelemetry spans with their 22 attributes, all StatsD metrics (gauges, counters, histograms, overlay traffic), SpanMetrics-derived Prometheus metrics, and all 10 Grafana dashboards. Includes Jaeger search guides and Prometheus query examples.
 
 ➡️ **[View Data Collection Reference](./09-data-collection-reference.md)**
+
+---
+
+## Securing the OTel Pipeline
+
+Threat model and hardening guidance for production deployments where xrpld nodes ship telemetry to a centrally-hosted collector across an untrusted network. Covers the two attack surfaces (collector ingress and peer trace-context spoofing) and the chosen defenses: mTLS as primary collector auth, NetworkPolicy as defense-in-depth, and source-side validation plus per-peer rate limiting for the `protocol::TraceContext` field on peer messages.
+
+➡️ **[View Securing the OTel Pipeline](./secure-OTel.md)**
 
 ---
 

@@ -14,24 +14,29 @@
 
 namespace xrpl {
 
-Json::Value
+json::Value
 doPathFind(RPC::JsonContext& context)
 {
     using namespace telemetry;
-    [[maybe_unused]] auto span = SpanGuard::span(
+    auto span = SpanGuard::span(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
-    if (context.app.config().PATH_SEARCH_MAX == 0)
-        return rpcError(rpcNOT_SUPPORTED);
+    if (auto const& src = context.params[jss::source_account]; src.isString())
+        span.setAttribute(pathfind_span::attr::sourceAccount, src.asString());
+    if (auto const& dst = context.params[jss::destination_account]; dst.isString())
+        span.setAttribute(pathfind_span::attr::destAccount, dst.asString());
+
+    if (context.app.config().pathSearchMax == 0)
+        return rpcError(RpcNotSupported);
 
     auto lpLedger = context.ledgerMaster.getClosedLedger();
 
     if (!context.params.isMember(jss::subcommand) || !context.params[jss::subcommand].isString())
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
     }
 
     if (!context.infoSub)
-        return rpcError(rpcNO_EVENTS);
+        return rpcError(RpcNoEvents);
 
     context.infoSub->setApiVersion(context.apiVersion);
 
@@ -39,7 +44,7 @@ doPathFind(RPC::JsonContext& context)
 
     if (sSubCommand == "create")
     {
-        context.loadType = Resource::feeHeavyBurdenRPC;
+        context.loadType = Resource::kFeeHeavyBurdenRpc;
         context.infoSub->clearRequest();
         return context.app.getPathRequestManager().makePathRequest(
             context.infoSub, lpLedger, context.params);
@@ -50,7 +55,7 @@ doPathFind(RPC::JsonContext& context)
         InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
-            return rpcError(rpcNO_PF_REQUEST);
+            return rpcError(RpcNoPfRequest);
 
         context.infoSub->clearRequest();
         return request->doClose();
@@ -61,12 +66,12 @@ doPathFind(RPC::JsonContext& context)
         InfoSubRequest::pointer const request = context.infoSub->getRequest();
 
         if (!request)
-            return rpcError(rpcNO_PF_REQUEST);
+            return rpcError(RpcNoPfRequest);
 
         return request->doStatus(context.params);
     }
 
-    return rpcError(rpcINVALID_PARAMS);
+    return rpcError(RpcInvalidParams);
 }
 
 }  // namespace xrpl

@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfAccount (soeREQUIRED)
+     * @brief Get sfAccount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainBridge (soeREQUIRED)
+     * @brief Get sfXChainBridge (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainAccountCreateCount (soeREQUIRED)
+     * @brief Get sfXChainAccountCreateCount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfXChainCreateAccountAttestations (soeREQUIRED)
+     * @brief Get sfXChainCreateAccountAttestations (SoeRequired)
      * @note This is an untyped field (unknown).
      * @return The field value.
      */
@@ -91,7 +91,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -102,7 +102,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -113,7 +113,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -128,7 +128,7 @@ public:
  * @brief Builder for XChainOwnedCreateAccountClaimID ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class XChainOwnedCreateAccountClaimIDBuilder : public LedgerEntryBuilderBase<XChainOwnedCreateAccountClaimIDBuilder>
@@ -173,7 +173,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfAccount (soeREQUIRED)
+     * @brief Set sfAccount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedCreateAccountClaimIDBuilder&
@@ -184,7 +184,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainBridge (soeREQUIRED)
+     * @brief Set sfXChainBridge (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedCreateAccountClaimIDBuilder&
@@ -195,7 +195,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainAccountCreateCount (soeREQUIRED)
+     * @brief Set sfXChainAccountCreateCount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedCreateAccountClaimIDBuilder&
@@ -206,7 +206,7 @@ public:
     }
 
     /**
-     * @brief Set sfXChainCreateAccountAttestations (soeREQUIRED)
+     * @brief Set sfXChainCreateAccountAttestations (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedCreateAccountClaimIDBuilder&
@@ -217,7 +217,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedCreateAccountClaimIDBuilder&
@@ -228,7 +228,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedCreateAccountClaimIDBuilder&
@@ -239,7 +239,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     XChainOwnedCreateAccountClaimIDBuilder&

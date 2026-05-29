@@ -63,7 +63,9 @@ words:
   - Bougalis
   - Britto
   - Btrfs
+  - Buildx
   - canonicality
+  - CGNAT
   - changespq
   - checkme
   - choco
@@ -71,6 +73,7 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - cmaketoolchain
   - coeffs
   - coldwallet
   - compr
@@ -91,19 +94,24 @@ words:
   - daria
   - dcmake
   - dearmor
+  - dedented
   - deleteme
   - demultiplexer
   - deserializaton
   - desync
   - desynced
   - determ
+  - disablerepo
   - distro
   - doxyfile
   - dxrpl
   - enabled
+  - enablerepo
   - endmacro
   - EOCFG
   - exceptioned
+  - EXPECT_STREQ
+  - exfiltration
   - Falco
   - fcontext
   - finalizers
@@ -111,14 +119,18 @@ words:
   - fmtdur
   - fsanitize
   - funclets
+  - gantt
+  - Gantt
   - gcov
   - gcovr
   - ghead
   - Gnutella
+  - godexsoft
   - gpgcheck
   - gpgkey
   - hotwallet
   - hicpp
+  - htpasswd
   - hwaddress
   - hwrap
   - ifndef
@@ -153,13 +165,14 @@ words:
   - lseq
   - lsmf
   - ltype
+  - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
-  - MPTAMM
-  - MPTDEX
   - Merkle
   - Metafuncton
   - misprediction
+  - missingok
+  - MPTAMM
   - mptbalance
   - MPTDEX
   - mptflags
@@ -192,13 +205,18 @@ words:
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
+  - noreplace
   - noripple
   - nostd
+  - nostdinc
+  - notifempty
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
+  - onlatest
   - ostr
+  - otelc
   - pargs
   - partitioner
   - paychan
@@ -216,6 +234,7 @@ words:
   - preauthorize
   - preauthorizes
   - preclaim
+  - preun
   - protobuf
   - protos
   - ptrs
@@ -252,12 +271,15 @@ words:
   - sfields
   - shamap
   - shamapitem
+  - shfmt
+  - shlibs
   - sidechain
   - SIGGOOD
   - sle
   - sles
   - soci
   - socidb
+  - SRPMS
   - sslws
   - statsd
   - STATSDCOLLECTOR
@@ -277,6 +299,7 @@ words:
   - takerpays
   - ters
   - TMEndpointv2
+  - traceql
   - trixie
   - tx
   - txid
@@ -286,8 +309,8 @@ words:
   - txns
   - txqueue
   - txs
-  - UBSAN
   - ubsan
+  - UBSAN
   - umant
   - unacquired
   - unambiguity
@@ -295,6 +318,7 @@ words:
   - unauthorizing
   - unergonomic
   - unfetched
+  - unfindable
   - unflatten
   - unfund
   - unimpair
@@ -324,11 +348,6 @@ words:
   - xbridge
   - xchain
   - ximinez
-  - EXPECT_STREQ
-  - Gantt
-  - gantt
-  - otelc
-  - traceql
   - XMACRO
   - xrpkuwait
   - xrpl
