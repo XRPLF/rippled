@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
