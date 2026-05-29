@@ -3,7 +3,7 @@
 #include <xrpl/nodestore/Types.h>
 
 #include <benchmark/benchmark.h>
-#include <benchmarks/nodestore/NodeStoreBench.h>
+#include <benchmarks/libxrpl/nodestore/NodeStoreBench.h>
 
 #include <cstddef>
 #include <cstdint>

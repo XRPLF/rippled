@@ -147,5 +147,5 @@ if(tests)
 endif()
 
 if(benchmark)
-    add_subdirectory(src/benchmarks)
+    add_subdirectory(src/benchmarks/libxrpl)
 endif()

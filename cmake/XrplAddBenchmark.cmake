@@ -6,9 +6,9 @@ include(isolate_headers)
 # prefixed `bench` instead of `test`, and no `add_test(...)` is registered -
 # benchmarks are slow and run on demand, not as part of `ctest`.
 #
-# `isolate_headers` exposes only `src/benchmarks/${name}` on the include path,
-# rooted at `src`, so a benchmark's own headers are reached as
-# `<benchmarks/${name}/...>` and nothing else in the tree leaks in.
+# `isolate_headers` exposes only `${CMAKE_CURRENT_SOURCE_DIR}/${name}` on the
+# include path, rooted at `src`, so a benchmark's own headers are reached as
+# `<benchmarks/.../${name}/...>` and nothing else in the tree leaks in.
 function(xrpl_add_benchmark name)
     set(target ${PROJECT_NAME}.bench.${name})
 

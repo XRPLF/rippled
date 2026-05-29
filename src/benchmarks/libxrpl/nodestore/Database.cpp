@@ -1,11 +1,12 @@
+#include <xrpl/nodestore/Database.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 
 #include <benchmark/benchmark.h>
-#include <benchmarks/nodestore/NodeStoreBench.h>
+#include <benchmarks/libxrpl/nodestore/NodeStoreBench.h>
 
 #include <cstddef>
 #include <cstdint>
