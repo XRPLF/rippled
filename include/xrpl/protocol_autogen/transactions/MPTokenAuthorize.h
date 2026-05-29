@@ -19,9 +19,9 @@ class MPTokenAuthorizeBuilder;
  * @brief Transaction: MPTokenAuthorize
  *
  * Type: ttMPTOKEN_AUTHORIZE (57)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureMPTokensV1
- * Privileges: mustAuthorizeMPT
+ * Privileges: MustAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MPTokenAuthorizeBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfHolder (soeOPTIONAL)
+     * @brief Get sfHolder (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -89,7 +89,7 @@ public:
  * @brief Builder for MPTokenAuthorize transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class MPTokenAuthorizeBuilder : public TransactionBuilderBase<MPTokenAuthorizeBuilder>
@@ -128,7 +128,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenAuthorizeBuilder&
@@ -139,7 +139,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolder (soeOPTIONAL)
+     * @brief Set sfHolder (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenAuthorizeBuilder&

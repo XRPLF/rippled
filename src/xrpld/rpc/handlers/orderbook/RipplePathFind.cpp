@@ -22,19 +22,24 @@
 namespace xrpl {
 
 // This interface is deprecated.
-Json::Value
+json::Value
 doRipplePathFind(RPC::JsonContext& context)
 {
     using namespace telemetry;
-    [[maybe_unused]] auto span = SpanGuard::span(
+    auto span = SpanGuard::span(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
-    if (context.app.config().PATH_SEARCH_MAX == 0)
-        return rpcError(rpcNOT_SUPPORTED);
+    if (auto const& src = context.params[jss::source_account]; src.isString())
+        span.setAttribute(pathfind_span::attr::sourceAccount, src.asString());
+    if (auto const& dst = context.params[jss::destination_account]; dst.isString())
+        span.setAttribute(pathfind_span::attr::destAccount, dst.asString());
 
-    context.loadType = Resource::feeHeavyBurdenRPC;
+    if (context.app.config().pathSearchMax == 0)
+        return rpcError(RpcNotSupported);
+
+    context.loadType = Resource::kFeeHeavyBurdenRpc;
 
     std::shared_ptr<ReadView const> lpLedger;
-    Json::Value jvResult;
+    json::Value jvResult;
 
     if (!context.app.config().standalone() && !context.params.isMember(jss::ledger) &&
         !context.params.isMember(jss::ledger_index) && !context.params.isMember(jss::ledger_hash))
@@ -42,11 +47,11 @@ doRipplePathFind(RPC::JsonContext& context)
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine
         if (context.app.getLedgerMaster().getValidatedLedgerAge() >
-            RPC::Tuning::maxValidatedLedgerAge)
+            RPC::Tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
-                return rpcError(rpcNO_NETWORK);
-            return rpcError(rpcNOT_SYNCED);
+                return rpcError(RpcNoNetwork);
+            return rpcError(RpcNotSynced);
         }
 
         PathRequest::pointer request;
@@ -157,7 +162,7 @@ doRipplePathFind(RPC::JsonContext& context)
 
     RPC::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
     if (!lpf.isOk())
-        return rpcError(rpcTOO_BUSY);
+        return rpcError(RpcTooBusy);
 
     auto result = context.app.getPathRequestManager().doLegacyPathRequest(
         context.consumer, lpLedger, context.params);

@@ -4,7 +4,7 @@
 
 namespace xrpl::test {
 
-class Histogram_test : public beast::unit_test::suite
+class Histogram_test : public beast::unit_test::Suite
 {
 public:
     void

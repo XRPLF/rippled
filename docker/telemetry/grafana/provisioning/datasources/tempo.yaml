@@ -108,20 +108,9 @@ datasources:
             operator: "="
             scope: span
             type: dynamic
-          # Phase 2: Node health filters (Task 2.8) — resource attributes
-          - id: node-amendment-blocked
-            tag: xrpl.node.amendment_blocked
-            operator: "="
-            scope: resource
-            type: static
-          - id: node-server-state
-            tag: xrpl.node.server_state
-            operator: "="
-            scope: resource
-            type: dynamic
           # Phase 3: Transaction tracing filters
           - id: tx-hash
-            tag: xrpl.tx.hash
+            tag: tx_hash
             operator: "="
             scope: span
             type: static

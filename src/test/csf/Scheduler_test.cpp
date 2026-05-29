@@ -6,7 +6,7 @@
 
 namespace xrpl::test {
 
-class Scheduler_test : public beast::unit_test::suite
+class Scheduler_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -26,28 +26,28 @@ public:
 
         // Process first event
         BEAST_EXPECT(seen.empty());
-        BEAST_EXPECT(scheduler.step_one());
+        BEAST_EXPECT(scheduler.stepOne());
         BEAST_EXPECT(seen == std::set<int>({1}));
         BEAST_EXPECT(scheduler.now() == (start + 1s));
 
         // No processing if stepping until current time
-        BEAST_EXPECT(scheduler.step_until(scheduler.now()));
+        BEAST_EXPECT(scheduler.stepUntil(scheduler.now()));
         BEAST_EXPECT(seen == std::set<int>({1}));
         BEAST_EXPECT(scheduler.now() == (start + 1s));
 
         // Process next event
-        BEAST_EXPECT(scheduler.step_for(1s));
+        BEAST_EXPECT(scheduler.stepFor(1s));
         BEAST_EXPECT(seen == std::set<int>({1, 2}));
         BEAST_EXPECT(scheduler.now() == (start + 2s));
 
         // Don't process cancelled event, but advance clock
         scheduler.cancel(token);
-        BEAST_EXPECT(scheduler.step_for(1s));
+        BEAST_EXPECT(scheduler.stepFor(1s));
         BEAST_EXPECT(seen == std::set<int>({1, 2}));
         BEAST_EXPECT(scheduler.now() == (start + 3s));
 
         // Process until 3 seen ints
-        BEAST_EXPECT(scheduler.step_while([&]() { return seen.size() < 3; }));
+        BEAST_EXPECT(scheduler.stepWhile([&]() { return seen.size() < 3; }));
         BEAST_EXPECT(seen == std::set<int>({1, 2, 4}));
         BEAST_EXPECT(scheduler.now() == (start + 4s));
 
