@@ -122,7 +122,7 @@ endif()
 # so that tracing macros in TracingInstrumentation.h are compiled in.
 # When OFF (default), all tracing code compiles to no-ops with zero overhead.
 # Enable via: conan install -o telemetry=True, or cmake -Dtelemetry=ON.
-option(telemetry "Enable OpenTelemetry tracing" OFF)
+option(telemetry "Enable OpenTelemetry tracing" ON)
 if(telemetry)
     find_package(opentelemetry-cpp CONFIG REQUIRED)
     add_compile_definitions(XRPL_ENABLE_TELEMETRY)
