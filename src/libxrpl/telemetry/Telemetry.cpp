@@ -10,7 +10,7 @@
         trace-ID-ratio sampler, and resource attributes.
       - NullTelemetryOtel: no-op fallback used when telemetry is compiled in
         but disabled at runtime (enabled=0 in config).
-      - make_Telemetry(): factory that selects the appropriate implementation.
+      - makeTelemetry(): factory that selects the appropriate implementation.
 */
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -34,8 +34,12 @@
 #include <opentelemetry/trace/noop.h>
 #include <opentelemetry/trace/provider.h>
 
-namespace xrpl {
-namespace telemetry {
+#include <chrono>
+#include <string>
+#include <string_view>
+#include <utility>
+
+namespace xrpl::telemetry {
 
 namespace {
 
@@ -47,7 +51,7 @@ namespace resource = opentelemetry::sdk::resource;
 /** SpanProcessor decorator that drops discarded spans.
 
     Wraps a delegate processor (typically BatchSpanProcessor). In OnEnd(),
-    checks the tl_discardCurrentSpan thread-local flag. If set (by
+    checks the gTlDiscardCurrentSpan thread-local flag. If set (by
     SpanGuard::discard()), the span is silently dropped — never entering
     the batch queue, never sent over the network, never stored.
 
@@ -73,12 +77,12 @@ namespace resource = opentelemetry::sdk::resource;
           +---------------------+
 
     @note Thread safety: OnEnd() may be called concurrently from multiple
-    threads. The tl_discardCurrentSpan flag is thread-local, so each
+    threads. The gTlDiscardCurrentSpan flag is thread-local, so each
     thread's discard state is independent — no synchronization needed.
 */
 class FilteringSpanProcessor : public trace_sdk::SpanProcessor
 {
-    std::unique_ptr<trace_sdk::SpanProcessor> delegate_;
+    std::unique_ptr<trace_sdk::SpanProcessor> delegate_{};
 
 public:
     explicit FilteringSpanProcessor(std::unique_ptr<trace_sdk::SpanProcessor> delegate)
@@ -103,12 +107,12 @@ public:
     void
     OnEnd(std::unique_ptr<trace_sdk::Recordable>&& span) noexcept override
     {
-        if (tl_discardCurrentSpan)
+        if (gTlDiscardCurrentSpan)
         {
             // SpanGuard::discard() set the flag on this thread just before
             // calling Span::End(), which invokes OnEnd() synchronously.
             // Clear the flag and drop the span.
-            tl_discardCurrentSpan = false;
+            gTlDiscardCurrentSpan = false;
             return;
         }
         delegate_->OnEnd(std::move(span));
@@ -141,7 +145,7 @@ class NullTelemetryOtel : public Telemetry
     Setup const setup_;
 
 public:
-    explicit NullTelemetryOtel(Setup const& setup) : setup_(setup)
+    explicit NullTelemetryOtel(Setup setup) : setup_(std::move(setup))
     {
     }
 
@@ -157,37 +161,37 @@ public:
         Telemetry::setInstance(nullptr);
     }
 
-    bool
+    [[nodiscard]] bool
     isEnabled() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceTransactions() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceConsensus() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceRpc() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTracePeer() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceLedger() const override
     {
         return false;
@@ -236,10 +240,10 @@ class TelemetryImpl : public Telemetry
         Held as std::shared_ptr so we can call ForceFlush() on shutdown.
         Wrapped in a nostd::shared_ptr when registered as the global provider.
     */
-    std::shared_ptr<trace_sdk::TracerProvider> sdkProvider_;
+    std::shared_ptr<trace_sdk::TracerProvider> sdkProvider_{};
 
 public:
-    TelemetryImpl(Setup const& setup, beast::Journal journal) : setup_(setup), journal_(journal)
+    TelemetryImpl(Setup setup, beast::Journal journal) : setup_(std::move(setup)), journal_(journal)
     {
     }
 
@@ -331,37 +335,37 @@ public:
         JLOG(journal_.info()) << "Telemetry stopped";
     }
 
-    bool
+    [[nodiscard]] bool
     isEnabled() const override
     {
         return true;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceTransactions() const override
     {
         return setup_.traceTransactions;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceConsensus() const override
     {
         return setup_.traceConsensus;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceRpc() const override
     {
         return setup_.traceRpc;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTracePeer() const override
     {
         return setup_.tracePeer;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceLedger() const override
     {
         return setup_.traceLedger;
@@ -401,14 +405,13 @@ public:
 }  // namespace
 
 std::unique_ptr<Telemetry>
-make_Telemetry(Telemetry::Setup const& setup, beast::Journal journal)
+makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal)
 {
     if (setup.enabled)
         return std::make_unique<TelemetryImpl>(setup, journal);
     return std::make_unique<NullTelemetryOtel>(setup);
 }
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry
 
 #endif  // XRPL_ENABLE_TELEMETRY

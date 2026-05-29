@@ -35,12 +35,15 @@
 #include <opentelemetry/trace/span_startoptions.h>
 #include <opentelemetry/trace/tracer.h>
 
+#include <cstdint>
+#include <exception>
+#include <memory>
 #include <string>
+#include <string_view>
 #include <typeinfo>
 #include <utility>
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 namespace otel_trace = opentelemetry::trace;
 
@@ -164,7 +167,7 @@ SpanGuard
 SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view name)
 {
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
+    if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
     auto fullName = std::string(prefix) + "." + std::string(name);
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName, categoryToSpanKind(cat))));
@@ -178,7 +181,7 @@ SpanGuard::childSpan(std::string_view name) const
     if (!impl_)
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled())
+    if ((tel == nullptr) || !tel->isEnabled())
         return {};
     auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(name, ctx)));
@@ -190,7 +193,7 @@ SpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx)
     if (!parentCtx.isValid())
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled())
+    if ((tel == nullptr) || !tel->isEnabled())
         return {};
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(name, parentCtx.impl_->ctx)));
 }
@@ -201,7 +204,7 @@ SpanGuard::linkedSpan(std::string_view name) const
     if (!impl_)
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled())
+    if ((tel == nullptr) || !tel->isEnabled())
         return {};
 
     auto tracer = tel->getTracer("xrpld");
@@ -228,7 +231,7 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
     if (!linkCtx.isValid())
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled())
+    if ((tel == nullptr) || !tel->isEnabled())
         return {};
 
     auto tracer = tel->getTracer("xrpld");
@@ -271,9 +274,11 @@ void
 SpanGuard::setAttribute(std::string_view key, std::string_view value)
 {
     if (impl_)
+    {
         impl_->span->SetAttribute(
             opentelemetry::nostd::string_view(key.data(), key.size()),
             opentelemetry::nostd::string_view(value.data(), value.size()));
+    }
 }
 
 void
@@ -342,14 +347,13 @@ SpanGuard::discard()
 {
     if (impl_)
     {
-        tl_discardCurrentSpan = true;
+        gTlDiscardCurrentSpan = true;
         impl_->span->End();
         impl_->span = nullptr;  // prevent ~Impl from calling End() again
         impl_.reset();
     }
 }
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry
 
 #endif  // XRPL_ENABLE_TELEMETRY
