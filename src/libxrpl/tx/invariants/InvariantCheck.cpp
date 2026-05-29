@@ -141,24 +141,28 @@ XRPNotCreated::visitEntry(
         }
     }
 
-    if (after)
+    if (!after)
     {
-        switch (after->getType())
-        {
-            case ltACCOUNT_ROOT:
-                drops_ += (*after)[sfBalance].xrp().drops();
-                break;
-            case ltPAYCHAN:
-                if (!isDelete)
-                    drops_ += ((*after)[sfAmount] - (*after)[sfBalance]).xrp().drops();
-                break;
-            case ltESCROW:
-                if (!isDelete && isXRP((*after)[sfAmount]))
-                    drops_ += (*after)[sfAmount].xrp().drops();
-                break;
-            default:
-                break;
-        }
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::XRPNotCreated::visitEntry : after can't be null");
+        return;
+        // LCOV_EXCL_STOP
+    }
+    switch (after->getType())
+    {
+        case ltACCOUNT_ROOT:
+            drops_ += (*after)[sfBalance].xrp().drops();
+            break;
+        case ltPAYCHAN:
+            if (!isDelete)
+                drops_ += ((*after)[sfAmount] - (*after)[sfBalance]).xrp().drops();
+            break;
+        case ltESCROW:
+            if (!isDelete && isXRP((*after)[sfAmount]))
+                drops_ += (*after)[sfAmount].xrp().drops();
+            break;
+        default:
+            break;
     }
 }
 
