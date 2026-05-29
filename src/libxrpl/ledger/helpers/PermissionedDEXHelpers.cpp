@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
