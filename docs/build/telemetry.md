@@ -258,7 +258,7 @@ The Conan package provides a single umbrella target
 | `include/xrpl/telemetry/SpanGuard.h`          | RAII span guard with `discard()` for dropping unwanted spans |
 | `include/xrpl/telemetry/DiscardFlag.h`        | Thread-local discard flag (zero-dependency header)           |
 | `src/libxrpl/telemetry/Telemetry.cpp`         | OTel SDK setup, `FilteringSpanProcessor`, provider lifecycle |
-| `src/libxrpl/telemetry/TelemetryConfig.cpp`   | Config parser (`setup_Telemetry()`)                          |
+| `src/libxrpl/telemetry/TelemetryConfig.cpp`   | Config parser (`setupTelemetry()`)                           |
 | `src/libxrpl/telemetry/NullTelemetry.cpp`     | No-op implementation (used when disabled)                    |
 | `src/libxrpl/telemetry/SpanGuard.cpp`         | Pimpl implementation for SpanGuard (all OTel types confined) |
 | `src/xrpld/rpc/detail/ServerHandler.cpp`      | RPC entry point instrumentation                              |

@@ -67,7 +67,7 @@
 
 - `src/tests/libxrpl/telemetry/TelemetryConfig.cpp`:
   - Test Setup defaults (all fields have correct initial values)
-  - Test `setup_Telemetry` config parser (empty section, full section, edge cases)
+  - Test `setupTelemetry` config parser (empty section, full section, edge cases)
   - Test `samplingRatio` clamping (values outside 0.0-1.0)
 
 - `src/tests/libxrpl/telemetry/SpanGuardFactory.cpp`:
