@@ -4,14 +4,14 @@
 
 #include <string>
 
-namespace Json {
+namespace json {
 
-/** Writes a Json::Value to an std::string. */
+/** Writes a json::Value to an std::string. */
 std::string
 to_string(Value const&);
 
-/** Writes a Json::Value to an std::string. */
+/** Writes a json::Value to an std::string. */
 std::string
 pretty(Value const&);
 
-}  // namespace Json
+}  // namespace json

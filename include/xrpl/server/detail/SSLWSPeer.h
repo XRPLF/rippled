@@ -28,7 +28,7 @@ class SSLWSPeer : public BaseWSPeer<Handler, SSLWSPeer<Handler>>,
     using stream_type = boost::beast::ssl_stream<socket_type>;
     using waitable_timer = boost::asio::basic_waitable_timer<clock_type>;
 
-    std::unique_ptr<stream_type> stream_ptr_;
+    std::unique_ptr<stream_type> streamPtr_;
     boost::beast::websocket::stream<stream_type&> ws_;
 
 public:
@@ -36,9 +36,9 @@ public:
     SSLWSPeer(
         Port const& port,
         Handler& handler,
-        endpoint_type remote_endpoint,
+        endpoint_type remoteEndpoint,
         boost::beast::http::request<Body, Headers>&& request,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        std::unique_ptr<stream_type>&& streamPtr,
         beast::Journal journal);
 };
 
@@ -49,20 +49,20 @@ template <class Body, class Headers>
 SSLWSPeer<Handler>::SSLWSPeer(
     Port const& port,
     Handler& handler,
-    endpoint_type remote_endpoint,
+    endpoint_type remoteEndpoint,
     boost::beast::http::request<Body, Headers>&& request,
-    std::unique_ptr<stream_type>&& stream_ptr,
+    std::unique_ptr<stream_type>&& streamPtr,
     beast::Journal journal)
     : BaseWSPeer<Handler, SSLWSPeer>(
           port,
           handler,
-          stream_ptr->get_executor(),
-          waitable_timer{stream_ptr->get_executor()},
-          remote_endpoint,
+          streamPtr->get_executor(),
+          waitable_timer{streamPtr->get_executor()},
+          remoteEndpoint,
           std::move(request),
           journal)
-    , stream_ptr_(std::move(stream_ptr))
-    , ws_(*stream_ptr_)
+    , streamPtr_(std::move(streamPtr))
+    , ws_(*streamPtr_)
 {
 }
 

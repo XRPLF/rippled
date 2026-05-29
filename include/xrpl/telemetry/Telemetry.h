@@ -4,7 +4,7 @@
 
     Provides the Telemetry base class that all components use to create trace
     spans. Three concrete implementations exist, selected at construction time
-    by make_Telemetry():
+    by makeTelemetry():
 
       - TelemetryImpl (Telemetry.cpp): real OTel SDK integration, compiled
         only when XRPL_ENABLE_TELEMETRY is defined and enabled at runtime.
@@ -111,7 +111,7 @@ class Telemetry
         the initialization thread, factory methods load on worker threads.
         @see setInstance(), getInstance()
     */
-    inline static std::atomic<Telemetry*> instance_{nullptr};
+    inline static std::atomic<Telemetry*> instance{nullptr};
 
 public:
     /** Get the global Telemetry instance.
@@ -120,7 +120,7 @@ public:
     static Telemetry*
     getInstance()
     {
-        return instance_.load(std::memory_order_acquire);
+        return instance.load(std::memory_order_acquire);
     }
 
     /** Set the global Telemetry instance.
@@ -131,7 +131,7 @@ public:
     static void
     setInstance(Telemetry* t)
     {
-        instance_.store(t, std::memory_order_release);
+        instance.store(t, std::memory_order_release);
     }
 
     /** Configuration parsed from the [telemetry] section of xrpld.cfg.
@@ -313,7 +313,7 @@ public:
     @param journal  Journal for log output during initialization.
 */
 std::unique_ptr<Telemetry>
-make_Telemetry(Telemetry::Setup const& setup, beast::Journal journal);
+makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
 
 /** Parse the [telemetry] config section into a Setup struct.
 
@@ -325,7 +325,7 @@ make_Telemetry(Telemetry::Setup const& setup, beast::Journal journal);
     @return A populated Setup struct with defaults for missing values.
 */
 Telemetry::Setup
-setup_Telemetry(
+setupTelemetry(
     Section const& section,
     std::string const& nodePublicKey,
     std::string const& version,

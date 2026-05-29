@@ -13,7 +13,7 @@
 namespace xrpl::test::jtx {
 
 Buffer
-sign_claim_attestation(
+signClaimAttestation(
     PublicKey const& pk,
     SecretKey const& sk,
     STXChainBridge const& bridge,
@@ -30,7 +30,7 @@ sign_claim_attestation(
 }
 
 Buffer
-sign_create_account_attestation(
+signCreateAccountAttestation(
     PublicKey const& pk,
     SecretKey const& sk,
     STXChainBridge const& bridge,
