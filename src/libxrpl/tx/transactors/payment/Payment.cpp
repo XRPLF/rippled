@@ -125,6 +125,16 @@ Payment::preflight(PreflightContext const& ctx)
     if (!mpTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
+    // A present but zero DomainID is malformed: it would build a keylet with
+    // a zero key and violate Ledger::read's invariant. Reject at preflight
+    // (temMALFORMED) instead of letting it slip to preclaim and be
+    // misclassified as tecNO_PERMISSION.
+    if (tx.isFieldPresent(sfDomainID) && tx.getFieldH256(sfDomainID).isZero())
+    {
+        JLOG(j.debug()) << "Malformed payment: zero DomainID";
+        return temMALFORMED;
+    }
+
     bool const partialPaymentAllowed = tx.isFlag(tfPartialPayment);
     bool const limitQuality = tx.isFlag(tfLimitQuality);
     bool const defaultPathsAllowed = !tx.isFlag(tfNoRippleDirect);

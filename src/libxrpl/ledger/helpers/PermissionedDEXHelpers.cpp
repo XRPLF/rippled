@@ -19,6 +19,14 @@ namespace xrpl::permissioned_dex {
 bool
 accountInDomain(ReadView const& view, AccountID const& account, Domain const& domainID)
 {
+    // A zero domainID is malformed: it would build a keylet with a zero key
+    // and violate Ledger::read's invariant. Defense in depth: callers should
+    // reject this at preflight, but guard here too so any future caller and
+    // the order-book sweep path (offerInDomain -> here) cannot trip the
+    // invariant.
+    if (domainID.isZero())
+        return false;
+
     auto const sleDomain = view.read(keylet::permissionedDomain(domainID));
     if (!sleDomain)
         return false;

@@ -94,6 +94,16 @@ OfferCreate::preflight(PreflightContext const& ctx)
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
 
+    // A present but zero DomainID is malformed: it would build a keylet with
+    // a zero key and violate Ledger::read's invariant. Reject at preflight
+    // (temMALFORMED) instead of letting it slip to preclaim and be
+    // misclassified as tecNO_PERMISSION.
+    if (tx.isFieldPresent(sfDomainID) && tx.getFieldH256(sfDomainID).isZero())
+    {
+        JLOG(j.debug()) << "Malformed offer: zero DomainID";
+        return temMALFORMED;
+    }
+
     bool const bImmediateOrCancel(tx.isFlag(tfImmediateOrCancel));
     bool const bFillOrKill(tx.isFlag(tfFillOrKill));
 
