@@ -969,7 +969,7 @@ ValidPseudoAccounts::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoModifiedUnmodifiableFields::visitEntry(
+NoModifiedImmutableFields::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
@@ -1025,7 +1025,7 @@ hasConstantFieldChanged(STObject const& before, STObject const& after, SOTemplat
 }
 
 bool
-NoModifiedUnmodifiableFields::finalize(
+NoModifiedImmutableFields::finalize(
     STTx const& tx,
     TER const,
     XRPAmount const,
@@ -1145,7 +1145,7 @@ NoModifiedUnmodifiableFields::finalize(
 
         XRPL_ASSERT(
             !badOld || enforceOld,
-            "xrpl::NoModifiedUnmodifiableFields::finalize : no bad "
+            "xrpl::NoModifiedImmutableFields::finalize : no bad "
             "changes or enforce invariant");
         if (badOld)
         {

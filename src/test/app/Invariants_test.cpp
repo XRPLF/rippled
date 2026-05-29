@@ -2228,7 +2228,7 @@ class Invariants_test : public beast::unit_test::Suite
     };
 
     void
-    testNoModifiedUnmodifiableFields()
+    testNoModifiedImmutableFields()
     {
         testcase("no modified unmodifiable fields");
         using namespace jtx;
@@ -4972,7 +4972,7 @@ public:
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
         testBookDirectoryExchangeRate();
-        testNoModifiedUnmodifiableFields();
+        testNoModifiedImmutableFields();
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
