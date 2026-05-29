@@ -349,7 +349,7 @@ ServerHandler::onWSMessage(
     {
         auto span =
             SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
-        span.setError("jsonInvalid");
+        span.setError(rpc_span::val::invalidJson);
 
         json::Value jvResult(json::ValueType::Object);
         jvResult[jss::type] = jss::error;
@@ -573,7 +573,7 @@ ServerHandler::processSession(
     std::shared_ptr<Session> const& session,
     std::shared_ptr<JobQueue::Coro> coro)
 {
-    [[maybe_unused]] auto span =
+    auto span =
         SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
 
     processRequest(

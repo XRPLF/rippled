@@ -188,7 +188,9 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         // Status::operator bool() returns true when there IS an error
         // (code_ != OK), so the ternary correctly maps error->error, ok->success.
         span.setAttribute(
-            rpc_span::attr::rpcStatus, ret ? rpc_span::val::error : rpc_span::val::success);
+            rpc_span::attr::rpcStatus,
+            ret ? std::string_view{rpc_span::val::error}
+                : std::string_view{rpc_span::val::success});
         if (!ret)
             span.setOk();
         return ret;
@@ -235,7 +237,7 @@ doCommand(RPC::JsonContext& context, json::Value& result)
         // "unknown" name only when the request truly omits both fields.
         auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
         span.setAttribute(rpc_span::attr::command, cmdName.c_str());
-        span.setError(getErrorInfo(error).token.c_str());
+        span.setError(getErrorInfo(error).token.cStr());
 
         injectError(error, result);
         return error;

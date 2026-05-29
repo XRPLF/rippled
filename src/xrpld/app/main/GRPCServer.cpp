@@ -192,7 +192,8 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
 
             span.setAttribute(
                 grpc_span::attr::grpcRole,
-                role == Role::ADMIN ? grpc_span::val::admin : grpc_span::val::user);
+                role == Role::ADMIN ? std::string_view{grpc_span::val::admin}
+                                    : std::string_view{grpc_span::val::user});
 
             {
                 std::stringstream toLog;
@@ -230,7 +231,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
             {
                 RPC::ErrorInfo const errorInfo = RPC::getErrorInfo(conditionMetRes);
                 span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::error);
-                span.setError(errorInfo.token.c_str());
+                span.setError(errorInfo.token.cStr());
                 grpc::Status const status{
                     grpc::StatusCode::FAILED_PRECONDITION, errorInfo.message.cStr()};
                 responder_.FinishWithError(status, this);
