@@ -1867,17 +1867,17 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             app_.getTimeKeeper().closeTime(),
             calcNodeID(app_.getValidatorManifests().getMasterKey(publicKey))});
 
-    auto span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
-    span->setAttribute(telemetry::consensus::span::attr::trusted, isTrusted);
-    span->setAttribute(
+    auto consSpan = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
+    consSpan->setAttribute(telemetry::consensus::span::attr::trusted, isTrusted);
+    consSpan->setAttribute(
         telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
     // First 16 hex chars (8 bytes) of each hash — enough to disambiguate
     // peer positions and prior ledgers without exporting full 32-byte
     // hashes on every receive event.
-    span->setAttribute(
+    consSpan->setAttribute(
         telemetry::consensus::span::attr::prevLedgerPrefix,
         to_string(prevLedger).substr(0, 16).c_str());
-    span->setAttribute(
+    consSpan->setAttribute(
         telemetry::consensus::span::attr::positionHashPrefix,
         to_string(proposeHash).substr(0, 16).c_str());
 
@@ -2467,16 +2467,17 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
-        auto span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
-        span->setAttribute(telemetry::consensus::span::attr::trusted, isTrusted);
+        auto consSpan =
+            std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
+        consSpan->setAttribute(telemetry::consensus::span::attr::trusted, isTrusted);
         if (val->isFieldPresent(sfLedgerSequence))
         {
-            span->setAttribute(
+            consSpan->setAttribute(
                 telemetry::consensus::span::attr::ledgerSeq,
                 static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
         }
-        span->setAttribute(telemetry::consensus::span::attr::fullValidation, val->isFull());
-        span->setAttribute(
+        consSpan->setAttribute(telemetry::consensus::span::attr::fullValidation, val->isFull());
+        consSpan->setAttribute(
             telemetry::consensus::span::attr::validationSignTime,
             static_cast<int64_t>(val->getSignTime().time_since_epoch().count()));
 
