@@ -19,9 +19,9 @@ class ClawbackBuilder;
  * @brief Transaction: Clawback
  *
  * Type: ttCLAWBACK (30)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureClawback
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ClawbackBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -60,7 +60,7 @@ public:
     }
 
     /**
-     * @brief Get sfHolder (soeOPTIONAL)
+     * @brief Get sfHolder (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
  * @brief Builder for Clawback transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ClawbackBuilder : public TransactionBuilderBase<ClawbackBuilder>
@@ -129,7 +129,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -141,7 +141,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolder (soeOPTIONAL)
+     * @brief Set sfHolder (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ClawbackBuilder&

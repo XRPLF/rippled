@@ -49,33 +49,33 @@ setupTelemetry(
 {
     Telemetry::Setup setup;
 
-    setup.enabled = section.value_or<int>("enabled", 0) != 0;
-    setup.serviceName = section.value_or<std::string>("service_name", "xrpld");
+    setup.enabled = section.valueOr<int>("enabled", 0) != 0;
+    setup.serviceName = section.valueOr<std::string>("service_name", "xrpld");
     setup.serviceVersion = version;
-    setup.serviceInstanceId = section.value_or<std::string>("service_instance_id", nodePublicKey);
+    setup.serviceInstanceId = section.valueOr<std::string>("service_instance_id", nodePublicKey);
 
     setup.exporterEndpoint =
-        section.value_or<std::string>("endpoint", "http://localhost:4318/v1/traces");
+        section.valueOr<std::string>("endpoint", "http://localhost:4318/v1/traces");
 
-    setup.useTls = section.value_or<int>("use_tls", 0) != 0;
-    setup.tlsCertPath = section.value_or<std::string>("tls_ca_cert", "");
+    setup.useTls = section.valueOr<int>("use_tls", 0) != 0;
+    setup.tlsCertPath = section.valueOr<std::string>("tls_ca_cert", "");
 
-    setup.samplingRatio = section.value_or<double>("sampling_ratio", 1.0);
+    setup.samplingRatio = section.valueOr<double>("sampling_ratio", 1.0);
     setup.samplingRatio = std::clamp(setup.samplingRatio, 0.0, 1.0);
 
-    setup.batchSize = section.value_or<std::uint32_t>("batch_size", 512u);
+    setup.batchSize = section.valueOr<std::uint32_t>("batch_size", 512u);
     setup.batchDelay =
-        std::chrono::milliseconds{section.value_or<std::uint32_t>("batch_delay_ms", 5000u)};
-    setup.maxQueueSize = section.value_or<std::uint32_t>("max_queue_size", 2048u);
+        std::chrono::milliseconds{section.valueOr<std::uint32_t>("batch_delay_ms", 5000u)};
+    setup.maxQueueSize = section.valueOr<std::uint32_t>("max_queue_size", 2048u);
 
     setup.networkId = networkId;
     setup.networkType = networkTypeFromId(networkId);
 
-    setup.traceTransactions = section.value_or<int>("trace_transactions", 1) != 0;
-    setup.traceConsensus = section.value_or<int>("trace_consensus", 1) != 0;
-    setup.traceRpc = section.value_or<int>("trace_rpc", 1) != 0;
-    setup.tracePeer = section.value_or<int>("trace_peer", 0) != 0;
-    setup.traceLedger = section.value_or<int>("trace_ledger", 1) != 0;
+    setup.traceTransactions = section.valueOr<int>("trace_transactions", 1) != 0;
+    setup.traceConsensus = section.valueOr<int>("trace_consensus", 1) != 0;
+    setup.traceRpc = section.valueOr<int>("trace_rpc", 1) != 0;
+    setup.tracePeer = section.valueOr<int>("trace_peer", 0) != 0;
+    setup.traceLedger = section.valueOr<int>("trace_ledger", 1) != 0;
 
     return setup;
 }

@@ -103,7 +103,7 @@ struct WSSession
     request() const = 0;
 
     [[nodiscard]] virtual boost::asio::ip::tcp::endpoint const&
-    remote_endpoint() const = 0;
+    remoteEndpoint() const = 0;
 
     /** Send a WebSockets message. */
     virtual void

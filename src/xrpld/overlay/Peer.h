@@ -80,7 +80,7 @@ public:
     [[nodiscard]] virtual PublicKey const&
     getNodePublic() const = 0;
 
-    virtual Json::Value
+    virtual json::Value
     json() = 0;
 
     [[nodiscard]] virtual bool

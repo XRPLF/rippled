@@ -112,26 +112,26 @@ namespace {
 
  */
 
-error_code_i
+ErrorCodeI
 fillHandler(JsonContext& context, Handler const*& result)
 {
     if (!isUnlimited(context.role))
     {
         // Count all jobs at jtCLIENT priority or higher.
-        int const jobCount = context.app.getJobQueue().getJobCountGE(jtCLIENT);
-        if (jobCount > Tuning::maxJobQueueClients)
+        int const jobCount = context.app.getJobQueue().getJobCountGE(JtClient);
+        if (jobCount > Tuning::kMaxJobQueueClients)
         {
             JLOG(context.j.debug()) << "Too busy for command: " << jobCount;
-            return rpcTOO_BUSY;
+            return RpcTooBusy;
         }
     }
 
     if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
-        return rpcCOMMAND_MISSING;
+        return RpcCommandMissing;
     if (context.params.isMember(jss::command) && context.params.isMember(jss::method))
     {
         if (context.params[jss::command].asString() != context.params[jss::method].asString())
-            return rpcUNKNOWN_COMMAND;
+            return RpcUnknownCommand;
     }
 
     std::string const strCommand = context.params.isMember(jss::command)
@@ -140,22 +140,22 @@ fillHandler(JsonContext& context, Handler const*& result)
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
     JLOG(context.j.trace()) << "REQUEST:" << context.params;
-    auto handler = getHandler(context.apiVersion, context.app.config().BETA_RPC_API, strCommand);
+    auto handler = getHandler(context.apiVersion, context.app.config().betaRpcApi, strCommand);
 
     if (handler == nullptr)
-        return rpcUNKNOWN_COMMAND;
+        return RpcUnknownCommand;
 
-    if (handler->role_ == Role::ADMIN && context.role != Role::ADMIN)
-        return rpcNO_PERMISSION;
+    if (handler->role == Role::ADMIN && context.role != Role::ADMIN)
+        return RpcNoPermission;
 
-    error_code_i const res = conditionMet(handler->condition_, context);
-    if (res != rpcSUCCESS)
+    ErrorCodeI const res = conditionMet(handler->condition, context);
+    if (res != RpcSuccess)
     {
         return res;
     }
 
     result = handler;
-    return rpcSUCCESS;
+    return RpcSuccess;
 }
 
 template <class Object, class Method>
@@ -170,13 +170,13 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
                                     : std::string_view(rpc_span::val::user));
 
-    static std::atomic<std::uint64_t> requestId{0};
+    static std::atomic<std::uint64_t> kRequestId{0};
     auto& perfLog = context.app.getPerfLog();
-    std::uint64_t const curId = ++requestId;
+    std::uint64_t const curId = ++kRequestId;
     try
     {
         perfLog.rpcStart(name, curId);
-        auto v = context.app.getJobQueue().makeLoadEvent(jtGENERIC, "cmd:" + name);
+        auto v = context.app.getJobQueue().makeLoadEvent(JtGeneric, "cmd:" + name);
 
         auto start = std::chrono::system_clock::now();
         auto ret = method(context, result);
@@ -200,18 +200,18 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         span.recordException(e);
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
 
-        if (context.loadType == Resource::feeReferenceRPC)
-            context.loadType = Resource::feeExceptionRPC;
+        if (context.loadType == Resource::kFeeReferenceRpc)
+            context.loadType = Resource::kFeeExceptionRpc;
 
-        inject_error(rpcINTERNAL, result);
-        return rpcINTERNAL;
+        injectError(RpcInternal, result);
+        return RpcInternal;
     }
 }
 
 }  // namespace
 
 Status
-doCommand(RPC::JsonContext& context, Json::Value& result)
+doCommand(RPC::JsonContext& context, json::Value& result)
 {
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
@@ -235,34 +235,34 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
         // "unknown" name only when the request truly omits both fields.
         auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
         span.setAttribute(rpc_span::attr::command, cmdName.c_str());
-        span.setError(get_error_info(error).token.c_str());
+        span.setError(getErrorInfo(error).token.c_str());
 
-        inject_error(error, result);
+        injectError(error, result);
         return error;
     }
 
-    if (auto method = handler->valueMethod_)
+    if (auto method = handler->valueMethod)
     {
         if (!context.headers.user.empty() || !context.headers.forwardedFor.empty())
         {
             JLOG(context.j.debug())
-                << "start command: " << handler->name_ << ", user: " << context.headers.user
+                << "start command: " << handler->name << ", user: " << context.headers.user
                 << ", forwarded for: " << context.headers.forwardedFor;
 
-            auto ret = callMethod(context, method, handler->name_, result);
+            auto ret = callMethod(context, method, handler->name, result);
 
             JLOG(context.j.debug())
-                << "finish command: " << handler->name_ << ", user: " << context.headers.user
+                << "finish command: " << handler->name << ", user: " << context.headers.user
                 << ", forwarded for: " << context.headers.forwardedFor;
 
             return ret;
         }
 
-        auto ret = callMethod(context, method, handler->name_, result);
+        auto ret = callMethod(context, method, handler->name, result);
         return ret;
     }
 
-    return rpcUNKNOWN_COMMAND;
+    return RpcUnknownCommand;
 }
 
 Role
@@ -273,7 +273,7 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
     if (handler == nullptr)
         return Role::FORBID;
 
-    return handler->role_;
+    return handler->role;
 }
 
 }  // namespace RPC

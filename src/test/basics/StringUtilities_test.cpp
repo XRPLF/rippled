@@ -7,7 +7,7 @@
 
 namespace xrpl {
 
-class StringUtilities_test : public beast::unit_test::suite
+class StringUtilities_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -53,7 +53,7 @@ public:
 
         // Expected passes.
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username.empty());
@@ -68,7 +68,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme:///"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username.empty());
@@ -79,7 +79,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "lower://domain"));
             BEAST_EXPECT(pUrl.scheme == "lower");
             BEAST_EXPECT(pUrl.username.empty());
@@ -90,7 +90,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "UPPER://domain:234/"));
             BEAST_EXPECT(pUrl.scheme == "upper");
             BEAST_EXPECT(pUrl.username.empty());
@@ -101,7 +101,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "Mixed://domain/path"));
             BEAST_EXPECT(pUrl.scheme == "mixed");
             BEAST_EXPECT(pUrl.username.empty());
@@ -112,7 +112,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://[::1]:123/path"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username.empty());
@@ -123,7 +123,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://user:pass@domain:123/abc:321"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username == "user");
@@ -134,7 +134,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://user@domain:123/abc:321"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username == "user");
@@ -145,7 +145,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://:pass@domain:123/abc:321"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username.empty());
@@ -156,7 +156,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://domain:123/abc:321"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username.empty());
@@ -167,7 +167,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://user:pass@domain/abc:321"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username == "user");
@@ -178,7 +178,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://user@domain/abc:321"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username == "user");
@@ -189,7 +189,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://:pass@domain/abc:321"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username.empty());
@@ -200,7 +200,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://domain/abc:321"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username.empty());
@@ -211,7 +211,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme:///path/to/file"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username.empty());
@@ -222,7 +222,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://user:pass@domain/path/with/an@sign"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username == "user");
@@ -233,7 +233,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://domain/path/with/an@sign"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username.empty());
@@ -244,7 +244,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "scheme://:999/"));
             BEAST_EXPECT(pUrl.scheme == "scheme");
             BEAST_EXPECT(pUrl.username.empty());
@@ -255,7 +255,7 @@ public:
         }
 
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(parseUrl(pUrl, "http://::1:1234/validators"));
             BEAST_EXPECT(pUrl.scheme == "http");
             BEAST_EXPECT(pUrl.username.empty());
@@ -267,7 +267,7 @@ public:
 
         // Expected fails.
         {
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(!parseUrl(pUrl, ""));
             BEAST_EXPECT(!parseUrl(pUrl, "nonsense"));
             BEAST_EXPECT(!parseUrl(pUrl, "://"));
@@ -282,7 +282,7 @@ public:
 
         {
             std::string const strUrl("s://" + std::string(8192, ':'));
-            parsedURL pUrl;
+            ParsedUrl pUrl;
             BEAST_EXPECT(!parseUrl(pUrl, strUrl));
         }
     }
