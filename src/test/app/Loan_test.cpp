@@ -8605,8 +8605,6 @@ public:
     void
     run() override
     {
-        testLoanSetNearZeroInterestRateSucceeds();
-        return;
         runAmendmentIndependent();
         for (auto const& features :
              amendmentCombinations({fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}))
