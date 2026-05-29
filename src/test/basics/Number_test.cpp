@@ -1694,12 +1694,11 @@ public:
         }
 
         {
-            /* Companion to NumberUpwardWrongDirection_test (which targets
-             * `operator*=` Upward at the kMaxRep cusp on LargeLegacy), but for
+            /* Companion regression for the kMaxRep cusp behavior, but for
              * `operator/=` on the cusp-fix-ENABLED `Large` scale.
              *
-             * Under `Large` (`CuspRoundingFix::Enabled`), `operator/=` with Upward
-             * rounding can return a value STRICTLY LESS than the exact quotient,
+             * Before the dropped-remainder fix, `operator/=` with Upward
+             * rounding could return a value STRICTLY LESS than the exact quotient,
              * violating Upward's directional invariant.
              *
              * Mechanism (fix-enabled path):
