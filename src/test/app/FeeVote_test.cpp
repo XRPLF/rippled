@@ -341,7 +341,7 @@ class FeeVote_test : public beast::unit_test::Suite
             config.append(
                 {"extension_compute_limit = " + std::to_string(kMaxExtensionComputeLimit + 1),
                  "extension_size_limit = " + std::to_string(kMaxExtensionSizeLimit + 1)});
-            auto setup = setupFeeVote(config);
+            auto const setup = setupFeeVote(config);
             BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
             BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
         }
@@ -350,7 +350,7 @@ class FeeVote_test : public beast::unit_test::Suite
             config.append(
                 {"extension_compute_limit = " + std::to_string(kMaxExtensionComputeLimit),
                  "extension_size_limit = " + std::to_string(kMaxExtensionSizeLimit)});
-            auto setup = setupFeeVote(config);
+            auto const setup = setupFeeVote(config);
             BEAST_EXPECT(setup.extension_compute_limit == kMaxExtensionComputeLimit);
             BEAST_EXPECT(setup.extension_size_limit == kMaxExtensionSizeLimit);
         }
