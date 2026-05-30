@@ -784,7 +784,7 @@ RCLConsensus::Adaptor::buildLCL(
 
     // Update fee computations based on accepted txs
     using namespace std::chrono_literals;
-    app_.getTxQ().processClosedLedger(app_, *built, roundTime > 5s);
+    app_.getTxQ().processClosedLedger(app_, *built, roundTime > 2500ms);
 
     // And stash the ledger in the ledger master
     if (ledgerMaster_.storeLedger(built))

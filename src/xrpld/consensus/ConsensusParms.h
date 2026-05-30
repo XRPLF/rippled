@@ -59,10 +59,10 @@ struct ConsensusParms
     std::size_t const minConsensusPct = 80;
 
     //! The duration a ledger may remain idle before closing
-    std::chrono::milliseconds const ledgerIdleInterval = std::chrono::seconds{15};
+    std::chrono::milliseconds const ledgerIdleInterval = std::chrono::seconds{5};
 
     //! The number of seconds we wait minimum to ensure participation
-    std::chrono::milliseconds const ledgerMinConsensus = std::chrono::milliseconds{1950};
+    std::chrono::milliseconds const ledgerMinConsensus = std::chrono::milliseconds{1000};
 
     /** The maximum amount of time to spend pausing for laggards.
      *
@@ -73,7 +73,7 @@ struct ConsensusParms
     std::chrono::milliseconds const ledgerMaxConsensus = std::chrono::seconds{15};
 
     //! Minimum number of seconds to wait to ensure others have computed the LCL
-    std::chrono::milliseconds const ledgerMinClose = std::chrono::seconds{2};
+    std::chrono::milliseconds const ledgerMinClose = std::chrono::seconds{1};
 
     //! How often we check state or change positions
     std::chrono::milliseconds const ledgerGRANULARITY = std::chrono::seconds{1};
@@ -99,7 +99,7 @@ struct ConsensusParms
         twice the interval between proposals (0.7s) divided by
         the interval between mid and late consensus ([85-50]/100).
     */
-    std::chrono::milliseconds const avMinConsensusTime = std::chrono::seconds{5};
+    std::chrono::milliseconds const avMinConsensusTime = std::chrono::seconds{2};
 
     //------------------------------------------------------------------------------
     // Avalanche tuning
