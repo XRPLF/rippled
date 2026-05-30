@@ -134,6 +134,10 @@ public:
     // Entries from [ips_fixed] config stanza
     std::vector<std::string> ipsFixed;
 
+    // Entries from [datagram_monitor]: "<IP> <port>" UDP targets the
+    // DatagramMonitor sends node-stats packets to (XDGM, every 1s).
+    std::vector<std::string> DATAGRAM_MONITOR;
+
     StartUpType startUp = StartUpType::Normal;
 
     bool startValid = false;

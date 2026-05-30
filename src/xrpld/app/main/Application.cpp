@@ -19,6 +19,7 @@
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/main/NodeIdentity.h>
 #include <xrpld/app/main/NodeStoreScheduler.h>
+#include <xrpld/app/misc/DatagramMonitor.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
@@ -220,6 +221,7 @@ public:
     std::unique_ptr<JobQueue> jobQueue_;
     NodeStoreScheduler nodeStoreScheduler_;
     std::unique_ptr<SHAMapStore> shaMapStore_;
+    std::unique_ptr<DatagramMonitor> datagramMonitor_;
     PendingSaves pendingSaves_;
     std::optional<OpenLedger> openLedger_;
 
@@ -1503,6 +1505,14 @@ ApplicationImp::start(bool withTimers)
 
     ledgerCleaner_->start();
     perfLog_->start();
+
+    // Datagram monitor: UDP node-stats exporter (XDGM). Off in standalone or
+    // when [datagram_monitor] has no endpoints.
+    if (!config_->standalone() && !config_->DATAGRAM_MONITOR.empty())
+    {
+        datagramMonitor_ = std::make_unique<DatagramMonitor>(*this);
+        datagramMonitor_->start();
+    }
 }
 
 void

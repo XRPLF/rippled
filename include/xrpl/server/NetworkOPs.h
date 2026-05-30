@@ -10,7 +10,9 @@
 
 #include <boost/asio.hpp>
 
+#include <array>
 #include <memory>
+#include <tuple>
 
 namespace xrpl {
 
@@ -72,6 +74,18 @@ class NetworkOPs : public InfoSub::Source
 public:
     using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
+    // Snapshot of per-operating-mode accounting, exposed for the datagram monitor.
+    struct AccountingCounter
+    {
+        std::uint64_t transitions{0};
+        std::chrono::microseconds dur{std::chrono::microseconds(0)};
+    };
+    using StateAccountingData = std::tuple<
+        std::array<AccountingCounter, 5>,
+        OperatingMode,
+        std::chrono::steady_clock::time_point,
+        std::uint64_t>;
+
     enum class FailHard : unsigned char { No, Yes };
     static FailHard
     doFailHard(bool noMeansDont)
@@ -92,6 +106,8 @@ public:
 
     [[nodiscard]] virtual OperatingMode
     getOperatingMode() const = 0;
+    [[nodiscard]] virtual StateAccountingData
+    getStateAccountingData() = 0;
     [[nodiscard]] virtual std::string
     strOperatingMode(OperatingMode const mode, bool const admin = false) const = 0;
     [[nodiscard]] virtual std::string

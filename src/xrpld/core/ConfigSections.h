@@ -27,6 +27,7 @@ struct ConfigSection
 #define SECTION_BETA_RPC_API "beta_rpc_api"
 #define SECTION_CLUSTER_NODES "cluster_nodes"
 #define SECTION_COMPRESSION "compression"
+#define SECTION_DATAGRAM_MONITOR "datagram_monitor"
 #define SECTION_DEBUG_LOGFILE "debug_logfile"
 #define SECTION_ELB_SUPPORT "elb_support"
 #define SECTION_FEE_DEFAULT "fee_default"
