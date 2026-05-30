@@ -209,7 +209,7 @@ public:
 
     // Work queue limits
     int maxTransactions = 250;
-    static constexpr int kMaxJobQueueTx = 1000;
+    static constexpr int kMaxJobQueueTx = 100000;
     static constexpr int kMinJobQueueTx = 100;
 
     // Amendment majority time
