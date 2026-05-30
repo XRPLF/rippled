@@ -82,8 +82,7 @@ STObject::makeInnerObject(SField const& name)
     //  3. fixInnerObjTemplate2 added templates to all remaining inner objects.
     std::optional<Rules> const& rules = getCurrentTransactionRules();
     bool const isAMMObj = name == sfAuctionSlot || name == sfVoteEntry;
-    if (!rules || (rules->enabled(fixInnerObjTemplate) && isAMMObj) ||
-        (rules->enabled(fixInnerObjTemplate2) && !isAMMObj))
+    if (!rules || isAMMObj || (rules->enabled(fixInnerObjTemplate2) && !isAMMObj))
     {
         if (SOTemplate const* elements =
                 InnerObjectFormats::getInstance().findSOTemplateBySField(name))

@@ -716,8 +716,7 @@ AMM::bid(BidArg const& arg)
 {
     if (auto const amm = env_.current()->read(keylet::amm(asset1_.asset(), asset2_.asset())))
     {
-        if (env_.current()->rules().enabled(fixInnerObjTemplate) &&
-            !amm->isFieldPresent(sfAuctionSlot))
+        if (!amm->isFieldPresent(sfAuctionSlot))
             Throw<std::runtime_error>("AMM::Bid");
         if (amm->isFieldPresent(sfAuctionSlot))
         {
@@ -845,8 +844,7 @@ AMM::expectAuctionSlot(auto&& cb) const
 {
     if (auto const amm = env_.current()->read(keylet::amm(asset1_.asset(), asset2_.asset())))
     {
-        if (env_.current()->rules().enabled(fixInnerObjTemplate) &&
-            !amm->isFieldPresent(sfAuctionSlot))
+        if (!amm->isFieldPresent(sfAuctionSlot))
             Throw<std::runtime_error>("AMM::expectAuctionSlot");
         if (amm->isFieldPresent(sfAuctionSlot))
         {
