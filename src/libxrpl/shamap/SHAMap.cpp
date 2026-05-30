@@ -26,13 +26,17 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <functional>
+#include <future>
 #include <memory>
 #include <stack>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -849,6 +853,98 @@ SHAMap::getHash() const
         hash = root_->getHash();
     }
     return hash;
+}
+
+namespace {
+
+// Recompute hashes bottom-up for the subtree rooted at `node`, descending
+// only into dirty (cowid != 0) resident children — the hash side of
+// walkSubTree, without flushing/sharing. `node` must itself be dirty.
+//
+// Thread-safety: dirty nodes are uniquely owned by the current cowid, and the
+// subtrees hanging off distinct branches are disjoint, so two callers handed
+// children of different branches never touch the same node. Reads of clean
+// (cowid 0) children's cached hashes via updateHashDeep are read-only and safe
+// to race.
+void
+recomputeSubtreeHashes(SHAMapTreeNode* node)
+{
+    if (node->isLeaf())
+    {
+        node->updateHash();
+        return;
+    }
+
+    auto* inner = safeDowncast<SHAMapInnerNode*>(node);
+    for (int branch = 0; branch < SHAMapInnerNode::kBranchFactor; ++branch)
+    {
+        if (inner->isEmptyBranch(branch))
+            continue;
+        auto* child = inner->getChildPointer(branch);
+        if (child && (child->cowid() != 0))
+            recomputeSubtreeHashes(child);
+    }
+    inner->updateHashDeep();
+}
+
+}  // namespace
+
+SHAMapHash
+SHAMap::updateHashesParallel(int workers)
+{
+    // Nothing dirtied since the last settle: the cached root hash is current.
+    // (root_ is always present, matching getHash()'s invariant.)
+    if (root_->cowid() == 0)
+        return root_->getHash();
+
+    if (root_->isLeaf())
+    {
+        root_->updateHash();
+        return root_->getHash();
+    }
+
+    auto* rootInner = safeDowncast<SHAMapInnerNode*>(root_.get());
+
+    // Gather the root's dirty, resident top-level subtrees. These are
+    // independent and can be recomputed concurrently.
+    std::vector<SHAMapTreeNode*> subtrees;
+    for (int branch = 0; branch < kBranchFactor; ++branch)
+    {
+        if (rootInner->isEmptyBranch(branch))
+            continue;
+        auto* child = rootInner->getChildPointer(branch);
+        if (child && (child->cowid() != 0))
+            subtrees.push_back(child);
+    }
+
+    if (workers <= 0)
+        workers = static_cast<int>(std::thread::hardware_concurrency());
+
+    if (workers <= 1 || subtrees.size() <= 1)
+    {
+        for (auto* s : subtrees)
+            recomputeSubtreeHashes(s);
+    }
+    else
+    {
+        int const nthreads = std::min<int>(workers, static_cast<int>(subtrees.size()));
+        std::atomic<std::size_t> next{0};
+        std::vector<std::future<void>> tasks;
+        tasks.reserve(nthreads);
+        for (int t = 0; t < nthreads; ++t)
+        {
+            tasks.push_back(std::async(std::launch::async, [&subtrees, &next] {
+                for (std::size_t i = next++; i < subtrees.size(); i = next++)
+                    recomputeSubtreeHashes(subtrees[i]);
+            }));
+        }
+        for (auto& task : tasks)
+            task.get();
+    }
+
+    // All top-level subtree hashes are now current; finish at the root.
+    rootInner->updateHashDeep();
+    return rootInner->getHash();
 }
 
 bool

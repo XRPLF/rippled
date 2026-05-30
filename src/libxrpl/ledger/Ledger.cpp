@@ -9,6 +9,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/FlatStateMap.h>
 #include <xrpl/ledger/LedgerTiming.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -276,6 +277,19 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     {
         header_.closeTime = prevLedger.header_.closeTime + header_.closeTimeResolution;
     }
+
+    // Plan 6 lifecycle: if the parent carries a flat-state mirror, the child
+    // inherits an independent deep-copy snapshot of it. This mirrors the COW
+    // snapshot of `stateMap_` above: the child starts from the parent's final
+    // state and then diverges as the round's transactions mirror into it,
+    // while the parent's map is left untouched. When no map is attached (the
+    // default), this is a no-op and the ledger behaves exactly as before.
+    //
+    // The snapshot is O(N) in entry count today; a persistent/HAMT structure
+    // (see FlatStateMap.h) is the follow-on that makes per-ledger propagation
+    // cheap enough to enable in production.
+    if (prevLedger.flatStateMap_)
+        flatStateMap_ = prevLedger.flatStateMap_->snapshot();
 }
 
 Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
@@ -411,6 +425,14 @@ Ledger::read(Keylet const& k) const
         return nullptr;
         // LCOV_EXCL_STOP
     }
+
+    // Plan 6 P6.4: when a FlatStateMap is attached, it is the read
+    // source of truth. No SHAMap fallback — drift between the two
+    // is caught at close by the differential invariant check (P6.5),
+    // not by silently re-reading from SHAMap.
+    if (flatStateMap_)
+        return readFromFlatStateMap(*flatStateMap_, k);
+
     auto const& item = stateMap_.peekItem(k.key);
     if (!item)
         return nullptr;
@@ -490,6 +512,8 @@ Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
     if (!stateMap_.delItem(sle->key()))
         logicError("Ledger::rawErase: key not found");
+    if (flatStateMap_)
+        mirrorRawErase(*flatStateMap_, sle);
 }
 
 void
@@ -497,6 +521,8 @@ Ledger::rawErase(uint256 const& key)
 {
     if (!stateMap_.delItem(key))
         logicError("Ledger::rawErase: key not found");
+    if (flatStateMap_)
+        mirrorRawErase(*flatStateMap_, key);
 }
 
 void
@@ -509,6 +535,8 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     {
         logicError("Ledger::rawInsert: key already exists");
     }
+    if (flatStateMap_)
+        mirrorRawInsert(*flatStateMap_, sle);
 }
 
 void
@@ -521,6 +549,28 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     {
         logicError("Ledger::rawReplace: key not found");
     }
+    if (flatStateMap_)
+        mirrorRawReplace(*flatStateMap_, sle);
+}
+
+void
+Ledger::setFlatStateMap(std::shared_ptr<FlatStateMap> map)
+{
+    flatStateMap_ = std::move(map);
+}
+
+std::shared_ptr<FlatStateMap>
+Ledger::flatStateMap() const
+{
+    return flatStateMap_;
+}
+
+bool
+Ledger::validateFlatStateMapMatchesShaMap() const
+{
+    if (!flatStateMap_)
+        return true;  // nothing to validate against
+    return flatStateMapMatchesShaMap(*flatStateMap_, stateMap_);
 }
 
 void

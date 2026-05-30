@@ -14,6 +14,7 @@
 
 namespace xrpl {
 
+class FlatStateMap;
 class ServiceRegistry;
 class Job;
 class TransactionMaster;
@@ -364,6 +365,38 @@ public:
     std::shared_ptr<SLE>
     peek(Keylet const& k) const;
 
+    //
+    // Flat-state mirror (Plan 6 P6.3).
+    //
+    // When a FlatStateMap is attached, every successful `raw*` call below
+    // mirrors the operation into the map via the matching `mirrorRaw*`
+    // helper. With no map attached (the default), the ledger behaves
+    // exactly as before — no allocation, no mutex, no observable change.
+    // The map's lifetime is managed by the caller (typically the
+    // Application owns the live ledger's map).
+    //
+
+    void
+    setFlatStateMap(std::shared_ptr<FlatStateMap> map);
+
+    [[nodiscard]] std::shared_ptr<FlatStateMap>
+    flatStateMap() const;
+
+    /** Run the Plan 6 P6.5 differential invariant.
+
+        Returns true iff (a) no FlatStateMap is attached (vacuously
+        true — there is no second source of truth to disagree), or
+        (b) the attached FlatStateMap's key-set matches the SHAMap's
+        key-set exactly.
+
+        Intended to be called at ledger close, before the new state
+        root is published. A false return is a stop-the-line bug —
+        the integrator should crash rather than publish a state root
+        that disagrees with the read path.
+    */
+    [[nodiscard]] bool
+    validateFlatStateMapMatchesShaMap() const;
+
 private:
     class SlesIterImpl;
     class TxsIterImpl;
@@ -399,6 +432,11 @@ private:
 
     // A SHAMap containing the state objects for this ledger.
     SHAMap mutable stateMap_;
+
+    // Optional flat keylet→SLE mirror. When non-null, every successful
+    // raw* state mutation is mirrored into this map. See FlatStateMap.h
+    // and the Plan 6 docs in tasks/.
+    std::shared_ptr<FlatStateMap> mutable flatStateMap_;
 
     // Protects fee variables
     std::mutex mutable mutex_;

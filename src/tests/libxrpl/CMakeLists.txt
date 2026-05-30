@@ -35,6 +35,14 @@ xrpl_add_test(json)
 target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.json)
 
+xrpl_add_test(ledger)
+target_link_libraries(xrpl.test.ledger PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.ledger)
+
+xrpl_add_test(shamap)
+target_link_libraries(xrpl.test.shamap PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.shamap)
+
 xrpl_add_test(tx)
 target_link_libraries(xrpl.test.tx PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.tx)

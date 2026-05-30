@@ -178,6 +178,31 @@ public:
     SHAMapHash
     getHash() const;
 
+    /** Recompute dirty node hashes in parallel and return the root hash.
+
+        Plan 7 Phase 2. Equivalent in output to `getHash()` on a freshly
+        mutated map: it recomputes the hash of every node dirtied since the
+        last hash settle, bottom-up, then returns the root hash. The work is
+        fanned out by top-level subtree — the root's up-to-16 children are
+        independent (a dirty node under one branch is never shared with
+        another), so their subtree recomputations run concurrently with no
+        synchronization, and only the root hash is computed serially after.
+
+        Byte-identical to the serial path by construction: a node's hash is a
+        pure function of its children's hashes, so computation order is
+        irrelevant as long as children precede parents — which the bottom-up
+        walk guarantees.
+
+        Unlike `getHash()`/`unshare()`, this does NOT convert nodes to shared
+        (cowid stays as-is) or flush to the nodestore; it only refreshes hash
+        caches. A subsequent `getHash()` therefore returns immediately.
+
+        @param workers Maximum concurrent subtree recomputations. <= 1 runs
+                       serially. Defaults to the hardware concurrency.
+    */
+    SHAMapHash
+    updateHashesParallel(int workers = 0);
+
     // save a copy if you have a temporary anyway
     bool
     updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> item);
