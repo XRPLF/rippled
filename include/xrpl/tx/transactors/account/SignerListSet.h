@@ -36,6 +36,9 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
+    static AccessSet
+    accessSetOf(STTx const& tx, ReadView const& base);
+
     TER
     doApply() override;
     void

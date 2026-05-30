@@ -95,6 +95,15 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
     return tesSUCCESS;
 }
 
+AccessSet
+DIDSet::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // Touches the actor's AccountRoot and its single DID object.
+    AccessSet acc = commonAccountFootprint(tx);
+    acc.miscObjects.insert(keylet::did(tx.getAccountID(sfAccount)).key);
+    return acc;
+}
+
 TER
 DIDSet::doApply()
 {

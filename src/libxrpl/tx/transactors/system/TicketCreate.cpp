@@ -64,6 +64,26 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+AccessSet
+TicketCreate::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    AccessSet acc = commonAccountFootprint(tx);
+    auto const account = tx.getAccountID(sfAccount);
+    // Tickets are numbered from the account's current Sequence, which is ledger
+    // state — read it from the closed-ledger snapshot. The apply machinery
+    // advances Sequence by one before creating tickets for a sequence-based tx,
+    // so declare the inclusive range [seq, seq + count] to cover both the
+    // sequence-based (start = seq + 1) and ticket-based (start = seq) cases.
+    auto const sleAccount = base.read(keylet::account(account));
+    if (!sleAccount)
+        return AccessSet::global();
+    std::uint32_t const firstSeq = (*sleAccount)[sfSequence];
+    std::uint32_t const count = tx[sfTicketCount];
+    for (std::uint32_t i = 0; i <= count; ++i)
+        acc.miscObjects.insert(keylet::kTicket(account, firstSeq + i).key);
+    return acc;
+}
+
 TER
 TicketCreate::doApply()
 {

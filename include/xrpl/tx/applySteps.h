@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/tx/AccessSet.h>
 
 namespace xrpl {
 
@@ -307,6 +308,19 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
 */
 XRPAmount
 calculateBaseFee(ReadView const& view, STTx const& tx);
+
+/** Compute the static ledger footprint of a transaction.
+
+    Dispatches to the concrete transactor's `accessSetOf`. Un-migrated
+    transactors return `touchesGlobal`. Used by the parallel-apply scheduler
+    (and the DEBUG access-set assertion) to reason about which transactions can
+    apply concurrently. No validation is implied.
+
+    @param tx   the transaction.
+    @param base a read-only snapshot of the ledger the tx applies to.
+*/
+AccessSet
+accessSetOf(STTx const& tx, ReadView const& base);
 
 /** Return the minimum fee that an "ordinary" transaction would pay.
 

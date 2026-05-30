@@ -112,6 +112,24 @@ public:
     TER
     checkInvariants(TER const result, XRPAmount const fee);
 
+#ifndef NDEBUG
+    /** The read-only base (closed-ledger) snapshot this tx applies against. */
+    [[nodiscard]] ReadView const&
+    baseView() const
+    {
+        return base_;
+    }
+
+    /** Every ledger entry touched during apply, with type. Backs the
+        access-set assertion in Transactor::operator(). */
+    [[nodiscard]] std::map<uint256, LedgerEntryType> const&
+    touchedEntries() const
+    {
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in ctor
+        return view_->touchedEntries();
+    }
+#endif
+
 private:
     static TER
     failInvariantCheck(TER const result);

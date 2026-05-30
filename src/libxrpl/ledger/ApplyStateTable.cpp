@@ -287,6 +287,9 @@ ApplyStateTable::apply(
 bool
 ApplyStateTable::exists(ReadView const& base, Keylet const& k) const
 {
+#ifndef NDEBUG
+    recordTouch(k.key, k.type);
+#endif
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.exists(k);
@@ -342,6 +345,11 @@ ApplyStateTable::succ(
 std::shared_ptr<SLE const>
 ApplyStateTable::read(ReadView const& base, Keylet const& k) const
 {
+#ifndef NDEBUG
+    // Record even on a nullptr result: an absence probe still conflicts with a
+    // concurrent transaction that would create the key.
+    recordTouch(k.key, k.type);
+#endif
     auto const iter = items_.find(k.key);
     if (iter == items_.end())
         return base.read(k);
@@ -364,6 +372,9 @@ ApplyStateTable::read(ReadView const& base, Keylet const& k) const
 std::shared_ptr<SLE>
 ApplyStateTable::peek(ReadView const& base, Keylet const& k)
 {
+#ifndef NDEBUG
+    recordTouch(k.key, k.type);
+#endif
     auto iter = items_.lower_bound(k.key);
     if (iter == items_.end() || iter->first != k.key)
     {
@@ -398,6 +409,9 @@ ApplyStateTable::peek(ReadView const& base, Keylet const& k)
 void
 ApplyStateTable::erase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
+#ifndef NDEBUG
+    recordTouch(sle->key(), sle->getType());
+#endif
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
         Throw<std::logic_error>("ApplyStateTable::erase: missing key");
@@ -422,6 +436,9 @@ ApplyStateTable::erase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 void
 ApplyStateTable::rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
+#ifndef NDEBUG
+    recordTouch(sle->key(), sle->getType());
+#endif
     using namespace std;
     auto const result = items_.emplace(
         piecewise_construct, forward_as_tuple(sle->key()), forward_as_tuple(Action::Erase, sle));
@@ -447,6 +464,9 @@ ApplyStateTable::rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 void
 ApplyStateTable::insert(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
+#ifndef NDEBUG
+    recordTouch(sle->key(), sle->getType());
+#endif
     auto const iter = items_.lower_bound(sle->key());
     if (iter == items_.end() || iter->first != sle->key())
     {
@@ -477,6 +497,9 @@ ApplyStateTable::insert(ReadView const& base, std::shared_ptr<SLE> const& sle)
 void
 ApplyStateTable::replace(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
+#ifndef NDEBUG
+    recordTouch(sle->key(), sle->getType());
+#endif
     auto const iter = items_.lower_bound(sle->key());
     if (iter == items_.end() || iter->first != sle->key())
     {
@@ -506,6 +529,9 @@ ApplyStateTable::replace(ReadView const& base, std::shared_ptr<SLE> const& sle)
 void
 ApplyStateTable::update(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
+#ifndef NDEBUG
+    recordTouch(sle->key(), sle->getType());
+#endif
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
         Throw<std::logic_error>("ApplyStateTable::update: missing key");

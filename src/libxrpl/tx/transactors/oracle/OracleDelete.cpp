@@ -79,6 +79,16 @@ OracleDelete::deleteOracle(
     return tesSUCCESS;
 }
 
+AccessSet
+OracleDelete::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // Touches the actor's AccountRoot and its own Oracle object.
+    AccessSet acc = commonAccountFootprint(tx);
+    acc.miscObjects.insert(
+        keylet::oracle(tx.getAccountID(sfAccount), tx[sfOracleDocumentID]).key);
+    return acc;
+}
+
 TER
 OracleDelete::doApply()
 {

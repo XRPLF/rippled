@@ -44,6 +44,16 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+AccessSet
+PermissionedDomainDelete::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // Touches the actor's AccountRoot and the single PermissionedDomain object
+    // named directly by the transaction.
+    AccessSet acc = commonAccountFootprint(tx);
+    acc.miscObjects.insert(keylet::permissionedDomain(tx[sfDomainID]).key);
+    return acc;
+}
+
 /** Attempt to delete the Permissioned Domain. */
 TER
 PermissionedDomainDelete::doApply()

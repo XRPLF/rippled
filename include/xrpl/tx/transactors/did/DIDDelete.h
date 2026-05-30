@@ -22,6 +22,9 @@ public:
     static TER
     deleteSLE(ApplyView& view, std::shared_ptr<SLE> sle, AccountID const owner, beast::Journal j);
 
+    static AccessSet
+    accessSetOf(STTx const& tx, ReadView const& base);
+
     TER
     doApply() override;
 

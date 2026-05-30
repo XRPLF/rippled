@@ -323,6 +323,20 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+AccessSet
+TrustSet::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // Touches the actor and issuer AccountRoots and the single shared trust
+    // line between them; both endpoints come from sfLimitAmount.
+    AccessSet acc = commonAccountFootprint(tx);
+    auto const account = tx.getAccountID(sfAccount);
+    auto const limit = tx.getFieldAmount(sfLimitAmount);
+    auto const issuer = limit.getIssuer();
+    acc.accounts.insert(keylet::account(issuer).key);
+    acc.trustlines.insert(keylet::line(account, issuer, limit.get<Issue>().currency).key);
+    return acc;
+}
+
 TER
 TrustSet::doApply()
 {

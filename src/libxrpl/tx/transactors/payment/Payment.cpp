@@ -395,6 +395,32 @@ Payment::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+AccessSet
+Payment::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // Only the direct XRP->XRP case has a statically-enumerable footprint.
+    // Path / cross-currency / IOU / MPT payments route through the flow engine,
+    // which touches state-dependent trust lines and offers, so they stay global.
+    // A SendMax (even in XRP) also forces the rippling path.
+    if (tx.isFieldPresent(sfPaths) || tx.isFieldPresent(sfSendMax) ||
+        !tx.getFieldAmount(sfAmount).native())
+        return AccessSet::global();
+
+    AccessSet acc = commonAccountFootprint(tx);
+    auto const src = tx.getAccountID(sfAccount);
+    auto const dst = tx.getAccountID(sfDestination);
+    acc.accounts.insert(keylet::account(dst).key);
+    // The destination's deposit-authorization check may read this preauth
+    // object (declared unconditionally — pessimistic but a narrow conflict
+    // surface) and, when authorized by credentials, the credentials named in
+    // the tx.
+    acc.miscObjects.insert(keylet::depositPreauth(dst, src).key);
+    if (tx.isFieldPresent(sfCredentialIDs))
+        for (auto const& h : tx.getFieldV256(sfCredentialIDs))
+            acc.miscObjects.insert(h);
+    return acc;
+}
+
 TER
 Payment::doApply()
 {

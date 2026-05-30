@@ -64,6 +64,15 @@ DIDDelete::deleteSLE(
     return tesSUCCESS;
 }
 
+AccessSet
+DIDDelete::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // Touches the actor's AccountRoot and its single DID object.
+    AccessSet acc = commonAccountFootprint(tx);
+    acc.miscObjects.insert(keylet::did(tx.getAccountID(sfAccount)).key);
+    return acc;
+}
+
 TER
 DIDDelete::doApply()
 {

@@ -347,6 +347,19 @@ public:
         return registry_;
     }
 
+    /**
+     * @brief Get the closed (base) ledger as a shared Ledger pointer.
+     *
+     * Exposes the underlying Ledger (not just the ReadView) so tests can build
+     * sibling ledgers from it — e.g. to apply a transaction set in a controlled
+     * order outside the canonicalizing close() path.
+     */
+    [[nodiscard]] std::shared_ptr<Ledger const>
+    getClosedLedgerPtr() const
+    {
+        return closedLedger_;
+    }
+
 private:
     TestServiceRegistry registry_;
     std::unordered_set<uint256, beast::Uhash<>> featureSet_;

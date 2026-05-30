@@ -56,6 +56,9 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
+    static AccessSet
+    accessSetOf(STTx const& tx, ReadView const& base);
+
     /** Precondition: fee collection is likely.  Attempt to create ticket(s). */
     TER
     doApply() override;

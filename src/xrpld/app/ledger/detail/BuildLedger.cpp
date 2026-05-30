@@ -17,12 +17,18 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/tx/Schedule.h>
 #include <xrpl/tx/apply.h>
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdlib>
 #include <exception>
 #include <memory>
 #include <set>
+#include <string_view>
+#include <thread>
+#include <vector>
 
 namespace xrpl {
 
@@ -90,6 +96,39 @@ buildLedgerImpl(
   @return number of transactions applied; transactions to retry left in txns
 */
 
+namespace {
+
+// Experimental, operator-opt-in parallel apply (Plan 1). Gated by the
+// XRPL_PARALLEL_APPLY env var; default OFF, so default behaviour is unchanged.
+// A proper amendment/Config flag is the productionization step.
+bool
+parallelApplyEnabled()
+{
+    static bool const enabled = [] {
+        auto const* v = std::getenv("XRPL_PARALLEL_APPLY");
+        return v != nullptr && std::string_view{v} != "" && std::string_view{v} != "0";
+    }();
+    return enabled;
+}
+
+unsigned
+parallelApplyWorkers()
+{
+    static unsigned const workers = [] {
+        if (auto const* v = std::getenv("XRPL_PARALLEL_APPLY_WORKERS"))
+        {
+            auto const n = std::atoi(v);
+            if (n > 0)
+                return static_cast<unsigned>(n);
+        }
+        unsigned const hw = std::thread::hardware_concurrency();
+        return std::clamp<unsigned>(hw > 2 ? hw - 2 : 2, 2u, 8u);
+    }();
+    return workers;
+}
+
+}  // namespace
+
 std::size_t
 applyTransactions(
     Application& app,
@@ -99,6 +138,36 @@ applyTransactions(
     OpenView& view,
     beast::Journal j)
 {
+    // Plan 1 parallel apply: schedule the canonical set into independent groups
+    // and apply them (optionally across a thread pool), merging the disjoint
+    // write-sets into `view`. Behind XRPL_PARALLEL_APPLY; the resulting state is
+    // byte-identical to the serial path for conflict-free reorderings (the
+    // schedule guarantees this; see ScheduledApply differential tests). On flag
+    // ledgers / any global tx, the scheduler falls back to fully serial.
+    if (parallelApplyEnabled())
+    {
+        std::vector<std::shared_ptr<STTx const>> ordered;
+        ordered.reserve(txns.size());
+        for (auto const& item : txns)
+        {
+            if (built->txExists(item.first.getTXID()))
+                continue;
+            ordered.push_back(item.second);
+        }
+
+        auto const res = applyScheduled(app, *built, view, ordered, j, parallelApplyWorkers());
+
+        JLOG(j.debug()) << "Parallel apply: " << res.applied << " applied across "
+                        << res.groupCount << " group(s)"
+                        << (res.fullySerial ? " (fell back to serial)" : "");
+
+        // Every transaction has been consumed; the parallel path needs no retry
+        // passes — by access-set disjointness, no cross-group dependency exists.
+        for (auto it = txns.begin(); it != txns.end();)
+            it = txns.erase(it);
+        return res.applied;
+    }
+
     bool certainRetry = true;
     std::size_t count = 0;
 

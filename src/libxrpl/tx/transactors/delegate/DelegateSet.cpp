@@ -65,6 +65,17 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+AccessSet
+DelegateSet::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // Touches the actor's AccountRoot and the single Delegate object it owns
+    // for the authorized account.
+    AccessSet acc = commonAccountFootprint(tx);
+    acc.miscObjects.insert(
+        keylet::delegate(tx.getAccountID(sfAccount), tx[sfAuthorize]).key);
+    return acc;
+}
+
 TER
 DelegateSet::doApply()
 {

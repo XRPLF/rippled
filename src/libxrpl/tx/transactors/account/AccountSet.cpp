@@ -276,6 +276,13 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+AccessSet
+AccountSet::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // AccountSet only mutates the actor's own AccountRoot.
+    return commonAccountFootprint(tx);
+}
+
 TER
 AccountSet::doApply()
 {

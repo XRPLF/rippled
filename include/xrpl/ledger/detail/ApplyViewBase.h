@@ -95,6 +95,16 @@ public:
     void
     rawDestroyXRP(XRPAmount const& feeDrops) override;
 
+#ifndef NDEBUG
+    /** Every ledger entry touched (read or written) by this view, with type.
+        DEBUG-only; backs the parallel-apply access-set assertion. */
+    [[nodiscard]] std::map<uint256, LedgerEntryType> const&
+    touchedEntries() const
+    {
+        return items_.touchedEntries();
+    }
+#endif
+
 protected:
     ApplyFlags flags_;
     ReadView const* base_;

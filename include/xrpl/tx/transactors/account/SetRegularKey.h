@@ -19,6 +19,9 @@ public:
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
+    static AccessSet
+    accessSetOf(STTx const& tx, ReadView const& base);
+
     TER
     doApply() override;
 

@@ -4,11 +4,15 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <memory>
+#ifndef NDEBUG
+#include <map>
+#endif
 
 namespace xrpl::detail {
 
@@ -103,7 +107,39 @@ public:
         return dropsDestroyed_;
     }
 
+#ifndef NDEBUG
+    /** Every ledger entry this table has read or written, mapped to its type.
+
+        Populated in DEBUG builds by the access methods below (reads via
+        read/exists/peek and writes via insert/update/replace/erase). Directory
+        iteration via succ() is deliberately NOT recorded — see AccessSet for
+        why directory entries are out of scope for conflict tracking. Used by
+        the parallel-apply access-set assertion to verify a transactor's
+        declared footprint is a superset of what it actually touched.
+    */
+    [[nodiscard]] std::map<key_type, LedgerEntryType> const&
+    touchedEntries() const
+    {
+        return touched_;
+    }
+#endif
+
 private:
+#ifndef NDEBUG
+    void
+    recordTouch(key_type const& key, LedgerEntryType type) const
+    {
+        // Prefer ltDIR_NODE on collision so directory pages stay identifiable
+        // regardless of access order; non-dir objects are never accessed via a
+        // directory keylet, so this never mislabels a real object.
+        auto const [it, inserted] = touched_.try_emplace(key, type);
+        if (!inserted && type == ltDIR_NODE)
+            it->second = ltDIR_NODE;
+    }
+
+    mutable std::map<key_type, LedgerEntryType> touched_;
+#endif
+
     using Mods = hash_map<key_type, std::shared_ptr<SLE>>;
 
     static void

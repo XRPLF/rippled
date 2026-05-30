@@ -19,6 +19,9 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
+    static AccessSet
+    accessSetOf(STTx const& tx, ReadView const& base);
+
     /** Attempt to delete the Permissioned Domain. */
     TER
     doApply() override;

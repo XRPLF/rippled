@@ -420,6 +420,22 @@ calculateBaseFee(ReadView const& view, STTx const& tx)
     return invokeCalculateBaseFee(view, tx);
 }
 
+AccessSet
+accessSetOf(STTx const& tx, ReadView const& base)
+{
+    try
+    {
+        return withTxnType(base.rules(), tx.getTxnType(), [&]<typename T>() {
+            return T::accessSetOf(tx, base);
+        });
+    }
+    catch (UnknownTxnType const&)
+    {
+        // Unknown type — fail safe to global so a scheduler serializes it.
+        return AccessSet::global();
+    }
+}
+
 XRPAmount
 calculateDefaultBaseFee(ReadView const& view, STTx const& tx)
 {

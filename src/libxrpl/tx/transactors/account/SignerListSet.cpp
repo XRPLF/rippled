@@ -107,6 +107,15 @@ SignerListSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+AccessSet
+SignerListSet::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // Touches the actor's AccountRoot and its SignerList object.
+    AccessSet acc = commonAccountFootprint(tx);
+    acc.miscObjects.insert(keylet::signers(tx.getAccountID(sfAccount)).key);
+    return acc;
+}
+
 TER
 SignerListSet::doApply()
 {

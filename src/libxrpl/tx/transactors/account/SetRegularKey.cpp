@@ -52,6 +52,13 @@ SetRegularKey::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+AccessSet
+SetRegularKey::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // SetRegularKey only mutates the actor's own AccountRoot.
+    return commonAccountFootprint(tx);
+}
+
 TER
 SetRegularKey::doApply()
 {

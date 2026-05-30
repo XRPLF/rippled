@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/AccessSet.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
@@ -222,9 +223,38 @@ public:
         return tesSUCCESS;
     }
 
+    /** The static ledger footprint this transaction may read or write.
+
+        Consumed by the parallel-apply scheduler to decide which transactions
+        can apply concurrently. The base implementation is fail-safe: it
+        declares `touchesGlobal`, so an un-migrated transactor is serialized
+        against everything. A transactor opts into concurrency by hiding this
+        with its own static `accessSetOf` that enumerates exactly what it
+        touches. Like preclaim/calculateBaseFee, this is dispatched by
+        compile-time name hiding, not virtual dispatch.
+
+        @param tx   the signed transaction.
+        @param base a read-only snapshot of the ledger the tx applies to, for
+                    the few transactors whose footprint needs a state lookup
+                    (e.g. resolving an AMM pseudo-account). Most ignore it.
+    */
+    static AccessSet
+    accessSetOf(STTx const& tx, ReadView const& base)
+    {
+        return AccessSet::global();
+    }
+
     static NotTEC
     checkPermission(ReadView const& view, STTx const& tx);
     /////////////////////////////////////////////////////
+
+    /** The ledger footprint every transaction incurs, regardless of type: the
+        actor's AccountRoot, the fee-payer's AccountRoot (when delegated), and
+        the consumed Ticket object (when ticket-sequenced). Directory pages are
+        excluded by design — see AccessSet. A migrated `accessSetOf` seeds its
+        result with this and adds its type-specific entries. */
+    static AccessSet
+    commonAccountFootprint(STTx const& tx);
 
     // Interface used by AccountDelete
     static TER
@@ -379,6 +409,15 @@ private:
         beast::Journal const j);
 
     void trapTransaction(uint256) const;
+
+#ifndef NDEBUG
+    /** DEBUG: assert the transaction's actual ledger footprint is a subset of
+        the access set declared by `accessSetOf`, or — for `touchesGlobal`
+        transactors — optionally record the measured footprint for the
+        hard-transactor audit. Called only on a clean tesSUCCESS apply. */
+    void
+    verifyAccessSet() const;
+#endif
 
     /** Performs early sanity checks on the account and fee fields.
 

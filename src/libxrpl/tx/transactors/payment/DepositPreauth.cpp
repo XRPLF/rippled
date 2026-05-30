@@ -148,6 +148,31 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+AccessSet
+DepositPreauth::accessSetOf(STTx const& tx, ReadView const& base)
+{
+    // Touches the actor's AccountRoot and the single DepositPreauth object it
+    // creates or removes. The object key is fully derivable from the tx body
+    // (by authorized account, or by the sorted credential set).
+    AccessSet acc = commonAccountFootprint(tx);
+    auto const owner = tx.getAccountID(sfAccount);
+    if (tx.isFieldPresent(sfAuthorize))
+        acc.miscObjects.insert(keylet::depositPreauth(owner, tx[sfAuthorize]).key);
+    else if (tx.isFieldPresent(sfUnauthorize))
+        acc.miscObjects.insert(keylet::depositPreauth(owner, tx[sfUnauthorize]).key);
+    else if (tx.isFieldPresent(sfAuthorizeCredentials))
+        acc.miscObjects.insert(
+            keylet::depositPreauth(
+                owner, credentials::makeSorted(tx.getFieldArray(sfAuthorizeCredentials)))
+                .key);
+    else if (tx.isFieldPresent(sfUnauthorizeCredentials))
+        acc.miscObjects.insert(
+            keylet::depositPreauth(
+                owner, credentials::makeSorted(tx.getFieldArray(sfUnauthorizeCredentials)))
+                .key);
+    return acc;
+}
+
 TER
 DepositPreauth::doApply()
 {

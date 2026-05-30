@@ -44,10 +44,12 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <exception>
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -276,6 +278,21 @@ Transactor::Transactor(ApplyContext& ctx)
 {
 }
 
+AccessSet
+Transactor::commonAccountFootprint(STTx const& tx)
+{
+    AccessSet acc;
+    // The actor and the fee-payer (which differ only under delegation;
+    // getFeePayer() returns sfDelegate when present, else sfAccount).
+    acc.accounts.insert(keylet::account(tx.getAccountID(sfAccount)).key);
+    acc.accounts.insert(keylet::account(tx.getFeePayer()).key);
+    // A ticket-sequenced transaction consumes (erases) its Ticket object.
+    if (tx.isFieldPresent(sfTicketSequence))
+        acc.miscObjects.insert(
+            keylet::kTicket(tx.getAccountID(sfAccount), tx.getFieldU32(sfTicketSequence)).key);
+    return acc;
+}
+
 bool
 Transactor::validDataLength(std::optional<Slice> const& slice, std::size_t maxLength)
 {
@@ -283,6 +300,56 @@ Transactor::validDataLength(std::optional<Slice> const& slice, std::size_t maxLe
         return true;
     return !slice->empty() && slice->length() <= maxLength;
 }
+
+#ifndef NDEBUG
+namespace {
+// Opt-in via the XRPL_ACCESS_AUDIT env var: log the measured footprint of
+// touchesGlobal transactors to feed the hard-transactor audit (Phase 1.5).
+bool
+accessSetAuditEnabled()
+{
+    static bool const enabled = [] {
+        auto const* v = std::getenv("XRPL_ACCESS_AUDIT");
+        return v != nullptr && std::string_view{v} != "" && std::string_view{v} != "0";
+    }();
+    return enabled;
+}
+}  // namespace
+
+void
+Transactor::verifyAccessSet() const
+{
+    // Qualify: the unqualified name would bind to the static member
+    // Transactor::accessSetOf (the global default), not the free dispatcher.
+    auto const declared = xrpl::accessSetOf(ctx_.tx, ctx_.baseView());
+
+    if (declared.touchesGlobal)
+    {
+        if (accessSetAuditEnabled())
+        {
+            std::size_t nonDir = 0;
+            for (auto const& [key, type] : ctx_.touchedEntries())
+                if (type != ltDIR_NODE)
+                    ++nonDir;
+            JLOG(j_.warn()) << "ACCESS_AUDIT txType=" << static_cast<int>(ctx_.tx.getTxnType())
+                            << " touched=" << ctx_.touchedEntries().size() << " nonDir=" << nonDir;
+        }
+        return;
+    }
+
+    auto const allowed = declared.keys();
+    for (auto const& [key, type] : ctx_.touchedEntries())
+    {
+        // Directory bookkeeping is out of scope for the access set (see
+        // AccessSet); a directory conflict is subsumed by its owner's account.
+        if (type == ltDIR_NODE)
+            continue;
+        XRPL_ASSERT(
+            allowed.contains(key),
+            "xrpl::Transactor::verifyAccessSet : touched entry within declared access set");
+    }
+}
+#endif
 
 std::uint32_t
 Transactor::getFlagsMask(PreflightContext const& ctx)
@@ -1232,6 +1299,15 @@ Transactor::operator()()
     auto result = ctx_.preclaimResult;
     if (isTesSuccess(result))
         result = apply();
+
+#ifndef NDEBUG
+    // Validate (or audit) the declared access set against the actual footprint,
+    // but only on a clean success — tec/reset paths below intentionally touch
+    // extra state (removeUnfundedOffers, etc.) that the access set does not
+    // model.
+    if (isTesSuccess(result))
+        verifyAccessSet();
+#endif
 
     // No transaction can return temUNKNOWN from apply,
     // and it can't be passed in from a preclaim.
