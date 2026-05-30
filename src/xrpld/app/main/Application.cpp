@@ -999,7 +999,7 @@ public:
                                    << "; size after: " << masterTxCache.size();
         }
         {
-            // Does not appear to have an associated cache.
+            // Sweep NodeStore database cache(s), if enabled.
             getNodeStore().sweep();
         }
         {

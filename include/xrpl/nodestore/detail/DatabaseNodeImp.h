@@ -38,7 +38,7 @@ public:
                 Throw<std::runtime_error>("Specified negative value for cache_age");
         }
 
-        if (cacheSize != 0 || cacheAge != 0)
+        if (cacheSize.has_value() || cacheAge.has_value())
         {
             cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
                 "DatabaseNodeImp",
