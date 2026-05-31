@@ -7594,24 +7594,23 @@ protected:
     // the Upward rounding in tryOverpayment then bumps it a full scale-unit
     // higher. The principal therefore drops by `delta - 1 unit`, not `delta`.
     //
-    // Concrete case (found by brute-force search over real loans): a 100 USD
-    // loan at the minimum non-zero rate, 3 payments, loanScale -10. After one
-    // regular payment (principalOutstanding 66.6666666674) a residual
-    // overpayment of 0.049999998 yields trackedPrincipalDelta 0.048999998 but
-    // only reduces the principal by 0.0489999979 (newPrincipal 66.6176666695)
-    // — short by 1e-10.
+    // Concrete case (isolated, at the tryOverpayment level):
+    // A 100 USD loan at the minimum non-zero rate, 3 payments, loanScale -10.
+    // After one regular payment (principalOutstanding 66.6666666674) a residual overpayment of
+    // 0.049999998 yields trackedPrincipalDelta 0.048999998 but only reduces the principal by
+    // 0.0489999979 (newPrincipal 66.6176666695) — short by 1e-10.
     //
-    // doOverpayment is only reachable after at least one regular periodic
-    // payment in the same transaction (loanMakePayment returns
-    // tecINSUFFICIENT_PAYMENT when numPayments == 0), so the LoanPay below
-    // pays exactly one period plus the residual overpayment.
-    //
-    // Without fixCleanup3_2_0 this aborts the server at LendingHelpers.cpp
-    // "principal change agrees" in Debug builds. With the amendment (enabled
-    // here via all_), tryOverpayment pins the new principal to the exact,
+    // With fixCleanup3_2_0, tryOverpayment pins the new principal to the exact,
     // on-grid reduction (oldPrincipal - trackedPrincipalDelta) instead of the
     // lossy (P*factor)/factor round-trip, so the assertion holds and the
-    // overpayment applies cleanly.
+    // overpayment applies cleanly. The three "principal change agrees" /
+    // "interest paid agrees" / "principal payment matches" assertions are
+    // gated behind the same amendment, so without it they are disabled (the
+    // server does not abort) and the loan keeps the pre-amendment computation.
+    //
+    // The test runs the same scenario under both amendment settings and checks
+    // the stored principal against a ground-truth value derived independently of
+    // the loan-state computation under test.
     void
     testBugOverpaymentPrincipalChange()
     {
@@ -7621,84 +7620,149 @@ protected:
         using namespace loan;
         using namespace xrpl::detail;
 
-        Env env(*this, all_);
+        struct Result
+        {
+            Number principalOutstanding;  // stored principal after the LoanPay
+            Number expectedNewPrincipal;  // ground truth, independent of the fix
+        };
 
-        Account const issuer{"issuer"};
-        Account const lender{"vaultOwner"};
-        Account const borrower{"borrower"};
+        auto runScenario = [this](FeatureBitset features) -> Result {
+            Env env(*this, features);
 
-        env.fund(XRP(1'000'000), issuer, lender, borrower);
-        env(fset(issuer, asfDefaultRipple));
-        env.close();
+            Account const issuer{"issuer"};
+            Account const lender{"vaultOwner"};
+            Account const borrower{"borrower"};
 
-        PrettyAsset const iouAsset = issuer["USD"];
-        Asset const asset = iouAsset.raw();
-        STAmount const iouLimit{asset, Number{9'999'999'999'999'999LL}};
-        env(trust(lender, iouLimit));
-        env(trust(borrower, iouLimit));
-        env(pay(issuer, lender, iouAsset(1'000'000)));
-        env(pay(issuer, borrower, iouAsset(1'000'000)));
-        env.close();
+            env.fund(XRP(1'000'000), issuer, lender, borrower);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
 
-        auto const broker = createVaultAndBroker(
-            env,
-            iouAsset,
-            lender,
-            {.vaultDeposit = 900'000,
-             .debtMax = 0,
-             .managementFeeRate = TenthBips16{0},
-             .vaultScale = 1});
+            PrettyAsset const iouAsset = issuer["USD"];
+            Asset const asset = iouAsset.raw();
+            STAmount const iouLimit{asset, Number{9'999'999'999'999'999LL}};
+            env(trust(lender, iouLimit));
+            env(trust(borrower, iouLimit));
+            env(pay(issuer, lender, iouAsset(1'000'000)));
+            env(pay(issuer, borrower, iouAsset(1'000'000)));
+            env.close();
 
-        auto const brokerSle = env.le(broker.brokerKeylet());
-        if (!BEAST_EXPECT(brokerSle))
-            return;
-        auto const loanSequence = brokerSle->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+            auto const broker = createVaultAndBroker(
+                env,
+                iouAsset,
+                lender,
+                {.vaultDeposit = 900'000,
+                 .debtMax = 0,
+                 .managementFeeRate = TenthBips16{0},
+                 .vaultScale = 1});
 
-        env(set(borrower, broker.brokerID, Number{100}, tfLoanOverpayment),
-            Sig(sfCounterpartySignature, lender),
-            kInterestRate(TenthBips32{1}),
-            kPaymentTotal(3),
-            kPaymentInterval(60),
-            kGracePeriod(60),
-            kOverpaymentFee(TenthBips32{1000}),
-            kOverpaymentInterestRate(TenthBips32{1000}),
-            Fee(env.current()->fees().base * 2),
-            Ter(tesSUCCESS));
-        env.close();
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            BEAST_EXPECT(brokerSle);
+            auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
+            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
 
-        // Value of exactly one regular period, so the single LoanPay below
-        // makes one regular payment and leaves the residual as an overpayment.
-        auto const s = getCurrentState(env, broker, loanKeylet);
-        auto const periodicRate = loanPeriodicRate(s.interestRate, s.paymentInterval);
-        auto const onePeriod = computePaymentComponents(
-            env.current()->rules(),
-            asset,
-            s.loanScale,
-            s.totalValue,
-            s.principalOutstanding,
-            s.managementFeeOutstanding,
-            s.periodicPayment,
-            periodicRate,
-            s.paymentRemaining,
-            TenthBips16{0});
+            TenthBips32 const overpaymentInterestRate{1000};
+            TenthBips32 const overpaymentFeeRate{1000};
+            env(set(borrower, broker.brokerID, Number{100}, tfLoanOverpayment),
+                Sig(sfCounterpartySignature, lender),
+                kInterestRate(TenthBips32{1}),
+                kPaymentTotal(3),
+                kPaymentInterval(60),
+                kGracePeriod(60),
+                kOverpaymentFee(overpaymentFeeRate),
+                kOverpaymentInterestRate(overpaymentInterestRate),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
 
-        // 0.049999998 — smaller than one period, so it stays a residual
-        // overpayment rather than being consumed as a second regular payment.
-        Number const overpayment{49999998, -9};
-        STAmount const payAmount{asset, onePeriod.trackedValueDelta + overpayment};
+            // Value of exactly one regular period, so the single LoanPay below
+            // makes one regular payment and leaves the residual as an
+            // overpayment.
+            auto const s = getCurrentState(env, broker, loanKeylet);
+            auto const periodicRate = loanPeriodicRate(s.interestRate, s.paymentInterval);
+            auto const onePeriod = computePaymentComponents(
+                env.current()->rules(),
+                asset,
+                s.loanScale,
+                s.totalValue,
+                s.principalOutstanding,
+                s.managementFeeOutstanding,
+                s.periodicPayment,
+                periodicRate,
+                s.paymentRemaining,
+                TenthBips16{0});
 
-        env(pay(borrower, loanKeylet.key, payAmount), Txflags(tfLoanOverpayment), Ter(tesSUCCESS));
-        env.close();
+            // 0.049999998 — smaller than one period, so it stays a residual
+            // overpayment rather than being consumed as a second regular
+            // payment.
+            Number const overpayment{49999998, -9};
+
+            // Ground truth: the stored principal must drop by exactly the regular
+            // payment's principal portion plus the overpayment's principal
+            // portion. computeOverpaymentComponents depends only on the
+            // overpayment amount and rates (not on the loan-state computation
+            // under test), so it is an independent oracle. Both components are
+            // computed under the same rules as the env so the near-zero-rate
+            // payment factor matches.
+            auto const overpaymentComponents = computeOverpaymentComponents(
+                asset,
+                s.loanScale,
+                overpayment,
+                overpaymentInterestRate,
+                overpaymentFeeRate,
+                TenthBips16{0});
+            Number const expectedNewPrincipal = s.principalOutstanding -
+                onePeriod.trackedPrincipalDelta - overpaymentComponents.trackedPrincipalDelta;
+
+            STAmount const payAmount{asset, onePeriod.trackedValueDelta + overpayment};
+            env(pay(borrower, loanKeylet.key, payAmount),
+                Txflags(tfLoanOverpayment),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const loanSle = env.le(loanKeylet);
+            BEAST_EXPECT(loanSle);
+
+            return Result{
+                .principalOutstanding = loanSle ? Number{loanSle->at(sfPrincipalOutstanding)} : 0,
+                .expectedNewPrincipal = expectedNewPrincipal};
+        };
+
+        // With fixCleanup3_2_0 the stored principal lands exactly on the
+        // ground-truth grid point: it is reduced by exactly the overpayment's
+        // principal portion. This is the key correctness check: if the principal
+        // pin were removed (even with the assertions still gated off), the lossy
+        // (P * factor) / factor round-trip would leave the principal one
+        // scale-unit high and this would fail.
+        Result const fixed = runScenario(all_);
+        BEAST_EXPECTS(
+            fixed.principalOutstanding == fixed.expectedNewPrincipal,
+            "fixed principal " + to_string(fixed.principalOutstanding) + " != expected " +
+                to_string(fixed.expectedNewPrincipal));
+
+        // Without the amendment the loan amortizes with the catastrophically
+        // cancelling near-zero payment factor, so its schedule (and ground truth)
+        // differ from the fixed case; the gated assertions keep the server from
+        // aborting and the overpayment still lands exactly on that schedule.
+        Result const legacy = runScenario(all_ - fixCleanup3_2_0);
+        BEAST_EXPECTS(
+            legacy.principalOutstanding == legacy.expectedNewPrincipal,
+            "legacy principal " + to_string(legacy.principalOutstanding) + " != expected " +
+                to_string(legacy.expectedNewPrincipal));
     }
 
-    // POST-FIX (fixCleanup3_2_0): a LoanSet with InterestRate = 1 (0.001%
-    // annualized, the minimum non-zero rate) succeeds. At such a near-zero
-    // rate the closed-form payment factor (1 + r)^n - 1 cancels
-    // catastrophically; the amendment switches to the numerically-stable
-    // series expansion (computePowerMinusOneHybrid), so the periodic payment is
-    // large enough that the scheduled payments cover at least the principal
-    // (no economic underpayment / yield theft).
+    // A LoanSet with InterestRate = 1 (0.001% annualized, the minimum non-zero
+    // rate). At such a near-zero rate the closed-form payment factor
+    // (1 + r)^n - 1 cancels catastrophically.
+    //
+    // Without fixCleanup3_2_0 the resulting amortization is degenerate and the
+    // LoanSet is rejected with tecPRECISION_LOSS (no loan created). With the
+    // amendment, computePowerMinusOneHybrid uses a numerically-stable series
+    // expansion, so the loan is created and the scheduled payments
+    // (2 * periodicPayment) cover the principal — no economic underpayment
+    // (yield theft).
+    //
+    // The test runs the same LoanSet under both amendment settings and pins the
+    // exact outcome for each.
     void
     testLoanSetNearZeroInterestRateSucceeds()
     {
@@ -7707,56 +7771,97 @@ protected:
         using namespace jtx;
         using namespace loan;
 
-        Env env(*this, all_);
-
-        Account const issuer{"issuer"};
-        Account const lender{"vaultOwner"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(1'000'000), issuer, lender, borrower);
-        env(fset(issuer, asfDefaultRipple));
-        env.close();
-
-        PrettyAsset const iouAsset = issuer["USD"];
-        STAmount const iouLimit{iouAsset.raw(), Number{9'999'999'999'999'999LL}};
-        env(trust(lender, iouLimit));
-        env(trust(borrower, iouLimit));
-        env(pay(issuer, lender, iouAsset(1'000'000)));
-        env(pay(issuer, borrower, iouAsset(1'000'000)));
-        env.close();
-
-        auto const broker = createVaultAndBroker(
-            env,
-            iouAsset,
-            lender,
-            {.vaultDeposit = 100'000, .debtMax = 0, .managementFeeRate = TenthBips16{0}});
-
-        auto const brokerSle = env.le(broker.brokerKeylet());
-        if (!BEAST_EXPECT(brokerSle))
-            return;
-        auto const loanSequence = brokerSle->at(sfLoanSequence);
-        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
-
         Number const principalRequested{1000};
-        env(set(borrower, broker.brokerID, principalRequested),
-            Sig(sfCounterpartySignature, lender),
-            kInterestRate(TenthBips32{1}),
-            kPaymentTotal(2),
-            kPaymentInterval(400),
-            Fee(env.current()->fees().base * 2),
-            Ter(tesSUCCESS));
-        env.close();
 
-        auto const loanSle = env.le(loanKeylet);
-        if (!BEAST_EXPECT(loanSle))
-            return;
-        // total scheduled = periodicPayment * paymentTotal must cover principal.
-        Number const periodicPayment = loanSle->at(sfPeriodicPayment);
-        Number const totalScheduled = periodicPayment * 2;
-        BEAST_EXPECTS(
-            totalScheduled >= principalRequested,
-            "near-zero-rate scheduled total " + to_string(totalScheduled) +
-                " for principal 1000; economic underpayment (yield theft)");
+        struct Result
+        {
+            TER ter = tesSUCCESS;
+            bool created = false;
+            std::int32_t loanScale = 0;
+            Number principal;
+            Number totalValue;
+            Number managementFee;
+            Number periodicPayment;
+        };
+
+        auto runScenario = [&](FeatureBitset features, TER expectedTer) -> Result {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const lender{"vaultOwner"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(1'000'000), issuer, lender, borrower);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const iouAsset = issuer["USD"];
+            STAmount const iouLimit{iouAsset.raw(), Number{9'999'999'999'999'999LL}};
+            env(trust(lender, iouLimit));
+            env(trust(borrower, iouLimit));
+            env(pay(issuer, lender, iouAsset(1'000'000)));
+            env(pay(issuer, borrower, iouAsset(1'000'000)));
+            env.close();
+
+            auto const broker = createVaultAndBroker(
+                env,
+                iouAsset,
+                lender,
+                {.vaultDeposit = 100'000, .debtMax = 0, .managementFeeRate = TenthBips16{0}});
+
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            BEAST_EXPECT(brokerSle);
+            auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
+            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+
+            env(set(borrower, broker.brokerID, principalRequested),
+                Sig(sfCounterpartySignature, lender),
+                kInterestRate(TenthBips32{1}),
+                kPaymentTotal(2),
+                kPaymentInterval(400),
+                Fee(env.current()->fees().base * 2),
+                Ter(expectedTer));
+            env.close();
+
+            Result r;
+            r.ter = env.ter();
+            if (auto const loanSle = env.le(loanKeylet))
+            {
+                r.created = true;
+                r.loanScale = loanSle->at(sfLoanScale);
+                r.principal = loanSle->at(sfPrincipalOutstanding);
+                r.totalValue = loanSle->at(sfTotalValueOutstanding);
+                r.managementFee = loanSle->at(sfManagementFeeOutstanding);
+                r.periodicPayment = loanSle->at(sfPeriodicPayment);
+            }
+            return r;
+        };
+
+        Result const fixed = runScenario(all_, tesSUCCESS);
+        Result const legacy = runScenario(all_ - fixCleanup3_2_0, tecPRECISION_LOSS);
+
+        // Without the amendment, the catastrophically-cancelling closed-form
+        // payment factor produces a degenerate amortization that fails
+        // checkLoanGuards: the LoanSet is rejected with tecPRECISION_LOSS and no
+        // loan is created.
+        BEAST_EXPECT(legacy.ter == tecPRECISION_LOSS);
+        BEAST_EXPECT(!legacy.created);
+
+        // With the amendment the stable series expansion produces a valid loan
+        // at loanScale -10.
+        BEAST_EXPECT(fixed.ter == tesSUCCESS);
+        BEAST_EXPECT(fixed.created);
+        BEAST_EXPECT(fixed.loanScale == -10);
+        BEAST_EXPECT(fixed.principal == principalRequested);
+        BEAST_EXPECT((fixed.totalValue == Number{10000000001903, -10}));
+        BEAST_EXPECT(fixed.managementFee == beast::kZero);
+
+        // Periodic payment from the numerically-stable series expansion, and the
+        // scheduled total (2 * periodicPayment) which exceeds the 1000 principal
+        // — no economic underpayment / yield theft.
+        BEAST_EXPECT((fixed.periodicPayment == Number{5000000000951293762, -16}));
+        BEAST_EXPECT((fixed.periodicPayment * 2 == Number{1000000000190258752, -15}));
+        BEAST_EXPECT(fixed.periodicPayment * 2 > principalRequested);
     }
 
     // An overpayment whose residual amount has more precision than loanScale
