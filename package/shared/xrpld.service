@@ -8,8 +8,9 @@ StartLimitBurst=5
 [Service]
 Type=simple
 ExecStart=/usr/bin/xrpld --net --silent --conf /etc/xrpld/xrpld.cfg
-Restart=always
+Restart=on-failure
 RestartSec=5s
+TimeoutStopSec=300
 NoNewPrivileges=true
 ProtectSystem=full
 ProtectHome=true
