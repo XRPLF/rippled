@@ -4291,8 +4291,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         if (!BEAST_EXPECT(proof.has_value()))
             return;
 
-        mptAlice.mergeInbox({.account = bob});
-
+        // Change Bob's confidential balance version after generating the clawback proof.
         mptAlice.confidentialClaw({
             .account = alice,
             .holder = bob,
