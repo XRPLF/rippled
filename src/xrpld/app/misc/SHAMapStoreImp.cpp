@@ -175,10 +175,10 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             std::to_string(app_.config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
     }
 
-    if (!nscfg.exists(Keys::kCacheSize))
+    if (!nscfg.exists(Keys::kCacheAge))
     {
         nscfg.set(
-            Keys::kCacheSize,
+            Keys::kCacheAge,
             std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
     }
 
