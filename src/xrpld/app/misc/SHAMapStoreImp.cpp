@@ -165,6 +165,22 @@ std::unique_ptr<NodeStore::Database>
 SHAMapStoreImp::makeNodeStore(int readThreads)
 {
     auto nscfg = app_.config().section(ConfigSection::nodeDatabase());
+
+    // Provide default values.
+    if (!nscfg.exists("cache_size"))
+    {
+        nscfg.set(
+            "cache_size",
+            std::to_string(app_.config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
+    }
+
+    if (!nscfg.exists("cache_age"))
+    {
+        nscfg.set(
+            "cache_age",
+            std::to_string(app_.config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
+    }
+
     std::unique_ptr<NodeStore::Database> db;
 
     if (deleteInterval_ != 0u)
@@ -254,6 +270,8 @@ SHAMapStoreImp::run()
     LedgerIndex lastRotated = stateDb_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
+    fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache());
+    treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache());
 
     if (advisoryDelete_)
         canDelete_ = stateDb_.getCanDelete();
@@ -542,16 +560,16 @@ SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
     // Also clear the FullBelowCache so its generation counter is bumped.
     // This prevents stale "full below" markers from persisting across
     // backend rotation/online deletion and interfering with SHAMap sync.
-    app_.getNodeFamily().getFullBelowCache()->clear();
+    fullBelowCache_->clear();
 }
 
 void
 SHAMapStoreImp::freshenCaches()
 {
-    if (freshenCache(*app_.getNodeFamily().getTreeNodeCache()))
+    if (freshenCache(*treeNodeCache_))
         return;
-
-    freshenCache(app_.getMasterTransaction().getCache());
+    if (freshenCache(app_.getMasterTransaction().getCache()))
+        return;
 }
 
 void
