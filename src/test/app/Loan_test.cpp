@@ -7620,13 +7620,28 @@ protected:
         using namespace loan;
         using namespace xrpl::detail;
 
+        struct Params
+        {
+            TenthBips32 interestRate;
+            TenthBips16 managementFeeRate;
+            std::uint32_t paymentTotal;
+            std::uint32_t paymentInterval;
+            std::int64_t principal;
+            Number overpayment;
+            TenthBips32 overpaymentInterestRate;
+            TenthBips32 overpaymentFeeRate;
+            std::optional<int> vaultScale;
+        };
+
         struct Result
         {
             Number principalOutstanding;  // stored principal after the LoanPay
             Number expectedNewPrincipal;  // ground truth, independent of the fix
+            Number managementFeeChange;   // managementFeeOutstanding after - before
+            Number unit;                  // one scale-unit at the loan scale
         };
 
-        auto runScenario = [this](FeatureBitset features) -> Result {
+        auto runScenario = [this](FeatureBitset features, Params const& p) -> Result {
             Env env(*this, features);
 
             Account const issuer{"issuer"};
@@ -7652,30 +7667,28 @@ protected:
                 lender,
                 {.vaultDeposit = 900'000,
                  .debtMax = 0,
-                 .managementFeeRate = TenthBips16{0},
-                 .vaultScale = 1});
+                 .managementFeeRate = p.managementFeeRate,
+                 .vaultScale = p.vaultScale});
 
             auto const brokerSle = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerSle);
             auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
             auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
 
-            TenthBips32 const overpaymentInterestRate{1000};
-            TenthBips32 const overpaymentFeeRate{1000};
-            env(set(borrower, broker.brokerID, Number{100}, tfLoanOverpayment),
+            env(set(borrower, broker.brokerID, Number{p.principal}, tfLoanOverpayment),
                 Sig(sfCounterpartySignature, lender),
-                kInterestRate(TenthBips32{1}),
-                kPaymentTotal(3),
-                kPaymentInterval(60),
-                kGracePeriod(60),
-                kOverpaymentFee(overpaymentFeeRate),
-                kOverpaymentInterestRate(overpaymentInterestRate),
+                kInterestRate(p.interestRate),
+                kPaymentTotal(p.paymentTotal),
+                kPaymentInterval(p.paymentInterval),
+                kGracePeriod(p.paymentInterval),
+                kOverpaymentFee(p.overpaymentFeeRate),
+                kOverpaymentInterestRate(p.overpaymentInterestRate),
                 Fee(env.current()->fees().base * 2),
                 Ter(tesSUCCESS));
             env.close();
 
-            // Value of exactly one regular period, so the single LoanPay below
-            // makes one regular payment and leaves the residual as an
+            // The single LoanPay below makes one regular payment (the overpayment
+            // is smaller than one period) and leaves the residual as an
             // overpayment.
             auto const s = getCurrentState(env, broker, loanKeylet);
             auto const periodicRate = loanPeriodicRate(s.interestRate, s.paymentInterval);
@@ -7689,31 +7702,28 @@ protected:
                 s.periodicPayment,
                 periodicRate,
                 s.paymentRemaining,
-                TenthBips16{0});
-
-            // 0.049999998 — smaller than one period, so it stays a residual
-            // overpayment rather than being consumed as a second regular
-            // payment.
-            Number const overpayment{49999998, -9};
+                p.managementFeeRate);
 
             // Ground truth: the stored principal must drop by exactly the regular
             // payment's principal portion plus the overpayment's principal
             // portion. computeOverpaymentComponents depends only on the
             // overpayment amount and rates (not on the loan-state computation
             // under test), so it is an independent oracle. Both components are
-            // computed under the same rules as the env so the near-zero-rate
-            // payment factor matches.
+            // computed under the same rules as the env so the payment factor
+            // matches.
             auto const overpaymentComponents = computeOverpaymentComponents(
                 asset,
                 s.loanScale,
-                overpayment,
-                overpaymentInterestRate,
-                overpaymentFeeRate,
-                TenthBips16{0});
+                p.overpayment,
+                p.overpaymentInterestRate,
+                p.overpaymentFeeRate,
+                p.managementFeeRate);
             Number const expectedNewPrincipal = s.principalOutstanding -
                 onePeriod.trackedPrincipalDelta - overpaymentComponents.trackedPrincipalDelta;
 
-            STAmount const payAmount{asset, onePeriod.trackedValueDelta + overpayment};
+            Number const managementFeeBefore = s.managementFeeOutstanding;
+
+            STAmount const payAmount{asset, onePeriod.trackedValueDelta + p.overpayment};
             env(pay(borrower, loanKeylet.key, payAmount),
                 Txflags(tfLoanOverpayment),
                 Ter(tesSUCCESS));
@@ -7724,8 +7734,26 @@ protected:
 
             return Result{
                 .principalOutstanding = loanSle ? Number{loanSle->at(sfPrincipalOutstanding)} : 0,
-                .expectedNewPrincipal = expectedNewPrincipal};
+                .expectedNewPrincipal = expectedNewPrincipal,
+                .managementFeeChange =
+                    (loanSle ? Number{loanSle->at(sfManagementFeeOutstanding)} : Number{0}) -
+                    managementFeeBefore,
+                .unit = Number{1, s.loanScale}};
         };
+
+        // Scenario 1: the original near-zero-rate principal reproduction
+        // (loanScale -10, no management fee). 0.049999998 is smaller than one
+        // period, so it stays a residual overpayment.
+        Params const principalCase{
+            .interestRate = TenthBips32{1},
+            .managementFeeRate = TenthBips16{0},
+            .paymentTotal = 3,
+            .paymentInterval = 60,
+            .principal = 100,
+            .overpayment = Number{49999998, -9},
+            .overpaymentInterestRate = TenthBips32{1000},
+            .overpaymentFeeRate = TenthBips32{1000},
+            .vaultScale = 1};
 
         // With fixCleanup3_2_0 the stored principal lands exactly on the
         // ground-truth grid point: it is reduced by exactly the overpayment's
@@ -7733,7 +7761,7 @@ protected:
         // pin were removed (even with the assertions still gated off), the lossy
         // (P * factor) / factor round-trip would leave the principal one
         // scale-unit high and this would fail.
-        Result const fixed = runScenario(all_);
+        Result const fixed = runScenario(all_, principalCase);
         BEAST_EXPECTS(
             fixed.principalOutstanding == fixed.expectedNewPrincipal,
             "fixed principal " + to_string(fixed.principalOutstanding) + " != expected " +
@@ -7743,11 +7771,58 @@ protected:
         // cancelling near-zero payment factor, so its schedule (and ground truth)
         // differ from the fixed case; the gated assertions keep the server from
         // aborting and the overpayment still lands exactly on that schedule.
-        Result const legacy = runScenario(all_ - fixCleanup3_2_0);
+        Result const legacy = runScenario(all_ - fixCleanup3_2_0, principalCase);
         BEAST_EXPECTS(
             legacy.principalOutstanding == legacy.expectedNewPrincipal,
             "legacy principal " + to_string(legacy.principalOutstanding) + " != expected " +
                 to_string(legacy.expectedNewPrincipal));
+
+        // Scenario 2: a normal-rate loan with a 10% management fee. At a normal
+        // rate the payment factor is identical across the amendment, so toggling
+        // fixCleanup3_2_0 isolates the fix. This overpayment (found by search)
+        // lands on a state where both the principal and the management fee differ
+        // by one scale-unit between the fixed and legacy paths.
+        Params const feeCase{
+            .interestRate = TenthBips32{10000},
+            .managementFeeRate = TenthBips16{10000},
+            .paymentTotal = 6,
+            .paymentInterval = 30u * 24 * 60 * 60,
+            .principal = 1000,
+            .overpayment = Number{214367363, -10},
+            .overpaymentInterestRate = TenthBips32{0},
+            .overpaymentFeeRate = TenthBips32{0},
+            .vaultScale = std::nullopt};
+
+        Result const feeFixed = runScenario(all_, feeCase);
+        Result const feeLegacy = runScenario(all_ - fixCleanup3_2_0, feeCase);
+
+        // With the fix the principal is the exact reduction; without it the lossy
+        // (P * factor) / factor round-trip leaves it one scale-unit high.
+        BEAST_EXPECTS(
+            feeFixed.principalOutstanding == feeFixed.expectedNewPrincipal,
+            "fee-case fixed principal " + to_string(feeFixed.principalOutstanding) +
+                " != expected " + to_string(feeFixed.expectedNewPrincipal));
+        BEAST_EXPECTS(
+            feeLegacy.principalOutstanding == feeLegacy.expectedNewPrincipal + feeLegacy.unit,
+            "fee-case legacy principal " + to_string(feeLegacy.principalOutstanding) +
+                " != expected " + to_string(feeLegacy.expectedNewPrincipal + feeLegacy.unit));
+
+        // Management fee: the overpayment re-amortizes a fee-bearing loan, so the management fee
+        // outstanding drops.
+        //
+        // Unlike the principal that is already at the correct precision, the re-amortized
+        // management fee  is tenthBipsOfValue of the new schedule's gross interest, which depends
+        // on the recomputed periodic payment. So the expected change below is a pinned constant
+        // captured from a passing run a magic value only because there is nothing simpler to
+        // compare against.
+        //
+        // At the integration level, toggling the amendment also changes the regular payment's
+        // rounding so a fixed-vs-legacy comparison cannot isolate the overpayment management-fee
+        // fix.
+        BEAST_EXPECT(feeFixed.managementFeeChange == feeLegacy.managementFeeChange);
+        BEAST_EXPECTS(
+            (feeFixed.managementFeeChange == Number{-8219709543, -10}),
+            "fee-case mgmt fee change " + to_string(feeFixed.managementFeeChange));
     }
 
     // A LoanSet with InterestRate = 1 (0.001% annualized, the minimum non-zero
