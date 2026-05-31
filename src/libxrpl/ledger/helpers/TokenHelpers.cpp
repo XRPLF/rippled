@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <initializer_list>
+#include <limits>
 #include <string>
 #include <variant>
 
@@ -55,11 +56,27 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
         [&](MPTIssue const& issue) { return isGlobalFrozen(view, issue); });
 }
 
+TER
+checkGlobalFrozen(ReadView const& view, Asset const& asset)
+{
+    if (isGlobalFrozen(view, asset))
+        return asset.holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
+    return tesSUCCESS;
+}
+
 bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
     return std::visit(
         [&](auto const& issue) { return isIndividualFrozen(view, account, issue); }, asset.value());
+}
+
+TER
+checkIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    if (isIndividualFrozen(view, account, asset))
+        return asset.holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
+    return tesSUCCESS;
 }
 
 bool
@@ -1105,6 +1122,13 @@ directSendNoFeeMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
+            if (view.rules().enabled(featureMPTokensV2))
+            {
+                if ((*sle)[sfMPTAmount] > (std::numeric_limits<std::uint64_t>::max() - amt))
+                {
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                }
+            }
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] += amt;
             view.update(sle);

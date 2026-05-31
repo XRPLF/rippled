@@ -199,6 +199,6 @@ CheckOptions:
   readability-identifier-naming.PublicMemberSuffix: ""
   readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
 
-HeaderFilterRegex: '^.*/(test|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
+HeaderFilterRegex: '^.*/(tests?|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
 ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'
 WarningsAsErrors: "*"

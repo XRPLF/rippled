@@ -93,7 +93,9 @@ struct Keys
     static constexpr auto kBbtOptions = "bbt_options";
     static constexpr auto kBgThreads = "bg_threads";
     static constexpr auto kBlockSize = "block_size";
+    static constexpr auto kCacheAge = "cache_age";
     static constexpr auto kCacheMb = "cache_mb";
+    static constexpr auto kCacheSize = "cache_size";
     static constexpr auto kClientMaxWindowBits = "client_max_window_bits";
     static constexpr auto kClientNoContextTakeover = "client_no_context_takeover";
     static constexpr auto kCompressLevel = "compress_level";
