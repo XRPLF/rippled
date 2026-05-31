@@ -5,6 +5,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/vault.h>
 
@@ -16,6 +17,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -28,6 +30,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
 #include <algorithm>
 #include <array>
@@ -496,6 +499,75 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     }
 
     void
+    testConvertProofContextBinding(FeatureBitset features)
+    {
+        testcase("Convert proof context binding");
+        using namespace test::jtx;
+
+        auto runBadProof = [&](auto makeContextHash) {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            auto const proof =
+                mptAlice.getSchnorrProof(bob, makeContextHash(env, mptAlice, alice, bob, carol));
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 10,
+                .proof = strHex(*proof),
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .err = tecBAD_PROOF,
+            });
+        };
+
+        // Wrong account in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const& carol) {
+            return getConvertContextHash(carol.id(), mpt.issuanceID(), env.seq(bob));
+        });
+
+        // Wrong issuance ID in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const&,
+                        Account const& alice,
+                        Account const& bob,
+                        Account const&) {
+            return getConvertContextHash(
+                bob.id(), makeMptID(env.seq(alice) + 100, alice), env.seq(bob));
+        });
+
+        // Wrong transaction sequence in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const&) {
+            return getConvertContextHash(bob.id(), mpt.issuanceID(), env.seq(bob) + 1);
+        });
+    }
+
+    void
     testSet(FeatureBitset features)
     {
         testcase("Set");
@@ -827,25 +899,35 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
         }
 
-        // Set issuer key first, then auditor key in a separate tx
+        // Cannot set issuer key first, then add auditor key in a separate tx
         {
             Env env{*this, features};
             Account const alice("alice");
+            Account const bob("bob");
             Account const auditor("auditor");
-            MPTTester mptAlice(env, alice, {.holders = {}, .auditor = auditor});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
             });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
 
             mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
             mptAlice.generateKeyPair(auditor);
 
             // Set issuer key only
             mptAlice.set({
                 .account = alice,
                 .issuerPubKey = mptAlice.getPubKey(alice),
+            });
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 10,
+                .holderPubKey = mptAlice.getPubKey(bob),
             });
 
             // Set auditor key in a separate tx - requires issuer key in tx
@@ -857,6 +939,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .auditorPubKey = mptAlice.getPubKey(auditor),
                 .err = tecNO_PERMISSION,
             });
+
+            BEAST_EXPECT(!mptAlice.getEncryptedBalance(bob, MPTTester::AuditorEncryptedBalance));
         }
     }
 
@@ -865,6 +949,39 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     {
         testcase("test transfer fee");
         using namespace test::jtx;
+
+        // Public MPT holder-to-holder payments apply the transfer fee. The
+        // confidential policy is stricter: nonzero transfer fees cannot coexist
+        // with lsfMPTCanConfidentialAmount, so ConfidentialMPTSend never bypasses
+        // public transfer-fee accounting.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create({
+                .transferFee = 10'000,
+                .flags = tfMPTCanTransfer,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 1'000);
+
+            auto const mpt = mptAlice["MPT"];
+            env(pay(bob, carol, mpt(100)), Sendmax(mpt(110)));
+            BEAST_EXPECT(mptAlice.checkMPTokenAmount(bob, 890));
+            BEAST_EXPECT(mptAlice.checkMPTokenAmount(carol, 100));
+            BEAST_EXPECT(mptAlice.checkMPTokenOutstandingAmount(990));
+
+            MPTTester confidentialMPT(env, alice, kMPT_INIT_NO_FUND);
+            confidentialMPT.create({
+                .transferFee = 10'000,
+                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .err = temBAD_TRANSFER_FEE,
+            });
+        }
 
         // MPTokenIssuanceCreate: cannot create with both TransferFee > 0 and
         // tfMPTCanConfidentialAmount
@@ -1609,13 +1726,48 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     void
     testMergeInbox(FeatureBitset features)
     {
-        testcase("Merge inbox");
         using namespace test::jtx;
-        Env env{*this, features};
-        Account const alice("alice");
-        Account const bob("bob");
-        ConfidentialEnv const confEnv{
-            env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+        {
+            testcase("No-op merge inbox");
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+            // ConfidentialEnv already merged Bob's converted amount, so this is a no-op merge.
+            confEnv.mpt.mergeInbox({.account = bob});
+        }
+
+        // makes sure if merge inbox version is UINT32_MAX, the next merge will be 0
+        {
+            testcase("Merge inbox version wraps to zero");
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+            auto& mptAlice = confEnv.mpt;
+
+            auto const wrappedFrom = std::numeric_limits<std::uint32_t>::max();
+            auto const jt = env.jt(mptAlice.mergeInboxJV({.account = bob}));
+            BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle = std::const_pointer_cast<SLE>(
+                    view.read(keylet::mptoken(mptAlice.issuanceID(), bob.id())));
+                if (!sle)
+                    return false;
+
+                (*sle)[sfConfidentialBalanceVersion] = wrappedFrom;
+                view.rawReplace(sle);
+
+                auto const result = xrpl::apply(env.app(), view, *jt.stx, TapNone, env.journal);
+                BEAST_EXPECT(result.ter == tesSUCCESS);
+                return result.applied;
+            }));
+
+            BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) == 0);
+        }
     }
 
     void
@@ -4041,6 +4193,111 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             .account = alice,
             .holder = dave,
             .amt = 200,
+        });
+    }
+
+    void
+    testClawbackContextBinding(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTClawback context binding");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{.account = bob, .payAmount = 100, .convertAmount = 60},
+             {.account = carol, .payAmount = 100, .convertAmount = 60}},
+            tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount};
+        auto& mptAlice = confEnv.mpt;
+
+        auto getProof = [&](uint256 const& contextHash) -> std::optional<std::string> {
+            auto const privKey = mptAlice.getPrivKey(alice);
+            if (!BEAST_EXPECT(privKey.has_value()))
+                return std::nullopt;
+
+            auto const proof = mptAlice.getClawbackProof(bob, 60, *privKey, contextHash);
+            if (!BEAST_EXPECT(proof.has_value()))
+                return std::nullopt;
+
+            return strHex(*proof);
+        };
+
+        auto submitBadContext = [&](uint256 const& contextHash) {
+            auto const proof = getProof(contextHash);
+            if (!proof)
+                return;
+
+            mptAlice.confidentialClaw({
+                .account = alice,
+                .holder = bob,
+                .amt = 60,
+                .proof = proof,
+                .err = tecBAD_PROOF,
+            });
+        };
+
+        submitBadContext(getClawbackContextHash(
+            alice.id(), mptAlice.issuanceID(), env.seq(alice) + 1, bob.id()));
+        submitBadContext(getClawbackContextHash(
+            alice.id(), makeMptID(env.seq(alice) + 100, alice), env.seq(alice), bob.id()));
+        submitBadContext(
+            getClawbackContextHash(alice.id(), mptAlice.issuanceID(), env.seq(alice), carol.id()));
+        submitBadContext(
+            getClawbackContextHash(carol.id(), mptAlice.issuanceID(), env.seq(alice), bob.id()));
+
+        auto const proof = getProof(
+            getClawbackContextHash(alice.id(), mptAlice.issuanceID(), env.seq(alice), bob.id()));
+        if (!proof)
+            return;
+
+        mptAlice.confidentialClaw({
+            .account = alice,
+            .holder = bob,
+            .amt = 60,
+            .proof = proof,
+        });
+    }
+
+    void
+    testClawbackIgnoresHolderVersion(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTClawback omits holder version binding");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        ConfidentialEnv confEnv{
+            env,
+            alice,
+            {{.account = bob, .payAmount = 100, .convertAmount = 60}},
+            tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount};
+        auto& mptAlice = confEnv.mpt;
+
+        auto const privKey = mptAlice.getPrivKey(alice);
+        if (!BEAST_EXPECT(privKey.has_value()))
+            return;
+
+        auto const issuerSeq = env.seq(alice);
+        auto const proof = mptAlice.getClawbackProof(
+            bob,
+            60,
+            *privKey,
+            getClawbackContextHash(alice.id(), mptAlice.issuanceID(), issuerSeq, bob.id()));
+        if (!BEAST_EXPECT(proof.has_value()))
+            return;
+
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.confidentialClaw({
+            .account = alice,
+            .holder = bob,
+            .amt = 60,
+            .proof = strHex(*proof),
         });
     }
 
@@ -7517,6 +7774,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // ConfidentialMPTConvert
         testConvert(features);
         testConvertPreflight(features);
+        testConvertProofContextBinding(features);
         testConvertPreclaim(features);
         testConvertWithAuditor(features);
 
@@ -7544,6 +7802,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testClawbackPreclaim(features);
         testClawbackProof(features);
         testClawbackWithAuditor(features);
+        testClawbackContextBinding(features);
+        testClawbackIgnoresHolderVersion(features);
 
         testDelete(features);
 
