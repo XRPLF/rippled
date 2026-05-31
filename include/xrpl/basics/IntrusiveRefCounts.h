@@ -7,6 +7,24 @@
 
 namespace xrpl {
 
+namespace detail {
+// All-time peak strong/weak ref counts ever observed across all
+// IntrusiveRefCounts instances. Read from doSweep periodically.
+inline std::atomic<std::uint32_t> kPeakStrongObserved{0};
+inline std::atomic<std::uint32_t> kPeakWeakObserved{0};
+
+inline void
+updateRefCountPeak(std::atomic<std::uint32_t>& peak, std::uint32_t v) noexcept
+{
+    auto cur = peak.load(std::memory_order_relaxed);
+    while (v > cur && !peak.compare_exchange_weak(
+                          cur, v, std::memory_order_relaxed))
+    {
+        // retry; cur is updated by compare_exchange_weak on failure
+    }
+}
+}  // namespace detail
+
 /** Action to perform when releasing a strong pointer.
 
     noop: Do nothing. For example, a `noop` action will occur when a count is
@@ -413,6 +431,8 @@ inline IntrusiveRefCounts::RefCountPair::RefCountPair(IntrusiveRefCounts::FieldT
     , partialDestroyStartedBit{v & kPartialDestroyStartedMask}
     , partialDestroyFinishedBit{v & kPartialDestroyFinishedMask}
 {
+    detail::updateRefCountPeak(detail::kPeakStrongObserved, strong);
+    detail::updateRefCountPeak(detail::kPeakWeakObserved, weak);
     XRPL_ASSERT(
         (strong < kCheckStrongMaxValue && weak < kCheckWeakMaxValue),
         "xrpl::IntrusiveRefCounts::RefCountPair(FieldType) : inputs inside "

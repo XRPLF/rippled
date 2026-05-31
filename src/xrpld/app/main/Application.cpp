@@ -1084,6 +1084,21 @@ public:
                                    << "; size after: " << cachedSLEs_.size();
         }
 
+        {
+            auto const peakStrong =
+                xrpl::detail::kPeakStrongObserved.load(std::memory_order_relaxed);
+            auto const peakWeak =
+                xrpl::detail::kPeakWeakObserved.load(std::memory_order_relaxed);
+            constexpr std::uint32_t kStrongLimit = 65503;  // kCheckStrongMaxValue
+            constexpr std::uint32_t kWeakLimit = 16351;    // kCheckWeakMaxValue
+            JLOG(journal_.warn())
+                << "RefCount peak since startup: "
+                << "strong=" << peakStrong << "/" << kStrongLimit
+                << " (" << (peakStrong * 100 / kStrongLimit) << "%); "
+                << "weak=" << peakWeak << "/" << kWeakLimit
+                << " (" << (peakWeak * 100 / kWeakLimit) << "%)";
+        }
+
         mallocTrim("doSweep", journal_);
 
         // Set timer to do another sweep later.
