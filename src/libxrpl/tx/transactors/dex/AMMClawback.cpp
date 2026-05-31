@@ -324,9 +324,9 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     auto amount2Withdraw = amount2Balance * frac;
 
     auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac);
-    if (lpTokensWithdraw > holdLPtokens)
+    if (lpTokensWithdraw >= holdLPtokens)
     {
-        // if lptoken balance less than what the issuer intended to clawback,
+        // if lptoken balance less and equal to what the issuer intended to clawback,
         // clawback all the tokens. Because we are doing a two-asset withdrawal,
         // tfee is actually not used, so pass tfee as 0.
         return AMMWithdraw::equalWithdrawTokens(

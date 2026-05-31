@@ -2461,6 +2461,31 @@ class AMMClawback_test : public beast::unit_test::Suite
             return {lpToken, lpTokenBalance};
         };
 
+        auto testClawbackAllWithAmount = [&](bool amountExceedsBalance) {
+            Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
+            Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
+            auto const usd = setupAccounts(env, gw, alice, bob);
+
+            AMM amm(env, alice, XRP(2), usd(1));
+            amm.deposit(alice, IOUAmount{1'876123487565916, -15});
+            amm.deposit(bob, IOUAmount{1'000'000});
+            amm.withdraw(alice, IOUAmount{1'876123487565916, -15});
+            amm.withdrawAll(bob);
+
+            auto const [amountBalance, amount2Balance, lptAMMBalance] = amm.balances(usd, XRP);
+            BEAST_EXPECT(amountBalance.asset() == usd);
+            BEAST_EXPECT(amount2Balance.native());
+            auto const holderLPTokens = STAmount{amm.getLPTokensBalance(alice), amm.lptIssue()};
+            BEAST_EXPECT(lptAMMBalance >= holderLPTokens);
+
+            auto const unit = STAmount(usd, UINT64_C(1), -15);
+            auto const amount = amountExceedsBalance ? amountBalance + unit : amountBalance;
+
+            env(amm::ammClawback(gw, alice, usd, XRP, amount), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(!amm.ammExists());
+        };
+
         // IOU/XRP pool. AMMClawback almost last holder's USD balance
         {
             Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
@@ -2570,6 +2595,12 @@ class AMMClawback_test : public beast::unit_test::Suite
             {
                 env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt));
                 BEAST_EXPECT(!amm.ammExists());
+            }
+
+            if (features[fixAMMv1_3] && features[fixAMMClawbackRounding])
+            {
+                testClawbackAllWithAmount(true);
+                testClawbackAllWithAmount(false);
             }
         }
 
