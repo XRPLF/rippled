@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -1406,8 +1407,12 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         auto const fixedOpt = run(testableAmendments());
         auto const legacyOpt = run(testableAmendments() - fixCleanup3_2_0);
-        if (!BEAST_EXPECT(fixedOpt && legacyOpt))
+        if (!fixedOpt || !legacyOpt)
+        {
+            BEAST_EXPECT(fixedOpt.has_value());
+            BEAST_EXPECT(legacyOpt.has_value());
             return;
+        }
         Outcome const& fixed = *fixedOpt;
         Outcome const& legacy = *legacyOpt;
 
