@@ -571,12 +571,21 @@ tryOverpayment(
                                managementFeeRate) +
             errors;
 
-        return rules.enabled(fixCleanup3_2_0) ? constructLoanState(
-                                                    state.valueOutstanding,
-                                                    roundedOldState.principalOutstanding -
-                                                        overpaymentComponents.trackedPrincipalDelta,
-                                                    state.managementFeeDue)
-                                              : state;
+        if (!rules.enabled(fixCleanup3_2_0))
+            return state;
+
+        // The new principal is known exactly: it is reduced by the overpayment's
+        // principal portion. computeTheoreticalLoanState instead derives the
+        // principal -- and, from it, the management fee and interest -- via a
+        // lossy (P * factor) / factor round-trip. Pin the principal to the exact
+        // value and re-derive the management fee from the exact interest gross
+        // (value - principal), so the intermediate state is fully consistent with
+        // the exact principal rather than the one-scale-unit-high round-trip.
+        Number const principal =
+            roundedOldState.principalOutstanding - overpaymentComponents.trackedPrincipalDelta;
+        Number const managementFee =
+            tenthBipsOfValue(state.valueOutstanding - principal, managementFeeRate);
+        return constructLoanState(state.valueOutstanding, principal, managementFee);
     }();
 
     JLOG(j.debug()) << "new theoretical value: " << newTheoreticalState.valueOutstanding

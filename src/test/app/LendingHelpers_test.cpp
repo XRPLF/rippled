@@ -1403,9 +1403,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
         // interest decrease plus overpayment interest portion
         BEAST_EXPECTS(
             (actualPaymentParts.valueChange ==
-             Number{-164737, -5} + actualPaymentParts.interestPaid),
+             Number{-164738, -5} + actualPaymentParts.interestPaid),
             " valueChange mismatch: expected " +
-                to_string(Number{-164737, -5} + actualPaymentParts.interestPaid) + ", got " +
+                to_string(Number{-164738, -5} + actualPaymentParts.interestPaid) + ", got " +
                 to_string(actualPaymentParts.valueChange));
 
         // While there is no overpayment fee, fee paid should equal the
@@ -1433,8 +1433,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
         // value is not needed to correctly update the Vault state.
         BEAST_EXPECTS(
             (newState.managementFeeDue - loanProperties.loanState.managementFeeDue ==
-             Number{-18304, -5}),
-            " management fee change mismatch: expected " + to_string(Number{-18304, -5}) +
+             Number{-18303, -5}),
+            " management fee change mismatch: expected " + to_string(Number{-18303, -5}) +
                 ", got " +
                 to_string(newState.managementFeeDue - loanProperties.loanState.managementFeeDue));
 
