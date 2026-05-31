@@ -514,7 +514,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const expectedOverpaymentManagementFee = Number{10};   // 10% of 100
         auto const expectedPrincipalPortion = Number{400};          // 1,000 - 100 - 500
 
+        Env const env{*this};
         auto const components = xrpl::detail::computeOverpaymentComponents(
+            env.current()->rules(),
             iou,
             loanScale,
             overpayment,
@@ -855,7 +857,13 @@ class LendingHelpers_test : public beast::unit_test::Suite
         Number const overpaymentAmount{50};
 
         auto const overpaymentComponents = computeOverpaymentComponents(
-            asset, loanScale, overpaymentAmount, TenthBips32(0), TenthBips32(0), managementFeeRate);
+            env.current()->rules(),
+            asset,
+            loanScale,
+            overpaymentAmount,
+            TenthBips32(0),
+            TenthBips32(0),
+            managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
             env.current()->rules(),
@@ -943,6 +951,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -1038,6 +1047,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -1139,6 +1149,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -1248,6 +1259,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},
@@ -1355,7 +1367,9 @@ class LendingHelpers_test : public beast::unit_test::Suite
         std::uint32_t const paymentsRemaining = 10;
         auto const periodicRate = loanPeriodicRate(loanInterestRate, paymentInterval);
 
+        Env const env{*this};
         auto const overpaymentComponents = computeOverpaymentComponents(
+            env.current()->rules(),
             asset,
             loanScale,
             Number{50, 0},

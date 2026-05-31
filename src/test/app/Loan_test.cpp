@@ -7712,6 +7712,7 @@ protected:
             // computed under the same rules as the env so the payment factor
             // matches.
             auto const overpaymentComponents = computeOverpaymentComponents(
+                env.current()->rules(),
                 asset,
                 s.loanScale,
                 p.overpayment,

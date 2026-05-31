@@ -1171,11 +1171,13 @@ computePaymentComponents(
     // Cap each component to never exceed what's actually outstanding
     deltas.principal = std::min(deltas.principal, currentLedgerState.principalOutstanding);
 
-    XRPL_ASSERT_PARTS(
-        deltas.interest <= currentLedgerState.interestDue,
-        "xrpl::detail::computePaymentComponents",
-        "interest due delta not greater than outstanding");
-
+    if (fixCleanup320Enabled)
+    {
+        XRPL_ASSERT_PARTS(
+            deltas.interest <= currentLedgerState.interestDue,
+            "xrpl::detail::computePaymentComponents",
+            "interest due delta not greater than outstanding");
+    }
     // Cap interest to both the outstanding amount AND what's left of the
     // periodic payment after principal is paid
     deltas.interest = std::min(
@@ -1316,6 +1318,7 @@ computePaymentComponents(
  */
 ExtendedPaymentComponents
 computeOverpaymentComponents(
+    Rules const& rules,
     Asset const& asset,
     int32_t const loanScale,
     Number const& overpayment,
@@ -1323,10 +1326,13 @@ computeOverpaymentComponents(
     TenthBips32 const overpaymentFeeRate,
     TenthBips16 const managementFeeRate)
 {
-    XRPL_ASSERT(
-        overpayment > 0 && isRounded(asset, overpayment, loanScale),
-        "xrpl::detail::computeOverpaymentComponents : valid overpayment "
-        "amount");
+    if (rules.enabled(fixCleanup3_2_0))
+    {
+        XRPL_ASSERT(
+            overpayment > 0 && isRounded(asset, overpayment, loanScale),
+            "xrpl::detail::computeOverpaymentComponents : valid overpayment "
+            "amount");
+    }
 
     // First, deduct the fixed overpayment fee from the total amount.
     // This reduces the effective payment that will be applied to the loan.
@@ -2082,6 +2088,7 @@ loanMakePayment(
         {
             detail::ExtendedPaymentComponents const overpaymentComponents =
                 detail::computeOverpaymentComponents(
+                    view.rules(),
                     asset,
                     loanScale,
                     overpayment,
