@@ -21,15 +21,8 @@
 
 #include <xrpld/telemetry/MetricsRegistry.h>
 
-#include <xrpl/beast/utility/Journal.h>
-
-#include <cstdint>
-#include <string>
-#include <string_view>
-
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
@@ -39,7 +32,9 @@
 #include <xrpld/overlay/Overlay.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>
@@ -52,16 +47,27 @@
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_metric_exporter_options.h>
-#include <opentelemetry/metrics/provider.h>
+#include <opentelemetry/metrics/observer_result.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/variant.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_options.h>
-#include <opentelemetry/sdk/metrics/meter_provider.h>
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
+#include <opentelemetry/sdk/metrics/view/view_registry.h>
 #include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/semconv/incubating/service_attributes.h>
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <sstream>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace metric_sdk = opentelemetry::sdk::metrics;
 namespace otlp_http = opentelemetry::exporter::otlp;
@@ -237,10 +243,12 @@ MetricsRegistry::recordRpcFinished(std::string_view method, std::int64_t duratio
         return;
     rpcFinishedCounter_->Add(1, {{"method", std::string(method)}});
     if (rpcDurationHistogram_)
+    {
         rpcDurationHistogram_->Record(
             static_cast<double>(durationUs),
             {{"method", std::string(method)}},
             opentelemetry::context::Context{});
+    }
 #else
     (void)method;
     (void)durationUs;
@@ -256,10 +264,12 @@ MetricsRegistry::recordRpcErrored(std::string_view method, std::int64_t duration
         return;
     rpcErroredCounter_->Add(1, {{"method", std::string(method)}});
     if (rpcDurationHistogram_)
+    {
         rpcDurationHistogram_->Record(
             static_cast<double>(durationUs),
             {{"method", std::string(method)}},
             opentelemetry::context::Context{});
+    }
 #else
     (void)method;
     (void)durationUs;
@@ -292,10 +302,12 @@ MetricsRegistry::recordJobStarted(std::string_view jobType, std::int64_t queuedD
         return;
     jobStartedCounter_->Add(1, {{"job_type", std::string(jobType)}});
     if (jobQueuedDurationHistogram_)
+    {
         jobQueuedDurationHistogram_->Record(
             static_cast<double>(queuedDurUs),
             {{"job_type", std::string(jobType)}},
             opentelemetry::context::Context{});
+    }
 #else
     (void)jobType;
     (void)queuedDurUs;
@@ -311,10 +323,12 @@ MetricsRegistry::recordJobFinished(std::string_view jobType, std::int64_t runnin
         return;
     jobFinishedCounter_->Add(1, {{"job_type", std::string(jobType)}});
     if (jobRunningDurationHistogram_)
+    {
         jobRunningDurationHistogram_->Record(
             static_cast<double>(runningDurUs),
             {{"job_type", std::string(jobType)}},
             opentelemetry::context::Context{});
+    }
 #else
     (void)jobType;
     (void)runningDurUs;
@@ -557,8 +571,9 @@ MetricsRegistry::registerLoadFactorGauge()
                 double combined = static_cast<double>(loadFactorServer) / loadBase;
                 if (refLevel > 0)
                 {
-                    double feeEscalation = static_cast<double>(metrics.openLedgerFeeLevel.fee()) *
-                        loadBaseServer / refLevel;
+                    double const feeEscalation =
+                        static_cast<double>(metrics.openLedgerFeeLevel.fee()) * loadBaseServer /
+                        refLevel;
                     if (feeEscalation > static_cast<double>(loadFactorServer))
                     {
                         combined = feeEscalation / loadBase;
@@ -631,17 +646,23 @@ MetricsRegistry::registerNodeStoreGauge()
 
                 // Read thread pool stats (native JSON ints, no jss:: constants).
                 if (obj.isMember("read_request_bundle"))
+                {
                     observe(
                         "read_request_bundle",
                         static_cast<int64_t>(obj["read_request_bundle"].asInt()));
+                }
                 if (obj.isMember("read_threads_running"))
+                {
                     observe(
                         "read_threads_running",
                         static_cast<int64_t>(obj["read_threads_running"].asInt()));
+                }
                 if (obj.isMember("read_threads_total"))
+                {
                     observe(
                         "read_threads_total",
                         static_cast<int64_t>(obj["read_threads_total"].asInt()));
+                }
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -933,7 +954,7 @@ MetricsRegistry::registerPeerQualityGauge()
                 // P90 latency across connected peers.
                 if (!latencies.empty())
                 {
-                    std::sort(latencies.begin(), latencies.end());
+                    std::ranges::sort(latencies);
                     auto p90idx = static_cast<std::size_t>(latencies.size() * 0.9);
                     if (p90idx >= latencies.size())
                         p90idx = latencies.size() - 1;
@@ -1015,11 +1036,15 @@ MetricsRegistry::registerLedgerEconomyGauge()
                 auto const txInLedger = openLedger.current()->txCount();
                 auto const ageVal = age.count();
                 if (ageVal > 0)
+                {
                     observe(
                         "transaction_rate",
                         static_cast<double>(txInLedger) / static_cast<double>(ageVal));
+                }
                 else
+                {
                     observe("transaction_rate", 0.0);
+                }
             }
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
@@ -1059,9 +1084,13 @@ MetricsRegistry::registerStateTrackingGauge()
                 {
                     auto const info = app.getOPs().getConsensusInfo();
                     if (info.isMember("proposing") && info["proposing"].asBool())
+                    {
                         stateValue = 6.0;
+                    }
                     else if (info.isMember("validating") && info["validating"].asBool())
+                    {
                         stateValue = 5.0;
+                    }
                 }
                 observe("state_value", stateValue);
 
