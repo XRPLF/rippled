@@ -28,7 +28,6 @@
 #include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/telemetry/TraceContextPropagator.h>
 
-#include <opentelemetry/common/key_value_iterable_view.h>
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
