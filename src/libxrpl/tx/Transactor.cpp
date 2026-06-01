@@ -45,7 +45,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -789,7 +788,7 @@ Transactor::checkSingleSign(
     ReadView const& view,
     AccountID const& idSigner,
     AccountID const& idAccount,
-    std::shared_ptr<SLE const> sleAccount,
+    SLE::const_pointer sleAccount,
     beast::Journal const j)
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
@@ -825,7 +824,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
+    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -1286,8 +1285,8 @@ Transactor::operator()()
                         &expiredCredentials](
                            uint256 const& index,
                            bool isDelete,
-                           std::shared_ptr<SLE const> const& before,
-                           std::shared_ptr<SLE const> const& after) {
+                           SLE::const_ref before,
+                           SLE::const_ref after) {
                 if (isDelete)
                 {
                     XRPL_ASSERT(
