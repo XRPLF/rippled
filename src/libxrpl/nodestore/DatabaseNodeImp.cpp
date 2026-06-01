@@ -24,6 +24,13 @@ DatabaseNodeImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, st
 
     auto obj = NodeObject::createObject(type, std::move(data), hash);
     backend_->store(obj);
+    if (cache_)
+    {
+        // After the store, replace a negative cache entry if there is one
+        cache_->canonicalize(hash, obj, [](std::shared_ptr<NodeObject> const& n) {
+            return n->getType() == NodeObjectType::Dummy;
+        });
+    }
 }
 
 void
@@ -32,7 +39,23 @@ DatabaseNodeImp::asyncFetch(
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& callback)
 {
+    if (cache_)
+    {
+        std::shared_ptr<NodeObject> const obj = cache_->fetch(hash);
+        if (obj)
+        {
+            callback(obj->getType() == NodeObjectType::Dummy ? nullptr : obj);
+            return;
+        }
+    }
     Database::asyncFetch(hash, ledgerSeq, std::move(callback));
+}
+
+void
+DatabaseNodeImp::sweep()
+{
+    if (cache_)
+        cache_->sweep();
 }
 
 std::shared_ptr<NodeObject>
@@ -42,32 +65,58 @@ DatabaseNodeImp::fetchNodeObject(
     FetchReport& fetchReport,
     bool duplicate)
 {
-    std::shared_ptr<NodeObject> nodeObject = nullptr;
-    Status status = Status::Ok;
+    std::shared_ptr<NodeObject> nodeObject = cache_ ? cache_->fetch(hash) : nullptr;
+    if (!nodeObject)
+    {
+        JLOG(j_.trace()) << "fetchNodeObject " << hash << ": record not "
+                         << (cache_ ? "cached" : "found");
 
-    try
-    {
-        status = backend_->fetch(hash, &nodeObject);
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(j_.fatal()) << "fetchNodeObject " << hash
-                         << ": Exception fetching from backend: " << e.what();
-        rethrow();
-    }
+        Status status = Status::Ok;
+        try
+        {
+            status = backend_->fetch(hash, &nodeObject);
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(j_.fatal()) << "fetchNodeObject " << hash
+                             << ": Exception fetching from backend: " << e.what();
+            rethrow();
+        }
 
-    switch (status)
+        switch (status)
+        {
+            case Status::Ok:
+                if (cache_)
+                {
+                    if (nodeObject)
+                    {
+                        cache_->canonicalizeReplaceClient(hash, nodeObject);
+                    }
+                    else
+                    {
+                        auto notFound = NodeObject::createObject(NodeObjectType::Dummy, {}, hash);
+                        cache_->canonicalizeReplaceClient(hash, notFound);
+                        if (notFound->getType() != NodeObjectType::Dummy)
+                            nodeObject = notFound;
+                    }
+                }
+                break;
+            case Status::NotFound:
+                break;
+            case Status::DataCorrupt:
+                JLOG(j_.fatal()) << "fetchNodeObject " << hash << ": nodestore data is corrupted";
+                break;
+            default:
+                JLOG(j_.warn()) << "fetchNodeObject " << hash << ": backend returns unknown result "
+                                << static_cast<int>(status);
+                break;
+        }
+    }
+    else
     {
-        case Status::Ok:
-        case Status::NotFound:
-            break;
-        case Status::DataCorrupt:
-            JLOG(j_.fatal()) << "fetchNodeObject " << hash << ": nodestore data is corrupted";
-            break;
-        default:
-            JLOG(j_.warn()) << "fetchNodeObject " << hash << ": backend returns unknown result "
-                            << static_cast<int>(status);
-            break;
+        JLOG(j_.trace()) << "fetchNodeObject " << hash << ": record found in cache";
+        if (nodeObject->getType() == NodeObjectType::Dummy)
+            nodeObject.reset();
     }
 
     if (nodeObject)

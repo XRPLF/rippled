@@ -1018,6 +1018,10 @@ public:
                                    << "; size after: " << masterTxCache.size();
         }
         {
+            // Sweep NodeStore database cache(s), if enabled.
+            getNodeStore().sweep();
+        }
+        {
             std::size_t const oldLedgerMasterCacheSize = getLedgerMaster().getFetchPackCacheSize();
 
             getLedgerMaster().sweep();
