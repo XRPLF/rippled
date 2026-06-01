@@ -26,8 +26,7 @@
 
 #include <cstdint>
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 /** Extract OTel context from a protobuf TraceContext message.
 
@@ -92,7 +91,6 @@ injectToProtobuf(opentelemetry::context::Context const& ctx, protocol::TraceCont
     proto.set_trace_flags(spanCtx.trace_flags().flags());
 }
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry
 
 #endif  // XRPL_ENABLE_TELEMETRY
