@@ -54,7 +54,7 @@ class Xrpl(ConanFile):
         "rocksdb": True,
         "shared": False,
         "static": True,
-        "telemetry": False,
+        "telemetry": True,
         "tests": False,
         "unity": False,
         "xrpld": False,
