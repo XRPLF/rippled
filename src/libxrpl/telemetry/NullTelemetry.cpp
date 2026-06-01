@@ -13,13 +13,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/Telemetry.h>
 
-#include <memory>
-#include <utility>
-
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/trace/noop.h>
-
-#include <string_view>
 #endif
 
 #include <memory>
