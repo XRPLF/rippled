@@ -18,11 +18,15 @@
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/SpanNames.h>
 
+#include <opentelemetry/context/context.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_factory.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_options.h>
 #include <opentelemetry/sdk/trace/processor.h>
@@ -33,8 +37,15 @@
 #include <opentelemetry/semconv/incubating/service_attributes.h>
 #include <opentelemetry/trace/noop.h>
 #include <opentelemetry/trace/provider.h>
+#include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_metadata.h>
+#include <opentelemetry/trace/span_startoptions.h>
+#include <opentelemetry/trace/tracer.h>
+#include <opentelemetry/trace/tracer_provider.h>
 
 #include <chrono>
+#include <cstdint>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -82,7 +93,7 @@ namespace resource = opentelemetry::sdk::resource;
 */
 class FilteringSpanProcessor : public trace_sdk::SpanProcessor
 {
-    std::unique_ptr<trace_sdk::SpanProcessor> delegate_{};
+    std::unique_ptr<trace_sdk::SpanProcessor> delegate_;
 
 public:
     explicit FilteringSpanProcessor(std::unique_ptr<trace_sdk::SpanProcessor> delegate)
@@ -246,7 +257,7 @@ class TelemetryImpl : public Telemetry
         Held as std::shared_ptr so we can call ForceFlush() on shutdown.
         Wrapped in a nostd::shared_ptr when registered as the global provider.
     */
-    std::shared_ptr<trace_sdk::TracerProvider> sdkProvider_{};
+    std::shared_ptr<trace_sdk::TracerProvider> sdkProvider_;
 
 public:
     TelemetryImpl(Setup setup, beast::Journal journal) : setup_(std::move(setup)), journal_(journal)
