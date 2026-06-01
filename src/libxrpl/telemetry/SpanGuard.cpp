@@ -34,7 +34,6 @@
 #include <opentelemetry/trace/span.h>
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/span_startoptions.h>
-#include <opentelemetry/trace/tracer.h>
 
 #include <cstdint>
 #include <exception>
