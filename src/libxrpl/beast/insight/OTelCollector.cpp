@@ -54,7 +54,7 @@
 #include <opentelemetry/sdk/metrics/view/instrument_selector_factory.h>
 #include <opentelemetry/sdk/metrics/view/meter_selector_factory.h>
 #include <opentelemetry/sdk/metrics/view/view_factory.h>
-#include <opentelemetry/sdk/resource/semantic_conventions.h>
+#include <opentelemetry/semconv/incubating/service_attributes.h>
 
 #include <atomic>
 #include <chrono>
@@ -362,7 +362,7 @@ private:
  * @code
  *   auto collector = OTelCollector::New(
  *       "http://localhost:4318/v1/metrics", "xrpld", journal);
- *   auto counter = collector->make_counter("rpc.requests");
+ *   auto counter = collector->makeCounter("rpc.requests");
  *   counter.increment(1);
  *   // Metric "xrpld_rpc_requests" exported via OTLP every 1s.
  * @endcode
@@ -393,19 +393,19 @@ public:
     /** @name Collector interface implementation */
     /** @{ */
     Hook
-    make_hook(HookImpl::HandlerType const& handler) override;
+    makeHook(HookImpl::HandlerType const& handler) override;
 
     Counter
-    make_counter(std::string const& name) override;
+    makeCounter(std::string const& name) override;
 
     Event
-    make_event(std::string const& name) override;
+    makeEvent(std::string const& name) override;
 
     Gauge
-    make_gauge(std::string const& name) override;
+    makeGauge(std::string const& name) override;
 
     Meter
-    make_meter(std::string const& name) override;
+    makeMeter(std::string const& name) override;
     /** @} */
 
     /** @name Hook management for observable callbacks */
@@ -680,9 +680,9 @@ OTelCollectorImp::OTelCollectorImp(
     // Include service.instance.id when provided so Prometheus
     // exported_instance labels distinguish multi-node deployments.
     resource::ResourceAttributes attrs;
-    attrs[resource::SemanticConventions::kServiceName] = "xrpld";
+    attrs[opentelemetry::semconv::service::kServiceName] = "xrpld";
     if (!instanceId.empty())
-        attrs[resource::SemanticConventions::kServiceInstanceId] = instanceId;
+        attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
     auto resourceAttrs = resource::Resource::Create(attrs);
 
     // Create MeterProvider with resource, then attach the metric reader.
@@ -701,7 +701,6 @@ OTelCollectorImp::OTelCollectorImp(
     auto histogramView = metrics_sdk::ViewFactory::Create(
         "default_histogram",
         "Default histogram view with SpanMetrics-compatible buckets",
-        "ms",
         metrics_sdk::AggregationType::kHistogram,
         std::move(histogramConfig));
 
@@ -729,32 +728,32 @@ OTelCollectorImp::~OTelCollectorImp()
 }
 
 Hook
-OTelCollectorImp::make_hook(HookImpl::HandlerType const& handler)
+OTelCollectorImp::makeHook(HookImpl::HandlerType const& handler)
 {
     return Hook(std::make_shared<OTelHookImpl>(handler, shared_from_this()));
 }
 
 Counter
-OTelCollectorImp::make_counter(std::string const& name)
+OTelCollectorImp::makeCounter(std::string const& name)
 {
     return Counter(std::make_shared<OTelCounterImpl>(formatName(name), m_otelMeter));
 }
 
 Event
-OTelCollectorImp::make_event(std::string const& name)
+OTelCollectorImp::makeEvent(std::string const& name)
 {
     return Event(std::make_shared<OTelEventImpl>(formatName(name), m_otelMeter));
 }
 
 Gauge
-OTelCollectorImp::make_gauge(std::string const& name)
+OTelCollectorImp::makeGauge(std::string const& name)
 {
     return Gauge(
         std::make_shared<OTelGaugeImpl>(formatName(name), m_otelMeter, shared_from_this()));
 }
 
 Meter
-OTelCollectorImp::make_meter(std::string const& name)
+OTelCollectorImp::makeMeter(std::string const& name)
 {
     return Meter(std::make_shared<OTelMeterImpl>(formatName(name), m_otelMeter));
 }
@@ -871,7 +870,7 @@ OTelCollector::New(
     std::string const& /* instanceId */,
     Journal /* journal */)
 {
-    return NullCollector::New();
+    return NullCollector::make();
 }
 
 }  // namespace beast::insight
