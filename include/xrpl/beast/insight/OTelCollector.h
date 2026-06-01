@@ -81,6 +81,7 @@ public:
      * @return Shared pointer to the created Collector.
      */
     static std::shared_ptr<Collector>
+    // NOLINTNEXTLINE(readability-identifier-naming)
     New(std::string const& endpoint,
         std::string const& prefix,
         std::string const& instanceId,

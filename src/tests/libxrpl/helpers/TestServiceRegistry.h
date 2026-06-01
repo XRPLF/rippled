@@ -334,6 +334,12 @@ public:
         throw std::logic_error("TestServiceRegistry::getTelemetry() not implemented");
     }
 
+    telemetry::MetricsRegistry*
+    getMetricsRegistry() override
+    {
+        return nullptr;
+    }
+
     // Configuration and state
     bool
     isStopping() const override

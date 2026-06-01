@@ -645,7 +645,7 @@ struct Peer
     telemetry::Telemetry&
     getTelemetry()
     {
-        static auto tel = make_Telemetry(
+        static auto tel = telemetry::makeTelemetry(
             telemetry::Telemetry::Setup{}, beast::Journal{beast::Journal::getNullSink()});
         return *tel;
     }

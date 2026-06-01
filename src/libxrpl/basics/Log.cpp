@@ -9,7 +9,11 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/runtime_context.h>
-#include <opentelemetry/trace/context.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/span.h>
+#include <opentelemetry/nostd/variant.h>
+#include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_metadata.h>
 #endif  // XRPL_ENABLE_TELEMETRY
 
 #include <chrono>
