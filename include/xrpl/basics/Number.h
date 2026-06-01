@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <array>
 #include <concepts>
 #include <cstdint>
 #include <functional>
@@ -67,6 +68,47 @@ isPowerOfTen(T value)
     return logTen(value).has_value();
 }
 
+namespace detail {
+
+/** Builds a table of the powers of 10
+ *
+ * This function is marked consteval, so it can only be run in
+ * a constexpr context. This assures that it is and can only be run at
+ * compile time. Doing it at runtime would be pretty wasteful and
+ * inefficient.
+ */
+constexpr std::size_t kInt64Digits = 20;
+consteval std::array<std::uint64_t, kInt64Digits>
+buildPowersOfTen()
+{
+    std::array<std::uint64_t, kInt64Digits> result{};
+
+    std::uint64_t power = 1;
+    std::size_t exponent = 0;
+    // end the loop early so it doesn't overflow;
+    for (; exponent < result.size() - 1; ++exponent, power *= 10)
+    {
+        result[exponent] = power;
+        if (power > std::numeric_limits<std::uint64_t>::max() / 10)
+            throw std::logic_error("Power of 10 table is too big");
+    }
+    result[exponent] = power;
+    if (power < std::numeric_limits<std::uint64_t>::max() / 10)
+        throw std::logic_error("Power of 10 table is not big enough for the uint64_t type");
+
+    return result;
+}
+
+}  // namespace detail
+
+constexpr std::array<std::uint64_t, detail::kInt64Digits> kPowerOfTen = detail::buildPowersOfTen();
+
+static_assert(kPowerOfTen[0] == 1);
+static_assert(kPowerOfTen[1] == 10);
+static_assert(kPowerOfTen[10] == 10'000'000'000);
+static_assert(
+    isPowerOfTen(kPowerOfTen.back()) && *logTen(kPowerOfTen.back()) == detail::kInt64Digits - 1);
+
 /** MantissaRange defines a range for the mantissa of a normalized Number.
  *
  * The mantissa is in the range [min, max], where
@@ -102,6 +144,7 @@ isPowerOfTen(T value)
 struct MantissaRange final
 {
     using rep = std::uint64_t;
+
     enum class MantissaScale {
         Small,
         // LargeLegacy can be removed when fixCleanup3_2_0 is retired
@@ -115,11 +158,7 @@ struct MantissaRange final
         Enabled = true,
     };
 
-    explicit constexpr MantissaRange(MantissaScale scale)
-        : max(getMax(scale))
-        , internalMin(getInternalMin(scale, min))
-        , cuspRoundingFixEnabled(isCuspFixEnabled(scale))
-        , scale(scale)
+    explicit constexpr MantissaRange(MantissaScale sc) : scale(sc)
     {
         // Keep the error messages terse. Since this is constexpr, if any of these throw, it won't
         // compile, so there's no real need to worry about runtime exceptions here.
@@ -132,8 +171,8 @@ struct MantissaRange final
         // This is a little hacky
         if ((max + 10) / 10 < min)
             throw std::out_of_range("Invalid mantissa range: (max + 10) / 10 < min");
-        if (computeLog(internalMin) != log)
-            throw std::out_of_range("Invalid mantissa range: computeLog(internalMin) != log");
+        if (internalMin != kPowerOfTen[log])
+            throw std::out_of_range("Invalid mantissa range: internalMin != kPowersOfTen[log]");
     }
 
     // Explicitly delete copy and move operations
@@ -144,17 +183,17 @@ struct MantissaRange final
     MantissaRange&
     operator=(MantissaRange&&) = delete;
 
-    rep const max;
+    MantissaScale const scale;
+    int const log{getExponent(scale)};
+    rep const max{getMax(scale, log)};
     rep const min{computeMin(max)};
     /* Used to determine if mantissas are in range, but have fewer digits than max.
      *
      * Unlike min, internalMin is always an exact power of 10, so a mantissa in the internal
      * representation will always have a consistent number of digits.
      */
-    rep const internalMin;
-    int const log{computeLog(min)};
-    CuspRoundingFix const cuspRoundingFixEnabled;
-    MantissaScale const scale;
+    rep const internalMin{getInternalMin(scale, log)};
+    CuspRoundingFix const cuspRoundingFixEnabled{isCuspFixEnabled(scale)};
 
     static MantissaRange const&
     getMantissaRange(MantissaScale scale);
@@ -163,20 +202,40 @@ struct MantissaRange final
     getAllScales();
 
 private:
-    static constexpr rep
-    getMax(MantissaScale scale)
+    static constexpr int
+    getExponent(MantissaScale scale)
     {
         switch (scale)
         {
             case MantissaScale::Small:
-                return 9'999'999'999'999'999ULL;
+                return 15;
+            case MantissaScale::LargeLegacy:
+            case MantissaScale::Large:
+                return 18;
+            // LCOV_EXCL_START
+            default:
+                // If called in a constexpr context, this throw assures that the build fails if an
+                // invalid scale is used.
+                throw std::runtime_error("Unknown mantissa scale");
+                // LCOV_EXCL_STOP
+        }
+    }
+
+    static constexpr rep
+    getMax(MantissaScale scale, int log)
+    {
+        switch (scale)
+        {
+            case MantissaScale::Small:
+                return kPowerOfTen[log + 1] - 1;
             case MantissaScale::LargeLegacy:
             case MantissaScale::Large:
                 return std::numeric_limits<std::int64_t>::max();
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
-                throw std::runtime_error("Unknown mantissa scale");  // LCOV_EXCL_LINE
+                throw std::runtime_error("Unknown mantissa scale");
+                // LCOV_EXCL_STOP
         }
     }
 
@@ -187,25 +246,13 @@ private:
     }
 
     static constexpr rep
-    getInternalMin(MantissaScale scale, rep min)
+    getInternalMin(MantissaScale scale, int exponent)
     {
-        switch (scale)
-        {
-            case MantissaScale::LargeLegacy:
-            case MantissaScale::Large:
-                return 1'000'000'000'000'000'000ULL;
-            default:
-                if (isPowerOfTen(min))
-                    return min;
-                throw std::runtime_error("Unknown/bad mantissa scale");
-        }
-    }
-
-    static constexpr int
-    computeLog(rep min)
-    {
-        auto const estimate = logTenEstimate(min);
-        return estimate.first + (estimate.second == 1 ? 0 : 1);
+        if (exponent < 0 || exponent >= kPowerOfTen.size())
+            // If called in a constexpr context, this throw assures that the build fails if an
+            // invalid exponent is used.
+            throw std::runtime_error("Invalid exponent");  // LCOV_EXCL_LINE
+        return kPowerOfTen[exponent];
     }
 
     static constexpr CuspRoundingFix
@@ -575,8 +622,7 @@ public:
     template <
         auto MinMantissa,
         auto MaxMantissa,
-        Integral64 T = std::decay_t<decltype(MinMantissa)>,
-        Integral64 TMax = std::decay_t<decltype(MaxMantissa)>>
+        Integral64 T = std::decay_t<decltype(MinMantissa)>>
     [[nodiscard]]
     std::pair<T, int>
     normalizeToRange() const;
@@ -637,7 +683,8 @@ private:
         int& exponent,
         MantissaRange::rep const& minMantissa,
         MantissaRange::rep const& maxMantissa,
-        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled);
+        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
+        bool dropped);
 
     [[nodiscard]]
     bool
@@ -876,16 +923,18 @@ Number::isnormal() const noexcept
     return isnormal(kRange);
 }
 
-template <auto MinMantissa, auto MaxMantissa, Integral64 T, Integral64 TMax>
+template <auto MinMantissa, auto MaxMantissa, Integral64 T>
 std::pair<T, int>
 Number::normalizeToRange() const
 {
     static_assert(std::is_same_v<T, std::uint64_t> || std::is_same_v<T, std::int64_t>);
-    static_assert(std::is_same_v<T, TMax>);
+    static_assert(std::is_same_v<T, std::decay_t<decltype(MinMantissa)>>);
+    static_assert(std::is_same_v<T, std::decay_t<decltype(MaxMantissa)>>);
     auto constexpr kMIN = static_cast<T>(MinMantissa);
     auto constexpr kMAX = static_cast<T>(MaxMantissa);
     static_assert(kMIN > 0);
     static_assert(kMIN % 10 == 0);
+    static_assert(isPowerOfTen(static_cast<std::make_unsigned_t<T>>(kMIN)));
     static_assert(kMAX % 10 == 9);
     static_assert((kMAX + 1) / 10 == kMIN);
 
