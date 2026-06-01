@@ -47,21 +47,30 @@
 #include <opentelemetry/metrics/meter_provider.h>
 #include <opentelemetry/metrics/observer_result.h>
 #include <opentelemetry/metrics/sync_instruments.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/unique_ptr.h>
+#include <opentelemetry/nostd/variant.h>
+#include <opentelemetry/sdk/metrics/aggregation/aggregation_config.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_options.h>
+#include <opentelemetry/sdk/metrics/instruments.h>
 #include <opentelemetry/sdk/metrics/meter_provider.h>
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
 #include <opentelemetry/sdk/metrics/view/instrument_selector_factory.h>
 #include <opentelemetry/sdk/metrics/view/meter_selector_factory.h>
 #include <opentelemetry/sdk/metrics/view/view_factory.h>
+#include <opentelemetry/sdk/metrics/view/view_registry.h>
+#include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/semconv/incubating/service_attributes.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace beast::insight {
@@ -93,9 +102,12 @@ public:
      * @param handler  Callback invoked at each collection interval.
      * @param impl     Owning collector (prevents premature destruction).
      */
-    OTelHookImpl(HandlerType const& handler, std::shared_ptr<OTelCollectorImp> const& impl);
+    OTelHookImpl(HandlerType handler, std::shared_ptr<OTelCollectorImp> impl);
 
     ~OTelHookImpl() override;
+
+    OTelHookImpl&
+    operator=(OTelHookImpl const&) = delete;
 
     /**
      * @brief Invoke the stored handler.
@@ -107,14 +119,11 @@ public:
     callHandler();
 
 private:
-    OTelHookImpl&
-    operator=(OTelHookImpl const&);
-
     /** Owning collector. Prevents collector destruction while hook alive. */
-    std::shared_ptr<OTelCollectorImp> m_impl;
+    std::shared_ptr<OTelCollectorImp> impl_;
 
     /** User-supplied handler called at each collection interval. */
-    HandlerType m_handler;
+    HandlerType handler_;
 };
 
 //------------------------------------------------------------------------------
@@ -141,6 +150,9 @@ public:
 
     ~OTelCounterImpl() override = default;
 
+    OTelCounterImpl&
+    operator=(OTelCounterImpl const&) = delete;
+
     /**
      * @brief Add amount to the counter.
      * @param amount  Value to add (must be non-negative for OTel counters).
@@ -149,11 +161,8 @@ public:
     increment(value_type amount) override;
 
 private:
-    OTelCounterImpl&
-    operator=(OTelCounterImpl const&);
-
     /** OTel synchronous counter instrument. */
-    opentelemetry::nostd::unique_ptr<metrics_api::Counter<uint64_t>> m_counter;
+    opentelemetry::nostd::unique_ptr<metrics_api::Counter<uint64_t>> counter_;
 };
 
 //------------------------------------------------------------------------------
@@ -181,6 +190,9 @@ public:
 
     ~OTelEventImpl() override = default;
 
+    OTelEventImpl&
+    operator=(OTelEventImpl const&) = delete;
+
     /**
      * @brief Record a duration measurement.
      * @param value  Duration in milliseconds.
@@ -189,11 +201,8 @@ public:
     notify(value_type const& value) override;
 
 private:
-    OTelEventImpl&
-    operator=(OTelEventImpl const&);
-
     /** OTel histogram instrument for recording durations. */
-    opentelemetry::nostd::unique_ptr<metrics_api::Histogram<double>> m_histogram;
+    opentelemetry::nostd::unique_ptr<metrics_api::Histogram<double>> histogram_;
 };
 
 //------------------------------------------------------------------------------
@@ -253,19 +262,19 @@ public:
     int64_t
     currentValue() const;
 
+    OTelGaugeImpl&
+    operator=(OTelGaugeImpl const&) = delete;
+
     /** Static callback registered with the OTel SDK observable gauge. */
     static void
     gaugeCallback(opentelemetry::metrics::ObserverResult result, void* state);
 
 private:
-    OTelGaugeImpl&
-    operator=(OTelGaugeImpl const&);
-
     /** Current gauge value, updated atomically by set()/increment(). */
-    std::atomic<int64_t> m_value{0};
+    std::atomic<int64_t> value_{0};
 
     /** OTel observable gauge handle (prevents deregistration). */
-    opentelemetry::nostd::shared_ptr<metrics_api::ObservableInstrument> m_gauge;
+    opentelemetry::nostd::shared_ptr<metrics_api::ObservableInstrument> gauge_;
 
     /** Owning collector, used to invoke hooks before reading gauge values. */
     std::shared_ptr<OTelCollectorImp> collector_;
@@ -299,6 +308,9 @@ public:
 
     ~OTelMeterImpl() override = default;
 
+    OTelMeterImpl&
+    operator=(OTelMeterImpl const&) = delete;
+
     /**
      * @brief Add amount to the meter.
      * @param amount  Value to add (unsigned).
@@ -307,11 +319,8 @@ public:
     increment(value_type amount) override;
 
 private:
-    OTelMeterImpl&
-    operator=(OTelMeterImpl const&);
-
     /** OTel synchronous counter instrument (unsigned). */
-    opentelemetry::nostd::unique_ptr<metrics_api::Counter<uint64_t>> m_counter;
+    opentelemetry::nostd::unique_ptr<metrics_api::Counter<uint64_t>> counter_;
 };
 
 //------------------------------------------------------------------------------
@@ -334,12 +343,12 @@ private:
  *   +------------------+             |
  *   | OTelCollectorImp |-------------+
  *   +------------------+
- *   | - m_journal      |
- *   | - m_prefix       |
- *   | - m_provider     |     +---------------------+
- *   | - m_otelMeter    |---->| OTel MeterProvider   |
- *   | - m_hooks[]      |     | + PeriodicReader     |
- *   | - m_gauges[]     |     | + OtlpHttpExporter   |
+ *   | - journal_       |
+ *   | - prefix_        |
+ *   | - provider_      |     +---------------------+
+ *   | - otelMeter_     |---->| OTel MeterProvider   |
+ *   | - hooks_[]       |     | + PeriodicReader     |
+ *   | - gauges_[]      |     | + OtlpHttpExporter   |
  *   +------------------+     +---------------------+
  *
  * Lifecycle:
@@ -381,7 +390,7 @@ public:
      */
     OTelCollectorImp(
         std::string const& endpoint,
-        std::string const& prefix,
+        std::string prefix,
         std::string const& instanceId,
         Journal journal);
 
@@ -475,25 +484,25 @@ public:
 
 private:
     /** Journal for log output. */
-    Journal m_journal;
+    Journal journal_;
 
     /** Prefix for all metric names (e.g., "xrpld"). */
-    std::string m_prefix;
+    std::string prefix_;
 
     /** OTel SDK MeterProvider owning the export pipeline. RAII lifecycle. */
-    std::shared_ptr<metrics_sdk::MeterProvider> m_provider;
+    std::shared_ptr<metrics_sdk::MeterProvider> provider_;
 
     /** OTel Meter used to create all instruments. */
-    opentelemetry::nostd::shared_ptr<metrics_api::Meter> m_otelMeter;
+    opentelemetry::nostd::shared_ptr<metrics_api::Meter> otelMeter_;
 
     /** Mutex protecting hook and gauge registration lists. */
-    std::mutex m_mutex;
+    std::mutex mutex_;
 
     /** Registered hooks called during observable callbacks. */
-    std::vector<OTelHookImpl*> m_hooks;
+    std::vector<OTelHookImpl*> hooks_;
 
     /** Registered gauges read during observable callbacks. */
-    std::vector<OTelGaugeImpl*> m_gauges;
+    std::vector<OTelGaugeImpl*> gauges_;
 
     /**
      * @brief Debounce timestamp for callHooks().
@@ -503,7 +512,7 @@ private:
      * Hooks are called at most once per 500ms window to avoid redundant
      * invocations while still ensuring fresh values each collection cycle.
      */
-    std::atomic<int64_t> m_lastHookCallMs{0};
+    std::atomic<int64_t> lastHookCallMs_{0};
 };
 
 //==============================================================================
@@ -514,23 +523,21 @@ private:
 // OTelHookImpl
 //------------------------------------------------------------------------------
 
-OTelHookImpl::OTelHookImpl(
-    HandlerType const& handler,
-    std::shared_ptr<OTelCollectorImp> const& impl)
-    : m_impl(impl), m_handler(handler)
+OTelHookImpl::OTelHookImpl(HandlerType handler, std::shared_ptr<OTelCollectorImp> impl)
+    : impl_(std::move(impl)), handler_(std::move(handler))
 {
-    m_impl->addHook(this);
+    impl_->addHook(this);
 }
 
 OTelHookImpl::~OTelHookImpl()
 {
-    m_impl->removeHook(this);
+    impl_->removeHook(this);
 }
 
 void
 OTelHookImpl::callHandler()
 {
-    m_handler();
+    handler_();
 }
 
 //------------------------------------------------------------------------------
@@ -540,7 +547,7 @@ OTelHookImpl::callHandler()
 OTelCounterImpl::OTelCounterImpl(
     std::string const& name,
     opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter)
-    : m_counter(meter->CreateUInt64Counter(name))
+    : counter_(meter->CreateUInt64Counter(name))
 {
 }
 
@@ -550,7 +557,7 @@ OTelCounterImpl::increment(value_type amount)
     // OTel counters require non-negative values. beast::insight CounterImpl
     // uses int64_t, so clamp negative values to 0 and cast to uint64_t.
     if (amount > 0)
-        m_counter->Add(static_cast<uint64_t>(amount));
+        counter_->Add(static_cast<uint64_t>(amount));
 }
 
 //------------------------------------------------------------------------------
@@ -560,14 +567,14 @@ OTelCounterImpl::increment(value_type amount)
 OTelEventImpl::OTelEventImpl(
     std::string const& name,
     opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter)
-    : m_histogram(meter->CreateDoubleHistogram(name, "Duration in ms", "ms"))
+    : histogram_(meter->CreateDoubleHistogram(name, "Duration in ms", "ms"))
 {
 }
 
 void
 OTelEventImpl::notify(value_type const& value)
 {
-    m_histogram->Record(static_cast<double>(value.count()), opentelemetry::context::Context{});
+    histogram_->Record(static_cast<double>(value.count()), opentelemetry::context::Context{});
 }
 
 //------------------------------------------------------------------------------
@@ -578,10 +585,10 @@ OTelGaugeImpl::OTelGaugeImpl(
     std::string const& name,
     opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
     std::shared_ptr<OTelCollectorImp> const& collector)
-    : m_gauge(meter->CreateInt64ObservableGauge(name)), collector_(collector)
+    : gauge_(meter->CreateInt64ObservableGauge(name)), collector_(collector)
 {
     collector_->addGauge(this);
-    m_gauge->AddCallback(gaugeCallback, this);
+    gauge_->AddCallback(gaugeCallback, this);
 }
 
 void
@@ -599,35 +606,34 @@ OTelGaugeImpl::gaugeCallback(opentelemetry::metrics::ObserverResult result, void
 
 OTelGaugeImpl::~OTelGaugeImpl()
 {
-    m_gauge->RemoveCallback(gaugeCallback, this);
+    gauge_->RemoveCallback(gaugeCallback, this);
     collector_->removeGauge(this);
 }
 
 void
 OTelGaugeImpl::set(value_type value)
 {
-    m_value.store(static_cast<int64_t>(value), std::memory_order_relaxed);
+    value_.store(static_cast<int64_t>(value), std::memory_order_relaxed);
 }
 
 void
 OTelGaugeImpl::increment(difference_type amount)
 {
     // Use compare-exchange loop to safely clamp to [0, MAX].
-    int64_t current = m_value.load(std::memory_order_relaxed);
-    int64_t desired;
+    int64_t current = value_.load(std::memory_order_relaxed);
+    int64_t desired = 0;
     do
     {
         desired = current + amount;
         // Clamp to 0 on underflow.
-        if (desired < 0)
-            desired = 0;
-    } while (!m_value.compare_exchange_weak(current, desired, std::memory_order_relaxed));
+        desired = std::max(desired, int64_t{0});
+    } while (!value_.compare_exchange_weak(current, desired, std::memory_order_relaxed));
 }
 
 int64_t
 OTelGaugeImpl::currentValue() const
 {
-    return m_value.load(std::memory_order_relaxed);
+    return value_.load(std::memory_order_relaxed);
 }
 
 //------------------------------------------------------------------------------
@@ -637,14 +643,14 @@ OTelGaugeImpl::currentValue() const
 OTelMeterImpl::OTelMeterImpl(
     std::string const& name,
     opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter)
-    : m_counter(meter->CreateUInt64Counter(name))
+    : counter_(meter->CreateUInt64Counter(name))
 {
 }
 
 void
 OTelMeterImpl::increment(value_type amount)
 {
-    m_counter->Add(amount);
+    counter_->Add(amount);
 }
 
 //------------------------------------------------------------------------------
@@ -653,14 +659,15 @@ OTelMeterImpl::increment(value_type amount)
 
 OTelCollectorImp::OTelCollectorImp(
     std::string const& endpoint,
-    std::string const& prefix,
+    std::string prefix,
     std::string const& instanceId,
     Journal journal)
-    : m_journal(journal), m_prefix(prefix)
+    : journal_(journal), prefix_(std::move(prefix))
 {
-    if (m_journal.info())
-        m_journal.info() << "OTelCollector starting: endpoint=" << endpoint
-                         << " prefix=" << m_prefix;
+    if (journal_.info())
+    {
+        journal_.info() << "OTelCollector starting: endpoint=" << endpoint << " prefix=" << prefix_;
+    }
 
     // Configure OTLP HTTP metric exporter.
     otlp_http::OtlpHttpMetricExporterOptions exporterOpts;
@@ -682,13 +689,15 @@ OTelCollectorImp::OTelCollectorImp(
     resource::ResourceAttributes attrs;
     attrs[opentelemetry::semconv::service::kServiceName] = "xrpld";
     if (!instanceId.empty())
+    {
         attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
+    }
     auto resourceAttrs = resource::Resource::Create(attrs);
 
     // Create MeterProvider with resource, then attach the metric reader.
-    m_provider = metrics_sdk::MeterProviderFactory::Create(
+    provider_ = metrics_sdk::MeterProviderFactory::Create(
         std::make_unique<metrics_sdk::ViewRegistry>(), resourceAttrs);
-    m_provider->AddMetricReader(std::move(reader));
+    provider_->AddMetricReader(std::move(reader));
 
     // Configure histogram bucket boundaries for Event instruments.
     // These match the SpanMetrics connector buckets for consistency.
@@ -704,27 +713,33 @@ OTelCollectorImp::OTelCollectorImp(
         metrics_sdk::AggregationType::kHistogram,
         std::move(histogramConfig));
 
-    m_provider->AddView(
+    provider_->AddView(
         std::move(histogramSelector), std::move(meterSelector), std::move(histogramView));
 
     // Create the OTel Meter for creating instruments.
-    m_otelMeter = m_provider->GetMeter("xrpld_metrics", "1.0.0");
+    otelMeter_ = provider_->GetMeter("xrpld_metrics", "1.0.0");
 
-    if (m_journal.info())
-        m_journal.info() << "OTelCollector started successfully";
+    if (journal_.info())
+    {
+        journal_.info() << "OTelCollector started successfully";
+    }
 }
 
 OTelCollectorImp::~OTelCollectorImp()
 {
-    if (m_journal.info())
-        m_journal.info() << "OTelCollector shutting down";
-    if (m_provider)
+    if (journal_.info())
     {
-        m_provider->ForceFlush(std::chrono::milliseconds(2000));
-        m_provider->Shutdown();
+        journal_.info() << "OTelCollector shutting down";
     }
-    if (m_journal.info())
-        m_journal.info() << "OTelCollector stopped";
+    if (provider_)
+    {
+        provider_->ForceFlush(std::chrono::milliseconds(2000));
+        provider_->Shutdown();
+    }
+    if (journal_.info())
+    {
+        journal_.info() << "OTelCollector stopped";
+    }
 }
 
 Hook
@@ -736,40 +751,39 @@ OTelCollectorImp::makeHook(HookImpl::HandlerType const& handler)
 Counter
 OTelCollectorImp::makeCounter(std::string const& name)
 {
-    return Counter(std::make_shared<OTelCounterImpl>(formatName(name), m_otelMeter));
+    return Counter(std::make_shared<OTelCounterImpl>(formatName(name), otelMeter_));
 }
 
 Event
 OTelCollectorImp::makeEvent(std::string const& name)
 {
-    return Event(std::make_shared<OTelEventImpl>(formatName(name), m_otelMeter));
+    return Event(std::make_shared<OTelEventImpl>(formatName(name), otelMeter_));
 }
 
 Gauge
 OTelCollectorImp::makeGauge(std::string const& name)
 {
-    return Gauge(
-        std::make_shared<OTelGaugeImpl>(formatName(name), m_otelMeter, shared_from_this()));
+    return Gauge(std::make_shared<OTelGaugeImpl>(formatName(name), otelMeter_, shared_from_this()));
 }
 
 Meter
 OTelCollectorImp::makeMeter(std::string const& name)
 {
-    return Meter(std::make_shared<OTelMeterImpl>(formatName(name), m_otelMeter));
+    return Meter(std::make_shared<OTelMeterImpl>(formatName(name), otelMeter_));
 }
 
 void
 OTelCollectorImp::addHook(OTelHookImpl* hook)
 {
-    std::lock_guard lock(m_mutex);
-    m_hooks.push_back(hook);
+    std::lock_guard lock(mutex_);
+    hooks_.push_back(hook);
 }
 
 void
 OTelCollectorImp::removeHook(OTelHookImpl* hook)
 {
-    std::lock_guard lock(m_mutex);
-    m_hooks.erase(std::remove(m_hooks.begin(), m_hooks.end(), hook), m_hooks.end());
+    std::lock_guard lock(mutex_);
+    hooks_.erase(std::remove(hooks_.begin(), hooks_.end(), hook), hooks_.end());
 }
 
 void
@@ -782,35 +796,35 @@ OTelCollectorImp::callHooks()
     auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
                    std::chrono::steady_clock::now().time_since_epoch())
                    .count();
-    auto last = m_lastHookCallMs.load(std::memory_order_acquire);
+    auto last = lastHookCallMs_.load(std::memory_order_acquire);
     if (now - last < 500)
         return;
-    if (!m_lastHookCallMs.compare_exchange_strong(last, now, std::memory_order_acq_rel))
+    if (!lastHookCallMs_.compare_exchange_strong(last, now, std::memory_order_acq_rel))
         return;  // Another thread won the race.
 
-    std::lock_guard lock(m_mutex);
-    for (auto* hook : m_hooks)
+    std::lock_guard lock(mutex_);
+    for (auto* hook : hooks_)
         hook->callHandler();
 }
 
 void
 OTelCollectorImp::addGauge(OTelGaugeImpl* gauge)
 {
-    std::lock_guard lock(m_mutex);
-    m_gauges.push_back(gauge);
+    std::lock_guard lock(mutex_);
+    gauges_.push_back(gauge);
 }
 
 void
 OTelCollectorImp::removeGauge(OTelGaugeImpl* gauge)
 {
-    std::lock_guard lock(m_mutex);
-    m_gauges.erase(std::remove(m_gauges.begin(), m_gauges.end(), gauge), m_gauges.end());
+    std::lock_guard lock(mutex_);
+    gauges_.erase(std::remove(gauges_.begin(), gauges_.end(), gauge), gauges_.end());
 }
 
 opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
 OTelCollectorImp::otelMeter() const
 {
-    return m_otelMeter;
+    return otelMeter_;
 }
 
 std::string
@@ -823,9 +837,9 @@ OTelCollectorImp::formatName(std::string const& name) const
     // Example: prefix="xrpld", name="LedgerMaster.Validated_Ledger_Age"
     //   -> "xrpld_LedgerMaster_Validated_Ledger_Age"
     std::string result;
-    if (!m_prefix.empty())
+    if (!prefix_.empty())
     {
-        result = m_prefix;
+        result = prefix_;
         result += '_';
     }
     for (char c : name)
