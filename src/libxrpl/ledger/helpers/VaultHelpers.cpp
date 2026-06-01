@@ -12,16 +12,12 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
 
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets)
+assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -45,10 +41,7 @@ assetsToSharesDeposit(
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
-    STAmount const& shares)
+sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
     XRPL_ASSERT(
@@ -72,8 +65,8 @@ sharesToAssetsDeposit(
 
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
     STAmount const& assets,
     TruncateShares truncate,
     WaiveUnrealizedLoss waive)
@@ -101,8 +94,8 @@ assetsToSharesWithdraw(
 
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& issuance,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive)
 {

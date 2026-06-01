@@ -150,7 +150,7 @@ TxQ::FeeMetrics::update(
             // current size limit, use a limit that is
             // 90% of the way from max_element to the
             // current size limit.
-            return (txnsExpected_ * 9 + *iter) / 10;
+            return ((txnsExpected_ * 9) + *iter) / 10;
         }();
         // Ledgers are processing in a timely manner,
         // so keep the limit high, but don't let it
@@ -218,7 +218,7 @@ sumOfFirstSquares(std::size_t xIn)
     // in a ledger, this is the least of our problems.
     if (x >= (1 << 21))
         return {false, std::numeric_limits<std::uint64_t>::max()};
-    return {true, (x * (x + 1) * (2 * x + 1)) / 6};
+    return {true, (x * (x + 1) * ((2 * x) + 1)) / 6};
 }
 
 // Unit tests for sumOfSquares()
@@ -387,7 +387,7 @@ TxQ::canBeHeld(
     STTx const& tx,
     ApplyFlags const flags,
     OpenView const& view,
-    std::shared_ptr<SLE const> const& sleAccount,
+    SLE::const_ref sleAccount,
     AccountMap::iterator const& accountIter,
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock)
@@ -1576,7 +1576,7 @@ TxQ::accept(Application& app, OpenView& view)
 //
 // Acquires a lock and calls the implementation.
 SeqProxy
-TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
+TxQ::nextQueuableSeq(SLE::const_ref sleAccount) const
 {
     std::scoped_lock const lock(mutex_);
     return nextQueuableSeqImpl(sleAccount, lock);
@@ -1589,9 +1589,7 @@ TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
 // sequence number, that is not used by a transaction in the queue, must
 // be found and returned.
 SeqProxy
-TxQ::nextQueuableSeqImpl(
-    std::shared_ptr<SLE const> const& sleAccount,
-    std::scoped_lock<std::mutex> const&) const
+TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const
 {
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.
