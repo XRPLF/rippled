@@ -52,6 +52,7 @@
 #include <string_view>
 #include <typeinfo>
 #include <utility>
+#include <vector>
 
 namespace xrpl::telemetry {
 
