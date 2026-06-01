@@ -10,11 +10,17 @@
     its own factory that can return the real TelemetryImpl.
 */
 
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
+#include <opentelemetry/context/context.h>
+#include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/noop.h>
+#include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_metadata.h>
+#include <opentelemetry/trace/tracer.h>
+
+#include <string_view>
 #endif
 
 #include <memory>

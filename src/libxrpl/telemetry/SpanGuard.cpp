@@ -28,30 +28,29 @@
 #include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/telemetry/TraceContextPropagator.h>
 
-#include <opentelemetry/common/attribute_value.h>
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/nostd/span.h>
 #include <opentelemetry/trace/context.h>
 #include <opentelemetry/trace/default_span.h>
 #include <opentelemetry/trace/scope.h>
 #include <opentelemetry/trace/span.h>
 #include <opentelemetry/trace/span_context.h>
+#include <opentelemetry/trace/span_id.h>
 #include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/span_startoptions.h>
 #include <opentelemetry/trace/trace_flags.h>
 #include <opentelemetry/trace/trace_id.h>
-#include <opentelemetry/trace/tracer.h>
 
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <initializer_list>
 #include <memory>
-#include <string>
 #include <string_view>
 #include <typeinfo>
 #include <utility>
-#include <vector>
 
 namespace xrpl::telemetry {
 
@@ -280,17 +279,19 @@ SpanGuard::hashSpan(
     if (hashSize < 16)
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
+    if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
 
-    otel_trace::TraceId traceId(opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
+    otel_trace::TraceId const traceId(
+        opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
 
-    auto const rval = default_prng()();
+    auto const rval = defaultPrng()();
     std::uint8_t spanIdBytes[8];
     std::memcpy(spanIdBytes, &rval, sizeof(spanIdBytes));
-    otel_trace::SpanId spanId(opentelemetry::nostd::span<std::uint8_t const, 8>(spanIdBytes, 8));
+    otel_trace::SpanId const spanId(
+        opentelemetry::nostd::span<std::uint8_t const, 8>(spanIdBytes, 8));
 
-    otel_trace::SpanContext syntheticCtx(
+    otel_trace::SpanContext const syntheticCtx(
         traceId, spanId, otel_trace::TraceFlags(1), /* remote = */ false);
 
     auto parentCtx = opentelemetry::context::Context{}.SetValue(
@@ -333,15 +334,16 @@ SpanGuard::hashSpan(
     if (hashSize < 16 || parentSpanSize != 8)
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
+    if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
 
-    otel_trace::TraceId traceId(opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
+    otel_trace::TraceId const traceId(
+        opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
 
-    otel_trace::SpanId parentSpan(
+    otel_trace::SpanId const parentSpan(
         opentelemetry::nostd::span<std::uint8_t const, 8>(parentSpanId, 8));
 
-    otel_trace::SpanContext combinedCtx(
+    otel_trace::SpanContext const combinedCtx(
         traceId, parentSpan, otel_trace::TraceFlags(traceFlags), /* remote = */ true);
 
     auto parentCtx = opentelemetry::context::Context{}.SetValue(
