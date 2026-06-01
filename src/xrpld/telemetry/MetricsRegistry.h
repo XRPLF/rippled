@@ -260,7 +260,7 @@ public:
     stop();
 
     /** @return true if the registry is actively exporting metrics. */
-    bool
+    [[nodiscard]] bool
     isEnabled() const noexcept
     {
         return enabled_;
