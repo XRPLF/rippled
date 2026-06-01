@@ -3524,6 +3524,13 @@ public:
             MPTTester const token{
                 {.env = env, .issuer = issuer, .holders = {taker}, .maxAmt = kMaxMpTokenAmount}};
 
+            // Give the taker exactly one MPT. If the old rounding overflow
+            // collapsed the required input to the minimum positive amount, the
+            // taker could afford the bad fill and the balance checks below
+            // would catch the economic gain.
+            env(pay(issuer, taker, token(1)));
+            env.close();
+
             // Covers BookStep::revImp() output reduction. The issuer's offer
             // is fully funded and has no transfer fee, so offer preparation
             // succeeds. The taker asks for slightly less output, forcing
@@ -3539,13 +3546,23 @@ public:
             auto const poisonKeylet = keylet::offer(issuer.id(), poisonSeq);
             BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
 
+            auto const issuerXRPBefore = env.balance(issuer, XRP);
+            auto const takerXRPBefore = env.balance(taker, XRP);
+            auto const takerMPTBefore = env.balance(taker, token);
+            auto const fee = env.current()->fees().base;
+
             auto const takerSeq = env.seq(taker);
             env(offer(taker, token(funded), XRP(1)));
             env.close();
 
+            // The former overflow point must not turn into a near-free fill:
+            // the unusable offer is removed, the taker's offer remains, and no
+            // value changes hands beyond the taker's transaction fee.
             BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
             BEAST_EXPECT(env.le(keylet::offer(taker.id(), takerSeq)) != nullptr);
-            BEAST_EXPECT(env.balance(taker, token) == token(0));
+            BEAST_EXPECT(env.balance(issuer, XRP) == issuerXRPBefore);
+            BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore - fee);
+            BEAST_EXPECT(env.balance(taker, token) == takerMPTBefore);
         }
 
         {
