@@ -48,7 +48,7 @@ using Prices =
 static void
 iteratePriceData(
     RPC::JsonContext& context,
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     std::function<bool(STObject const&)> const& f)
 {
     static constexpr std::uint8_t kMaxHistory = 3;
