@@ -122,7 +122,7 @@ endif()
 # so that SpanGuard factory methods produce real OTel spans.
 # When OFF (default), all tracing code compiles to no-ops with zero overhead.
 # Enable via: conan install -o telemetry=True, or cmake -Dtelemetry=ON.
-option(telemetry "Enable OpenTelemetry tracing" OFF)
+option(telemetry "Enable OpenTelemetry tracing" ON)
 if(telemetry)
     find_package(opentelemetry-cpp CONFIG REQUIRED)
     add_compile_definitions(XRPL_ENABLE_TELEMETRY)
@@ -146,6 +146,7 @@ endif()
 include(XrplCore)
 include(XrplProtocolAutogen)
 include(XrplInstall)
+include(XrplPackaging)
 include(XrplValidatorKeys)
 
 if(tests)

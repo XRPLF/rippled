@@ -4,8 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include <chrono>
-
 using namespace xrpl;
 
 TEST(TelemetryConfig, setup_defaults)
@@ -34,7 +32,7 @@ TEST(TelemetryConfig, setup_defaults)
 TEST(TelemetryConfig, parse_empty_section)
 {
     Section const section;
-    auto setup = telemetry::setup_Telemetry(section, "nHUtest123", "2.0.0", 0);
+    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0);
 
     EXPECT_FALSE(setup.enabled);
     EXPECT_EQ(setup.serviceName, "xrpld");
@@ -68,7 +66,7 @@ TEST(TelemetryConfig, parse_full_section)
     section.set("trace_peer", "1");
     section.set("trace_ledger", "0");
 
-    auto setup = telemetry::setup_Telemetry(section, "nHUtest123", "2.0.0", 1);
+    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 1);
 
     EXPECT_TRUE(setup.enabled);
     EXPECT_EQ(setup.serviceName, "my-rippled");
@@ -94,7 +92,7 @@ TEST(TelemetryConfig, null_telemetry_factory)
 
     beast::Journal::Sink& sink = beast::Journal::getNullSink();
     beast::Journal const j(sink);
-    auto tel = telemetry::make_Telemetry(setup, j);
+    auto tel = telemetry::makeTelemetry(setup, j);
     EXPECT_TRUE(tel != nullptr);
     EXPECT_FALSE(tel->isEnabled());
     EXPECT_FALSE(tel->shouldTraceRpc());
@@ -112,11 +110,11 @@ TEST(TelemetryConfig, sampling_ratio_clamped)
 {
     Section section;
     section.set("sampling_ratio", "2.5");
-    auto setup = telemetry::setup_Telemetry(section, "nHUtest123", "2.0.0", 0);
+    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0);
     EXPECT_DOUBLE_EQ(setup.samplingRatio, 1.0);
 
     Section section2;
     section2.set("sampling_ratio", "-0.5");
-    auto setup2 = telemetry::setup_Telemetry(section2, "nHUtest123", "2.0.0", 0);
+    auto setup2 = telemetry::setupTelemetry(section2, "nHUtest123", "2.0.0", 0);
     EXPECT_DOUBLE_EQ(setup2.samplingRatio, 0.0);
 }

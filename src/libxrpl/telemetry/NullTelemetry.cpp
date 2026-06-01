@@ -1,20 +1,26 @@
 /** No-op implementation of the Telemetry interface.
 
     Always compiled (regardless of XRPL_ENABLE_TELEMETRY). Provides the
-    make_Telemetry() factory when telemetry is compiled out (#ifndef), which
+    makeTelemetry() factory when telemetry is compiled out (#ifndef), which
     unconditionally returns a NullTelemetry that does nothing.
 
     When XRPL_ENABLE_TELEMETRY IS defined, the OTel virtual methods
-    (getTracer, startSpan) return noop tracers/spans. The make_Telemetry()
+    (getTracer, startSpan) return noop tracers/spans. The makeTelemetry()
     factory in this file is not used in that case -- Telemetry.cpp provides
     its own factory that can return the real TelemetryImpl.
 */
 
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
+#include <opentelemetry/context/context.h>
+#include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/noop.h>
+#include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_metadata.h>
+#include <opentelemetry/trace/tracer.h>
+
+#include <string_view>
 #endif
 
 #include <memory>
@@ -129,7 +135,7 @@ public:
 */
 #ifndef XRPL_ENABLE_TELEMETRY
 std::unique_ptr<Telemetry>
-make_Telemetry(Telemetry::Setup const& setup, beast::Journal)
+makeTelemetry(Telemetry::Setup const& setup, beast::Journal)
 {
     return std::make_unique<NullTelemetry>(setup);
 }

@@ -21,7 +21,7 @@ TEST(TransactionsCheckCreateTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCreate"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCreate"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -108,7 +108,7 @@ TEST(TransactionsCheckCreateTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCreateFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCreateFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -192,7 +192,7 @@ TEST(TransactionsCheckCreateTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -206,7 +206,7 @@ TEST(TransactionsCheckCreateTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -220,7 +220,7 @@ TEST(TransactionsCheckCreateTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testCheckCreateNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testCheckCreateNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);

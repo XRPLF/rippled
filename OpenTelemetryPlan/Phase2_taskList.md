@@ -1,8 +1,8 @@
 # Phase 2: RPC Tracing Completion Task List
 
-> **Goal**: Complete RPC tracing coverage with unit tests, Grafana search filters, node health attributes, and config hardening. Build on the Phase 1c SpanGuard factory foundation to achieve production-quality RPC observability.
+> **Goal**: Complete RPC tracing coverage with unit tests, Grafana search filters, PathFind instrumentation, and config hardening. Build on the Phase 1c SpanGuard factory foundation to achieve production-quality RPC observability.
 >
-> **Scope**: Unit tests for core telemetry, Grafana Tempo search filters, node health span attributes, config validation (`std::clamp`).
+> **Scope**: Unit tests for core telemetry, Grafana Tempo search filters, PathFind RPC tracing, config validation (`std::clamp`).
 >
 > **Branch**: `pratik/otel-phase2-rpc-tracing` (from `pratik/otel-phase1c-rpc-integration`)
 
@@ -67,7 +67,7 @@
 
 - `src/tests/libxrpl/telemetry/TelemetryConfig.cpp`:
   - Test Setup defaults (all fields have correct initial values)
-  - Test `setup_Telemetry` config parser (empty section, full section, edge cases)
+  - Test `setupTelemetry` config parser (empty section, full section, edge cases)
   - Test `samplingRatio` clamping (values outside 0.0-1.0)
 
 - `src/tests/libxrpl/telemetry/SpanGuardFactory.cpp`:
@@ -121,42 +121,9 @@ These can be added later if dashboard queries specifically need them. The node h
 
 ## Task 2.8: RPC Span Attribute Enrichment — Node Health Context
 
-> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — adds node-level health context inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
->
-> **Downstream**: Phase 7 (MetricsRegistry uses these attributes for alerting context), Phase 10 (validation checks for these attributes).
+**Status**: DROPPED.
 
-**Objective**: Add node-level health state to every `rpc.command.*` span so operators can correlate RPC behavior with node state in Tempo.
-
-**What to do**:
-
-- Edit `src/xrpld/rpc/detail/RPCHandler.cpp`:
-  - In the `rpc.command.*` span creation block (after existing `setAttribute` calls for `command`, `version`, etc.):
-    - Node health attrs (`xrpl.node.amendment_blocked`, `xrpl.node.server_state`) are now resource-level attrs, not per-span. They are set at Tracer init.
-
-**New span attributes**:
-
-| Attribute                     | Type   | Source                                      | Example  |
-| ----------------------------- | ------ | ------------------------------------------- | -------- |
-| `xrpl.node.amendment_blocked` | bool   | `context.app.getOPs().isAmendmentBlocked()` | `true`   |
-| `xrpl.node.server_state`      | string | `context.app.getOPs().strOperatingMode()`   | `"full"` |
-
-**Rationale**: When a node is amendment-blocked or in a degraded state, every RPC response is suspect. Tagging spans with this state enables Tempo TraceQL queries like:
-
-```
-{name=~"rpc.command.*"} | xrpl.node.amendment_blocked = true
-```
-
-This surfaces all RPCs served during a blocked period — critical for post-incident analysis.
-
-**Key modified files**:
-
-- `src/xrpld/rpc/detail/RPCHandler.cpp`
-
-**Exit Criteria**:
-
-- [ ] `rpc.command.server_info` spans carry `xrpl.node.amendment_blocked` and `xrpl.node.server_state` attributes
-- [ ] No measurable latency impact (attribute values are cached atomics, not computed per-call)
-- [ ] Attributes appear in Tempo trace detail view
+Node health (`amendment_blocked`, `server_state`) is not part of the telemetry surface. Operators consume the same data via the existing `server_info` / `server_state` RPC commands, so duplicating it on traces adds storage and cardinality cost without new value. The OTel C++ SDK 1.18.0 also does not support runtime updates to the resource, ruling out resource-level emission of these dynamic-by-nature flags.
 
 ---
 
@@ -169,10 +136,11 @@ This surfaces all RPCs served during a blocked period — critical for post-inci
 **Spans added**:
 
 - `pathfind.request` — wraps `doPathFind()` and `doRipplePathFind()` RPC handlers
-- `pathfind.compute` — wraps `PathRequest::doUpdate()` (fast/normal attr)
-- `pathfind.update_all` — wraps `PathRequestManager::updateAll()` on ledger close (ledger_index attr)
-- `pathfind.discover` — wraps `Pathfinder::findPaths()` graph exploration (search_level attr)
-- `pathfind.rank` — wraps `Pathfinder::computePathRanks()` liquidity validation (num_paths attr)
+- `pathfind.compute` — wraps `PathRequest::doUpdate()` (`pathfind_fast` attr)
+- `pathfind.update_all` — wraps `PathRequestManager::updateAll()` on ledger close (`pathfind_ledger_index`, `pathfind_num_requests` attrs; emitted only when active subscriptions exist)
+- `pathfind.discover` — wraps the entire per-source-asset loop in `PathRequest::findPaths()` (`pathfind_search_level`, `pathfind_num_paths` attrs). One span per RPC call instead of N (one per source asset). Trade-off: per-asset breakdown is lost; storage and cardinality bounded.
+
+**Attribute namespacing**: All pathfind attributes use the `pathfind_*` underscore form per the Phase 1c naming-spec rule 5.
 
 **New file**: `src/xrpld/rpc/detail/PathFindSpanNames.h`
 
@@ -197,11 +165,12 @@ This surfaces all RPCs served during a blocked period — critical for post-inci
 | 2.5  | Enhanced RPC span attributes (HTTP-level)   | Deferred            | Low value; span duration covers timing natively  |
 | 2.6  | Build verification and performance baseline | Complete            | Verified in CI on Phase 1c                       |
 | 2.7  | Grafana Tempo search filters                | Complete            | rpc-command, rpc-status, rpc-role filters        |
-| 2.8  | RPC span attribute enrichment (node health) | Complete            | amendment_blocked + server_state                 |
-| 2.9  | PathFind RPC instrumentation (5 spans)      | Complete            | request, compute, update_all, discover, rank     |
+| 2.8  | RPC span attribute enrichment (node health) | Dropped             | Available via `server_info`/`server_state` RPC   |
+| 2.9  | PathFind RPC instrumentation                | Complete            | request, compute, update_all, discover           |
 
-**Delivered in this branch**: Tasks 2.4, 2.7, 2.8, 2.9.
+**Delivered in this branch**: Tasks 2.4, 2.7, 2.9.
 **Deferred with rationale**: Tasks 2.1 (→Phase 3), 2.5 (low priority).
+**Dropped**: Task 2.8 (node health not duplicated on traces).
 **Superseded**: Task 2.2 (Phase 1c SpanGuard factory covers this).
 
 ---

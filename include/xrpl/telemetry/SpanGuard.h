@@ -125,6 +125,10 @@
 #include <string_view>
 #include <utility>
 
+namespace protocol {
+class TraceContext;
+}  // namespace protocol
+
 namespace xrpl::telemetry {
 
 /** Trace subsystem categories for conditional span creation.
@@ -275,17 +279,22 @@ public:
         TraceCategory. All nodes using the same hash independently produce
         spans under the same trace_id, enabling cross-node correlation
         without context propagation.
-        @param cat       Trace subsystem category.
-        @param name      Full span name (e.g. "tx.receive").
-        @param hashData  Pointer to at least 16 bytes of hash data.
-        @param hashSize  Size of the hash buffer (must be >= 16).
+        @param cat          Trace subsystem category.
+        @param name         Full span name (e.g. "tx.receive").
+        @param hashData     Pointer to at least 16 bytes of hash data.
+        @param hashSize     Size of the hash buffer (must be >= 16).
+        @param followsFrom  Optional captured context to attach as a
+                            follows-from link. Use to stitch sequential
+                            top-level spans (e.g. consecutive consensus
+                            rounds). Ignored if nullptr or invalid.
     */
     static SpanGuard
     hashSpan(
-        TraceCategory cat,
-        std::string_view name,
-        std::uint8_t const* hashData,
-        std::size_t hashSize);
+        TraceCategory const cat,
+        std::string_view const name,
+        std::uint8_t const* const hashData,
+        std::size_t const hashSize,
+        SpanContext const* followsFrom = nullptr);
 
     /** Create a hash-derived span with a remote parent.
         trace_id = hashData[0:16], parent span_id from protobuf context
@@ -301,13 +310,13 @@ public:
     */
     static SpanGuard
     hashSpan(
-        TraceCategory cat,
-        std::string_view name,
-        std::uint8_t const* hashData,
-        std::size_t hashSize,
-        std::uint8_t const* parentSpanId,
-        std::size_t parentSpanSize,
-        std::uint8_t traceFlags);
+        TraceCategory const cat,
+        std::string_view const name,
+        std::uint8_t const* const hashData,
+        std::size_t const hashSize,
+        std::uint8_t const* const parentSpanId,
+        std::size_t const parentSpanSize,
+        std::uint8_t const traceFlags);
 
     // --- Context capture -----------------------------------------------
 
@@ -328,6 +337,19 @@ public:
     */
     [[nodiscard]] TraceBytes
     getTraceBytes() const;
+
+    /** Inject the calling thread's currently-active OTel context into a
+        protobuf TraceContext message for cross-node propagation.
+
+        Encapsulates `RuntimeContext::GetCurrent()` + `injectToProtobuf`
+        so callers in app-layer code (e.g. RCLConsensus broadcasting
+        TMProposeSet / TMValidation) don't depend on any OTel headers.
+        No-op if telemetry is disabled or no span is active.
+
+        @param proto The protobuf TraceContext to populate.
+    */
+    static void
+    injectCurrentContextToProtobuf(protocol::TraceContext& proto);
 
     // --- Attribute setters (explicit overloads, no OTel types) ---------
 
@@ -443,7 +465,12 @@ public:
     }
 
     [[nodiscard]] static SpanGuard
-    hashSpan(TraceCategory, std::string_view, std::uint8_t const*, std::size_t)
+    hashSpan(
+        TraceCategory,
+        std::string_view,
+        std::uint8_t const*,
+        std::size_t,
+        SpanContext const* = nullptr)
     {
         return {};
     }
@@ -469,6 +496,11 @@ public:
     getTraceBytes() const
     {
         return {};
+    }
+
+    static void
+    injectCurrentContextToProtobuf(protocol::TraceContext&)
+    {
     }
     // NOLINTEND(readability-convert-member-functions-to-static)
 

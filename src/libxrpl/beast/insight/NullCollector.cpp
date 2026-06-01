@@ -108,31 +108,31 @@ public:
     ~NullCollectorImp() override = default;
 
     Hook
-    make_hook(HookImpl::HandlerType const&) override
+    makeHook(HookImpl::HandlerType const&) override
     {
         return Hook(std::make_shared<detail::NullHookImpl>());
     }
 
     Counter
-    make_counter(std::string const&) override
+    makeCounter(std::string const&) override
     {
         return Counter(std::make_shared<detail::NullCounterImpl>());
     }
 
     Event
-    make_event(std::string const&) override
+    makeEvent(std::string const&) override
     {
         return Event(std::make_shared<detail::NullEventImpl>());
     }
 
     Gauge
-    make_gauge(std::string const&) override
+    makeGauge(std::string const&) override
     {
         return Gauge(std::make_shared<detail::NullGaugeImpl>());
     }
 
     Meter
-    make_meter(std::string const&) override
+    makeMeter(std::string const&) override
     {
         return Meter(std::make_shared<detail::NullMeterImpl>());
     }
@@ -143,7 +143,7 @@ public:
 //------------------------------------------------------------------------------
 
 std::shared_ptr<Collector>
-NullCollector::New()
+NullCollector::make()
 {
     return std::make_shared<detail::NullCollectorImp>();
 }

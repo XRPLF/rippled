@@ -44,9 +44,9 @@ public:
     exportConsumers() = 0;
 
     /** Extract consumer information for reporting. */
-    virtual Json::Value
+    virtual json::Value
     getJson() = 0;
-    virtual Json::Value
+    virtual json::Value
     getJson(int threshold) = 0;
 
     /** Import packaged consumer information.
@@ -59,6 +59,6 @@ public:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<Manager>
-make_Manager(beast::insight::Collector::ptr const& collector, beast::Journal journal);
+makeManager(beast::insight::Collector::ptr const& collector, beast::Journal journal);
 
 }  // namespace xrpl::Resource

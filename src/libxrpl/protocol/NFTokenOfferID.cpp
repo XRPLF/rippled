@@ -52,7 +52,7 @@ getOfferIDFromCreatedOffer(TxMeta const& transactionMeta)
 
 void
 insertNFTokenOfferID(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {

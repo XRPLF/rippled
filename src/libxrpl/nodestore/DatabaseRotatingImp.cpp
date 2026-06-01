@@ -53,7 +53,7 @@ DatabaseRotatingImp::rotate(
     // deleted.
     std::shared_ptr<NodeStore::Backend> oldArchiveBackend;
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
 
         archiveBackend_->setDeletePath();
         oldArchiveBackend = std::move(archiveBackend_);
@@ -70,14 +70,14 @@ DatabaseRotatingImp::rotate(
 std::string
 DatabaseRotatingImp::getName() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return writableBackend_->getName();
 }
 
 std::int32_t
 DatabaseRotatingImp::getWriteLoad() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return writableBackend_->getWriteLoad();
 }
 
@@ -85,7 +85,7 @@ void
 DatabaseRotatingImp::importDatabase(Database& source)
 {
     auto const backend = [&] {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         return writableBackend_;
     }();
 
@@ -95,7 +95,7 @@ DatabaseRotatingImp::importDatabase(Database& source)
 void
 DatabaseRotatingImp::sync()
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     writableBackend_->sync();
 }
 
@@ -105,12 +105,18 @@ DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
 
     auto const backend = [&] {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         return writableBackend_;
     }();
 
     backend->store(nObj);
     storeStats(1, nObj->getData().size());
+}
+
+void
+DatabaseRotatingImp::sweep()
+{
+    // Nothing to do.
 }
 
 std::shared_ptr<NodeObject>
@@ -121,7 +127,7 @@ DatabaseRotatingImp::fetchNodeObject(
     bool duplicate)
 {
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
-        Status status = ok;
+        Status status = Status::Ok;
         std::shared_ptr<NodeObject> nodeObject;
         try
         {
@@ -130,19 +136,19 @@ DatabaseRotatingImp::fetchNodeObject(
         catch (std::exception const& e)
         {
             JLOG(j_.fatal()) << "Exception, " << e.what();
-            Rethrow();
+            rethrow();
         }
 
         switch (status)
         {
-            case ok:
-            case notFound:
+            case Status::Ok:
+            case Status::NotFound:
                 break;
-            case dataCorrupt:
+            case Status::DataCorrupt:
                 JLOG(j_.fatal()) << "Corrupt NodeObject #" << hash;
                 break;
             default:
-                JLOG(j_.warn()) << "Unknown status=" << status;
+                JLOG(j_.warn()) << "Unknown status=" << static_cast<int>(status);
                 break;
         }
 
@@ -153,7 +159,7 @@ DatabaseRotatingImp::fetchNodeObject(
     std::shared_ptr<NodeObject> nodeObject;
 
     auto [writable, archive] = [&] {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
@@ -167,7 +173,7 @@ DatabaseRotatingImp::fetchNodeObject(
         {
             {
                 // Refresh the writable backend pointer
-                std::lock_guard const lock(mutex_);
+                std::scoped_lock const lock(mutex_);
                 writable = writableBackend_;
             }
 
@@ -184,18 +190,18 @@ DatabaseRotatingImp::fetchNodeObject(
 }
 
 void
-DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f)
+DatabaseRotatingImp::forEach(std::function<void(std::shared_ptr<NodeObject>)> f)
 {
     auto [writable, archive] = [&] {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
     // Iterate the writable backend
-    writable->for_each(f);
+    writable->forEach(f);
 
     // Iterate the archive backend
-    archive->for_each(f);
+    archive->forEach(f);
 }
 
 }  // namespace xrpl::NodeStore

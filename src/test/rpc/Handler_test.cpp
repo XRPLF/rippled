@@ -35,7 +35,7 @@ operator<<(std::ostream& os, std::chrono::nanoseconds ns)
 // dissimilar to how xrpld will normally work.
 // TODO as https://github.com/XRPLF/rippled/issues/4765
 
-class Handler_test : public beast::unit_test::suite
+class Handler_test : public beast::unit_test::Suite
 {
     auto
     time(std::size_t n, auto f, auto prng) -> auto
@@ -43,7 +43,7 @@ class Handler_test : public beast::unit_test::suite
         using clock = std::chrono::steady_clock;
         assert(n > 0);
         double sum = 0;
-        double sum_squared = 0;
+        double sumSquared = 0;
         std::size_t j = 0;
         while (j < n)
         {
@@ -69,14 +69,14 @@ class Handler_test : public beast::unit_test::suite
             {
                 j += 1;
                 sum += samples[k];
-                sum_squared += (samples[k] * samples[k]);
+                sumSquared += (samples[k] * samples[k]);
             }
         }
 
-        double const mean_squared = (sum * sum) / (j * j);
+        double const meanSquared = (sum * sum) / (j * j);
         return std::make_tuple(
             clock::duration{static_cast<long>(sum / j)},
-            clock::duration{static_cast<long>(std::sqrt((sum_squared / j) - mean_squared))},
+            clock::duration{static_cast<long>(std::sqrt((sumSquared / j) - meanSquared))},
             j);
     }
 
@@ -88,7 +88,7 @@ class Handler_test : public beast::unit_test::suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        std::vector<char const*> names = test::jtx::make_vector(xrpl::RPC::getHandlerNames());
+        std::vector<char const*> names = test::jtx::makeVector(xrpl::RPC::getHandlerNames());
 
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};
 
@@ -97,7 +97,7 @@ class Handler_test : public beast::unit_test::suite
             1'000'000,
             [&](std::size_t i) {
                 auto const d = RPC::getHandler(1, false, names[i]);
-                dummy = dummy + i + (int)d->role_;
+                dummy = dummy + i + (int)d->role;
             },
             [&]() -> std::size_t { return distr(prng); });
 

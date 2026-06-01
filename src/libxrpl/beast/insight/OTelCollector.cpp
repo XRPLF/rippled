@@ -268,7 +268,7 @@ private:
     opentelemetry::nostd::shared_ptr<metrics_api::ObservableInstrument> m_gauge;
 
     /** Owning collector, used to invoke hooks before reading gauge values. */
-    std::shared_ptr<OTelCollectorImp> m_collector;
+    std::shared_ptr<OTelCollectorImp> collector_;
 };
 
 //------------------------------------------------------------------------------
@@ -578,9 +578,9 @@ OTelGaugeImpl::OTelGaugeImpl(
     std::string const& name,
     opentelemetry::nostd::shared_ptr<metrics_api::Meter> const& meter,
     std::shared_ptr<OTelCollectorImp> const& collector)
-    : m_gauge(meter->CreateInt64ObservableGauge(name)), m_collector(collector)
+    : m_gauge(meter->CreateInt64ObservableGauge(name)), collector_(collector)
 {
-    m_collector->addGauge(this);
+    collector_->addGauge(this);
     m_gauge->AddCallback(gaugeCallback, this);
 }
 
@@ -588,7 +588,7 @@ void
 OTelGaugeImpl::gaugeCallback(opentelemetry::metrics::ObserverResult result, void* state)
 {
     auto* self = static_cast<OTelGaugeImpl*>(state);
-    self->m_collector->callHooks();
+    self->collector_->callHooks();
     if (auto intResult = opentelemetry::nostd::get_if<
             opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObserverResultT<int64_t>>>(
             &result))
@@ -600,7 +600,7 @@ OTelGaugeImpl::gaugeCallback(opentelemetry::metrics::ObserverResult result, void
 OTelGaugeImpl::~OTelGaugeImpl()
 {
     m_gauge->RemoveCallback(gaugeCallback, this);
-    m_collector->removeGauge(this);
+    collector_->removeGauge(this);
 }
 
 void

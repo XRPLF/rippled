@@ -19,9 +19,9 @@ class VaultWithdrawBuilder;
  * @brief Transaction: VaultWithdraw
  *
  * Type: ttVAULT_WITHDRAW (69)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: mayDeleteMPT | mayAuthorizeMPT | mustModifyVault
+ * Privileges: MayDeleteMpt | MayAuthorizeMpt | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultWithdrawBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeREQUIRED)
+     * @brief Get sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
@@ -71,7 +71,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestination (soeOPTIONAL)
+     * @brief Get sfDestination (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -97,7 +97,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -127,7 +127,7 @@ public:
  * @brief Builder for VaultWithdraw transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class VaultWithdrawBuilder : public TransactionBuilderBase<VaultWithdrawBuilder>
@@ -168,7 +168,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultWithdrawBuilder&
@@ -179,7 +179,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeREQUIRED)
+     * @brief Set sfAmount (SoeRequired)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
@@ -191,7 +191,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeOPTIONAL)
+     * @brief Set sfDestination (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultWithdrawBuilder&
@@ -202,7 +202,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultWithdrawBuilder&

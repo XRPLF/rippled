@@ -95,7 +95,7 @@ private:
     template <class Request, class Response>
     using Handler = std::function<std::pair<Response, grpc::Status>(RPC::GRPCContext<Request>&)>;
     // This implementation is currently limited to v1 of the API
-    static unsigned constexpr apiVersion = 1;
+    static constexpr unsigned kApiVersion = 1;
 
     template <class Request, class Response>
     using Forward = std::function<grpc::Status(

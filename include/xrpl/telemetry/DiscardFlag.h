@@ -2,7 +2,7 @@
 
 /** Thread-local flag for span discard signaling.
 
-    SpanGuard::discard() sets tl_discardCurrentSpan to true before calling
+    SpanGuard::discard() sets gTlDiscardCurrentSpan to true before calling
     Span::End(). The OTel SDK calls SpanProcessor::OnEnd() synchronously on
     the same thread, so FilteringSpanProcessor checks and clears this flag
     in OnEnd() to drop the span before it enters the batch export queue.
@@ -16,12 +16,10 @@
     @see SpanGuard::discard(), FilteringSpanProcessor (Telemetry.cpp)
 */
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 /** When true, the FilteringSpanProcessor drops the current span in
     OnEnd(). Set by SpanGuard::discard(), cleared by OnEnd(). */
-inline thread_local bool tl_discardCurrentSpan = false;
+inline thread_local bool gTlDiscardCurrentSpan = false;
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry

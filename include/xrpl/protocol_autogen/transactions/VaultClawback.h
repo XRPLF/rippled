@@ -19,9 +19,9 @@ class VaultClawbackBuilder;
  * @brief Transaction: VaultClawback
  *
  * Type: ttVAULT_CLAWBACK (70)
- * Delegable: Delegation::notDelegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSingleAssetVault
- * Privileges: mayDeleteMPT | mustModifyVault
+ * Privileges: MayDeleteMpt | MustModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use VaultClawbackBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfVaultID (soeREQUIRED)
+     * @brief Get sfVaultID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfHolder (soeREQUIRED)
+     * @brief Get sfHolder (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmount (soeOPTIONAL)
+     * @brief Get sfAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
@@ -101,7 +101,7 @@ public:
  * @brief Builder for VaultClawback transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class VaultClawbackBuilder : public TransactionBuilderBase<VaultClawbackBuilder>
@@ -142,7 +142,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfVaultID (soeREQUIRED)
+     * @brief Set sfVaultID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultClawbackBuilder&
@@ -153,7 +153,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolder (soeREQUIRED)
+     * @brief Set sfHolder (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     VaultClawbackBuilder&
@@ -164,7 +164,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmount (soeOPTIONAL)
+     * @brief Set sfAmount (SoeOptional)
      * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
