@@ -41,6 +41,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/jss.h>
@@ -57,7 +58,7 @@
 #include <opentelemetry/sdk/metrics/meter_provider.h>
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
 #include <opentelemetry/sdk/resource/resource.h>
-#include <opentelemetry/sdk/resource/semantic_conventions.h>
+#include <opentelemetry/semconv/incubating/service_attributes.h>
 
 #include <algorithm>
 #include <sstream>
@@ -112,9 +113,9 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     // Configure resource attributes so Prometheus exported_instance labels
     // distinguish metrics from different nodes (matches OTelCollector setup).
     resource::ResourceAttributes attrs;
-    attrs[resource::SemanticConventions::kServiceName] = "xrpld";
+    attrs[opentelemetry::semconv::service::kServiceName] = "xrpld";
     if (!instanceId.empty())
-        attrs[resource::SemanticConventions::kServiceInstanceId] = instanceId;
+        attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
     auto resourceAttrs = resource::Resource::Create(attrs);
 
     // Create MeterProvider with resource, then attach the metric reader.
@@ -611,7 +612,7 @@ MetricsRegistry::registerNodeStoreGauge()
                 observe("write_load", static_cast<int64_t>(db.getWriteLoad()));
 
                 // Read queue depth (instantaneous).
-                Json::Value obj(Json::objectValue);
+                json::Value obj(json::ValueType::Object);
                 db.getCountsJson(obj);
                 if (obj.isMember("read_queue"))
                 {
