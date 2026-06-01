@@ -249,9 +249,11 @@ private:
     getInternalMin(MantissaScale scale, int exponent)
     {
         if (exponent < 0 || exponent >= kPowerOfTen.size())
+        {
             // If called in a constexpr context, this throw assures that the build fails if an
             // invalid exponent is used.
             throw std::runtime_error("Invalid exponent");  // LCOV_EXCL_LINE
+        }
         return kPowerOfTen[exponent];
     }
 

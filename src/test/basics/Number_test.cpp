@@ -1803,16 +1803,16 @@ public:
                     ", got: " + std::to_string(normalized.second) + " @ " + std::to_string(line));
         };
 
-        std::int64_t constexpr kI_RANGE_MIN = 100;
-        std::int64_t constexpr kI_RANGE_MAX = 999;
+        std::int64_t constexpr kIRangeMin = 100;
+        std::int64_t constexpr kIRangeMax = 999;
 
-        std::uint64_t constexpr kU_RANGE_MIN = 100;
-        std::uint64_t constexpr kU_RANGE_MAX = 999;
+        std::uint64_t constexpr kURangeMin = 100;
+        std::uint64_t constexpr kURangeMax = 999;
 
-        constexpr static MantissaRange kLARGE_RANGE{MantissaRange::MantissaScale::Large};
+        constexpr static MantissaRange kLargeRange{MantissaRange::MantissaScale::Large};
 
-        std::int64_t constexpr kI_BIG_MIN = kLARGE_RANGE.min;
-        std::int64_t constexpr kI_BIG_MAX = kLARGE_RANGE.max;
+        std::int64_t constexpr kIBigMin = kLargeRange.min;
+        std::int64_t constexpr kIBigMax = kLargeRange.max;
 
         auto const testSuite = [&](Number const& n,
                                    auto const expectedSmallMantissa,
@@ -1820,24 +1820,18 @@ public:
                                    auto const expectedLargeMantissa,
                                    auto const expectedLargeExponent,
                                    auto const line) {
-            test(n, kI_RANGE_MIN, kI_RANGE_MAX, expectedSmallMantissa, expectedSmallExponent, line);
-            test(n, kI_BIG_MIN, kI_BIG_MAX, expectedLargeMantissa, expectedLargeExponent, line);
+            test(n, kIRangeMin, kIRangeMax, expectedSmallMantissa, expectedSmallExponent, line);
+            test(n, kIBigMin, kIBigMax, expectedLargeMantissa, expectedLargeExponent, line);
 
             // Only test non-negative. testing a negative number with an
             // unsigned range will assert, and asserts can't be tested.
             if (n.signum() >= 0)
             {
+                test(n, kURangeMin, kURangeMax, expectedSmallMantissa, expectedSmallExponent, line);
                 test(
                     n,
-                    kU_RANGE_MIN,
-                    kU_RANGE_MAX,
-                    expectedSmallMantissa,
-                    expectedSmallExponent,
-                    line);
-                test(
-                    n,
-                    kLARGE_RANGE.min,
-                    kLARGE_RANGE.max,
+                    kLargeRange.min,
+                    kLargeRange.max,
                     expectedLargeMantissa,
                     expectedLargeExponent,
                     line);
