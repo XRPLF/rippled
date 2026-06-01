@@ -244,13 +244,18 @@ private:
 inline void
 IntrusiveRefCounts::addStrongRef() const noexcept
 {
-    refCounts_.fetch_add(kStrongDelta, std::memory_order_acq_rel);
+    auto const prev = refCounts_.fetch_add(kStrongDelta, std::memory_order_acq_rel);
+    auto const newStrong = static_cast<std::uint32_t>((prev & kStrongMask) + 1);
+    detail::updateRefCountPeak(detail::kPeakStrongObserved, newStrong);
 }
 
 inline void
 IntrusiveRefCounts::addWeakRef() const noexcept
 {
-    refCounts_.fetch_add(kWeakDelta, std::memory_order_acq_rel);
+    auto const prev = refCounts_.fetch_add(kWeakDelta, std::memory_order_acq_rel);
+    auto const newWeak =
+        static_cast<std::uint32_t>(((prev & kWeakMask) >> kStrongCountNumBits) + 1);
+    detail::updateRefCountPeak(detail::kPeakWeakObserved, newWeak);
 }
 
 inline ReleaseStrongRefAction
@@ -349,6 +354,11 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
                 (!(prevIntVal & kPartialDestroyStartedMask)),
                 "xrpl::IntrusiveRefCounts::addWeakReleaseStrongRef : not "
                 "started partial destroy");
+            // This op converts one strong into one weak: capture the new
+            // weak count for the leak-proof peak.
+            auto const newWeak = static_cast<std::uint32_t>(
+                ((prevIntVal & kWeakMask) >> kStrongCountNumBits) + 1);
+            detail::updateRefCountPeak(detail::kPeakWeakObserved, newWeak);
             return action;
         }
     }
@@ -395,6 +405,10 @@ IntrusiveRefCounts::checkoutStrongRefFromWeak() const noexcept
 
         desiredValue = curValue + kStrongDelta;
     }
+    // Successful CAS promoted a weak ref to strong. Capture the new strong
+    // count for the leak-proof peak.
+    auto const newStrong = static_cast<std::uint32_t>(desiredValue & kStrongMask);
+    detail::updateRefCountPeak(detail::kPeakStrongObserved, newStrong);
     return true;
 }
 
