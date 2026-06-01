@@ -4,8 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include <chrono>
-
 using namespace xrpl;
 
 TEST(TelemetryConfig, setup_defaults)

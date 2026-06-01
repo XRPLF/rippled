@@ -197,6 +197,20 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
         }
 
+        // test preflight - malformed DomainID being zero
+        // Only test this with fixCleanup3_2_0 enabled. Without the fix,
+        // an assert-enabled build can crash when Ledger::read() receives
+        // a zero-key PermissionedDomain keylet.
+        if (features[fixCleanup3_2_0])
+        {
+            Env env(*this, features);
+            auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            env(offer(bob_, XRP(10), USD(10)), Domain(uint256{}), Ter(temMALFORMED));
+            env.close();
+        }
+
         // preclaim - someone outside of the domain cannot create domain offer
         {
             Env env(*this, features);
@@ -393,6 +407,24 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             env.close();
 
             env(pay(bob_, alice_, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
+            env.close();
+        }
+
+        // test preflight - malformed DomainID being zero
+        // Only test this with fixCleanup3_2_0 enabled. Without the fix,
+        // an assert-enabled build can crash when Ledger::read() receives
+        // a zero-key PermissionedDomain keylet.
+        if (features[fixCleanup3_2_0])
+        {
+            Env env(*this, features);
+            auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            env(pay(bob_, alice_, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(uint256{}),
+                Ter(temMALFORMED));
             env.close();
         }
 
@@ -1772,7 +1804,9 @@ public:
 
         // Test domain offer (w/o hybrid)
         testOfferCreate(all);
+        testOfferCreate(all - fixCleanup3_2_0);
         testPayment(all);
+        testPayment(all - fixCleanup3_2_0);
         testBookStep(all);
         testRippling(all);
         testOfferTokenIssuerInDomain(all);

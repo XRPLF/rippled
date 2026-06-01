@@ -51,7 +51,7 @@ public:
             // metric sources via the exported_instance Prometheus label.
             std::string const instanceId = get(params, "service_instance_id");
 
-            m_collector = beast::insight::OTelCollector::New(endpoint, prefix, instanceId, journal);
+            collector_ = beast::insight::OTelCollector::New(endpoint, prefix, instanceId, journal);
         }
         // LCOV_EXCL_STOP
         else
