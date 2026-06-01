@@ -16,10 +16,6 @@ The most effective way to prevent spoofing from external sources is to treat you
 
 **NGINX Example (Stripping Headers):**
 
-Code output
-
-File generated successfully.
-
 ```nginx
 server {
     listen 80;
