@@ -48,6 +48,7 @@
 #include <exception>
 #include <initializer_list>
 #include <memory>
+#include <string>
 #include <string_view>
 #include <typeinfo>
 #include <utility>
