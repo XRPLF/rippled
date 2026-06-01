@@ -94,7 +94,7 @@
         auto const endpoint = get(telemetryParams, "endpoint",
             "http://localhost:4318/v1/metrics");
         std::string const& prefix(get(params, "prefix"));
-        m_collector = beast::insight::OTelCollector::New(
+        collector_ = beast::insight::OTelCollector::New(
             endpoint, prefix, journal);
     }
     ```

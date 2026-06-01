@@ -35,7 +35,7 @@ public:
         Section testSection;
         testSection.set("type", "memory");
         testSection.set("path", "SHAMap_test");
-        db_ = NodeStore::Manager::instance().make_Database(
+        db_ = NodeStore::Manager::instance().makeDatabase(
             megabytes(4), scheduler_, 1, testSection, j);
     }
 
@@ -91,11 +91,11 @@ public:
     void
     reset() override
     {
-        fbCache_->reset();
-        tnCache_->reset();
+        (*fbCache_).reset();
+        (*tnCache_).reset();
     }
 
-    beast::manual_clock<std::chrono::steady_clock>
+    beast::ManualClock<std::chrono::steady_clock>
     clock()
     {
         return clock_;

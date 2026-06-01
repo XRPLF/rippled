@@ -89,7 +89,7 @@
   - In `onMessage(TMTransaction)` / `handleTransaction()`:
     - Extract parent trace context from incoming `TMTransaction::trace_context` field (if present)
     - Create `tx.receive` span as child of extracted context (or new root if none)
-    - Set attributes: `xrpl.tx.hash`, `xrpl.peer.id`, `tx_status`
+    - Set attributes: `tx_hash`, `peer_id`, `tx_status`
     - On HashRouter suppression (duplicate): set `suppressed=true`, add `tx.duplicate` event
     - Wrap validation call with child span `tx.validate`
     - Wrap relay with `tx.relay` span
@@ -121,7 +121,7 @@
 - Edit `src/xrpld/app/misc/NetworkOPs.cpp`:
   - In `processTransaction()`:
     - Create `tx.process` span
-    - Set attributes: `xrpl.tx.hash`, `tx_type`, `local` (whether from RPC or peer)
+    - Set attributes: `tx_hash`, `tx_type`, `local` (whether from RPC or peer)
     - Record whether sync or async path is taken
 
   - In `doTransactionAsync()`:
@@ -256,7 +256,7 @@
 **What to do**:
 
 - Edit `src/xrpld/overlay/detail/PeerImp.cpp`:
-  - In the `tx.receive` span block (after existing `xrpl.peer.id` setAttribute call):
+  - In the `tx.receive` span block (after existing `peer_id` setAttribute call):
     - Add `peer_version` (string) — from `this->getVersion()`
     - Only set if `getVersion()` returns a non-empty string (avoid empty-string attributes)
 

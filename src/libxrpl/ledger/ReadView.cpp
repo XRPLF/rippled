@@ -13,48 +13,48 @@
 
 namespace xrpl {
 
-ReadView::sles_type::sles_type(ReadView const& view) : ReadViewFwdRange(view)
+ReadView::SlesType::SlesType(ReadView const& view) : ReadViewFwdRange(view)
 {
 }
 
 auto
-ReadView::sles_type::begin() const -> iterator
+ReadView::SlesType::begin() const -> Iterator
 {
-    return iterator(view_, view_->slesBegin());
+    return Iterator(view_, view_->slesBegin());
 }
 
 auto
-ReadView::sles_type::end() const -> iterator
+ReadView::SlesType::end() const -> Iterator
 {
-    return iterator(view_, view_->slesEnd());
+    return Iterator(view_, view_->slesEnd());
 }
 
 auto
-ReadView::sles_type::upper_bound(key_type const& key) const -> iterator
+ReadView::SlesType::upperBound(key_type const& key) const -> Iterator
 {
-    return iterator(view_, view_->slesUpperBound(key));
+    return Iterator(view_, view_->slesUpperBound(key));
 }
 
-ReadView::txs_type::txs_type(ReadView const& view) : ReadViewFwdRange(view)
+ReadView::TxsType::TxsType(ReadView const& view) : ReadViewFwdRange(view)
 {
 }
 
 bool
-ReadView::txs_type::empty() const
+ReadView::TxsType::empty() const
 {
     return begin() == end();
 }
 
 auto
-ReadView::txs_type::begin() const -> iterator
+ReadView::TxsType::begin() const -> Iterator
 {
-    return iterator(view_, view_->txsBegin());
+    return Iterator(view_, view_->txsBegin());
 }
 
 auto
-ReadView::txs_type::end() const -> iterator
+ReadView::TxsType::end() const -> Iterator
 {
-    return iterator(view_, view_->txsEnd());
+    return Iterator(view_, view_->txsEnd());
 }
 
 Rules
@@ -66,7 +66,7 @@ makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current)
 Rules
 makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
-    std::unordered_set<uint256, beast::uhash<>> const& presets)
+    std::unordered_set<uint256, beast::Uhash<>> const& presets)
 {
     Keylet const k = keylet::amendments();
     std::optional const digest = ledger.digest(k.key);

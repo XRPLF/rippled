@@ -101,7 +101,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 
         if (available < needed)
         {
-            // Ignore the rlim_max, as the process may
+            // Ignore the rlimit_max_, as the process may
             // be configured to override it anyways. We
             // ask for the number descriptors we need.
             rl.rlim_cur = needed;
@@ -199,13 +199,13 @@ printHelp(po::options_description const& desc)
 /* simple unit test selector that allows a comma separated list
  * of selectors
  */
-class multi_selector
+class MultiSelector
 {
 private:
-    std::vector<beast::unit_test::selector> selectors_;
+    std::vector<beast::unit_test::Selector> selectors_;
 
 public:
-    explicit multi_selector(std::string const& patterns = "")
+    explicit MultiSelector(std::string const& patterns = "")
     {
         std::vector<std::string> v;
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
@@ -213,12 +213,12 @@ public:
         std::ranges::for_each(v, [this](std::string s) {
             boost::trim(s);
             if (selectors_.empty() || !s.empty())
-                selectors_.emplace_back(beast::unit_test::selector::automatch, s);
+                selectors_.emplace_back(beast::unit_test::Selector::ModeT::Automatch, s);
         });
     }
 
     bool
-    operator()(beast::unit_test::suite_info const& s)
+    operator()(beast::unit_test::SuiteInfo const& s)
     {
         for (auto& sel : selectors_)
         {
@@ -236,23 +236,23 @@ public:
 };
 
 namespace test {
-extern std::atomic<bool> envUseIPv4;
+extern std::atomic<bool> gEnvUseIPv4;
 }  // namespace test
 
 template <class Runner>
 static bool
-anyMissing(Runner& runner, multi_selector const& pred)
+anyMissing(Runner& runner, MultiSelector const& pred)
 {
     if (runner.tests() == 0)
     {
-        runner.add_failures(1);
+        runner.addFailures(1);
         std::cout << "Failed: No tests run" << std::endl;
         return true;
     }
     if (runner.suites() < pred.size())
     {
         auto const missing = pred.size() - runner.suites();
-        runner.add_failures(missing);
+        runner.addFailures(missing);
         std::cout << "Failed: " << missing << " filters did not match any existing test suites"
                   << std::endl;
         return true;
@@ -268,34 +268,34 @@ runUnitTests(
     bool log,
     bool child,
     bool ipv6,
-    std::size_t num_jobs,
+    std::size_t numJobs,
     int argc,
     char** argv)
 {
     using namespace beast::unit_test;
     using namespace xrpl::test;
 
-    xrpl::test::envUseIPv4 = (!ipv6);
+    xrpl::test::gEnvUseIPv4 = (!ipv6);
 
-    if (!child && num_jobs == 1)
+    if (!child && numJobs == 1)
     {
-        multi_runner_parent const parent_runner;
+        MultiRunnerParent const parentRunner;
 
-        multi_runner_child child_runner{num_jobs, quiet, log};
-        child_runner.arg(argument);
-        multi_selector const pred(pattern);
-        auto const any_failed = child_runner.run_multi(pred) || anyMissing(child_runner, pred);
+        MultiRunnerChild childRunner{numJobs, quiet, log};
+        childRunner.arg(argument);
+        MultiSelector const pred(pattern);
+        auto const anyFailed = childRunner.runMulti(pred) || anyMissing(childRunner, pred);
 
-        if (any_failed)
+        if (anyFailed)
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
     if (!child)
     {
-        multi_runner_parent parent_runner;
+        MultiRunnerParent parentRunner;
         std::vector<boost::process::v1::child> children;
 
-        std::string const exe_name = argv[0];
+        std::string const exeName = argv[0];
         std::vector<std::string> args;
         {
             args.reserve(argc);
@@ -304,43 +304,43 @@ runUnitTests(
             args.emplace_back("--unittest-child");
         }
 
-        children.reserve(num_jobs);
-        for (std::size_t i = 0; i < num_jobs; ++i)
+        children.reserve(numJobs);
+        for (std::size_t i = 0; i < numJobs; ++i)
         {
             children.emplace_back(
-                boost::process::v1::exe = exe_name, boost::process::v1::args = args);
+                boost::process::v1::exe = exeName, boost::process::v1::args = args);
         }
 
-        int bad_child_exits = 0;
-        int terminated_child_exits = 0;
+        int badChildExits = 0;
+        int terminatedChildExits = 0;
         for (auto& c : children)
         {
             try
             {
                 c.wait();
                 if (c.exit_code() != 0)
-                    ++bad_child_exits;
+                    ++badChildExits;
             }
             catch (...)
             {
                 // wait throws if process was terminated with a signal
-                ++bad_child_exits;
-                ++terminated_child_exits;
+                ++badChildExits;
+                ++terminatedChildExits;
             }
         }
 
-        parent_runner.add_failures(terminated_child_exits);
-        anyMissing(parent_runner, multi_selector(pattern));
+        parentRunner.addFailures(terminatedChildExits);
+        anyMissing(parentRunner, MultiSelector(pattern));
 
-        if (parent_runner.any_failed() || (bad_child_exits != 0))
+        if (parentRunner.anyFailed() || (badChildExits != 0))
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
 
     // child
-    multi_runner_child runner{num_jobs, quiet, log};
+    MultiRunnerChild runner{numJobs, quiet, log};
     runner.arg(argument);
-    auto const anyFailed = runner.run_multi(multi_selector(pattern));
+    auto const anyFailed = runner.runMulti(MultiSelector(pattern));
 
     if (anyFailed)
         return EXIT_FAILURE;
@@ -516,7 +516,7 @@ run(int argc, char** argv)
     if (vm.contains("definitions"))
     {
         // LCOV_EXCL_START
-        std::cout << Json::FastWriter().write(getServerDefinitionsJson());
+        std::cout << json::FastWriter().write(getServerDefinitionsJson());
         return 0;
         // LCOV_EXCL_STOP
     }
@@ -588,7 +588,7 @@ run(int argc, char** argv)
 
         try
         {
-            auto setup = setup_DatabaseCon(*config);
+            auto setup = setupDatabaseCon(*config);
             if (!doVacuumDB(setup, config->journal()))
                 return -1;
         }
@@ -627,7 +627,7 @@ run(int argc, char** argv)
                 {
                     throw std::runtime_error("Invalid force_ledger_present_range parameter");
                 }
-                config->FORCED_LEDGER_RANGE_PRESENT.emplace(r[0], r[1]);
+                config->forcedLedgerRangePresent.emplace(r[0], r[1]);
             }
             else
             {
@@ -646,7 +646,7 @@ run(int argc, char** argv)
 
     if (vm.contains("start"))
     {
-        config->START_UP = StartUpType::Fresh;
+        config->startUp = StartUpType::Fresh;
     }
 
     if (vm.contains("import"))
@@ -654,17 +654,17 @@ run(int argc, char** argv)
 
     if (vm.contains("ledger"))
     {
-        config->START_LEDGER = vm["ledger"].as<std::string>();
+        config->startLedger = vm["ledger"].as<std::string>();
         if (vm.contains("replay"))
         {
-            config->START_UP = StartUpType::Replay;
+            config->startUp = StartUpType::Replay;
             if (vm.contains("trap_tx_hash"))
             {
                 uint256 tmp = {};
                 auto hash = vm["trap_tx_hash"].as<std::string>();
                 if (tmp.parseHex(hash))
                 {
-                    config->TRAP_TX_HASH = tmp;
+                    config->trapTxHash = tmp;
                 }
                 else
                 {
@@ -677,17 +677,17 @@ run(int argc, char** argv)
         }
         else
         {
-            config->START_UP = StartUpType::Load;
+            config->startUp = StartUpType::Load;
         }
     }
     else if (vm.contains("ledgerfile"))
     {
-        config->START_LEDGER = vm["ledgerfile"].as<std::string>();
-        config->START_UP = StartUpType::LoadFile;
+        config->startLedger = vm["ledgerfile"].as<std::string>();
+        config->startUp = StartUpType::LoadFile;
     }
-    else if (vm.contains("load") || config->FAST_LOAD)
+    else if (vm.contains("load") || config->fastLoad)
     {
-        config->START_UP = StartUpType::Load;
+        config->startUp = StartUpType::Load;
     }
 
     if (vm.contains("trap_tx_hash") && !vm.contains("replay"))
@@ -696,27 +696,27 @@ run(int argc, char** argv)
         return -1;
     }
 
-    if (vm.contains("net") && !config->FAST_LOAD)
+    if (vm.contains("net") && !config->fastLoad)
     {
-        if ((config->START_UP == StartUpType::Load) || (config->START_UP == StartUpType::Replay))
+        if ((config->startUp == StartUpType::Load) || (config->startUp == StartUpType::Replay))
         {
             std::cerr << "Net and load/replay options are incompatible" << std::endl;
             return -1;
         }
 
-        config->START_UP = StartUpType::Network;
+        config->startUp = StartUpType::Network;
     }
 
     if (vm.contains("valid"))
     {
-        config->START_VALID = true;
+        config->startValid = true;
     }
 
     // Override the RPC destination IP address. This must
     // happen after the config file is loaded.
     if (vm.contains("rpc_ip"))
     {
-        auto endpoint = beast::IP::Endpoint::from_string_checked(vm["rpc_ip"].as<std::string>());
+        auto endpoint = beast::IP::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
         if (!endpoint)
         {
             std::cerr << "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>() << "\n";
@@ -731,7 +731,7 @@ run(int argc, char** argv)
                 std::cerr << "WARNING: using deprecated rpc_port param.\n";
                 try
                 {
-                    endpoint = endpoint->at_port(vm["rpc_port"].as<std::uint16_t>());
+                    endpoint = endpoint->atPort(vm["rpc_port"].as<std::uint16_t>());
                     if (endpoint->port() == 0)
                         throw std::domain_error("0");
                 }
@@ -747,15 +747,15 @@ run(int argc, char** argv)
             }
         }
 
-        config->rpc_ip = std::move(*endpoint);
+        config->rpcIp = std::move(*endpoint);
     }
 
     if (vm.contains("quorum"))
     {
         try
         {
-            config->VALIDATION_QUORUM = vm["quorum"].as<std::size_t>();
-            if (config->VALIDATION_QUORUM == std::size_t{})
+            config->validationQuorum = vm["quorum"].as<std::size_t>();
+            if (config->validationQuorum == std::size_t{})
             {
                 throw std::domain_error("0");
             }
@@ -768,16 +768,16 @@ run(int argc, char** argv)
     }
 
     // Construct the logs object at the configured severity
-    using namespace beast::severities;
-    Severity thresh = kInfo;
+    using beast::Severity;
+    Severity thresh = Severity::Info;
 
     if (vm.contains("quiet"))
     {
-        thresh = kFatal;
+        thresh = Severity::Fatal;
     }
     else if (vm.contains("verbose"))
     {
-        thresh = kTrace;
+        thresh = Severity::Trace;
     }
 
     auto logs = std::make_unique<Logs>(thresh);
@@ -785,7 +785,7 @@ run(int argc, char** argv)
     // No arguments. Run server.
     if (!vm.contains("parameters"))
     {
-        if (config->had_trailing_comments())
+        if (config->hadTrailingComments())
         {
             JLOG(logs->journal("Application").warn())
                 << "Trailing comments were seen in your config file. "
@@ -802,10 +802,10 @@ run(int argc, char** argv)
             return -1;
 
         if (vm.contains("debug"))
-            setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
+            setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
 
         auto app =
-            make_Application(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+            makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
         if (!app->setup(vm))
             return -1;

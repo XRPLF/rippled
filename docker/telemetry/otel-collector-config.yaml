@@ -36,7 +36,11 @@ receivers:
   # trace_id, span_id, message) via regex. The trace_id and span_id are
   # optional — only present when the log was emitted within an active span.
   filelog:
-    include: [/var/log/rippled/*/debug.log]
+    # Tails both user-run xrpld logs (/home/pratik/xrpld-logs/...)
+    # and integration-test logs (/tmp/xrpld-integration/...).
+    include:
+      - /var/log/rippled/*/debug.log
+      - /var/log/rippled-integration/*/debug.log
     operators:
       # Log format emitted by Logs::format() is:
       #   YYYY-Mmm-DD HH:MM:SS.ffffff UTC <partition>:<severity> [trace_id=... span_id=...] <message>
@@ -83,6 +87,7 @@ connectors:
       - name: rpc_status
       - name: xrpl.consensus.mode
       - name: close_time_correct
+      - name: consensus_state
       - name: local
       - name: suppressed
       - name: proposal_trusted

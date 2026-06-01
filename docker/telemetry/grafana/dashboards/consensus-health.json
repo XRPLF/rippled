@@ -654,6 +654,119 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "title": "Ledger Total Processing Time (Round Open -> Next Round Start)",
+      "description": "p95/p50 duration of the consensus.round span (full local round: open + establish + accept request) sourced from spanmetrics histograms — values are stable across refreshes because Prometheus rate() over a fixed time window is deterministic, unlike TraceQL search which pages through traces. Accepted vs Rejected apply rates derived from consensus.accept.apply spanmetrics partitioned by consensus_state (finished | moved_on | expired). Note: histogram bucket ceiling is currently 5s (otel-collector-config.yaml spanmetrics histogram.explicit.buckets) — durations longer than 5s land in the +Inf bucket and inflate p95.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "pointSize": 4,
+            "showPoints": "auto",
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Accepted apply p95"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Rejected apply p95"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max", "count"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.round\"}[5m])))",
+          "legendFormat": "Round Total p95 [{{exported_instance}}]",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.round\"}[5m])))",
+          "legendFormat": "Round Total p50 [{{exported_instance}}]",
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\", consensus_state=\"finished\"}[5m])))",
+          "legendFormat": "Accepted apply p95 [{{exported_instance}}]",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\", consensus_state=~\"moved_on|expired\"}[5m])))",
+          "legendFormat": "Rejected apply p95 [{{exported_instance}}]",
+          "refId": "C"
+        }
+      ]
     }
   ],
   "schemaVersion": 39,

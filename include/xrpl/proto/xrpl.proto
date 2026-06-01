@@ -87,6 +87,17 @@ message TMPublicKey {
 
 // Trace context for OpenTelemetry distributed tracing across nodes.
 // Uses W3C Trace Context format internally.
+//
+// Field numbering note: this message is embedded as field 1001 on
+// TMTransaction, TMProposeSet, and TMValidation. Field numbers >= 1000
+// are reserved for optional, observability-only additions that must not
+// collide with protocol-semantic fields (which historically use 1-99).
+// Older peers that do not understand field 1001 will simply ignore it
+// per protobuf wire-format rules, preserving backwards compatibility.
+//
+// trace_state is reserved for future use (secure tracing pipeline,
+// OpenTelemetryPlan/secure-OTel.md). It is currently neither populated
+// on inject nor read on extract; consumers must not rely on it.
 message TraceContext {
   optional bytes trace_id = 1;      // 16-byte trace identifier
   optional bytes span_id = 2;       // 8-byte parent span identifier
@@ -95,7 +106,7 @@ message TraceContext {
   // key-value pairs but is not yet read or written by
   // TraceContextPropagator. Wire it when cross-vendor trace
   // propagation is needed.
-  optional string trace_state = 4;  // W3C tracestate header value
+  optional string trace_state = 4;  // RESERVED — see TraceContext header note
 }
 
 enum TransactionStatus {
