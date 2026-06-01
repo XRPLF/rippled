@@ -6,16 +6,16 @@
     # version — matches the system libc on Ubuntu 20.04 LTS. Imported
     # manually (flake = false) because this revision predates nixpkgs'
     # own flake.nix.
-    nixpkgs-glibc231 = {
+    nixpkgs-custom-glibc = {
       url = "github:NixOS/nixpkgs/9cd98386a38891d1074fc18036b842dc4416f562";
       flake = false;
     };
   };
 
   outputs =
-    { nixpkgs, nixpkgs-glibc231, ... }:
+    { nixpkgs, nixpkgs-custom-glibc, ... }:
     let
-      forEachSystem = import ./nix/utils.nix { inherit nixpkgs nixpkgs-glibc231; };
+      forEachSystem = import ./nix/utils.nix { inherit nixpkgs nixpkgs-custom-glibc; };
     in
     {
       devShells = forEachSystem (import ./nix/devshell.nix);

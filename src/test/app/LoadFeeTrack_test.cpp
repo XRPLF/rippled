@@ -17,7 +17,7 @@ public:
         {
             Fees const fees = [&]() {
                 Fees f;
-                f.base = d.FEES.reference_fee;
+                f.base = d.fees.referenceFee;
                 f.reserve = 200 * kDropsPerXrp;
                 f.increment = 50 * kDropsPerXrp;
                 return f;
@@ -30,7 +30,7 @@ public:
         {
             Fees const fees = [&]() {
                 Fees f;
-                f.base = d.FEES.reference_fee * 10;
+                f.base = d.fees.referenceFee * 10;
                 f.reserve = 200 * kDropsPerXrp;
                 f.increment = 50 * kDropsPerXrp;
                 return f;
@@ -43,7 +43,7 @@ public:
         {
             Fees const fees = [&]() {
                 Fees f;
-                f.base = d.FEES.reference_fee;
+                f.base = d.fees.referenceFee;
                 f.reserve = 200 * kDropsPerXrp;
                 f.increment = 50 * kDropsPerXrp;
                 return f;

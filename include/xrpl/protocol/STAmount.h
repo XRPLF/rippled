@@ -3,11 +3,13 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
@@ -183,6 +185,23 @@ public:
 
     [[nodiscard]] STAmount const&
     value() const noexcept;
+
+    /**
+     * Checks if this amount evaluates to zero when constrained to a specific
+     * accounting scale.
+     * For XRP and MPT `roundToScale` is a no-op, returns true only when the amount itself is zero.
+     * The `scale` argument is ignored in that case.
+     * For IOU, the amount is rounded to the given scale using Number::RoundingMode::ToNearest mode
+     * and the result is checked for zero; if `scale <= exponent()`, `roundToScale` short-circuits
+     * and returns the value unchanged, so this returns false for any non-zero amount.
+     *
+     * @param scale The target accounting scale to evaluate against.
+     * @return `true` if this amount rounds to zero at the given scale, `false` otherwise.
+     *
+     * @see roundToScale
+     */
+    [[nodiscard]] bool
+    isZeroAtScale(int scale) const;
 
     //--------------------------------------------------------------------------
     //
@@ -540,7 +559,7 @@ STAmount::fromNumber(A const& a, Number const& number)
         return STAmount{asset, intValue, 0, negative};
     }
 
-    auto const [mantissa, exponent] = working.normalizeToRange(kMinValue, kMaxValue);
+    auto const [mantissa, exponent] = working.normalizeToRange<kMinValue, kMaxValue>();
 
     return STAmount{asset, mantissa, exponent, negative};
 }
@@ -575,11 +594,24 @@ STAmount::value() const noexcept
     return *this;
 }
 
-inline bool
+[[nodiscard]] inline bool
 isLegalNet(STAmount const& value)
 {
     return !value.native() || (value.mantissa() <= STAmount::kMaxNativeN);
 }
+
+[[nodiscard]] inline bool
+isLegalMPT(STAmount const& value)
+{
+    return !value.holds<MPTIssue>() ||
+        (!value.negative() && value.exponent() == 0 && value.mantissa() <= kMaxMpTokenAmount);
+}
+
+/* Check recursively if an object has invalid MPTAmount or XRPAmount in STAmount field.
+ * Calls isLegalNet() and isLegalMPT().
+ */
+[[nodiscard]] bool
+hasInvalidAmount(STBase const& field, beast::Journal j);
 
 //------------------------------------------------------------------------------
 //

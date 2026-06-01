@@ -300,9 +300,9 @@ SignerListSet::validateQuorumAndSignerEntries(
 TER
 SignerListSet::replaceSignerList()
 {
-    auto const accountKeylet = keylet::account(account_);
-    auto const ownerDirKeylet = keylet::ownerDir(account_);
-    auto const signerListKeylet = keylet::signers(account_);
+    auto const accountKeylet = keylet::account(accountID_);
+    auto const ownerDirKeylet = keylet::ownerDir(accountID_);
+    auto const signerListKeylet = keylet::signers(accountID_);
 
     // This may be either a create or a replace.  Preemptively remove any
     // old signer list.  May reduce the reserve, so this is done before
@@ -337,9 +337,9 @@ SignerListSet::replaceSignerList()
     auto viewJ = ctx_.registry.get().getJournal("View");
     // Add the signer list to the account's directory.
     auto const page =
-        ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(account_));
+        ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(accountID_));
 
-    JLOG(j_.trace()) << "Create signer list for account " << toBase58(account_) << ": "
+    JLOG(j_.trace()) << "Create signer list for account " << toBase58(accountID_) << ": "
                      << (page ? "success" : "failure");
 
     if (!page)
@@ -356,7 +356,7 @@ SignerListSet::replaceSignerList()
 TER
 SignerListSet::destroySignerList()
 {
-    auto const accountKeylet = keylet::account(account_);
+    auto const accountKeylet = keylet::account(accountID_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
     SLE::pointer const ledgerEntry = view().peek(accountKeylet);
@@ -366,8 +366,8 @@ SignerListSet::destroySignerList()
     if ((ledgerEntry->isFlag(lsfDisableMaster)) && (!ledgerEntry->isFieldPresent(sfRegularKey)))
         return tecNO_ALTERNATIVE_KEY;
 
-    auto const ownerDirKeylet = keylet::ownerDir(account_);
-    auto const signerListKeylet = keylet::signers(account_);
+    auto const ownerDirKeylet = keylet::ownerDir(accountID_);
+    auto const signerListKeylet = keylet::signers(accountID_);
     return removeSignersFromLedger(
         ctx_.registry, view(), accountKeylet, ownerDirKeylet, signerListKeylet, j_);
 }
@@ -378,7 +378,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
-        ledgerEntry->setAccountID(sfOwner, account_);
+        ledgerEntry->setAccountID(sfOwner, accountID_);
     }
     ledgerEntry->setFieldU32(sfSignerQuorum, quorum_);
     ledgerEntry->setFieldU32(sfSignerListID, kDefaultSignerListId);

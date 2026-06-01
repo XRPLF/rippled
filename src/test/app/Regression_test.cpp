@@ -87,7 +87,7 @@ struct Regression_test : public beast::unit_test::Suite
         auto closed = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
-            env.app().config().FEES.toFees(),
+            env.app().config().fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto expectedDrops = kInitialXrp;
@@ -194,7 +194,7 @@ struct Regression_test : public beast::unit_test::Suite
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
             cfg->section("transaction_queue").set("minimum_txn_in_ledger_standalone", "3");
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             return cfg;
         }));
         EnvSs envs(env);

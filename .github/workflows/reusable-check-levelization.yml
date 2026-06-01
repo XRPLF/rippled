@@ -38,9 +38,9 @@ jobs:
         run: |
           DIFF=$(git status --porcelain)
           if [ -n "${DIFF}" ]; then
-            # Print the differences to give the contributor a hint about what to
-            # expect when running levelization on their own machine.
-            git diff
-            echo "${MESSAGE}"
-            exit 1
+              # Print the differences to give the contributor a hint about what to
+              # expect when running levelization on their own machine.
+              git diff
+              echo "${MESSAGE}"
+              exit 1
           fi

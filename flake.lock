@@ -15,7 +15,7 @@
         "type": "indirect"
       }
     },
-    "nixpkgs-glibc231": {
+    "nixpkgs-custom-glibc": {
       "flake": false,
       "locked": {
         "lastModified": 1593520194,
@@ -35,7 +35,7 @@
     "root": {
       "inputs": {
         "nixpkgs": "nixpkgs",
-        "nixpkgs-glibc231": "nixpkgs-glibc231"
+        "nixpkgs-custom-glibc": "nixpkgs-custom-glibc"
       }
     }
   },
