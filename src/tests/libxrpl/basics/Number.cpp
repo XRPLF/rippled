@@ -6,6 +6,8 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+// NOLINTNEXTLINE(misc-include-cleaner)
+#include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/multiprecision/number.hpp>
 
 #include <gtest/gtest.h>
@@ -13,6 +15,7 @@
 #include <array>
 #include <cctype>
 #include <cstdint>
+#include <iomanip>
 #include <limits>
 #include <map>
 #include <sstream>
@@ -23,6 +26,7 @@
 namespace xrpl {
 
 using BigInt = boost::multiprecision::cpp_int;
+using Dec = boost::multiprecision::cpp_dec_float_50;
 
 static std::string
 fmt(BigInt const& value)
@@ -38,6 +42,37 @@ fmt(BigInt const& value)
         ++count;
     }
     return out;
+}
+
+template <class T = Dec>
+static T
+pow10(int n)
+{
+    if (n == 0)
+        return 1;
+    if (n == 1)
+        return 10;
+
+    if (n > 1)
+    {
+        auto r = pow10<T>(n / 2);
+        r *= r;
+        if (n % 2 != 0)
+            r *= 10;
+        return r;
+    }
+
+    T p = 1;
+    p /= pow10<T>(-n);
+    return p;
+}
+
+static std::string
+fmt(Dec const& value)
+{
+    std::ostringstream os;
+    os << std::setprecision(40) << value;
+    return os.str();
 }
 
 TEST(NumberTest, zero)
@@ -1637,34 +1672,277 @@ TEST(NumberTest, int64)
 
 TEST(NumberTest, upward_rounding_produces_value_not_below_exact_at_k_max_rep_cusp)
 {
-    NumberMantissaScaleGuard const mg{MantissaRange::MantissaScale::Large};
-    NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
+    for (auto const mantissaScale : MantissaRange::getAllScales())
+    {
+        NumberMantissaScaleGuard const mg{mantissaScale};
+        NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
 
-    constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
-    constexpr std::int64_t kBValue = 9'223'372'036'854'315'903LL;
+        auto const scale = Number::getMantissaScale();
 
-    Number const a = kAValue;
-    Number const b = kBValue;
-    Number const product = a * b;
+        constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
+        constexpr std::int64_t kBValue = 9'223'372'036'854'315'903LL;
 
-    BigInt const exactProduct = BigInt(kAValue) * BigInt(kBValue);
+        Number const a = kAValue;
+        Number const b = kBValue;
+        Number const product = a * b;
 
-    BigInt storedValue = BigInt(product.mantissa());
-    for (int i = 0; i < product.exponent(); ++i)
-        storedValue *= 10;
+        // Exact reference in BigInt.
+        BigInt const exactProduct = BigInt(kAValue) * BigInt(kBValue);
 
-    BigInt const signedDifference = storedValue - exactProduct;
+        // What Number actually stored.
+        BigInt storedValue = BigInt(product.mantissa());
+        for (int i = 0; i < product.exponent(); ++i)
+            storedValue *= 10;
 
-    EXPECT_TRUE(signedDifference >= 0)
-        << "\n"
-        << "  a              = " << fmt(BigInt(kAValue)) << "\n"
-        << "  b              = " << fmt(BigInt(kBValue)) << "\n"
-        << "  exact a*b      = " << fmt(exactProduct) << "\n"
-        << "  stored         = " << fmt(storedValue) << "\n"
-        << "  stored - exact = " << fmt(signedDifference) << "\n"
-        << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n";
-    EXPECT_EQ(product.mantissa(), (std::numeric_limits<std::int64_t>::max() / 10) + 1);
-    EXPECT_EQ(product.exponent(), 19);
+        BigInt const signedDifference = storedValue - exactProduct;
+
+        auto const message = [&] {
+            std::ostringstream os;
+            os << "\n"
+               << "  a              = " << fmt(BigInt(kAValue)) << "\n"
+               << "  b              = " << fmt(BigInt(kBValue)) << "\n"
+               << "  exact a*b      = " << fmt(exactProduct) << "\n"
+               << "  stored         = " << fmt(storedValue) << "\n"
+               << "  stored - exact = " << fmt(signedDifference) << "\n"
+               << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n"
+               << " stored.mantissa = " << product.mantissa() << "\n"
+               << " stored.exponent = " << product.exponent() << "\n";
+            return os.str();
+        };
+
+        switch (scale)
+        {
+            case MantissaRange::MantissaScale::Large:
+                EXPECT_TRUE(signedDifference >= 0) << message();
+                EXPECT_TRUE(signedDifference < pow10<BigInt>(product.exponent())) << message();
+                EXPECT_EQ(product.mantissa(), (std::numeric_limits<std::int64_t>::max() / 10) + 1);
+                EXPECT_EQ(product.exponent(), 19);
+                break;
+
+            case MantissaRange::MantissaScale::LargeLegacy:
+                EXPECT_TRUE(signedDifference < 0) << message();
+                EXPECT_EQ(
+                    product.mantissa(), (std::numeric_limits<std::int64_t>::max() / 100) * 100);
+                EXPECT_EQ(product.exponent(), 18);
+                break;
+
+            case MantissaRange::MantissaScale::Small:
+                // The seemingly weird rounding here is because a & b are both
+                // normalized, and both round up when being converted to Number,
+                // so you're really getting
+                // 1_000_000_000_000_050 * 9_223_372_036_854_316.
+                EXPECT_TRUE(signedDifference >= 0) << message();
+                EXPECT_EQ(
+                    product.mantissa(), (std::numeric_limits<std::int64_t>::max() / 1000) + 3);
+                EXPECT_EQ(product.exponent(), 21);
+                break;
+        }
+    }
+}
+
+/*
+ * Companion regression for the kMaxRep cusp behavior, but for `operator/=` on
+ * the cusp-fix-ENABLED `Large` scale.
+ *
+ * Before the dropped-remainder fix, `operator/=` with Upward rounding could
+ * return a value STRICTLY LESS than the exact quotient, violating Upward's
+ * directional invariant.
+ *
+ * Mechanism (fix-enabled path):
+ *   1. `operator/=` computes `numerator = nm * 10^17` and
+ *      `zm = numerator / dm` (integer division, truncates remainder).
+ *   2. If `remainder != 0`, the correction block runs:
+ *        zm *= 100000
+ *        correction = (remainder * 100000) / dm  // also truncates
+ *        zm += correction
+ *        ze -= 5
+ *      The truncation in `correction` discards a sub-1/100000 residual.
+ *   3. `normalize`'s shift loop reduces zm to fit, but the discarded residual
+ *      is BELOW the Guard's visibility, so the Guard sees fraction = 0.
+ *   4. Under Upward + positive, `round()` returns -1 (no round-up), and the
+ *      algorithm returns the truncated zm.
+ */
+TEST(NumberTest, upward_division_returns_value_not_below_exact_on_large_scale)
+{
+    for (auto const mantissaScale : MantissaRange::getAllScales())
+    {
+        NumberMantissaScaleGuard const mg{mantissaScale};
+        NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
+
+        auto const scale = Number::getMantissaScale();
+
+        constexpr std::int64_t kAValue = 2LL;
+        constexpr std::int64_t kBValue = 1'000'000'000'000'000'007LL;
+        // kBValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+        Number const a{kAValue, 0};
+        Number const b{kBValue, 0};
+        Number const quotient = a / b;
+
+        Dec const exact = Dec(kAValue) / Dec(kBValue);
+        Dec const stored = Dec(quotient.mantissa()) * pow10(quotient.exponent());
+        Dec const diff = stored - exact;
+
+        auto const message = [&] {
+            std::ostringstream os;
+            os << "\n"
+               << "  a                 = " << kAValue << "\n"
+               << "  b                 = " << kBValue << "\n"
+               << "  exact a/b         = " << fmt(exact) << "\n"
+               << "  stored a/b        = " << fmt(stored) << "\n"
+               << "  stored - exact    = " << fmt(diff)
+               << "    (negative => Upward gave value BELOW truth)\n"
+               << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+               << "  quotient.exponent = " << quotient.exponent() << "\n";
+            return os.str();
+        };
+
+        // Upward invariant: stored >= exact. Bug: stored < exact.
+        switch (scale)
+        {
+            case MantissaRange::MantissaScale::Large:
+                EXPECT_TRUE(stored >= exact) << message();
+                EXPECT_TRUE(diff < pow10(quotient.exponent())) << message();
+                break;
+
+            case MantissaRange::MantissaScale::LargeLegacy:
+                EXPECT_TRUE(stored < exact) << message();
+                EXPECT_TRUE(diff >= -pow10(quotient.exponent())) << message();
+                break;
+
+            case MantissaRange::MantissaScale::Small:
+                // Small mantissa doesn't have the correction for dropped
+                // remainders.
+                EXPECT_TRUE(stored < exact) << message();
+                break;
+        }
+    }
+}
+
+// Companion test case for Upward positive operator/=: Downward negative.
+TEST(NumberTest, downward_division_returns_value_not_above_exact_on_large_scale)
+{
+    for (auto const mantissaScale : MantissaRange::getAllScales())
+    {
+        NumberMantissaScaleGuard const mg{mantissaScale};
+        NumberRoundModeGuard const rg{Number::RoundingMode::Downward};
+
+        auto const scale = Number::getMantissaScale();
+
+        constexpr std::int64_t kAValue = -2LL;
+        constexpr std::int64_t kBValue = 1'000'000'000'000'000'007LL;
+        // kBValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+        Number const a{kAValue, 0};
+        Number const b{kBValue, 0};
+        Number const quotient = a / b;
+
+        Dec const exact = Dec(kAValue) / Dec(kBValue);
+        Dec const stored = Dec(quotient.mantissa()) * pow10(quotient.exponent());
+        Dec const diff = stored - exact;
+
+        auto const message = [&] {
+            std::ostringstream os;
+            os << "\n"
+               << "  a                 = " << kAValue << "\n"
+               << "  b                 = " << kBValue << "\n"
+               << "  exact a/b         = " << fmt(exact) << "\n"
+               << "  stored a/b        = " << fmt(stored) << "\n"
+               << "  stored - exact    = " << fmt(diff)
+               << "    (positive => Downward gave value ABOVE truth)\n"
+               << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+               << "  quotient.exponent = " << quotient.exponent() << "\n";
+            return os.str();
+        };
+
+        // Downward invariant: stored <= exact. Bug: stored > exact.
+        switch (scale)
+        {
+            case MantissaRange::MantissaScale::Large:
+                EXPECT_TRUE(stored <= exact) << message();
+                EXPECT_TRUE(diff > -pow10(quotient.exponent())) << message();
+                break;
+
+            case MantissaRange::MantissaScale::LargeLegacy:
+                EXPECT_TRUE(stored > exact) << message();
+                EXPECT_TRUE(diff <= pow10(quotient.exponent())) << message();
+                break;
+
+            case MantissaRange::MantissaScale::Small:
+                // Small mantissa doesn't have the correction for dropped
+                // remainders.
+                EXPECT_TRUE(stored < exact) << message();
+                break;
+        }
+    }
+}
+
+/*
+ * Companion test case for Upward positive operator/=: ToNearest.
+ *
+ * With ToNearest, if the dropped digits are exactly "5", then the mantissa will
+ * be rounded to even. The numbers below result in a value where the unrounded
+ * mantissa ends in an even digit, and "infinite precision" would drop
+ * "500000000000000000145...", but doNormalize only sees "5". Without the
+ * rounding fix, doNormalize rounds down to the even value. With the rounding
+ * fix, doNormalize knows there are more digits beyond "5", and so rounds _up_
+ * to the odd value.
+ */
+TEST(NumberTest, to_nearest_division_uses_dropped_digits_on_large_scale)
+{
+    for (auto const mantissaScale : MantissaRange::getAllScales())
+    {
+        NumberMantissaScaleGuard const mg{mantissaScale};
+        NumberRoundModeGuard const rg{Number::RoundingMode::ToNearest};
+
+        auto const scale = Number::getMantissaScale();
+
+        constexpr std::int64_t kAValue = 1'269'917'268'816'087'809LL;
+        constexpr std::int64_t kBValue = 3'458'525'013'821'685'511LL;
+        // kBValue is prime and in [minMantissa, kMaxRep].
+
+        Number const a{kAValue, 0};
+        Number const b{kBValue, 0};
+        Number const quotient = a / b;
+
+        Dec const exact = Dec(kAValue) / Dec(kBValue);
+        Dec const stored = Dec(quotient.mantissa()) * pow10(quotient.exponent());
+        Dec const diff = stored - exact;
+
+        auto const message = [&] {
+            std::ostringstream os;
+            os << "\n"
+               << "  a                 = " << kAValue << "\n"
+               << "  b                 = " << kBValue << "\n"
+               << "  exact a/b         = " << fmt(exact) << "\n"
+               << "  stored a/b        = " << fmt(stored) << "\n"
+               << "  stored - exact    = " << fmt(diff)
+               << "    (negative => ToNearest gave value BELOW truth)\n"
+               << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+               << "  quotient.exponent = " << quotient.exponent() << "\n";
+            return os.str();
+        };
+
+        // ToNearest should account for dropped digits beyond the visible "5".
+        switch (scale)
+        {
+            case MantissaRange::MantissaScale::Large:
+                EXPECT_TRUE(stored >= exact) << message();
+                EXPECT_TRUE(diff < pow10(quotient.exponent())) << message();
+                break;
+
+            case MantissaRange::MantissaScale::LargeLegacy:
+                EXPECT_TRUE(stored < exact) << message();
+                EXPECT_TRUE(diff >= -pow10(quotient.exponent())) << message();
+                break;
+
+            case MantissaRange::MantissaScale::Small:
+                // Small mantissa doesn't have the correction for dropped
+                // remainders.
+                EXPECT_TRUE(stored < exact) << message();
+                break;
+        }
+    }
 }
 
 }  // namespace xrpl
