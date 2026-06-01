@@ -1901,7 +1901,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
 
             // Alice deposits everything into the MPT/MPT pool; her MPT
             // balances drop to zero.
-            AMM amm(env, alice, btc(10'000), eth(10'000));
+            AMM const amm(env, alice, btc(10'000), eth(10'000));
             env.close();
             BEAST_EXPECT(amm.expectBalances(btc(10'000), eth(10'000), IOUAmount{10'000}));
 
@@ -1956,7 +1956,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
                  .pay = 10'000,
                  .flags = tfMPTCanClawback | kMptDexFlags});
 
-            AMM amm(env, alice, btc(10'000), eth(10'000));
+            AMM const amm(env, alice, btc(10'000), eth(10'000));
             env.close();
 
             auto aliceBTC = env.balance(alice, btc);
