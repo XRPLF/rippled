@@ -10,7 +10,7 @@ override_dh_auto_configure override_dh_auto_build override_dh_auto_test:
 
 override_dh_installsystemd:
 	dh_installsystemd --no-stop-on-upgrade xrpld.service
-	dh_installsystemd --name=update-xrpld --no-start update-xrpld.service update-xrpld.timer
+	dh_installsystemd --name=update-xrpld --no-enable --no-start update-xrpld.service update-xrpld.timer
 
 execute_before_dh_installtmpfiles:
 	dh_installsysusers
