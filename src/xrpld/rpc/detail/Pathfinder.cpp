@@ -225,7 +225,7 @@ Pathfinder::Pathfinder(
     , dstAmount_(saDstAmount)
     , srcPathAsset_(uSrcPathAsset)
     , srcIssuer_(uSrcIssuer)
-    , srcAmount_(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount))
+    , srcAmount_(srcAmount.value_or(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount)))
     , convertAll_(convertAllCheck(dstAmount_))
     , domain_(domain)
     , ledger_(cache->getLedger())

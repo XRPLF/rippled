@@ -441,6 +441,124 @@ public:
         }
     }
 
+    // Regression test: the Pathfinder constructor must honor the
+    // caller-supplied srcAmount (= the user's send_max from PathRequest)
+    // when ranking candidate paths in convert_all mode.
+    //
+    // Background. The MPT-DEX refactor of `Pathfinder::Pathfinder`
+    // (src/xrpld/rpc/detail/Pathfinder.cpp) replaced the original
+    // `mSrcAmount(srcAmount.value_or(...))` initialiser with an
+    // unconditional `amountFromPathAsset(...)` call. The latter always
+    // returns the negative "no limit" STAmount sentinel, so the
+    // `srcAmount` constructor parameter became dead code:
+    // `getPathLiquidity` and `computePathRanks` ran `rippleCalculate`
+    // with `saMaxAmountReq` = sentinel and recorded each path's
+    // saturated capacity instead of the capacity reachable inside
+    // send_max.
+    //
+    // In convert_all_ mode (the only mode that allows send_max),
+    // `Pathfinder::rankPaths` ignores quality and orders purely by
+    // liquidity, then `Pathfinder::getBestPaths` only fills the last
+    // (kMaxPaths-th = 4th) slot when `pathRank.liquidity >= remaining`.
+    // For convert_all_ `remaining = largestAmount(dstAmount_)`, so the
+    // last slot effectively never fills and the cut keeps the top 3
+    // ranked paths. With the wrong (unbounded-budget) ranking, a
+    // low-capacity / high-rate path that would actually deliver the
+    // most under the user's send_max can be excluded entirely.
+    //
+    // Topology. Four candidate paths from alice's XRP to bob's USD-MPT,
+    // each via a distinct IOU intermediary issued by a different market
+    // maker:
+    //
+    //   charlie: XRP(1000) -> AUD(1000) -> USD(500)    cap 1000 XRP, rate 0.5
+    //   dave:    XRP(1000) -> EUR(1000) -> USD(500)    cap 1000 XRP, rate 0.5
+    //   eve:     XRP(1000) -> GBP(1000) -> USD(500)    cap 1000 XRP, rate 0.5
+    //   frank:   XRP(50)   -> JPY(50)   -> USD(75)     cap   50 XRP, rate 1.5
+    //
+    // Alice queries findPaths with destination = USD-MPT(-1) (convert_all)
+    // and send_max = XRP(100).
+    //
+    // Bug-free ranking (post-fix), with srcAmount = XRP(100):
+    //   charlie/dave/eve liquidity = min(100, 1000) * 0.5 = 50 USD each
+    //   frank   liquidity         = min(100, 50)   * 1.5 = 75 USD
+    // -> frank ranks first; the flow uses frank's 50 XRP at 1.5 (=75 USD)
+    //    plus 50 XRP via a 0.5-rate path (=25 USD), delivering USD(100).
+    //
+    // Pre-fix ranking, with srcAmount silently replaced by the sentinel:
+    //   charlie/dave/eve liquidity = 1000 * 0.5 = 500 USD each
+    //   frank   liquidity         =   50 * 1.5 = 75 USD
+    // -> frank ranks 4th; the last-slot rule excludes it from the
+    //    surviving path set, the cut keeps the three 0.5-rate paths,
+    //    and the flow delivers only 100 * 0.5 = USD(50).
+    //
+    // This test asserts the post-fix outcome (USD(100)). On the pre-fix
+    // tree the assertion fails with USD(50).
+    void
+    convertAllSendMaxRanking()
+    {
+        testcase("convert_all + send_max: srcAmount governs path ranking");
+        using namespace jtx;
+
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gateway");
+        auto const charlie = Account("charlie");
+        auto const dave = Account("dave");
+        auto const eve = Account("eve");
+        auto const frank = Account("frank");
+
+        env.fund(XRP(10'000), alice, bob, gw, charlie, dave, eve, frank);
+        env.close();
+
+        // USD MPT issued by gw; the four market makers and bob are holders.
+        // alice is not a holder because she only pays XRP; USD only ever
+        // flows from gw / market-maker offers to bob.
+        MPT const usd =
+            MPTTester({.env = env, .issuer = gw, .holders = {charlie, dave, eve, frank, bob}});
+
+        // Capitalize each market maker with the USD-MPT they will sell.
+        env(pay(gw, charlie, usd(500)));
+        env(pay(gw, dave, usd(500)));
+        env(pay(gw, eve, usd(500)));
+        env(pay(gw, frank, usd(75)));
+        env.close();
+
+        // Each market maker issues their own intermediate IOU.
+        auto const aud = charlie["AUD"];
+        auto const eur = dave["EUR"];
+        auto const gbp = eve["GBP"];
+        auto const jpy = frank["JPY"];
+
+        // Three high-capacity, low-rate paths (1 XRP -> 0.5 USD-MPT,
+        // capacity 1000 XRP each).
+        env(offer(charlie, XRP(1'000), aud(1'000)));
+        env(offer(charlie, aud(1'000), usd(500)));
+        env(offer(dave, XRP(1'000), eur(1'000)));
+        env(offer(dave, eur(1'000), usd(500)));
+        env(offer(eve, XRP(1'000), gbp(1'000)));
+        env(offer(eve, gbp(1'000), usd(500)));
+
+        // One low-capacity, high-rate path (1 XRP -> 1.5 USD-MPT,
+        // capacity 50 XRP).
+        env(offer(frank, XRP(50), jpy(50)));
+        env(offer(frank, jpy(50), usd(75)));
+        env.close();
+
+        // ripple_path_find with convert_all (USD(-1)) and send_max XRP(100).
+        STPathSet st;
+        STAmount sa;
+        STAmount da;
+        std::tie(st, sa, da) =
+            findPaths(env, alice, bob, usd(-1), std::optional<STAmount>(XRP(100).value()));
+
+        // Post-fix: frank's high-rate path is included in the surviving
+        // path set, so the flow uses 50 XRP at 1.5 plus 50 XRP at 0.5,
+        // delivering exactly USD(100) on alice's 100-XRP budget.
+        BEAST_EXPECT(sa == XRP(100));
+        BEAST_EXPECT(equal(da, usd(100)));
+    }
+
     void
     run() override
     {
@@ -448,6 +566,7 @@ public:
         noDirectPathNoIntermediaryNoAlternatives();
         directPathNoIntermediary();
         paymentAutoPathFind();
+        convertAllSendMaxRanking();
         for (auto const domainEnabled : {false, true})
         {
             pathFind(domainEnabled);
