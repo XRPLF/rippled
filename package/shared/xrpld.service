@@ -18,6 +18,8 @@ PrivateTmp=true
 User=xrpld
 Group=xrpld
 LimitNOFILE=65536
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+SystemCallArchitectures=native
 
 [Install]
 WantedBy=multi-user.target
