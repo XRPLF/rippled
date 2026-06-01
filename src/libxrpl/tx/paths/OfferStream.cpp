@@ -168,7 +168,12 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     TTakerGets const ownerFunds = toAmount<TTakerGets>(*ownerFunds_);
 
     auto const effectiveAmounts = [&] {
-        if (offer_.owner() != offer_.assetOut().getIssuer() && ownerFunds < ofrAmts.out)
+        // Issuer-owned IOU offers are self-funded without a limit. MPT issuer
+        // offers are bounded by remaining issuance capacity, so they still need
+        // to be clipped by ownerFunds.
+        bool const issuerHasUnlimitedFunds = offer_.owner() == offer_.assetOut().getIssuer() &&
+            offer_.assetOut().template holds<Issue>();
+        if (!issuerHasUnlimitedFunds && ownerFunds < ofrAmts.out)
         {
             // adjust the amounts by owner funds.
             //

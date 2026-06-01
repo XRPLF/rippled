@@ -610,6 +610,60 @@ public:
     }
 
     void
+    testMPTIssuerOfferUsesRemainingCapacity(FeatureBitset features)
+    {
+        testcase("MPT issuer offer dust removal uses remaining issuance capacity");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const carol{"carol"};
+        Account const bob{"bob"};
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), issuer, carol, bob);
+        env.close();
+
+        MPTTester const musd(
+            {.env = env, .issuer = issuer, .holders = {carol, bob}, .maxAmt = 101});
+
+        // The issuer offer is fully fundable when placed. Later issuance leaves
+        // only one MPT of remaining capacity, so this issuer-owned MPT offer
+        // must be clipped by owner funds just like a holder-funded offer.
+        auto const issuerOfferSeq = env.seq(issuer);
+        env(offer(issuer, drops(1), musd(100)));
+        env.close();
+
+        env(pay(issuer, carol, musd(100)));
+        env.close();
+        BEAST_EXPECT(env.balance(issuer, musd) == musd(-100));
+        BEAST_EXPECT(env.balance(carol, musd) == musd(100));
+
+        // Carol's same-quality offer provides the legitimately funded side of
+        // the crossing. Without the issuer-cap dust-removal check, Bob would
+        // receive Carol's 100 MPT plus one free self-issued MPT from issuer's
+        // stale offer while paying only Carol's one drop.
+        auto const carolOfferSeq = env.seq(carol);
+        env(offer(carol, drops(1), musd(100)));
+        env.close();
+
+        auto const issuerOffer = keylet::offer(issuer.id(), issuerOfferSeq);
+        auto const carolOffer = keylet::offer(carol.id(), carolOfferSeq);
+        BEAST_EXPECT(env.le(issuerOffer) != nullptr);
+        BEAST_EXPECT(env.le(carolOffer) != nullptr);
+
+        env(offer(bob, musd(101), drops(2), tfImmediateOrCancel));
+        env.close();
+
+        BEAST_EXPECT(env.le(issuerOffer) == nullptr);
+        BEAST_EXPECT(env.le(carolOffer) == nullptr);
+        env.require(offers(issuer, 0), offers(carol, 0), offers(bob, 0));
+        BEAST_EXPECT(env.balance(issuer, musd) == musd(-100));
+        BEAST_EXPECT(env.balance(carol, musd) == musd(0));
+        BEAST_EXPECT(env.balance(bob, musd) == musd(100));
+    }
+
+    void
     testPartiallyFundedMPTInputOfferZeroInput(FeatureBitset features)
     {
         using namespace jtx;
@@ -5448,6 +5502,7 @@ public:
         testMPTAMMLimitQualityRounding(features);
         testRmSmallIncreasedQOffersXRP(features);
         testRmSmallIncreasedQOffersMPT(features);
+        testMPTIssuerOfferUsesRemainingCapacity(features);
         testPartiallyFundedMPTInputOfferZeroInput(features);
         testFillOrKill(features);
         testTickSize(features);
