@@ -16,9 +16,12 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Colored output helpers
 # ---------------------------------------------------------------------------
-log()  { printf "\033[1;34m[KEYGEN]\033[0m %s\n" "$*"; }
-ok()   { printf "\033[1;32m[KEYGEN]\033[0m %s\n" "$*"; }
-die()  { printf "\033[1;31m[KEYGEN]\033[0m %s\n" "$*" >&2; exit 1; }
+log() { printf "\033[1;34m[KEYGEN]\033[0m %s\n" "$*"; }
+ok() { printf "\033[1;32m[KEYGEN]\033[0m %s\n" "$*"; }
+die() {
+    printf "\033[1;31m[KEYGEN]\033[0m %s\n" "$*" >&2
+    exit 1
+}
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -57,7 +60,7 @@ TEMP_CFG="$TEMP_DIR/xrpld.cfg"
 
 log "Starting temporary xrpld for key generation (port $TEMP_PORT)..."
 
-cat > "$TEMP_CFG" <<EOCFG
+cat >"$TEMP_CFG" <<EOCFG
 [server]
 port_rpc_keygen
 
@@ -82,7 +85,7 @@ $TEMP_DIR/debug.log
 0
 EOCFG
 
-"$XRPLD" --conf "$TEMP_CFG" -a --start > "$TEMP_DIR/stdout.log" 2>&1 &
+"$XRPLD" --conf "$TEMP_CFG" -a --start >"$TEMP_DIR/stdout.log" 2>&1 &
 TEMP_PID=$!
 
 # Ensure cleanup on exit
@@ -142,8 +145,8 @@ KEYS_JSON="$KEYS_JSON]"
 # ---------------------------------------------------------------------------
 # Write output files
 # ---------------------------------------------------------------------------
-echo "$KEYS_JSON" | jq '.' > "$OUTPUT_DIR/validator-keys.json"
-echo "$VALIDATORS_TXT" > "$OUTPUT_DIR/validators.txt"
+echo "$KEYS_JSON" | jq '.' >"$OUTPUT_DIR/validator-keys.json"
+echo "$VALIDATORS_TXT" >"$OUTPUT_DIR/validators.txt"
 
 ok "Generated $NUM_NODES key pairs:"
 ok "  Keys:       $OUTPUT_DIR/validator-keys.json"

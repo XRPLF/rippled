@@ -115,10 +115,10 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           cmake \
-            -G Ninja \
-            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-            -DCMAKE_BUILD_TYPE=Release \
-            ..
+              -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+              -DCMAKE_BUILD_TYPE=Release \
+              ..
 
       - name: Build xrpld
         working-directory: ${{ env.BUILD_DIR }}
@@ -126,10 +126,10 @@ jobs:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
           cmake \
-            --build . \
-            --config Release \
-            --parallel "${BUILD_NPROC}" \
-            --target xrpld
+              --build . \
+              --config Release \
+              --parallel "${BUILD_NPROC}" \
+              --target xrpld
 
       - name: Show ccache statistics
         if: ${{ github.repository_owner == 'XRPLF' }}
@@ -182,7 +182,7 @@ jobs:
           ARGS="$ARGS --tx-tps $TX_TPS"
           ARGS="$ARGS --tx-duration $TX_DURATION"
           if [ "$RUN_BENCHMARK" = "true" ]; then
-            ARGS="$ARGS --with-benchmark"
+              ARGS="$ARGS --with-benchmark"
           fi
           docker/telemetry/workload/run-full-validation.sh $ARGS
         # continue-on-error allows subsequent steps (artifact upload,
@@ -212,22 +212,22 @@ jobs:
         run: |
           REPORT="/tmp/xrpld-validation/reports/validation-report.json"
           if [ -f "$REPORT" ]; then
-            echo "## Telemetry Validation Results" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            TOTAL=$(jq '.summary.total' "$REPORT")
-            PASSED=$(jq '.summary.passed' "$REPORT")
-            FAILED=$(jq '.summary.failed' "$REPORT")
-            echo "| Metric | Value |" >> "$GITHUB_STEP_SUMMARY"
-            echo "|--------|-------|" >> "$GITHUB_STEP_SUMMARY"
-            echo "| Total Checks | $TOTAL |" >> "$GITHUB_STEP_SUMMARY"
-            echo "| Passed | $PASSED |" >> "$GITHUB_STEP_SUMMARY"
-            echo "| Failed | $FAILED |" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            if [ "$FAILED" -gt 0 ]; then
-              echo "### Failed Checks" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              jq -r '.checks[] | select(.passed == false) | "- **\(.name)**: \(.message)"' "$REPORT" >> "$GITHUB_STEP_SUMMARY"
-            fi
+              echo "## Telemetry Validation Results" >>"$GITHUB_STEP_SUMMARY"
+              echo "" >>"$GITHUB_STEP_SUMMARY"
+              TOTAL=$(jq '.summary.total' "$REPORT")
+              PASSED=$(jq '.summary.passed' "$REPORT")
+              FAILED=$(jq '.summary.failed' "$REPORT")
+              echo "| Metric | Value |" >>"$GITHUB_STEP_SUMMARY"
+              echo "|--------|-------|" >>"$GITHUB_STEP_SUMMARY"
+              echo "| Total Checks | $TOTAL |" >>"$GITHUB_STEP_SUMMARY"
+              echo "| Passed | $PASSED |" >>"$GITHUB_STEP_SUMMARY"
+              echo "| Failed | $FAILED |" >>"$GITHUB_STEP_SUMMARY"
+              echo "" >>"$GITHUB_STEP_SUMMARY"
+              if [ "$FAILED" -gt 0 ]; then
+                  echo "### Failed Checks" >>"$GITHUB_STEP_SUMMARY"
+                  echo "" >>"$GITHUB_STEP_SUMMARY"
+                  jq -r '.checks[] | select(.passed == false) | "- **\(.name)**: \(.message)"' "$REPORT" >>"$GITHUB_STEP_SUMMARY"
+              fi
           fi
 
       # Publishes captured OTel timings + regression report to the Step Summary.
@@ -244,53 +244,53 @@ jobs:
           BASELINE="docker/telemetry/workload/baselines/baseline-timings.json"
 
           if [ ! -f "$TIMINGS" ]; then
-            echo "## Regression Gate: no timings captured" >> "$GITHUB_STEP_SUMMARY"
-            echo "::warning::capture_timings.py did not produce timings.json — regression gate was not evaluated."
-            exit 0
+              echo "## Regression Gate: no timings captured" >>"$GITHUB_STEP_SUMMARY"
+              echo "::warning::capture_timings.py did not produce timings.json — regression gate was not evaluated."
+              exit 0
           fi
 
           if [ ! -f "$BASELINE" ]; then
-            echo "## Regression Gate: baseline file missing" >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::baselines/baseline-timings.json not found in checkout"
-            exit 1
+              echo "## Regression Gate: baseline file missing" >>"$GITHUB_STEP_SUMMARY"
+              echo "::error::baselines/baseline-timings.json not found in checkout"
+              exit 1
           fi
 
           IS_PLACEHOLDER=$(jq -e -r '.placeholder == true or (.metrics | length == 0)' "$BASELINE") || {
-            echo "::error::Failed to parse baseline JSON"
-            exit 1
+              echo "::error::Failed to parse baseline JSON"
+              exit 1
           }
 
-          echo "## OTel Timings Regression Gate" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## OTel Timings Regression Gate" >>"$GITHUB_STEP_SUMMARY"
+          echo "" >>"$GITHUB_STEP_SUMMARY"
 
           if [ "$IS_PLACEHOLDER" = "true" ]; then
-            echo "### Paste into \`baselines/baseline-timings.json\`" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "The committed baseline is a placeholder. Open a PR replacing" \
-                 "its contents with the JSON block below to activate the" \
-                 "regression gate." >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo '```json' >> "$GITHUB_STEP_SUMMARY"
-            cat "$TIMINGS" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "### Paste into \`baselines/baseline-timings.json\`" >>"$GITHUB_STEP_SUMMARY"
+              echo "" >>"$GITHUB_STEP_SUMMARY"
+              echo "The committed baseline is a placeholder. Open a PR replacing" \
+                  "its contents with the JSON block below to activate the" \
+                  "regression gate." >>"$GITHUB_STEP_SUMMARY"
+              echo "" >>"$GITHUB_STEP_SUMMARY"
+              echo '```json' >>"$GITHUB_STEP_SUMMARY"
+              cat "$TIMINGS" >>"$GITHUB_STEP_SUMMARY"
+              echo '```' >>"$GITHUB_STEP_SUMMARY"
           elif [ -f "$REGRESSION" ]; then
-            REGR_COUNT=$(jq -e '.summary.regressions' "$REGRESSION") || REGR_COUNT=0
-            IMPR_COUNT=$(jq -e '.summary.improvements' "$REGRESSION") || IMPR_COUNT=0
-            TOTAL=$(jq -e '.summary.total' "$REGRESSION") || TOTAL=0
-            echo "| Stat | Count |" >> "$GITHUB_STEP_SUMMARY"
-            echo "|------|-------|" >> "$GITHUB_STEP_SUMMARY"
-            echo "| Metrics compared | $TOTAL |" >> "$GITHUB_STEP_SUMMARY"
-            echo "| Regressions | $REGR_COUNT |" >> "$GITHUB_STEP_SUMMARY"
-            echo "| Improvements | $IMPR_COUNT |" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            if [ "$REGR_COUNT" -gt 0 ]; then
-              echo "### Regressions" >> "$GITHUB_STEP_SUMMARY"
-              echo "" >> "$GITHUB_STEP_SUMMARY"
-              echo "| Metric | Baseline | Current | Δ | % | Unit |" >> "$GITHUB_STEP_SUMMARY"
-              echo "|--------|---------:|--------:|--:|--:|------|" >> "$GITHUB_STEP_SUMMARY"
-              jq -r '.metrics[] | select(.regressed) | "| \(.key) | \(.baseline) | \(.current) | \(.delta) | \(.pct_change)% | \(.unit) |"' \
-                "$REGRESSION" >> "$GITHUB_STEP_SUMMARY"
-            fi
+              REGR_COUNT=$(jq -e '.summary.regressions' "$REGRESSION") || REGR_COUNT=0
+              IMPR_COUNT=$(jq -e '.summary.improvements' "$REGRESSION") || IMPR_COUNT=0
+              TOTAL=$(jq -e '.summary.total' "$REGRESSION") || TOTAL=0
+              echo "| Stat | Count |" >>"$GITHUB_STEP_SUMMARY"
+              echo "|------|-------|" >>"$GITHUB_STEP_SUMMARY"
+              echo "| Metrics compared | $TOTAL |" >>"$GITHUB_STEP_SUMMARY"
+              echo "| Regressions | $REGR_COUNT |" >>"$GITHUB_STEP_SUMMARY"
+              echo "| Improvements | $IMPR_COUNT |" >>"$GITHUB_STEP_SUMMARY"
+              echo "" >>"$GITHUB_STEP_SUMMARY"
+              if [ "$REGR_COUNT" -gt 0 ]; then
+                  echo "### Regressions" >>"$GITHUB_STEP_SUMMARY"
+                  echo "" >>"$GITHUB_STEP_SUMMARY"
+                  echo "| Metric | Baseline | Current | Δ | % | Unit |" >>"$GITHUB_STEP_SUMMARY"
+                  echo "|--------|---------:|--------:|--:|--:|------|" >>"$GITHUB_STEP_SUMMARY"
+                  jq -r '.metrics[] | select(.regressed) | "| \(.key) | \(.baseline) | \(.current) | \(.delta) | \(.pct_change)% | \(.unit) |"' \
+                      "$REGRESSION" >>"$GITHUB_STEP_SUMMARY"
+              fi
           fi
 
       - name: Cleanup

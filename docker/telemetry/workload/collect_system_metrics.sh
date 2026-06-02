@@ -26,9 +26,12 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Colored output helpers
 # ---------------------------------------------------------------------------
-log()  { printf "\033[1;34m[METRICS]\033[0m %s\n" "$*"; }
-ok()   { printf "\033[1;32m[METRICS]\033[0m %s\n" "$*"; }
-die()  { printf "\033[1;31m[METRICS]\033[0m %s\n" "$*" >&2; exit 1; }
+log() { printf "\033[1;34m[METRICS]\033[0m %s\n" "$*"; }
+ok() { printf "\033[1;32m[METRICS]\033[0m %s\n" "$*"; }
+die() {
+    printf "\033[1;31m[METRICS]\033[0m %s\n" "$*" >&2
+    exit 1
+}
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -51,7 +54,7 @@ RPC_PORTS_CSV="$1"
 DURATION="$2"
 OUTPUT_FILE="$3"
 
-IFS=',' read -ra RPC_PORTS <<< "$RPC_PORTS_CSV"
+IFS=',' read -ra RPC_PORTS <<<"$RPC_PORTS_CSV"
 SAMPLE_INTERVAL=5
 SAMPLES=$((DURATION / SAMPLE_INTERVAL))
 
@@ -80,8 +83,8 @@ INITIAL_SEQ=0
 INITIAL_TIME=$(date +%s)
 for port in "${RPC_PORTS[@]}"; do
     seq=$(curl -sf "http://localhost:$port" \
-        -d '{"method":"server_info"}' 2>/dev/null \
-        | jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
+        -d '{"method":"server_info"}' 2>/dev/null |
+        jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
     if [ "$seq" -gt "$INITIAL_SEQ" ]; then
         INITIAL_SEQ=$seq
     fi
@@ -106,7 +109,7 @@ for sample in $(seq 1 "$SAMPLES"); do
 
     if [ "$cpu_count" -gt 0 ]; then
         cpu_avg=$(echo "scale=2; $cpu_sum / $cpu_count" | bc 2>/dev/null || echo "0")
-        echo "$cpu_avg" >> "$CPU_FILE"
+        echo "$cpu_avg" >>"$CPU_FILE"
     fi
 
     # Collect memory RSS for xrpld processes.
@@ -114,7 +117,7 @@ for sample in $(seq 1 "$SAMPLES"); do
         rss_kb=$(echo "$line" | awk '{print $1}')
         if [ -n "$rss_kb" ] && [ "$rss_kb" != "0" ]; then
             rss_mb=$(echo "scale=2; $rss_kb / 1024" | bc 2>/dev/null || echo "0")
-            echo "$rss_mb" >> "$MEM_FILE"
+            echo "$rss_mb" >>"$MEM_FILE"
         fi
     done < <(ps aux 2>/dev/null | grep '[x]rpld' | awk '{print $6}')
 
@@ -122,19 +125,19 @@ for sample in $(seq 1 "$SAMPLES"); do
     for port in "${RPC_PORTS[@]}"; do
         start_ms=$(date +%s%N)
         curl -sf "http://localhost:$port" \
-            -d '{"method":"server_info"}' > /dev/null 2>&1 || true
+            -d '{"method":"server_info"}' >/dev/null 2>&1 || true
         end_ms=$(date +%s%N)
-        latency_ms=$(( (end_ms - start_ms) / 1000000 ))
-        echo "$latency_ms" >> "$RPC_FILE"
+        latency_ms=$(((end_ms - start_ms) / 1000000))
+        echo "$latency_ms" >>"$RPC_FILE"
     done
 
     # Record current validated ledger seq.
     for port in "${RPC_PORTS[@]}"; do
         seq=$(curl -sf "http://localhost:$port" \
-            -d '{"method":"server_info"}' 2>/dev/null \
-            | jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
-        echo "$seq" >> "$LEDGER_FILE"
-        break  # Only need one node's seq per sample.
+            -d '{"method":"server_info"}' 2>/dev/null |
+            jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
+        echo "$seq" >>"$LEDGER_FILE"
+        break # Only need one node's seq per sample.
     done
 
     # Progress indicator.
@@ -166,7 +169,7 @@ fi
 
 # RPC latency p99 (ms).
 if [ -s "$RPC_FILE" ]; then
-    RPC_COUNT=$(wc -l < "$RPC_FILE")
+    RPC_COUNT=$(wc -l <"$RPC_FILE")
     P99_INDEX=$(echo "scale=0; $RPC_COUNT * 99 / 100" | bc)
     RPC_P99=$(sort -n "$RPC_FILE" | sed -n "${P99_INDEX}p")
     [ -z "$RPC_P99" ] && RPC_P99="0"
@@ -178,8 +181,8 @@ fi
 FINAL_SEQ=0
 for port in "${RPC_PORTS[@]}"; do
     seq=$(curl -sf "http://localhost:$port" \
-        -d '{"method":"server_info"}' 2>/dev/null \
-        | jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
+        -d '{"method":"server_info"}' 2>/dev/null |
+        jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
     if [ "$seq" -gt "$FINAL_SEQ" ]; then
         FINAL_SEQ=$seq
     fi
@@ -199,7 +202,7 @@ fi
 # Approximate by looking at ledger sequence progression intervals.
 if [ -s "$LEDGER_FILE" ]; then
     # Calculate intervals between consecutive ledger sequences.
-    LEDGER_COUNT=$(wc -l < "$LEDGER_FILE")
+    LEDGER_COUNT=$(wc -l <"$LEDGER_FILE")
     # Rough estimate: DURATION / number_of_distinct_ledgers * 1000 ms
     UNIQUE_LEDGERS=$(sort -u "$LEDGER_FILE" | wc -l)
     if [ "$UNIQUE_LEDGERS" -gt 1 ]; then
@@ -214,7 +217,7 @@ fi
 # ---------------------------------------------------------------------------
 # Write output JSON
 # ---------------------------------------------------------------------------
-cat > "$OUTPUT_FILE" <<EOF_JSON
+cat >"$OUTPUT_FILE" <<EOF_JSON
 {
   "cpu_pct_avg": $CPU_AVG,
   "memory_rss_mb_peak": $MEM_PEAK,

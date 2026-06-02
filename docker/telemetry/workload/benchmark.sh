@@ -23,11 +23,14 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Colored output helpers
 # ---------------------------------------------------------------------------
-log()   { printf "\033[1;34m[BENCH]\033[0m  %s\n" "$*"; }
-ok()    { printf "\033[1;32m[BENCH]\033[0m  %s\n" "$*"; }
-warn()  { printf "\033[1;33m[BENCH]\033[0m  %s\n" "$*"; }
-fail()  { printf "\033[1;31m[BENCH]\033[0m  %s\n" "$*"; }
-die()   { printf "\033[1;31m[BENCH]\033[0m  %s\n" "$*" >&2; exit 1; }
+log() { printf "\033[1;34m[BENCH]\033[0m  %s\n" "$*"; }
+ok() { printf "\033[1;32m[BENCH]\033[0m  %s\n" "$*"; }
+warn() { printf "\033[1;33m[BENCH]\033[0m  %s\n" "$*"; }
+fail() { printf "\033[1;31m[BENCH]\033[0m  %s\n" "$*"; }
+die() {
+    printf "\033[1;31m[BENCH]\033[0m  %s\n" "$*" >&2
+    exit 1
+}
 
 # ---------------------------------------------------------------------------
 # Defaults and thresholds
@@ -67,11 +70,23 @@ usage() {
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --xrpld)   XRPLD="$2"; shift 2 ;;
-        --duration) DURATION="$2"; shift 2 ;;
-        --nodes)   NUM_NODES="$2"; shift 2 ;;
-        --output)  RESULTS_DIR="$2"; shift 2 ;;
-        -h|--help) usage ;;
+        --xrpld)
+            XRPLD="$2"
+            shift 2
+            ;;
+        --duration)
+            DURATION="$2"
+            shift 2
+            ;;
+        --nodes)
+            NUM_NODES="$2"
+            shift 2
+            ;;
+        --output)
+            RESULTS_DIR="$2"
+            shift 2
+            ;;
+        -h | --help) usage ;;
         *) die "Unknown option: $1" ;;
     esac
 done
@@ -110,7 +125,7 @@ start_cluster() {
         local peer_port
         peer_port=$((PEER_PORT_BASE + i - 1))
         local seed
-        seed=$(jq -r ".[$((i-1))].seed" "$WORKDIR/validator-keys.json")
+        seed=$(jq -r ".[$((i - 1))].seed" "$WORKDIR/validator-keys.json")
 
         # Build ips_fixed list.
         local ips_fixed=""
@@ -150,7 +165,7 @@ prefix=rippled"
 enabled=0"
         fi
 
-        cat > "$node_dir/xrpld.cfg" <<EOCFG
+        cat >"$node_dir/xrpld.cfg" <<EOCFG
 [server]
 port_rpc
 port_peer
@@ -196,8 +211,8 @@ ${telemetry_section}
 0
 EOCFG
 
-        "$XRPLD" --conf "$node_dir/xrpld.cfg" --start > "$node_dir/stdout.log" 2>&1 &
-        echo $! > "$node_dir/xrpld.pid"
+        "$XRPLD" --conf "$node_dir/xrpld.cfg" --start >"$node_dir/stdout.log" 2>&1 &
+        echo $! >"$node_dir/xrpld.pid"
     done
 
     # Wait for consensus.
@@ -209,8 +224,8 @@ EOCFG
             port=$((RPC_PORT_BASE + i - 1))
             local state
             state=$(curl -sf "http://localhost:$port" \
-                -d '{"method":"server_info"}' 2>/dev/null \
-                | jq -r '.result.info.server_state' 2>/dev/null || echo "")
+                -d '{"method":"server_info"}' 2>/dev/null |
+                jq -r '.result.info.server_state' 2>/dev/null || echo "")
             if [ "$state" = "proposing" ]; then
                 ready=$((ready + 1))
             fi
@@ -345,7 +360,7 @@ CONS_RESULT=$(check_threshold "Consensus impact" "$CONS_IMPACT" "$CONSENSUS_THRE
 # ---------------------------------------------------------------------------
 REPORT_FILE="$RESULTS_DIR/benchmark-report-${TIMESTAMP}.md"
 
-cat > "$REPORT_FILE" <<EOMD
+cat >"$REPORT_FILE" <<EOMD
 # Telemetry Performance Benchmark Report
 
 **Date**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")

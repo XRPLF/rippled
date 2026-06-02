@@ -26,11 +26,14 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Colored output helpers
 # ---------------------------------------------------------------------------
-log()   { printf "\033[1;34m[VALIDATE]\033[0m %s\n" "$*"; }
-ok()    { printf "\033[1;32m[VALIDATE]\033[0m %s\n" "$*"; }
-warn()  { printf "\033[1;33m[VALIDATE]\033[0m %s\n" "$*"; }
-fail()  { printf "\033[1;31m[VALIDATE]\033[0m %s\n" "$*"; }
-die()   { printf "\033[1;31m[VALIDATE]\033[0m %s\n" "$*" >&2; exit 2; }
+log() { printf "\033[1;34m[VALIDATE]\033[0m %s\n" "$*"; }
+ok() { printf "\033[1;32m[VALIDATE]\033[0m %s\n" "$*"; }
+warn() { printf "\033[1;33m[VALIDATE]\033[0m %s\n" "$*"; }
+fail() { printf "\033[1;31m[VALIDATE]\033[0m %s\n" "$*"; }
+die() {
+    printf "\033[1;31m[VALIDATE]\033[0m %s\n" "$*" >&2
+    exit 2
+}
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -90,17 +93,47 @@ usage() {
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --xrpld)         XRPLD="$2"; shift 2 ;;
-        --nodes)         NUM_NODES="$2"; shift 2 ;;
-        --rpc-rate)      RPC_RATE="$2"; shift 2 ;;
-        --rpc-duration)  RPC_DURATION="$2"; shift 2 ;;
-        --tx-tps)        TX_TPS="$2"; shift 2 ;;
-        --tx-duration)   TX_DURATION="$2"; shift 2 ;;
-        --profile)       WORKLOAD_PROFILE="$2"; shift 2 ;;
-        --with-benchmark) WITH_BENCHMARK=true; shift ;;
-        --skip-loki)     SKIP_LOKI=true; shift ;;
-        --skip-regression) SKIP_REGRESSION=true; shift ;;
-        --cleanup)       # Cleanup mode
+        --xrpld)
+            XRPLD="$2"
+            shift 2
+            ;;
+        --nodes)
+            NUM_NODES="$2"
+            shift 2
+            ;;
+        --rpc-rate)
+            RPC_RATE="$2"
+            shift 2
+            ;;
+        --rpc-duration)
+            RPC_DURATION="$2"
+            shift 2
+            ;;
+        --tx-tps)
+            TX_TPS="$2"
+            shift 2
+            ;;
+        --tx-duration)
+            TX_DURATION="$2"
+            shift 2
+            ;;
+        --profile)
+            WORKLOAD_PROFILE="$2"
+            shift 2
+            ;;
+        --with-benchmark)
+            WITH_BENCHMARK=true
+            shift
+            ;;
+        --skip-loki)
+            SKIP_LOKI=true
+            shift
+            ;;
+        --skip-regression)
+            SKIP_REGRESSION=true
+            shift
+            ;;
+        --cleanup) # Cleanup mode
             log "Cleaning up..."
             pkill -f "$WORKDIR" 2>/dev/null || true
             docker compose -f "$COMPOSE_FILE" down 2>/dev/null || true
@@ -108,8 +141,8 @@ while [ $# -gt 0 ]; do
             ok "Cleanup complete."
             exit 0
             ;;
-        -h|--help)       usage ;;
-        *)               die "Unknown option: $1" ;;
+        -h | --help) usage ;;
+        *) die "Unknown option: $1" ;;
     esac
 done
 
@@ -127,8 +160,8 @@ command -v jq >/dev/null 2>&1 || die "jq not found"
 
 # Install Python dependencies.
 log "Installing Python dependencies..."
-pip3 install -q -r "$SCRIPT_DIR/requirements.txt" 2>/dev/null || \
-    pip install -q -r "$SCRIPT_DIR/requirements.txt" 2>/dev/null || \
+pip3 install -q -r "$SCRIPT_DIR/requirements.txt" 2>/dev/null ||
+    pip install -q -r "$SCRIPT_DIR/requirements.txt" 2>/dev/null ||
     warn "Could not install Python dependencies — they may already be present"
 
 ok "Prerequisites verified."
@@ -193,7 +226,7 @@ for i in $(seq 1 "$NUM_NODES"); do
     RPC_PORT=$((RPC_PORT_BASE + i - 1))
     WS_PORT=$((WS_PORT_BASE + i - 1))
     PEER_PORT=$((PEER_PORT_BASE + i - 1))
-    SEED=$(jq -r ".[$((i-1))].seed" "$WORKDIR/validator-keys.json")
+    SEED=$(jq -r ".[$((i - 1))].seed" "$WORKDIR/validator-keys.json")
 
     # Build ips_fixed.
     IPS_FIXED=""
@@ -204,7 +237,7 @@ for i in $(seq 1 "$NUM_NODES"); do
         fi
     done
 
-    cat > "$NODE_DIR/xrpld.cfg" <<EOCFG
+    cat >"$NODE_DIR/xrpld.cfg" <<EOCFG
 [server]
 port_rpc
 port_ws
@@ -277,8 +310,8 @@ true
 0
 EOCFG
 
-    "$XRPLD" --conf "$NODE_DIR/xrpld.cfg" --start > "$NODE_DIR/stdout.log" 2>&1 &
-    echo $! > "$NODE_DIR/xrpld.pid"
+    "$XRPLD" --conf "$NODE_DIR/xrpld.cfg" --start >"$NODE_DIR/stdout.log" 2>&1 &
+    echo $! >"$NODE_DIR/xrpld.pid"
     log "  Node $i: RPC=$RPC_PORT WS=$WS_PORT Peer=$PEER_PORT PID=$!"
 done
 
@@ -291,8 +324,8 @@ for attempt in $(seq 1 120); do
     for i in $(seq 1 "$NUM_NODES"); do
         port=$((RPC_PORT_BASE + i - 1))
         state=$(curl -sf "http://localhost:$port" \
-            -d '{"method":"server_info"}' 2>/dev/null \
-            | jq -r '.result.info.server_state' 2>/dev/null || echo "")
+            -d '{"method":"server_info"}' 2>/dev/null |
+            jq -r '.result.info.server_state' 2>/dev/null || echo "")
         if [ "$state" = "proposing" ]; then
             ready=$((ready + 1))
         fi
@@ -313,8 +346,8 @@ echo ""
 log "Waiting for validated ledger..."
 for attempt in $(seq 1 60); do
     val_seq=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
-        -d '{"method":"server_info"}' 2>/dev/null \
-        | jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
+        -d '{"method":"server_info"}' 2>/dev/null |
+        jq -r '.result.info.validated_ledger.seq // 0' 2>/dev/null || echo 0)
     if [ "$val_seq" -gt 2 ] 2>/dev/null; then
         ok "Validated ledger: seq $val_seq"
         break
@@ -337,7 +370,7 @@ python3 "$SCRIPT_DIR/workload_orchestrator.py" \
     --profile "$WORKLOAD_PROFILE" \
     --endpoints $WS_ENDPOINTS \
     --report "$REPORT_DIR/workload-report.json" \
-    --report-dir "$REPORT_DIR" || \
+    --report-dir "$REPORT_DIR" ||
     warn "Workload orchestrator returned non-zero exit"
 
 ok "Workload orchestration complete."
@@ -380,8 +413,7 @@ if [ "$SKIP_REGRESSION" != true ]; then
         --metrics "$METRICS_FILE" \
         --output "$TIMINGS_FILE" \
         --window "$REGRESSION_WINDOW" \
-        --profile "$WORKLOAD_PROFILE"
-    then
+        --profile "$WORKLOAD_PROFILE"; then
         ok "Timings captured: $TIMINGS_FILE"
     else
         fail "Failed to capture timings — skipping regression comparison."
@@ -417,7 +449,7 @@ if [ "$WITH_BENCHMARK" = true ]; then
         --xrpld "$XRPLD" \
         --duration 120 \
         --nodes 3 \
-        --output "$REPORT_DIR" || \
+        --output "$REPORT_DIR" ||
         warn "Benchmark returned non-zero exit"
 fi
 
