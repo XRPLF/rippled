@@ -77,8 +77,12 @@ IOUAmount::normalize()
 
     if (getSTNumberSwitchover())
     {
-        Number const v{mantissa_, exponent_};
-        *this = fromNumber(v);
+        // Normalize the raw mantissa/exponent straight to the IOU range in a
+        // single pass. Previously this built a Number (one pass to the default
+        // range) and then re-normalized to the IOU range via fromNumber (a
+        // second pass); the static primitive collapses both into one.
+        std::tie(mantissa_, exponent_) =
+            Number::normalizeToRange<kMinMantissa, kMaxMantissa>(mantissa_, exponent_);
         if (exponent_ > kMaxExponent)
             Throw<std::overflow_error>("value overflow");
         if (exponent_ < kMinExponent)
