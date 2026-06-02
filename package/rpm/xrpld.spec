@@ -81,6 +81,8 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %{_presetdir}/50-xrpld.preset
 %{_sysusersdir}/xrpld.conf
 %{_tmpfilesdir}/xrpld.conf
+%ghost %dir /var/lib/xrpld
+%ghost %dir /var/log/xrpld
 
 # Legacy compatibility for pre-FHS package layouts.
 # TODO: remove after rippled fully deprecated.
