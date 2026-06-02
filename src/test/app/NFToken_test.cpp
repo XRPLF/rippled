@@ -892,6 +892,17 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
         }
 
+        // Only test this with fixCleanup3_2_0 enabled. Without the fix,
+        // an assert-enabled build can crash when Ledger::read() receives
+        // a zero-key NFT id keylet.
+        if (features[fixCleanup3_2_0])
+        {
+            // Zero is not a valid offer ID.
+            env(token::cancelOffer(buyer, {uint256{}}), Ter(temMALFORMED));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+        }
+
         // List of tokens to delete is too long.
         {
             std::vector<uint256> const offers(kMaxTokenOfferCancelCount + 1, buyerOfferIndex);
