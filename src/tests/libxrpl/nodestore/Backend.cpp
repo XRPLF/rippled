@@ -7,6 +7,7 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 
 #include <gtest/gtest.h>
@@ -14,9 +15,12 @@
 #include <nodestore/TestBase.h>
 
 #include <algorithm>
+#include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace xrpl::NodeStore {
@@ -37,6 +41,27 @@ backendTypes()
     types.emplace_back("sqlite");
 #endif
     return types;
+}
+
+// Run work(i) for every i in [0, n) spread across numThreads threads, handing
+// out indices via a shared atomic counter (mirrors the old Timing_test
+// parallel-for so the N items are partitioned, not duplicated).
+template <class Work>
+void
+parallelFor(std::size_t n, unsigned numThreads, Work work)
+{
+    std::atomic<std::size_t> next{0};
+    std::vector<std::thread> threads;
+    threads.reserve(numThreads);
+    for (unsigned t = 0; t < numThreads; ++t)
+    {
+        threads.emplace_back([&] {
+            for (std::size_t i = next++; i < n; i = next++)
+                work(i);
+        });
+    }
+    for (auto& thread : threads)
+        thread.join();
 }
 
 }  // namespace
