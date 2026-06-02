@@ -7,7 +7,6 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STVector256.h>
 
 #include <memory>
@@ -89,7 +88,6 @@ createGuards(
     if (useRulesGuards(rules))
     {
         // raii classes for the current ledger rules.
-        // fixUniversalNumber predates the rulesGuard and should be replaced.
         rulesGuard.emplace(rules);
     }
     else
