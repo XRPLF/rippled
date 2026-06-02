@@ -822,15 +822,14 @@ doOverpayment(
 
     XRPL_ASSERT_IF(
         fix320Enabled,
-        loanPaymentParts.valueChange ==
-            [&] {
-                Number const tvoChange = newRoundedLoanState.valueOutstanding -
-                    (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta);
-                Number const managementFeeReleased =
-                    managementFeeOutstandingProxy - newRoundedLoanState.managementFeeDue;
-                Number const interestPart = overpaymentComponents.trackedInterestPart();
-                return tvoChange + managementFeeReleased + interestPart;
-            }(),
+        [&] {
+            Number const tvoChange = newRoundedLoanState.valueOutstanding -
+                (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta);
+            Number const managementFeeReleased =
+                managementFeeOutstandingProxy - newRoundedLoanState.managementFeeDue;
+            Number const interestPart = overpaymentComponents.trackedInterestPart();
+            return loanPaymentParts.valueChange == tvoChange + managementFeeReleased + interestPart;
+        }(),
         "xrpl::detail::doOverpayment : interest paid agrees");
 
     XRPL_ASSERT_IF(
