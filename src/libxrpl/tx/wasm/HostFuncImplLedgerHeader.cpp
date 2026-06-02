@@ -1,9 +1,8 @@
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/AmendmentTable.h>
-#include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
-#include <xrpl/tx/wasm/ParamsHelper.h>
+#include <xrpl/tx/wasm/WasmParamsHelper.h>
 
 #include <cstdint>
 #include <string>

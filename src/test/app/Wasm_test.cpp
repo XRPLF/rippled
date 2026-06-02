@@ -7,7 +7,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncWrapper.h>  // IWYU pragma: keep
-#include <xrpl/tx/wasm/ParamsHelper.h>
+#include <xrpl/tx/wasm/WasmImportsHelper.h>
+#include <xrpl/tx/wasm/WasmParamsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <boost/algorithm/hex.hpp>
@@ -218,7 +219,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
         HostFunctions hfs;
         ImportVec imports;
-        WasmImpFunc<Add_proto>(imports, "func-add", reinterpret_cast<void*>(&add), &hfs);
+        WasmImpFunc<Add_proto>(imports, "func-add", reinterpret_cast<void*>(&add), hfs);
 
         auto re = vm.run(wasm, hfs, 10'000'000, "addTwo", wasmParams(1234, 5678), imports);
 
@@ -287,7 +288,7 @@ struct Wasm_test : public beast::unit_test::Suite
         Env env{*this};
         TestLedgerDataProvider hfs(env);
         ImportVec imports;
-        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs, 33);
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", hfs, 33);
         auto& engine = WasmEngine::instance();
 
         auto re =
@@ -316,8 +317,8 @@ struct Wasm_test : public beast::unit_test::Suite
         Env env{*this};
         TestLedgerDataProvider hfs(env);
         ImportVec imports;
-        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs, 33);
-        WASM_IMPORT_FUNC2(imports, getParentLedgerHash, "get_parent_ledger_hash", &hfs, 60);
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", hfs, 33);
+        WASM_IMPORT_FUNC2(imports, getParentLedgerHash, "get_parent_ledger_hash", hfs, 60);
         auto& engine = WasmEngine::instance();
 
         // Test exp_func1() - should return 1
@@ -396,7 +397,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
             auto& engine = WasmEngine::instance();
 
-            TestHostFunctions hfs(env, 0);
+            TestHostFunctions hfs(env);
             auto imp = createWasmImport(hfs);
             for (auto& i : imp)
                 i.second.second.gas = 0;
@@ -420,7 +421,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
             auto& engine = WasmEngine::instance();
 
-            TestHostFunctions hfs(env, 0);
+            TestHostFunctions hfs(env);
             auto const imp = createWasmImport(hfs);
 
             auto re = engine.run(
@@ -437,7 +438,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
             auto& engine = WasmEngine::instance();
 
-            TestHostFunctions hfs(env, 0);
+            TestHostFunctions hfs(env);
             auto const imp = createWasmImport(hfs);
 
             auto re =
@@ -463,14 +464,14 @@ struct Wasm_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this};
         {
-            TestHostFunctions hfs(env, 0);
+            TestHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName, {});
             checkResult(re, 1, 70'340);
         }
 
         {
             // Invalid gas limit (0) should be rejected (boundary condition)
-            TestHostFunctions hfs(env, 0);
+            TestHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, -1, escrowFunctionName, {});
             BEAST_EXPECT(!re.has_value());
             BEAST_EXPECT(re.error() == temBAD_AMOUNT);
@@ -478,7 +479,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
         {
             // Invalid gas limit (-1) should be rejected
-            TestHostFunctions hfs(env, 0);
+            TestHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, 0, escrowFunctionName, {});
             BEAST_EXPECT(!re.has_value());
             BEAST_EXPECT(re.error() == temBAD_AMOUNT);
@@ -486,7 +487,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
         {
             // max<int64_t>() gas
-            TestHostFunctions hfs(env, 0);
+            TestHostFunctions hfs(env);
             auto re = runEscrowWasm(
                 allHFWasm, hfs, std::numeric_limits<int64_t>::max(), escrowFunctionName, {});
             checkResult(re, 1, 70'340);
@@ -562,7 +563,7 @@ struct Wasm_test : public beast::unit_test::Suite
         {  // infinite loop
             auto const infiniteLoopWasm = hexToBytes(kInfiniteLoopWasmHex);
             std::string const funcName("loop");
-            TestHostFunctions hfs(env, 0);
+            TestHostFunctions hfs(env);
 
             // infinite loop should be caught and fail
             auto const re = runEscrowWasm(infiniteLoopWasm, hfs, 1'000'000, funcName, {});
@@ -577,7 +578,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto const lgrSqnWasm = hexToBytes(kLedgerSqnWasmHex);
             TestLedgerDataProvider hfs(env);
             ImportVec imports;
-            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn2", &hfs);
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn2", hfs);
 
             auto& engine = WasmEngine::instance();
 
@@ -588,12 +589,12 @@ struct Wasm_test : public beast::unit_test::Suite
         }
 
         {
-            // bad import format
+            // HF unsync between import and VM
             auto const lgrSqnWasm = hexToBytes(kLedgerSqnWasmHex);
             TestLedgerDataProvider hfs(env);
+            TestLedgerDataProvider hfs2(env);
             ImportVec imports;
-            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs);
-            imports["get_ledger_sqn"].first = nullptr;
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", hfs2);
 
             auto& engine = WasmEngine::instance();
 
@@ -608,7 +609,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto const lgrSqnWasm = hexToBytes(kLedgerSqnWasmHex);
             TestLedgerDataProvider hfs(env);
             ImportVec imports;
-            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs);
+            WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", hfs);
 
             auto& engine = WasmEngine::instance();
             auto re = engine.run(lgrSqnWasm, hfs, 1'000'000, "func1", {}, imports, env.journal);
@@ -630,7 +631,7 @@ struct Wasm_test : public beast::unit_test::Suite
         {
             auto const floatTestWasm = hexToBytes(kFloatTestsWasmHex);
 
-            TestHostFunctions hfs(env, 0);
+            TestHostFunctions hfs(env);
             auto re = runEscrowWasm(floatTestWasm, hfs, 200'000, funcName, {});
             checkResult(re, 1, 134'938);
             env.close();
@@ -639,7 +640,7 @@ struct Wasm_test : public beast::unit_test::Suite
         {
             auto const float0Wasm = hexToBytes(kFloat0Hex);
 
-            TestHostFunctions hfs(env, 0);
+            TestHostFunctions hfs(env);
             auto re = runEscrowWasm(float0Wasm, hfs, 100'000, funcName, {});
             checkResult(re, 1, 4'309);
             env.close();
@@ -656,7 +657,7 @@ struct Wasm_test : public beast::unit_test::Suite
         Env env{*this};
 
         auto const codecovWasm = hexToBytes(kCodecovTestsWasmHex);
-        TestHostFunctions hfs(env, 0);
+        TestHostFunctions hfs(env);
 
         auto const allowance = 220'169;
         auto re = runEscrowWasm(codecovWasm, hfs, allowance, escrowFunctionName, {});
@@ -674,7 +675,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
         auto disabledFloatWasm = hexToBytes(kDisabledFloatHex);
         std::string const funcName("finish");
-        TestHostFunctions hfs(env, 0);
+        TestHostFunctions hfs(env);
 
         {
             // f32 set constant, opcode disabled exception
@@ -810,7 +811,7 @@ struct Wasm_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         Env env{*this};
-        TestHostFunctions hfs(env, 0);
+        TestHostFunctions hfs(env);
         auto imports = createWasmImport(hfs);
 
         {  // Calls float_from_uint with bad alignment.
@@ -832,7 +833,7 @@ struct Wasm_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         Env env(*this);
-        TestHostFunctions hfs(env, 0);
+        TestHostFunctions hfs(env);
 
         testcase("Wasm invalid return type");
 
@@ -887,7 +888,7 @@ struct Wasm_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         Env env(*this);
-        TestHostFunctions hfs(env, 0);
+        TestHostFunctions hfs(env);
 
         testcase("Wasm invalid params");
 
@@ -999,7 +1000,7 @@ struct Wasm_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         Env env{*this};
-        TestHostFunctions hfs(env, 0);
+        TestHostFunctions hfs(env);
         auto imports = createWasmImport(hfs);
 
         // add 1k parameter (max that wasmi support)
@@ -1054,7 +1055,7 @@ struct Wasm_test : public beast::unit_test::Suite
         Env env{*this};
         auto& engine = WasmEngine::instance();
 
-        TestHostFunctions hfs(env, 0);
+        TestHostFunctions hfs(env);
         auto imports = createWasmImport(hfs);
         env.close();
 

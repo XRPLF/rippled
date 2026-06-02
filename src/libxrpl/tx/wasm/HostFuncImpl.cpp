@@ -5,8 +5,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/tx/wasm/HostFunc.h>
-#include <xrpl/tx/wasm/ParamsHelper.h>
+#include <xrpl/tx/wasm/WasmParamsHelper.h>
 
 #include <cstdint>
 
@@ -19,10 +18,9 @@ namespace xrpl {
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::updateData(Slice const& data)
 {
-    if (data.size() > maxWasmDataLength)
-    {
+    if (data.size() > kMaxWasmDataLength)
         return Unexpected(HostFunctionError::DataFieldTooLarge);
-    }
+
     data_ = Bytes(data.begin(), data.end());
     return data_->size();
 }

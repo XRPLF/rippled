@@ -6,7 +6,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
-#include <xrpl/tx/wasm/ParamsHelper.h>
+#include <xrpl/tx/wasm/WasmParamsHelper.h>
 
 #include <boost/algorithm/hex.hpp>
 

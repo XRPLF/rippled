@@ -4,7 +4,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFuncWrapper.h>  // IWYU pragma: keep
-#include <xrpl/tx/wasm/ParamsHelper.h>
+#include <xrpl/tx/wasm/WasmImportsHelper.h>
+#include <xrpl/tx/wasm/WasmParamsHelper.h>
 
 #include <cstdint>
 #include <string>
@@ -27,7 +28,7 @@ namespace xrpl {
 // See XLS-0102 §6.5 (Future-Proofing):
 // https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0102-wasm-vm#65-future-proofing
 static void
-setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
+setCommonHostFunctions(HostFunctions& hfs, ImportVec& i)
 {
     // clang-format off
     WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
@@ -108,8 +109,8 @@ createWasmImport(HostFunctions& hfs)
 {
     ImportVec i;
 
-    setCommonHostFunctions(&hfs, i);
-    WASM_IMPORT_FUNC2(i, updateData, "update_data", &hfs, 1000);
+    setCommonHostFunctions(hfs, i);
+    WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs, 1000);
 
     return i;
 }
@@ -140,7 +141,7 @@ runEscrowWasm(
 #ifdef DEBUG_OUTPUT
     std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost << std::endl;
 #endif
-    return EscrowResult{ret->result, ret->cost};
+    return EscrowResult{.result = ret->result, .cost = ret->cost};
 }
 
 NotTEC

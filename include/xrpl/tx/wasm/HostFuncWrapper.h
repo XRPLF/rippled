@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl/tx/wasm/ParamsHelper.h>
+#include <xrpl/tx/wasm/WasmImportsHelper.h>
 
 #include <wasm.h>
 

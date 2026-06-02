@@ -252,10 +252,10 @@ constexpr std::uint8_t kVaultMaximumIouScale = 18;
 constexpr std::uint8_t kMaxAssetCheckDepth = 5;
 
 /** Maximum length of a Data field in Escrow object that can be updated by WASM code. */
-std::size_t constexpr maxWasmDataLength = 4 * 1024;  // 4KB
+constexpr std::size_t kMaxWasmDataLength = 4 * 1024;  // 4KB
 
 /** Maximum length of parameters passed from WASM code to host functions. */
-std::size_t constexpr maxWasmParamLength = 1024;  // 1KB
+constexpr std::size_t kMaxWasmParamLength = 1024;  // 1KB
 
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
