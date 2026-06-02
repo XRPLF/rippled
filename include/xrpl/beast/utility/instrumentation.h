@@ -22,10 +22,14 @@
 #define XRPL_ASSERT_PARTS(cond, function, description, ...) \
     XRPL_ASSERT(cond, function " : " description)
 // clang-format off
+// MSVC's legacy preprocessor treats __VA_ARGS__ as a single token when
+// forwarded to another function-like macro. XRPL_ASSERT_IF_EXPAND forces a
+// rescan that splits the tokens back into separate arguments.
+#define XRPL_ASSERT_IF_EXPAND(x) x
 #define XRPL_ASSERT_IF(guard, ...) \
     do {                           \
         if ((guard))               \
-            XRPL_ASSERT(__VA_ARGS__); \
+            XRPL_ASSERT_IF_EXPAND(XRPL_ASSERT(__VA_ARGS__)); \
     } while (false)
 // clang-format on
 
