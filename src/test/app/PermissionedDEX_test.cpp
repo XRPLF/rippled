@@ -1824,8 +1824,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         BEAST_EXPECT(oldOffer->getFieldH256(sfDomainID) == domainA);
 
         auto const newSeq = env.seq(alice);
-        // Regression: replacing a DomainA offer with a DomainB offer deletes
-        // the old offer. The fixed invariant ignores the deleted DomainA entry.
+        // The invariant should reject mixing active Permissioned DEX domains,
+        // not a domain that is only touched because its offer is being deleted.
         if (fixEnabled)
         {
             env(offer(alice, USD(100), XRP(2)), Domain(domainB), Json(jss::OfferSequence, oldSeq));
