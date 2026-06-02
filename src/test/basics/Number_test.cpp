@@ -1923,6 +1923,86 @@ public:
         }
 
         {
+            testcase << "normalization cusp: ToNearest and Downward disagree " << to_string(scale);
+
+            constexpr auto kMaxRep = Number::kMaxRep;
+
+            // Both ToNearest and Downward should round to `below`
+            auto const actual = static_cast<std::uint64_t>(kMaxRep) + 1;
+            Number const below{static_cast<std::int64_t>(kMaxRep), 0};
+            Number const above{
+                false, static_cast<std::uint64_t>(kMaxRep) + 3, 0, Number::Unchecked{}};
+
+            auto construct = [](Number::RoundingMode mode) {
+                NumberRoundModeGuard const roundGuard{mode};
+                return Number(false, actual, 0, Number::Normalized{});
+            };
+            Number const upward = construct(Number::RoundingMode::Upward);
+
+            Number const toNearest = construct(Number::RoundingMode::ToNearest);
+
+            Number const downward = construct(Number::RoundingMode::Downward);
+
+            log << "\n"
+                << "  actual     = " << actual << "  (kMaxRep + 1)\n"
+                << "  below      = " << below << "  (kMaxRep, distance 1)\n"
+                << "  above      = " << above << "  (kMaxRep + 3, distance 2)\n"
+                << "  Upward     = " << upward << "\n"
+                << "  ToNearest  = " << toNearest << "\n"
+                << "  Downward   = " << downward << "\n\n";
+            log.flush();
+
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Small:
+                    // With the small mantissa, everything rounds up
+
+                    // Upward round UP
+                    BEAST_EXPECT(upward > above);
+
+                    // ToNearest rounds UP when the DOWN neighbor is strictly closer
+                    BEAST_EXPECT(toNearest > above);
+                    BEAST_EXPECT(toNearest == below);
+
+                    // Downward undershoots: it returns a value below `below`
+                    BEAST_EXPECT(downward < below);
+
+                    // Both should have given the same answer, but they differ
+                    BEAST_EXPECT(toNearest > downward);
+
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    // Upward round UP
+                    BEAST_EXPECT(upward == above);
+
+                    // ToNearest rounds UP when the DOWN neighbor is strictly closer
+                    BEAST_EXPECT(toNearest == above);
+                    BEAST_EXPECT(toNearest > below);
+
+                    // Downward undershoots: it returns a value below `below`
+                    BEAST_EXPECT(downward < below);
+
+                    // Both should have given the same answer, but they differ
+                    BEAST_EXPECT(toNearest > downward);
+
+                    break;
+                default:
+                    // Upward round UP
+                    BEAST_EXPECT(upward == above);
+
+                    // ToNearest rounds UP when the DOWN neighbor is strictly closer
+                    BEAST_EXPECT(toNearest != above);
+                    BEAST_EXPECT(toNearest == below);
+
+                    // Downward undershoots: it returns a value below `below`
+                    BEAST_EXPECT(downward == below);
+
+                    // Both should have given the same answer, but they differ
+                    BEAST_EXPECT(toNearest == downward);
+            }
+        }
+        {
             testcase << "operator+ TowardsZero rounds away from zero " << to_string(scale);
 
             Number const a{1LL, 20};
