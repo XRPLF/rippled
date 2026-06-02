@@ -206,10 +206,16 @@ public:
     void
     doDropDigit(T& mantissa, int& exponent) noexcept;
 
+    enum class Round {
+        Down = -1,
+        Even = 0,
+        Up = 1,
+    };
+
     // Indicate round direction:  1 is up, -1 is down, 0 is even
     // This enables the client to round towards nearest, and on
     // tie, round towards even.
-    [[nodiscard]] int
+    [[nodiscard]] Round
     round() const noexcept;
 
     // Modify the result to the correctly rounded value
@@ -314,41 +320,41 @@ Number::Guard::doDropDigit<uint128_t>(uint128_t& mantissa, int& exponent) noexce
 //     -1 if Guard is less than half
 //      0 if Guard is exactly half
 //      1 if Guard is greater than half
-int
+Number::Guard::Round
 Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
     if (mode == RoundingMode::TowardsZero)
-        return -1;
+        return Round::Down;
 
     if (mode == RoundingMode::Downward)
     {
         if (sbit_)
         {
             if (digits_ > 0 || xbit_)
-                return 1;
+                return Round::Up;
         }
-        return -1;
+        return Round::Down;
     }
 
     if (mode == RoundingMode::Upward)
     {
         if (sbit_)
-            return -1;
+            return Round::Down;
         if (digits_ > 0 || xbit_)
-            return 1;
-        return -1;
+            return Round::Up;
+        return Round::Down;
     }
 
     // assume round to nearest if mode is not one of the predefined values
     if (digits_ > 0x5000'0000'0000'0000)
-        return 1;
+        return Round::Up;
     if (digits_ < 0x5000'0000'0000'0000)
-        return -1;
+        return Round::Down;
     if (xbit_)
-        return 1;
-    return 0;
+        return Round::Up;
+    return Round::Even;
 }
 
 template <UnsignedMantissa T>
@@ -388,7 +394,7 @@ Number::Guard::doRoundUp(
     std::string location)
 {
     auto r = round();
-    if (r == 1 || (r == 0 && (mantissa & 1) == 1))
+    if (r == Round::Up || (r == Round::Even && (mantissa & 1) == 1))
     {
         auto const safeToIncrement = [&maxMantissa](auto const& mantissa) {
             return mantissa < maxMantissa && mantissa < kMaxRep;
@@ -454,7 +460,7 @@ Number::Guard::doRoundDown(
     internalrep const& minMantissa)
 {
     auto r = round();
-    if (r == 1 || (r == 0 && (mantissa & 1) == 1))
+    if (r == Round::Up || (r == Round::Even && (mantissa & 1) == 1))
     {
         --mantissa;
         if (mantissa < minMantissa)
@@ -471,7 +477,7 @@ void
 Number::Guard::doRound(rep& drops, std::string location) const
 {
     auto r = round();
-    if (r == 1 || (r == 0 && (drops & 1) == 1))
+    if (r == Round::Up || (r == Round::Even && (drops & 1) == 1))
     {
         if (drops >= kMaxRep)
         {
@@ -817,7 +823,7 @@ Number::operator+=(Number const& y)
             --xe;
         }
         g.doRoundDown(xn, xm, xe, minMantissa);
-        if (range.cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled)
+        if (range.cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled && xm != 0)
         {
             // make a new guard
             Guard g;
