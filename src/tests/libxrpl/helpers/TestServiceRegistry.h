@@ -369,7 +369,7 @@ public:
     DatabaseCon&
     getWalletDB() override
     {
-        std::scoped_lock lock(walletDBMutex_);
+        std::scoped_lock const lock(walletDBMutex_);
         if (!walletDB_)
         {
             DatabaseCon::Setup setup;
