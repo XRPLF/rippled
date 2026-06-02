@@ -720,26 +720,54 @@ Number::operator+=(Number const& y)
     uint128_t ym = y.mantissa_;
     auto ye = y.exponent_;
     Guard g;
+
+    auto const& range = kRange.get();
+
+    // Bring the exponents of both values into agreement, so the mantissas are on the same scale
+    //   and can be added directly together
+    // expandM / expandE: First try to expand the mantissa and bring the exponent down
+    // shringM / shrinkE: Then shrink the mantissa and bring the exponent up, if necessary
+    auto const adjust = [&g, &range](
+                            uint128_t& expandM, int& expandE, uint128_t& shrinkM, int& shrinkE) {
+        constexpr uint128_t kSafeLimit = kPowerOfTenImpl<uint128_t, detail::kUint128Digits>[37];
+
+        if (range.cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled)
+        {
+            while (shrinkE < expandE && shrinkM % 10 == 0)
+            {
+                g.doDropDigit(shrinkM, shrinkE);
+            }
+
+            // We've got 128 bits of mantissa to work with here. Don't throw away data unless we
+            // have to
+            while (shrinkE < expandE && expandE > kMinExponent && expandM < kSafeLimit)
+            {
+                expandM *= 10;
+                --expandE;
+            }
+        }
+
+        while (shrinkE < expandE)
+        {
+            g.doDropDigit(shrinkM, shrinkE);
+        }
+    };
+
     if (xe < ye)
     {
         if (xn)
             g.setNegative();
-        do
-        {
-            g.doDropDigit(xm, xe);
-        } while (xe < ye);
+
+        adjust(ym, ye, xm, xe);
     }
     else if (xe > ye)
     {
         if (yn)
             g.setNegative();
-        do
-        {
-            g.doDropDigit(ym, ye);
-        } while (xe > ye);
+
+        adjust(xm, xe, ym, ye);
     }
 
-    auto const& range = kRange.get();
     auto const& minMantissa = range.min;
     auto const& maxMantissa = range.max;
     auto const cuspRoundingFixEnabled = range.cuspRoundingFixEnabled;
@@ -747,9 +775,19 @@ Number::operator+=(Number const& y)
     if (xn == yn)
     {
         xm += ym;
-        if (xm > maxMantissa || xm > kMaxRep)
+        if (range.cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled)
         {
-            g.doDropDigit(xm, xe);
+            while (xm > maxMantissa || xm > kMaxRep)
+            {
+                g.doDropDigit(xm, xe);
+            }
+        }
+        else
+        {
+            if (xm > maxMantissa || xm > kMaxRep)
+            {
+                g.doDropDigit(xm, xe);
+            }
         }
         g.doRoundUp(
             xn,
@@ -779,6 +817,25 @@ Number::operator+=(Number const& y)
             --xe;
         }
         g.doRoundDown(xn, xm, xe, minMantissa);
+        if (range.cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled)
+        {
+            // make a new guard
+            Guard g;
+            if (xn)
+                g.setNegative();
+            while (xm > maxMantissa || xm > kMaxRep)
+            {
+                g.doDropDigit(xm, xe);
+            }
+            g.doRoundUp(
+                xn,
+                xm,
+                xe,
+                minMantissa,
+                maxMantissa,
+                cuspRoundingFixEnabled,
+                "Number::addition overflow");
+        }
     }
 
     negative_ = xn;

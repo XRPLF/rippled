@@ -51,37 +51,43 @@ namespace detail {
  * compile time. Doing it at runtime would be pretty wasteful and
  * inefficient.
  */
-constexpr std::size_t kInt64Digits = 20;
-consteval std::array<std::uint64_t, kInt64Digits>
+constexpr std::size_t kUint64Digits = 20;
+constexpr std::size_t kUint128Digits = 39;
+
+template <typename T, std::size_t digits>
+consteval std::array<T, digits>
 buildPowersOfTen()
 {
-    std::array<std::uint64_t, kInt64Digits> result{};
+    std::array<T, digits> result{};
 
-    std::uint64_t power = 1;
+    T power = 1;
     std::size_t exponent = 0;
     // end the loop early so it doesn't overflow;
     for (; exponent < result.size() - 1; ++exponent, power *= 10)
     {
         result[exponent] = power;
-        if (power > std::numeric_limits<std::uint64_t>::max() / 10)
+        if (power > std::numeric_limits<T>::max() / 10)
             throw std::logic_error("Power of 10 table is too big");
     }
     result[exponent] = power;
-    if (power < std::numeric_limits<std::uint64_t>::max() / 10)
-        throw std::logic_error("Power of 10 table is not big enough for the uint64_t type");
+    if (power < std::numeric_limits<T>::max() / 10)
+        throw std::logic_error("Power of 10 table is not big enough for the given type");
 
     return result;
 }
 
 }  // namespace detail
 
-constexpr std::array<std::uint64_t, detail::kInt64Digits> kPowerOfTen = detail::buildPowersOfTen();
+template <typename T = std::uint64_t, std::size_t digits = detail::kUint64Digits>
+constexpr std::array<T, digits> kPowerOfTenImpl = detail::buildPowersOfTen<T, digits>();
+
+constexpr auto kPowerOfTen = kPowerOfTenImpl<std::uint64_t, detail::kUint64Digits>;
 
 static_assert(kPowerOfTen[0] == 1);
 static_assert(kPowerOfTen[1] == 10);
 static_assert(kPowerOfTen[10] == 10'000'000'000);
 static_assert(
-    isPowerOfTen(kPowerOfTen.back()) && *logTen(kPowerOfTen.back()) == detail::kInt64Digits - 1);
+    isPowerOfTen(kPowerOfTen.back()) && *logTen(kPowerOfTen.back()) == detail::kUint64Digits - 1);
 
 /** MantissaRange defines a range for the mantissa of a normalized Number.
  *
