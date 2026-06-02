@@ -1088,12 +1088,22 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
                 !takeAsRootNode(packet.nodes(1).nodedata(), san))
             {
                 JLOG(journal_.warn()) << "Included AS root invalid";
+                if (san.isInvalid())
+                {
+                    peer->charge(Resource::kFeeInvalidData, "ledger_data invalid AS root");
+                    return -1;
+                }
             }
 
             if (!haveTransactions_ && (packet.nodes().size() > 2) &&
                 !takeTxRootNode(packet.nodes(2).nodedata(), san))
             {
                 JLOG(journal_.warn()) << "Included TX root invalid";
+                if (san.isInvalid())
+                {
+                    peer->charge(Resource::kFeeInvalidData, "ledger_data invalid TX root");
+                    return -1;
+                }
             }
         }
         catch (std::exception const& ex)
