@@ -1811,16 +1811,21 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         Account const domainOwnerB("permdex-domainOwnerB");
         auto const domainB =
             setupDomain(env, {alice, bob, carol, gw}, domainOwnerB, "permdex-other-domain");
+        BEAST_EXPECT(domainA != domainB);
 
         auto const oldSeq = env.seq(alice);
         env(offer(alice, USD(100), XRP(1)), Domain(domainA));
         env.close();
 
         BEAST_EXPECT(checkOffer(env, alice, oldSeq, USD(100), XRP(1), 0, true));
-        if (auto const sle = env.le(keylet::offer(alice.id(), oldSeq)))
-            BEAST_EXPECT(sle->getFieldH256(sfDomainID) == domainA);
+        auto const oldOffer = env.le(keylet::offer(alice.id(), oldSeq));
+        if (!BEAST_EXPECT(oldOffer))
+            return;
+        BEAST_EXPECT(oldOffer->getFieldH256(sfDomainID) == domainA);
 
         auto const newSeq = env.seq(alice);
+        // Regression: replacing a DomainA offer with a DomainB offer deletes
+        // the old offer. The fixed invariant ignores the deleted DomainA entry.
         if (fixEnabled)
         {
             env(offer(alice, USD(100), XRP(2)), Domain(domainB), Json(jss::OfferSequence, oldSeq));
@@ -1828,8 +1833,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(!offerExists(env, alice, oldSeq));
             BEAST_EXPECT(checkOffer(env, alice, newSeq, USD(100), XRP(2), 0, true));
-            if (auto const sle = env.le(keylet::offer(alice.id(), newSeq)))
-                BEAST_EXPECT(sle->getFieldH256(sfDomainID) == domainB);
+            auto const newOffer = env.le(keylet::offer(alice.id(), newSeq));
+            if (!BEAST_EXPECT(newOffer))
+                return;
+            BEAST_EXPECT(newOffer->getFieldH256(sfDomainID) == domainB);
         }
         else
         {
