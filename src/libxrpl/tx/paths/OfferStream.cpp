@@ -28,7 +28,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
@@ -213,7 +212,7 @@ TOfferStreamBase<TIn, TOut>::step()
         if (!tip_.step(j_))
             return false;
 
-        std::shared_ptr<SLE> const entry = tip_.entry();
+        SLE::pointer const entry = tip_.entry();
 
         // If we exceed the maximum number of allowed steps, we're done.
         if (!counter_.step())
