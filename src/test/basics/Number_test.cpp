@@ -1757,7 +1757,7 @@ public:
                 // digits
                 BEAST_EXPECT(
                     (power(max, 2) ==
-                     Number{false, maxInternalMantissa / 10 - 1, 20, Number::Normalized{}}));
+                     Number{false, (maxInternalMantissa / 10) - 1, 20, Number::Normalized{}}));
             }
 
             {
