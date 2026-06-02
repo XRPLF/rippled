@@ -71,7 +71,7 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     //
     std::optional<CurrentTransactionRulesGuard> rulesGuard;
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
-    createGuards(rules, std::nullopt, rulesGuard, mantissaScaleGuard);
+    createGuards(rules, rulesGuard, mantissaScaleGuard);
 
     switch (txnType)
     {

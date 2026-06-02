@@ -83,7 +83,6 @@ useRulesGuards(Rules const& rules)
 void
 createGuards(
     Rules const& rules,
-    std::optional<NumberSO>& stNumberSO,
     std::optional<CurrentTransactionRulesGuard>& rulesGuard,
     std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard)
 {
@@ -91,7 +90,6 @@ createGuards(
     {
         // raii classes for the current ledger rules.
         // fixUniversalNumber predates the rulesGuard and should be replaced.
-        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
         rulesGuard.emplace(rules);
     }
     else

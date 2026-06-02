@@ -839,27 +839,25 @@ STAmount::canonicalize()
         if (asset_.holds<MPTIssue>() && offset_ > 18)
             Throw<std::runtime_error>("MPT amount out of range");
 
+        Number const num(isNegative_, value_, offset_, Number::Unchecked{});
+        auto set = [&](auto const& val) {
+            auto const value = val.value();
+            isNegative_ = value < 0;
+            value_ = isNegative_ ? -value : value;
+        };
+        if (native())
         {
-            Number const num(isNegative_, value_, offset_, Number::Unchecked{});
-            auto set = [&](auto const& val) {
-                auto const value = val.value();
-                isNegative_ = value < 0;
-                value_ = isNegative_ ? -value : value;
-            };
-            if (native())
-            {
-                set(XRPAmount{num});
-            }
-            else if (asset_.holds<MPTIssue>())
-            {
-                set(MPTAmount{num});
-            }
-            else
-            {
-                Throw<std::runtime_error>("Unknown integral asset type");
-            }
-            offset_ = 0;
+            set(XRPAmount{num});
         }
+        else if (asset_.holds<MPTIssue>())
+        {
+            set(MPTAmount{num});
+        }
+        else
+        {
+            Throw<std::runtime_error>("Unknown integral asset type");
+        }
+        offset_ = 0;
 
         if (native() && value_ > kMaxNativeN)
         {

@@ -131,7 +131,6 @@ useRulesGuards(Rules const& rules);
 void
 createGuards(
     Rules const& rules,
-    std::optional<NumberSO>& stNumberSO,
     std::optional<CurrentTransactionRulesGuard>& rulesGuard,
     std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard);
 
