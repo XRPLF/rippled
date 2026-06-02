@@ -20,14 +20,21 @@ function compile() {
     local src="${src_dir}/${name}.cpp"
     local binary="${dst_dir}/${name}-${compiler}"
 
-    echo "=== Compile ${name} with ${compiler} ==="
-    cmd="${compiler} -std=c++23 -O1 -g \
+    echo "=== Compiling ${name} with ${compiler} ==="
+    # Always statically link libstdc++ so the test binary does not depend on
+    # the host's libstdc++.so.6 version.
+    local compile_cmd="${compiler} -std=c++23 -O1 -g \
         -pthread \
-        -Wl,--dynamic-linker=${loader} \
+        -static-libstdc++ \
         ${san_flag} \
         ${src} -o ${binary}"
-    echo "Command: ${cmd}"
-    eval "${cmd}"
+    echo "Compile cmd: ${compile_cmd}"
+    eval "${compile_cmd}"
+
+    echo "=== Patching ${binary} to use ${loader} as PT_INTERP ==="
+    local patch_cmd="patchelf --set-interpreter ${loader} --remove-rpath ${binary}"
+    echo "Patch cmd: ${patch_cmd}"
+    eval "${patch_cmd}"
 }
 
 declare -A sanitize=(
