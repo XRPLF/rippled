@@ -21,6 +21,13 @@
 #define XRPL_ASSERT ALWAYS_OR_UNREACHABLE
 #define XRPL_ASSERT_PARTS(cond, function, description, ...) \
     XRPL_ASSERT(cond, function " : " description)
+// clang-format off
+#define XRPL_ASSERT_IF(guard, ...) \
+    do {                           \
+        if ((guard))               \
+            XRPL_ASSERT(__VA_ARGS__); \
+    } while (false)
+// clang-format on
 
 // How to use the instrumentation macros:
 //
@@ -29,6 +36,11 @@
 // * XRPL_ASSERT_PARTS is for convenience, and works like XRPL_ASSERT, but
 //   splits the message param into "function" and "description", then joins
 //   them with " : " before passing to XRPL_ASSERT.
+// * XRPL_ASSERT_IF(guard, cond, message) fires the assertion only when guard
+//   is true (e.g. an amendment is enabled). Equivalent to
+//   `if (guard) XRPL_ASSERT(cond, message)` but safe to use in all statement
+//   contexts. NOTE: guard is always evaluated — even in release builds where
+//   the assertion itself is stripped — so keep it side-effect-free and cheap.
 // * ALWAYS if cond must be true _and_ the line must be reached during fuzzing.
 //   Same like `assert` in normal use.
 // * REACHABLE if the line must be reached during fuzzing
