@@ -4055,9 +4055,9 @@ private:
             {
                 auto jtx = env.jt(tx, Seq(1), Fee(10));
                 env.app().config().features.erase(featureMPTokensV2);
-                PreflightContext const pfctx(
+                PreflightContext const ctx(
                     env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
-                auto pf = AMMBid::checkExtraFeatures(pfctx);
+                auto pf = AMMBid::checkExtraFeatures(ctx);
                 BEAST_EXPECT(pf == false);
                 env.app().config().features.insert(featureMPTokensV2);
             }
@@ -4067,9 +4067,9 @@ private:
                 jtx.jv["Asset2"]["currency"] = "XRP";
                 jtx.jv["Asset2"].removeMember("mpt_issuance_id");
                 jtx.stx = env.ust(jtx);
-                PreflightContext const pfctx(
+                PreflightContext const ctx(
                     env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = AMMBid::preflight(ctx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }
         }
@@ -4915,7 +4915,7 @@ private:
                 XRP(10'100), MPT(ammAlice[1])(10'000'000000000001), ammAlice.tokens()));
             env.require(Balance(carol_, MPT(ammAlice[1])(30'199'999999999999)));
 
-            // Initial 30,000 - 10000(AMM pool LP) - 100(AMMoffer) -
+            // Initial 30,000 - 10000(AMM pool LP) - 100(AMM offer) -
             // - 100(offer) - 10(tx fee) - 10(tx fee of MPTTester init as
             // holder) - one reserve
             BEAST_EXPECT(expectLedgerEntryRoot(

@@ -1724,7 +1724,7 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
             env(amm::ammClawback(gw, alice, btc, usd, std::nullopt), Ter(tecNO_PERMISSION));
 
             // Although USD is clawable with asfAllowTrustLineClawback.
-            // When tfClawTwoAssets is set, we will claw Asser2 as well.
+            // When tfClawTwoAssets is set, we will claw Asset2 as well.
             // But Asset2 is not clawable. tfMPTCanClawback was not set for BTC.
             env(amm::ammClawback(gw, alice, usd, btc, std::nullopt),
                 Txflags(tfClawTwoAssets),
