@@ -138,6 +138,45 @@ TEST_P(BackendTypeTest, fetch_missing)
     // deliberately do NOT store batch_ — every key must be absent
     fetchMissing(*backend, batch_);
 }
+
+// concurrent store/fetch correctness. Replaces the correctness half of the
+// multi-threaded Timing_test workloads (which only ran manually, never in CI):
+// many threads store disjoint objects, then many threads fetch and verify each
+// round-trips. Doubles as a thread-safety smoke test for the backend.
+TEST_P(BackendTypeTest, concurrent_store_and_fetch)
+{
+    // The SQLite backend is not designed for concurrent writers (and the old
+    // Timing_test only exercised nudb/rocksdb under threads).
+    if (GetParam() == "sqlite")
+        GTEST_SKIP() << "sqlite backend is not exercised under concurrency";
+
+    for (unsigned const numThreads : {4u, 8u})
+    {
+        SCOPED_TRACE("threads=" + std::to_string(numThreads));
+
+        auto backend = makeOpenBackend();
+
+        // concurrent stores of disjoint objects
+        parallelFor(batch_.size(), numThreads, [&](std::size_t i) { backend->store(batch_[i]); });
+
+        // concurrent fetches, each verifying its object round-trips. Worker
+        // threads only touch an atomic counter; the EXPECT runs on the main
+        // thread after join to avoid relying on cross-thread assertion support.
+        std::atomic<std::size_t> mismatches{0};
+        parallelFor(batch_.size(), numThreads, [&](std::size_t i) {
+            std::shared_ptr<NodeObject> result;
+            if (backend->fetch(batch_[i]->getHash(), &result) != Status::Ok || !result ||
+                !isSame(result, batch_[i]))
+            {
+                ++mismatches;
+            }
+        });
+        EXPECT_EQ(mismatches.load(), 0u);
+
+        backend->close();
+    }
+}
+
 INSTANTIATE_TEST_SUITE_P(
     BackendTypes,
     BackendTypeTest,
