@@ -7809,8 +7809,8 @@ public:
         FeatureBitset const all{testableAmendments()};
 
         testMultiSendMaximumAmount(all);
-        testDirectSendNoFeeMPTOverflow(all | fixCleanup3_2_0);
-        testDirectSendNoFeeMPTOverflow((all | fixCleanup3_2_0) - featureMPTokensV2);
+        testDirectSendNoFeeMPTOverflow(all | fixCleanup3_3_0);
+        testDirectSendNoFeeMPTOverflow((all | fixCleanup3_3_0) - featureMPTokensV2);
         // MPTokenIssuanceCreate
         testCreateValidation(all - featureSingleAssetVault);
         testCreateValidation(all - featurePermissionedDomains);

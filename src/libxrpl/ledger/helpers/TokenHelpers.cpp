@@ -1076,7 +1076,7 @@ directSendNoFeeMPT(
     auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
     auto const available = availableMPTAmount(*sleIssuance);
     auto const amt = saAmount.mpt().value();
-    bool const cleanup320 = view.rules().enabled(fixCleanup3_2_0);
+    bool const cleanup330 = view.rules().enabled(fixCleanup3_3_0);
 
     auto const additionOverflows = [](std::uint64_t current, std::int64_t amount) {
         auto const max = std::numeric_limits<std::uint64_t>::max();
@@ -1090,7 +1090,7 @@ directSendNoFeeMPT(
             if (isMPTOverflow(amt, outstanding, maxAmount, AllowMPTOverflow::Yes))
                 return tecPATH_DRY;
         }
-        if (cleanup320 && additionOverflows(outstanding, amt))
+        if (cleanup330 && additionOverflows(outstanding, amt))
             return tecINTERNAL;
         (*sleIssuance)[sfOutstandingAmount] += amt;
         view.update(sleIssuance);
@@ -1131,7 +1131,7 @@ directSendNoFeeMPT(
         if (auto sle = view.peek(mptokenID))
         {
             auto const receiverBalance = sle->getFieldU64(sfMPTAmount);
-            if ((cleanup320 || view.rules().enabled(featureMPTokensV2)) &&
+            if ((cleanup330 || view.rules().enabled(featureMPTokensV2)) &&
                 additionOverflows(receiverBalance, amt))
                 return tecINTERNAL;
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
