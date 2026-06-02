@@ -128,8 +128,7 @@ TEST(NuDBFactory, LogMessages)
         DummyScheduler scheduler;
         auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
-        EXPECT_NE(
-            sink.messages().str().find("Using custom NuDB block size: 8192"), std::string::npos);
+        EXPECT_NE(sink.messages().find("Using custom NuDB block size: 8192"), std::string::npos);
     }
 
     // invalid block size throws with informative message
@@ -240,7 +239,7 @@ TEST(NuDBFactory, ConfigurationParsing)
         beast::Journal const journal(sink);
         DummyScheduler scheduler;
         auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
-        EXPECT_NE(sink.messages().str().find("Using custom NuDB block size"), std::string::npos);
+        EXPECT_NE(sink.messages().find("Using custom NuDB block size"), std::string::npos);
     }
 
     // Test whitespace handling separately since lexical_cast behavior may vary
