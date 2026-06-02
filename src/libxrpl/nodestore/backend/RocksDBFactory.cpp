@@ -1,12 +1,22 @@
+#if XRPL_ROCKSDB_AVAILABLE
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Factory.h>
+#include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
+#include <xrpl/nodestore/detail/BatchWriter.h>
+#include <xrpl/nodestore/detail/DecodedBlob.h>
+#include <xrpl/nodestore/detail/EncodedBlob.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -24,25 +34,13 @@
 #include <rocksdb/table.h>
 #include <rocksdb/write_batch.h>
 
+#include <atomic>
 #include <bit>
 #include <cstddef>
 #include <functional>
+#include <memory>
 #include <stdexcept>
 #include <string>
-
-#if XRPL_ROCKSDB_AVAILABLE
-#include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/nodestore/Factory.h>
-#include <xrpl/nodestore/Manager.h>
-#include <xrpl/nodestore/detail/BatchWriter.h>
-#include <xrpl/nodestore/detail/DecodedBlob.h>
-#include <xrpl/nodestore/detail/EncodedBlob.h>
-
-#include <atomic>
-#include <memory>
 
 namespace xrpl::NodeStore {
 
