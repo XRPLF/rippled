@@ -123,7 +123,7 @@ private:
         bool preserveOrder,
         Keylet const& directory,
         uint256 const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> const& describe);
+        std::function<void(SLE::ref)> const& describe);
 
 public:
     ApplyView() = default;
@@ -153,7 +153,7 @@ public:
 
         @return `nullptr` if the key is not present
     */
-    virtual std::shared_ptr<SLE>
+    virtual SLE::pointer
     peek(Keylet const& k) = 0;
 
     /** Remove a peeked SLE.
@@ -168,7 +168,7 @@ public:
             The key is no longer associated with the SLE.
     */
     virtual void
-    erase(std::shared_ptr<SLE> const& sle) = 0;
+    erase(SLE::ref sle) = 0;
 
     /** Insert a new state SLE
 
@@ -189,7 +189,7 @@ public:
         @note The key is taken from the SLE
     */
     virtual void
-    insert(std::shared_ptr<SLE> const& sle) = 0;
+    insert(SLE::ref sle) = 0;
 
     /** Indicate changes to a peeked SLE
 
@@ -208,7 +208,7 @@ public:
     */
     /** @{ */
     virtual void
-    update(std::shared_ptr<SLE> const& sle) = 0;
+    update(SLE::ref sle) = 0;
 
     //--------------------------------------------------------------------------
 
@@ -301,7 +301,7 @@ public:
     dirAppend(
         Keylet const& directory,
         Keylet const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+        std::function<void(SLE::ref)> const& describe)
     {
         if (key.type != ltOFFER)
         {
@@ -340,7 +340,7 @@ public:
     dirInsert(
         Keylet const& directory,
         uint256 const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+        std::function<void(SLE::ref)> const& describe)
     {
         return dirAdd(false, directory, key, describe);
     }
@@ -349,7 +349,7 @@ public:
     dirInsert(
         Keylet const& directory,
         Keylet const& key,
-        std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+        std::function<void(SLE::ref)> const& describe)
     {
         return dirAdd(false, directory, key.key, describe);
     }
@@ -411,7 +411,7 @@ createRoot(
     ApplyView& view,
     Keylet const& directory,
     uint256 const& key,
-    std::function<void(std::shared_ptr<SLE> const&)> const& describe);
+    std::function<void(SLE::ref)> const& describe);
 
 auto
 findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start);
@@ -434,7 +434,7 @@ insertPage(
     SLE::ref next,
     uint256 const& key,
     Keylet const& directory,
-    std::function<void(std::shared_ptr<SLE> const&)> const& describe);
+    std::function<void(SLE::ref)> const& describe);
 
 }  // namespace directory
 }  // namespace xrpl
