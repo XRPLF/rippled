@@ -5,14 +5,19 @@
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/core/StartUpType.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/Wallet.h>
 
 #include <boost/asio/io_context.hpp>
 
 #include <helpers/TestFamily.h>
 #include <helpers/TestSink.h>
 
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <stdexcept>
 
@@ -81,6 +86,8 @@ class TestServiceRegistry : public ServiceRegistry
         logs_.journal("TaggedCache")};
     PendingSaves pendingSaves_;
     std::optional<uint256> trapTxID_;
+    mutable std::mutex walletDBMutex_;
+    mutable std::unique_ptr<DatabaseCon> walletDB_;
 
 public:
     TestServiceRegistry() = default;
@@ -358,10 +365,19 @@ public:
         return trapTxID_;
     }
 
+    /** Returns a lazily-created in-memory wallet DB suitable for tests. */
     DatabaseCon&
     getWalletDB() override
     {
-        throw std::logic_error("TestServiceRegistry::getWalletDB() not implemented");
+        std::scoped_lock lock(walletDBMutex_);
+        if (!walletDB_)
+        {
+            DatabaseCon::Setup setup;
+            setup.standAlone = true;
+            setup.startUp = StartUpType::Normal;
+            walletDB_ = makeWalletDB(setup, logs_.journal("WalletDB"));
+        }
+        return *walletDB_;
     }
 
     // Temporary: Get the underlying Application
