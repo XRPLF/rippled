@@ -128,7 +128,17 @@ TEST_P(NodeStoreDatabasePersistenceTest, RoundTrip)
     auto copy = fetchCopyOfBatch(*db, batch);
     std::ranges::sort(batch, LessThan{});
     std::ranges::sort(copy, LessThan{});
-    EXPECT_TRUE(areBatchesEqual(batch, copy));
+    EXPECT_TRUE(areBatchesEqual(batch_, copy));
+}
+
+// missing-key path at the Database layer. Mirrors Backend's fetch_missing —
+// fetching keys that were never stored must return nullptr (NotFound).
+TEST_P(NodeStoreDatabaseTest, fetch_missing)
+{
+    auto db = makeDatabase();
+
+    // never store: every key must be absent
+    fetchMissing(*db, batch_);
 }
 
 INSTANTIATE_TEST_SUITE_P(

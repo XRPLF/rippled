@@ -104,6 +104,15 @@ TEST_P(BackendTypeTest, persists_after_reopen)
     EXPECT_TRUE(areBatchesEqual(batch_, copy));
 }
 
+// missing-key path. Replaces the correctness half of Timing_test::doMissing
+// (and the missing branch of doMixed): every fetch on an empty backend must
+// report Status::NotFound.
+TEST_P(BackendTypeTest, fetch_missing)
+{
+    auto backend = makeOpenBackend();
+    // deliberately do NOT store batch_ — every key must be absent
+    fetchMissing(*backend, batch_);
+}
 INSTANTIATE_TEST_SUITE_P(
     BackendTypes,
     BackendTypeTest,

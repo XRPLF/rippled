@@ -156,4 +156,14 @@ fetchCopyOfBatch(Database& db, Batch const& batch)
     return copy;
 }
 
+inline void
+fetchMissing(Database& db, Batch const& batch)
+{
+    for (std::size_t i = 0; i < batch.size(); ++i)
+    {
+        SCOPED_TRACE("fetchMissing(Database) index=" + std::to_string(i));
+        EXPECT_EQ(db.fetchNodeObject(batch[i]->getHash(), 0), nullptr);
+    }
+}
+
 }  // namespace xrpl::NodeStore
