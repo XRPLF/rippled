@@ -1796,6 +1796,54 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testReplaceDomainOfferWithOtherDomainOffer(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_2_0];
+
+        testcase << "Replace domain offer via OfferCreate"
+                 << (fixEnabled ? " (fixCleanup3_2_0 enabled)" : " (fixCleanup3_2_0 disabled)");
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainA, credType] =
+            PermissionedDEX(env);
+
+        Account const domainOwnerB("permdex-domainOwnerB");
+        auto const domainB =
+            setupDomain(env, {alice, bob, carol, gw}, domainOwnerB, "permdex-other-domain");
+
+        auto const oldSeq = env.seq(alice);
+        env(offer(alice, USD(100), XRP(1)), Domain(domainA));
+        env.close();
+
+        BEAST_EXPECT(checkOffer(env, alice, oldSeq, USD(100), XRP(1), 0, true));
+        if (auto const sle = env.le(keylet::offer(alice.id(), oldSeq)))
+            BEAST_EXPECT(sle->getFieldH256(sfDomainID) == domainA);
+
+        auto const newSeq = env.seq(alice);
+        if (fixEnabled)
+        {
+            env(offer(alice, USD(100), XRP(2)), Domain(domainB), Json(jss::OfferSequence, oldSeq));
+            env.close();
+
+            BEAST_EXPECT(!offerExists(env, alice, oldSeq));
+            BEAST_EXPECT(checkOffer(env, alice, newSeq, USD(100), XRP(2), 0, true));
+            if (auto const sle = env.le(keylet::offer(alice.id(), newSeq)))
+                BEAST_EXPECT(sle->getFieldH256(sfDomainID) == domainB);
+        }
+        else
+        {
+            env(offer(alice, USD(100), XRP(2)),
+                Domain(domainB),
+                Json(jss::OfferSequence, oldSeq),
+                Ter(tecINVARIANT_FAILED));
+            env.close();
+
+            BEAST_EXPECT(checkOffer(env, alice, oldSeq, USD(100), XRP(1), 0, true));
+            BEAST_EXPECT(!offerExists(env, alice, newSeq));
+        }
+    }
+
 public:
     void
     run() override
@@ -1829,6 +1877,8 @@ public:
         // only after fixCleanup3_2_0.
         testCancelRegularOfferWithDomainCreate(all);
         testCancelRegularOfferWithDomainCreate(all - fixCleanup3_2_0);
+        testReplaceDomainOfferWithOtherDomainOffer(all);
+        testReplaceDomainOfferWithOtherDomainOffer(all - fixCleanup3_2_0);
     }
 };
 
