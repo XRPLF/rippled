@@ -63,70 +63,75 @@ importBackends()
 
 }  // namespace
 
-class NodeStoreDatabaseTest : public ::testing::TestWithParam<std::string>
+// Shared setup for the parameterized Database tests: builds the node params,
+// journal and a predictable batch per test, mirroring Backend.cpp's fixture.
+class NodeStoreDatabaseTestBase : public ::testing::TestWithParam<std::string>
+{
+protected:
+    void
+    SetUp() override
+    {
+        nodeParams_.set("type", GetParam());
+        nodeParams_.set("path", nodeDb_.path());
+
+        beast::xor_shift_engine rng(kSeedValue);
+        batch_ = createPredictableBatch(kNumObjects, rng());
+    }
+
+    std::unique_ptr<Database>
+    makeDatabase()
+    {
+        return Manager::instance().makeDatabase(megabytes(4), scheduler_, 2, nodeParams_, journal_);
+    }
+
+    DummyScheduler scheduler_;
+    beast::TempDir const nodeDb_;
+    beast::Journal const journal_{TestSink::instance()};
+    Section nodeParams_;
+    Batch batch_;
+};
+
+class NodeStoreDatabaseTest : public NodeStoreDatabaseTestBase
 {
 };
 
-class NodeStoreDatabasePersistenceTest : public ::testing::TestWithParam<std::string>
+class NodeStoreDatabasePersistenceTest : public NodeStoreDatabaseTestBase
 {
 };
 
-TEST_P(NodeStoreDatabaseTest, StoreAndFetch)
+TEST_P(NodeStoreDatabaseTest, store_and_fetch)
 {
-    auto const type = GetParam();
+    auto db = makeDatabase();
 
-    DummyScheduler scheduler;
-    beast::TempDir const nodeDb;
-    Section nodeParams;
-    nodeParams.set("type", type);
-    nodeParams.set("path", nodeDb.path());
-
-    beast::Journal const journal(TestSink::instance());
-    beast::xor_shift_engine rng(kSeedValue);
-    auto batch = createPredictableBatch(kNumObjects, rng());
-
-    auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
-
-    storeBatch(*db, batch);
+    storeBatch(*db, batch_);
 
     {
         SCOPED_TRACE("read in original order");
-        auto const copy = fetchCopyOfBatch(*db, batch);
-        EXPECT_TRUE(areBatchesEqual(batch, copy));
+        auto const copy = fetchCopyOfBatch(*db, batch_);
+        EXPECT_TRUE(areBatchesEqual(batch_, copy));
     }
 
     {
         SCOPED_TRACE("read in shuffled order");
-        std::shuffle(batch.begin(), batch.end(), rng);
-        auto const copy = fetchCopyOfBatch(*db, batch);
-        EXPECT_TRUE(areBatchesEqual(batch, copy));
+        beast::xor_shift_engine rng(kSeedValue);
+        std::shuffle(batch_.begin(), batch_.end(), rng);
+        auto const copy = fetchCopyOfBatch(*db, batch_);
+        EXPECT_TRUE(areBatchesEqual(batch_, copy));
     }
 }
 
-TEST_P(NodeStoreDatabasePersistenceTest, RoundTrip)
+TEST_P(NodeStoreDatabasePersistenceTest, round_trip)
 {
-    auto const type = GetParam();
-
-    DummyScheduler scheduler;
-    beast::TempDir const nodeDb;
-    Section nodeParams;
-    nodeParams.set("type", type);
-    nodeParams.set("path", nodeDb.path());
-
-    beast::Journal const journal(TestSink::instance());
-    beast::xor_shift_engine rng(kSeedValue);
-    auto batch = createPredictableBatch(kNumObjects, rng());
-
     {
-        auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
-        storeBatch(*db, batch);
+        auto db = makeDatabase();
+        storeBatch(*db, batch_);
     }
 
     // re-open without the ephemeral db
-    auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
+    auto db = makeDatabase();
 
-    auto copy = fetchCopyOfBatch(*db, batch);
-    std::ranges::sort(batch, LessThan{});
+    auto copy = fetchCopyOfBatch(*db, batch_);
+    std::ranges::sort(batch_, LessThan{});
     std::ranges::sort(copy, LessThan{});
     EXPECT_TRUE(areBatchesEqual(batch_, copy));
 }
@@ -153,7 +158,7 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::ValuesIn(persistentBackends()),
     [](::testing::TestParamInfo<std::string> const& info) { return info.param; });
 
-TEST(NodeStoreDatabase, MemoryEarliestSeq)
+TEST(NodeStoreDatabase, memory_earliest_seq)
 {
     DummyScheduler scheduler;
     beast::TempDir const nodeDb;
@@ -196,7 +201,7 @@ class DatabaseImportTest : public ::testing::TestWithParam<std::string>
 {
 };
 
-TEST_P(DatabaseImportTest, SameBackend)
+TEST_P(DatabaseImportTest, same_backend)
 {
     auto const type = GetParam();
 
