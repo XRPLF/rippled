@@ -5,6 +5,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
@@ -21,6 +22,7 @@
 #include <cstring>
 #include <optional>
 #include <stdexcept>
+#include <vector>
 
 namespace xrpl {
 
