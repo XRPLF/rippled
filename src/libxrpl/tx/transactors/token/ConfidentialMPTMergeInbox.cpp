@@ -86,7 +86,7 @@ TER
 ConfidentialMPTMergeInbox::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, account_));
+    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -111,7 +111,7 @@ ConfidentialMPTMergeInbox::doApply()
     // Reset inbox to encrypted zero. Must use canonical zero encryption
     // (deterministic ciphertext) so the ledger state is reproducible.
     auto zeroEncryption =
-        encryptCanonicalZeroAmount((*sleMptoken)[sfHolderEncryptionKey], account_, mptIssuanceID);
+        encryptCanonicalZeroAmount((*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
     if (!zeroEncryption)
         return tecINTERNAL;  // LCOV_EXCL_LINE

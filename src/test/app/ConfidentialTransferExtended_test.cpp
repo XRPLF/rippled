@@ -564,7 +564,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                  {.account = carol, .payAmount = 100, .convertAmount = 50}}};
             auto& mpt = confEnv.mpt;
 
-            auto constexpr kCRED_IDX =
+            auto constexpr kCredIdx =
                 "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
                 "E4";
 
@@ -572,7 +572,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 .account = carol,
                 .dest = bob,
                 .amt = 10,
-                .credentials = {{kCRED_IDX}},
+                .credentials = {{kCredIdx}},
                 .err = temDISABLED,
             });
         }
@@ -604,7 +604,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({
-                .flags = kMPT_DEX_FLAGS | tfMPTCanClawback | tfMPTCanConfidentialAmount,
+                .flags = kMptDexFlags | tfMPTCanClawback | tfMPTCanConfidentialAmount,
             });
             mptAlice.authorize({.account = bob});
             mptAlice.pay(alice, bob, 1'000);

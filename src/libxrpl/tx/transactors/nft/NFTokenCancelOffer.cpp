@@ -16,15 +16,13 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
     if (auto const& ids = ctx.tx[sfNFTokenOffers];
-        ids.empty() || (ids.size() > kMAX_TOKEN_OFFER_CANCEL_COUNT))
+        ids.empty() || (ids.size() > kMaxTokenOfferCancelCount))
         return temMALFORMED;
 
     // In order to prevent unnecessarily overlarge transactions, we
@@ -98,11 +96,9 @@ NFTokenCancelOffer::doApply()
 }
 
 void
-NFTokenCancelOffer::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenCancelOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -113,6 +109,7 @@ NFTokenCancelOffer::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

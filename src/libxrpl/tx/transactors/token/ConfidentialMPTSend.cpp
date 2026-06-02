@@ -268,7 +268,7 @@ ConfidentialMPTSend::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const destination = ctx_.tx[sfDestination];
 
-    auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, account_));
+    auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     auto sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
 
     auto const sleDestAcct = view().read(keylet::account(destination));

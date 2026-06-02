@@ -44,7 +44,7 @@ getFailHard(RPC::JsonContext const& context)
 json::Value
 doSubmit(RPC::JsonContext& context)
 {
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
 
     if (!context.params.isMember(jss::tx_blob))
     {
@@ -141,7 +141,7 @@ doSubmit(RPC::JsonContext& context)
 
     try
     {
-        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::KNone);
+        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::Values::None);
         jvResult[jss::tx_blob] = strHex(transaction->getSTransaction()->getSerializer().peekData());
 
         if (temUNCERTAIN != transaction->getResult())

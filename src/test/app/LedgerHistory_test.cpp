@@ -48,9 +48,9 @@ public:
         {
             assert(!stx);
             return std::make_shared<Ledger>(
-                kCREATE_GENESIS,
+                kCreateGenesis,
                 Rules{env.app().config().features},
-                env.app().config().FEES.toFees(),
+                env.app().config().fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
         }

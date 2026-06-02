@@ -82,7 +82,7 @@ struct BookT
     Keylet
     operator()(Book const& b) const;
 };
-static BookT const kBOOK{};
+static BookT const kBook{};
 
 /** The index of a trust line for a given currency
 
@@ -126,7 +126,7 @@ struct NextT
     Keylet
     operator()(Keylet const& k) const;
 };
-static NextT const kNEXT{};
+static NextT const kNext{};
 
 /** A ticket belonging to an account */
 struct TicketT
@@ -145,7 +145,7 @@ struct TicketT
         return {ltTICKET, key};
     }
 };
-static TicketT const kTICKET{};
+static TicketT const kTicket{};
 
 /** A SignerList */
 Keylet
@@ -373,7 +373,7 @@ struct KeyletDesc
 
 // This list should include all of the keylet functions that take a single
 // AccountID parameter.
-std::array<KeyletDesc<AccountID const&>, 6> const kDIRECT_ACCOUNT_KEYLETS{
+std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
     {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
      {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
      {.function = &keylet::signers, .expectedLEName = jss::SignerList, .includeInTests = true},
