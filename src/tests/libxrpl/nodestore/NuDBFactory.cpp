@@ -203,6 +203,10 @@ TEST(NuDBFactory, PowerOfTwoValidation)
         }
         catch (std::exception const& e)
         {
+            // A throw is only expected for sizes that should NOT work; if a
+            // valid size throws, fail here instead of silently matching the
+            // message below (which would mask the regression).
+            EXPECT_FALSE(shouldWork);
             std::string const what{e.what()};
             EXPECT_NE(what.find("Invalid nudb_block_size"), std::string::npos);
         }
