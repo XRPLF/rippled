@@ -46,7 +46,7 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // verify schnorr proof length when registering holder ec public key
-        if (ctx.tx[sfZKProof].size() != kEC_SCHNORR_PROOF_LENGTH)
+        if (ctx.tx[sfZKProof].size() != kEcSchnorrProofLength)
             return temMALFORMED;
     }
     else
@@ -69,9 +69,9 @@ XRPAmount
 ConfidentialMPTConvert::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge kCONFIDENTIAL_FEE_MULTIPLIER extra base fees so the total is
+    // We charge kConfidentialFeeMultiplier extra base fees so the total is
     // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kCONFIDENTIAL_FEE_MULTIPLIER;
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
 }
 
 TER

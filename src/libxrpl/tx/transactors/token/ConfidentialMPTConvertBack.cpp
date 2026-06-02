@@ -43,7 +43,7 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
         return res;
 
     // ConvertBack proof = compact sigma proof (128 bytes) + single bulletproof (688 bytes)
-    if (ctx.tx[sfZKProof].size() != kEC_CONVERT_BACK_PROOF_LENGTH)
+    if (ctx.tx[sfZKProof].size() != kEcConvertBackProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -53,9 +53,9 @@ XRPAmount
 ConfidentialMPTConvertBack::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge kCONFIDENTIAL_FEE_MULTIPLIER extra base fees so the total is
+    // We charge kConfidentialFeeMultiplier extra base fees so the total is
     // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kCONFIDENTIAL_FEE_MULTIPLIER;
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
 }
 
 /**

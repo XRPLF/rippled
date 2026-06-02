@@ -5,7 +5,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
@@ -22,7 +21,6 @@
 #include <cstring>
 #include <optional>
 #include <stdexcept>
-#include <vector>
 
 namespace xrpl {
 
@@ -115,15 +113,15 @@ getConvertBackContextHash(
 std::optional<EcPair>
 makeEcPair(Slice const& buffer)
 {
-    if (buffer.length() != 2 * kEC_GAMAL_ENCRYPTED_LENGTH)
+    if (buffer.length() != 2 * kEcGamalEncryptedLength)
         return std::nullopt;  // LCOV_EXCL_LINE
 
     auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
         return secp256k1_ec_pubkey_parse(secp256k1Context(), &out, slice.data(), slice.length());
     };
 
-    Slice const s1{buffer.data(), kEC_GAMAL_ENCRYPTED_LENGTH};
-    Slice const s2{buffer.data() + kEC_GAMAL_ENCRYPTED_LENGTH, kEC_GAMAL_ENCRYPTED_LENGTH};
+    Slice const s1{buffer.data(), kEcGamalEncryptedLength};
+    Slice const s2{buffer.data() + kEcGamalEncryptedLength, kEcGamalEncryptedLength};
 
     EcPair pair{};
     if (parsePubKey(s1, pair.c1) != 1 || parsePubKey(s2, pair.c2) != 1)
@@ -136,16 +134,16 @@ std::optional<Buffer>
 serializeEcPair(EcPair const& pair)
 {
     auto serializePubKey = [](secp256k1_pubkey const& pub, unsigned char* out) {
-        size_t outLen = kEC_GAMAL_ENCRYPTED_LENGTH;  // 33 bytes
+        size_t outLen = kEcGamalEncryptedLength;  // 33 bytes
         auto const ret = secp256k1_ec_pubkey_serialize(
             secp256k1Context(), out, &outLen, &pub, SECP256K1_EC_COMPRESSED);
-        return ret == 1 && outLen == kEC_GAMAL_ENCRYPTED_LENGTH;
+        return ret == 1 && outLen == kEcGamalEncryptedLength;
     };
 
-    Buffer buffer(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+    Buffer buffer(kEcGamalEncryptedTotalLength);
     auto const ptr = buffer.data();
     bool const res1 = serializePubKey(pair.c1, ptr);
-    bool const res2 = serializePubKey(pair.c2, ptr + kEC_GAMAL_ENCRYPTED_LENGTH);
+    bool const res2 = serializePubKey(pair.c2, ptr + kEcGamalEncryptedLength);
 
     if (!res1 || !res2)
         return std::nullopt;
@@ -162,11 +160,11 @@ isValidCiphertext(Slice const& buffer)
 bool
 isValidCompressedECPoint(Slice const& buffer)
 {
-    if (buffer.size() != kCOMPRESSED_EC_POINT_LENGTH)
+    if (buffer.size() != kCompressedEcPointLength)
         return false;
 
     // Compressed EC points must start with 0x02 or 0x03
-    if (buffer[0] != kEC_COMPRESSED_PREFIX_EVEN_Y && buffer[0] != kEC_COMPRESSED_PREFIX_ODD_Y)
+    if (buffer[0] != kEcCompressedPrefixEvenY && buffer[0] != kEcCompressedPrefixOddY)
         return false;
 
     secp256k1_pubkey point;
@@ -176,8 +174,7 @@ isValidCompressedECPoint(Slice const& buffer)
 std::optional<Buffer>
 homomorphicAdd(Slice const& a, Slice const& b)
 {
-    if (a.length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-        b.length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
+    if (a.length() != kEcGamalEncryptedTotalLength || b.length() != kEcGamalEncryptedTotalLength)
         return std::nullopt;
 
     auto const pairA = makeEcPair(a);
@@ -200,8 +197,7 @@ homomorphicAdd(Slice const& a, Slice const& b)
 std::optional<Buffer>
 homomorphicSubtract(Slice const& a, Slice const& b)
 {
-    if (a.length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-        b.length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
+    if (a.length() != kEcGamalEncryptedTotalLength || b.length() != kEcGamalEncryptedTotalLength)
         return std::nullopt;
 
     auto const pairA = makeEcPair(a);
@@ -224,23 +220,22 @@ homomorphicSubtract(Slice const& a, Slice const& b)
 Buffer
 generateBlindingFactor()
 {
-    unsigned char blindingFactor[kEC_BLINDING_FACTOR_LENGTH];
+    unsigned char blindingFactor[kEcBlindingFactorLength];
 
     // todo: might need to be updated using another RNG
-    if (RAND_bytes(blindingFactor, kEC_BLINDING_FACTOR_LENGTH) != 1)
+    if (RAND_bytes(blindingFactor, kEcBlindingFactorLength) != 1)
         Throw<std::runtime_error>("Failed to generate random number");
 
-    return Buffer(blindingFactor, kEC_BLINDING_FACTOR_LENGTH);
+    return Buffer(blindingFactor, kEcBlindingFactorLength);
 }
 
 std::optional<Buffer>
 encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindingFactor)
 {
-    if (blindingFactor.size() != kEC_BLINDING_FACTOR_LENGTH ||
-        pubKeySlice.size() != kEC_PUB_KEY_LENGTH)
+    if (blindingFactor.size() != kEcBlindingFactorLength || pubKeySlice.size() != kEcPubKeyLength)
         return std::nullopt;
 
-    Buffer out(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+    Buffer out(kEcGamalEncryptedTotalLength);
     if (mpt_encrypt_amount(amt, pubKeySlice.data(), blindingFactor.data(), out.data()) != 0)
         return std::nullopt;
 
@@ -250,13 +245,13 @@ encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindin
 std::optional<Buffer>
 encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, MPTID const& mptId)
 {
-    if (pubKeySlice.size() != kEC_PUB_KEY_LENGTH)
+    if (pubKeySlice.size() != kEcPubKeyLength)
         return std::nullopt;  // LCOV_EXCL_LINE
 
     EcPair pair{};
     secp256k1_pubkey pubKey;
     if (auto res = secp256k1_ec_pubkey_parse(
-            secp256k1Context(), &pubKey, pubKeySlice.data(), kEC_PUB_KEY_LENGTH);
+            secp256k1Context(), &pubKey, pubKeySlice.data(), kEcPubKeyLength);
         res != 1)
     {
         return std::nullopt;  // LCOV_EXCL_LINE
@@ -280,11 +275,11 @@ verifyRevealedAmount(
     ConfidentialRecipient const& issuer,
     std::optional<ConfidentialRecipient> const& auditor)
 {
-    if (blindingFactor.size() != kEC_BLINDING_FACTOR_LENGTH ||
-        holder.publicKey.size() != kEC_PUB_KEY_LENGTH ||
-        holder.encryptedAmount.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-        issuer.publicKey.size() != kEC_PUB_KEY_LENGTH ||
-        issuer.encryptedAmount.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
+    if (blindingFactor.size() != kEcBlindingFactorLength ||
+        holder.publicKey.size() != kEcPubKeyLength ||
+        holder.encryptedAmount.size() != kEcGamalEncryptedTotalLength ||
+        issuer.publicKey.size() != kEcPubKeyLength ||
+        issuer.encryptedAmount.size() != kEcGamalEncryptedTotalLength)
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
@@ -302,8 +297,8 @@ verifyRevealedAmount(
     mpt_confidential_participant const* auditorPtr = nullptr;
     if (auditor)
     {
-        if (auditor->publicKey.size() != kEC_PUB_KEY_LENGTH ||
-            auditor->encryptedAmount.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
+        if (auditor->publicKey.size() != kEcPubKeyLength ||
+            auditor->encryptedAmount.size() != kEcGamalEncryptedTotalLength)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
@@ -332,14 +327,14 @@ checkEncryptedAmountFormat(STObject const& object)
         return temMALFORMED;  // LCOV_EXCL_LINE
     }
 
-    if (object[sfHolderEncryptedAmount].length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-        object[sfIssuerEncryptedAmount].length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
+    if (object[sfHolderEncryptedAmount].length() != kEcGamalEncryptedTotalLength ||
+        object[sfIssuerEncryptedAmount].length() != kEcGamalEncryptedTotalLength)
     {
         return temBAD_CIPHERTEXT;
     }
 
     bool const hasAuditor = object.isFieldPresent(sfAuditorEncryptedAmount);
-    if (hasAuditor && object[sfAuditorEncryptedAmount].length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
+    if (hasAuditor && object[sfAuditorEncryptedAmount].length() != kEcGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
     if (!isValidCiphertext(object[sfHolderEncryptedAmount]) ||
@@ -357,7 +352,7 @@ checkEncryptedAmountFormat(STObject const& object)
 TER
 verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash)
 {
-    if (proofSlice.size() != kEC_SCHNORR_PROOF_LENGTH || pubKeySlice.size() != kEC_PUB_KEY_LENGTH)
+    if (proofSlice.size() != kEcSchnorrProofLength || pubKeySlice.size() != kEcPubKeyLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (mpt_verify_convert_proof(proofSlice.data(), pubKeySlice.data(), contextHash.data()) != 0)
@@ -374,8 +369,8 @@ verifyClawbackProof(
     Slice const& ciphertext,
     uint256 const& contextHash)
 {
-    if (ciphertext.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-        pubKeySlice.size() != kEC_PUB_KEY_LENGTH || proof.size() != kEC_CLAWBACK_PROOF_LENGTH)
+    if (ciphertext.size() != kEcGamalEncryptedTotalLength ||
+        pubKeySlice.size() != kEcPubKeyLength || proof.size() != kEcClawbackProofLength)
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
@@ -402,15 +397,15 @@ verifySendProof(
     uint256 const& contextHash)
 {
     auto const recipientCount = getConfidentialRecipientCount(auditor.has_value());
-    if (proof.size() != kEC_SEND_PROOF_LENGTH || sender.publicKey.size() != kEC_PUB_KEY_LENGTH ||
-        sender.encryptedAmount.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-        destination.publicKey.size() != kEC_PUB_KEY_LENGTH ||
-        destination.encryptedAmount.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-        issuer.publicKey.size() != kEC_PUB_KEY_LENGTH ||
-        issuer.encryptedAmount.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-        spendingBalance.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-        amountCommitment.size() != kEC_PEDERSEN_COMMITMENT_LENGTH ||
-        balanceCommitment.size() != kEC_PEDERSEN_COMMITMENT_LENGTH)
+    if (proof.size() != kEcSendProofLength || sender.publicKey.size() != kEcPubKeyLength ||
+        sender.encryptedAmount.size() != kEcGamalEncryptedTotalLength ||
+        destination.publicKey.size() != kEcPubKeyLength ||
+        destination.encryptedAmount.size() != kEcGamalEncryptedTotalLength ||
+        issuer.publicKey.size() != kEcPubKeyLength ||
+        issuer.encryptedAmount.size() != kEcGamalEncryptedTotalLength ||
+        spendingBalance.size() != kEcGamalEncryptedTotalLength ||
+        amountCommitment.size() != kEcPedersenCommitmentLength ||
+        balanceCommitment.size() != kEcPedersenCommitmentLength)
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
@@ -428,8 +423,8 @@ verifySendProof(
     participants[2] = makeParticipant(issuer);
     if (auditor)
     {
-        if (auditor->publicKey.size() != kEC_PUB_KEY_LENGTH ||
-            auditor->encryptedAmount.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
+        if (auditor->publicKey.size() != kEcPubKeyLength ||
+            auditor->encryptedAmount.size() != kEcGamalEncryptedTotalLength)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
@@ -460,9 +455,9 @@ verifyConvertBackProof(
     uint64_t amount,
     uint256 const& contextHash)
 {
-    if (proof.size() != kEC_CONVERT_BACK_PROOF_LENGTH || pubKeySlice.size() != kEC_PUB_KEY_LENGTH ||
-        spendingBalance.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-        balanceCommitment.size() != kEC_PEDERSEN_COMMITMENT_LENGTH)
+    if (proof.size() != kEcConvertBackProofLength || pubKeySlice.size() != kEcPubKeyLength ||
+        spendingBalance.size() != kEcGamalEncryptedTotalLength ||
+        balanceCommitment.size() != kEcPedersenCommitmentLength)
     {
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
