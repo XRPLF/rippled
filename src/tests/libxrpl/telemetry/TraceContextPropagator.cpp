@@ -5,13 +5,20 @@
 #include <xrpl/telemetry/TraceContextPropagator.h>
 
 #include <opentelemetry/context/context.h>
+#include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/span.h>
 #include <opentelemetry/trace/context.h>
 #include <opentelemetry/trace/default_span.h>
+#include <opentelemetry/trace/span.h>
 #include <opentelemetry/trace/span_context.h>
+#include <opentelemetry/trace/span_id.h>
+#include <opentelemetry/trace/span_metadata.h>
 #include <opentelemetry/trace/trace_flags.h>
 #include <opentelemetry/trace/trace_id.h>
 
+#include <xrpl.pb.h>
+
+#include <cstdint>
 #include <cstring>
 
 namespace trace = opentelemetry::trace;
@@ -37,10 +44,10 @@ TEST(TraceContextPropagator, round_trip)
         0x10};
     std::uint8_t spanIdBuf[8] = {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11, 0x22};
 
-    trace::TraceId traceId(opentelemetry::nostd::span<uint8_t const, 16>(traceIdBuf, 16));
-    trace::SpanId spanId(opentelemetry::nostd::span<uint8_t const, 8>(spanIdBuf, 8));
-    trace::TraceFlags flags(trace::TraceFlags::kIsSampled);
-    trace::SpanContext spanCtx(traceId, spanId, flags, true);
+    trace::TraceId const traceId(opentelemetry::nostd::span<uint8_t const, 16>(traceIdBuf, 16));
+    trace::SpanId const spanId(opentelemetry::nostd::span<uint8_t const, 8>(spanIdBuf, 8));
+    trace::TraceFlags const flags(trace::TraceFlags::kIsSampled);
+    trace::SpanContext const spanCtx(traceId, spanId, flags, true);
 
     auto ctx = opentelemetry::context::Context{}.SetValue(
         trace::kSpanKey,
@@ -71,7 +78,7 @@ TEST(TraceContextPropagator, round_trip)
 
 TEST(TraceContextPropagator, extract_empty_protobuf)
 {
-    protocol::TraceContext proto;
+    protocol::TraceContext const proto;
     auto ctx = xrpl::telemetry::extractFromProtobuf(proto);
     auto span = trace::GetSpan(ctx);
     if (span)
@@ -120,12 +127,12 @@ TEST(TraceContextPropagator, inject_invalid_span)
 
 TEST(TraceContextPropagator, flags_preservation)
 {
-    std::uint8_t traceIdBuf[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
-    std::uint8_t spanIdBuf[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    std::uint8_t const traceIdBuf[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    std::uint8_t const spanIdBuf[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 
     // Test with flags NOT sampled (flags = 0)
-    trace::TraceFlags flags(0);
-    trace::SpanContext spanCtx(
+    trace::TraceFlags const flags(0);
+    trace::SpanContext const spanCtx(
         trace::TraceId(opentelemetry::nostd::span<uint8_t const, 16>(traceIdBuf, 16)),
         trace::SpanId(opentelemetry::nostd::span<uint8_t const, 8>(spanIdBuf, 8)),
         flags,

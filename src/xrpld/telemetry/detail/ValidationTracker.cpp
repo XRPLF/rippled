@@ -18,7 +18,7 @@ namespace xrpl::telemetry {
 void
 ValidationTracker::recordOurValidation(uint256 const& ledgerHash, LedgerIndex seq)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto& evt = pending_[ledgerHash];
     if (evt.recordTime == TimePoint{})
     {
@@ -34,7 +34,7 @@ ValidationTracker::recordOurValidation(uint256 const& ledgerHash, LedgerIndex se
 void
 ValidationTracker::recordNetworkValidation(uint256 const& ledgerHash, LedgerIndex seq)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto& evt = pending_[ledgerHash];
     if (evt.recordTime == TimePoint{})
     {
@@ -49,7 +49,7 @@ ValidationTracker::recordNetworkValidation(uint256 const& ledgerHash, LedgerInde
 void
 ValidationTracker::reconcile()
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto const now = Clock::now();
 
     for (auto& [hash, evt] : pending_)
@@ -163,7 +163,7 @@ ValidationTracker::evictOldPending(TimePoint now)
 double
 ValidationTracker::agreementPct1h() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     if (window1h_.empty())
         return 0.0;
     auto const agreed = static_cast<double>(
@@ -174,7 +174,7 @@ ValidationTracker::agreementPct1h() const
 double
 ValidationTracker::agreementPct24h() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     if (window24h_.empty())
         return 0.0;
     auto const agreed = static_cast<double>(std::count_if(
@@ -185,7 +185,7 @@ ValidationTracker::agreementPct24h() const
 uint64_t
 ValidationTracker::agreements1h() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return static_cast<uint64_t>(
         std::count_if(window1h_.begin(), window1h_.end(), [](auto const& e) { return e.agreed; }));
 }
@@ -193,7 +193,7 @@ ValidationTracker::agreements1h() const
 uint64_t
 ValidationTracker::missed1h() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return static_cast<uint64_t>(
         std::count_if(window1h_.begin(), window1h_.end(), [](auto const& e) { return !e.agreed; }));
 }
@@ -201,7 +201,7 @@ ValidationTracker::missed1h() const
 uint64_t
 ValidationTracker::agreements24h() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return static_cast<uint64_t>(std::count_if(
         window24h_.begin(), window24h_.end(), [](auto const& e) { return e.agreed; }));
 }
@@ -209,7 +209,7 @@ ValidationTracker::agreements24h() const
 uint64_t
 ValidationTracker::missed24h() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return static_cast<uint64_t>(std::count_if(
         window24h_.begin(), window24h_.end(), [](auto const& e) { return !e.agreed; }));
 }
@@ -217,7 +217,7 @@ ValidationTracker::missed24h() const
 double
 ValidationTracker::agreementPct7d() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     if (window7d_.empty())
         return 0.0;
     auto const agreed = static_cast<double>(
@@ -228,7 +228,7 @@ ValidationTracker::agreementPct7d() const
 uint64_t
 ValidationTracker::agreements7d() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return static_cast<uint64_t>(
         std::count_if(window7d_.begin(), window7d_.end(), [](auto const& e) { return e.agreed; }));
 }
@@ -236,7 +236,7 @@ ValidationTracker::agreements7d() const
 uint64_t
 ValidationTracker::missed7d() const
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return static_cast<uint64_t>(
         std::count_if(window7d_.begin(), window7d_.end(), [](auto const& e) { return !e.agreed; }));
 }
