@@ -41,8 +41,9 @@
 // * XRPL_ASSERT_IF(guard, cond, message) fires the assertion only when guard
 //   is true (e.g. an amendment is enabled). Equivalent to
 //   `if (guard) XRPL_ASSERT(cond, message)` but safe to use in all statement
-//   contexts. NOTE: guard is always evaluated — even in release builds where
-//   the assertion itself is stripped — so keep it side-effect-free and cheap.
+//   contexts. NOTE: do not rely on side effects in guard — in release builds
+//   the assertion body is stripped, and the compiler may optimize away a
+//   side-effect-free guard entirely.
 // * ALWAYS if cond must be true _and_ the line must be reached during fuzzing.
 //   Same like `assert` in normal use.
 // * REACHABLE if the line must be reached during fuzzing
