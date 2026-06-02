@@ -55,14 +55,14 @@ runRoundTrip(Section const& params, std::size_t expectedBlocksize)
 
 }  // namespace
 
-TEST(NuDBFactory, DefaultBlockSize)
+TEST(NuDBFactory, default_block_size)
 {
     beast::TempDir const tempDir;
     auto const params = makeSection(tempDir.path());
     ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, 4096));
 }
 
-TEST(NuDBFactory, ValidBlockSizes)
+TEST(NuDBFactory, valid_block_sizes)
 {
     std::vector<std::size_t> const kValidSizes = {4096, 8192, 16384, 32768};
     for (auto const size : kValidSizes)
@@ -81,7 +81,7 @@ TEST(NuDBFactory, ValidBlockSizes)
     }
 }
 
-TEST(NuDBFactory, InvalidBlockSizes)
+TEST(NuDBFactory, invalid_block_sizes)
 {
     std::vector<std::string> const kInvalidSizes = {
         "2048",     // too small
@@ -116,7 +116,7 @@ TEST(NuDBFactory, InvalidBlockSizes)
     }
 }
 
-TEST(NuDBFactory, LogMessages)
+TEST(NuDBFactory, log_messages)
 {
     // valid custom block size emits info log
     {
@@ -173,7 +173,7 @@ TEST(NuDBFactory, LogMessages)
     }
 }
 
-TEST(NuDBFactory, PowerOfTwoValidation)
+TEST(NuDBFactory, power_of_two_validation)
 {
     std::vector<std::pair<std::string, bool>> const kCASES = {
         {"4095", false},    // just below minimum
@@ -212,7 +212,7 @@ TEST(NuDBFactory, PowerOfTwoValidation)
     }
 }
 
-TEST(NuDBFactory, BothConstructorVariants)
+TEST(NuDBFactory, both_constructor_variants)
 {
     beast::TempDir const tempDir;
     auto const params = makeSection(tempDir.path(), "16384");
@@ -229,7 +229,7 @@ TEST(NuDBFactory, BothConstructorVariants)
     // the factory can create backends with the first constructor.
 }
 
-TEST(NuDBFactory, ConfigurationParsing)
+TEST(NuDBFactory, configuration_parsing)
 {
     // basic valid format emits success log
     {
@@ -256,7 +256,7 @@ TEST(NuDBFactory, ConfigurationParsing)
     }
 }
 
-TEST(NuDBFactory, DataPersistence)
+TEST(NuDBFactory, data_persistence)
 {
     std::vector<std::string> const kBlockSizes = {"4096", "8192", "16384", "32768"};
     for (auto const& size : kBlockSizes)

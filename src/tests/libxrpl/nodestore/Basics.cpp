@@ -14,7 +14,7 @@ namespace xrpl::NodeStore {
 
 constexpr std::uint64_t kSeedValue = 50;
 
-TEST(NodeStoreBasics, PredictableBatches)
+TEST(NodeStoreBasics, predictable_batches)
 {
     auto const batch1 = createPredictableBatch(kNumObjectsToTest, kSeedValue);
     auto const batch2 = createPredictableBatch(kNumObjectsToTest, kSeedValue);
@@ -24,7 +24,7 @@ TEST(NodeStoreBasics, PredictableBatches)
     EXPECT_FALSE(areBatchesEqual(batch1, batch3));
 }
 
-TEST(NodeStoreBasics, BlobEncoding)
+TEST(NodeStoreBasics, blob_encoding)
 {
     auto const batch = createPredictableBatch(kNumObjectsToTest, kSeedValue);
     for (std::size_t i = 0; i < batch.size(); ++i)
