@@ -78,12 +78,13 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const& vaultAccount = vault->at(sfAccount);
     auto const& account = ctx.tx[sfAccount];
     auto const& dstAcct = ctx.tx[~sfDestination].value_or(account);
+
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     // Post-fixCleanup3_2_0: withdraw is a recovery path that bypasses the
     // lsfMPTCanTransfer flag check, so an issuer cannot trap depositor funds.
     // Other transferability checks (IOU NoRipple, freeze, requireAuth) still
     // apply.
-    auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
-                                                                 : WaiveMPTCanTransfer::No;
+    auto const waive = fix320Enabled ? WaiveMPTCanTransfer::Yes : WaiveMPTCanTransfer::No;
     if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct, waive);
         !isTesSuccess(ter))
     {
@@ -160,9 +161,22 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType); !isTesSuccess(ter))
         return ter;
 
-    // Cannot withdraw from a Vault an Asset frozen for the destination account
-    if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
-        return ret;
+    // Pre-fixCleanup3_2_0: any freeze on the destination blocked withdrawal
+    // even though frozen accounts can still receive. Post-amendment:
+    // - Frozen pseudo-account (vault) cannot send assets.
+    // - Only deep-frozen destinations (which cannot receive at all) are blocked.
+    if (fix320Enabled)
+    {
+        if (auto const ret = checkFrozen(ctx.view, vaultAccount, vaultAsset))
+            return ret;
+        if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
+            return ret;
+    }
+    else
+    {
+        if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
+            return ret;
+    }
 
     // Cannot return shares to the vault, if the underlying asset was frozen for
     // the submitter
