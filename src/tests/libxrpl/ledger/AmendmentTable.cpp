@@ -561,7 +561,8 @@ TEST_F(AmendmentTableTest, has_unsupported_enabled)
 
     table->doValidatedLedger(1, enabled, majority);
     EXPECT_TRUE(table->hasUnsupportedEnabled());
-    EXPECT_TRUE(table->firstUnsupportedExpected());
+    ASSERT_TRUE(table->firstUnsupportedExpected());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access) checked in ASSERT_TRUE above
     EXPECT_EQ(*table->firstUnsupportedExpected(), NetClock::time_point{t} + kW);
 
     // Make sure the table knows when it needs an update.
