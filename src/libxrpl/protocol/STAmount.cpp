@@ -854,8 +854,8 @@ STAmount::canonicalize()
             set(MPTAmount{num});
         }
         else
-        {  // LCOV_EXCL_LINE here
-            Throw<std::runtime_error>("Unknown integral asset type");
+        {
+            Throw<std::runtime_error>("Unknown integral asset type");  // LCOV_EXCL_LINE
         }
         offset_ = 0;
 
