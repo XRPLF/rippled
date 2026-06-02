@@ -179,33 +179,34 @@ public:
         testcase << "test_add " << to_string(scale);
 
         using Case = std::tuple<Number, Number, Number, int>;
-        auto const cSmall = std::to_array<Case>(
-            {{Number{1'000'000'000'000'000, -15},
-              Number{6'555'555'555'555'555, -29},
-              Number{1'000'000'000'000'066, -15},
-              __LINE__},
-             {Number{-1'000'000'000'000'000, -15},
-              Number{-6'555'555'555'555'555, -29},
-              Number{-1'000'000'000'000'066, -15},
-              __LINE__},
-             {Number{-1'000'000'000'000'000, -15},
-              Number{6'555'555'555'555'555, -29},
-              Number{-9'999'999'999'999'344, -16},
-              __LINE__},
-             {Number{-6'555'555'555'555'555, -29},
-              Number{1'000'000'000'000'000, -15},
-              Number{9'999'999'999'999'344, -16},
-              __LINE__},
-             {Number{}, Number{5}, Number{5}, __LINE__},
-             {Number{5}, Number{}, Number{5}, __LINE__},
-             {Number{5'555'555'555'555'555, -32768},
-              Number{-5'555'555'555'555'554, -32768},
-              Number{0},
-              __LINE__},
-             {Number{-9'999'999'999'999'999, -31},
-              Number{1'000'000'000'000'000, -15},
-              Number{9'999'999'999'999'990, -16},
-              __LINE__}});
+        auto const cSmall = std::to_array<Case>({
+            {Number{1'000'000'000'000'000, -15},
+             Number{6'555'555'555'555'555, -29},
+             Number{1'000'000'000'000'066, -15},
+             __LINE__},
+            {Number{-1'000'000'000'000'000, -15},
+             Number{-6'555'555'555'555'555, -29},
+             Number{-1'000'000'000'000'066, -15},
+             __LINE__},
+            {Number{-1'000'000'000'000'000, -15},
+             Number{6'555'555'555'555'555, -29},
+             Number{-9'999'999'999'999'344, -16},
+             __LINE__},
+            {Number{-6'555'555'555'555'555, -29},
+             Number{1'000'000'000'000'000, -15},
+             Number{9'999'999'999'999'344, -16},
+             __LINE__},
+            {Number{}, Number{5}, Number{5}, __LINE__},
+            {Number{5}, Number{}, Number{5}, __LINE__},
+            {Number{5'555'555'555'555'555, -32768},
+             Number{-5'555'555'555'555'554, -32768},
+             Number{0},
+             __LINE__},
+            {Number{-9'999'999'999'999'999, -31},
+             Number{1'000'000'000'000'000, -15},
+             Number{9'999'999'999'999'990, -16},
+             __LINE__},
+        });
         auto const cLarge = std::to_array<Case>(
             // Note that items with extremely large mantissas need to be
             // calculated, because otherwise they overflow uint64. Items from C
@@ -2021,13 +2022,27 @@ public:
 
             BigInt const exact = toBigInt(a) + toBigInt(b);
             BigInt const stored = toBigInt(sum);
+            BigInt const diff = stored - exact;
 
-            log << "\n    exact a + b = " << exact.str() << "\n    TowardsZero = " << stored.str()
-                << "\n";
+            log << "\n              a = " << a << "\n              b = " << b
+                << "\n    exact a + b = " << exact.str() << "\n    TowardsZero = " << stored.str()
+                << "\n     difference = " << diff.str() << "\n";
             log.flush();
 
-            if (scale != MantissaRange::MantissaScale::LargeLegacy)
+            if (scale == MantissaRange::MantissaScale::Small)
+            {
                 BEAST_EXPECT(stored == exact);
+            }
+            else if (scale == MantissaRange::MantissaScale::LargeLegacy)
+            {
+                BEAST_EXPECT(stored > exact);
+            }
+            else
+            {
+                BEAST_EXPECT(stored < exact);
+                BEAST_EXPECT(diff < 0);
+                BEAST_EXPECT(-diff < pow10<BigInt>(sum.exponent()));
+            }
         }
     }
 
