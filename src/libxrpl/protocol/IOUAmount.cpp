@@ -32,7 +32,7 @@ IOUAmount::fromNumber(Number const& number)
     // to normalize, which calls fromNumber
     IOUAmount result{};
     std::tie(result.mantissa_, result.exponent_) =
-        number.normalizeToRange(kMinMantissa, kMaxMantissa);
+        number.normalizeToRange<kMinMantissa, kMaxMantissa>();
     return result;
 }
 

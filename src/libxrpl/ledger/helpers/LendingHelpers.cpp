@@ -559,15 +559,34 @@ tryOverpayment(
                     << ", new total value: " << newLoanProperties.loanState.valueOutstanding
                     << ", first payment principal: " << newLoanProperties.firstPaymentPrincipal;
 
-    // Calculate what the new loan state should be with the new periodic payment
-    // including rounding errors
-    auto const newTheoreticalState = computeTheoreticalLoanState(
-                                         rules,
-                                         newLoanProperties.periodicPayment,
-                                         periodicRate,
-                                         paymentRemaining,
-                                         managementFeeRate) +
-        errors;
+    // Calculate what the new loan state should be with the new periodic payment,
+    // including the preserved rounding errors.
+
+    auto const newTheoreticalState = [&]() {
+        auto const state = computeTheoreticalLoanState(
+                               rules,
+                               newLoanProperties.periodicPayment,
+                               periodicRate,
+                               paymentRemaining,
+                               managementFeeRate) +
+            errors;
+
+        if (!rules.enabled(fixCleanup3_2_0))
+            return state;
+
+        // The new principal is known exactly: it is reduced by the overpayment's
+        // principal portion. computeTheoreticalLoanState instead derives the
+        // principal -- and, from it, the management fee and interest -- via a
+        // lossy (P * factor) / factor round-trip. Pin the principal to the exact
+        // value and re-derive the management fee from the exact interest gross
+        // (value - principal), so the intermediate state is fully consistent with
+        // the exact principal rather than the one-scale-unit-high round-trip.
+        Number const principal =
+            roundedOldState.principalOutstanding - overpaymentComponents.trackedPrincipalDelta;
+        Number const managementFee =
+            tenthBipsOfValue(state.valueOutstanding - principal, managementFeeRate);
+        return constructLoanState(state.valueOutstanding, principal, managementFee);
+    }();
 
     JLOG(j.debug()) << "new theoretical value: " << newTheoreticalState.valueOutstanding
                     << ", principal: " << newTheoreticalState.principalOutstanding
@@ -762,13 +781,6 @@ doOverpayment(
     // The proxies still hold the original (pre-overpayment) values, which
     // allows us to compute deltas and verify they match what we expect
     // from the overpaymentComponents and loanPaymentParts.
-
-    XRPL_ASSERT_PARTS(
-        overpaymentComponents.trackedPrincipalDelta ==
-            principalOutstandingProxy - newRoundedLoanState.principalOutstanding,
-        "xrpl::detail::doOverpayment",
-        "principal change agrees");
-
     JLOG(j.debug()) << "valueChange: " << loanPaymentParts.valueChange
                     << ", totalValue before: " << *totalValueOutstandingProxy
                     << ", totalValue after: " << newRoundedLoanState.valueOutstanding
@@ -780,35 +792,50 @@ doOverpayment(
                     << overpaymentComponents.trackedPrincipalDelta -
             (totalValueOutstandingProxy - newRoundedLoanState.valueOutstanding);
 
-    // The valueChange returned by tryOverpayment satisfies
-    //   valueChange = (newInterestDue - oldInterestDue) + untrackedInterest.
-    // Using the loan-state identity v = p + i + m and the adjacent
-    // `principal change agrees` assertion (dp = oldP - newP), this
-    // rearranges into three independently-computable terms:
-    //
-    //   1. TVO change beyond what principal repayment alone explains:
-    //        newTVO - (oldTVO - dp)
-    //   2. Management fee released by re-amortization (positive when
-    //      mfee decreased; zero when managementFeeRate == 0):
-    //        oldMfee - newMfee
-    //   3. The overpayment's penalty interest part (= untrackedInterest
-    //      for the overpayment path; see computeOverpaymentComponents):
-    //        trackedInterestPart()
-    [[maybe_unused]] Number const tvoChange = newRoundedLoanState.valueOutstanding -
-        (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta);
-    [[maybe_unused]] Number const managementFeeReleased =
-        managementFeeOutstandingProxy - newRoundedLoanState.managementFeeDue;
-    [[maybe_unused]] Number const interestPart = overpaymentComponents.trackedInterestPart();
+    // The three assertions below are invariants that only hold once
+    // fixCleanup3_2_0 pins the new principal to the exact reduction
+    // (oldPrincipal - trackedPrincipalDelta). Before the amendment, the lossy
+    // (P * factor) / factor round-trip can leave the new principal one
+    // scale-unit high, so these equalities do not hold on the pre-amendment
+    // code path and must be gated to match the fix they verify.
+    if (rules.enabled(fixCleanup3_2_0))
+    {
+        // The valueChange returned by tryOverpayment satisfies
+        //   valueChange = (newInterestDue - oldInterestDue) + untrackedInterest.
+        // Using the loan-state identity v = p + i + m and the adjacent
+        // `principal change agrees` assertion (dp = oldP - newP), this
+        // rearranges into three independently-computable terms:
+        //
+        //   1. TVO change beyond what principal repayment alone explains:
+        //        newTVO - (oldTVO - dp)
+        //   2. Management fee released by re-amortization (positive when
+        //      mfee decreased; zero when managementFeeRate == 0):
+        //        oldMfee - newMfee
+        //   3. The overpayment's penalty interest part (= untrackedInterest
+        //      for the overpayment path; see computeOverpaymentComponents):
+        //        trackedInterestPart()
+        [[maybe_unused]] Number const tvoChange = newRoundedLoanState.valueOutstanding -
+            (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta);
+        [[maybe_unused]] Number const managementFeeReleased =
+            managementFeeOutstandingProxy - newRoundedLoanState.managementFeeDue;
+        [[maybe_unused]] Number const interestPart = overpaymentComponents.trackedInterestPart();
 
-    XRPL_ASSERT_PARTS(
-        loanPaymentParts.valueChange == tvoChange + managementFeeReleased + interestPart,
-        "xrpl::detail::doOverpayment",
-        "interest paid agrees");
+        XRPL_ASSERT_PARTS(
+            overpaymentComponents.trackedPrincipalDelta ==
+                principalOutstandingProxy - newRoundedLoanState.principalOutstanding,
+            "xrpl::detail::doOverpayment",
+            "principal change agrees");
 
-    XRPL_ASSERT_PARTS(
-        overpaymentComponents.trackedPrincipalDelta == loanPaymentParts.principalPaid,
-        "xrpl::detail::doOverpayment",
-        "principal payment matches");
+        XRPL_ASSERT_PARTS(
+            loanPaymentParts.valueChange == tvoChange + managementFeeReleased + interestPart,
+            "xrpl::detail::doOverpayment",
+            "interest paid agrees");
+
+        XRPL_ASSERT_PARTS(
+            overpaymentComponents.trackedPrincipalDelta == loanPaymentParts.principalPaid,
+            "xrpl::detail::doOverpayment",
+            "principal payment matches");
+    }
 
     // All validations passed, so update the proxy objects (which will
     // modify the actual Loan ledger object)
@@ -1144,11 +1171,13 @@ computePaymentComponents(
     // Cap each component to never exceed what's actually outstanding
     deltas.principal = std::min(deltas.principal, currentLedgerState.principalOutstanding);
 
-    XRPL_ASSERT_PARTS(
-        deltas.interest <= currentLedgerState.interestDue,
-        "xrpl::detail::computePaymentComponents",
-        "interest due delta not greater than outstanding");
-
+    if (fixCleanup320Enabled)
+    {
+        XRPL_ASSERT_PARTS(
+            deltas.interest <= currentLedgerState.interestDue,
+            "xrpl::detail::computePaymentComponents",
+            "interest due delta not greater than outstanding");
+    }
     // Cap interest to both the outstanding amount AND what's left of the
     // periodic payment after principal is paid
     deltas.interest = std::min(
@@ -1289,6 +1318,7 @@ computePaymentComponents(
  */
 ExtendedPaymentComponents
 computeOverpaymentComponents(
+    Rules const& rules,
     Asset const& asset,
     int32_t const loanScale,
     Number const& overpayment,
@@ -1296,10 +1326,13 @@ computeOverpaymentComponents(
     TenthBips32 const overpaymentFeeRate,
     TenthBips16 const managementFeeRate)
 {
-    XRPL_ASSERT(
-        overpayment > 0 && isRounded(asset, overpayment, loanScale),
-        "xrpl::detail::computeOverpaymentComponents : valid overpayment "
-        "amount");
+    if (rules.enabled(fixCleanup3_2_0))
+    {
+        XRPL_ASSERT(
+            overpayment > 0 && isRounded(asset, overpayment, loanScale),
+            "xrpl::detail::computeOverpaymentComponents : valid overpayment "
+            "amount");
+    }
 
     // First, deduct the fixed overpayment fee from the total amount.
     // This reduces the effective payment that will be applied to the loan.
@@ -2055,6 +2088,7 @@ loanMakePayment(
         {
             detail::ExtendedPaymentComponents const overpaymentComponents =
                 detail::computeOverpaymentComponents(
+                    view.rules(),
                     asset,
                     loanScale,
                     overpayment,
