@@ -33,7 +33,7 @@ public:
      * @brief Construct a Vault ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Vault(std::shared_ptr<SLE const> sle)
+    explicit Vault(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -330,7 +330,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    VaultBuilder(std::shared_ptr<SLE const> sle)
+    VaultBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltVAULT)
         {
