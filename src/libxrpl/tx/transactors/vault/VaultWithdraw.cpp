@@ -278,10 +278,12 @@ VaultWithdraw::doApply()
     }
 
     auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
-    bool const isIssuerRedemption =
+    bool const redeemingToIssuer =
         view().rules().enabled(fixCleanup3_2_0) && dstAcct == vaultAsset.getIssuer();
     auto const freezeHandling =
-        isIssuerRedemption ? FreezeHandling::IgnoreFreeze : FreezeHandling::ZeroIfFrozen;
+        redeemingToIssuer ? FreezeHandling::IgnoreFreeze : FreezeHandling::ZeroIfFrozen;
+
+    // Share freeze checks are transitive. We skip them when withdrawing to the issuer all together.
     if (accountHolds(view(), accountID_, share, freezeHandling, AuthHandling::IgnoreAuth, j_) <
         sharesRedeemed)
     {
