@@ -61,11 +61,11 @@ TEST(Number, normalizeToRangeEquivalence)
         std::numeric_limits<std::int64_t>::max() - 1,
     };
 
-    for (std::int64_t absM : mantissas)
+    for (std::int64_t const absM : mantissas)
     {
-        for (std::int64_t m : {absM, -absM})
+        for (std::int64_t const m : {absM, -absM})
         {
-            for (int e : {-90, -32, -1, 0, 1, 5, 32, 70})
+            for (int const e : {-90, -32, -1, 0, 1, 5, 32, 70})
             {
                 auto const expected = twoPass(m, e);
                 auto const actual = onePass(m, e);
@@ -153,11 +153,11 @@ TEST(Number, normalizeToRangeAllRoundingModes)
           Number::RoundingMode::Downward,
           Number::RoundingMode::Upward})
     {
-        for (std::int64_t absM : mantissas)
+        for (std::int64_t const absM : mantissas)
         {
-            for (std::int64_t m : {absM, -absM})
+            for (std::int64_t const m : {absM, -absM})
             {
-                for (int e : {-20, 0, 13})
+                for (int const e : {-20, 0, 13})
                 {
                     NumberRoundModeGuard const g(mode);
                     auto const expected = twoPass(m, e);
@@ -180,11 +180,11 @@ TEST(Number, normalizeToRangeMemberStaticConsistency)
 {
     std::int64_t const mantissas[] = {3, 42, kMin, kMin + 7, kMax, kMax + 1, 1'234'567'890'123'456};
 
-    for (std::int64_t absM : mantissas)
+    for (std::int64_t const absM : mantissas)
     {
-        for (std::int64_t m : {absM, -absM})
+        for (std::int64_t const m : {absM, -absM})
         {
-            for (int e : {-50, -3, 0, 11, 60})
+            for (int const e : {-50, -3, 0, 11, 60})
             {
                 Number const v{m, e};
                 auto const viaMember = v.normalizeToRange<kMin, kMax>();
