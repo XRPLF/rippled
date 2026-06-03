@@ -78,8 +78,10 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     p->hash_ = hash_;
     p->isBranch_ = isBranch_;
     p->fullBelowGen_ = fullBelowGen_;
-    SHAMapHash *cloneHashes = nullptr, *thisHashes = nullptr;
-    SHAMapTreeNodePtr *cloneChildren = nullptr, *thisChildren = nullptr;
+    SHAMapHash* cloneHashes = nullptr;
+    SHAMapHash* thisHashes = nullptr;
+    SHAMapTreeNodePtr* cloneChildren = nullptr;
+    SHAMapTreeNodePtr* thisChildren = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, cloneHashes, cloneChildren) =
         p->hashesAndChildren_.getHashesAndChildren();
