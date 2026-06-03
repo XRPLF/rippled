@@ -101,9 +101,7 @@ class Path_test : public beast::unit_test::Suite
         // with the search parameters that the tests were written for.
         using namespace jtx;
         return Env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->pathSearchOld = 7;
-            cfg->pathSearch = 7;
-            cfg->pathSearchMax = 10;
+            cfg->pathSearch = true;
             return cfg;
         }));
     }
@@ -1865,6 +1863,41 @@ public:
     }
 
     void
+    selfSubscriptionIouToXrp()
+    {
+        // Regression: when src == dst (a self-subscription, common for wallet
+        // apps that subscribe to their own account), IOU->XRP paths were
+        // incorrectly suppressed because effectiveDst_==dstAccount_==srcAccount_
+        // triggered the repayToSelf guard even when dst is XRP.
+        // Verify paths are found when the source currency is an IOU.
+        testcase("self-subscription IOU to XRP path find");
+        using namespace jtx;
+
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");  // market maker
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(100), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(50)));
+        env(pay(gw, bob, usd(50)));
+        env.close();
+        env(offer(bob, usd(10), XRP(100)));
+        env.close();
+
+        // src == dst (self-subscription) with explicit sendMax specifying the
+        // source IOU issuer and convertAll dst (-1) — matches what real wallet
+        // subscriptions send.  Must find the USD→XRP offer-book path.
+        // (send_max requires destination_amount == -1 in the RPC layer.)
+        auto const [st, sa, da] = findPaths(env, alice, alice, drops(-1), usd(50).value());
+        BEAST_EXPECT(!st.empty());
+    }
+
+    void
     run() override
     {
         sourceCurrenciesLimit();
@@ -1907,6 +1940,7 @@ public:
 
         hybridOfferPath();
         ammDomainPath();
+        selfSubscriptionIouToXrp();
     }
 };
 

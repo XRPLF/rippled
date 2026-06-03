@@ -1,7 +1,7 @@
 #pragma once
 
 #include <xrpld/rpc/detail/AssetCache.h>
-#include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/GraphPathfinder.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
@@ -93,13 +93,15 @@ private:
     bool
     isValid(std::shared_ptr<AssetCache> const& crCache);
 
-    std::unique_ptr<Pathfinder> const&
-    getPathFinder(
+    std::unique_ptr<GraphPathfinder> const&
+    getGraphPathFinder(
+        std::shared_ptr<PayGraph> const&,
         std::shared_ptr<AssetCache> const&,
-        hash_map<PathAsset, std::unique_ptr<Pathfinder>>&,
+        hash_map<PathAsset, std::unique_ptr<GraphPathfinder>>&,
         PathAsset const&,
+        std::optional<AccountID> const&,
         STAmount const&,
-        int const,
+        bool fast,
         std::function<bool(void)> const&);
 
     /** Finds and sets a PathSet in the JSON argument.
@@ -108,8 +110,8 @@ private:
     bool
     findPaths(
         std::shared_ptr<AssetCache> const&,
-        int const,
         json::Value&,
+        bool fast,
         std::function<bool(void)> const&);
 
     int
@@ -146,16 +148,14 @@ private:
     LedgerIndex lastIndex_;
     bool inProgress_;
 
-    int iLevel_;
-    bool bLastSuccess_;
-
     int const iIdentifier_;
 
     std::chrono::steady_clock::time_point const created_;
     std::chrono::steady_clock::time_point quickReply_;
     std::chrono::steady_clock::time_point fullReply_;
 
-    static unsigned int const kMaxPaths = 4;
+    // payments accept up to 6 paths
+    static unsigned int const kMaxPaths = 6;
 };
 
 }  // namespace xrpl

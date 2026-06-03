@@ -312,7 +312,7 @@ checkPayment(
                     std::nullopt,
                     domain,
                     app);
-                if (pf.findPaths(app.config().pathSearchOld))
+                if (pf.findPaths(7))
                 {
                     // 4 is the maximum paths
                     pf.computePathRanks(4);

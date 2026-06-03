@@ -34,7 +34,7 @@ namespace xrpl {
 
 OrderBookDBImpl::OrderBookDBImpl(ServiceRegistry& registry, OrderBookDBConfig const& config)
     : registry_(registry)
-    , pathSearchMax_(config.pathSearchMax)
+    , pathSearch_(config.pathSearch)
     , standalone_(config.standalone)
     , seq_(0)
     , j_(registry.getJournal("OrderBookDB"))
@@ -72,7 +72,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
 
     JLOG(j_.debug()) << "Full order book update: " << seq << " to " << ledger->seq();
 
-    if (pathSearchMax_ != 0)
+    if (pathSearch_)
     {
         if (standalone_)
         {
@@ -93,7 +93,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
 void
 OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
 {
-    if (pathSearchMax_ == 0)
+    if (!pathSearch_)
         return;  // pathfinding has been disabled
 
     // A newer full update job is pending
@@ -305,6 +305,28 @@ OrderBookDBImpl::isBookToXRP(Asset const& asset, std::optional<Domain> const& do
     if (domain)
         return xrpDomainBooks_.contains({asset, *domain});
     return xrpBooks_.contains(asset);
+}
+
+std::vector<Asset>
+OrderBookDBImpl::getAllTakerPaysAssets(std::optional<Domain> const& domain)
+{
+    std::scoped_lock const sl(lock_);
+    std::vector<Asset> ret;
+    if (!domain)
+    {
+        ret.reserve(allBooks_.size());
+        for (auto const& [asset, _] : allBooks_)
+            ret.push_back(asset);
+    }
+    else
+    {
+        for (auto const& [key, _] : domainBooks_)
+        {
+            if (key.second == *domain)
+                ret.push_back(key.first);
+        }
+    }
+    return ret;
 }
 
 BookListeners::pointer

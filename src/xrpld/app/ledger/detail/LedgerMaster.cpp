@@ -1502,6 +1502,12 @@ LedgerMaster::isNewPathRequest()
 bool
 LedgerMaster::newOrderBookDB()
 {
+    // Signal that OrderBookDB has finished at least one full scan so the
+    // PathRequestManager knows it's safe to build the PayGraph.  This gates
+    // the race on networked nodes where the initial scan is async and may
+    // complete after the first path request arrives.
+    app_.getPathRequestManager().signalOrderBookReady();
+
     std::unique_lock ml(mutex_);
     pathLedger_.reset();
 

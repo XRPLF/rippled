@@ -75,6 +75,16 @@ struct FeeSetup
 class Config : public BasicConfig
 {
 public:
+    /**
+     * Compute the effective number of job queue worker threads.
+     * This logic is shared between config validation and runtime.
+     */
+    static int
+    computeEffectiveWorkers(
+        bool standalone,
+        bool forceMultiThread,
+        int workers,
+        std::size_t nodeSize);
     // Settings related to the configuration file location and directories
     static char const* const kConfigFileName;
     static char const* const kConfigLegacyName;
@@ -175,13 +185,10 @@ public:
     //                 options; higher values result in exponentially higher
     //                 resource usage.
     //
-    //                 Servers operating as validators disable path finding by
-    //                 default by setting the `PATH_SEARCH_MAX` option to 0
-    //                 unless it is explicitly set in the configuration file.
-    int pathSearchOld = 2;
-    int pathSearch = 2;
-    int pathSearchFast = 2;
-    int pathSearchMax = 3;
+    //                 Path finding is enabled by default. Set `PATH_SEARCH`
+    //                 to 0 in the configuration file to disable it.
+    bool pathSearch = true;
+    int PATH_WORKERS = 2;
 
     // Validation
     std::optional<std::size_t> validationQuorum;  // validations to consider ledger authoritative
@@ -322,6 +329,23 @@ public:
     useTxTables() const
     {
         return useTxTables_;
+    }
+
+    /** Returns true when the RWDB backend is running in null mode.
+
+        In null mode the in-memory node store never persists or retrieves
+        objects — nodes are retained purely through the Ledger -> SHAMap
+        shared_ptr retention chain.  Activated via the XRPL_RWDB_NULL
+        environment variable.
+    */
+    static bool
+    nullBackend()
+    {
+        static bool const kV = [] {
+            char const* e = std::getenv("XRPL_RWDB_NULL");
+            return e && *e && std::string_view(e) != "0";
+        }();
+        return kV;
     }
 
     [[nodiscard]] bool

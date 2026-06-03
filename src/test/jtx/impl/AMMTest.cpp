@@ -213,9 +213,7 @@ AMMTest::pathTestEnv()
     // different from the current defaults. This function creates an env
     // with the search parameters that the tests were written for.
     return Env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-        cfg->pathSearchOld = 7;
-        cfg->pathSearch = 7;
-        cfg->pathSearchMax = 10;
+        cfg->pathSearch = true;
         return cfg;
     }));
 }

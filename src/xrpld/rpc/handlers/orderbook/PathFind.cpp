@@ -15,7 +15,7 @@ namespace xrpl {
 json::Value
 doPathFind(RPC::JsonContext& context)
 {
-    if (context.app.config().pathSearchMax == 0)
+    if (!context.app.config().pathSearch)
         return rpcError(RpcNotSupported);
 
     auto lpLedger = context.ledgerMaster.getClosedLedger();

@@ -15,7 +15,7 @@ namespace xrpl {
 /** Configuration for OrderBookDB */
 struct OrderBookDBConfig
 {
-    int pathSearchMax;
+    bool pathSearch;
     bool standalone;
 };
 
@@ -50,6 +50,9 @@ public:
     bool
     isBookToXRP(Asset const& asset, std::optional<Domain> const& domain = std::nullopt) override;
 
+    std::vector<Asset>
+    getAllTakerPaysAssets(std::optional<Domain> const& domain = std::nullopt) override;
+
     // OrderBookDBImpl-specific methods
     void
     update(std::shared_ptr<ReadView const> const& ledger);
@@ -68,7 +71,7 @@ public:
 
 private:
     std::reference_wrapper<ServiceRegistry> registry_;
-    int const pathSearchMax_;
+    bool const pathSearch_;
     bool const standalone_;
 
     // Maps order books by "asset in" to "asset out":

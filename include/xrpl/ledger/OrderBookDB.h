@@ -78,6 +78,18 @@ public:
     virtual bool
     isBookToXRP(Asset const& asset, std::optional<Domain> const& domain = std::nullopt) = 0;
 
+    /** Get all assets that appear as takerPays in any known order book.
+
+        Used by PayGraph::buildSnapshot to seed vertex discovery so that
+        non-XRP-rooted assets are always included even when they have no
+        direct XRP book.
+
+        @param domain Optional domain restriction
+        @return Vector of all known takerPays assets
+    */
+    virtual std::vector<Asset>
+    getAllTakerPaysAssets(std::optional<Domain> const& domain = std::nullopt) = 0;
+
     /**
      * Process a transaction for order book tracking.
      * @param ledger The ledger the transaction was applied to

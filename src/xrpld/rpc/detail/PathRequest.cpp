@@ -3,9 +3,10 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/AccountAssets.h>
+#include <xrpld/rpc/detail/GraphPathfinder.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
-#include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
+#include <xrpld/rpc/detail/PayGraph.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
@@ -15,6 +16,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/AccountID.h>
@@ -62,8 +64,6 @@ PathRequest::PathRequest(
     , jvStatus_(json::ValueType::Object)
     , lastIndex_(0)
     , inProgress_(false)
-    , iLevel_(0)
-    , bLastSuccess_(false)
     , iIdentifier_(id)
     , created_(std::chrono::steady_clock::now())
 {
@@ -85,8 +85,6 @@ PathRequest::PathRequest(
     , jvStatus_(json::ValueType::Object)
     , lastIndex_(0)
     , inProgress_(false)
-    , iLevel_(0)
-    , bLastSuccess_(false)
     , iIdentifier_(id)
     , created_(std::chrono::steady_clock::now())
 {
@@ -497,37 +495,44 @@ PathRequest::doAborting() const
     JLOG(journal_.info()) << iIdentifier_ << " aborting early";
 }
 
-std::unique_ptr<Pathfinder> const&
-PathRequest::getPathFinder(
+std::unique_ptr<GraphPathfinder> const&
+PathRequest::getGraphPathFinder(
+    std::shared_ptr<PayGraph> const& graph,
     std::shared_ptr<AssetCache> const& cache,
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>>& currencyMap,
+    hash_map<PathAsset, std::unique_ptr<GraphPathfinder>>& currencyMap,
     PathAsset const& currency,
+    std::optional<AccountID> const& srcIssuer,
     STAmount const& dstAmount,
-    int const level,
+    bool const fast,
     std::function<bool(void)> const& continueCallback)
 {
     auto i = currencyMap.find(currency);
     if (i != currencyMap.end())
         return i->second;
     // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-    auto pathfinder = std::make_unique<Pathfinder>(
+    auto pathfinder = std::make_unique<GraphPathfinder>(
+        graph,
         cache,
         *raSrcAccount_,
         *raDstAccount_,
         currency,
-        std::nullopt,
+        srcIssuer,
         dstAmount,
         saSendMax_,
         domain_,
         app_);
     // NOLINTEND(bugprone-unchecked-optional-access)
-    if (pathfinder->findPaths(level, continueCallback))
+    if (pathfinder->findPaths(continueCallback))
     {
-        pathfinder->computePathRanks(kMaxPaths, continueCallback);
+        // On the fast pass, skip ranking — unranked paths are returned
+        // immediately via getBestPaths' fallback, giving a near-instant
+        // first response. The full pass will rank them properly.
+        if (!fast)
+            pathfinder->computePathRanks(kMaxPaths, continueCallback);
     }
     else
     {
-        pathfinder.reset();  // It's a bad request - clear it.
+        pathfinder.reset();
     }
     return currencyMap[currency] = std::move(pathfinder);
 }
@@ -535,8 +540,8 @@ PathRequest::getPathFinder(
 bool
 PathRequest::findPaths(
     std::shared_ptr<AssetCache> const& cache,
-    int const level,
     json::Value& jvArray,
+    bool const fast,
     std::function<bool(void)> const& continueCallback)
 {
     auto sourceAssets = sciSourceAssets_;
@@ -578,26 +583,15 @@ PathRequest::findPaths(
     }
 
     auto const dstAmount = convertAmount(saDstAmount_, convertAll_);
-    hash_map<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
-    for (auto const& asset : sourceAssets)
-    {
-        if (continueCallback && !continueCallback())
-            break;
-        JLOG(journal_.debug()) << iIdentifier_
-                               << " Trying to find paths: " << STAmount(asset, 1).getFullText();
 
-        auto& pathfinder =
-            getPathFinder(cache, currencyMap, PathAsset(asset), dstAmount, level, continueCallback);
-        if (!pathfinder)
-        {
-            JLOG(journal_.debug()) << iIdentifier_ << " No paths found";
-            continue;
-        }
-
-        STPath fullLiquidityPath;
-        auto ps = pathfinder->getBestPaths(
-            kMaxPaths, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
-        context_[asset] = ps;
+    // Shared post-processing: update context, run rippleCalc, append JSON.
+    auto processResult = [&](STPathSet ps, Asset const& asset) {
+        // Only update context from the full pass (ranked paths).  Updating it
+        // from the fast-pass unranked fallback pollutes extraPaths on the next
+        // getBestPaths call, causing the same paths to appear in both
+        // pathRanks_ and extraRanks and filling maxPaths slots with duplicates.
+        if (!fast)
+            context_[asset] = ps;
 
         auto const& sourceAccount = [&] {
             if (!isXRP(asset.getIssuer()))
@@ -619,57 +613,42 @@ PathRequest::findPaths(
                 [](MPTIssue const& issue) { return STAmount(issue, 1u, 0, true); });
         }();
 
+        JLOG(journal_.info()) << iIdentifier_ << " rippleCalc src=" << toBase58(*raSrcAccount_)
+                              << " dst=" << toBase58(*raDstAccount_)
+                              << " sendMax=" << saMaxAmount.getFullText()
+                              << " dstAmt=" << dstAmount.getFullText()
+                              << " paths=" << json::Compact{ps.getJson(JsonOptions::Values::None)};
         JLOG(journal_.debug()) << iIdentifier_ << " Paths found, calling rippleCalc";
 
         path::RippleCalc::Input rcInput;
         if (convertAll_)
             rcInput.partialPaymentAllowed = true;
         auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
-        auto rc = path::RippleCalc::rippleCalculate(
-            *sandbox,
-            saMaxAmount,  // --> Amount to send is unlimited
-                          //     to get an estimate.
-            dstAmount,    // --> Amount to deliver.
-            // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-            *raDstAccount_,  // --> Account to deliver to.
-            *raSrcAccount_,  // --> Account sending from.
-            // NOLINTEND(bugprone-unchecked-optional-access)
-            ps,       // --> Path set.
-            domain_,  // --> Domain.
-            app_,
-            &rcInput);
 
-        if (!convertAll_ && !fullLiquidityPath.empty() &&
-            (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
-        {
-            JLOG(journal_.debug()) << iIdentifier_ << " Trying with an extra path element";
-
-            ps.pushBack(fullLiquidityPath);
-            sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
-            rc = path::RippleCalc::rippleCalculate(
-                *sandbox,
-                saMaxAmount,  // --> Amount to send is unlimited
-                              //     to get an estimate.
-                dstAmount,    // --> Amount to deliver.
-                // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-                *raDstAccount_,  // --> Account to deliver to.
-                *raSrcAccount_,  // --> Account sending from.
-                // NOLINTEND(bugprone-unchecked-optional-access)
-                ps,       // --> Path set.
-                domain_,  // --> Domain.
-                app_);
-
-            if (!isTesSuccess(rc.result()))
+        // rippleCalculate only catches FlowException internally; other exceptions
+        // (e.g. std::overflow_error from AMMLiquidity::generateFibSeqOffer) can
+        // propagate.  Catch them here so one bad path doesn't abort the entire
+        // processResult and lose all alternatives.
+        auto safeCalc = [&](PaymentSandbox& sb,
+                            STAmount const& maxSend,
+                            STAmount const& dst,
+                            STPathSet const& paths,
+                            path::RippleCalc::Input const* inp) -> path::RippleCalc::Output {
+            try
             {
-                JLOG(journal_.warn())
-                    << iIdentifier_ << " Failed with covering path " << transHuman(rc.result());
+                return path::RippleCalc::rippleCalculate(
+                    sb, maxSend, dst, *raDstAccount_, *raSrcAccount_, paths, domain_, app_, inp);
             }
-            else
+            catch (std::exception const& e)
             {
-                JLOG(journal_.debug())
-                    << iIdentifier_ << " Extra path element gives " << transHuman(rc.result());
+                JLOG(journal_.debug()) << iIdentifier_ << " rippleCalc exception: " << e.what();
+                path::RippleCalc::Output out;
+                out.setResult(tefEXCEPTION);
+                return out;
             }
-        }
+        };
+
+        auto rc = safeCalc(*sandbox, saMaxAmount, dstAmount, ps, &rcInput);
 
         if (rc.result() == tesSUCCESS)
         {
@@ -695,9 +674,66 @@ PathRequest::findPaths(
         }
         else
         {
-            JLOG(journal_.debug())
-                << iIdentifier_ << " rippleCalc returns " << transHuman(rc.result());
+            JLOG(journal_.info()) << iIdentifier_ << " rippleCalc returns "
+                                  << transHuman(rc.result());
         }
+    };
+
+    // When a domain filter is active, build a domain-specific PayGraph so
+    // domain-only offers (stored in domainBooks_ rather than allBooks_) are
+    // visible to the pathfinder.  The global PayGraph is built with nullopt
+    // and therefore cannot see them.
+    std::shared_ptr<PayGraph> domainGraph;
+    if (domain_)
+    {
+        if (auto* ledger = cache->getLedger().get())
+        {
+            domainGraph = PayGraph::build(app_.getOrderBookDB(), *ledger, domain_, journal_);
+        }
+    }
+
+    auto baseGraph = domain_ ? domainGraph : owner_.getPayGraph();
+    if (auto graph = baseGraph)
+    {
+        // Fast path: Yen's K-Shortest on the pre-built asset graph — O(μs).
+        hash_map<PathAsset, std::unique_ptr<GraphPathfinder>> graphMap;
+        for (auto const& asset : sourceAssets)
+        {
+            if (continueCallback && !continueCallback())
+                break;
+            JLOG(journal_.debug())
+                << iIdentifier_ << " Trying to find paths: " << STAmount(asset, 1).getFullText();
+
+            // Extract the gateway issuer from the asset so GraphPathfinder
+            // can build srcAmount_ with the correct issuer account.
+            std::optional<AccountID> assetIssuer;
+            if (asset.holds<Issue>() && !isXRP(asset.get<Issue>().currency))
+                assetIssuer = asset.get<Issue>().account;
+
+            auto& pf = getGraphPathFinder(
+                graph,
+                cache,
+                graphMap,
+                PathAsset(asset),
+                assetIssuer,
+                dstAmount,
+                fast,
+                continueCallback);
+            if (!pf)
+            {
+                JLOG(journal_.debug()) << iIdentifier_ << " No paths found";
+                continue;
+            }
+
+            auto ps =
+                pf->getBestPaths(kMaxPaths, context_[asset], asset.getIssuer(), continueCallback);
+            processResult(std::move(ps), asset);
+        }
+    }
+    else
+    {
+        // PayGraph not yet ready — caller should surface RpcNotReady.
+        return false;
     }
 
     /*  The resource fee is based on the number of source currencies used.
@@ -747,55 +783,22 @@ PathRequest::doUpdate(
     if (jvId_)
         newStatus[jss::id] = jvId_;
 
-    bool const loaded = app_.getFeeTrack().isLoadedLocal();
-
-    if (iLevel_ == 0)
+    if (!owner_.getPayGraph())
     {
-        // first pass
-        if (loaded || fast)
+        JLOG(journal_.info()) << iIdentifier_ << " PayGraph not ready, returning notReady";
+        newStatus = rpcError(RpcNotReady);
+    }
+    else
+    {
+        json::Value jvArray = json::ValueType::Array;
+        if (findPaths(cache, jvArray, fast, continueCallback))
         {
-            iLevel_ = app_.config().pathSearchFast;
+            newStatus[jss::alternatives] = std::move(jvArray);
         }
         else
         {
-            iLevel_ = app_.config().pathSearch;
+            newStatus = rpcError(RpcInternal);
         }
-    }
-    else if ((iLevel_ == app_.config().pathSearchFast) && !fast)
-    {
-        // leaving fast pathfinding
-        iLevel_ = app_.config().pathSearch;
-        if (loaded && (iLevel_ > app_.config().pathSearchFast))
-            --iLevel_;
-    }
-    else if (bLastSuccess_)
-    {
-        // decrement, if possible
-        if (iLevel_ > app_.config().pathSearch ||
-            (loaded && (iLevel_ > app_.config().pathSearchFast)))
-            --iLevel_;
-    }
-    else
-    {
-        // adjust as needed
-        if (!loaded && (iLevel_ < app_.config().pathSearchMax))
-            ++iLevel_;
-        if (loaded && (iLevel_ > app_.config().pathSearchFast))
-            --iLevel_;
-    }
-
-    JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_;
-
-    json::Value jvArray = json::ValueType::Array;
-    if (findPaths(cache, iLevel_, jvArray, continueCallback))
-    {
-        bLastSuccess_ = jvArray.size() != 0;
-        newStatus[jss::alternatives] = std::move(jvArray);
-    }
-    else
-    {
-        bLastSuccess_ = false;
-        newStatus = rpcError(RpcInternal);
     }
 
     if (fast && quickReply_ == steady_clock::time_point{})

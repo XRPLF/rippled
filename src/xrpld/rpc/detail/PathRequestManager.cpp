@@ -4,6 +4,8 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathRequest.h>
+#include <xrpld/rpc/detail/PayGraph.h>
+#include <xrpld/rpc/detail/PayGraphDelta.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/Job.h>
@@ -12,6 +14,9 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
@@ -61,6 +66,58 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
     auto event = app_.getJobQueue().makeLoadEvent(JtPathFind, "PathRequest::updateAll");
 
+    // ------------------------------------------------------------------
+    // Update the PayGraph incrementally from this ledger's tx metadata.
+    // Build it from scratch if it does not exist yet (startup / catchup).
+    // Skip entirely when path finding is disabled.
+    // ------------------------------------------------------------------
+    if (!app_.config().pathSearch)
+        return;
+
+    {
+        std::scoped_lock const sl(lock_);
+        if (!payGraph_)
+        {
+            // Only build once OrderBookDB has finished its first full scan.
+            // On networked nodes the scan runs in a background job; if a path
+            // request arrives before it completes, allBooks_ is empty and the
+            // resulting PayGraph would have no edges.  We defer here and rely
+            // on LedgerMaster::newOrderBookDB() → signalOrderBookReady() →
+            // another updateAll() call to perform the build once allBooks_ is
+            // fully populated.
+            //
+            // In standalone mode (unit tests) the scan is always synchronous
+            // and completes during Application::setup() before any request can
+            // arrive, so the gate is not needed and we proceed unconditionally.
+            if (!orderBookReady_.load(std::memory_order_acquire) && !app_.config().standalone())
+                return;
+
+            // First call after OrderBookDB is ready: build the full graph.
+            payGraph_ = PayGraph::build(
+                app_.getOrderBookDB(),
+                *inLedger,
+                std::nullopt,  // domain
+                journal_);
+        }
+        else
+        {
+            // Subsequent calls: derive only the changed books from tx metadata.
+            std::vector<Book> changedBooks;
+            for (auto const& [stTx, stMeta] : inLedger->txs)
+            {
+                if (!stMeta)
+                    continue;
+                // sfAffectedNodes is an array at the top level of the metadata.
+                if (stMeta->isFieldPresent(sfAffectedNodes))
+                {
+                    auto const& nodes = stMeta->getFieldArray(sfAffectedNodes);
+                    mergeBooks(changedBooks, extractChangedBooks(nodes, std::nullopt));
+                }
+            }
+            payGraph_->applyLedgerDelta(app_.getOrderBookDB(), *inLedger, changedBooks);
+        }
+    }
+
     std::vector<PathRequest::wptr> requests;
     std::shared_ptr<AssetCache> cache;
 
@@ -91,6 +148,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
     do
     {
         JLOG(journal_.trace()) << "updateAll looping";
+
         for (auto const& wr : requests)
         {
             if (app_.getJobQueue().isStopping())
@@ -149,16 +207,18 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
-                auto ret = std::ranges::remove_if(requests_, [&removed, &request](auto const& wl) {
-                    auto r = wl.lock();
+                auto ret = std::remove_if(
+                    requests_.begin(), requests_.end(), [&removed, &request](auto const& wl) {
+                        auto r = wl.lock();
 
-                    if (r && r != request)
-                        return false;
-                    ++removed;
-                    return true;
-                });
+                        if (r && r != request)
+                            return false;
 
-                requests_.erase(ret.begin(), ret.end());
+                        ++removed;
+                        return true;
+                    });
+
+                requests_.erase(ret, requests_.end());
             }
 
             mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
@@ -168,6 +228,8 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
             if (mustBreak)
                 break;
         }
+
+        mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
 
         if (mustBreak)
         {  // a new request came in while we were working
@@ -234,6 +296,11 @@ PathRequestManager::makePathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& requestJson)
 {
+    // Ensure the PayGraph is built before doCreate runs its fast pass; the
+    // async updateAll() that normally builds it won't have run yet on this
+    // first call from a fresh subscriber.
+    ensurePayGraph(inLedger);
+
     auto req = std::make_shared<PathRequest>(app_, subscriber, ++lastIdentifier_, *this, journal_);
 
     auto [valid, jvRes] = req->doCreate(getAssetCache(inLedger, false), requestJson);
@@ -256,6 +323,9 @@ PathRequestManager::makeLegacyPathRequest(
     std::shared_ptr<ReadView const> const& inLedger,
     json::Value const& request)
 {
+    // Ensure the PayGraph is built before doCreate runs its fast pass.
+    ensurePayGraph(inLedger);
+
     // This assignment must take place before the
     // completion function is called
     req = std::make_shared<PathRequest>(
@@ -288,6 +358,11 @@ PathRequestManager::doLegacyPathRequest(
     json::Value const& request)
 {
     auto cache = std::make_shared<AssetCache>(inLedger, app_.getJournal("AssetCache"));
+
+    // Ensure the PayGraph is built/refreshed for this ledger before running
+    // the synchronous path-find pass; otherwise the first response would be
+    // empty when called before the async updateAll() job runs.
+    ensurePayGraph(inLedger);
 
     auto req =
         std::make_shared<PathRequest>(app_, [] {}, consumer, ++lastIdentifier_, *this, journal_);
