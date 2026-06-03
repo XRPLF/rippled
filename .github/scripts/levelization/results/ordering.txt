@@ -50,6 +50,7 @@ libxrpl.tx > xrpl.json
 libxrpl.tx > xrpl.ledger
 libxrpl.tx > xrpl.protocol
 libxrpl.tx > xrpl.server
+libxrpl.tx > xrpl.telemetry
 libxrpl.tx > xrpl.tx
 test.app > test.jtx
 test.app > test.unit_test
