@@ -283,7 +283,7 @@ VaultWithdraw::doApply()
     auto const freezeHandling =
         redeemingToIssuer ? FreezeHandling::IgnoreFreeze : FreezeHandling::ZeroIfFrozen;
 
-    // Share freeze checks are transitive. We skip them when withdrawing to the issuer all together.
+    // Share freeze checks are transitive. We skip them when withdrawing to the issuer alltogether.
     if (accountHolds(view(), accountID_, share, freezeHandling, AuthHandling::IgnoreAuth, j_) <
         sharesRedeemed)
     {

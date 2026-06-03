@@ -3538,6 +3538,11 @@ class Vault_test : public beast::unit_test::Suite
                 env(tx, Ter{tecFROZEN});
                 env.close();
 
+                // Withdrawal to the IOU issuer succeeds (redemption path)
+                tx[sfDestination] = issuer.human();
+                env(tx);
+                env.close();
+
                 // Cannot deposit some more
                 tx = vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(10)});
 
