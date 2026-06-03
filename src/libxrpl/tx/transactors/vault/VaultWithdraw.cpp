@@ -167,21 +167,30 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     // - Only deep-frozen destinations (which cannot receive at all) are blocked.
     if (fix320Enabled)
     {
-        if (auto const ret = checkFrozen(ctx.view, vaultAccount, vaultAsset))
-            return ret;
-        if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
-            return ret;
+        if (dstAcct != vaultAsset.getIssuer())
+        {
+            if (auto const ret = checkFrozen(ctx.view, vaultAccount, vaultAsset))
+                return ret;
+
+            if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
+                return ret;
+
+            // Cannot return shares to the vault, if the underlying asset was frozen for
+            // the submitter
+            if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
+                return ret;
+        }
     }
     else
     {
         if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
             return ret;
-    }
 
-    // Cannot return shares to the vault, if the underlying asset was frozen for
-    // the submitter
-    if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
-        return ret;
+        // Cannot return shares to the vault, if the underlying asset was frozen for
+        // the submitter
+        if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
+            return ret;
+    }
 
     return tesSUCCESS;
 }
