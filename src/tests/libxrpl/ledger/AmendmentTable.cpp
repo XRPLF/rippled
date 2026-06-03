@@ -153,19 +153,19 @@ struct AmendmentTableTest : ::testing::Test
     // Enabled amendments are typically a subset of supported amendments.
     // Vetoed amendments should be supported but not enabled.
     // Unsupported amendments may be added to the AmendmentTable.
-    std::vector<std::string> const yes_{"g", "i", "k", "m", "o", "q", "r", "s", "t", "u"};
-    std::vector<std::string> const enabled_{"b", "d", "f", "h", "j", "l", "n", "p"};
-    std::vector<std::string> const vetoed_{"a", "c", "e"};
-    std::vector<std::string> const obsolete_{"0", "1", "2"};
-    std::vector<std::string> const allSupported_{combine(yes_, enabled_, vetoed_, obsolete_)};
-    std::vector<std::string> const unsupported_{"v", "w", "x"};
-    std::vector<std::string> const unsupportedMajority_{"y", "z"};
+    std::vector<std::string> const yes{"g", "i", "k", "m", "o", "q", "r", "s", "t", "u"};
+    std::vector<std::string> const enabled{"b", "d", "f", "h", "j", "l", "n", "p"};
+    std::vector<std::string> const vetoed{"a", "c", "e"};
+    std::vector<std::string> const obsolete{"0", "1", "2"};
+    std::vector<std::string> const allSupported{combine(yes, enabled, vetoed, obsolete)};
+    std::vector<std::string> const unsupported{"v", "w", "x"};
+    std::vector<std::string> const unsupportedMajority{"y", "z"};
 
-    Section const emptySection_;
-    std::vector<AmendmentTable::FeatureInfo> const emptyYes_;
+    Section const emptySection;
+    std::vector<AmendmentTable::FeatureInfo> const emptyYes;
 
-    TestServiceRegistry registry_;
-    beast::Journal journal_{registry_.getJournal("AmendmentTableTest")};
+    TestServiceRegistry registry;
+    beast::Journal journal{registry.getJournal("AmendmentTableTest")};
 
     std::unique_ptr<AmendmentTable>
     makeTable(
@@ -174,22 +174,22 @@ struct AmendmentTableTest : ::testing::Test
         Section const& enabled,
         Section const& vetoed)
     {
-        return makeAmendmentTable(registry_, majorityTime, supported, enabled, vetoed, journal_);
+        return makeAmendmentTable(registry, majorityTime, supported, enabled, vetoed, journal);
     }
 
     std::unique_ptr<AmendmentTable>
     makeTable(std::chrono::seconds majorityTime)
     {
         static std::vector<AmendmentTable::FeatureInfo> const kSupported = combine(
-            makeDefaultYes(yes_),
+            makeDefaultYes(yes),
             // Use non-intuitive default votes for "enabled_" and "vetoed_"
             // so that when the tests later explicitly enable or veto them,
             // we can be certain that they are not simply going by their
             // default vote setting.
-            makeDefaultNo(enabled_),
-            makeDefaultYes(vetoed_),
-            makeObsolete(obsolete_));
-        return makeTable(majorityTime, kSupported, makeSection(enabled_), makeSection(vetoed_));
+            makeDefaultNo(enabled),
+            makeDefaultYes(vetoed),
+            makeObsolete(obsolete));
+        return makeTable(majorityTime, kSupported, makeSection(enabled), makeSection(vetoed));
     }
 
     // Build a Rules object that has all testable amendments enabled.
@@ -332,22 +332,22 @@ TEST_F(AmendmentTableTest, construction)
 {
     auto table = makeTable(weeks(1));
 
-    for (auto const& a : allSupported_)
+    for (auto const& a : allSupported)
         EXPECT_TRUE(table->isSupported(amendmentId(a)));
 
-    for (auto const& a : yes_)
+    for (auto const& a : yes)
         EXPECT_TRUE(table->isSupported(amendmentId(a)));
 
-    for (auto const& a : enabled_)
+    for (auto const& a : enabled)
         EXPECT_TRUE(table->isSupported(amendmentId(a)));
 
-    for (auto const& a : vetoed_)
+    for (auto const& a : vetoed)
     {
         EXPECT_TRUE(table->isSupported(amendmentId(a)));
         EXPECT_FALSE(table->isEnabled(amendmentId(a)));
     }
 
-    for (auto const& a : obsolete_)
+    for (auto const& a : obsolete)
     {
         EXPECT_TRUE(table->isSupported(amendmentId(a)));
         EXPECT_FALSE(table->isEnabled(amendmentId(a)));
@@ -358,17 +358,17 @@ TEST_F(AmendmentTableTest, name_to_id_mapping)
 {
     auto table = makeTable(weeks(1));
 
-    for (auto const& a : yes_)
+    for (auto const& a : yes)
         EXPECT_EQ(table->find(a), amendmentId(a));
-    for (auto const& a : enabled_)
+    for (auto const& a : enabled)
         EXPECT_EQ(table->find(a), amendmentId(a));
-    for (auto const& a : vetoed_)
+    for (auto const& a : vetoed)
         EXPECT_EQ(table->find(a), amendmentId(a));
-    for (auto const& a : obsolete_)
+    for (auto const& a : obsolete)
         EXPECT_EQ(table->find(a), amendmentId(a));
-    for (auto const& a : unsupported_)
+    for (auto const& a : unsupported)
         EXPECT_FALSE(table->find(a));
-    for (auto const& a : unsupportedMajority_)
+    for (auto const& a : unsupportedMajority)
         EXPECT_FALSE(table->find(a));
 }
 
@@ -378,7 +378,7 @@ TEST_F(AmendmentTableTest, getjson_veto_unsupported)
 {
     auto table = makeTable(weeks(1));
 
-    uint256 const unsupportedID = amendmentId(unsupported_[0]);
+    uint256 const unsupportedID = amendmentId(unsupported[0]);
 
     // Before vetoing, the amendment is not in the table.
     {
@@ -419,9 +419,9 @@ struct AmendmentTableBadConfigTest : AmendmentTableTest,
 
 TEST_P(AmendmentTableBadConfigTest, rejects_invalid_entry)
 {
-    auto const yesVotes = makeDefaultYes(yes_);
-    auto const section = makeSection(vetoed_);
-    auto const id = to_string(amendmentId(enabled_[0]));
+    auto const yesVotes = makeDefaultYes(yes);
+    auto const section = makeSection(vetoed);
+    auto const id = to_string(amendmentId(enabled[0]));
 
     std::string const entry = GetParam().makeEntry(id);
 
@@ -429,7 +429,7 @@ TEST_P(AmendmentTableBadConfigTest, rejects_invalid_entry)
     test.append(entry);
 
     EXPECT_THAT(
-        [&] { makeTable(weeks(2), yesVotes, test, emptySection_); },
+        [&] { makeTable(weeks(2), yesVotes, test, emptySection); },
         ThrowsMessage<std::runtime_error>("Invalid entry '" + entry + "' in [Test]"));
 }
 
@@ -475,7 +475,7 @@ TEST_F(AmendmentTableTest, enable)
 
     // Note which entries are enabled (convert the amendment names to IDs)
     std::set<uint256> allEnabled;
-    for (auto const& a : enabled_)
+    for (auto const& a : enabled)
         allEnabled.insert(amendmentId(a));
 
     for (uint256 const& a : allEnabled)
@@ -485,7 +485,7 @@ TEST_F(AmendmentTableTest, enable)
     EXPECT_FALSE(table->hasUnsupportedEnabled());
 
     // Verify all enables are enabled and nothing else.
-    for (std::string const& a : yes_)
+    for (std::string const& a : yes)
     {
         uint256 const supportedID = amendmentId(a);
         bool const enabled = table->isEnabled(supportedID);
@@ -500,21 +500,21 @@ TEST_F(AmendmentTableTest, desired_excludes_vetoed)
 {
     std::unique_ptr<AmendmentTable> table = makeTable(weeks(2));
 
-    for (std::string const& a : enabled_)
+    for (std::string const& a : enabled)
         table->enable(amendmentId(a));
 
     std::set<uint256> vetoed;
-    for (std::string const& a : vetoed_)
+    for (std::string const& a : this->vetoed)
         vetoed.insert(amendmentId(a));
 
     std::vector<uint256> const desired = table->getDesired();
     for (uint256 const& a : desired)
-        EXPECT_TRUE(not vetoed.contains(a));
+        EXPECT_TRUE(!vetoed.contains(a));
 
     // Unveto an amendment that is already not vetoed.  Shouldn't
     // hurt anything, but the values returned by getDesired()
     // shouldn't change.
-    EXPECT_FALSE(table->unVeto(amendmentId(yes_[1])));
+    EXPECT_FALSE(table->unVeto(amendmentId(yes[1])));
     EXPECT_EQ(desired, table->getDesired());
 }
 
@@ -523,10 +523,10 @@ TEST_F(AmendmentTableTest, unveto_vetoed)
 {
     std::unique_ptr<AmendmentTable> table = makeTable(weeks(2));
 
-    for (std::string const& a : enabled_)
+    for (std::string const& a : enabled)
         table->enable(amendmentId(a));
 
-    uint256 const unvetoedID = amendmentId(vetoed_[0]);
+    uint256 const unvetoedID = amendmentId(vetoed[0]);
     EXPECT_TRUE(table->unVeto(unvetoedID));
 
     std::vector<uint256> const desired = table->getDesired();
@@ -538,10 +538,10 @@ TEST_F(AmendmentTableTest, veto_all)
 {
     std::unique_ptr<AmendmentTable> table = makeTable(weeks(2));
 
-    for (std::string const& a : enabled_)
+    for (std::string const& a : enabled)
         table->enable(amendmentId(a));
 
-    for (std::string const& a : allSupported_)
+    for (std::string const& a : allSupported)
         table->veto(amendmentId(a));
 
     EXPECT_TRUE(table->getDesired().empty());
@@ -553,7 +553,7 @@ TEST_F(AmendmentTableTest, enable_unsupported)
     std::unique_ptr<AmendmentTable> table = makeTable(weeks(2));
 
     EXPECT_FALSE(table->hasUnsupportedEnabled());
-    table->enable(amendmentId(unsupported_[0]));
+    table->enable(amendmentId(unsupported[0]));
     EXPECT_TRUE(table->hasUnsupportedEnabled());
 }
 
@@ -568,7 +568,7 @@ TEST_F(AmendmentTableTest, has_unsupported_enabled)
 
     std::set<uint256> enabled;
     std::ranges::for_each(
-        unsupported_, [&enabled](auto const& s) { enabled.insert(amendmentId(s)); });
+        unsupported, [&enabled](auto const& s) { enabled.insert(amendmentId(s)); });
 
     majorityAmendments_t majority;
     table->doValidatedLedger(1, enabled, majority);
@@ -576,7 +576,7 @@ TEST_F(AmendmentTableTest, has_unsupported_enabled)
     EXPECT_FALSE(table->firstUnsupportedExpected());
 
     NetClock::duration t{1000s};
-    std::ranges::for_each(unsupportedMajority_, [&majority, &t](auto const& s) {
+    std::ranges::for_each(unsupportedMajority, [&majority, &t](auto const& s) {
         majority[amendmentId(s)] = NetClock::time_point{--t};
     });
 
@@ -596,7 +596,7 @@ TEST_F(AmendmentTableTest, no_on_unknown)
 {
     auto const testAmendment = amendmentId("TestAmendment");
 
-    auto table = makeTable(weeks(2), emptyYes_, emptySection_, emptySection_);
+    auto table = makeTable(weeks(2), emptyYes, emptySection, emptySection);
 
     auto const validators = makeValidators(10, table);
 
@@ -627,7 +627,7 @@ TEST_F(AmendmentTableTest, no_on_vetoed)
 {
     auto const testAmendment = amendmentId("vetoedAmendment");
 
-    auto table = makeTable(weeks(2), emptyYes_, emptySection_, makeSection(testAmendment));
+    auto table = makeTable(weeks(2), emptyYes, emptySection, makeSection(testAmendment));
 
     auto const validators = makeValidators(10, table);
 
@@ -654,7 +654,7 @@ TEST_F(AmendmentTableTest, no_on_vetoed)
 // Vote on and enable known, not-enabled amendment
 TEST_F(AmendmentTableTest, vote_enable)
 {
-    auto table = makeTable(weeks(2), makeDefaultYes(yes_), emptySection_, emptySection_);
+    auto table = makeTable(weeks(2), makeDefaultYes(yes), emptySection, emptySection);
 
     auto const validators = makeValidators(10, table);
 
@@ -662,32 +662,32 @@ TEST_F(AmendmentTableTest, vote_enable)
 
     // Week 1: We should vote for all known amendments not enabled
     std::vector<uint256> ourVotes = doRound(allRules(), *table, weeks{1}, validators, votingState);
-    EXPECT_EQ(ourVotes.size(), yes_.size());
+    EXPECT_EQ(ourVotes.size(), yes.size());
     EXPECT_TRUE(votingState.enabled.empty());
-    for (auto const& i : yes_)
+    for (auto const& i : yes)
         EXPECT_TRUE(!votingState.majority.contains(amendmentId(i)));
 
     // Now, everyone votes for this feature
-    for (auto const& i : yes_)
+    for (auto const& i : yes)
         votingState.votes.emplace_back(amendmentId(i), validators.size());
 
     // Week 2: We should recognize a majority
     ourVotes = doRound(allRules(), *table, weeks{2}, validators, votingState);
-    EXPECT_EQ(ourVotes.size(), yes_.size());
+    EXPECT_EQ(ourVotes.size(), yes.size());
     EXPECT_TRUE(votingState.enabled.empty());
 
-    for (auto const& i : yes_)
+    for (auto const& i : yes)
         EXPECT_EQ(votingState.majority[amendmentId(i)], hourTime(weeks{2}));
 
     // Week 5: We should enable the amendment
     ourVotes = doRound(allRules(), *table, weeks{5}, validators, votingState);
-    EXPECT_EQ(votingState.enabled.size(), yes_.size());
+    EXPECT_EQ(votingState.enabled.size(), yes.size());
 
     // Week 6: We should remove it from our votes and from having a majority
     ourVotes = doRound(allRules(), *table, weeks{6}, validators, votingState);
-    EXPECT_EQ(votingState.enabled.size(), yes_.size());
+    EXPECT_EQ(votingState.enabled.size(), yes.size());
     EXPECT_TRUE(ourVotes.empty());
-    for (auto const& i : yes_)
+    for (auto const& i : yes)
         EXPECT_TRUE(!votingState.majority.contains(amendmentId(i)));
 }
 
@@ -695,7 +695,7 @@ TEST_F(AmendmentTableTest, vote_enable)
 TEST_F(AmendmentTableTest, detect_majority)
 {
     auto const testAmendment = amendmentId("detectMajority");
-    auto table = makeTable(weeks(2), makeDefaultYes(testAmendment), emptySection_, emptySection_);
+    auto table = makeTable(weeks(2), makeDefaultYes(testAmendment), emptySection, emptySection);
 
     auto const validators = makeValidators(16, table);
 
@@ -747,7 +747,7 @@ TEST_F(AmendmentTableTest, lost_majority)
 {
     auto const testAmendment = amendmentId("lostMajority");
 
-    auto table = makeTable(weeks(8), makeDefaultYes(testAmendment), emptySection_, emptySection_);
+    auto table = makeTable(weeks(8), makeDefaultYes(testAmendment), emptySection, emptySection);
 
     auto const validators = makeValidators(16, table);
 
@@ -793,7 +793,7 @@ TEST_F(AmendmentTableTest, lost_majority)
 TEST_F(AmendmentTableTest, changed_unl)
 {
     auto const testAmendment = amendmentId("changedUNL");
-    auto table = makeTable(weeks(8), makeDefaultYes(testAmendment), emptySection_, emptySection_);
+    auto table = makeTable(weeks(8), makeDefaultYes(testAmendment), emptySection, emptySection);
 
     std::vector<std::pair<PublicKey, SecretKey>> validators = makeValidators(10, table);
 
@@ -895,8 +895,7 @@ TEST_F(AmendmentTableTest, validator_flapping)
     for (int const flapRateHours : {23, 25})
     {
         auto const testAmendment = amendmentId("validatorFlapping");
-        auto table =
-            makeTable(weeks(1), makeDefaultYes(testAmendment), emptySection_, emptySection_);
+        auto table = makeTable(weeks(1), makeDefaultYes(testAmendment), emptySection, emptySection);
 
         // Make two lists of validators, one with a missing validator, to
         // make it easy to simulate validator flapping.
