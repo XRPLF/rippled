@@ -5,7 +5,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/tx/wasm/WasmParamsHelper.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <cstdint>
 

@@ -18,8 +18,8 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmImportsHelper.h>
-#include <xrpl/tx/wasm/WasmParamsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <wasm.h>
@@ -43,7 +43,7 @@ static inline HostFunctions*
 getHF(void* env)
 {
     auto const* udata = reinterpret_cast<WasmUserData*>(env);
-    HostFunctions* hf = &udata->first.get();
+    HostFunctions* hf = &udata->first.get();  // NOLINT
     return hf;
 }
 

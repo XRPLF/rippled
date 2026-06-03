@@ -5,8 +5,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmImportsHelper.h>
-#include <xrpl/tx/wasm/WasmParamsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <wasmi/config.h>

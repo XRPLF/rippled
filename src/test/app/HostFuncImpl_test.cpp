@@ -44,8 +44,8 @@
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/HostFuncWrapper.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmImportsHelper.h>
-#include <xrpl/tx/wasm/WasmParamsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 #include <xrpl/tx/wasm/WasmiVM.h>
 

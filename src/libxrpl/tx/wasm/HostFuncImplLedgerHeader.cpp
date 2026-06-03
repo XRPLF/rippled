@@ -2,7 +2,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
-#include <xrpl/tx/wasm/WasmParamsHelper.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <cstdint>
 #include <string>

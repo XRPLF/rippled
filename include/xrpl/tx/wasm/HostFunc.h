@@ -8,7 +8,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
-#include <xrpl/tx/wasm/WasmParamsHelper.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 
 namespace xrpl {
 

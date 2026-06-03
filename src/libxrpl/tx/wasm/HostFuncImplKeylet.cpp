@@ -7,7 +7,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
-#include <xrpl/tx/wasm/WasmParamsHelper.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <cstdint>
 

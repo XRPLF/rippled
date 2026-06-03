@@ -7,8 +7,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncWrapper.h>  // IWYU pragma: keep
+#include <xrpl/tx/wasm/WasmCommon.h>
 #include <xrpl/tx/wasm/WasmImportsHelper.h>
-#include <xrpl/tx/wasm/WasmParamsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
 #include <boost/algorithm/hex.hpp>

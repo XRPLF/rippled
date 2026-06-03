@@ -11,7 +11,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
-#include <xrpl/tx/wasm/WasmParamsHelper.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <cstdint>
 #include <cstring>

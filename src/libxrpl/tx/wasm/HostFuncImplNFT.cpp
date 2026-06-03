@@ -6,7 +6,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
-#include <xrpl/tx/wasm/WasmParamsHelper.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <cstdint>
 
