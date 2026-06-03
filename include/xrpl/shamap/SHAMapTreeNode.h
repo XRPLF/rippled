@@ -13,6 +13,9 @@
 
 namespace xrpl {
 
+class SHAMapTreeNode;
+using SHAMapTreeNodePtr = intr_ptr::SharedPtr<SHAMapTreeNode>;
+
 // These are wire-protocol identifiers used during serialization to encode the
 // type of a node. They should not be arbitrarily be changed.
 static constexpr unsigned char const kWireTypeTransaction = 0;
@@ -112,7 +115,7 @@ public:
     }
 
     /** Make a copy of this node, setting the owner. */
-    virtual intr_ptr::SharedPtr<SHAMapTreeNode>
+    virtual SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const = 0;
     /** @} */
 
@@ -153,20 +156,20 @@ public:
     virtual void
     invariants(bool isRoot = false) const = 0;
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeFromWire(Slice rawNode);
 
 private:
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeAccountState(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid);
 };
 
