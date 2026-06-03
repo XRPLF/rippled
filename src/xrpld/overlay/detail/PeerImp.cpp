@@ -1336,11 +1336,8 @@ PeerImp::handleTransaction(
             span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
         if (auto const version = getVersion(); !version.empty())
             span->setAttribute(tx_span::attr::peerVersion, version.c_str());
-        // Set defaults for conditional attributes so they are always present
-        // on the span.  The suppressed path overrides these when the
-        // transaction has already been seen via HashRouter.
-        span->setAttribute(tx_span::attr::suppressed, false);
-        span->setAttribute(tx_span::attr::txStatus, "new");
+        // Note: suppressed and txStatus are set once at each exit path
+        // (not as defaults here) to avoid OTel SDK attribute duplication.
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
@@ -1405,6 +1402,7 @@ PeerImp::handleTransaction(
             return;
         }
 
+        span->setAttribute(tx_span::attr::suppressed, false);
         JLOG(pJournal_.debug()) << "Got tx " << txID;
 
         bool checkSignature = true;
