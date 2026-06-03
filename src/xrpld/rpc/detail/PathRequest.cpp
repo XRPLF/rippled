@@ -594,6 +594,8 @@ PathRequest::findPaths(
     auto span = SpanGuard::span(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::discover);
     span.setAttribute(pathfind_span::attr::searchLevel, static_cast<int64_t>(level));
+    span.setAttribute(
+        pathfind_span::attr::numSourceAssets, static_cast<int64_t>(sourceAssets.size()));
 
     std::int64_t totalPaths = 0;
     for (auto const& asset : sourceAssets)
@@ -740,6 +742,8 @@ PathRequest::doUpdate(
     auto span = SpanGuard::span(
         TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::compute);
     span.setAttribute(pathfind_span::attr::fast, fast);
+    span.setAttribute(pathfind_span::attr::destAmount, saDstAmount_.getFullText().c_str());
+    span.setAttribute(pathfind_span::attr::destCurrency, to_string(saDstAmount_.asset()).c_str());
 
     JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
 

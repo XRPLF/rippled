@@ -32,6 +32,7 @@
 
 #include <xrpl/beast/insight/OTelCollector.h>
 
+#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/CounterImpl.h>
 #include <xrpl/beast/insight/EventImpl.h>
 #include <xrpl/beast/insight/GaugeImpl.h>
@@ -775,15 +776,15 @@ OTelCollectorImp::makeMeter(std::string const& name)
 void
 OTelCollectorImp::addHook(OTelHookImpl* hook)
 {
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     hooks_.push_back(hook);
 }
 
 void
 OTelCollectorImp::removeHook(OTelHookImpl* hook)
 {
-    std::lock_guard lock(mutex_);
-    hooks_.erase(std::remove(hooks_.begin(), hooks_.end(), hook), hooks_.end());
+    std::scoped_lock const lock(mutex_);
+    std::erase(hooks_, hook);
 }
 
 void
@@ -802,7 +803,7 @@ OTelCollectorImp::callHooks()
     if (!lastHookCallMs_.compare_exchange_strong(last, now, std::memory_order_acq_rel))
         return;  // Another thread won the race.
 
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     for (auto* hook : hooks_)
         hook->callHandler();
 }
@@ -810,15 +811,15 @@ OTelCollectorImp::callHooks()
 void
 OTelCollectorImp::addGauge(OTelGaugeImpl* gauge)
 {
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     gauges_.push_back(gauge);
 }
 
 void
 OTelCollectorImp::removeGauge(OTelGaugeImpl* gauge)
 {
-    std::lock_guard lock(mutex_);
-    gauges_.erase(std::remove(gauges_.begin(), gauges_.end(), gauge), gauges_.end());
+    std::scoped_lock const lock(mutex_);
+    std::erase(gauges_, gauge);
 }
 
 opentelemetry::nostd::shared_ptr<metrics_api::Meter> const&
@@ -842,7 +843,7 @@ OTelCollectorImp::formatName(std::string const& name) const
         result = prefix_;
         result += '_';
     }
-    for (char c : name)
+    for (char const c : name)
     {
         result += (c == '.') ? '_' : c;
     }
