@@ -1565,8 +1565,9 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         {
             if (e.span && *e.span)
             {
-                e.span->setAttribute(tx_span::attr::terResult, transToken(e.result).c_str());
-                e.span->setAttribute(tx_span::attr::applied, e.applied);
+                e.span->setAttribute(
+                    telemetry::tx_span::attr::terResult, transToken(e.result).c_str());
+                e.span->setAttribute(telemetry::tx_span::attr::applied, e.applied);
             }
             e.transaction->clearSubmitResult();
 
