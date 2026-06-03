@@ -4514,8 +4514,6 @@ public:
 
             // tfFillOrKill, TakerPays must be filled
             {
-                TER const err = TER(tesSUCCESS);
-
                 env(offer(maker, XRP(100), usd(100)));
                 env.close();
 
