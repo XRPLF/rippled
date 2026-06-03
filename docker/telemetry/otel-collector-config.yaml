@@ -57,6 +57,12 @@ connectors:
       - name: suppressed
       - name: proposal_trusted
       - name: validation_trusted
+      - name: tx_type
+      - name: ter_result
+      - name: txq_status
+      - name: consensus_state
+      - name: load_type
+      - name: is_batch
 
 exporters:
   debug:
