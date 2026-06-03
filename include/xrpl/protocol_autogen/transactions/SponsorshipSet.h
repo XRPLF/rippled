@@ -19,9 +19,9 @@ class SponsorshipSetBuilder;
  * @brief Transaction: SponsorshipSet
  *
  * Type: ttSPONSORSHIP_SET (86)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureSponsor
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use SponsorshipSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfCounterpartySponsor (soeOPTIONAL)
+     * @brief Get sfCounterpartySponsor (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfSponsee (soeOPTIONAL)
+     * @brief Get sfSponsee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -100,7 +100,7 @@ public:
     }
 
     /**
-     * @brief Get sfFeeAmount (soeOPTIONAL)
+     * @brief Get sfFeeAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -126,7 +126,7 @@ public:
     }
 
     /**
-     * @brief Get sfMaxFee (soeOPTIONAL)
+     * @brief Get sfMaxFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -152,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveCount (soeOPTIONAL)
+     * @brief Get sfReserveCount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -182,7 +182,7 @@ public:
  * @brief Builder for SponsorshipSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class SponsorshipSetBuilder : public TransactionBuilderBase<SponsorshipSetBuilder>
@@ -219,7 +219,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfCounterpartySponsor (soeOPTIONAL)
+     * @brief Set sfCounterpartySponsor (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
@@ -230,7 +230,7 @@ public:
     }
 
     /**
-     * @brief Set sfSponsee (soeOPTIONAL)
+     * @brief Set sfSponsee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
@@ -241,7 +241,7 @@ public:
     }
 
     /**
-     * @brief Set sfFeeAmount (soeOPTIONAL)
+     * @brief Set sfFeeAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
@@ -252,7 +252,7 @@ public:
     }
 
     /**
-     * @brief Set sfMaxFee (soeOPTIONAL)
+     * @brief Set sfMaxFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
@@ -263,7 +263,7 @@ public:
     }
 
     /**
-     * @brief Set sfReserveCount (soeOPTIONAL)
+     * @brief Set sfReserveCount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&

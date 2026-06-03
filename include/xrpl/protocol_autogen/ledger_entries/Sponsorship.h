@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwner (soeREQUIRED)
+     * @brief Get sfOwner (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -79,7 +79,7 @@ public:
     }
 
     /**
-     * @brief Get sfSponsee (soeREQUIRED)
+     * @brief Get sfSponsee (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -90,7 +90,7 @@ public:
     }
 
     /**
-     * @brief Get sfFeeAmount (soeOPTIONAL)
+     * @brief Get sfFeeAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -114,7 +114,7 @@ public:
     }
 
     /**
-     * @brief Get sfMaxFee (soeOPTIONAL)
+     * @brief Get sfMaxFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -138,7 +138,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveCount (soeDEFAULT)
+     * @brief Get sfReserveCount (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -162,7 +162,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -173,7 +173,7 @@ public:
     }
 
     /**
-     * @brief Get sfSponseeNode (soeREQUIRED)
+     * @brief Get sfSponseeNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -188,7 +188,7 @@ public:
  * @brief Builder for Sponsorship ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class SponsorshipBuilder : public LedgerEntryBuilderBase<SponsorshipBuilder>
@@ -231,7 +231,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
@@ -242,7 +242,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
@@ -253,7 +253,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwner (soeREQUIRED)
+     * @brief Set sfOwner (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
@@ -264,7 +264,7 @@ public:
     }
 
     /**
-     * @brief Set sfSponsee (soeREQUIRED)
+     * @brief Set sfSponsee (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
@@ -275,7 +275,7 @@ public:
     }
 
     /**
-     * @brief Set sfFeeAmount (soeOPTIONAL)
+     * @brief Set sfFeeAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
@@ -286,7 +286,7 @@ public:
     }
 
     /**
-     * @brief Set sfMaxFee (soeOPTIONAL)
+     * @brief Set sfMaxFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
@@ -297,7 +297,7 @@ public:
     }
 
     /**
-     * @brief Set sfReserveCount (soeDEFAULT)
+     * @brief Set sfReserveCount (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
@@ -308,7 +308,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&
@@ -319,7 +319,7 @@ public:
     }
 
     /**
-     * @brief Set sfSponseeNode (soeREQUIRED)
+     * @brief Set sfSponseeNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipBuilder&

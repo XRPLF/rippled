@@ -520,7 +520,7 @@ public:
     }
 
     /**
-     * @brief Get sfSponsoredOwnerCount (soeDEFAULT)
+     * @brief Get sfSponsoredOwnerCount (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -544,7 +544,7 @@ public:
     }
 
     /**
-     * @brief Get sfSponsoringOwnerCount (soeDEFAULT)
+     * @brief Get sfSponsoringOwnerCount (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -568,7 +568,7 @@ public:
     }
 
     /**
-     * @brief Get sfSponsoringAccountCount (soeDEFAULT)
+     * @brief Get sfSponsoringAccountCount (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -892,7 +892,7 @@ public:
     }
 
     /**
-     * @brief Set sfSponsoredOwnerCount (soeDEFAULT)
+     * @brief Set sfSponsoredOwnerCount (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -903,7 +903,7 @@ public:
     }
 
     /**
-     * @brief Set sfSponsoringOwnerCount (soeDEFAULT)
+     * @brief Set sfSponsoringOwnerCount (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&
@@ -914,7 +914,7 @@ public:
     }
 
     /**
-     * @brief Set sfSponsoringAccountCount (soeDEFAULT)
+     * @brief Set sfSponsoringAccountCount (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     AccountRootBuilder&

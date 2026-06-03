@@ -19,9 +19,9 @@ class SponsorshipTransferBuilder;
  * @brief Transaction: SponsorshipTransfer
  *
  * Type: ttSPONSORSHIP_TRANSFER (85)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureSponsor
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use SponsorshipTransferBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfObjectID (soeOPTIONAL)
+     * @brief Get sfObjectID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -74,7 +74,7 @@ public:
     }
 
     /**
-     * @brief Get sfSponsee (soeOPTIONAL)
+     * @brief Get sfSponsee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -104,7 +104,7 @@ public:
  * @brief Builder for SponsorshipTransfer transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class SponsorshipTransferBuilder : public TransactionBuilderBase<SponsorshipTransferBuilder>
@@ -141,7 +141,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfObjectID (soeOPTIONAL)
+     * @brief Set sfObjectID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipTransferBuilder&
@@ -152,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Set sfSponsee (soeOPTIONAL)
+     * @brief Set sfSponsee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipTransferBuilder&

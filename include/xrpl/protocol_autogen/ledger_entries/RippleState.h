@@ -245,7 +245,7 @@ public:
     }
 
     /**
-     * @brief Get sfHighSponsor (soeOPTIONAL)
+     * @brief Get sfHighSponsor (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -269,7 +269,7 @@ public:
     }
 
     /**
-     * @brief Get sfLowSponsor (soeOPTIONAL)
+     * @brief Get sfLowSponsor (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -459,7 +459,7 @@ public:
     }
 
     /**
-     * @brief Set sfHighSponsor (soeOPTIONAL)
+     * @brief Set sfHighSponsor (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
@@ -470,7 +470,7 @@ public:
     }
 
     /**
-     * @brief Set sfLowSponsor (soeOPTIONAL)
+     * @brief Set sfLowSponsor (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     RippleStateBuilder&
