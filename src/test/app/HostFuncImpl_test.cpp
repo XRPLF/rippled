@@ -44,7 +44,8 @@
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/HostFuncWrapper.h>
-#include <xrpl/tx/wasm/ParamsHelper.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/WasmImportsHelper.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 #include <xrpl/tx/wasm/WasmiVM.h>
 
@@ -174,7 +175,7 @@ public:
     Wmem
     getMem() override
     {
-        return {.p = buffer_.data(), .s = buffer_.size()};
+        return Wmem(buffer_.data(), buffer_.size());
     }
 
     std::int64_t
@@ -206,14 +207,14 @@ public:
     checkIdx(WasmValVec const& params, size_t i) const
     {
         if (i + 1 >= params.size())
-            Throw<std::runtime_error>("Out of bounds");
+            Throw<std::out_of_range>("Out of bounds");
         if (params[i].kind != WASM_I32 || params[i + 1].kind != WASM_I32)
             Throw<std::runtime_error>("Invalid params");
         std::int32_t const ptr = params[i].of.i32;
         std::int32_t const size = params[i + 1].of.i32;
         std::int64_t const offset = (std::int64_t)ptr + size;
         if (ptr < 0 || size < 0 || std::cmp_greater_equal(offset, buffer_.size()))
-            Throw<std::runtime_error>("Out of bounds");
+            Throw<std::out_of_range>("Out of bounds");
     }
 
     [[nodiscard]] Slice
@@ -292,24 +293,24 @@ ww_hlp(size_t& idx, E&& e, P&& params, Arg&& arg)
     else if constexpr (std::is_same_v<Arg, Issue>)
     {
         auto const* udata = reinterpret_cast<WasmUserData*>(e);
-        HostFunctions const* hf = reinterpret_cast<HostFunctions*>(udata->first);
-        auto* vrt = reinterpret_cast<VirtualRuntime*>(hf->getRT());
+        HostFunctions const& hf = udata->first;
+        auto& vrt = *reinterpret_cast<VirtualRuntime*>(hf.getRT());
 
         auto const data = toBytes(std::forward<Arg>(arg));
 
         size_t const ptr = (idx << 10);
-        vrt->setBytes(ptr, data.data(), data.size());
+        vrt.setBytes(ptr, data.data(), data.size());
         params[idx++] = wasm_val_t WASM_I32_VAL(static_cast<int32_t>(ptr));
         params[idx++] = wasm_val_t WASM_I32_VAL(static_cast<int32_t>(data.size()));
     }
     else
     {
         auto const* udata = reinterpret_cast<WasmUserData*>(e);
-        HostFunctions const* hf = reinterpret_cast<HostFunctions*>(udata->first);
-        auto* vrt = reinterpret_cast<VirtualRuntime*>(hf->getRT());
+        HostFunctions const& hf = udata->first;
+        auto& vrt = *reinterpret_cast<VirtualRuntime*>(hf.getRT());
 
         size_t const ptr = (idx << 10);
-        vrt->setBytes(ptr, arg.data(), arg.size());
+        vrt.setBytes(ptr, arg.data(), arg.size());
         params[idx++] = wasm_val_t WASM_I32_VAL(static_cast<int32_t>(ptr));
         params[idx++] = wasm_val_t WASM_I32_VAL(static_cast<int32_t>(arg.size()));
     }
@@ -321,8 +322,8 @@ wasm_trap_t*
 ww(F&& f, E&& e, P&& params, P&& result, Args... args)
 {
     size_t idx = 0;
-    (ww_hlp(idx, e, params, std::forward<Args>(args)), ...);   // NOLINT
-    return f(std::forward<E>(e), params.get(), result.get());  // NOLINT
+    (ww_hlp(idx, e, params, std::forward<Args>(args)), ...);
+    return f(std::forward<E>(e), params.get(), result.get());
 }
 
 constexpr int64_t min64 = std::numeric_limits<int64_t>::min();
@@ -345,7 +346,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.getLedgerSqn();
@@ -378,7 +379,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.getParentLedgerTime();
@@ -413,7 +414,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.getParentLedgerHash();
@@ -450,7 +451,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // hfs.getBaseFee();
         {
@@ -483,7 +484,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Use featureTokenEscrow for testing
         auto const amendmentId = featureTokenEscrow;
@@ -572,7 +573,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             // hfs.cacheLedgerObj(accountKeylet.key, -1);
             {
@@ -693,7 +694,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             vrt.setGas(2'000'000);
             for (int i = 1; i <= 256; ++i)
@@ -768,7 +769,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             // hfs.getTxField(sfAccount);
             {
@@ -943,7 +944,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
 
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             // hfs.getTxField(sfAsset);
             {
@@ -998,7 +999,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
 
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             // hfs.getTxField(sfAsset);
             {
@@ -1054,7 +1055,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
 
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             // hfs.getTxField(sfAssetScale);
             {
@@ -1103,7 +1104,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, escrowKeylet);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // hfs.getCurrentLedgerObjField(sfAccount);
         {
@@ -1191,7 +1192,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmHostFunctionsImpl hfs2(ac, dummyEscrow);
 
             auto import2 = xrpl::createWasmImport(hfs2);
-            hfs2.setRT(&vrt2);
+            hfs2.setRT(vrt2);
 
             // hfs2.getCurrentLedgerObjField(sfAccount);
             {
@@ -1234,7 +1235,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, escrowKeylet);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // hfs.cacheLedgerObj(accountKeylet.key, 1);
         {
@@ -1403,7 +1404,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // hfs.getTxNestedField(locator);
         {
@@ -1536,7 +1537,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECTS(
-                result[0].of.i32 == HfErrorToInt(expectedError), std::to_string(result[0].of.i32));
+                result[0].of.i32 == hfErrorToInt(expectedError), std::to_string(result[0].of.i32));
         };
 
         // hfs.getTxNestedField(locator);
@@ -1692,7 +1693,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // hfs.getCurrentLedgerObjNestedField(baseLocatorSlice);
         // Locator for base field
@@ -1738,7 +1739,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECTS(
-                result[0].of.i32 == HfErrorToInt(expectedError), std::to_string(result[0].of.i32));
+                result[0].of.i32 == hfErrorToInt(expectedError), std::to_string(result[0].of.i32));
         };
         // hfs.getCurrentLedgerObjNestedField(locator);
         // Locator for non-existent base field
@@ -1804,7 +1805,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
 
             auto import2 = xrpl::createWasmImport(dummyHfs);
-            dummyHfs.setRT(&vrt2);
+            dummyHfs.setRT(vrt2);
 
             std::vector<int32_t> const locatorVec = {sfAccount.getCode()};
             vrt2.setBytes(0, locatorVec.data(), locatorVec.size() * sizeof(int32_t));
@@ -1848,7 +1849,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Cache the SignerList ledger object in slot 1
         auto const signerListKeylet = keylet::signers(env.master.id());
@@ -1997,7 +1998,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    256);
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECTS(
-                result[0].of.i32 == HfErrorToInt(expectedError), std::to_string(result[0].of.i32));
+                result[0].of.i32 == hfErrorToInt(expectedError), std::to_string(result[0].of.i32));
         };
 
         // Error: base field not found
@@ -2113,7 +2114,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Should return 2 for sfMemos
         // hfs.getTxArrayLen(sfMemos);
@@ -2200,7 +2201,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // hfs.getCurrentLedgerObjArrayLen(sfSignerEntries);
         {
@@ -2253,7 +2254,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
 
             auto import2 = xrpl::createWasmImport(dummyHfs);
-            dummyHfs.setRT(&vrt2);
+            dummyHfs.setRT(vrt2);
 
             // auto const len = dummyHfs.getCurrentLedgerObjArrayLen(sfMemos);
             WasmValVec params(1), result(1);
@@ -2291,7 +2292,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         auto const signerListKeylet = keylet::signers(env.master.id());
         // hfs.cacheLedgerObj(signerListKeylet.key, 1);
@@ -2416,7 +2417,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Helper for error checks
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
@@ -2434,7 +2435,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECTS(
-                result[0].of.i32 == HfErrorToInt(expectedError), std::to_string(result[0].of.i32));
+                result[0].of.i32 == hfErrorToInt(expectedError), std::to_string(result[0].of.i32));
         };
 
         // Locator for sfMemos
@@ -2483,7 +2484,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Helper for error checks
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
@@ -2501,7 +2502,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECTS(
-                result[0].of.i32 == HfErrorToInt(expectedError), std::to_string(result[0].of.i32));
+                result[0].of.i32 == hfErrorToInt(expectedError), std::to_string(result[0].of.i32));
         };
 
         // Locator for sfSignerEntries
@@ -2534,7 +2535,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
 
             auto import2 = xrpl::createWasmImport(dummyHfs);
-            dummyHfs.setRT(&vrt2);
+            dummyHfs.setRT(vrt2);
 
             std::vector<int32_t> locatorVec = {sfAccount.getCode()};
             // auto const result = dummyHfs.getCurrentLedgerObjNestedArrayLen(locator);
@@ -2575,7 +2576,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         auto const signerListKeylet = keylet::signers(env.master.id());
         // hfs.cacheLedgerObj(signerListKeylet.key, 1);
@@ -2632,7 +2633,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             BEAST_EXPECTS(
-                result[0].of.i32 == HfErrorToInt(expectedError), std::to_string(result[0].of.i32));
+                result[0].of.i32 == hfErrorToInt(expectedError), std::to_string(result[0].of.i32));
         };
 
         // Error: non-array field
@@ -2695,7 +2696,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, escrowKeylet);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Should succeed for small data
         Bytes data(10, 0x42);
@@ -2712,7 +2713,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         }
 
         // Should fail for too large data
-        Bytes bigData(maxWasmDataLength + 1, 0x42);
+        Bytes bigData(kMaxWasmDataLength + 1, 0x42);
         // hfs.updateData(Slice(bigData.data(), bigData.size()));
         {
             vrt.setBytes(0, bigData.data(), bigData.size());
@@ -2722,7 +2723,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == HfErrorToInt(HostFunctionError::DataFieldTooLarge));
+                    result[0].of.i32 == hfErrorToInt(HostFunctionError::DataFieldTooLarge));
         }
     }
 
@@ -2741,7 +2742,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Generate a keypair and sign a message
         auto const kp = generateKeyPair(KeyType::Secp256k1, randomSeed());
@@ -2827,7 +2828,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    badPk.size());
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::InvalidParams));
+                BEAST_EXPECT(result[0].of.i32 == hfErrorToInt(HostFunctionError::InvalidParams));
         }
 
         // Should fail for empty public key
@@ -2852,7 +2853,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    0);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::InvalidParams));
+                BEAST_EXPECT(result[0].of.i32 == hfErrorToInt(HostFunctionError::InvalidParams));
         }
 
         // Should fail for empty signature
@@ -2919,7 +2920,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         std::string data = "hello world";
         // hfs.computeSha512HalfHash(Slice(data.data(), data.size()));
@@ -2965,7 +2966,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         auto const baseMpt = makeMptID(1, masterID);
 
         auto imp = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Lambda to compare a Bytes (std::vector<uint8_t>) to a keylet
         auto compareKeylet = [](std::vector<uint8_t> const& bytes, Keylet const& kl) {
@@ -3771,7 +3772,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Should succeed for valid NFT
         {
@@ -3819,7 +3820,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    256);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::InvalidAccount));
+                BEAST_EXPECT(result[0].of.i32 == hfErrorToInt(HostFunctionError::InvalidAccount));
         }
 
         // Should fail for invalid nftId
@@ -3842,7 +3843,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    256);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::InvalidParams));
+                BEAST_EXPECT(result[0].of.i32 == hfErrorToInt(HostFunctionError::InvalidParams));
         }
 
         // Should fail for invalid nftId
@@ -3866,7 +3867,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
-                    result[0].of.i32 == HfErrorToInt(HostFunctionError::LedgerObjNotFound));
+                    result[0].of.i32 == hfErrorToInt(HostFunctionError::LedgerObjNotFound));
         }
 
         {
@@ -3887,7 +3888,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    256);
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::FieldNotFound));
+                BEAST_EXPECT(result[0].of.i32 == hfErrorToInt(HostFunctionError::FieldNotFound));
         }
     }
 
@@ -3912,7 +3913,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Should succeed for valid NFT id
         {
@@ -3954,7 +3955,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                    AccountID::size());
 
             if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32))
-                BEAST_EXPECT(result[0].of.i32 == HfErrorToInt(HostFunctionError::InvalidParams));
+                BEAST_EXPECT(result[0].of.i32 == hfErrorToInt(HostFunctionError::InvalidParams));
         }
     }
 
@@ -3979,7 +3980,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // hfs.getNFTTaxon(nftId);
         vrt.setBytes(0, nftId.data(), uint256::size());
@@ -4022,7 +4023,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.getNFTFlags(nftId);
@@ -4070,7 +4071,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.getNFTTransferFee(nftId);
@@ -4129,7 +4130,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.getNFTSerial(nftId);
@@ -4194,7 +4195,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             VirtualRuntime vrt;
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             std::string const msg = "test trace";
             std::string data = "abc";
@@ -4266,7 +4267,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             VirtualRuntime vrt;
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             std::string const msg = "test trace";
             std::string data = "abc";
@@ -4312,7 +4313,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             VirtualRuntime vrt;
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             std::string const msg = "trace number";
             int64_t const num = 123456789;
@@ -4345,7 +4346,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             VirtualRuntime vrt;
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             std::string const msg = "trace number";
             int64_t const num = 123456789;
@@ -4381,7 +4382,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             VirtualRuntime vrt;
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             std::string const msg = "trace account";
             auto const& accountId = env.master.id();
@@ -4422,7 +4423,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             VirtualRuntime vrt;
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             std::string msg = "trace account";
             auto const& accountId = env.master.id();
@@ -4466,7 +4467,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             VirtualRuntime vrt;
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             std::string const msg = "trace amount";
             STAmount const amount = XRP(12345);
@@ -4559,7 +4560,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             VirtualRuntime vrt;
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             std::string const msg = "trace amount";
             STAmount const amount = XRP(12345);
@@ -4688,7 +4689,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             VirtualRuntime vrt;
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             std::string const msg = "trace float";
 
@@ -4744,7 +4745,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             VirtualRuntime vrt;
             auto import = xrpl::createWasmImport(hfs);
-            hfs.setRT(&vrt);
+            hfs.setRT(vrt);
 
             std::string const msg = "trace float";
 
@@ -4783,7 +4784,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatFromInt(min64, -1);
@@ -4895,7 +4896,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), -1);
@@ -5001,7 +5002,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatFromMantExp(1, 0, -1);
@@ -5238,7 +5239,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatCompare(Slice(), Slice());
@@ -5358,7 +5359,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatAdd(Slice(), Slice(), -1);
@@ -5517,7 +5518,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatSubtract(Slice(), Slice(), -1);
@@ -5674,7 +5675,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatMultiply(Slice(), Slice(), -1);
@@ -5855,7 +5856,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatDivide(Slice(), Slice(), -1);
@@ -6036,7 +6037,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {  // hfs.floatRoot(Slice(), 2, -1);
             WasmValVec params(6), result(1);
@@ -6236,7 +6237,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {  // hfs.floatPower(Slice(), 2, -1);
             WasmValVec params(6), result(1);
@@ -6476,7 +6477,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatFromSTAmount(amount, -1);
@@ -6677,7 +6678,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         // Test with invalid rounding mode
         {
@@ -6788,7 +6789,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatToInt(makeSlice(float1), -1);
@@ -7113,7 +7114,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         {
             // hfs.floatToMantExp(makeSlice(invalid));
@@ -7397,7 +7398,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         auto import = xrpl::createWasmImport(hfs);
-        hfs.setRT(&vrt);
+        hfs.setRT(vrt);
 
         bool ex = false;
         try

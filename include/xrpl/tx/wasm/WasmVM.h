@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/tx/wasm/HostFunc.h>
+#include <xrpl/tx/wasm/WasmImportsHelper.h>
 
 #include <string_view>
 

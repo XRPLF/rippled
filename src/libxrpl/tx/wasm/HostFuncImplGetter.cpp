@@ -10,9 +10,8 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
-#include <xrpl/tx/wasm/ParamsHelper.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <cstdint>
 #include <cstring>
@@ -119,16 +118,12 @@ static Expected<Bytes, HostFunctionError>
 getAnyFieldData(FieldValue const& variantObj)
 {
     if (STBase const* const* obj = std::get_if<STBase const*>(&variantObj))
-    {
         return getAnyFieldData(*obj);
-    }
 
     if (uint256 const* const* u = std::get_if<uint256 const*>(&variantObj))
-    {
         return Bytes((*u)->begin(), (*u)->end());
-    }
 
-    return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::Internal);  // LCOV_EXCL_LINE
 }
 
 static inline bool
@@ -144,8 +139,8 @@ locateField(STObject const& obj, Slice const& locator)
     if (locator.empty() || ((locator.size() & 3) != 0u))  // must be multiple of 4
         return Unexpected(HostFunctionError::LocatorMalformed);
 
-    static_assert(maxWasmParamLength % sizeof(int32_t) == 0);
-    int32_t locBuf[maxWasmParamLength / sizeof(int32_t)];
+    static_assert(kMaxWasmParamLength % sizeof(int32_t) == 0);
+    int32_t locBuf[kMaxWasmParamLength / sizeof(int32_t)];
     int32_t const* locPtr = &locBuf[0];
     int32_t const locSize = locator.size() / sizeof(int32_t);
 

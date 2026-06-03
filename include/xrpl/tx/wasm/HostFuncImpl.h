@@ -18,8 +18,7 @@ class WasmHostFunctionsImpl : public HostFunctions
 
     std::optional<Bytes> data_;
 
-    void* rt_ = nullptr;
-
+public:
     Expected<std::shared_ptr<SLE const>, HostFunctionError>
     getCurrentLedgerObj() const
     {
@@ -63,18 +62,6 @@ public:
     WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey)
         : HostFunctions(ct.journal), ctx_(ct), leKey_(leKey)
     {
-    }
-
-    void
-    setRT(void* rt) override
-    {
-        rt_ = rt;
-    }
-
-    void*
-    getRT() const override
-    {
-        return rt_;
     }
 
     bool
