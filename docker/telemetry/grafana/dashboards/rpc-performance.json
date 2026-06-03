@@ -319,6 +319,96 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "RPC Resource Cost by Command",
+      "description": "RPC commands grouped by load_type (resource cost category). High-cost categories like exception_rpc or malformed_rpc indicate problematic clients.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "lastNotNull"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (load_type) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=~\"rpc.command.*\", load_type!=\"\"}[5m]))",
+          "legendFormat": "{{load_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Requests / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Batch vs Single RPC Requests",
+      "description": "Rate of batch RPC requests vs single requests. High batch rate may indicate bulk automation clients.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"rpc.process\", is_batch=\"true\"}[5m]))",
+          "legendFormat": "Batch [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"rpc.process\", is_batch=\"false\"}[5m]))",
+          "legendFormat": "Single [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Requests / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
