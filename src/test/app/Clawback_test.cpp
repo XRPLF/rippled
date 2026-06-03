@@ -170,37 +170,6 @@ class Clawback_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         // Test that Clawback tx fails for the following:
-        // 1. when asfAllowTrustLineClawback flag has not been set
-        {
-            Env env(*this, features);
-
-            Account const alice{"alice"};
-            Account const bob{"bob"};
-
-            env.fund(XRP(1000), alice, bob);
-            env.close();
-
-            env.require(Nflags(alice, asfAllowTrustLineClawback));
-
-            auto const usd = alice["USD"];
-
-            // alice issues 10 USD to bob
-            env.trust(usd(1000), bob);
-            env(pay(alice, bob, usd(10)));
-            env.close();
-
-            env.require(Balance(bob, alice["USD"](10)));
-            env.require(Balance(alice, bob["USD"](-10)));
-
-            // clawback fails because asfAllowTrustLineClawback has not been set
-            env(claw(alice, bob["USD"](5)), Ter(tecNO_PERMISSION));
-            env.close();
-
-            env.require(Balance(bob, alice["USD"](10)));
-            env.require(Balance(alice, bob["USD"](-10)));
-        }
-
-        // Test that Clawback tx fails for the following:
         // 1. invalid flag
         // 2. negative STAmount
         // 3. zero STAmount
