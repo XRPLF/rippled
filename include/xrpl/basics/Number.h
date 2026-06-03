@@ -147,7 +147,7 @@ struct MantissaRange final
     int const log{getExponent(scale)};
     rep const min{getMin(scale, log)};
     rep const max{(min * 10) - 1};
-    CuspRoundingFix const cuspRoundingFixEnabled{isCuspFixEnabled(scale)};
+    CuspRoundingFix const cuspRoundingFix{isCuspFixEnabled(scale)};
 
     static MantissaRange const&
     getMantissaRange(MantissaScale scale);
@@ -325,6 +325,8 @@ public:
     static constexpr internalrep kMaxRep = std::numeric_limits<rep>::max();
     static_assert(kMaxRep == 9'223'372'036'854'775'807);
     static_assert(-kMaxRep == std::numeric_limits<rep>::min() + 1);
+    static constexpr internalrep kMaxRepUp = ((kMaxRep / 10) + 1) * 10;
+    static_assert(kMaxRepUp == 9'223'372'036'854'775'810ULL);
 
     // May need to make unchecked private
     struct Unchecked
@@ -566,7 +568,7 @@ private:
         int& exponent,
         internalrep const& minMantissa,
         internalrep const& maxMantissa,
-        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled);
+        MantissaRange::CuspRoundingFix cuspRoundingFix);
 
     template <class T>
     friend void
@@ -576,7 +578,7 @@ private:
         int& exponent,
         MantissaRange::rep const& minMantissa,
         MantissaRange::rep const& maxMantissa,
-        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
+        MantissaRange::CuspRoundingFix cuspRoundingFix,
         bool dropped);
 
     [[nodiscard]] bool

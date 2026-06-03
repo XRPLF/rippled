@@ -178,6 +178,8 @@ public:
         auto const scale = Number::getMantissaScale();
         testcase << "test_add " << to_string(scale);
 
+        BEAST_EXPECT(Number::getround() == Number::RoundingMode::ToNearest);
+
         using Case = std::tuple<Number, Number, Number, int>;
         auto const cSmall = std::to_array<Case>({
             {Number{1'000'000'000'000'000, -15},
