@@ -15,8 +15,10 @@ in
     git
     gnumake
     llvmPackages_22.clang-tools
+    less # needed for git diff
     mold
     ninja
+    patchelf
     perl # needed for openssl
     pkg-config
     pre-commit

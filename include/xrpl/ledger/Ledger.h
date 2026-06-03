@@ -168,7 +168,7 @@ public:
     std::optional<uint256>
     succ(uint256 const& key, std::optional<uint256> const& last = std::nullopt) const override;
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     read(Keylet const& k) const override;
 
     std::unique_ptr<SlesType::iter_base>
@@ -204,16 +204,16 @@ public:
     //
 
     void
-    rawErase(std::shared_ptr<SLE> const& sle) override;
+    rawErase(SLE::ref sle) override;
 
     void
-    rawInsert(std::shared_ptr<SLE> const& sle) override;
+    rawInsert(SLE::ref sle) override;
 
     void
     rawErase(uint256 const& key);
 
     void
-    rawReplace(std::shared_ptr<SLE> const& sle) override;
+    rawReplace(SLE::ref sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& fee) override
@@ -378,7 +378,7 @@ public:
     bool
     isVotingLedger() const;
 
-    std::shared_ptr<SLE>
+    SLE::pointer
     peek(Keylet const& k) const;
 
 private:
