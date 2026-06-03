@@ -34,9 +34,12 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
@@ -1193,6 +1196,13 @@ Transactor::checkInvariants(TER result, XRPAmount fee)
 ApplyResult
 Transactor::operator()()
 {
+    auto span = telemetry::SpanGuard::span(
+        telemetry::TraceCategory::Transactions,
+        telemetry::seg::tx,
+        telemetry::makeStr("transactor"));
+    if (auto const* fmt = TxFormats::getInstance().findByType(ctx_.tx.getTxnType()))
+        span.setAttribute("tx_type", fmt->getName().c_str());
+
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
     // These global updates really should have been for every Transaction
@@ -1418,6 +1428,9 @@ Transactor::operator()()
     }
 
     JLOG(j_.trace()) << (applied ? "applied " : "not applied ") << transToken(result);
+
+    span.setAttribute("ter_result", transToken(result).c_str());
+    span.setAttribute("applied", applied);
 
     return {result, applied, metadata};
 }
