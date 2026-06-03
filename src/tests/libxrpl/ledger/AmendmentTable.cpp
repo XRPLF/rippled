@@ -45,9 +45,8 @@ namespace xrpl::test {
  * Provides a TestServiceRegistry (with an in-memory wallet DB) and a collection
  * of helpers for building amendment sections, feature lists and validators.
  */
-class AmendmentTableTest : public ::testing::Test
+struct AmendmentTableTest : ::testing::Test
 {
-protected:
     static uint256
     amendmentId(std::string in)
     {
@@ -123,7 +122,7 @@ protected:
 
     template <class Arg, class... Args>
     static std::size_t
-    totalsize(std::vector<Arg> const& src, Args const&... args)
+    totalSize(std::vector<Arg> const& src, Args const&... args)
     {
         if constexpr (sizeof...(args) > 0)
             return src.size() + totalsize(args...);
