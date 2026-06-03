@@ -154,21 +154,53 @@ Node health (`amendment_blocked`, `server_state`) is not part of the telemetry s
 
 ---
 
+## Task 2.10: RPC and PathFind Span Attribute Gap Fill
+
+**Status**: COMPLETE
+
+**Objective**: Wire up workflow-identifying attributes that enable filtering and grouping traces by request characteristics without drilling into child spans.
+
+**Attributes added**:
+
+| Span                | Attribute                    | Type   | Source                            |
+| ------------------- | ---------------------------- | ------ | --------------------------------- |
+| `rpc.http_request`  | `request_payload_size`       | int64  | `request.body().size()`           |
+| `rpc.process`       | `is_batch`                   | bool   | `method == "batch"` check         |
+| `rpc.process`       | `batch_size`                 | int64  | `params.size()` (only when batch) |
+| `rpc.ws_message`    | `command`                    | string | `jv[command]` or `jv[method]`     |
+| `rpc.command.*`     | `load_type`                  | string | `context.loadType.label()`        |
+| `pathfind.compute`  | `pathfind_dest_amount`       | string | `saDstAmount_.getFullText()`      |
+| `pathfind.compute`  | `pathfind_dest_currency`     | string | `to_string(saDstAmount_.asset())` |
+| `pathfind.discover` | `pathfind_num_source_assets` | int64  | `sourceAssets.size()`             |
+
+**New attr keys**: `RpcSpanNames.h` (`isBatch`, `batchSize`, `loadType`), `PathFindSpanNames.h` (`destAmount`, `destCurrency`, `numSourceAssets`).
+
+**Modified files**:
+
+- `src/xrpld/rpc/detail/RpcSpanNames.h`
+- `src/xrpld/rpc/detail/PathFindSpanNames.h`
+- `src/xrpld/rpc/detail/ServerHandler.cpp`
+- `src/xrpld/rpc/detail/RPCHandler.cpp`
+- `src/xrpld/rpc/detail/PathRequest.cpp`
+
+---
+
 ## Summary
 
-| Task | Description                                 | Status              | Notes                                            |
-| ---- | ------------------------------------------- | ------------------- | ------------------------------------------------ |
-| 2.1  | W3C Trace Context header extraction         | Deferred → Phase 3  | No consumer in Phase 2; needs cross-node tracing |
-| 2.2  | Per-category span creation                  | Complete (Phase 1c) | Superseded by TraceCategory enum + SpanGuard     |
-| 2.3  | Add shouldTraceLedger() interface method    | Complete (Phase 1c) | Delivered in Phase 1c base branch                |
-| 2.4  | Unit tests for core telemetry               | Complete            | TelemetryConfig + SpanGuardFactory tests         |
-| 2.5  | Enhanced RPC span attributes (HTTP-level)   | Deferred            | Low value; span duration covers timing natively  |
-| 2.6  | Build verification and performance baseline | Complete            | Verified in CI on Phase 1c                       |
-| 2.7  | Grafana Tempo search filters                | Complete            | rpc-command, rpc-status, rpc-role filters        |
-| 2.8  | RPC span attribute enrichment (node health) | Dropped             | Available via `server_info`/`server_state` RPC   |
-| 2.9  | PathFind RPC instrumentation                | Complete            | request, compute, update_all, discover           |
+| Task | Description                                 | Status              | Notes                                                     |
+| ---- | ------------------------------------------- | ------------------- | --------------------------------------------------------- |
+| 2.1  | W3C Trace Context header extraction         | Deferred → Phase 3  | No consumer in Phase 2; needs cross-node tracing          |
+| 2.2  | Per-category span creation                  | Complete (Phase 1c) | Superseded by TraceCategory enum + SpanGuard              |
+| 2.3  | Add shouldTraceLedger() interface method    | Complete (Phase 1c) | Delivered in Phase 1c base branch                         |
+| 2.4  | Unit tests for core telemetry               | Complete            | TelemetryConfig + SpanGuardFactory tests                  |
+| 2.5  | Enhanced RPC span attributes (HTTP-level)   | Deferred            | Low value; span duration covers timing natively           |
+| 2.6  | Build verification and performance baseline | Complete            | Verified in CI on Phase 1c                                |
+| 2.7  | Grafana Tempo search filters                | Complete            | rpc-command, rpc-status, rpc-role filters                 |
+| 2.8  | RPC span attribute enrichment (node health) | Dropped             | Available via `server_info`/`server_state` RPC            |
+| 2.9  | PathFind RPC instrumentation                | Complete            | request, compute, update_all, discover                    |
+| 2.10 | RPC/PathFind span attribute gap fill        | Complete            | Batch detection, payload size, load cost, pathfind params |
 
-**Delivered in this branch**: Tasks 2.4, 2.7, 2.9.
+**Delivered in this branch**: Tasks 2.4, 2.7, 2.9, 2.10.
 **Deferred with rationale**: Tasks 2.1 (→Phase 3), 2.5 (low priority).
 **Dropped**: Task 2.8 (node health not duplicated on traces).
 **Superseded**: Task 2.2 (Phase 1c SpanGuard factory covers this).

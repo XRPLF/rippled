@@ -63,6 +63,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdint>
 #include <exception>
 #include <map>
 #include <memory>
@@ -428,6 +429,15 @@ ServerHandler::processSession(
     json::Value const& jv)
 {
     auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
+    if (jv.isMember(jss::command) && jv[jss::command].isString())
+    {
+        span.setAttribute(rpc_span::attr::command, jv[jss::command].asString().c_str());
+    }
+    else if (jv.isMember(jss::method) && jv[jss::method].isString())
+    {
+        span.setAttribute(rpc_span::attr::command, jv[jss::method].asString().c_str());
+    }
+
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))
     {
@@ -576,9 +586,12 @@ ServerHandler::processSession(
     auto span =
         SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
 
+    auto const requestBody = ::xrpl::buffersToString(session->request().body().data());
+    span.setAttribute(rpc_span::attr::requestPayloadSize, static_cast<int64_t>(requestBody.size()));
+
     processRequest(
         session->port(),
-        ::xrpl::buffersToString(session->request().body().data()),
+        requestBody,
         session->remoteAddress().atPort(0),
         makeOutput(*session),
         coro,
@@ -657,6 +670,9 @@ ServerHandler::processRequest(
         }
         size = jsonOrig[jss::params].size();
     }
+    span.setAttribute(rpc_span::attr::isBatch, batch);
+    if (batch)
+        span.setAttribute(rpc_span::attr::batchSize, static_cast<int64_t>(size));
 
     json::Value reply(batch ? json::ValueType::Array : json::ValueType::Object);
     auto const start(std::chrono::high_resolution_clock::now());

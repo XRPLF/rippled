@@ -189,6 +189,11 @@ inline constexpr auto traceStrategy = makeStr("trace_strategy");
 inline constexpr auto modeOld = makeStr("mode_old");
 inline constexpr auto modeNew = makeStr("mode_new");
 
+/// "is_bow_out" — whether this proposal is a bow-out (resigning from round).
+inline constexpr auto isBowOut = makeStr("is_bow_out");
+/// "ledger_hash" — full hash of the ledger being validated/accepted.
+inline constexpr auto ledgerHash = makeStr("ledger_hash");
+
 /// Transaction/dispute attrs used in consensus accept spans.
 inline constexpr auto txId = makeStr("tx_id");
 inline constexpr auto disputeOurVote = makeStr("dispute_our_vote");

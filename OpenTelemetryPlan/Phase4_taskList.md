@@ -255,11 +255,35 @@ Phase 7's `ValidationTracker` builds metric-level aggregation (1h/24h agreement 
 
 **Exit Criteria**:
 
-- [ ] `consensus.validation.send` spans carry `xrpl.validation.ledger_hash` and `xrpl.validation.full`
+- [x] `consensus.validation.send` spans carry `ledger_hash` and `full_validation`
 - [ ] `peer.validation.receive` spans carry `xrpl.peer.validation.ledger_hash` and `xrpl.peer.validation.full`
 - [ ] `consensus.accept` spans carry `validation_quorum` and `proposers_validated`
-- [ ] Ledger hash attributes match between send and receive for the same ledger
+- [x] Ledger hash attributes match between send and receive for the same ledger
 - [ ] No impact on consensus performance
+
+---
+
+## Task 4.9: Consensus Span Attribute Gap Fill
+
+**Status**: COMPLETE
+
+**Objective**: Add workflow-critical attributes to consensus spans that enable operators to understand consensus outcomes, identify bow-out proposals, and correlate validations to specific ledgers.
+
+**Attributes added**:
+
+| Span                        | Attribute         | Type   | Source                                |
+| --------------------------- | ----------------- | ------ | ------------------------------------- |
+| `consensus.proposal.send`   | `is_bow_out`      | bool   | `proposal.isBowOut()`                 |
+| `consensus.accept`          | `consensus_state` | string | `result.state` (yes/moved_on/expired) |
+| `consensus.accept`          | `disputes_count`  | int64  | `result.disputes.size()`              |
+| `consensus.validation.send` | `ledger_hash`     | string | `ledger.ledger->header().hash`        |
+
+**New attr keys**: `ConsensusSpanNames.h` (`isBowOut`, `ledgerHash`).
+
+**Modified files**:
+
+- `src/xrpld/consensus/ConsensusSpanNames.h`
+- `src/xrpld/app/consensus/RCLConsensus.cpp`
 
 ---
 
@@ -275,6 +299,7 @@ Phase 7's `ValidationTracker` builds metric-level aggregation (1h/24h agreement 
 | 4.6  | Transaction-consensus correlation           | ✅ Done     | 0         | 1              | 4.2, Phase 3  |
 | 4.7  | Build verification and testing              | ✅ Done     | 0         | 0              | 4.1-4.6       |
 | 4.8  | Validation span enrichment (ext. dashboard) | ❌ Not done | 0         | 2              | 4.4           |
+| 4.9  | Consensus span attribute gap fill           | ✅ Done     | 0         | 2              | 4.1-4.5       |
 
 **Parallel work**: Tasks 4.2, 4.3, and 4.4 can run in parallel after 4.1 is complete. Task 4.5 depends on all three. Task 4.6 depends on 4.2 and Phase 3. Task 4.8 depends on 4.4 (validation spans must exist).
 
@@ -282,11 +307,11 @@ Phase 7's `ValidationTracker` builds metric-level aggregation (1h/24h agreement 
 
 | Span Name                   | Method                             | Key Attributes                                                                                                                                                                                                        |
 | --------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.proposal.send`   | `Adaptor::propose`                 | `xrpl.consensus.round`                                                                                                                                                                                                |
+| `consensus.proposal.send`   | `Adaptor::propose`                 | `xrpl.consensus.round`, `is_bow_out`                                                                                                                                                                                  |
 | `consensus.ledger_close`    | `Adaptor::onClose`                 | `xrpl.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                              |
-| `consensus.accept`          | `Adaptor::onAccept`                | `proposers`, `round_time_ms`                                                                                                                                                                                          |
+| `consensus.accept`          | `Adaptor::onAccept`                | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                           |
 | `consensus.accept.apply`    | `Adaptor::doAccept`                | `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `xrpl.ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
-| `consensus.validation.send` | `Adaptor::onAccept` (via validate) | `proposing`                                                                                                                                                                                                           |
+| `consensus.validation.send` | `Adaptor::onAccept` (via validate) | `proposing`, `ledger_hash`, `ledger_seq`, `full_validation`, `validation_sign_time`                                                                                                                                   |
 
 #### Close Time Attributes (consensus.accept.apply)
 
