@@ -424,7 +424,7 @@ public:
     }
 
     void
-    testValidations(FeatureBitset features)
+    testValidations(FeatureBitset features = test::jtx::testableAmendments())
     {
         using namespace jtx;
 
@@ -1556,7 +1556,7 @@ public:
         testTransactionsAPIv1();
         testTransactionsAPIv2();
         testManifests();
-        testValidations(all);
+        testValidations();
         testSubErrors(true);
         testSubErrors(false);
         testSubByUrl();

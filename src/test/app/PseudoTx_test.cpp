@@ -60,7 +60,7 @@ struct PseudoTx_test : public beast::unit_test::Suite
     }
 
     void
-    testPrevented(FeatureBitset features)
+    testPrevented(FeatureBitset features = test::jtx::testableAmendments())
     {
         using namespace jtx;
         Env env(*this, features);
@@ -94,9 +94,8 @@ struct PseudoTx_test : public beast::unit_test::Suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testableAmendments()};
 
-        testPrevented(all);
+        testPrevented();
         testAllowed();
     }
 };

@@ -213,7 +213,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Basic SetFee transaction");
 
-        jtx::Env env(*this, jtx::testableAmendments());
+        jtx::Env env(*this);
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
@@ -244,7 +244,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Fee Transaction Validation");
 
-        jtx::Env env(*this, jtx::testableAmendments());
+        jtx::Env env(*this);
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
@@ -270,7 +270,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Pseudo Transaction Properties");
 
-        jtx::Env env(*this, jtx::testableAmendments());
+        jtx::Env env(*this);
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
@@ -309,7 +309,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Multiple Fee Updates");
 
-        jtx::Env env(*this, jtx::testableAmendments());
+        jtx::Env env(*this);
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
@@ -357,7 +357,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Wrong Ledger Sequence");
 
-        jtx::Env env(*this, jtx::testableAmendments());
+        jtx::Env env(*this);
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
@@ -388,7 +388,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Partial Field Updates");
 
-        jtx::Env env(*this, jtx::testableAmendments());
+        jtx::Env env(*this);
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
@@ -434,7 +434,7 @@ class FeeVote_test : public beast::unit_test::Suite
     {
         testcase("Single Invalid Transaction");
 
-        jtx::Env env(*this, jtx::testableAmendments());
+        jtx::Env env(*this);
         auto ledger = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{env.app().config().features},
