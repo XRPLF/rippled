@@ -26,7 +26,7 @@ static_assert(
 // Terminology: A chunk is the memory being allocated from a block. A block
 // contains multiple chunks. This is the terminology the boost documentation
 // uses. Pools use "Simple Segregated Storage" as their storage format.
-constexpr size_t kElementSizeBytes = (sizeof(SHAMapHash) + sizeof(SHAMapTreeNodePtr));
+constexpr size_t kElementSizeBytes = sizeof(SHAMapHash) + sizeof(SHAMapTreeNodePtr);
 
 constexpr size_t kBlockSizeBytes = kilobytes(512);
 
