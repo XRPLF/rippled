@@ -84,18 +84,18 @@ public:
     }
 
     void
-    missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const& nodeHash) override
+    missingNodeAcquireBySeq(
+        [[maybe_unused]] std::uint32_t refNum,
+        [[maybe_unused]] uint256 const& nodeHash) override
     {
-        (void)refNum;
-        (void)nodeHash;
         Throw<std::runtime_error>("missing node");
     }
 
     void
-    missingNodeAcquireByHash(uint256 const& refHash, std::uint32_t refNum) override
+    missingNodeAcquireByHash(
+        [[maybe_unused]] uint256 const& refHash,
+        [[maybe_unused]] std::uint32_t refNum) override
     {
-        (void)refHash;
-        (void)refNum;
         Throw<std::runtime_error>("missing node");
     }
 

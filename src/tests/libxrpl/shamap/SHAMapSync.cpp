@@ -103,10 +103,7 @@ TEST_F(SHAMapSyncTest, sync)
     source.setImmutable();
 
     int count = 0;
-    source.visitLeaves([&count](auto const& item) {
-        (void)item;
-        ++count;
-    });
+    source.visitLeaves([&count]([[maybe_unused]] auto const& item) { ++count; });
     EXPECT_EQ(count, items);
 
     std::vector<SHAMapMissingNode> missingNodes;
