@@ -1088,7 +1088,7 @@ public:
                                    << "; size after: " << cachedSLEs_.size();
         }
 
-        mallocTrim("doSweep", journal_);
+        // mallocTrim("doSweep", journal_);
 
         // Set timer to do another sweep later.
         setSweepTimer();
