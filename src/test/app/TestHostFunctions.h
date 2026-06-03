@@ -155,15 +155,16 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getTxNestedField(Slice const& locator) const override
+    getTxNestedField(FieldLocator const& locator) const override
     {
-        if (locator.size() == 4)
+        if (locator.size() == 1)
         {
-            int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
+            int32_t const* l = locator.data();
             int32_t const sfield = l[0];
             if (sfield == sfAccount.getCode())
                 return Bytes(accountID_.begin(), accountID_.end());
         }
+
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
                              0x45, 0x9f, 0xa4, 0xa0, 0x34, 0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92,
                              0xfc, 0xee, 0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
@@ -171,15 +172,16 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjNestedField(Slice const& locator) const override
+    getCurrentLedgerObjNestedField(FieldLocator const& locator) const override
     {
-        if (locator.size() == 4)
+        if (locator.size() == 1)
         {
-            int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
+            int32_t const* l = locator.data();
             int32_t const sfield = l[0];
             if (sfield == sfAccount.getCode())
                 return Bytes(accountID_.begin(), accountID_.end());
         }
+
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
                              0x45, 0x9f, 0xa4, 0xa0, 0x34, 0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92,
                              0xfc, 0xee, 0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
@@ -187,15 +189,16 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) const override
+    getLedgerObjNestedField(int32_t cacheIdx, FieldLocator const& locator) const override
     {
-        if (locator.size() == 4)
+        if (locator.size() == 1)
         {
-            int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
+            int32_t const* l = locator.data();
             int32_t const sfield = l[0];
             if (sfield == sfAccount.getCode())
                 return Bytes(accountID_.begin(), accountID_.end());
         }
+
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41, 0xbf, 0x49, 0xd2,
                              0x45, 0x9f, 0xa4, 0xa0, 0x34, 0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92,
                              0xfc, 0xee, 0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
@@ -221,19 +224,19 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    getTxNestedArrayLen(Slice const& locator) const override
+    getTxNestedArrayLen(FieldLocator const& locator) const override
     {
         return 32;
     }
 
     Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator) const override
+    getCurrentLedgerObjNestedArrayLen(FieldLocator const& locator) const override
     {
         return 32;
     }
 
     Expected<int32_t, HostFunctionError>
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) const override
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, FieldLocator const& locator) const override
     {
         return 32;
     }

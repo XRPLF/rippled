@@ -1,3 +1,8 @@
+#ifdef _DEBUG
+// #define DEBUG_OUTPUT 1
+#endif
+
+#include <test/app/TestHostFunctions.h>
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx/Env.h>
 
@@ -17,21 +22,14 @@
 
 #include <algorithm>
 #include <array>
-#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <limits>
 #include <optional>
+#include <source_location>
 #include <string>
 #include <utility>
 #include <vector>
-#ifdef _DEBUG
-// #define DEBUG_OUTPUT 1
-#endif
-
-#include <test/app/TestHostFunctions.h>
-
-#include <source_location>
 
 namespace xrpl::test {
 
@@ -40,7 +38,7 @@ testGetDataIncrement();
 
 using Add_proto = int32_t(int32_t, int32_t);
 static wasm_trap_t*
-add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+add(HostFunctions&, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     int32_t const val1 = params->data[0].of.i32;
     int32_t const val2 = params->data[1].of.i32;
@@ -219,7 +217,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
         HostFunctions hfs;
         ImportVec imports;
-        WasmImpFunc<Add_proto>(imports, "func-add", reinterpret_cast<void*>(&add), hfs);
+        WasmImpFunc<Add_proto>(imports, "func-add", add, hfs);
 
         auto re = vm.run(wasm, hfs, 10'000'000, "addTwo", wasmParams(1234, 5678), imports);
 
@@ -405,7 +403,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto re = engine.run(
                 allHostFuncWasm, hfs, 1'000'000, escrowFunctionName, {}, imp, env.journal);
 
-            checkResult(re, 1, 27'080);
+            checkResult(re, 1, 27'617);
 
             env.close();
         }
@@ -427,7 +425,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto re = engine.run(
                 allHostFuncWasm, hfs, 1'000'000, escrowFunctionName, {}, imp, env.journal);
 
-            checkResult(re, 1, 70'340);
+            checkResult(re, 1, 70'877);
 
             env.close();
         }
@@ -466,7 +464,7 @@ struct Wasm_test : public beast::unit_test::Suite
         {
             TestHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName, {});
-            checkResult(re, 1, 70'340);
+            checkResult(re, 1, 70'877);
         }
 
         {
@@ -490,7 +488,7 @@ struct Wasm_test : public beast::unit_test::Suite
             TestHostFunctions hfs(env);
             auto re = runEscrowWasm(
                 allHFWasm, hfs, std::numeric_limits<int64_t>::max(), escrowFunctionName, {});
-            checkResult(re, 1, 70'340);
+            checkResult(re, 1, 70'877);
         }
 
         {  // fail because trying to access nonexistent field
@@ -508,7 +506,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
             FieldNotFoundHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName, {});
-            checkResult(re, -201, 28'965);
+            checkResult(re, -201, 29'502);
         }
 
         {  // fail because trying to allocate more than MAX_PAGES memory
@@ -526,7 +524,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
             OversizedFieldHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName, {});
-            checkResult(re, -201, 28'965);
+            checkResult(re, -201, 29'502);
         }
 
 // This test use log output, so DEBUG_OUTPUT  must be disabled.
@@ -642,7 +640,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
             TestHostFunctions hfs(env);
             auto re = runEscrowWasm(float0Wasm, hfs, 100'000, funcName, {});
-            checkResult(re, 1, 4'309);
+            checkResult(re, 1, 2'819);
             env.close();
         }
     }

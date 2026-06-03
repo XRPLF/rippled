@@ -4,7 +4,6 @@
 
 #include <functional>
 #include <optional>
-#include <stdexcept>
 #include <vector>
 
 namespace xrpl {
@@ -59,6 +58,49 @@ struct WasmResult
     int64_t cost;
 };
 using EscrowResult = WasmResult<int32_t>;
+
+class FieldLocator
+{
+    int32_t const* ptr_ = nullptr;
+    uint32_t const size_ = 0;
+    std::vector<int32_t> buf_;
+
+public:
+    FieldLocator(std::vector<int32_t>&& buf)
+        : ptr_(&buf[0]), size_(buf.size()), buf_(std::move(buf))
+    {
+    }
+
+    FieldLocator(int32_t const* ptr, uint32_t const size) : ptr_(ptr), size_(size)
+    {
+    }
+
+    int32_t
+    operator[](unsigned i) const
+    {
+        if (i >= size_)
+            Throw<std::runtime_error>("index out of bounds");
+        return ptr_[i];
+    }
+
+    [[nodiscard]] uint32_t
+    size() const
+    {
+        return size_;
+    }
+
+    [[nodiscard]] int32_t const*
+    data() const
+    {
+        return ptr_;
+    }
+
+    [[nodiscard]] bool
+    empty() const
+    {
+        return size_ == 0;
+    }
+};
 
 class WasmRuntimeWrapper
 {

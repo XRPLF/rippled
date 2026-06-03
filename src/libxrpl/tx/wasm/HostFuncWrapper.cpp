@@ -32,61 +32,95 @@
 #include <functional>
 #include <optional>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
 using SFieldCRef = std::reference_wrapper<SField const>;
 
-static inline HostFunctions*
-getHF(void* env)
+static inline Expected<std::int64_t, HostFunctionError>
+checkGas(WasmRuntimeWrapper& rt, int64_t delta)
 {
-    auto const* udata = reinterpret_cast<WasmUserData*>(env);
-    HostFunctions* hf = &udata->first.get();  // NOLINT
-    return hf;
+    int64_t const gas = rt.getGas();
+    if (delta == 0)
+        return gas;
+
+    int64_t const x = gas >= delta ? gas - delta : 0;
+
+    if (rt.setGas(x) < 0)
+        return Unexpected(HostFunctionError::Internal);  // LCOV_EXCL_LINE
+
+    if (gas < delta)
+        return Unexpected(HostFunctionError::OutOfGas);
+
+    return x;
 }
 
 static inline Expected<std::int64_t, wasm_trap_t*>
-checkGas(void* env)
+checkGas(WasmRuntimeWrapper& rt, WasmImportFunc const& impFunc)
 {
-    auto const* udata = reinterpret_cast<WasmUserData*>(env);
-    HostFunctions const* hf = &udata->first.get();
-    auto* rt = hf->getRT();
+    auto g = checkGas(rt, impFunc.gas);
 
-    if (rt == nullptr)
+    if (!g)
     {
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(    // NOLINT
-            WasmEngine::instance().newTrap("hf no runtime"));  // LCOV_EXCL_LINE
-        return Unexpected(trap);                               // LCOV_EXCL_LINE
-    }
+        if (g.error() == HostFunctionError::OutOfGas)
+        {
+            wasm_trap_t* const trap =  // NOLINT
+                reinterpret_cast<wasm_trap_t*>(WasmEngine::instance().newTrap("hf out of gas"));
+            return Unexpected(trap);
+        }
 
-    int64_t const gas = rt->getGas();
-    WasmImportFunc const& impFunc = udata->second;
-    int64_t const x = gas >= impFunc.gas ? gas - impFunc.gas : 0;
-
-    if (rt->setGas(x) < 0)
-    {
         wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(    // NOLINT
             WasmEngine::instance().newTrap("can't set gas"));  // LCOV_EXCL_LINE
         return Unexpected(trap);                               // LCOV_EXCL_LINE
     }
 
-    if (gas < impFunc.gas)
+    return *g;
+}
+
+static Expected<std::tuple<HostFunctions&, WasmImportFunc const&>, wasm_trap_t*>
+mainCheck(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    if (env == nullptr)
     {
-        wasm_trap_t* const trap =  // NOLINT
-            reinterpret_cast<wasm_trap_t*>(WasmEngine::instance().newTrap("hf out of gas"));
-        return Unexpected(trap);
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(     // NOLINT
+            WasmEngine::instance().newTrap("no environment"));  // LCOV_EXCL_LINE
+        return Unexpected(trap);                                // LCOV_EXCL_LINE
     }
 
-    return x;
+    if (params == nullptr)
+    {
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(  // NOLINT
+            WasmEngine::instance().newTrap("no params"));    // LCOV_EXCL_LINE
+        return Unexpected(trap);                             // LCOV_EXCL_LINE
+    }
+
+    if (results == nullptr)
+    {
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(  // NOLINT
+            WasmEngine::instance().newTrap("no results"));   // LCOV_EXCL_LINE
+        return Unexpected(trap);                             // LCOV_EXCL_LINE
+    }
+
+    WasmUserData const* udata = reinterpret_cast<WasmUserData*>(env);
+    HostFunctions& hf = udata->first;
+    WasmRuntimeWrapper& rt = hf.getRT();
+    WasmImportFunc const& impFunc = udata->second;
+
+    if (auto g = checkGas(rt, impFunc); !g)
+        return Unexpected(g.error());  // LCOV_EXCL_LINE
+
+    return std::tie(hf, impFunc);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 
 static int32_t
 setData(
-    WasmRuntimeWrapper* runtime,
+    WasmRuntimeWrapper& runtime,
     int32_t dst,
     int32_t dstSize,
     uint8_t const* src,
@@ -101,7 +135,7 @@ setData(
     if (srcSize > kMaxWasmDataLength)
         return hfErrorToInt(HostFunctionError::DataFieldTooLarge);
 
-    auto const memory = (runtime != nullptr) ? runtime->getMem() : Wmem();
+    auto const memory = runtime.getMem();
 
     // LCOV_EXCL_START
     if (memory.s == 0u)
@@ -118,11 +152,7 @@ setData(
 }
 
 static Expected<Slice, HostFunctionError>
-getDataSlice(
-    WasmRuntimeWrapper* runtime,
-    wasm_val_vec_t const* params,
-    int32_t& i,
-    bool isUpdate = false)
+getDataSlice(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     int64_t const ptr = params->data[i].of.i32;
     int64_t const size = params->data[i + 1].of.i32;
@@ -133,10 +163,10 @@ getDataSlice(
     if (size == 0)
         return Slice();
 
-    if (size > (isUpdate ? kMaxWasmDataLength : kMaxWasmParamLength))
+    if (size > kMaxWasmDataLength)
         return Unexpected(HostFunctionError::DataFieldTooLarge);
 
-    auto const memory = runtime != nullptr ? runtime->getMem() : Wmem();
+    auto const memory = runtime.getMem();
     // LCOV_EXCL_START
     if (memory.s == 0u)
         return Unexpected(HostFunctionError::NoMemExported);
@@ -150,7 +180,7 @@ getDataSlice(
 }
 
 static Expected<int32_t, HostFunctionError>
-getDataInt32(WasmRuntimeWrapper const*, wasm_val_vec_t const* params, int32_t& i)
+getDataInt32(WasmRuntimeWrapper const&, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i32;
     i++;
@@ -158,7 +188,7 @@ getDataInt32(WasmRuntimeWrapper const*, wasm_val_vec_t const* params, int32_t& i
 }
 
 static Expected<int64_t, HostFunctionError>
-getDataInt64(WasmRuntimeWrapper const*, wasm_val_vec_t const* params, int32_t& i)
+getDataInt64(WasmRuntimeWrapper const&, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i64;
     i++;
@@ -167,7 +197,7 @@ getDataInt64(WasmRuntimeWrapper const*, wasm_val_vec_t const* params, int32_t& i
 
 template <class T>
 static Expected<T, HostFunctionError>
-getDataUnsigned(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataUnsigned(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     static_assert(std::is_unsigned_v<T>);
     auto const r = getDataSlice(runtime, params, i);
@@ -192,19 +222,19 @@ getDataUnsigned(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32
 }
 
 static Expected<uint32_t, HostFunctionError>
-getDataUInt32(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataUInt32(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     return getDataUnsigned<uint32_t>(runtime, params, i);
 }
 
 static Expected<uint64_t, HostFunctionError>
-getDataUInt64(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataUInt64(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     return getDataUnsigned<uint64_t>(runtime, params, i);
 }
 
 static Expected<SFieldCRef, HostFunctionError>
-getDataSField(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataSField(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const& m = SField::getKnownCodeToField();
     auto const it = m.find(params->data[i].of.i32);
@@ -216,7 +246,7 @@ getDataSField(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t
 }
 
 static Expected<uint256, HostFunctionError>
-getDataUInt256(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataUInt256(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
@@ -229,7 +259,7 @@ getDataUInt256(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_
 }
 
 static Expected<AccountID, HostFunctionError>
-getDataAccountID(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataAccountID(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
@@ -242,7 +272,7 @@ getDataAccountID(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int3
 }
 
 static Expected<Currency, HostFunctionError>
-getDataCurrency(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataCurrency(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
@@ -255,7 +285,7 @@ getDataCurrency(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32
 }
 
 static Expected<Asset, HostFunctionError>
-getDataAsset(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataAsset(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
@@ -293,13 +323,41 @@ getDataAsset(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t&
 }
 
 static Expected<std::string_view, HostFunctionError>
-getDataString(WasmRuntimeWrapper* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataString(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const slice = getDataSlice(runtime, params, i);
     if (!slice)
         return Unexpected(slice.error());
 
     return std::string_view(reinterpret_cast<char const*>(slice->data()), slice->size());
+}
+
+static Expected<FieldLocator, HostFunctionError>
+getDataLocator(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t& i)
+{
+    static_assert(kMaxWasmDataLength % sizeof(int32_t) == 0);
+
+    auto const slice = getDataSlice(runtime, params, i);
+    if (!slice)
+        return Unexpected(slice.error());
+    if (slice->empty() || ((slice->size() & 3) != 0u))  // must be multiple of 4
+        return Unexpected(HostFunctionError::LocatorMalformed);
+
+    uint32_t const locSize = slice->size() / sizeof(int32_t);
+    uintptr_t const p = reinterpret_cast<uintptr_t>(slice->data());
+
+    if ((p & (alignof(int32_t) - 1)) != 0u)
+    {  // unaligned
+
+        std::vector<int32_t> locBuf(locSize);
+        memcpy(&locBuf[0], slice->data(), slice->size());
+        FieldLocator locator(std::move(locBuf));
+
+        return locator;
+    }
+
+    int32_t const* locPtr = reinterpret_cast<int32_t const*>(slice->data());
+    return FieldLocator(locPtr, locSize);
 }
 
 static inline std::nullptr_t
@@ -321,7 +379,7 @@ hfResult(wasm_val_vec_t* results, HostFunctionError value)
 template <typename T>
 static std::nullptr_t
 returnResult(
-    WasmRuntimeWrapper* runtime,
+    WasmRuntimeWrapper& runtime,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results,
     Expected<T, HostFunctionError> const& res,
@@ -424,61 +482,85 @@ returnResult(
 
 //----------------------------------------------------------------------------------------------------------------------
 wasm_trap_t*
-getLedgerSqn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-    int const index = 0;
+    [[maybe_unused]] std::string_view hfName;
 
-    return returnResult(runtime, params, results, hf->getLedgerSqn(), index);
+    try
+    {
+        auto const mc = mainCheck(env, params, results);
+        if (!mc)
+            return mc.error();  // LCOV_EXCL_LINE
+        auto& [hf, impFunc] = *mc;
+
+        hfName = impFunc.name;
+        auto* fWrap = reinterpret_cast<wasmSecondaryCbFuncType*>(impFunc.wrap);
+        return fWrap(hf, params, results);
+    }
+    catch (std::exception const& e)
+    {
+#ifdef DEBUG_OUTPUT
+        std::cerr << "Hostfunction " << hfName << " exception: " << e.what() << std::endl;
+#endif
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(  // NOLINT
+            WasmEngine::instance().newTrap(e.what()));       // LCOV_EXCL_LINE
+        return trap;
+    }
+    catch (...)
+    {
+#ifdef DEBUG_OUTPUT
+        std::cerr << "Hostfunction " << hfName << " unknown exception." << std::endl;
+#endif
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(        // NOLINT
+            WasmEngine::instance().newTrap("Unknown exception"));  // LCOV_EXCL_LINE
+        return trap;
+    }
+
+    return nullptr;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+wasm_trap_t*
+getLedgerSqn_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+{
+    int const index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
+    return returnResult(runtime, params, results, hf.getLedgerSqn(), index);
 }
 
 wasm_trap_t*
-getParentLedgerTime_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getParentLedgerTime_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int const index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
-    return returnResult(runtime, params, results, hf->getParentLedgerTime(), index);
+    return returnResult(runtime, params, results, hf.getParentLedgerTime(), index);
 }
 
 wasm_trap_t*
-getParentLedgerHash_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getParentLedgerHash_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int const index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
-    return returnResult(runtime, params, results, hf->getParentLedgerHash(), index);
+    return returnResult(runtime, params, results, hf.getParentLedgerHash(), index);
 }
 
 wasm_trap_t*
-getBaseFee_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getBaseFee_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int const index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
-    return returnResult(runtime, params, results, hf->getBaseFee(), index);
+    return returnResult(runtime, params, results, hf.getBaseFee(), index);
 }
 
 wasm_trap_t*
-isAmendmentEnabled_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+isAmendmentEnabled_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const slice = getDataSlice(runtime, params, index);
     if (!slice)
@@ -486,7 +568,7 @@ isAmendmentEnabled_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t*
 
     if (slice->size() == uint256::size())
     {
-        if (auto const ret = hf->isAmendmentEnabled(uint256::fromVoid(slice->data()));
+        if (auto const ret = hf.isAmendmentEnabled(uint256::fromVoid(slice->data()));
             ret && *ret == 1)
             return returnResult(runtime, params, results, ret, index);
         // Fall through to string lookup — the 32 bytes may be an amendment name
@@ -496,17 +578,14 @@ isAmendmentEnabled_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t*
         return hfResult(results, HostFunctionError::DataFieldTooLarge);
 
     auto const str = std::string_view(reinterpret_cast<char const*>(slice->data()), slice->size());
-    return returnResult(runtime, params, results, hf->isAmendmentEnabled(str), index);
+    return returnResult(runtime, params, results, hf.isAmendmentEnabled(str), index);
 }
 
 wasm_trap_t*
-cacheLedgerObj_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+cacheLedgerObj_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const id = getDataUInt256(runtime, params, index);
     if (!id)
@@ -516,49 +595,40 @@ cacheLedgerObj_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* res
     if (!cache)
         return hfResult(results, cache.error());  // LCOV_EXCL_LINE
 
-    return returnResult(runtime, params, results, hf->cacheLedgerObj(*id, *cache), index);
+    return returnResult(runtime, params, results, hf.cacheLedgerObj(*id, *cache), index);
 }
 
 wasm_trap_t*
-getTxField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getTxField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const fname = getDataSField(runtime, params, index);
     if (!fname)
         return hfResult(results, fname.error());
 
-    return returnResult(runtime, params, results, hf->getTxField(*fname), index);
+    return returnResult(runtime, params, results, hf.getTxField(*fname), index);
 }
 
 wasm_trap_t*
-getCurrentLedgerObjField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getCurrentLedgerObjField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const fname = getDataSField(runtime, params, index);
     if (!fname)
         return hfResult(results, fname.error());
 
-    return returnResult(runtime, params, results, hf->getCurrentLedgerObjField(*fname), index);
+    return returnResult(runtime, params, results, hf.getCurrentLedgerObjField(*fname), index);
 }
 
 wasm_trap_t*
-getLedgerObjField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getLedgerObjField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const cache = getDataInt32(runtime, params, index);
     if (!cache)
@@ -568,106 +638,85 @@ getLedgerObjField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* 
     if (!fname)
         return hfResult(results, fname.error());
 
-    return returnResult(runtime, params, results, hf->getLedgerObjField(*cache, *fname), index);
+    return returnResult(runtime, params, results, hf.getLedgerObjField(*cache, *fname), index);
 }
 
 wasm_trap_t*
-getTxNestedField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getTxNestedField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
-    auto const bytes = getDataSlice(runtime, params, index);
-    if (!bytes)
-        return hfResult(results, bytes.error());
+    auto const locator = getDataLocator(runtime, params, index);
+    if (!locator)
+        return hfResult(results, locator.error());
 
-    return returnResult(runtime, params, results, hf->getTxNestedField(*bytes), index);
+    return returnResult(runtime, params, results, hf.getTxNestedField(*locator), index);
 }
 
 wasm_trap_t*
-getCurrentLedgerObjNestedField_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results)
+getCurrentLedgerObjNestedField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
-    auto const bytes = getDataSlice(runtime, params, index);
-    if (!bytes)
-        return hfResult(results, bytes.error());
+    auto const locator = getDataLocator(runtime, params, index);
+    if (!locator)
+        return hfResult(results, locator.error());
 
     return returnResult(
-        runtime, params, results, hf->getCurrentLedgerObjNestedField(*bytes), index);
+        runtime, params, results, hf.getCurrentLedgerObjNestedField(*locator), index);
 }
 
 wasm_trap_t*
-getLedgerObjNestedField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getLedgerObjNestedField_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const cache = getDataInt32(runtime, params, index);
     if (!cache)
         return hfResult(results, cache.error());  // LCOV_EXCL_LINE
 
-    auto const bytes = getDataSlice(runtime, params, index);
-    if (!bytes)
-        return hfResult(results, bytes.error());
+    auto const locator = getDataLocator(runtime, params, index);
+    if (!locator)
+        return hfResult(results, locator.error());
 
     return returnResult(
-        runtime, params, results, hf->getLedgerObjNestedField(*cache, *bytes), index);
+        runtime, params, results, hf.getLedgerObjNestedField(*cache, *locator), index);
 }
 
 wasm_trap_t*
-getTxArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getTxArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const fname = getDataSField(runtime, params, index);
     if (!fname)
         return hfResult(results, fname.error());
 
-    return returnResult(runtime, params, results, hf->getTxArrayLen(*fname), index);
+    return returnResult(runtime, params, results, hf.getTxArrayLen(*fname), index);
 }
 
 wasm_trap_t*
-getCurrentLedgerObjArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getCurrentLedgerObjArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const fname = getDataSField(runtime, params, index);
     if (!fname)
         return hfResult(results, fname.error());
 
-    return returnResult(runtime, params, results, hf->getCurrentLedgerObjArrayLen(*fname), index);
+    return returnResult(runtime, params, results, hf.getCurrentLedgerObjArrayLen(*fname), index);
 }
 
 wasm_trap_t*
-getLedgerObjArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getLedgerObjArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const cache = getDataInt32(runtime, params, index);
     if (!cache)
@@ -677,89 +726,71 @@ getLedgerObjArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_
     if (!fname)
         return hfResult(results, fname.error());
 
-    return returnResult(runtime, params, results, hf->getLedgerObjArrayLen(*cache, *fname), index);
+    return returnResult(runtime, params, results, hf.getLedgerObjArrayLen(*cache, *fname), index);
 }
 
 wasm_trap_t*
-getTxNestedArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getTxNestedArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
-    auto const bytes = getDataSlice(runtime, params, index);
-    if (!bytes)
-        return hfResult(results, bytes.error());
+    auto const locator = getDataLocator(runtime, params, index);
+    if (!locator)
+        return hfResult(results, locator.error());
 
-    return returnResult(runtime, params, results, hf->getTxNestedArrayLen(*bytes), index);
+    return returnResult(runtime, params, results, hf.getTxNestedArrayLen(*locator), index);
 }
 
 wasm_trap_t*
-getCurrentLedgerObjNestedArrayLen_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results)
+getCurrentLedgerObjNestedArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
-    auto const bytes = getDataSlice(runtime, params, index);
-    if (!bytes)
-        return hfResult(results, bytes.error());
+    auto const locator = getDataLocator(runtime, params, index);
+    if (!locator)
+        return hfResult(results, locator.error());
 
     return returnResult(
-        runtime, params, results, hf->getCurrentLedgerObjNestedArrayLen(*bytes), index);
+        runtime, params, results, hf.getCurrentLedgerObjNestedArrayLen(*locator), index);
 }
 wasm_trap_t*
-getLedgerObjNestedArrayLen_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getLedgerObjNestedArrayLen_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const cache = getDataInt32(runtime, params, index);
     if (!cache)
         return hfResult(results, cache.error());  // LCOV_EXCL_LINE
 
+    auto const locator = getDataLocator(runtime, params, index);
+    if (!locator)
+        return hfResult(results, locator.error());
+
+    return returnResult(
+        runtime, params, results, hf.getLedgerObjNestedArrayLen(*cache, *locator), index);
+}
+
+wasm_trap_t*
+updateData_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+{
+    int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const bytes = getDataSlice(runtime, params, index);
     if (!bytes)
         return hfResult(results, bytes.error());
 
-    return returnResult(
-        runtime, params, results, hf->getLedgerObjNestedArrayLen(*cache, *bytes), index);
+    return returnResult(runtime, params, results, hf.updateData(*bytes), index);
 }
 
 wasm_trap_t*
-updateData_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+checkSignature_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
-
-    auto const bytes = getDataSlice(runtime, params, index, true);
-    if (!bytes)
-        return hfResult(results, bytes.error());
-
-    return returnResult(runtime, params, results, hf->updateData(*bytes), index);
-}
-
-wasm_trap_t*
-checkSignature_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-    int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const message = getDataSlice(runtime, params, index);
     if (!message)
@@ -774,49 +805,40 @@ checkSignature_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* res
         return hfResult(results, pubkey.error());
 
     return returnResult(
-        runtime, params, results, hf->checkSignature(*message, *signature, *pubkey), index);
+        runtime, params, results, hf.checkSignature(*message, *signature, *pubkey), index);
 }
 
 wasm_trap_t*
-computeSha512HalfHash_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+computeSha512HalfHash_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const bytes = getDataSlice(runtime, params, index);
     if (!bytes)
         return hfResult(results, bytes.error());
 
-    return returnResult(runtime, params, results, hf->computeSha512HalfHash(*bytes), index);
+    return returnResult(runtime, params, results, hf.computeSha512HalfHash(*bytes), index);
 }
 
 wasm_trap_t*
-accountKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+accountKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
         return hfResult(results, acc.error());
 
-    return returnResult(runtime, params, results, hf->accountKeylet(*acc), index);
+    return returnResult(runtime, params, results, hf.accountKeylet(*acc), index);
 }
 
 wasm_trap_t*
-ammKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+ammKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const issue1 = getDataAsset(runtime, params, index);
     if (!issue1)
@@ -827,17 +849,14 @@ ammKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, issue2.error());
 
     return returnResult(
-        runtime, params, results, hf->ammKeylet(issue1.value(), issue2.value()), index);
+        runtime, params, results, hf.ammKeylet(issue1.value(), issue2.value()), index);
 }
 
 wasm_trap_t*
-checkKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+checkKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -847,17 +866,14 @@ checkKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
     if (!seq)
         return hfResult(results, seq.error());
 
-    return returnResult(runtime, params, results, hf->checkKeylet(acc.value(), *seq), index);
+    return returnResult(runtime, params, results, hf.checkKeylet(acc.value(), *seq), index);
 }
 
 wasm_trap_t*
-credentialKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+credentialKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const subj = getDataAccountID(runtime, params, index);
     if (!subj)
@@ -872,17 +888,14 @@ credentialKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* r
         return hfResult(results, credType.error());
 
     return returnResult(
-        runtime, params, results, hf->credentialKeylet(*subj, *iss, *credType), index);
+        runtime, params, results, hf.credentialKeylet(*subj, *iss, *credType), index);
 }
 
 wasm_trap_t*
-delegateKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+delegateKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -893,17 +906,14 @@ delegateKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* res
         return hfResult(results, authorize.error());
 
     return returnResult(
-        runtime, params, results, hf->delegateKeylet(acc.value(), authorize.value()), index);
+        runtime, params, results, hf.delegateKeylet(acc.value(), authorize.value()), index);
 }
 
 wasm_trap_t*
-depositPreauthKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+depositPreauthKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -914,33 +924,27 @@ depositPreauthKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_
         return hfResult(results, authorize.error());
 
     return returnResult(
-        runtime, params, results, hf->depositPreauthKeylet(acc.value(), authorize.value()), index);
+        runtime, params, results, hf.depositPreauthKeylet(acc.value(), authorize.value()), index);
 }
 
 wasm_trap_t*
-didKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+didKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
         return hfResult(results, acc.error());
 
-    return returnResult(runtime, params, results, hf->didKeylet(acc.value()), index);
+    return returnResult(runtime, params, results, hf.didKeylet(acc.value()), index);
 }
 
 wasm_trap_t*
-escrowKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+escrowKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -950,17 +954,14 @@ escrowKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
     if (!seq)
         return hfResult(results, seq.error());
 
-    return returnResult(runtime, params, results, hf->escrowKeylet(*acc, *seq), index);
+    return returnResult(runtime, params, results, hf.escrowKeylet(*acc, *seq), index);
 }
 
 wasm_trap_t*
-lineKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+lineKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc1 = getDataAccountID(runtime, params, index);
     if (!acc1)
@@ -978,18 +979,15 @@ lineKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
         runtime,
         params,
         results,
-        hf->lineKeylet(acc1.value(), acc2.value(), currency.value()),
+        hf.lineKeylet(acc1.value(), acc2.value(), currency.value()),
         index);
 }
 
 wasm_trap_t*
-mptIssuanceKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+mptIssuanceKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1000,17 +998,14 @@ mptIssuanceKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* 
         return hfResult(results, seq.error());
 
     return returnResult(
-        runtime, params, results, hf->mptIssuanceKeylet(acc.value(), seq.value()), index);
+        runtime, params, results, hf.mptIssuanceKeylet(acc.value(), seq.value()), index);
 }
 
 wasm_trap_t*
-mptokenKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+mptokenKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const slice = getDataSlice(runtime, params, index);
     if (!slice)
@@ -1024,17 +1019,14 @@ mptokenKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
     if (!holder)
         return hfResult(results, holder.error());
 
-    return returnResult(runtime, params, results, hf->mptokenKeylet(mptid, holder.value()), index);
+    return returnResult(runtime, params, results, hf.mptokenKeylet(mptid, holder.value()), index);
 }
 
 wasm_trap_t*
-nftOfferKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+nftOfferKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1045,17 +1037,14 @@ nftOfferKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* res
         return hfResult(results, seq.error());
 
     return returnResult(
-        runtime, params, results, hf->nftOfferKeylet(acc.value(), seq.value()), index);
+        runtime, params, results, hf.nftOfferKeylet(acc.value(), seq.value()), index);
 }
 
 wasm_trap_t*
-offerKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+offerKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1065,17 +1054,14 @@ offerKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
     if (!seq)
         return hfResult(results, seq.error());
 
-    return returnResult(runtime, params, results, hf->offerKeylet(acc.value(), seq.value()), index);
+    return returnResult(runtime, params, results, hf.offerKeylet(acc.value(), seq.value()), index);
 }
 
 wasm_trap_t*
-oracleKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+oracleKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1085,17 +1071,14 @@ oracleKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
     if (!documentId)
         return hfResult(results, documentId.error());
 
-    return returnResult(runtime, params, results, hf->oracleKeylet(*acc, *documentId), index);
+    return returnResult(runtime, params, results, hf.oracleKeylet(*acc, *documentId), index);
 }
 
 wasm_trap_t*
-paychanKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+paychanKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1110,17 +1093,14 @@ paychanKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
         return hfResult(results, seq.error());
 
     return returnResult(
-        runtime, params, results, hf->paychanKeylet(acc.value(), dest.value(), seq.value()), index);
+        runtime, params, results, hf.paychanKeylet(acc.value(), dest.value(), seq.value()), index);
 }
 
 wasm_trap_t*
-permissionedDomainKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+permissionedDomainKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1131,33 +1111,27 @@ permissionedDomainKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_
         return hfResult(results, seq.error());
 
     return returnResult(
-        runtime, params, results, hf->permissionedDomainKeylet(acc.value(), seq.value()), index);
+        runtime, params, results, hf.permissionedDomainKeylet(acc.value(), seq.value()), index);
 }
 
 wasm_trap_t*
-signersKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+signersKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
         return hfResult(results, acc.error());
 
-    return returnResult(runtime, params, results, hf->signersKeylet(acc.value()), index);
+    return returnResult(runtime, params, results, hf.signersKeylet(acc.value()), index);
 }
 
 wasm_trap_t*
-ticketKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+ticketKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1167,18 +1141,14 @@ ticketKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
     if (!seq)
         return hfResult(results, seq.error());
 
-    return returnResult(
-        runtime, params, results, hf->ticketKeylet(acc.value(), seq.value()), index);
+    return returnResult(runtime, params, results, hf.ticketKeylet(acc.value(), seq.value()), index);
 }
 
 wasm_trap_t*
-vaultKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+vaultKeylet_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1188,17 +1158,14 @@ vaultKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
     if (!seq)
         return hfResult(results, seq.error());
 
-    return returnResult(runtime, params, results, hf->vaultKeylet(acc.value(), seq.value()), index);
+    return returnResult(runtime, params, results, hf.vaultKeylet(acc.value(), seq.value()), index);
 }
 
 wasm_trap_t*
-getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getNFT_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const acc = getDataAccountID(runtime, params, index);
     if (!acc)
@@ -1208,104 +1175,79 @@ getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     if (!nftId)
         return hfResult(results, nftId.error());
 
-    return returnResult(runtime, params, results, hf->getNFT(*acc, *nftId), index);
+    return returnResult(runtime, params, results, hf.getNFT(*acc, *nftId), index);
 }
 
 wasm_trap_t*
-getNFTIssuer_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getNFTIssuer_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
         return hfResult(results, nftId.error());
 
-    return returnResult(runtime, params, results, hf->getNFTIssuer(*nftId), index);
+    return returnResult(runtime, params, results, hf.getNFTIssuer(*nftId), index);
 }
 
 wasm_trap_t*
-getNFTTaxon_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getNFTTaxon_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
         return hfResult(results, nftId.error());
 
-    return returnResult(runtime, params, results, hf->getNFTTaxon(*nftId), index);
+    return returnResult(runtime, params, results, hf.getNFTTaxon(*nftId), index);
 }
 
 wasm_trap_t*
-getNFTFlags_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getNFTFlags_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
         return hfResult(results, nftId.error());
 
-    return returnResult(runtime, params, results, hf->getNFTFlags(*nftId), index);
+    return returnResult(runtime, params, results, hf.getNFTFlags(*nftId), index);
 }
 
 wasm_trap_t*
-getNFTTransferFee_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getNFTTransferFee_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
         return hfResult(results, nftId.error());
 
-    return returnResult(runtime, params, results, hf->getNFTTransferFee(*nftId), index);
+    return returnResult(runtime, params, results, hf.getNFTTransferFee(*nftId), index);
 }
 
 wasm_trap_t*
-getNFTSerial_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+getNFTSerial_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
         return hfResult(results, nftId.error());
 
-    return returnResult(runtime, params, results, hf->getNFTSerial(*nftId), index);
+    return returnResult(runtime, params, results, hf.getNFTSerial(*nftId), index);
 }
 
 wasm_trap_t*
-trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
-
-    int64_t const len = (int64_t)params->data[1].of.i32 + params->data[3].of.i32;
-    if (len < 0)
-        return hfResult(results, HostFunctionError::InvalidParams);
-
-    if (std::cmp_greater(len, kMaxWasmParamLength))
-        return hfResult(results, HostFunctionError::DataFieldTooLarge);
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const msg = getDataString(runtime, params, index);
     if (!msg)
@@ -1315,6 +1257,9 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     if (!data)
         return hfResult(results, data.error());
 
+    if (msg->size() + data->size() > kMaxWasmDataLength)
+        return hfResult(results, HostFunctionError::DataFieldTooLarge);
+
     auto const asHex = getDataInt32(runtime, params, index);
     if (!asHex)
         return hfResult(results, asHex.error());  // LCOV_EXCL_LINE
@@ -1322,24 +1267,14 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     if (*asHex != 0 && *asHex != 1)
         return hfResult(results, HostFunctionError::InvalidParams);
 
-    return returnResult(runtime, params, results, hf->trace(*msg, *data, *asHex != 0), index);
+    return returnResult(runtime, params, results, hf.trace(*msg, *data, *asHex != 0), index);
 }
 
 wasm_trap_t*
-traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+traceNum_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
     int index = 0;
-
-    int32_t const len = params->data[1].of.i32;
-    if (len < 0)
-        return hfResult(results, HostFunctionError::InvalidParams);
-
-    if (std::cmp_greater(len, kMaxWasmParamLength))
-        return hfResult(results, HostFunctionError::DataFieldTooLarge);
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const msg = getDataString(runtime, params, index);
     if (!msg)
@@ -1349,25 +1284,15 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     if (!number)
         return hfResult(results, number.error());  // LCOV_EXCL_LINE
 
-    return returnResult(runtime, params, results, hf->traceNum(*msg, *number), index);
+    return returnResult(runtime, params, results, hf.traceNum(*msg, *number), index);
 }
 
 wasm_trap_t*
-traceAccount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+traceAccount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
-    int32_t const len = params->data[1].of.i32;
-    if (len < 0)
-        return hfResult(results, HostFunctionError::InvalidParams);
-
-    if (std::cmp_greater(len, kMaxWasmParamLength))
-        return hfResult(results, HostFunctionError::DataFieldTooLarge);
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const msg = getDataString(runtime, params, i);
     if (!msg)
         return hfResult(results, msg.error());
@@ -1376,25 +1301,15 @@ traceAccount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
     if (!account)
         return hfResult(results, account.error());
 
-    return returnResult(runtime, params, results, hf->traceAccount(*msg, *account), i);
+    return returnResult(runtime, params, results, hf.traceAccount(*msg, *account), i);
 }
 
 wasm_trap_t*
-traceFloat_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+traceFloat_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
-    int32_t const len = params->data[1].of.i32;
-    if (len < 0)
-        return hfResult(results, HostFunctionError::InvalidParams);
-
-    if (std::cmp_greater(len, kMaxWasmParamLength))
-        return hfResult(results, HostFunctionError::DataFieldTooLarge);
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const msg = getDataString(runtime, params, i);
     if (!msg)
         return hfResult(results, msg.error());
@@ -1403,25 +1318,15 @@ traceFloat_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
     if (!number)
         return hfResult(results, number.error());
 
-    return returnResult(runtime, params, results, hf->traceFloat(*msg, *number), i);
+    return returnResult(runtime, params, results, hf.traceFloat(*msg, *number), i);
 }
 
 wasm_trap_t*
-traceAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+traceAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
-    int32_t const len = params->data[1].of.i32;
-    if (len < 0)
-        return hfResult(results, HostFunctionError::InvalidParams);
-
-    if (std::cmp_greater(len, kMaxWasmParamLength))
-        return hfResult(results, HostFunctionError::DataFieldTooLarge);
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const msg = getDataString(runtime, params, i);
     if (!msg)
         return hfResult(results, msg.error());
@@ -1448,18 +1353,15 @@ traceAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
         return hfResult(results, HostFunctionError::InvalidParams);
     }
 
-    return returnResult(runtime, params, results, hf->traceAmount(*msg, *amount), i);
+    return returnResult(runtime, params, results, hf.traceAmount(*msg, *amount), i);
 }
 
 wasm_trap_t*
-floatFromInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatFromInt_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataInt64(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());  // LCOV_EXCL_LINE
@@ -1470,18 +1372,15 @@ floatFromInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 1;
-    return returnResult(runtime, params, results, hf->floatFromInt(*x, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatFromInt(*x, *rounding), i);
 }
 
 wasm_trap_t*
-floatFromUint_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatFromUint_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataUInt64(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
@@ -1492,18 +1391,15 @@ floatFromUint_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
-    return returnResult(runtime, params, results, hf->floatFromUint(*x, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatFromUint(*x, *rounding), i);
 }
 
 wasm_trap_t*
-floatFromSTAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatFromSTAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
@@ -1527,18 +1423,15 @@ floatFromSTAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* 
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
-    return returnResult(runtime, params, results, hf->floatFromSTAmount(*amount, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatFromSTAmount(*amount, *rounding), i);
 }
 
 wasm_trap_t*
-floatFromSTNumber_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatFromSTNumber_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
@@ -1562,18 +1455,15 @@ floatFromSTNumber_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* 
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
-    return returnResult(runtime, params, results, hf->floatFromSTNumber(*num, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatFromSTNumber(*num, *rounding), i);
 }
 
 wasm_trap_t*
-floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatToInt_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
@@ -1584,35 +1474,28 @@ floatToInt_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
-    return returnResult(runtime, params, results, hf->floatToInt(*x, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatToInt(*x, *rounding), i);
 }
 
 wasm_trap_t*
-floatToMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatToMantExp_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
     i = 2;
-    return returnResult(runtime, params, results, hf->floatToMantExp(*x), i);
+    return returnResult(runtime, params, results, hf.floatToMantExp(*x), i);
 }
 
 wasm_trap_t*
-floatFromMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatFromMantExp_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
     auto const mant = getDataInt64(runtime, params, i);
     if (!mant)
@@ -1628,18 +1511,15 @@ floatFromMantExp_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* r
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
-    return returnResult(runtime, params, results, hf->floatFromMantExp(*mant, *exp, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatFromMantExp(*mant, *exp, *rounding), i);
 }
 
 wasm_trap_t*
-floatCompare_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatCompare_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
@@ -1648,44 +1528,15 @@ floatCompare_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
     if (!y)
         return hfResult(results, y.error());
 
-    return returnResult(runtime, params, results, hf->floatCompare(*x, *y), i);
+    return returnResult(runtime, params, results, hf.floatCompare(*x, *y), i);
 }
 
 wasm_trap_t*
-floatAdd_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatAdd_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
-    auto const x = getDataSlice(runtime, params, i);
-    if (!x)
-        return hfResult(results, x.error());
+    WasmRuntimeWrapper& runtime = hf.getRT();
 
-    auto const y = getDataSlice(runtime, params, i);
-    if (!y)
-        return hfResult(results, y.error());
-
-    i = 6;
-    auto const rounding = getDataInt32(runtime, params, i);
-    if (!rounding)
-        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
-
-    i = 4;
-    return returnResult(runtime, params, results, hf->floatAdd(*x, *y, *rounding), i);
-}
-
-wasm_trap_t*
-floatSubtract_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
-    int i = 0;
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
@@ -1700,18 +1551,15 @@ floatSubtract_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
-    return returnResult(runtime, params, results, hf->floatSubtract(*x, *y, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatAdd(*x, *y, *rounding), i);
 }
 
 wasm_trap_t*
-floatMultiply_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatSubtract_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
@@ -1726,18 +1574,15 @@ floatMultiply_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
-    return returnResult(runtime, params, results, hf->floatMultiply(*x, *y, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatSubtract(*x, *y, *rounding), i);
 }
 
 wasm_trap_t*
-floatDivide_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatMultiply_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
@@ -1752,18 +1597,38 @@ floatDivide_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
-    return returnResult(runtime, params, results, hf->floatDivide(*x, *y, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatMultiply(*x, *y, *rounding), i);
 }
 
 wasm_trap_t*
-floatRoot_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatDivide_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
+    auto const x = getDataSlice(runtime, params, i);
+    if (!x)
+        return hfResult(results, x.error());
+
+    auto const y = getDataSlice(runtime, params, i);
+    if (!y)
+        return hfResult(results, y.error());
+
+    i = 6;
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
+
+    i = 4;
+    return returnResult(runtime, params, results, hf.floatDivide(*x, *y, *rounding), i);
+}
+
+wasm_trap_t*
+floatRoot_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
+{
+    int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
@@ -1778,18 +1643,15 @@ floatRoot_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 3;
-    return returnResult(runtime, params, results, hf->floatRoot(*x, *n, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatRoot(*x, *n, *rounding), i);
 }
 
 wasm_trap_t*
-floatPower_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatPower_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = hf->getRT();
-
     int i = 0;
+    WasmRuntimeWrapper& runtime = hf.getRT();
+
     auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
@@ -1804,7 +1666,7 @@ floatPower_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 3;
-    return returnResult(runtime, params, results, hf->floatPower(*x, *n, *rounding), i);
+    return returnResult(runtime, params, results, hf.floatPower(*x, *n, *rounding), i);
 }
 
 // LCOV_EXCL_START
@@ -1857,7 +1719,7 @@ testGetDataIncrement()
         values[0] = WASM_I32_VAL(42);
 
         int index = 0;
-        auto const result = getDataInt32(&runtime, &params, index);
+        auto const result = getDataInt32(runtime, &params, index);
         if (!result || result.value() != 42 || index != 1)
             return false;
     }
@@ -1869,7 +1731,7 @@ testGetDataIncrement()
         values[0] = WASM_I64_VAL(1234);
 
         int index = 0;
-        auto const result = getDataInt64(&runtime, &params, index);
+        auto const result = getDataInt64(runtime, &params, index);
         if (!result || result.value() != 1234 || index != 1)
             return false;
     }
@@ -1881,7 +1743,7 @@ testGetDataIncrement()
         values[0] = WASM_I32_VAL(sfAccount.getCode());
 
         int index = 0;
-        auto const result = getDataSField(&runtime, &params, index);
+        auto const result = getDataSField(runtime, &params, index);
         if (!result || result.value().get() != sfAccount || index != 1)
             return false;
     }
@@ -1894,7 +1756,7 @@ testGetDataIncrement()
         values[1] = WASM_I32_VAL(3);
 
         int index = 0;
-        auto const result = getDataSlice(&runtime, &params, index);
+        auto const result = getDataSlice(runtime, &params, index);
         if (!result || result.value() != Slice(buffer.data(), 3) || index != 2)
             return false;
     }
@@ -1907,7 +1769,7 @@ testGetDataIncrement()
         values[1] = WASM_I32_VAL(5);
 
         int index = 0;
-        auto const result = getDataString(&runtime, &params, index);
+        auto const result = getDataString(runtime, &params, index);
         if (!result ||
             result.value() != std::string_view(reinterpret_cast<char const*>(buffer.data()), 5) ||
             index != 2)
@@ -1926,7 +1788,7 @@ testGetDataIncrement()
         memcpy(&buffer[0], id.data(), AccountID::size());
 
         int index = 0;
-        auto const result = getDataAccountID(&runtime, &params, index);
+        auto const result = getDataAccountID(runtime, &params, index);
         if (!result || result.value() != id || index != 2)
             return false;
     }
@@ -1942,7 +1804,7 @@ testGetDataIncrement()
         memcpy(&buffer[0], h1.data(), Hash::size());
 
         int index = 0;
-        auto const result = getDataUInt256(&runtime, &params, index);
+        auto const result = getDataUInt256(runtime, &params, index);
         if (!result || result.value() != h1 || index != 2)
             return false;
     }
@@ -1958,7 +1820,7 @@ testGetDataIncrement()
         memcpy(&buffer[0], c.data(), Currency::size());
 
         int index = 0;
-        auto const result = getDataCurrency(&runtime, &params, index);
+        auto const result = getDataCurrency(runtime, &params, index);
         if (!result || result.value() != c || index != 2)
             return false;
     }

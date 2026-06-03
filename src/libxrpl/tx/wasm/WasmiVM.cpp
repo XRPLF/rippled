@@ -35,6 +35,9 @@
 
 namespace xrpl {
 
+wasm_trap_t*
+HostFuncMain_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
 namespace {
 
 void
@@ -395,12 +398,8 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
         params.release();
         results.release();
 
-        wasm_func_t* func = wasm_func_new_with_env(
-            s.get(),
-            ftype.get(),
-            reinterpret_cast<wasm_func_callback_with_env_t>(imp.wrap),
-            (void*)&obj,
-            nullptr);
+        wasm_func_t* func =
+            wasm_func_new_with_env(s.get(), ftype.get(), HostFuncMain_wrap, (void*)&obj, nullptr);
         if (func == nullptr)
         {
             Throw<std::runtime_error>(

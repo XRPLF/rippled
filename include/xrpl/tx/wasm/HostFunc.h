@@ -85,12 +85,12 @@ public:
         rt_ = std::nullopt;
     }
 
-    [[nodiscard]] WasmRuntimeWrapper*
+    [[nodiscard]] WasmRuntimeWrapper&
     getRT() const
     {
         if (!rt_)
-            return nullptr;  // LCOV_EXCL_LINE
-        return &rt_->get();
+            Throw<std::logic_error>("Wasm runtime not set");
+        return rt_->get();
     }
 
     [[nodiscard]] beast::Journal
@@ -168,19 +168,19 @@ public:
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    getTxNestedField(Slice const& locator) const
+    getTxNestedField(FieldLocator const& locator) const
     {
         return Unexpected(HostFunctionError::Internal);
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjNestedField(Slice const& locator) const
+    getCurrentLedgerObjNestedField(FieldLocator const& locator) const
     {
         return Unexpected(HostFunctionError::Internal);
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) const
+    getLedgerObjNestedField(int32_t cacheIdx, FieldLocator const& locator) const
     {
         return Unexpected(HostFunctionError::Internal);
     }
@@ -204,19 +204,19 @@ public:
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    getTxNestedArrayLen(Slice const& locator) const
+    getTxNestedArrayLen(FieldLocator const& locator) const
     {
         return Unexpected(HostFunctionError::Internal);
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator) const
+    getCurrentLedgerObjNestedArrayLen(FieldLocator const& locator) const
     {
         return Unexpected(HostFunctionError::Internal);
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) const
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, FieldLocator const& locator) const
     {
         return Unexpected(HostFunctionError::Internal);
     }
