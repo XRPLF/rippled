@@ -197,7 +197,10 @@ target_link_libraries(
 )
 
 add_module(xrpl tx)
-target_link_libraries(xrpl.libxrpl.tx PUBLIC xrpl.libxrpl.ledger)
+target_link_libraries(
+    xrpl.libxrpl.tx
+    PUBLIC xrpl.libxrpl.ledger xrpl.libxrpl.telemetry
+)
 
 # Telemetry module — OpenTelemetry distributed tracing support.
 # Sources: include/xrpl/telemetry/ (headers), src/libxrpl/telemetry/ (impl).
