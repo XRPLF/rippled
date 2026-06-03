@@ -5,7 +5,7 @@
 #include <test/jtx/amount.h>
 
 #include <xrpld/rpc/detail/AssetCache.h>
-#include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
@@ -41,22 +41,8 @@ Paths::operator()(Env& env, JTx& jt) const
             domain = num;
     }
 
-    Pathfinder pf(
-        std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache")),
-        from,
-        to,
-        in_,
-        in_.getIssuer(),
-        amount,
-        std::nullopt,
-        domain,
-        env.app());
-    if (!pf.findPaths(depth_))
-        return;
-
-    STPath fp;
-    pf.computePathRanks(limit_);
-    auto const found = pf.getBestPaths(limit_, fp, {}, in_.getIssuer());
+    auto const found = env.app().getPathRequestManager().findPaths(
+        env.current(), from, to, amount, in_, in_.getIssuer(), domain, limit_);
 
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()

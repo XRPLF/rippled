@@ -61,20 +61,24 @@ extractChangedBooks(STArray const& nodes, std::optional<uint256> const& /*domain
             SField const* subField = nullptr;
             SField const& nodeName = node.getFName();
             if (nodeName == sfCreatedNode)
+            {
                 subField = &sfNewFields;
+            }
             else if (nodeName == sfModifiedNode || nodeName == sfDeletedNode)
+            {
                 subField = &sfFinalFields;
+            }
 
-            if (!subField)
+            if (subField == nullptr)
                 continue;
 
             auto const* data = dynamic_cast<STObject const*>(node.peekAtPField(*subField));
-            if (!data)
+            if (data == nullptr)
                 continue;
             if (!data->isFieldPresent(sfTakerPays) || !data->isFieldPresent(sfTakerGets))
                 continue;
 
-            Book book{
+            Book const book{
                 data->getFieldAmount(sfTakerPays).asset(),
                 data->getFieldAmount(sfTakerGets).asset(),
                 std::nullopt};
@@ -92,7 +96,7 @@ extractChangedBooks(STArray const& nodes, std::optional<uint256> const& /*domain
             if (!dup)
                 result.push_back(book);
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
             // Malformed metadata node — skip safely.
         }

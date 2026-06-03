@@ -106,15 +106,15 @@ public:
     /// 12 bytes -- 5 fit in one cache line.
     struct Edge
     {
-        VID to;                 ///< Receiving-asset vertex
-        uint32_t qualityFixed;  ///< Top-of-book rate as 16.16 fixed-point:
-                                ///  (takerPays / takerGets) x 65536.
-                                ///  Lower = cheaper.  Used additively as the
-                                ///  Dijkstra edge weight.
-                                ///  kNoLiquidity means the book exists
-                                ///  structurally but has no current offers.
-        EdgeKind kind;
-        uint8_t _pad[3]{};
+        VID to{};                 ///< Receiving-asset vertex
+        uint32_t qualityFixed{};  ///< Top-of-book rate as 16.16 fixed-point:
+                                  ///  (takerPays / takerGets) x 65536.
+                                  ///  Lower = cheaper.  Used additively as the
+                                  ///  Dijkstra edge weight.
+                                  ///  kNoLiquidity means the book exists
+                                  ///  structurally but has no current offers.
+        EdgeKind kind{};
+        uint8_t pad[3]{};
     };
 
     static_assert(sizeof(Edge) == 12, "Edge must be 12 bytes");

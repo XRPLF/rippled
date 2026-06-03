@@ -7,6 +7,7 @@
 #include <test/jtx/rate.h>
 
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Rate.h>
 
 /** Escrow operations. */
 namespace xrpl::test::jtx::escrow {

@@ -1,17 +1,30 @@
 #include <xrpld/rpc/detail/PayGraph.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Quality.h>
+
+#include "xrpl/basics/UnorderedContainers.h"
+#include "xrpl/basics/base_uint.h"
+#include "xrpl/beast/utility/Journal.h"
+#include "xrpl/ledger/OrderBookDB.h"
+#include "xrpl/protocol/Asset.h"
+#include "xrpl/protocol/Book.h"
+#include "xrpl/protocol/Issue.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cassert>
-#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <limits>
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <queue>
-#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -123,7 +136,7 @@ PayGraph::ensureEdge(Snapshot& snap, VID from, VID to, EdgeKind kind)
         if (e.to == to && e.kind == kind)
             return e;
     }
-    list.push_back(Edge{to, kNoLiquidity, kind});
+    list.push_back(Edge{.to = to, .qualityFixed = kNoLiquidity, .kind = kind});
     ++snap.stats.edges;
     return list.back();
 }
@@ -200,7 +213,8 @@ PayGraph::buildSnapshot(
 
     for (std::size_t qi = 0; qi < workQueue.size(); ++qi)
     {
-        Asset src = workQueue[qi];  // copy — enqueue() may realloc workQueue, invalidating refs
+        Asset const src =
+            workQueue[qi];  // copy — enqueue() may realloc workQueue, invalidating refs
         auto books = bookDB.getBooksByTakerPays(src, domain);
         // Sort books so edge insertion order (and thus adj[] ordering) is
         // deterministic across processes with different hash seeds.
@@ -212,8 +226,8 @@ PayGraph::buildSnapshot(
             uint32_t const q = topOfBookQuality(ledger, book);
             // Add edge src -> dst even if no liquidity (structural presence).
 
-            VID vSrc = ensureVertex(*snap, src);
-            VID vDst = ensureVertex(*snap, dst);
+            VID const vSrc = ensureVertex(*snap, src);
+            VID const vDst = ensureVertex(*snap, dst);
             Edge& e = ensureEdge(*snap, vSrc, vDst, EdgeKind::OrderBook);
             e.qualityFixed = q;
             ++snap->stats.orderBooks;
@@ -256,7 +270,7 @@ PayGraph::rebuild(OrderBookDB& bookDB, ReadView const& ledger, std::optional<uin
 {
     auto snap = buildSnapshot(bookDB, ledger, domain, j_);
 
-    std::scoped_lock lk(writeMu_);
+    std::scoped_lock const lk(writeMu_);
     // Preserve cumulative counter from current snapshot.
     if (auto cur = snapshot())
         snap->stats.totalDeltasCalled = cur->stats.totalDeltasCalled;
@@ -284,7 +298,7 @@ PayGraph::applyLedgerDelta(
         return;
 
     // ---------- acquire write lock ----------------------------------------
-    std::scoped_lock lk(writeMu_);
+    std::scoped_lock const lk(writeMu_);
 
     // Shallow-copy the current snapshot.  All vectors are value-copied.
     auto cur = std::atomic_load_explicit(&snap_, std::memory_order_acquire);
@@ -307,8 +321,8 @@ PayGraph::applyLedgerDelta(
         uint32_t const newQ = topOfBookQuality(newLedger, book);
 
         // Ensure both endpoints exist (a book might be new this ledger).
-        VID vSrc = ensureVertex(*next, book.in);
-        VID vDst = ensureVertex(*next, book.out);
+        VID const vSrc = ensureVertex(*next, book.in);
+        VID const vDst = ensureVertex(*next, book.out);
         Edge& e = ensureEdge(*next, vSrc, vDst, EdgeKind::OrderBook);
         e.qualityFixed = newQ;
 
@@ -343,7 +357,7 @@ PayGraph::vertexOf(Asset const& asset) const
 Asset const&
 PayGraph::assetOf(VID v) const
 {
-    static Asset kEmpty;
+    static Asset const kEmpty;
     auto s = snapshot();
     if (!s || v >= s->assets.size())
         return kEmpty;
@@ -365,15 +379,15 @@ PayGraph::dijkstra(
     std::vector<bool> const* blockedVerts,
     BlockedEdges const* blockedEdges)
 {
-    uint32_t const N = static_cast<uint32_t>(snap.assets.size());
+    uint32_t const n = static_cast<uint32_t>(snap.assets.size());
 
     DijkResult res;
-    res.dist.assign(N, std::numeric_limits<uint64_t>::max());
-    res.prev.assign(N, kNull);
+    res.dist.assign(n, std::numeric_limits<uint64_t>::max());
+    res.prev.assign(n, kNull);
 
-    if (src >= N)
+    if (src >= n)
         return res;
-    if (blockedVerts && src < blockedVerts->size() && (*blockedVerts)[src])
+    if ((blockedVerts != nullptr) && src < blockedVerts->size() && (*blockedVerts)[src])
         return res;
 
     res.dist[src] = 0;
@@ -400,14 +414,14 @@ PayGraph::dijkstra(
 
         for (Edge const& e : snap.adj[u])
         {
-            VID v = e.to;
-            if (v >= N)
+            VID const v = e.to;
+            if (v >= n)
                 continue;
-            if (blockedVerts && v < blockedVerts->size() && (*blockedVerts)[v])
+            if ((blockedVerts != nullptr) && v < blockedVerts->size() && (*blockedVerts)[v])
                 continue;
 
             // Check if this specific edge (u -> v) is blocked.
-            if (blockedEdges)
+            if (blockedEdges != nullptr)
             {
                 bool edgeBlocked = false;
                 for (auto const& [bfrom, bto] : *blockedEdges)
@@ -478,19 +492,19 @@ PayGraph::reconstructPath(DijkResult const& res, VID src, VID dst)
 std::vector<PayGraph::AssetPath>
 PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
 {
-    uint32_t const N = static_cast<uint32_t>(snap.assets.size());
-    if (src >= N || dst >= N || k <= 0)
+    uint32_t const n = static_cast<uint32_t>(snap.assets.size());
+    if (src >= n || dst >= n || k <= 0)
         return {};
 
-    std::vector<AssetPath> A;  // confirmed k-shortest paths
-    A.reserve(k);
+    std::vector<AssetPath> a;  // confirmed k-shortest paths
+    a.reserve(k);
 
     // Candidate set: (cumQuality, path) ordered by quality ascending.
     using Candidate = std::pair<uint64_t, std::vector<VID>>;
     auto cmpCand = [](Candidate const& a, Candidate const& b) {
         return a.first > b.first;  // min-heap
     };
-    std::priority_queue<Candidate, std::vector<Candidate>, decltype(cmpCand)> B(cmpCand);
+    std::priority_queue<Candidate, std::vector<Candidate>, decltype(cmpCand)> b(cmpCand);
 
     // Find the first (shortest) path.
     {
@@ -498,17 +512,17 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
         auto path = reconstructPath(res, src, dst);
         if (path.empty())
             return {};  // no path at all
-        B.emplace(res.dist[dst], std::move(path));
+        b.emplace(res.dist[dst], std::move(path));
     }
 
-    while (!B.empty() && static_cast<int>(A.size()) < k)
+    while (!b.empty() && static_cast<int>(a.size()) < k)
     {
-        auto [cost, prev] = B.top();
-        B.pop();
+        auto [cost, prev] = b.top();
+        b.pop();
 
         // Deduplicate (same path may be inserted multiple times).
         bool dup = false;
-        for (auto const& ap : A)
+        for (auto const& ap : a)
         {
             if (ap.vids == prev)
             {
@@ -519,21 +533,21 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
         if (dup)
             continue;
 
-        A.push_back({prev, cost});
+        a.push_back({prev, cost});
 
-        if (static_cast<int>(A.size()) == k)
+        if (static_cast<int>(a.size()) == k)
             break;
 
         // For each spur node along the accepted path (except the last node):
         for (std::size_t i = 0; i + 1 < prev.size(); ++i)
         {
-            VID spurNode = prev[i];
+            VID const spurNode = prev[i];
             // Root path = prev[0..i]
             std::vector<VID> const rootPath(prev.begin(), prev.begin() + i + 1);
 
             // Block vertices in the root path (except spurNode itself) to
             // prevent spur paths from re-using the prefix (avoids cycles).
-            std::vector<bool> blockedVerts(N, false);
+            std::vector<bool> blockedVerts(n, false);
             for (std::size_t j = 0; j < i; ++j)
                 blockedVerts[rootPath[j]] = true;
 
@@ -542,7 +556,7 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
             // critical part of Yen's: without it, Dijkstra just finds the
             // same path again instead of exploring alternatives.
             BlockedEdges blockedEdges;
-            for (auto const& ap : A)
+            for (auto const& ap : a)
             {
                 auto const& av = ap.vids;
                 if (av.size() > i + 1 &&
@@ -568,8 +582,8 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
             bool valid = true;
             for (std::size_t j = 0; j + 1 < candidate.size(); ++j)
             {
-                VID u = candidate[j];
-                VID v = candidate[j + 1];
+                VID const u = candidate[j];
+                VID const v = candidate[j + 1];
                 if (u >= snap.adj.size())
                 {
                     valid = false;
@@ -598,11 +612,11 @@ PayGraph::kShortestPaths(Snapshot const& snap, VID src, VID dst, int k)
                 candidateCost += bestEdge;
             }
             if (valid)
-                B.emplace(candidateCost, std::move(candidate));
+                b.emplace(candidateCost, std::move(candidate));
         }
     }
 
-    return A;
+    return a;
 }
 
 //==============================================================================

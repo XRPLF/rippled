@@ -3,6 +3,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
+#include <xrpld/rpc/detail/GraphPathfinder.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 #include <xrpld/rpc/detail/PayGraph.h>
 #include <xrpld/rpc/detail/PayGraphDelta.h>
@@ -15,17 +16,23 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 
+#include "xrpl/basics/base_uint.h"
+#include "xrpl/protocol/AccountID.h"
+#include "xrpl/protocol/Book.h"
+#include "xrpl/protocol/PathAsset.h"
+#include "xrpl/protocol/STPathSet.h"
+
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -207,18 +214,17 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
-                auto ret = std::remove_if(
-                    requests_.begin(), requests_.end(), [&removed, &request](auto const& wl) {
-                        auto r = wl.lock();
+                auto ret = std::ranges::remove_if(requests_, [&removed, &request](auto const& wl) {
+                    auto r = wl.lock();
 
-                        if (r && r != request)
-                            return false;
+                    if (r && r != request)
+                        return false;
 
-                        ++removed;
-                        return true;
-                    });
+                    ++removed;
+                    return true;
+                });
 
-                requests_.erase(ret, requests_.end());
+                requests_.erase(ret.begin(), ret.end());
             }
 
             mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
@@ -371,6 +377,48 @@ PathRequestManager::doLegacyPathRequest(
     if (valid)
         jvRes = req->doUpdate(cache, false);
     return std::move(jvRes);
+}
+
+STPathSet
+PathRequestManager::findPaths(
+    std::shared_ptr<ReadView const> const& ledger,
+    AccountID const& srcAccount,
+    AccountID const& dstAccount,
+    STAmount const& dstAmount,
+    PathAsset const& srcAsset,
+    std::optional<AccountID> const& srcIssuer,
+    std::optional<uint256> const& domain,
+    int maxPaths)
+{
+    if (!ledger)
+        return {};
+
+    // Domain payments need a domain-scoped PayGraph because domain-only
+    // offers live in OrderBookDB::domainBooks_ rather than allBooks_.
+    auto graph = domain ? PayGraph::build(app_.getOrderBookDB(), *ledger, domain, journal_)
+                        : ensurePayGraph(ledger);
+    if (!graph)
+        return {};
+
+    auto cache = std::make_shared<AssetCache>(ledger, app_.getJournal("AssetCache"));
+
+    GraphPathfinder pf(
+        graph,
+        cache,
+        srcAccount,
+        dstAccount,
+        srcAsset,
+        srcIssuer,
+        dstAmount,
+        std::nullopt,
+        domain,
+        app_);
+
+    if (!pf.findPaths())
+        return {};
+
+    pf.computePathRanks(maxPaths);
+    return pf.getBestPaths(maxPaths, STPathSet{}, srcIssuer.value_or(srcAccount));
 }
 
 }  // namespace xrpl

@@ -8,7 +8,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
-#include <xrpld/rpc/detail/Pathfinder.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
@@ -302,24 +302,16 @@ checkPayment(
 
             if (auto ledger = app.getOpenLedger().current())
             {
-                Pathfinder pf(
-                    std::make_shared<AssetCache>(ledger, app.getJournal("AssetCache")),
+                // 4 is the maximum number of paths to return.
+                result = app.getPathRequestManager().findPaths(
+                    ledger,
                     srcAddressID,
                     *dstAccountID,
+                    amount,
                     sendMax.asset(),
                     sendMax.getIssuer(),
-                    amount,
-                    std::nullopt,
                     domain,
-                    app);
-                if (pf.findPaths(7))
-                {
-                    // 4 is the maximum paths
-                    pf.computePathRanks(4);
-                    STPath fullLiquidityPath;
-                    STPathSet const paths;
-                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.getIssuer());
-                }
+                    4);
             }
 
             auto j = app.getJournal("RPCHandler");

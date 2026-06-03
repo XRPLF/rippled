@@ -1,7 +1,6 @@
 #include <xrpld/rpc/detail/PathRequest.h>
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/AccountAssets.h>
 #include <xrpld/rpc/detail/GraphPathfinder.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
@@ -40,6 +39,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <mutex>

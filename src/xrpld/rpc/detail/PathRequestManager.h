@@ -6,6 +6,9 @@
 #include <xrpld/rpc/detail/PayGraph.h>
 #include <xrpld/rpc/detail/RippleLineCache.h>
 
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/STPathSet.h>
+
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -114,6 +117,22 @@ public:
     {
         orderBookReady_.store(true, std::memory_order_release);
     }
+
+    /// One-shot synchronous helper used by tx-signing autofill (build_path)
+    /// and jtx test helpers.  Builds/borrows the PayGraph for `ledger`,
+    /// constructs a GraphPathfinder and returns up to `maxPaths` STPaths
+    /// from src→dst delivering `dstAmount`.  Returns an empty STPathSet
+    /// when no paths are found (or no PayGraph is available).
+    STPathSet
+    findPaths(
+        std::shared_ptr<ReadView const> const& ledger,
+        AccountID const& srcAccount,
+        AccountID const& dstAccount,
+        STAmount const& dstAmount,
+        PathAsset const& srcAsset,
+        std::optional<AccountID> const& srcIssuer,
+        std::optional<uint256> const& domain,
+        int maxPaths);
 
 private:
     void

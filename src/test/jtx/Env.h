@@ -14,7 +14,6 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/rpc/detail/Pathfinder.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
@@ -193,7 +192,6 @@ public:
         , journal{bundle_.app->getJournal("Env")}
     {
         memoize(Account::kMaster);
-        Pathfinder::initPathTable();
         foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) {
             appFeats.insert(f);
         });

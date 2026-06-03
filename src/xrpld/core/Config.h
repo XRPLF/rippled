@@ -188,7 +188,7 @@ public:
     //                 Path finding is enabled by default. Set `PATH_SEARCH`
     //                 to 0 in the configuration file to disable it.
     bool pathSearch = true;
-    int PATH_WORKERS = 2;
+    int pathWorkers = 2;
 
     // Validation
     std::optional<std::size_t> validationQuorum;  // validations to consider ledger authoritative

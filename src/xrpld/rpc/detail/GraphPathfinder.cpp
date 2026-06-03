@@ -8,27 +8,29 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/Job.h>
-#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
+#include "xrpl/beast/utility/Zero.h"
+#include "xrpl/protocol/UintTypes.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <functional>
+#include <memory>
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -154,7 +156,7 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
                     continue;
                 if (a.get<Issue>().currency != cur)
                     continue;
-                if (!validIssuers.empty() && !validIssuers.count(a.get<Issue>().account))
+                if (!validIssuers.empty() && !validIssuers.contains(a.get<Issue>().account))
                     continue;
                 vids.push_back(vid);
             }
@@ -190,13 +192,13 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
     auto const srcVIDs = findVIDsSrc(srcAsset);
     auto const dstVIDs = findVIDsDst(dstAsset);
 
-    // When the effective destination is the sender (e.g. a1 sending alice["USD"]
-    // where alice IS the issuer, so effectiveDst_==srcAccount_), Yen's would
-    // search for a path from alice's asset vertex back to itself — skip it.
-    // This does NOT apply when dst is XRP: effectiveDst_==dstAccount_ in that
-    // case, and if src==dst (a self-subscription) we still need PayGraph to
-    // find IOU→XRP offer-book paths.
-    bool const repayToSelf = !isXRP(dstAmount_.asset()) && (effectiveDst_ == srcAccount_);
+    // When the effective destination is the sender AND the source/destination
+    // assets are the same (a genuine self-loop on a single asset), Yen's would
+    // search for a path from a vertex back to itself — skip it.  Cross-currency
+    // self-payments (e.g. bob holds XTS@gw and wants XXX@gw) still need
+    // PayGraph traversal to discover the gateway-side conversion route.
+    bool const repayToSelf = !isXRP(dstAmount_.asset()) && (effectiveDst_ == srcAccount_) &&
+        (srcPathAsset_ == dstAmount_.asset());
 
     if (repayToSelf || srcVIDs.empty() || dstVIDs.empty())
     {
@@ -209,9 +211,9 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
         // Run Yen's for each (src, dst) VID pair and collect unique paths.
         // For the common case both vectors have exactly one element.
         std::vector<PayGraph::AssetPath> allPaths;
-        for (PayGraph::VID vSrc : srcVIDs)
+        for (PayGraph::VID const vSrc : srcVIDs)
         {
-            for (PayGraph::VID vDst : dstVIDs)
+            for (PayGraph::VID const vDst : dstVIDs)
             {
                 if (vSrc == vDst)
                     continue;
@@ -221,11 +223,13 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
                     // Deduplicate across (vSrc, vDst) pairs.
                     bool dup = false;
                     for (auto const& existing : allPaths)
+                    {
                         if (existing.vids == p.vids)
                         {
                             dup = true;
                             break;
                         }
+                    }
                     if (!dup)
                         allPaths.push_back(std::move(p));
                 }
@@ -255,7 +259,7 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
     // This covers same-currency IOUs (e.g. sender holds USD from issuer A,
     // dest wants USD from issuer A) that don't go through any order book.
     {
-        STPath directPath;
+        STPath const directPath;
         // For non-XRP to non-XRP same-currency: no intermediate nodes needed;
         // the path engine will use the default path.  We still emit an empty
         // path as a hint so rippleCalculate considers it.
@@ -328,14 +332,14 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
 
             // 1-hop: src → I → dst
             // I must be in both srcPeers and dstPeers.
-            for (auto const& I : srcPeers)
+            for (auto const& i : srcPeers)
             {
                 if (continueCallback && !continueCallback())
                     return !completePaths_.empty();
-                if (dstPeers.count(I))
+                if (dstPeers.contains(i))
                 {
                     STPath path;
-                    path.emplaceBack(STPathElement::TypeAccount, I, xrpCurrency(), xrpAccount());
+                    path.emplaceBack(STPathElement::TypeAccount, i, xrpCurrency(), xrpAccount());
                     completePaths_.pushBack(path);
                 }
             }
@@ -349,23 +353,23 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
             [&] {
                 static constexpr std::size_t kMaxHop2Probes = 100;
                 std::size_t probes = 0;
-                for (auto const& A : srcPeers)
+                for (auto const& a : srcPeers)
                 {
                     if (continueCallback && !continueCallback())
                         return;
-                    for (auto const& B : dstPeers)
+                    for (auto const& b : dstPeers)
                     {
                         if (probes++ >= kMaxHop2Probes)
                             return;
-                        if (A == B)
+                        if (a == b)
                             continue;
-                        if (ledger_->read(keylet::line(A, B, targetCcy)))
+                        if (ledger_->read(keylet::line(a, b, targetCcy)))
                         {
                             STPath path;
                             path.emplaceBack(
-                                STPathElement::TypeAccount, A, xrpCurrency(), xrpAccount());
+                                STPathElement::TypeAccount, a, xrpCurrency(), xrpAccount());
                             path.emplaceBack(
-                                STPathElement::TypeAccount, B, xrpCurrency(), xrpAccount());
+                                STPathElement::TypeAccount, b, xrpCurrency(), xrpAccount());
                             completePaths_.pushBack(path);
                         }
                     }
@@ -384,11 +388,11 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
                 static constexpr std::size_t kMaxGatewayPeers = 50;
                 static constexpr std::size_t kMaxHop3Probes = 200;
                 std::size_t probes = 0;
-                for (auto const& A : srcPeers)
+                for (auto const& a : srcPeers)
                 {
                     if (continueCallback && !continueCallback())
                         return;
-                    auto const aLines = cache_->getRippleLines(A, LineDirection::Outgoing);
+                    auto const aLines = cache_->getRippleLines(a, LineDirection::Outgoing);
                     if (!aLines || aLines->size() > kMaxGatewayPeers)
                         continue;
                     for (auto const& aLine : *aLines)
@@ -397,26 +401,26 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
                             continue;
                         if (aLine.getFreeze() || aLine.getDeepFreeze())
                             continue;
-                        AccountID const& C = aLine.getAccountIDPeer();
-                        if (C == srcAccount_ || C == dstAccount_)
+                        AccountID const& c = aLine.getAccountIDPeer();
+                        if (c == srcAccount_ || c == dstAccount_)
                             continue;
-                        if (dstPeers.count(C))
+                        if (dstPeers.contains(c))
                             continue;  // already covered by 1-hop
-                        for (auto const& B : dstPeers)
+                        for (auto const& b : dstPeers)
                         {
                             if (probes++ >= kMaxHop3Probes)
                                 return;
-                            if (C == B || C == A)
+                            if (c == b || c == a)
                                 continue;
-                            if (ledger_->read(keylet::line(C, B, targetCcy)))
+                            if (ledger_->read(keylet::line(c, b, targetCcy)))
                             {
                                 STPath path;
                                 path.emplaceBack(
-                                    STPathElement::TypeAccount, A, xrpCurrency(), xrpAccount());
+                                    STPathElement::TypeAccount, a, xrpCurrency(), xrpAccount());
                                 path.emplaceBack(
-                                    STPathElement::TypeAccount, C, xrpCurrency(), xrpAccount());
+                                    STPathElement::TypeAccount, c, xrpCurrency(), xrpAccount());
                                 path.emplaceBack(
-                                    STPathElement::TypeAccount, B, xrpCurrency(), xrpAccount());
+                                    STPathElement::TypeAccount, b, xrpCurrency(), xrpAccount());
                                 completePaths_.pushBack(path);
                             }
                         }
@@ -470,17 +474,17 @@ GraphPathfinder::materialise(PayGraph::AssetPath const& assetPath)
         Asset const& srcAsset = snap_->assets[firstVID];
         if (srcAsset.holds<Issue>() && !isXRP(srcAsset.get<Issue>().currency))
         {
-            AccountID const& G = srcAsset.get<Issue>().account;
+            AccountID const& g = srcAsset.get<Issue>().account;
             AccountID const expectedIssuer = srcIssuer_.value_or(srcAccount_);
-            if (G != srcAccount_ && G != xrpAccount() && G != expectedIssuer)
-                path.emplaceBack(STPathElement::TypeAccount, G, xrpCurrency(), xrpAccount());
+            if (g != srcAccount_ && g != xrpAccount() && g != expectedIssuer)
+                path.emplaceBack(STPathElement::TypeAccount, g, xrpCurrency(), xrpAccount());
         }
     }
 
     for (std::size_t i = 0; i + 1 < assetPath.vids.size(); ++i)
     {
-        PayGraph::VID vFrom = assetPath.vids[i];
-        PayGraph::VID vTo = assetPath.vids[i + 1];
+        PayGraph::VID const vFrom = assetPath.vids[i];
+        PayGraph::VID const vTo = assetPath.vids[i + 1];
 
         if (vFrom >= snap_->assets.size() || vTo >= snap_->assets.size())
             return std::nullopt;
@@ -587,17 +591,17 @@ GraphPathfinder::materialise(PayGraph::AssetPath const& assetPath)
         Asset const& dstAsset = snap_->assets[lastVID];
         if (dstAsset.holds<Issue>() && !isXRP(dstAsset.get<Issue>().currency))
         {
-            AccountID const& G = dstAsset.get<Issue>().account;
-            if (G != effectiveDst_ && G != dstAccount_)
+            AccountID const& g = dstAsset.get<Issue>().account;
+            if (g != effectiveDst_ && g != dstAccount_)
             {
                 Currency const& ccy = dstAsset.get<Issue>().currency;
                 // First add G itself.
-                path.emplaceBack(STPathElement::TypeAccount, G, xrpCurrency(), xrpAccount());
+                path.emplaceBack(STPathElement::TypeAccount, g, xrpCurrency(), xrpAccount());
                 // If dstAccount_ does not hold G's IOU directly, look for an
                 // intermediate account B that has trust lines with both G and
                 // dstAccount_.  Load dstAccount_'s trust lines (cheap: these
                 // are the user's own lines, typically very few).
-                if (!ledger_->read(keylet::line(G, dstAccount_, ccy)))
+                if (!ledger_->read(keylet::line(g, dstAccount_, ccy)))
                 {
                     auto const dstLines = ledger_->read(keylet::account(dstAccount_))
                         ? cache_->getRippleLines(dstAccount_, LineDirection::Outgoing)
@@ -608,13 +612,13 @@ GraphPathfinder::materialise(PayGraph::AssetPath const& assetPath)
                         {
                             if (dl.getBalance().get<Issue>().currency != ccy)
                                 continue;
-                            AccountID const& B = dl.getAccountIDPeer();
-                            if (B == G || B == dstAccount_ || B == srcAccount_)
+                            AccountID const& b = dl.getAccountIDPeer();
+                            if (b == g || b == dstAccount_ || b == srcAccount_)
                                 continue;
-                            if (ledger_->read(keylet::line(G, B, ccy)))
+                            if (ledger_->read(keylet::line(g, b, ccy)))
                             {
                                 path.emplaceBack(
-                                    STPathElement::TypeAccount, B, xrpCurrency(), xrpAccount());
+                                    STPathElement::TypeAccount, b, xrpCurrency(), xrpAccount());
                                 break;
                             }
                         }
@@ -863,17 +867,29 @@ GraphPathfinder::getBestPaths(
         bool useExtra = false;
 
         if (itA == pathRanks_.end())
+        {
             useExtra = true;
+        }
         else if (itB == extraRanks.end())
+        {
             usePath = true;
+        }
         else if (itB->quality < itA->quality)
+        {
             useExtra = true;
+        }
         else if (itB->quality > itA->quality)
+        {
             usePath = true;
+        }
         else if (itB->liquidity > itA->liquidity)
+        {
             useExtra = true;
+        }
         else if (itB->liquidity < itA->liquidity)
+        {
             usePath = true;
+        }
         else
         {
             useExtra = true;
@@ -888,7 +904,7 @@ GraphPathfinder::getBestPaths(
         if (usePath)
             ++itA;
 
-        int iPathsLeft = static_cast<int>(maxPaths) - static_cast<int>(bestPaths.size());
+        int iPathsLeft = maxPaths - static_cast<int>(bestPaths.size());
         if (iPathsLeft <= 0)
             break;
 

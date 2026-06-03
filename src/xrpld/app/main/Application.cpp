@@ -37,7 +37,6 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
-#include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/shamap/NodeFamily.h>
 
 #include <xrpl/basics/BasicConfig.h>
@@ -78,11 +77,9 @@
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/resource/Charge.h>
@@ -1236,8 +1233,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             downVoted,
             logs_->journal("Amendments"));
     }
-
-    Pathfinder::initPathTable();
 
     auto const startUp = config_->startUp;
     JLOG(journal_.debug()) << "startUp: " << startUp;

@@ -718,11 +718,13 @@ Config::loadFromString(std::string const& fileContents)
         pathSearch = beast::lexicalCastThrow<int>(strTemp) != 0;
     if (getSingleSection(secConfig, SECTION_PATH_WORKERS, strTemp, j_))
     {
-        PATH_WORKERS = beast::lexicalCastThrow<int>(strTemp);
+        pathWorkers = beast::lexicalCastThrow<int>(strTemp);
 
-        if (PATH_WORKERS < 2)
+        if (pathWorkers < 2)
+        {
             Throw<std::runtime_error>("Invalid " SECTION_PATH_WORKERS
                                       ": must be greater than or equal to 2.");
+        }
     }
 
     if (getSingleSection(secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
@@ -754,12 +756,14 @@ Config::loadFromString(std::string const& fileContents)
         Config::computeEffectiveWorkers(standalone(), forceMultiThread, workers, nodeSize);
 
     auto const maxUpdatePfLimit = std::max(2, (effectiveWorkers * 3) / 4);
-    if (PATH_WORKERS > maxUpdatePfLimit)
+    if (pathWorkers > maxUpdatePfLimit)
+    {
         Throw<std::runtime_error>(boost::str(
             boost::format(
                 "Invalid %1%: configured value %2% exceeds maximum %3% "
                 "(3/4 of effective job queue workers = %4%, minimum maximum of 2).") %
-            SECTION_PATH_WORKERS % PATH_WORKERS % maxUpdatePfLimit % effectiveWorkers));
+            SECTION_PATH_WORKERS % pathWorkers % maxUpdatePfLimit % effectiveWorkers));
+    }
 
     if (getSingleSection(secConfig, SECTION_IO_WORKERS, strTemp, j_))
     {
@@ -1366,17 +1370,23 @@ Config::computeEffectiveWorkers(
     if (standalone && !forceMultiThread)
         return 1;
 
-    if (workers)
+    if (workers != 0)
         return workers;
 
     auto count = static_cast<int>(std::thread::hardware_concurrency());
 
     if (nodeSize >= 4 && count >= 16)
+    {
         count = 6 + std::min(count, 8);
+    }
     else if (nodeSize >= 3 && count >= 8)
+    {
         count = 4 + std::min(count, 6);
+    }
     else
+    {
         count = 2 + std::min(count, 4);
+    }
 
     return count;
 }
