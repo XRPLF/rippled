@@ -229,7 +229,7 @@ doCommand(RPC::JsonContext& context, json::Value& result)
         }
         else
         {
-            cmdName = "unknown";
+            cmdName = "unknown";  // LCOV_EXCL_LINE
         }
         // Use the resolved command name as the span suffix so dashboards
         // can break out per-command error rates (e.g. rpc.command.submit

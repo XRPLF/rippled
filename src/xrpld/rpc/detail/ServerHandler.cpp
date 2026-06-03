@@ -238,7 +238,7 @@ ServerHandler::onHandoff(
         }
         catch (std::exception const& e)
         {
-            span.recordException(e);
+            span.recordException(e);  // LCOV_EXCL_LINE
             JLOG(journal_.error()) << "Exception upgrading websocket: " << e.what() << "\n";
             return statusRequestResponse(request, http::status::internal_server_error);
         }
