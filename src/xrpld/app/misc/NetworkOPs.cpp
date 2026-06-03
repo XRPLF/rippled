@@ -1563,6 +1563,11 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         auto newOL = registry_.get().getOpenLedger().current();
         for (TransactionStatus const& e : transactions)
         {
+            if (e.span && *e.span)
+            {
+                e.span->setAttribute(tx_span::attr::terResult, transToken(e.result).c_str());
+                e.span->setAttribute(tx_span::attr::applied, e.applied);
+            }
             e.transaction->clearSubmitResult();
 
             if (e.applied)
