@@ -22,18 +22,19 @@ namespace xrpl {
 NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
-    STVector256 ids = ctx.tx.getFieldV256(sfNFTokenOffers);
+    auto const& offerIds = ctx.tx[sfNFTokenOffers];
 
-    if (ids.empty() || (ids.size() > kMaxTokenOfferCancelCount))
+    if (offerIds.empty() || (offerIds.size() > kMaxTokenOfferCancelCount))
         return temMALFORMED;
 
     // Zero offer IDs cannot be passed as ledger entry keys.
     if (ctx.rules.enabled(fixCleanup3_2_0) &&
-        std::ranges::any_of(ids, [](uint256 const& id) { return id.isZero(); }))
+        std::ranges::any_of(offerIds, [](uint256 const& id) { return id.isZero(); }))
         return temMALFORMED;
 
     // In order to prevent unnecessarily overlarge transactions, we
     // disallow duplicates in the list of offers to cancel.
+    STVector256 ids = ctx.tx.getFieldV256(sfNFTokenOffers);
     std::ranges::sort(ids);
     if (std::ranges::adjacent_find(ids) != ids.end())
         return temMALFORMED;

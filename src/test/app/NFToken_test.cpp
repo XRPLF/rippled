@@ -894,7 +894,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // Only test this with fixCleanup3_2_0 enabled. Without the fix,
         // an assert-enabled build can crash when Ledger::read() receives
-        // a zero-key NFT id keylet.
+        // a zero-key offer ID.
         if (features[fixCleanup3_2_0])
         {
             // Zero is not a valid offer ID.
