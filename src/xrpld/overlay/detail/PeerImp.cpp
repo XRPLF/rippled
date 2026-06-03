@@ -54,6 +54,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
@@ -1331,6 +1332,8 @@ PeerImp::handleTransaction(
         auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
         span->setAttribute(tx_span::attr::txHash, to_string(txID).c_str());
         span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
+        if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
+            span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
         if (auto const version = getVersion(); !version.empty())
             span->setAttribute(tx_span::attr::peerVersion, version.c_str());
         // Set defaults for conditional attributes so they are always present

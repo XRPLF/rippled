@@ -93,6 +93,8 @@ inline constexpr auto terCode = makeStr("ter_code");
 inline constexpr auto retriesRemaining = makeStr("retries_remaining");
 /// "num_cleared" — entries cleared in batch.
 inline constexpr auto numCleared = makeStr("num_cleared");
+/// "tx_type" — transaction type name (e.g., "Payment", "OfferCreate").
+inline constexpr auto txType = makeStr("tx_type");
 }  // namespace attr
 
 // ===== Attribute values ====================================================
