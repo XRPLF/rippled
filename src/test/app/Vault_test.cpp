@@ -1701,14 +1701,21 @@ class Vault_test : public beast::unit_test::Suite
             tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
             env(tx, Ter(tecLOCKED));
 
+            // Clawback is still permitted, even with global lock.
+            tx = vault.clawback(
+                {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(50)});
+            env(tx);
+            env.close();
+
             // Redemption to the issuer bypasses freeze checks end-to-end:
             // preclaim's issuer guard skips all three checks, and doApply uses
             // FreezeHandling::IgnoreFreeze for the accountHolds balance check.
+            tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
             tx[sfDestination] = issuer.human();
             env(tx);
             env.close();
 
-            // Withdrawal burned all depositor shares — MPToken is removed.
+            // Withdrawal burned remaining depositor shares — MPToken is removed.
             auto const mptSle = env.le(keylet::mptoken(share, depositor.id()));
             BEAST_EXPECT(mptSle == nullptr);
 
