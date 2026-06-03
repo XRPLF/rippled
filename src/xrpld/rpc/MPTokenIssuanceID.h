@@ -8,9 +8,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl {
-
-namespace RPC {
+namespace xrpl::RPC {
 
 /**
    Add a `mpt_issuance_id` field to the `meta` input/output parameter.
@@ -25,15 +23,14 @@ canHaveMPTokenIssuanceID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta);
 
-std::optional<uint192>
+std::optional<MPTID>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta);
 
 void
 insertMPTokenIssuanceID(
-    Json::Value& response,
+    json::Value& response,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta);
 /** @} */
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

@@ -12,31 +12,31 @@
 namespace xrpl {
 
 /** Manages a set of objects performing asynchronous I/O. */
-class io_list final
+class IOList final
 {
 public:
-    class work
+    class Work
     {
         template <class = void>
         void
         destroy();
 
-        friend class io_list;
-        io_list* ios_ = nullptr;
+        friend class IOList;
+        IOList* ios_ = nullptr;
 
     public:
-        virtual ~work()
+        virtual ~Work()
         {
             destroy();
         }
 
-        /** Return the io_list associated with the work.
+        /** Return the IOList associated with the work.
 
             Requirements:
-                The call to io_list::emplace to
+                The call to IOList::emplace to
                 create the work has already returned.
         */
-        io_list&
+        IOList&
         ios()
         {
             return *ios_;
@@ -55,21 +55,21 @@ private:
     std::size_t n_ = 0;
     bool closed_ = false;
     std::condition_variable cv_;
-    boost::container::flat_map<work*, std::weak_ptr<work>> map_;
+    boost::container::flat_map<Work*, std::weak_ptr<Work>> map_;
     std::function<void(void)> f_;
 
 public:
-    io_list() = default;
+    IOList() = default;
 
     /** Destroy the list.
 
         Effects:
-            Closes the io_list if it was not previously
+            Closes the IOList if it was not previously
                 closed. No finisher is invoked in this case.
 
             Blocks until all work is destroyed.
     */
-    ~io_list()
+    ~IOList()
     {
         destroy();
     }
@@ -80,7 +80,7 @@ public:
             Undefined result if called concurrently
             with close().
     */
-    bool
+    [[nodiscard]] bool
     closed() const
     {
         return closed_;
@@ -89,7 +89,7 @@ public:
     /** Create associated work if not closed.
 
         Requirements:
-            `std::is_base_of_v<work, T> == true`
+            `std::is_base_of_v<Work, T> == true`
 
         Thread Safety:
             May be called concurrently.
@@ -101,7 +101,7 @@ public:
 
         If the call succeeds and returns a new object,
         it is guaranteed that a subsequent call to close
-        will invoke work::close on the object.
+        will invoke Work::close on the object.
 
     */
     template <class T, class... Args>
@@ -159,13 +159,13 @@ public:
 
 template <class>
 void
-io_list::work::destroy()
+IOList::Work::destroy()
 {
     if (!ios_)
         return;
     std::function<void(void)> f;
     {
-        std::lock_guard const lock(ios_->m_);
+        std::scoped_lock const lock(ios_->m_);
         ios_->map_.erase(this);
         if (--ios_->n_ == 0 && ios_->closed_)
         {
@@ -179,7 +179,7 @@ io_list::work::destroy()
 
 template <class>
 void
-io_list::destroy()
+IOList::destroy()
 {
     close();
     join();
@@ -187,19 +187,19 @@ io_list::destroy()
 
 template <class T, class... Args>
 std::shared_ptr<T>
-io_list::emplace(Args&&... args)
+IOList::emplace(Args&&... args)
 {
-    static_assert(std::is_base_of<work, T>::value, "T must derive from io_list::work");
+    static_assert(std::is_base_of_v<Work, T>, "T must derive from IOList::Work");
     if (closed_)
         return nullptr;
     auto sp = std::make_shared<T>(std::forward<Args>(args)...);
     decltype(sp) dead;
 
-    std::lock_guard const lock(m_);
+    std::scoped_lock const lock(m_);
     if (!closed_)
     {
         ++n_;
-        sp->work::ios_ = this;
+        sp->Work::ios_ = this;
         map_.emplace(sp.get(), sp);
     }
     else
@@ -211,7 +211,7 @@ io_list::emplace(Args&&... args)
 
 template <class Finisher>
 void
-io_list::close(Finisher&& f)
+IOList::close(Finisher&& f)
 {
     std::unique_lock<std::mutex> lock(m_);
     if (closed_)
@@ -223,8 +223,10 @@ io_list::close(Finisher&& f)
         f_ = std::forward<Finisher>(f);
         lock.unlock();
         for (auto const& p : map)
+        {
             if (auto sp = p.second.lock())
                 sp->close();
+        }
     }
     else
     {
@@ -235,7 +237,7 @@ io_list::close(Finisher&& f)
 
 template <class>
 void
-io_list::join()
+IOList::join()
 {
     std::unique_lock<std::mutex> lock(m_);
     cv_.wait(lock, [&] { return closed_ && n_ == 0; });

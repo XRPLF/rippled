@@ -1,16 +1,22 @@
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
 
 #include <xrpld/overlay/Cluster.h>
-#include <xrpld/overlay/Overlay.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
+#include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace xrpl {
 
-class Peers_test : public beast::unit_test::suite
+class Peers_test : public beast::unit_test::Suite
 {
     void
     testRequest()
@@ -29,7 +35,7 @@ class Peers_test : public beast::unit_test::suite
         std::unordered_map<std::string, std::string> nodes;
         for (auto i = 0; i < 3; ++i)
         {
-            auto kp = generateKeyPair(KeyType::secp256k1, generateSeed("seed" + std::to_string(i)));
+            auto kp = generateKeyPair(KeyType::Secp256k1, generateSeed("seed" + std::to_string(i)));
 
             std::string const name = "Node " + std::to_string(i);
 

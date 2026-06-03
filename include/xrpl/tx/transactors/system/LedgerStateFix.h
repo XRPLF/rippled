@@ -7,11 +7,12 @@ namespace xrpl {
 class LedgerStateFix : public Transactor
 {
 public:
-    enum FixType : std::uint16_t {
-        nfTokenPageLink = 1,
+    enum class FixType : std::uint16_t {
+        NfTokenPageLink = 1,
+        BookExchangeRate = 2,
     };
 
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit LedgerStateFix(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -28,6 +29,17 @@ public:
 
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 };
 
 }  // namespace xrpl
