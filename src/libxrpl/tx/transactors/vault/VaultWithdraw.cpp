@@ -277,8 +277,12 @@ VaultWithdraw::doApply()
         return tecPATH_DRY;
     }
 
-    if (accountHolds(
-            view(), accountID_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <
+    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
+    bool const isIssuerRedemption =
+        view().rules().enabled(fixCleanup3_2_0) && dstAcct == vaultAsset.getIssuer();
+    auto const freezeHandling =
+        isIssuerRedemption ? FreezeHandling::IgnoreFreeze : FreezeHandling::ZeroIfFrozen;
+    if (accountHolds(view(), accountID_, share, freezeHandling, AuthHandling::IgnoreAuth, j_) <
         sharesRedeemed)
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
@@ -380,8 +384,6 @@ VaultWithdraw::doApply()
         }
         // else quietly ignore, account balance is not zero
     }
-
-    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
 
     associateAsset(*vault, vaultAsset);
 

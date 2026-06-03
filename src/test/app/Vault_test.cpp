@@ -1701,22 +1701,14 @@ class Vault_test : public beast::unit_test::Suite
             tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
             env(tx, Ter(tecLOCKED));
 
-            // Redemption to the issuer: preclaim's issuer guard skips all
-            // freeze checks, but doApply::accountHolds(ZeroIfFrozen) still
-            // returns 0 for the locked shares (isVaultPseudoAccountFrozen is
-            // true while the asset is globally locked).
-            // TODO: doApply needs a matching fix to use Normal freeze handling
-            // for the issuer-destination path.
+            // Redemption to the issuer bypasses freeze checks end-to-end:
+            // preclaim's issuer guard skips all three checks, and doApply uses
+            // FreezeHandling::IgnoreFreeze for the accountHolds balance check.
             tx[sfDestination] = issuer.human();
-            env(tx, Ter(tecINSUFFICIENT_FUNDS));
-
-            // Clawback is still permitted, even with global lock
-            tx = vault.clawback(
-                {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(0)});
             env(tx);
             env.close();
 
-            // Clawback removed shares MPToken
+            // Withdrawal burned all depositor shares — MPToken is removed.
             auto const mptSle = env.le(keylet::mptoken(share, depositor.id()));
             BEAST_EXPECT(mptSle == nullptr);
 
@@ -2953,27 +2945,25 @@ class Vault_test : public beast::unit_test::Suite
             }
 
             {
-                // Preclaim passes (issuer guard skips all three checks), but
-                // doApply::accountHolds(ZeroIfFrozen) still returns 0 for the
-                // owner's shares because isVaultPseudoAccountFrozen is true
-                // while the vault's trust line is frozen.
-                // TODO: doApply needs a matching fix to use Normal freeze
-                // handling for the issuer-destination path.
+                // Withdrawal to the IOU issuer succeeds end-to-end: the issuer
+                // guard skips all preclaim checks, and doApply uses
+                // FreezeHandling::IgnoreFreeze so accountHolds returns the
+                // actual balance rather than zero.
                 auto t =
                     vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(50)});
                 t[sfDestination] = issuer.human();
-                env(t, Ter{tecINSUFFICIENT_FUNDS});
+                env(t);
                 env.close();
             }
 
-            // Vault unchanged (100 assets / 100'000'000 shares). Clear freeze
-            // and drain before deletion.
+            // vault now has 50 assets / owner holds 50'000'000 shares
+            // Clear freeze and drain what remains.
             trustSet[jss::Flags] = tfClearFreeze;
             env(trustSet);
             env.close();
 
             env(vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = share(100'000'000)}));
+                {.depositor = owner, .id = keylet.key, .amount = share(50'000'000)}));
 
             env(vault.del({.owner = owner, .id = keylet.key}));
             env.close();
