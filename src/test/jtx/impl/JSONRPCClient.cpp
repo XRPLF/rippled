@@ -151,6 +151,14 @@ public:
     {
         return rpcVersion_;
     }
+
+    void
+    disconnect() override
+    {
+        boost::system::error_code ec;
+        stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+        stream_.close(ec);
+    }
 };
 
 std::unique_ptr<AbstractClient>

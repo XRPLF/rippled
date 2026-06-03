@@ -288,6 +288,17 @@ public:
         return rpcVersion_;
     }
 
+    void
+    disconnect() override
+    {
+        // Close the underlying socket on the strand that owns it, so the
+        // server observes the connection drop without racing the io thread.
+        boost::asio::post(ios_, boost::asio::bind_executor(strand_, [this] {
+                              boost::system::error_code ec;
+                              stream_.close(ec);
+                          }));
+    }
+
 private:
     void
     onReadMsg(error_code const& ec)
