@@ -37,13 +37,11 @@
 #include <boost/lexical_cast.hpp>
 
 #include <array>
-#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <random>
 #include <regex>
 #include <string>
-#include <thread>
 #include <utility>
 #include <vector>
 
@@ -564,10 +562,12 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         using namespace test::jtx;
         using namespace boost::asio;
         using namespace boost::beast::http;
-        Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
+        // Run the server with a single io thread so disconnectClient() below
+        // can deterministically drain the server's io_context (see its docs).
+        Env env{*this, singleThreadIo(envconfig([&](std::unique_ptr<Config> cfg) {
                     (*cfg)[Sections::kPortRpc].set(Keys::kLimit, std::to_string(limit));
                     return cfg;
-                })};
+                }))};
 
         auto const section = env.app().config().section(Sections::kPortRpc);
         // NOLINTBEGIN(bugprone-unchecked-optional-access)
@@ -589,16 +589,17 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         int connectionCount = 0;
 
         // Env owns a persistent JSON-RPC HTTP client connection to port_rpc as
-        // part of startup. This test wants a known starting occupancy of zero,
-        // so for nonzero limits it first waits for that hidden loopback client
-        // to expire under the server's short localhost idle timeout.
+        // part of startup, which counts against this port's connection limit.
+        // This test wants a known starting occupancy of zero, so for nonzero
+        // limits it deterministically drops that hidden client and waits for
+        // the server to register the disconnect before opening its own clients.
         //
         // Starting from zero is important because the port limit rejects once
         // the incremented connection count reaches the configured limit. With a
         // zero baseline and N = limit + 1 test-owned clients, exactly the last
         // two requests should be rejected.
         if (limit != 0)
-            std::this_thread::sleep_for(std::chrono::milliseconds(3500));
+            BEAST_EXPECT(env.disconnectClient());
 
         // For nonzero limits, go one past the limit. The port rejects at the
         // limit, not only above it, so this yields the last two clients

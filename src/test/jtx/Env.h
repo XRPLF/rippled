@@ -440,6 +440,57 @@ public:
         return result && status == std::future_status::ready;
     }
 
+    /** Disconnect the Env's built-in client and wait for the server to
+        register the dropped connection.
+
+        Env holds one persistent client connection to the server's RPC port for
+        its whole lifetime (see client()), and that connection counts against
+        the port's connection limit. Tests that need a known starting occupancy
+        can call this to deterministically release that slot instead of waiting
+        out the server's localhost idle timeout.
+
+        The server decrements its per-port connection count in the peer's
+        destructor, which runs when the io_context processes the end-of-stream
+        on the closed socket. After closing the client this drains the server's
+        io_context twice: the first barrier guarantees the reactor has reaped
+        the closed socket and queued the peer's teardown, and the second
+        guarantees that teardown (and therefore the count decrement) has run.
+
+        This is only sound when the server uses a single io_context thread, so
+        that draining establishes ordering against the teardown - configure the
+        Env with singleThreadIo() (as syncClose() also requires). Like
+        syncClose(), it relies on loopback teardown latency being negligible.
+
+        @param timeout Maximum time to wait for each barrier task to execute
+        @return true if both barriers executed within timeout, false otherwise
+    */
+    [[nodiscard]] bool
+    disconnectClient(std::chrono::steady_clock::duration timeout = std::chrono::seconds{1})
+    {
+        XRPL_ASSERT(
+            app().getNumberOfThreads() == 1,
+            "disconnectClient() is only useful on an application with a single "
+            "thread");
+
+        bundle_.client->disconnect();
+
+        // Drain the (single) server io_context thread. Each call returns only
+        // after a freshly-posted task has run, so all work queued before it -
+        // including the closed peer's teardown - has been processed.
+        auto drainServer = [this, timeout]() {
+            auto barrier = std::make_shared<std::promise<void>>();
+            auto future = barrier->get_future();
+            boost::asio::post(app().getIOContext(), [barrier]() { barrier->set_value(); });
+            return future.wait_for(timeout) == std::future_status::ready;
+        };
+
+        // Both barriers run unconditionally; the second drain must not be
+        // skipped by short-circuit if the first happens to time out.
+        bool const reaped = drainServer();
+        bool const toreDown = drainServer();
+        return reaped && toreDown;
+    }
+
     /** Turn on JSON tracing.
         With no arguments, trace all
     */
