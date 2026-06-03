@@ -23,7 +23,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <utility>
 
@@ -57,7 +56,7 @@ TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
     auto const checkOffer =
-        [&ctx](std::optional<uint256> id) -> std::pair<std::shared_ptr<const SLE>, TER> {
+        [&ctx](std::optional<uint256> id) -> std::pair<SLE::const_pointer, TER> {
         if (id)
         {
             if (id->isZero())
@@ -414,7 +413,7 @@ NFTokenAcceptOffer::transferNFToken(
 }
 
 TER
-NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
+NFTokenAcceptOffer::acceptOffer(SLE::ref offer)
 {
     bool const isSell = offer->isFlag(lsfSellNFToken);
     AccountID const owner = (*offer)[sfOwner];
@@ -452,7 +451,7 @@ TER
 NFTokenAcceptOffer::doApply()
 {
     auto const loadToken = [this](std::optional<uint256> const& id) {
-        std::shared_ptr<SLE> sle;
+        SLE::pointer sle;
         if (id)
             sle = view().peek(keylet::nftoffer(*id));
         return sle;
@@ -467,8 +466,7 @@ NFTokenAcceptOffer::doApply()
     {
         bool foundExpired = false;
 
-        auto const deleteOfferIfExpired =
-            [this, &foundExpired](std::shared_ptr<SLE> const& offer) -> TER {
+        auto const deleteOfferIfExpired = [this, &foundExpired](SLE::ref offer) -> TER {
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
             {
                 JLOG(j_.trace()) << "Offer is expired, deleting: " << offer->key();
@@ -580,10 +578,7 @@ NFTokenAcceptOffer::doApply()
 }
 
 void
-NFTokenAcceptOffer::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenAcceptOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

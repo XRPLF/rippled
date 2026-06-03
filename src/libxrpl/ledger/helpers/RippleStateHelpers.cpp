@@ -300,7 +300,7 @@ trustCreate(
 TER
 trustDelete(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sleRippleState,
+    SLE::ref sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j)
@@ -770,7 +770,7 @@ removeEmptyHolding(
 TER
 deleteAMMTrustLine(
     ApplyView& view,
-    std::shared_ptr<SLE> sleState,
+    SLE::pointer sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j)
 {
@@ -821,7 +821,7 @@ deleteAMMTrustLine(
 TER
 deleteAMMMPToken(
     ApplyView& view,
-    std::shared_ptr<SLE> sleMpt,
+    SLE::pointer sleMpt,
     AccountID const& ammAccountID,
     beast::Journal j)
 {

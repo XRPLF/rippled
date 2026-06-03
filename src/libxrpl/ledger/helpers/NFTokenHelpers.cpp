@@ -5,6 +5,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -44,7 +45,7 @@
 
 namespace xrpl::nft {
 
-static std::shared_ptr<SLE const>
+static SLE::const_pointer
 locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
 {
     auto const first = keylet::nftpage(keylet::nftpageMin(owner), id);
@@ -57,7 +58,7 @@ locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
         Keylet(ltNFTOKEN_PAGE, view.succ(first.key, last.key.next()).value_or(last.key)));
 }
 
-static std::shared_ptr<SLE>
+static SLE::pointer
 locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
 {
     auto const first = keylet::nftpage(keylet::nftpageMin(owner), id);
@@ -70,19 +71,15 @@ locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
         Keylet(ltNFTOKEN_PAGE, view.succ(first.key, last.key.next()).value_or(last.key)));
 }
 
-static Expected<std::shared_ptr<SLE>, TER>
+static Expected<SLE::pointer, TER>
 getPageForToken(
     ApplyView& view,
     STTx const& tx,
     AccountID const& owner,
     SLE::ref sponsorSle,
     uint256 const& id,
-    std::function<
-        TER(ApplyView&,
-            STTx const&,
-            std::shared_ptr<SLE> const&,
-            AccountID const&,
-            SLE::ref)> const& createCallback)
+    std::function<TER(ApplyView&, STTx const&, SLE::ref, AccountID const&, SLE::ref)> const&
+        createCallback)
 {
     auto const base = keylet::nftpageMin(owner);
     auto const first = keylet::nftpage(base, id);
@@ -243,7 +240,7 @@ changeTokenURI(
     uint256 const& nftokenID,
     std::optional<xrpl::Slice> const& uri)
 {
-    std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
+    SLE::pointer const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -280,35 +277,29 @@ insertToken(ApplyView& view, STTx const& tx, AccountID owner, SLE::ref sponsorSl
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
     // the NFT.
-    Expected<std::shared_ptr<SLE>, TER> const page = getPageForToken(
-        view,
-        tx,
-        owner,
-        sponsorSle,
-        nft[sfNFTokenID],
-        [](ApplyView& view,
-           STTx const& tx,
-           std::shared_ptr<SLE> const& newPage,
-           AccountID const& owner,
-           SLE::ref sponsorSle) -> TER {
-            if (isReserveSponsored(tx))
-            {
-                auto const ownerSle = view.read(keylet::account(owner));
-                auto const ownerBalance = ownerSle->getFieldAmount(sfBalance);
-                if (auto const ret =
-                        checkInsufficientReserve(view, tx, ownerSle, ownerBalance, sponsorSle, 1);
-                    !isTesSuccess(ret))
-                    return ret;
-            }
-            adjustOwnerCount(
-                view,
-                view.peek(keylet::account(owner)),
-                sponsorSle,
-                1,
-                beast::Journal{beast::Journal::getNullSink()});
-            addSponsorToLedgerEntry(newPage, sponsorSle);
-            return tesSUCCESS;
-        });
+    auto createCallback = [](ApplyView& view,
+                             STTx const& tx,
+                             std::shared_ptr<SLE> const& newPage,
+                             AccountID const& owner,
+                             SLE::ref sponsorSle) -> TER {
+        if (isReserveSponsored(tx))
+        {
+            auto const ownerSle = view.read(keylet::account(owner));
+            auto const ownerBalance = ownerSle->getFieldAmount(sfBalance);
+            if (auto const ret =
+                    checkInsufficientReserve(view, tx, ownerSle, ownerBalance, sponsorSle, 1);
+                !isTesSuccess(ret))
+                return ret;
+        }
+
+        adjustOwnerCount(view, view.peek(keylet::account(owner)), sponsorSle, 1);
+
+        addSponsorToLedgerEntry(newPage, sponsorSle);
+        return tesSUCCESS;
+    };
+
+    auto const page =
+        getPageForToken(view, tx, owner, sponsorSle, nft[sfNFTokenID], createCallback);
 
     if (!page.has_value())
         return page.error();
@@ -333,7 +324,7 @@ insertToken(ApplyView& view, STTx const& tx, AccountID owner, SLE::ref sponsorSl
 }
 
 static bool
-mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE> const& p2)
+mergePages(ApplyView& view, SLE::ref p1, SLE::ref p2)
 {
     if (p1->key() >= p2->key())
         Throw<std::runtime_error>("mergePages: pages passed in out of order!");
@@ -392,7 +383,7 @@ mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE>
 TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
+    SLE::pointer const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -403,11 +394,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 
 /** Remove the token from the owner's token directory. */
 TER
-removeToken(
-    ApplyView& view,
-    AccountID const& owner,
-    uint256 const& nftokenID,
-    std::shared_ptr<SLE> const& curr)
+removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, SLE::ref curr)
 {
     // We found a page, but the given NFT may not be in it.
     auto arr = curr->getFieldArray(sfNFTokens);
@@ -423,8 +410,8 @@ removeToken(
     }
 
     // Page management:
-    auto const loadPage = [&view](std::shared_ptr<SLE> const& page1, SF_UINT256 const& field) {
-        std::shared_ptr<SLE> page2;
+    auto const loadPage = [&view](SLE::ref page1, SF_UINT256 const& field) {
+        SLE::pointer page2;
 
         if (auto const id = (*page1)[~field])
         {
@@ -444,7 +431,6 @@ removeToken(
     auto const prev = loadPage(curr, sfPreviousPageMin);
     auto const next = loadPage(curr, sfNextPageMin);
 
-    auto nullJ = beast::Journal{beast::Journal::getNullSink()};
     if (!arr.empty())
     {
         // The current page isn't empty. Update it and then try to consolidate
@@ -454,10 +440,10 @@ removeToken(
         view.update(curr);
 
         if (prev && mergePages(view, prev, curr))
-            adjustOwnerCountObj(view, owner, prev, -1, nullJ);
+            adjustOwnerCountObj(view, owner, prev, -1);
 
         if (next && mergePages(view, curr, next))
-            adjustOwnerCountObj(view, owner, curr, -1, nullJ);
+            adjustOwnerCountObj(view, owner, curr, -1);
 
         return tesSUCCESS;
     }
@@ -491,7 +477,7 @@ removeToken(
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
-            adjustOwnerCountObj(view, owner, prev, -1, nullJ);
+            adjustOwnerCountObj(view, owner, prev, -1);
 
             view.update(curr);
             view.erase(prev);
@@ -527,7 +513,7 @@ removeToken(
         view.update(next);
     }
 
-    adjustOwnerCountObj(view, owner, curr, -1, nullJ);
+    adjustOwnerCountObj(view, owner, curr, -1);
 
     view.erase(curr);
 
@@ -545,7 +531,7 @@ removeToken(
             view.peek(Keylet(ltNFTOKEN_PAGE, prev->key())),
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
     {
-        adjustOwnerCountObj(view, owner, prev, -1, nullJ);
+        adjustOwnerCountObj(view, owner, prev, -1);
     }
 
     return tesSUCCESS;
@@ -554,7 +540,7 @@ removeToken(
 std::optional<STObject>
 findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    std::shared_ptr<SLE const> const page = locatePage(view, owner, nftokenID);
+    SLE::const_pointer const page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -573,7 +559,7 @@ findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID
 std::optional<TokenAndPage>
 findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftokenID)
 {
-    std::shared_ptr<SLE> page = locatePage(view, owner, nftokenID);
+    SLE::pointer page = locatePage(view, owner, nftokenID);
 
     // If the page couldn't be found, the given NFT isn't owned by this account
     if (!page)
@@ -642,7 +628,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
 }
 
 bool
-deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
+deleteTokenOffer(ApplyView& view, SLE::ref offer)
 {
     if (offer->getType() != ltNFTOKEN_OFFER)
         return false;
@@ -662,7 +648,7 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
             false))
         return false;
 
-    adjustOwnerCountObj(view, owner, offer, -1, beast::Journal{beast::Journal::getNullSink()});
+    adjustOwnerCountObj(view, owner, offer, -1);
 
     view.erase(offer);
     return true;
@@ -675,7 +661,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
 
     auto const last = keylet::nftpageMax(owner);
 
-    std::shared_ptr<SLE> page = view.peek(Keylet(
+    SLE::pointer page = view.peek(Keylet(
         ltNFTOKEN_PAGE,
         view.succ(keylet::nftpageMin(owner).key, last.key.next()).value_or(last.key)));
 
@@ -709,7 +695,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
         view.update(page);
     }
 
-    std::shared_ptr<SLE> nextPage;
+    SLE::pointer nextPage;
     while (
         (nextPage = view.peek(Keylet(
              ltNFTOKEN_PAGE, view.succ(page->key().next(), last.key.next()).value_or(last.key)))))
@@ -980,7 +966,7 @@ tokenOfferCreateApply(
         auto const offerNode = view.dirInsert(
             isSellOffer ? keylet::nftSells(nftokenID) : keylet::nftBuys(nftokenID),
             offerID,
-            [&nftokenID, isSellOffer](std::shared_ptr<SLE> const& sle) {
+            [&nftokenID, isSellOffer](SLE::ref sle) {
                 (*sle)[sfFlags] = isSellOffer ? lsfNFTokenSellOffers : lsfNFTokenBuyOffers;
                 (*sle)[sfNFTokenID] = nftokenID;
             });

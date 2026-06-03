@@ -281,10 +281,7 @@ protected:
      *                   to detect deletions.
      */
     virtual void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) = 0;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
 
     /** Check transaction-specific post-conditions after all entries have
      *  been visited.
@@ -389,7 +386,7 @@ private:
         ReadView const& view,
         AccountID const& idSigner,
         AccountID const& idAccount,
-        std::shared_ptr<SLE const> sleAccount,
+        SLE::const_pointer sleAccount,
         beast::Journal const j);
     static NotTEC
     checkMultiSign(

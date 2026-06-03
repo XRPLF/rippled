@@ -29,7 +29,6 @@
 #include <cstdint>
 #include <cstring>
 #include <iterator>  // IWYU pragma: keep
-#include <memory>
 #include <utility>
 
 namespace xrpl {
@@ -360,10 +359,7 @@ NFTokenMint::doApply()
 }
 
 void
-NFTokenMint::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenMint::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

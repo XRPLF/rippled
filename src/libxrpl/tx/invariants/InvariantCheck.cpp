@@ -64,10 +64,7 @@ hasPrivilege(STTx const& tx, Privilege priv)
 #pragma pop_macro("TRANSACTION")
 
 void
-TransactionFeeCheck::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+TransactionFeeCheck::visitEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // nothing to do
 }
@@ -110,10 +107,7 @@ TransactionFeeCheck::finalize(
 //------------------------------------------------------------------------------
 
 void
-XRPNotCreated::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+XRPNotCreated::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     /* We go through all modified ledger entries, looking only at account roots,
      * escrow payments, and payment channels. We remove from the total any
@@ -200,10 +194,7 @@ XRPNotCreated::finalize(
 //------------------------------------------------------------------------------
 
 void
-XRPBalanceChecks::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+XRPBalanceChecks::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
     auto isBad = [](STAmount const& balance) {
         if (!balance.native())
@@ -250,10 +241,7 @@ XRPBalanceChecks::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoBadOffers::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+NoBadOffers::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     auto isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
@@ -294,10 +282,7 @@ NoBadOffers::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoZeroEscrow::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+NoZeroEscrow::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     auto isBad = [](STAmount const& amount) {
         // XRP case
@@ -401,10 +386,7 @@ NoZeroEscrow::finalize(
 //------------------------------------------------------------------------------
 
 void
-AccountRootsNotDeleted::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const&)
+AccountRootsNotDeleted::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
         accountsDeleted_++;
@@ -454,10 +436,7 @@ AccountRootsNotDeleted::finalize(
 //------------------------------------------------------------------------------
 
 void
-AccountRootsDeletedClean::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+AccountRootsDeletedClean::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
         accountsDeleted_.emplace_back(before, after);
@@ -588,10 +567,7 @@ AccountRootsDeletedClean::finalize(
 //------------------------------------------------------------------------------
 
 void
-LedgerEntryTypesMatch::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+LedgerEntryTypesMatch::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
     if (before && after && before->getType() != after->getType())
         typeMismatch_ = true;
@@ -645,10 +621,7 @@ LedgerEntryTypesMatch::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoXRPTrustLines::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const& after)
+NoXRPTrustLines::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
 {
     bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
@@ -688,10 +661,7 @@ NoXRPTrustLines::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const& after)
+NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
 {
     if (after && after->getType() == ltRIPPLE_STATE)
     {
@@ -734,10 +704,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidNewAccountRoot::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidNewAccountRoot::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
     if (!before && after->getType() == ltACCOUNT_ROOT)
     {
@@ -811,10 +778,7 @@ ValidNewAccountRoot::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidClawback::visitEntry(
-    bool,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const&)
+ValidClawback::visitEntry(bool, SLE::const_ref before, SLE::const_ref)
 {
     if (before && before->getType() == ltRIPPLE_STATE)
         trustlinesChanged_++;
@@ -899,10 +863,7 @@ ValidClawback::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidPseudoAccounts::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     if (isDelete)
     {
@@ -998,10 +959,7 @@ ValidPseudoAccounts::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoModifiedUnmodifiableFields::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+NoModifiedUnmodifiableFields::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     if (isDelete || !before)
     {

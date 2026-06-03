@@ -45,7 +45,6 @@
 #include <cstdint>
 #include <functional>
 #include <map>
-#include <memory>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -722,11 +721,11 @@ public:
     }
 
     // Helper function that returns the Offers on an account.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     offersOnAccount(jtx::Env& env, jtx::Account account)
     {
-        std::vector<std::shared_ptr<SLE const>> result;
-        forEachItem(*env.current(), account, [&result](std::shared_ptr<SLE const> const& sle) {
+        std::vector<SLE::const_pointer> result;
+        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);
         });
@@ -3731,9 +3730,7 @@ public:
                     auto const offerCount = std::distance(
                         actorOffers.begin(),
                         std::remove_if(
-                            actorOffers.begin(),
-                            actorOffers.end(),
-                            [](std::shared_ptr<SLE const>& offer) {
+                            actorOffers.begin(), actorOffers.end(), [](SLE::const_pointer& offer) {
                                 return (*offer)[sfTakerGets].signum() == 0;
                             }));
                     BEAST_EXPECT(offerCount == actor.offers);
@@ -3903,9 +3900,7 @@ public:
                     auto const offerCount = std::distance(
                         actorOffers.begin(),
                         std::remove_if(
-                            actorOffers.begin(),
-                            actorOffers.end(),
-                            [](std::shared_ptr<SLE const>& offer) {
+                            actorOffers.begin(), actorOffers.end(), [](SLE::const_pointer& offer) {
                                 return (*offer)[sfTakerGets].signum() == 0;
                             }));
                     BEAST_EXPECT(offerCount == actor.offers);
@@ -4239,15 +4234,13 @@ public:
     }
 
     // Helper function that returns offers on an account sorted by sequence.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     sortedOffersOnAccount(jtx::Env& env, jtx::Account const& acct)
     {
-        std::vector<std::shared_ptr<SLE const>> offers{offersOnAccount(env, acct)};
-        std::ranges::sort(
-            offers,
-            [](std::shared_ptr<SLE const> const& rhs, std::shared_ptr<SLE const> const& lhs) {
-                return (*rhs)[sfSequence] < (*lhs)[sfSequence];
-            });
+        std::vector<SLE::const_pointer> offers{offersOnAccount(env, acct)};
+        std::ranges::sort(offers, [](SLE::const_ref rhs, SLE::const_ref lhs) {
+            return (*rhs)[sfSequence] < (*lhs)[sfSequence];
+        });
         return offers;
     }
 
@@ -4731,7 +4724,7 @@ public:
             env(offer(alice, xts(t.val2), xxx(t.val1)), Json(jss::Flags, tfSell));
 
             std::map<std::uint32_t, std::pair<STAmount, STAmount>> offers;
-            forEachItem(*env.current(), alice, [&](std::shared_ptr<SLE const> const& sle) {
+            forEachItem(*env.current(), alice, [&](SLE::const_ref sle) {
                 if (sle->getType() == ltOFFER)
                 {
                     offers.emplace(

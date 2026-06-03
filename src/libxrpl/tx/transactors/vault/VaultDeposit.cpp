@@ -24,7 +24,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
 #include <optional>
 #include <stdexcept>
 
@@ -366,10 +365,7 @@ VaultDeposit::doApply()
 }
 
 void
-VaultDeposit::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+VaultDeposit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

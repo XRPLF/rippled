@@ -9,7 +9,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
-#include <memory>
 #include <set>
 #include <vector>
 
@@ -87,7 +86,7 @@ adjustOwnerCount(
     SLE::ref accountSle,
     SLE::ref sponsorSle,
     std::int32_t amount,
-    beast::Journal j);
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 inline void
 adjustOwnerCount(
@@ -95,7 +94,7 @@ adjustOwnerCount(
     AccountID const& account,
     std::optional<AccountID> const& sponsor,
     std::int32_t amount,
-    beast::Journal j)
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
     adjustOwnerCount(
         view,
@@ -111,7 +110,7 @@ adjustOwnerCountObj(
     SLE::ref accountSle,
     SLE::ref objectSle,
     std::int32_t amount,
-    beast::Journal j);
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 inline void
 adjustOwnerCountObj(
@@ -119,7 +118,7 @@ adjustOwnerCountObj(
     AccountID const& account,
     SLE::ref objectSle,
     std::int32_t amount,
-    beast::Journal j)
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
     SLE::ref accountSle = view.peek(keylet::account(account));
     adjustOwnerCountObj(view, accountSle, objectSle, amount, j);

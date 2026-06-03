@@ -798,21 +798,21 @@ readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
     return tryGet(STXChainBridge::ChainType::Issuing);
 }
 
-std::shared_ptr<SLE>
+SLE::pointer
 peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
 {
     return readOrpeekBridge<SLE>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE> {
+        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::pointer {
             return v.peek(keylet::bridge(b, ct));
         },
         bridgeSpec);
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 readBridge(ReadView const& v, STXChainBridge const& bridgeSpec)
 {
     return readOrpeekBridge<SLE const>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE const> {
+        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::const_pointer {
             return v.read(keylet::bridge(b, ct));
         },
         bridgeSpec);
@@ -2243,10 +2243,7 @@ XChainCreateAccountCommit::doApply()
 }
 
 void
-XChainCreateBridge::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainCreateBridge::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2264,10 +2261,7 @@ XChainCreateBridge::finalizeInvariants(
 }
 
 void
-BridgeModify::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+BridgeModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2285,10 +2279,7 @@ BridgeModify::finalizeInvariants(
 }
 
 void
-XChainClaim::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2301,10 +2292,7 @@ XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, be
 }
 
 void
-XChainCommit::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2322,10 +2310,7 @@ XChainCommit::finalizeInvariants(
 }
 
 void
-XChainCreateClaimID::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainCreateClaimID::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2343,10 +2328,7 @@ XChainCreateClaimID::finalizeInvariants(
 }
 
 void
-XChainAddClaimAttestation::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainAddClaimAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2364,10 +2346,7 @@ XChainAddClaimAttestation::finalizeInvariants(
 }
 
 void
-XChainAddAccountCreateAttestation::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainAddAccountCreateAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
@@ -2385,10 +2364,7 @@ XChainAddAccountCreateAttestation::finalizeInvariants(
 }
 
 void
-XChainCreateAccountCommit::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+XChainCreateAccountCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

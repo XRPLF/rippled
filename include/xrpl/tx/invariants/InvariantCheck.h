@@ -71,10 +71,7 @@ public:
      * @param after ledger entry after modification by the transaction
      */
     void
-    visitEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after);
+    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after);
 
     /**
      * @brief called after all ledger entries have been visited to determine
@@ -112,7 +109,7 @@ class TransactionFeeCheck
 {
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     static bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -132,7 +129,7 @@ class XRPNotCreated
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -152,7 +149,7 @@ class AccountRootsNotDeleted
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -175,11 +172,11 @@ class AccountRootsDeletedClean
     // deleted, it can still be found. After is used specifically for any checks
     // that are expected as part of the deletion, such as zeroing out the
     // balance.
-    std::vector<std::pair<std::shared_ptr<SLE const>, std::shared_ptr<SLE const>>> accountsDeleted_;
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> accountsDeleted_;
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -198,7 +195,7 @@ class XRPBalanceChecks
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -215,7 +212,7 @@ class LedgerEntryTypesMatch
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -233,7 +230,7 @@ class NoXRPTrustLines
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -252,7 +249,7 @@ class NoDeepFreezeTrustLinesWithoutFreeze
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -271,7 +268,7 @@ class NoBadOffers
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -287,7 +284,7 @@ class NoZeroEscrow
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -307,7 +304,7 @@ class ValidNewAccountRoot
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -328,7 +325,7 @@ class ValidClawback
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -348,7 +345,7 @@ class ValidPseudoAccounts
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -368,7 +365,7 @@ class NoModifiedUnmodifiableFields
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
