@@ -5676,14 +5676,11 @@ private:
         };
 
         // ledger is closed after each transaction, vote/withdraw don't fail
-        // regardless whether the amendment is enabled or not
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 0, true);
         // ledger is not closed after each transaction
-        // vote/withdraw don't fail if the amendment is enabled
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 0, false);
         // if non-zero trading/discounted fee then vote/withdraw
-        // don't fail whether the ledger is closed or not and
-        // the amendment is enabled or not
+        // don't fail whether the ledger is closed or not
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, true);
         test(all, tesSUCCESS, tesSUCCESS, tesSUCCESS, tesSUCCESS, 10, false);
         // non-zero trading fee but discounted fee is 0, vote doesn't fail
