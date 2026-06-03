@@ -8,11 +8,13 @@ clang++ --version
 clang-format --version
 cmake --version
 conan --version
+curl --version
 g++ --version
 gcc --version
 gcov --version
 gcovr --version
 git --version
+gpg --version
 less --version
 make --version
 mold --version

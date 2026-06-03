@@ -94,6 +94,14 @@ let
       ln -s "${customCompilerRt.out}/lib" "$rsrc/lib"
       ln -s "${customCompilerRt.out}/share" "$rsrc/share" || true
       echo "-resource-dir=$rsrc" >> $out/nix-support/cc-cflags
+      # compiler-rt ships the sanitizer/profile/xray interface headers (e.g.
+      # <sanitizer/lsan_interface.h>) in its `dev` output. In a normal Nix
+      # build these reach the include path because compiler-rt is propagated
+      # via depsTargetTargetPropagated and stdenv's setup hooks add its
+      # dev/include. The CI image runs clang outside a Nix stdenv (binaries
+      # on PATH, no setup hooks), so that never happens; add the headers
+      # explicitly. gcc ships its own copy, which is why this is clang-only.
+      echo "-isystem ${customCompilerRt.dev}/include" >> $out/nix-support/cc-cflags
     '';
   };
 
