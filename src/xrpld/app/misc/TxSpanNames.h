@@ -55,6 +55,16 @@ inline constexpr auto suppressed = makeStr("suppressed");
 inline constexpr auto txStatus = makeStr("tx_status");
 /// "peer_version" — version of peer that sent the tx.
 inline constexpr auto peerVersion = makeStr("peer_version");
+/// "tx_type" — transaction type name (e.g., "Payment", "OfferCreate").
+inline constexpr auto txType = makeStr("tx_type");
+/// "fee" — transaction fee in drops.
+inline constexpr auto fee = makeStr("fee");
+/// "sequence" — transaction sequence number.
+inline constexpr auto sequence = makeStr("sequence");
+/// "ter_result" — engine result code after application.
+inline constexpr auto terResult = makeStr("ter_result");
+/// "applied" — whether the transaction was applied to the ledger.
+inline constexpr auto applied = makeStr("applied");
 }  // namespace attr
 
 // ===== Attribute values ====================================================

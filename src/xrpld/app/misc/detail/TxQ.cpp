@@ -28,6 +28,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -741,6 +742,8 @@ TxQ::apply(
     auto span =
         SpanGuard::span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
     span.setAttribute(txq_span::attr::txHash, to_string(tx->getTransactionID()).c_str());
+    if (auto const* fmt = TxFormats::getInstance().findByType(tx->getTxnType()))
+        span.setAttribute(txq_span::attr::txType, fmt->getName().c_str());
 
     NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
@@ -1477,6 +1480,7 @@ TxQ::accept(Application& app, OpenView& view)
 
             if (didApply)
             {
+                txSpan.setAttribute(txq_span::attr::txqStatus, txq_span::val::applied);
                 // Remove the candidate from the queue
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID
                                  << " applied successfully with " << transToken(txnResult)
@@ -1497,12 +1501,14 @@ TxQ::accept(Application& app, OpenView& view)
                 {
                     account.dropPenalty = true;
                 }
+                txSpan.setAttribute(txq_span::attr::txqStatus, txq_span::val::failed);
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
                                  << transToken(txnResult) << ". Remove from queue.";
                 candidateIter = eraseAndAdvance(candidateIter);
             }
             else
             {
+                txSpan.setAttribute(txq_span::attr::txqStatus, txq_span::val::retried);
                 JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID << " failed with "
                                  << transToken(txnResult) << ". Leave in queue."
                                  << " Applied: " << didApply << ". Flags: " << candidateIter->flags;
@@ -1598,6 +1604,7 @@ TxQ::accept(Application& app, OpenView& view)
         }
     }
     XRPL_ASSERT(byFee_.size() == startingSize, "xrpl::TxQ::accept : byFee size match");
+    span.setAttribute(txq_span::attr::ledgerChanged, ledgerChanged);
 
     return ledgerChanged;
 }
