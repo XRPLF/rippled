@@ -19,10 +19,10 @@
 ```bash
 # Start Tempo with OTLP support
 docker run -d --name tempo \
-  -p 3200:3200 \
-  -p 4317:4317 \
-  -p 4318:4318 \
-  grafana/tempo:2.6.1
+    -p 3200:3200 \
+    -p 4317:4317 \
+    -p 4318:4318 \
+    grafana/tempo:2.6.1
 ```
 
 ---
