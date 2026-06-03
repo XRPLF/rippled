@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Mutex.hpp>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/NetworkIDService.h>
@@ -86,8 +87,7 @@ class TestServiceRegistry : public ServiceRegistry
         logs_.journal("TaggedCache")};
     PendingSaves pendingSaves_;
     std::optional<uint256> trapTxID_;
-    mutable std::mutex walletDBMutex_;
-    mutable std::unique_ptr<DatabaseCon> walletDB_;
+    Mutex<std::unique_ptr<DatabaseCon>> walletDB_;
 
 public:
     TestServiceRegistry() = default;
@@ -369,15 +369,16 @@ public:
     DatabaseCon&
     getWalletDB() override
     {
-        std::scoped_lock const lock(walletDBMutex_);
-        if (!walletDB_)
+        auto lock = walletDB_.lock();
+        auto& walletDB = *lock;
+        if (!walletDB)
         {
             DatabaseCon::Setup setup;
             setup.standAlone = true;
             setup.startUp = StartUpType::Normal;
-            walletDB_ = makeWalletDB(setup, logs_.journal("WalletDB"));
+            walletDB = makeWalletDB(setup, logs_.journal("WalletDB"));
         }
-        return *walletDB_;
+        return *walletDB;
     }
 
     // Temporary: Get the underlying Application
