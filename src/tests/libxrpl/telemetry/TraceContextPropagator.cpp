@@ -2,6 +2,7 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/TraceContextPropagator.h>
 
 #include <opentelemetry/context/context.h>
@@ -44,8 +45,9 @@ TEST(TraceContextPropagator, round_trip)
         0x10};
     std::uint8_t spanIdBuf[8] = {0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11, 0x22};
 
-    trace::TraceId const traceId(opentelemetry::nostd::span<uint8_t const, 16>(traceIdBuf, 16));
-    trace::SpanId const spanId(opentelemetry::nostd::span<uint8_t const, 8>(spanIdBuf, 8));
+    trace::TraceId const traceId(
+        opentelemetry::nostd::span<std::uint8_t const, 16>(traceIdBuf, 16));
+    trace::SpanId const spanId(opentelemetry::nostd::span<std::uint8_t const, 8>(spanIdBuf, 8));
     trace::TraceFlags const flags(trace::TraceFlags::kIsSampled);
     trace::SpanContext const spanCtx(traceId, spanId, flags, true);
 
@@ -60,7 +62,7 @@ TEST(TraceContextPropagator, round_trip)
     EXPECT_EQ(proto.trace_id().size(), 16u);
     EXPECT_TRUE(proto.has_span_id());
     EXPECT_EQ(proto.span_id().size(), 8u);
-    EXPECT_EQ(proto.trace_flags(), static_cast<uint32_t>(trace::TraceFlags::kIsSampled));
+    EXPECT_EQ(proto.trace_flags(), static_cast<std::uint32_t>(trace::TraceFlags::kIsSampled));
     EXPECT_EQ(std::memcmp(proto.trace_id().data(), traceIdBuf, 16), 0);
     EXPECT_EQ(std::memcmp(proto.span_id().data(), spanIdBuf, 8), 0);
 
@@ -133,8 +135,8 @@ TEST(TraceContextPropagator, flags_preservation)
     // Test with flags NOT sampled (flags = 0)
     trace::TraceFlags const flags(0);
     trace::SpanContext const spanCtx(
-        trace::TraceId(opentelemetry::nostd::span<uint8_t const, 16>(traceIdBuf, 16)),
-        trace::SpanId(opentelemetry::nostd::span<uint8_t const, 8>(spanIdBuf, 8)),
+        trace::TraceId(opentelemetry::nostd::span<std::uint8_t const, 16>(traceIdBuf, 16)),
+        trace::SpanId(opentelemetry::nostd::span<std::uint8_t const, 8>(spanIdBuf, 8)),
         flags,
         true);
 

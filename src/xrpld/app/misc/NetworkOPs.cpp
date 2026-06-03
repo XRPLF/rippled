@@ -1335,6 +1335,15 @@ NetworkOPsImp::processTransaction(
     auto span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
     span->setAttribute(tx_span::attr::txHash, to_string(transaction->getID()).c_str());
     span->setAttribute(tx_span::attr::local, bLocal);
+    if (auto const& stx = transaction->getSTransaction())
+    {
+        if (auto const* fmt = TxFormats::getInstance().findByType(stx->getTxnType()))
+            span->setAttribute(tx_span::attr::txType, fmt->getName().c_str());
+        span->setAttribute(
+            tx_span::attr::fee, static_cast<int64_t>(stx->getFieldAmount(sfFee).xrp().drops()));
+        span->setAttribute(
+            tx_span::attr::sequence, static_cast<int64_t>(stx->getSeqProxy().value()));
+    }
 
     auto ev = jobQueue_.makeLoadEvent(JtTxnProc, "ProcessTXN");
 
@@ -1555,6 +1564,12 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         auto newOL = registry_.get().getOpenLedger().current();
         for (TransactionStatus const& e : transactions)
         {
+            if (e.span && *e.span)
+            {
+                e.span->setAttribute(
+                    telemetry::tx_span::attr::terResult, transToken(e.result).c_str());
+                e.span->setAttribute(telemetry::tx_span::attr::applied, e.applied);
+            }
             e.transaction->clearSubmitResult();
 
             if (e.applied)

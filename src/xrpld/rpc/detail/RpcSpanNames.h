@@ -144,6 +144,12 @@ inline constexpr auto rpcRole = makeStr("rpc_role");
 inline constexpr auto rpcStatus = makeStr("rpc_status");
 /// "request_payload_size" — bytes of inbound request payload.
 inline constexpr auto requestPayloadSize = makeStr("request_payload_size");
+/// "is_batch" — whether request is a JSON-RPC batch.
+inline constexpr auto isBatch = makeStr("is_batch");
+/// "batch_size" — number of sub-requests in a batch.
+inline constexpr auto batchSize = makeStr("batch_size");
+/// "load_type" — resource cost category after execution.
+inline constexpr auto loadType = makeStr("load_type");
 }  // namespace attr
 
 // ===== Attribute values ====================================================
