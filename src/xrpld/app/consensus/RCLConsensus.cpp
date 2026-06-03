@@ -236,6 +236,7 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         telemetry::consensus::span::op::proposalSend);
     span.setAttribute(
         telemetry::consensus::span::attr::round, static_cast<int64_t>(proposal.proposeSeq()));
+    span.setAttribute(telemetry::consensus::span::attr::isBowOut, proposal.isBowOut());
 
     JLOG(j_.trace()) << (proposal.isBowOut() ? "We bow out: " : "We propose: ")
                      << xrpl::to_string(proposal.prevLedger()) << " -> "
@@ -510,6 +511,21 @@ RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
     span->setAttribute(
         cs::attr::roundTimeMs, static_cast<int64_t>(result.roundTime.read().count()));
     span->setAttribute(cs::attr::quorum, static_cast<int64_t>(app_.getValidators().quorum()));
+    span->setAttribute(cs::attr::disputesCount, static_cast<int64_t>(result.disputes.size()));
+    char const* stateStr = [&] {
+        switch (result.state)
+        {
+            case ConsensusState::Yes:
+                return "yes";
+            case ConsensusState::MovedOn:
+                return "moved_on";
+            case ConsensusState::Expired:
+                return "expired";
+            default:
+                return "no";
+        }
+    }();
+    span->setAttribute(cs::attr::consensusState, stateStr);
 
     // Capture the accept span's context so createValidationSpan() — which
     // runs on the jtACCEPT worker thread — can link the validation.send
@@ -929,6 +945,8 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     {
         namespace cs = telemetry::consensus::span;
         valSpan->setAttribute(cs::attr::ledgerSeq, static_cast<int64_t>(ledger.seq()));
+        valSpan->setAttribute(
+            cs::attr::ledgerHash, to_string(ledger.ledger->header().hash).c_str());
         valSpan->setAttribute(cs::attr::proposing, proposing);
         // proposing implies a full validation (vfFullValidation is set on
         // the STValidation only when proposing — see below).

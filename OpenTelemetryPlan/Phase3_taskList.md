@@ -466,6 +466,38 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
 ---
 
+## Task 3.11: TX and TxQ Span Attribute Gap Fill
+
+**Status**: COMPLETE
+
+**Objective**: Add workflow-identifying attributes to transaction spans so operators can filter by transaction type and see outcomes without off-chain correlation.
+
+**Attributes added**:
+
+| Span            | Attribute        | Type   | Source                                                              |
+| --------------- | ---------------- | ------ | ------------------------------------------------------------------- |
+| `tx.process`    | `tx_type`        | string | `TxFormats::getInstance().findByType(stx->getTxnType())->getName()` |
+| `tx.process`    | `fee`            | int64  | `stx->getFieldAmount(sfFee).xrp().drops()`                          |
+| `tx.process`    | `sequence`       | int64  | `stx->getSeqProxy().value()`                                        |
+| `tx.process`    | `ter_result`     | string | `transToken(e.result)` (set after batch application)                |
+| `tx.process`    | `applied`        | bool   | `e.applied` (set after batch application)                           |
+| `tx.receive`    | `tx_type`        | string | `TxFormats::getInstance().findByType(stx->getTxnType())->getName()` |
+| `txq.enqueue`   | `tx_type`        | string | same pattern as above                                               |
+| `txq.accept.tx` | `txq_status`     | string | `applied` / `failed` / `retried`                                    |
+| `txq.accept`    | `ledger_changed` | bool   | set at end of accept loop                                           |
+
+**New attr keys**: `TxSpanNames.h` (`txType`, `fee`, `sequence`, `terResult`, `applied`), `TxQSpanNames.h` (`txType`).
+
+**Modified files**:
+
+- `src/xrpld/app/misc/TxSpanNames.h`
+- `src/xrpld/app/misc/detail/TxQSpanNames.h`
+- `src/xrpld/app/misc/NetworkOPs.cpp`
+- `src/xrpld/overlay/detail/PeerImp.cpp`
+- `src/xrpld/app/misc/detail/TxQ.cpp`
+
+---
+
 ## Summary
 
 | Task | Description                         | New Files | Modified Files | Depends On |
@@ -480,6 +512,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 | 3.8  | TX span peer version attribute      | 0         | 1              | 3.3        |
 | 3.9  | Deterministic transaction trace ID  | 0-1       | 3              | 3.2, 3.3   |
 | 3.10 | TxQ instrumentation (6 spans)       | 1         | 1              | 3.4        |
+| 3.11 | TX/TxQ span attribute gap fill      | 0         | 5              | 3.3, 3.10  |
 
 **Parallel work**: Tasks 3.1 and 3.4 can start in parallel. Task 3.2 depends on 3.1. Tasks 3.3 and 3.5 depend on 3.2. Task 3.6 depends on 3.3 and 3.5. Task 3.8 depends on 3.3 (span must exist). Task 3.9 depends on 3.2 and 3.3. Task 3.10 depends on 3.4 (tx.process span must exist).
 
