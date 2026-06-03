@@ -31,14 +31,11 @@ public:
         return mptID_;
     }
     [[nodiscard]] bool
-    isZeroBalance() const
+    canSend(AccountID const& account) const
     {
-        return zeroBalance_;
-    }
-    [[nodiscard]] bool
-    isMaxedOut() const
-    {
-        return maxedOut_;
+        // A maxed-out issuance only prevents the issuer from creating more
+        // MPT. Holders can still send existing balances.
+        return account == getMPTIssuer(mptID_) ? !maxedOut_ : !zeroBalance_;
     }
 };
 

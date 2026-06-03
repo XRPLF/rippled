@@ -14,6 +14,8 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/AccountAssets.h>
+#include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
@@ -232,6 +234,67 @@ public:
     }
 
     void
+    maxedOutMPTPathfinding()
+    {
+        testcase("maxed-out MPT pathfinding");
+        using namespace jtx;
+
+        auto hasMPT = [](auto const& assets, MPT const& mpt) {
+            for (auto const& asset : assets)
+            {
+                if (asset.template holds<MPTID>() && asset.template get<MPTID>() == mpt.mpt())
+                    return true;
+            }
+            return false;
+        };
+
+        Env env = pathTestEnv();
+        auto const gw = Account("gateway");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        env.fund(XRP(10'000), gw, alice, bob, carol);
+        env.close();
+
+        MPT const usd =
+            MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, carol}, .maxAmt = 100});
+        env(pay(gw, alice, usd(90)));
+        env(pay(gw, bob, usd(10)));
+        env.close();
+
+        auto const cache =
+            std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
+
+        BEAST_EXPECT(hasMPT(accountSourceAssets(alice.id(), cache, false), usd));
+        BEAST_EXPECT(hasMPT(accountDestAssets(bob.id(), cache, false), usd));
+        BEAST_EXPECT(hasMPT(accountDestAssets(carol.id(), cache, false), usd));
+
+        // A fully minted issuance should not be advertised as issuer-side
+        // mintable source liquidity.
+        BEAST_EXPECT(!hasMPT(accountSourceAssets(gw.id(), cache, false), usd));
+
+        auto [st, sa, da] = findPaths(env, alice, bob, usd(5));
+        BEAST_EXPECT(st.empty());
+        BEAST_EXPECT(equal(sa, usd(5)));
+        BEAST_EXPECT(equal(da, usd(5)));
+
+        env(offer(carol, usd(5), XRP(5)));
+        env.close();
+
+        std::tie(st, sa, da) = findPaths(env, alice, bob, drops(-1), usd(100).value());
+        BEAST_EXPECT(sa == usd(5));
+        BEAST_EXPECT(equal(da, XRP(5)));
+        if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
+        {
+            auto const& pathElem = st[0][0];
+            BEAST_EXPECT(
+                pathElem.isOffer() && pathElem.getIssuerID() == xrpAccount() &&
+                pathElem.getCurrency() == xrpCurrency());
+        }
+    }
+
+    void
     pathFind(bool const domainEnabled)
     {
         testcase(std::string("path find") + (domainEnabled ? " w/ " : " w/o ") + "domain");
@@ -447,7 +510,7 @@ public:
     //
     // Background. The MPT-DEX refactor of `Pathfinder::Pathfinder`
     // (src/xrpld/rpc/detail/Pathfinder.cpp) replaced the original
-    // `mSrcAmount(srcAmount.value_or(...))` initialiser with an
+    // `mSrcAmount(srcAmount.value_or(...))` initializer with an
     // unconditional `amountFromPathAsset(...)` call. The latter always
     // returns the negative "no limit" STAmount sentinel, so the
     // `srcAmount` constructor parameter became dead code:
@@ -566,6 +629,7 @@ public:
         noDirectPathNoIntermediaryNoAlternatives();
         directPathNoIntermediary();
         paymentAutoPathFind();
+        maxedOutMPTPathfinding();
         convertAllSendMaxRanking();
         for (auto const domainEnabled : {false, true})
         {

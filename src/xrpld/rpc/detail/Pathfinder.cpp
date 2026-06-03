@@ -828,7 +828,7 @@ Pathfinder::getPathsOut(
                         if (pathAsset.get<MPTID>() != mpt.getMptID())
                         {
                         }
-                        else if (mpt.isZeroBalance() || mpt.isMaxedOut())
+                        else if (!mpt.canSend(account))
                         {
                         }
                         else if (bAuthRequired)
@@ -1102,7 +1102,10 @@ Pathfinder::addLink(
                             }
                             if constexpr (kIsMpt)
                             {
-                                return asset.isZeroBalance() || asset.isMaxedOut() ||
+                                // `asset` came from uEndAccount's cached MPTs.
+                                // `acct` is the next issuer hop, not the
+                                // account whose balance is being tested.
+                                return !asset.canSend(uEndAccount) ||
                                     requireAuth(*ledger_, MPTIssue{asset}, acct);
                             }
                         };
