@@ -609,8 +609,6 @@ TEST_F(AmendmentTableTest, no_on_unknown)
 
     votingState.votes.emplace_back(testAmendment, validators.size());
 
-    votingState.votes.emplace_back(testAmendment, validators.size());
-
     ourVotes = doRound(allRules(), *table, weeks{2}, validators, votingState);
     EXPECT_TRUE(ourVotes.empty());
     EXPECT_TRUE(votingState.enabled.empty());
