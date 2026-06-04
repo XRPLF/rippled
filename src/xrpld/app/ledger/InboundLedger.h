@@ -6,8 +6,10 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <mutex>
+#include <optional>
 #include <set>
 #include <utility>
 
@@ -170,6 +172,12 @@ private:
         receivedData_;
     bool receiveDispatched_{false};
     std::unique_ptr<PeerSet> peerSet_;
+
+    /// Spans the acquire lifecycle: started in init(), finalized in done()
+    /// with the outcome (complete/failed), timeout count, and peer count.
+    /// Gives operators visibility into back-fill / fork-recovery cost, which
+    /// previously emitted no span or metric.
+    std::optional<telemetry::SpanGuard> acquireSpan_;
 };
 
 }  // namespace xrpl
