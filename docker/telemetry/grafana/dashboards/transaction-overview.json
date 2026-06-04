@@ -561,7 +561,8 @@
           "text": "All",
           "value": "$__all"
         },
-        "sort": 1
+        "sort": 1,
+        "label": "TX Type"
       },
       {
         "name": "ter_result",
@@ -578,7 +579,8 @@
           "text": "All",
           "value": "$__all"
         },
-        "sort": 1
+        "sort": 1,
+        "label": "Result Code"
       },
       {
         "name": "txq_status",
@@ -595,7 +597,8 @@
           "text": "All",
           "value": "$__all"
         },
-        "sort": 1
+        "sort": 1,
+        "label": "Queue Status"
       }
     ]
   },
