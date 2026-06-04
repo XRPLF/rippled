@@ -434,11 +434,6 @@ public:
         if (l.exponent_ < r.exponent_)
             return !lneg;
 
-        // If equal signs and exponents, compare mantissas.
-        if (lneg)
-            // If negative, the operator is reversed.
-            return l.mantissa_ > r.mantissa_;
-
         return l.mantissa_ < r.mantissa_;
     }
 
