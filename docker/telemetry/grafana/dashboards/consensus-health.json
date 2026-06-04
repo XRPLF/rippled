@@ -744,88 +744,6 @@
       }
     },
     {
-      "title": "Consensus Outcome Distribution",
-      "description": "Distribution of consensus.accept outcomes: yes (normal), moved_on (without full agreement), expired (timeout). Non-yes outcomes indicate network stress.",
-      "type": "piechart",
-      "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 0,
-        "y": 72
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "values": ["value", "percent"]
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (consensus_state) (increase(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.accept\", consensus_state!=\"\"}[5m]))",
-          "legendFormat": "{{consensus_state}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Consensus Failures Over Time",
-      "description": "Rate of non-normal consensus outcomes (moved_on + expired). Spikes indicate consensus instability.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 16,
-        "x": 8,
-        "y": 72
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.accept\", consensus_state=\"moved_on\"}[5m]))",
-          "legendFormat": "moved_on [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.accept\", consensus_state=\"expired\"}[5m]))",
-          "legendFormat": "expired [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "axisLabel": "Failures / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
       "title": "Consensus Round Duration (Full Round)",
       "description": "p95/p50 duration of the full consensus round. The consensus.round span (RCLConsensus.cpp startRound) wraps an entire round end-to-end. Filterable by consensus mode. This is the single most important consensus-health signal; rising round time precedes ledger-age alarms.",
       "type": "timeseries",
@@ -833,7 +751,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 80
+        "y": 72
       },
       "options": {
         "tooltip": {
@@ -879,7 +797,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 80
+        "y": 72
       },
       "options": {
         "tooltip": {
@@ -925,7 +843,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 88
+        "y": 80
       },
       "options": {
         "tooltip": {
@@ -971,7 +889,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 88
+        "y": 80
       },
       "options": {
         "tooltip": {
@@ -1017,7 +935,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 96
+        "y": 88
       },
       "options": {
         "tooltip": {
