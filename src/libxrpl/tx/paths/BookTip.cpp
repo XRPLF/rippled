@@ -8,8 +8,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
-#include <memory>
-
 namespace xrpl {
 
 BookTip::BookTip(ApplyView& view, Book const& book)
@@ -40,7 +38,7 @@ BookTip::step(beast::Journal j)
             return false;
 
         unsigned int di = 0;
-        std::shared_ptr<SLE> dir;
+        SLE::pointer dir;
 
         if (dirFirst(view_, *firstPage, dir, di, index_))
         {
