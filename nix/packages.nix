@@ -12,6 +12,8 @@ in
     cmake
     conan
     curlMinimal # needed for codecov/codecov-action
+    doxygen
+    dpkg # needed for dpkg-buildpackage
     gcovr
     git
     gnumake
@@ -26,6 +28,7 @@ in
     pkg-config
     pre-commit
     python3
+    rpm # needed for rpmbuild
     runClangTidy
     vim
   ];
