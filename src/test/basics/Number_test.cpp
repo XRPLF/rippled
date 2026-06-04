@@ -1390,59 +1390,71 @@ public:
         testcase << "test_relationals " << to_string(Number::getMantissaScale());
 
         {
-            auto const nums = [this]() {
+            auto test = [this](auto const& nums) {
+                BEAST_EXPECT(std::ranges::is_sorted(nums));
+
+                for (auto iter1 = nums.begin(); iter1 != nums.end(); ++iter1)
+                {
+                    auto iter2 = iter1;
+                    for (++iter2; iter2 != nums.end(); ++iter2)
+                    {
+                        Number const& smaller = *iter1;
+                        Number const& larger = *iter2;
+                        std::stringstream ss;
+                        ss << smaller << " < " << larger;
+                        auto const str = ss.str();
+
+                        // The ==/!= operators use a completely different code path than <, etc.
+                        // This helps detect a breakage in one but not the other. It also helps
+                        // verify that the values are being ordered correctly.
+                        BEAST_EXPECTS(smaller != larger, str + " (!=)");
+                        BEAST_EXPECTS(!(smaller == larger), str + " (==)");
+
+                        // true results using operator< and derived operators
+                        BEAST_EXPECTS(smaller < larger, str + " (<)");
+                        BEAST_EXPECTS(larger > smaller, str + " (>)");
+                        BEAST_EXPECTS(larger >= smaller, str + " (>=)");
+                        BEAST_EXPECTS(smaller <= larger, str + " (<=)");
+
+                        // false results using operator< and derived operators
+                        BEAST_EXPECTS(!(larger < smaller), str + " (! <)");
+                        BEAST_EXPECTS(!(smaller > larger), str + " (! >)");
+                        BEAST_EXPECTS(!(smaller >= larger), str + " (! >=)");
+                        BEAST_EXPECTS(!(larger <= smaller), str + " (! <=)");
+                    }
+                }
+            };
+
+            auto const intNums = [this]() {
                 // Inequality test cases are built from a list of sorted integers
                 auto const values =
                     std::to_array<int>({-100, -50, -20, -10, -1, 0, 1, 10, 20, 50, 100});
+                // Check this list is sorted before converting it to Numbers.
+                // That way if any of the other tests fail, we know it's because of code and not the
+                // source data.
                 BEAST_EXPECT(std::ranges::is_sorted(values));
 
                 std::vector<Number> result;
-                result.reserve(values.size() + 1);
-                result.emplace_back(-1, 100);
+                result.reserve(values.size());
                 for (auto const v : values)
-                {
-                    if (v == 0)
-                        result.emplace_back(-2, -10);
                     result.emplace_back(v);
-                    if (v == 0)
-                        result.emplace_back(2, -10);
-                }
-                result.emplace_back(1, 100);
                 return result;
             }();
 
-            BEAST_EXPECT(std::ranges::is_sorted(nums));
+            auto const otherNums = std::to_array<Number>({
+                Number{-5, 100},
+                Number{-1, 100},
+                Number{-7, -10},
+                Number{-2, -10},
+                Number{0},
+                Number{2, -10},
+                Number{7, -10},
+                Number{1, 100},
+                Number{5, 100},
+            });
 
-            for (auto iter1 = nums.begin(); iter1 != nums.end(); ++iter1)
-            {
-                auto iter2 = iter1;
-                for (++iter2; iter2 != nums.end(); ++iter2)
-                {
-                    Number const& smaller = *iter1;
-                    Number const& larger = *iter2;
-                    std::stringstream ss;
-                    ss << smaller << " < " << larger;
-                    auto const str = ss.str();
-
-                    // The ==/!= operators use a completely different code path than <, etc.
-                    // This helps detect a breakage in one but not the other. It also helps
-                    // verify that the values are being ordered correctly.
-                    BEAST_EXPECTS(smaller != larger, str + " (!=)");
-                    BEAST_EXPECTS(!(smaller == larger), str + " (==)");
-
-                    // true results using operator< and derived operators
-                    BEAST_EXPECTS(smaller < larger, str + " (<)");
-                    BEAST_EXPECTS(larger > smaller, str + " (>)");
-                    BEAST_EXPECTS(larger >= smaller, str + " (>=)");
-                    BEAST_EXPECTS(smaller <= larger, str + " (<=)");
-
-                    // false results using operator< and derived operators
-                    BEAST_EXPECTS(!(larger < smaller), str + " (! <)");
-                    BEAST_EXPECTS(!(smaller > larger), str + " (! >)");
-                    BEAST_EXPECTS(!(smaller >= larger), str + " (! >=)");
-                    BEAST_EXPECTS(!(larger <= smaller), str + " (! <=)");
-                }
-            }
+            test(intNums);
+            test(otherNums);
         }
 
         {
