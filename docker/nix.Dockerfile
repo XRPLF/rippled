@@ -32,7 +32,7 @@ FROM ${BASE_IMAGE} AS final
 ARG BASE_IMAGE
 
 # bash is not located at /bin/bash in nixos/nix, so we need to create a symlink to it.
-RUN if [ -d /nix ]; then \
+RUN if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then \
         ln -s /root/.nix-profile/bin/bash /bin/bash; \
     fi
 
@@ -46,6 +46,12 @@ COPY --from=builder /tmp/nix-store-closure /nix/store
 COPY --from=builder /tmp/build/result /nix/ci-env
 
 ENV PATH="/nix/ci-env/bin:${PATH}"
+
+# Point HTTPS clients (git, curl, conan, ...) at the CA bundle shipped in the
+# Nix CI environment, so TLS verification works without ca-certificates being
+# installed in the system.
+ENV SSL_CERT_FILE="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
+ENV GIT_SSL_CAINFO="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
 
 # Externally-built dynamically-linked ELF binaries hard-code the loader path
 # (e.g. /lib64/ld-linux-x86-64.so.2) in their PT_INTERP header. Install it
@@ -65,38 +71,44 @@ if [ ! -e "${target}" ]; then
 fi
 EOF
 
-RUN <<EOF
-ccache --version
-clang --version
-clang++ --version
-clang-format --version
-cmake --version
-conan --version
-g++ --version
-gcc --version
-gcovr --version
-git --version
-make --version
-mold --version
-ninja --version
-perl --version
-pkg-config --version
-pre-commit --version
-python3 --version
-run-clang-tidy --help
-vim --version
-EOF
+COPY docker/check-tools.sh /tmp/check-tools.sh
+RUN /tmp/check-tools.sh
 
-# Sanity-check that the sanitizer runtimes shipped with g++/clang++ are able to build binaries
+# Sanity-check that the g++/clang++ are able to build binaries, including sanitizer-instrumented ones.
 COPY docker/test_files/cpp_sources/ /tmp/cpp_sources/
 COPY docker/test_files/compile-cpp-sources.sh /tmp/compile-cpp-sources.sh
 RUN /tmp/compile-cpp-sources.sh /tmp/cpp_sources /tmp/bins
 
-# Sanity-check that the built binaries are able to run.
-# We only support running the test binaries on Ubuntu and NixOS right now (will be fixed in the future)
-#
-# When build and test images will be separate, we will be to run on vanilla images.
-COPY docker/test_files/run-test-binaries.sh /tmp/run-test-binaries.sh
-RUN if echo "${BASE_IMAGE}" | grep -qiE '(ubuntu|nixos)'; then \
-        /tmp/run-test-binaries.sh /tmp/bins; \
+# Tester: start from a clean BASE_IMAGE, install sanitizer runtime libraries,
+# and run the compiled test binaries to verify they execute correctly.
+FROM ${BASE_IMAGE} AS tester
+
+ARG BASE_IMAGE
+
+# bash is not located at /bin/bash in nixos/nix, so we need to create a symlink to it.
+RUN if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then \
+        ln -s /root/.nix-profile/bin/bash /bin/bash; \
     fi
+
+SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
+
+# Sanity-check that the built binaries run correctly in the vanilla base image, with the necessary sanitizer runtime libraries installed.
+COPY docker/install-sanitizer-libs.sh /tmp/install-sanitizer-libs.sh
+COPY docker/test_files/run-test-binaries.sh /tmp/run-test-binaries.sh
+COPY --from=final /tmp/bins /tmp/bins
+
+RUN <<EOF
+if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then
+    echo "Skipping runnning binaries on NixOS."
+else
+    /tmp/install-sanitizer-libs.sh
+    /tmp/run-test-binaries.sh /tmp/bins
+fi
+touch /tmp/tests-passed
+EOF
+
+# Output: the final image, gated on a successful test run in the tester stage.
+# Copying the sentinel from tester creates a hard build dependency: if the test
+# run above failed, this stage — and the overall build — fails too.
+FROM final
+COPY --from=tester /tmp/tests-passed /tmp/tests-passed

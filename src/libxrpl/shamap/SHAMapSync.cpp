@@ -66,7 +66,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
         {
             if (!node->isEmptyBranch(pos))
             {
-                intr_ptr::SharedPtr<SHAMapTreeNode> const child = descendNoStore(*node, pos);
+                SHAMapTreeNodePtr const child = descendNoStore(*node, pos);
                 if (!function(*child))
                     return;
 
@@ -204,8 +204,7 @@ SHAMap::gmnProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
                 branch,
                 mn.filter,
                 pending,
-                [node, nodeID, branch, &mn](
-                    intr_ptr::SharedPtr<SHAMapTreeNode> found, SHAMapHash const&) {
+                [node, nodeID, branch, &mn](SHAMapTreeNodePtr found, SHAMapHash const&) {
                     // a read completed asynchronously
                     std::unique_lock<std::mutex> const lock{mn.deferLock};
                     mn.finishedReads.emplace_back(node, nodeID, branch, std::move(found));
@@ -266,8 +265,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
     int complete = 0;
     while (complete != mn.deferred)
     {
-        std::tuple<SHAMapInnerNode*, SHAMapNodeID, int, intr_ptr::SharedPtr<SHAMapTreeNode>>
-            deferredNode;
+        std::tuple<SHAMapInnerNode*, SHAMapNodeID, int, SHAMapTreeNodePtr> deferredNode;
         {
             std::unique_lock<std::mutex> lock{mn.deferLock};
 
