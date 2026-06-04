@@ -638,8 +638,7 @@ protected:
             if (auto const vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                 BEAST_EXPECT(vaultSle))
             {
-// log << vaultSle->getJson() << std::endl;
-#if 0
+                // log << vaultSle->getJson() << std::endl;
                 auto const assetsUnavailable =
                     vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable);
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) + state.totalValue -
@@ -649,7 +648,6 @@ protected:
                 {
                     return false;
                 }
-#endif
             }
         }
         return true;
@@ -1028,12 +1026,10 @@ protected:
                 state.paymentRemaining,
                 broker.params.managementFeeRate);
 
-#if 0
             BEAST_EXPECT(
                 paymentComponents.trackedValueDelta <= roundedPeriodicPayment ||
                 (paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::Final &&
                  paymentComponents.trackedValueDelta >= roundedPeriodicPayment));
-#endif
             BEAST_EXPECT(
                 paymentComponents.trackedValueDelta ==
                 paymentComponents.trackedPrincipalDelta + paymentComponents.trackedInterestPart() +

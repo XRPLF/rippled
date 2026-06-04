@@ -166,12 +166,12 @@ ValidLoanBroker::finalize(
                                "decreased";
             return false;
         }
-        if (after->at(sfDebtTotal) < beast::kZero)
+        if (after->at(sfDebtTotal) < 0)
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Broker debt total is negative";
             return false;
         }
-        if (after->at(sfCoverAvailable) < beast::kZero)
+        if (after->at(sfCoverAvailable) < 0)
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Broker cover available is negative";
             return false;
@@ -190,16 +190,13 @@ ValidLoanBroker::finalize(
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
             j);
-#if 0
         if (after->at(sfCoverAvailable) < pseudoBalance)
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Broker cover available "
                                "is less than pseudo-account asset balance";
             return false;
         }
-#endif
 
-#if 0
         if (view.rules().enabled(fixCleanup3_1_3))
         {
             // Don't check the balance when LoanBroker is deleted,
@@ -212,7 +209,6 @@ ValidLoanBroker::finalize(
                 return false;
             }
         }
-#endif
     }
     return true;
 }

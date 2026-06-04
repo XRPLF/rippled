@@ -568,7 +568,6 @@ MPTEndpointStep<TDerived>::setCacheLimiting(
         auto const diff = fwdIn - cache_->in;
         if (diff > smallDiff)
         {
-#if 0
             if (!cache_->in.value() ||
                 (Number(fwdIn.value()) / Number(cache_->in.value())) > Number(101, -2))
             {
@@ -584,7 +583,6 @@ MPTEndpointStep<TDerived>::setCacheLimiting(
                 cache_.emplace(fwdIn, fwdSrcToDst, fwdOut, srcDebtDir);
                 return;
             }
-#endif
         }
     }
     cache_->in = fwdIn;

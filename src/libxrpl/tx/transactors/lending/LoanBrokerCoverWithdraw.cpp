@@ -138,7 +138,6 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
             return ret;
     }
 
-#if 0
     auto const coverAvail = sleBroker->at(sfCoverAvailable);
     // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
@@ -161,7 +160,6 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_FUNDS;
     if ((coverAvail - amount) < minimumCover)
         return tecINSUFFICIENT_FUNDS;
-#endif
 
     if (accountHolds(
             ctx.view,

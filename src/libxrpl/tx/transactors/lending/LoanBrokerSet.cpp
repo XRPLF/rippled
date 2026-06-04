@@ -46,10 +46,8 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
         return temINVALID;
     if (!validNumericRange(tx[~sfCoverRateLiquidation], kMaxCoverRate))
         return temINVALID;
-#if 0
     if (!validNumericRange(tx[~sfDebtMaximum], Number(kMaxMpTokenAmount), Number(0)))
         return temINVALID;
-#endif
 
     if (tx.isFieldPresent(sfLoanBrokerID))
     {
@@ -135,15 +133,13 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 
         if (auto const debtMax = tx[~sfDebtMaximum])
         {
-// Can't reduce the debt maximum below the current total debt
-#if 0
+            // Can't reduce the debt maximum below the current total debt
             auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
             if (*debtMax != 0 && *debtMax < currentDebtTotal)
             {
                 JLOG(ctx.j.warn()) << "Cannot reduce DebtMaximum below current DebtTotal.";
                 return tecLIMIT_EXCEEDED;
             }
-#endif
         }
     }
     else

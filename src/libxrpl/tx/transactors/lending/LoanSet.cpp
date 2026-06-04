@@ -87,21 +87,17 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (auto const data = tx[~sfData];
         data && !data->empty() && !validDataLength(tx[~sfData], kMaxDataPayloadLength))
         return temINVALID;
-#if 0
     for (auto const& field : {&sfLoanServiceFee, &sfLatePaymentFee, &sfClosePaymentFee})
     {
         if (!validNumericMinimum(tx[~*field]))
             return temINVALID;
     }
-#endif
     // Principal Requested is required
     auto const p = tx[sfPrincipalRequested];
-    if (p <= beast::kZero)
+    if (p <= 0)
         return temINVALID;
-#if 0
     if (!validNumericRange(tx[~sfLoanOriginationFee], p))
         return temINVALID;
-#endif
     if (!validNumericRange(tx[~sfInterestRate], kMaxInterestRate))
         return temINVALID;
     if (!validNumericRange(tx[~sfOverpaymentFee], kMaxOverpaymentFee))
@@ -306,13 +302,11 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
-#if 0
     if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
         JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
         return tecLIMIT_EXCEEDED;
     }
-#endif
 
     Asset const asset = vault->at(sfAsset);
 
@@ -412,13 +406,11 @@ LoanSet::doApply()
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
     auto const vaultScale = getAssetsTotalScale(vaultSle);
-#if 0
     if (vaultAvailableProxy < principalRequested)
     {
         JLOG(j_.warn()) << "Insufficient assets available in the Vault to fund the loan.";
         return tecINSUFFICIENT_FUNDS;
     }
-#endif
 
     TenthBips32 const interestRate{tx[~sfInterestRate].value_or(0)};
 
@@ -440,7 +432,6 @@ LoanSet::doApply()
         principalRequested,
         properties.loanState.managementFeeDue);
 
-#if 0
     auto const vaultMaximum = *vaultSle->at(sfAssetsMaximum);
     XRPL_ASSERT_PARTS(
         vaultMaximum == 0 || vaultMaximum > *vaultTotalProxy,
@@ -451,7 +442,6 @@ LoanSet::doApply()
         JLOG(j_.warn()) << "Loan would exceed the maximum assets of the vault";
         return tecLIMIT_EXCEEDED;
     }
-#endif
     // Check that relevant values won't lose precision. This is mostly only
     // relevant for IOU assets.
     for (auto const& field : getValueFields())
@@ -477,9 +467,8 @@ LoanSet::doApply()
         return ret;
 
     // Check that the other computed values are valid
-    if (properties.loanState.managementFeeDue < beast::kZero ||
-        properties.loanState.valueOutstanding <= beast::kZero ||
-        properties.periodicPayment <= beast::kZero)
+    if (properties.loanState.managementFeeDue < 0 || properties.loanState.valueOutstanding <= 0 ||
+        properties.periodicPayment <= 0)
     {
         // LCOV_EXCL_START
         JLOG(j_.warn()) << "Computed loan properties are invalid. Does not compute."
@@ -496,17 +485,14 @@ LoanSet::doApply()
 
     auto const newDebtDelta = principalRequested + state.interestDue;
     auto const newDebtTotal = brokerSle->at(sfDebtTotal) + newDebtDelta;
-#if 0
     if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
         debtMaximum != 0 && debtMaximum < newDebtTotal)
     {
         JLOG(j_.warn()) << "Loan would exceed the maximum debt limit of the LoanBroker.";
         return tecLIMIT_EXCEEDED;
     }
-#endif
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
-        [[maybe_unused]]
         auto const minCover = [&]() {
             if (ctx_.view().rules().enabled(fixCleanup3_2_0))
             {
@@ -519,13 +505,11 @@ LoanSet::doApply()
             NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
             return tenthBipsOfValue(newDebtTotal, coverRateMinimum);
         }();
-#if 0
         if (brokerSle->at(sfCoverAvailable) < minCover)
         {
             JLOG(j_.warn()) << "Insufficient first-loss capital to cover the loan.";
             return tecINSUFFICIENT_FUNDS;
         }
-#endif
     }
 
     adjustOwnerCount(view, borrowerSle, 1, j_);
@@ -639,12 +623,10 @@ LoanSet::doApply()
     // Update the balances in the vault
     vaultAvailableProxy -= principalRequested;
     vaultTotalProxy += state.interestDue;
-#if 0
     XRPL_ASSERT_PARTS(
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
         "assets available must not be greater than assets outstanding");
-#endif
     view.update(vaultSle);
 
     // Update the balances in the loan broker

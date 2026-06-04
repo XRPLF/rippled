@@ -15,11 +15,11 @@
 #include <cstdint>
 #include <iomanip>
 #include <limits>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <tuple>
-#include <unordered_map>
 
 namespace xrpl {
 
@@ -1386,13 +1386,10 @@ public:
     testRelationals()
     {
         testcase << "test_relationals " << to_string(Number::getMantissaScale());
-#if 0
         BEAST_EXPECT(!(Number{100} < Number{10}));
         BEAST_EXPECT(Number{100} > Number{10});
         BEAST_EXPECT(Number{100} >= Number{10});
         BEAST_EXPECT(!(Number{100} <= Number{10}));
-#endif
-        // *facepalm*
     }
 
     void
@@ -1471,9 +1468,9 @@ public:
         // Test that rounding works as expected.
         testcase("Rounding");
 
-        using NumberRoundings = std::unordered_map<Number::RoundingMode, std::int64_t>;
+        using NumberRoundings = std::map<Number::RoundingMode, std::int64_t>;
 
-        std::unordered_map<Number, NumberRoundings> const expected{
+        std::map<Number, NumberRoundings> const expected{
             // Positive numbers
             {Number{13, -1},
              {{Number::RoundingMode::ToNearest, 1},

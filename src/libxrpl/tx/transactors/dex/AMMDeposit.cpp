@@ -918,7 +918,6 @@ AMMDeposit::singleDepositEPrice(
             adjustAssetInByTokens(view.rules(), amountBalance, amount, lptAMMBalance, tokens, tfee);
         if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::kZero)
             return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
-#if 0
         auto const ep = Number{amountDepositAdj} / tokensAdj;
         if (ep <= ePrice)
         {
@@ -935,7 +934,6 @@ AMMDeposit::singleDepositEPrice(
                 std::nullopt,
                 tfee);
         }
-#endif
     }
 
     // LPTokens is asset out => E = b / t

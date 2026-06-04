@@ -1445,18 +1445,14 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         {
             auto const dm = power(2, 64) - 1;
-#if 0
             BEAST_EXPECT(dm > kMaxMpTokenAmount);
-#endif
             tx2[sfDebtMaximum] = dm;
             env(tx2, Ter(temINVALID));
         }
 
         {
             auto const dm = power(2, 63) - 1;
-#if 0
             BEAST_EXPECTS(dm > kMaxMpTokenAmount, to_string(dm));
-#endif
             tx2[sfDebtMaximum] = dm;
             env(tx2, Ter(temINVALID));
         }
@@ -1631,7 +1627,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         auto const broker = env.le(brokerKeylet);
         if (!BEAST_EXPECT(broker))
             return;
-        BEAST_EXPECT(broker->at(sfCoverAvailable) > beast::kZero);
+        BEAST_EXPECT(broker->at(sfCoverAvailable) > 0);
 
         // Get the broker pseudo-account ID
         auto const brokerPseudoID = broker->at(sfAccount);
@@ -1747,7 +1743,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         auto const broker = env.le(brokerKeylet);
         if (!BEAST_EXPECT(broker))
             return;
-        BEAST_EXPECT(broker->at(sfCoverAvailable) > beast::kZero);
+        BEAST_EXPECT(broker->at(sfCoverAvailable) > 0);
 
         // Get the broker pseudo-account
         auto const brokerPseudoID = broker->at(sfAccount);
@@ -2151,10 +2147,8 @@ class LoanBroker_test : public beast::unit_test::Suite
                     Number const coverAfter = brokerAfter->at(sfCoverAvailable);
                     Number const actual = coverAfter - coverBefore;
                     Number const lost = requested - actual;
-                    BEAST_EXPECT(lost >= beast::kZero);
-#if 0
+                    BEAST_EXPECT(lost >= Number{0});
                     BEAST_EXPECT(lost < oneUlp);
-#endif
                 }
             }
 

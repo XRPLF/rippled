@@ -158,10 +158,8 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 
     if constexpr (!kInIsXrp && !kOutIsXrp)
     {
-#if 0
         if (Number(ofrAmts.in) >= Number(ofrAmts.out))
             return false;
-#endif
     }
 
     TTakerGets const ownerFunds = toAmount<TTakerGets>(*ownerFunds_);

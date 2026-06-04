@@ -272,27 +272,21 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
             // Both min/max bid price are defined
             if (bidMin && bidMax)
             {
-#if 0
                 if (computedPrice <= *bidMax)
                     return std::max(computedPrice, Number(*bidMin));
-#endif
                 JLOG(ctx.journal.debug()) << "AMM Bid: not in range " << computedPrice << " "
                                           << *bidMin << " " << *bidMax;
                 return std::nullopt;
             }
-// Bidder pays max(bidPrice, computedPrice)
-#if 0
+            // Bidder pays max(bidPrice, computedPrice)
             if (bidMin)
             {
                 return std::max(computedPrice, Number(*bidMin));
             }
-#endif
             if (bidMax)
             {
-#if 0
                 if (computedPrice <= *bidMax)
                     return computedPrice;
-#endif
                 JLOG(ctx.journal.debug())
                     << "AMM Bid: not in range " << computedPrice << " " << *bidMax;
                 return std::nullopt;
@@ -304,12 +298,10 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         {
             return Unexpected(tecAMM_FAILED);
         }
-#if 0
         if (payPrice > lpTokens)
         {
             return Unexpected(tecAMM_INVALID_TOKENS);
         }
-#endif
         return *payPrice;
     };
 
@@ -350,7 +342,6 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         // Refund the previous owner. If the time slot is 0 then
         // the owner is refunded 95% of the amount.
         auto const refund = fractionRemaining * pricePurchased;
-#if 0
         if (refund > *payPrice)
         {
             // This error case should never occur.
@@ -358,7 +349,6 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
                 << "AMM Bid: refund exceeds payPrice " << refund << " " << *payPrice;
             return {tecINTERNAL, false};
         }
-#endif
         res = accountSend(
             sb, account, auctionSlot[sfAccount], toSTAmount(lpTokens.asset(), refund), ctx.journal);
         if (!isTesSuccess(res))

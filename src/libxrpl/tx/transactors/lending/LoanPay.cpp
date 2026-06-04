@@ -147,7 +147,6 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     static constexpr std::int64_t kMaxFeeIncrements =
         kLoanMaximumPaymentsPerTransaction / kLoanPaymentsPerFeeIncrement;
 
-#if 0
     if (view.rules().enabled(fixCleanup3_1_3) &&
         amount >= regularPayment * kLoanMaximumPaymentsPerTransaction)
     {
@@ -159,7 +158,6 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         // increments.
         return kMaxFeeIncrements * normalCost;
     }
-#endif
 
     // Estimate how many payments will be made
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
@@ -327,7 +325,6 @@ LoanPay::doApply()
         // In the fixCleanup3_2_0 path, vault-related values (for example,
         // DebtTotal) use vaultScale. The legacy path below intentionally retains
         // its pre-amendment loanScale behavior.
-        [[maybe_unused]]
         auto const minCover = [&]() {
             if (view.rules().enabled(fixCleanup3_2_0))
             {
@@ -340,12 +337,8 @@ LoanPay::doApply()
             return roundToAsset(
                 asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale);
         }();
-#if 0
         return coverAvailableProxy >= minCover && !isDeepFrozen(view, brokerOwner, asset) &&
             !requireAuth(view, asset, brokerOwner, AuthType::StrongAuth);
-#else
-        return true;
-#endif
     }();
 
     auto const brokerPayee = sendBrokerFeeToOwner ? brokerOwner : brokerPseudoAccount;
@@ -404,24 +397,23 @@ LoanPay::doApply()
 
     XRPL_ASSERT_PARTS(
         // It is possible to pay 0 principal
-        paymentParts->principalPaid >= beast::kZero,
+        paymentParts->principalPaid >= 0,
         "xrpl::LoanPay::doApply",
         "valid principal paid");
     XRPL_ASSERT_PARTS(
         // It is possible to pay 0 interest
-        paymentParts->interestPaid >= beast::kZero,
+        paymentParts->interestPaid >= 0,
         "xrpl::LoanPay::doApply",
         "valid interest paid");
     XRPL_ASSERT_PARTS(
         // It should not be possible to pay 0 total
-        paymentParts->principalPaid + paymentParts->interestPaid > beast::kZero,
+        paymentParts->principalPaid + paymentParts->interestPaid > 0,
         "xrpl::LoanPay::doApply",
         "valid total paid");
-    XRPL_ASSERT_PARTS(
-        paymentParts->feePaid >= beast::kZero, "xrpl::LoanPay::doApply", "valid fee paid");
+    XRPL_ASSERT_PARTS(paymentParts->feePaid >= 0, "xrpl::LoanPay::doApply", "valid fee paid");
 
-    if (paymentParts->principalPaid < beast::kZero || paymentParts->interestPaid < beast::kZero ||
-        paymentParts->feePaid < beast::kZero)
+    if (paymentParts->principalPaid < 0 || paymentParts->interestPaid < 0 ||
+        paymentParts->feePaid < 0)
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Loan payment computation returned invalid values.";
@@ -501,25 +493,21 @@ LoanPay::doApply()
     assetsAvailableProxy += totalPaidToVaultRounded;
     assetsTotalProxy += paymentParts->valueChange;
 
-#if 0
     XRPL_ASSERT_PARTS(
         *assetsAvailableProxy <= *assetsTotalProxy,
         "xrpl::LoanPay::doApply",
         "assets available must not be greater than assets outstanding");
-#endif
 
     JLOG(j_.debug()) << "total paid to vault raw: " << totalPaidToVaultRaw
                      << ", total paid to vault rounded: " << totalPaidToVaultRounded
                      << ", total paid to broker: " << totalPaidToBroker
                      << ", amount from transaction: " << amount;
 
-#if 0
     // Move funds
     XRPL_ASSERT_PARTS(
         totalPaidToVaultRounded + totalPaidToBroker <= amount,
         "xrpl::LoanPay::doApply",
         "amount is sufficient");
-#endif
 
     if (!sendBrokerFeeToOwner)
     {
@@ -538,12 +526,10 @@ LoanPay::doApply()
     Number const assetsAvailableAfter = *assetsAvailableProxy;
     Number const assetsTotalAfter = *assetsTotalProxy;
 
-#if 0
     XRPL_ASSERT_PARTS(
         assetsAvailableAfter <= assetsTotalAfter,
         "xrpl::LoanPay::doApply",
         "assets available must not be greater than assets outstanding");
-#endif
     if (assetsAvailableAfter == assetsAvailableBefore)
     {
         // An unchanged assetsAvailable indicates that the amount paid to the
@@ -587,7 +573,6 @@ LoanPay::doApply()
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
-#if 0
     if (assetsAvailableAfter > assetsTotalAfter)
     {
         // Assets available are not allowed to be larger than assets total.
@@ -598,7 +583,6 @@ LoanPay::doApply()
         return tecINTERNAL;
         // LCOV_EXCL_STOP
     }
-#endif
 
     // These three values are used to check that funds are conserved after the transfers
     auto const accountBalanceBefore = accountHolds(

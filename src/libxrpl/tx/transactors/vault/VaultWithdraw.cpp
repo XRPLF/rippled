@@ -266,7 +266,6 @@ VaultWithdraw::doApply()
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
     auto const lossUnrealized = vault->at(sfLossUnrealized);
-#if 0
     XRPL_ASSERT(
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "xrpl::VaultWithdraw::doApply : loss and assets do balance");
@@ -277,7 +276,6 @@ VaultWithdraw::doApply()
         JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
         return tecINSUFFICIENT_FUNDS;
     }
-#endif
 
     // Post-fixCleanup3_2_0 "final withdrawal" rule:
     // a transaction that would burn every outstanding share is only permitted when the vault is in

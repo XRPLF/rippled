@@ -36,10 +36,8 @@ bool
 checkNear(IOUAmount const& expected, IOUAmount const& actual)
 {
     double const ratTol = 0.001;
-#if 0
     if (abs(expected.exponent() - actual.exponent()) > 1)
         return false;
-#endif
 
     if (actual.exponent() < -20)
         return true;

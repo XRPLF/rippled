@@ -134,7 +134,6 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         }
     }
 
-#if 0
     // LCOV_EXCL_START
     if (signerCount > 0 && view.fees().base > maxAmount / signerCount)
     {
@@ -142,7 +141,6 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         return XRPAmount{kInitialXrp};
     }
     // LCOV_EXCL_STOP
-#endif
 
     XRPAmount const signerFees = signerCount * view.fees().base;
 

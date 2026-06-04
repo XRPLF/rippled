@@ -277,11 +277,11 @@ std::optional<Number>
 solveQuadraticEqSmallest(Number const& a, Number const& b, Number const& c)
 {
     auto const d = b * b - 4 * a * c;
-    if (d < beast::kZero)
+    if (d < 0)
         return std::nullopt;
     // use numerically stable citardauq formula for quadratic equation solution
     // https://people.csail.mit.edu/bkph/articles/Quadratics.pdf
-    if (b > beast::kZero)
+    if (b > 0)
     {
         return (2 * c) / (-b - root2(d));
     }
