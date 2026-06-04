@@ -93,6 +93,7 @@ words:
   - daria
   - dcmake
   - dearmor
+  - dedupe
   - dedented
   - deleteme
   - demultiplexer
@@ -154,11 +155,15 @@ words:
   - libpb
   - libxrpl
   - llection
+  - localised
   - LOCALGOOD
   - logwstream
   - lseq
   - lsmf
   - ltype
+  - materialisations
+  - materialises
+  - materialised
   - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
@@ -166,6 +171,7 @@ words:
   - MPTDEX
   - Merkle
   - Metafuncton
+  - minimisation
   - misprediction
   - missingok
   - mptbalance
@@ -185,6 +191,7 @@ words:
   - multisign
   - multisigned
   - Nakamoto
+  - neighbours
   - nftid
   - nftoffer
   - nftoken
@@ -253,6 +260,7 @@ words:
   - secp
   - sendq
   - seqit
+  - Serialises
   - sf
   - SFIELD
   - sfields
@@ -282,6 +290,7 @@ words:
   - stxchainattestations
   - superpeer
   - superpeers
+  - specialisation
   - takergets
   - takerpays
   - ters
@@ -307,6 +316,7 @@ words:
   - unflatten
   - unfund
   - unimpair
+  - unranked
   - unroutable
   - unscalable
   - unserviced
