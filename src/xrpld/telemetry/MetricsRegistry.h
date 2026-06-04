@@ -37,6 +37,9 @@
                     |       +-- xrpld_validations_checked_total
                     |       +-- xrpld_state_changes_total
                     |       +-- xrpld_jq_trans_overflow_total
+                    |       +-- xrpld_ledger_history_mismatch_total{reason}
+                    |       +-- xrpld_txq_expired_total
+                    |       +-- xrpld_txq_dropped_total{reason}
                     |
                     +-- ValidationTracker  (validation agreement tracker)
                     |
@@ -53,6 +56,7 @@
                             +-- DB metrics (storage KB, fetch rate)
                             +-- Validator health (amend blocked, UNL, quorum)
                             +-- Peer quality (P90 latency, version spread)
+                            +-- Reduce-relay efficiency (selected/suppressed peers)
                             +-- Ledger economy (fees, reserves, age)
                             +-- State tracking (mode value, time in state)
                             +-- Storage detail (NuDB sizes)
