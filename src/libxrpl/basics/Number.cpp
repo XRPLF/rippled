@@ -467,23 +467,27 @@ Number::Guard::doRoundUp(
                 // be impossible to recurse more than once, because once the mantissa is divided by
                 // 10, it will be _well_ under maxMantissa and kMaxRep, so adding 1 will have no
                 // chance of bringing it back over.
-                if (cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled &&
-                    mantissa > kMaxRep && mantissa < kMaxRepUp)
+                if (mantissa > kMaxRep && mantissa < kMaxRepUp)
+                {
                     mantissa = kMaxRepUp;
-                doDropDigit(mantissa, exponent);
-                XRPL_ASSERT_PARTS(
-                    safeToIncrement(mantissa),
-                    "xrpl::Number::Guard::doRoundUp",
-                    "can't recurse more than once");
-                doRoundUp(
-                    negative,
-                    mantissa,
-                    exponent,
-                    minMantissa,
-                    maxMantissa,
-                    cuspRoundingFix,
-                    location);
-                return;
+                }
+                else
+                {
+                    doDropDigit(mantissa, exponent);
+                    XRPL_ASSERT_PARTS(
+                        safeToIncrement(mantissa),
+                        "xrpl::Number::Guard::doRoundUp",
+                        "can't recurse more than once");
+                    doRoundUp(
+                        negative,
+                        mantissa,
+                        exponent,
+                        minMantissa,
+                        maxMantissa,
+                        cuspRoundingFix,
+                        location);
+                    return;
+                }
             }
         }
         else
@@ -501,7 +505,9 @@ Number::Guard::doRoundUp(
             }
         }
     }
-    else if (cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled && mantissa > kMaxRep)
+    else if (
+        cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled && mantissa > kMaxRep &&
+        mantissa < kMaxRepUp)
     {
         mantissa = kMaxRep;
     }
@@ -559,7 +565,9 @@ Number::Guard::doRound(
         }
         ++drops;
     }
-    else if (cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled && drops > kMaxRep)
+    else if (
+        cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled && drops > kMaxRep &&
+        drops < kMaxRepUp)
     {
         // This will probably be impossible because this function is not called by mutating
         // functions, so the Number will already be normalized.
@@ -614,7 +622,7 @@ doNormalize(
 {
     static constexpr auto kMinExponent = Number::kMinExponent;
     static constexpr auto kMaxExponent = Number::kMaxExponent;
-    auto const kRepLimit = cuspRoundingFix == MantissaRange::CuspRoundingFix::Disabled
+    auto const repLimit = cuspRoundingFix == MantissaRange::CuspRoundingFix::Disabled
         ? Number::kMaxRep
         : Number::kMaxRepUp;
 
@@ -666,7 +674,7 @@ doNormalize(
     //      9,900,000,000,000,123,450 or 9,900,000,000,000,123,460.
     // mantissa() will return mantissa / 10, and exponent() will return
     // exponent + 1.
-    if (m > kRepLimit)
+    if (m > repLimit)
     {
         if (exponent >= kMaxExponent)
             throw std::overflow_error("Number::normalize 1.5");
@@ -676,7 +684,7 @@ doNormalize(
     // modification, it must be less than kMaxRep. In other words, the original
     // value should have been no more than kMaxRep * 10.
     // (kMaxRep * 10 > maxMantissa)
-    XRPL_ASSERT_PARTS(m <= kRepLimit, "xrpl::doNormalize", "intermediate mantissa fits in limit");
+    XRPL_ASSERT_PARTS(m <= repLimit, "xrpl::doNormalize", "intermediate mantissa fits in limit");
     mantissa = m;
 
     g.doRoundUp(
@@ -804,7 +812,7 @@ Number::operator+=(Number const& y)
     auto const& minMantissa = range.min;
     auto const& maxMantissa = range.max;
     auto const cuspRoundingFix = range.cuspRoundingFix;
-    auto const kRepLimit =
+    auto const repLimit =
         cuspRoundingFix == MantissaRange::CuspRoundingFix::Disabled ? kMaxRep : kMaxRepUp;
 
     // Bring the exponents of both values into agreement, so the mantissas are on the same scale
@@ -857,14 +865,14 @@ Number::operator+=(Number const& y)
         xm += ym;
         if (range.cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled)
         {
-            while (xm > maxMantissa || xm > kRepLimit)
+            while (xm > maxMantissa || xm > repLimit)
             {
                 g.doDropDigit(xm, xe);
             }
         }
         else
         {
-            if (xm > maxMantissa || xm > kRepLimit)
+            if (xm > maxMantissa || xm > repLimit)
             {
                 g.doDropDigit(xm, xe);
             }
@@ -884,7 +892,7 @@ Number::operator+=(Number const& y)
             xe = ye;
             xn = yn;
         }
-        while (xm < minMantissa && xm * 10 <= kRepLimit)
+        while (xm < minMantissa && xm * 10 <= repLimit)
         {
             xm *= 10;
             xm -= g.pop();
@@ -897,7 +905,7 @@ Number::operator+=(Number const& y)
             Guard g;
             if (xn)
                 g.setNegative();
-            while (xm > maxMantissa || xm > kRepLimit)
+            while (xm > maxMantissa || xm > repLimit)
             {
                 g.doDropDigit(xm, xe);
             }
@@ -951,10 +959,10 @@ Number::operator*=(Number const& y)
     auto const& minMantissa = range.min;
     auto const& maxMantissa = range.max;
     auto const cuspRoundingFix = range.cuspRoundingFix;
-    auto const kRepLimit =
+    auto const repLimit =
         cuspRoundingFix == MantissaRange::CuspRoundingFix::Disabled ? kMaxRep : kMaxRepUp;
 
-    while (zm > maxMantissa || zm > kRepLimit)
+    while (zm > maxMantissa || zm > repLimit)
     {
         g.doDropDigit(zm, ze);
     }
