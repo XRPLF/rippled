@@ -13,6 +13,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
@@ -1194,9 +1195,9 @@ setupFeeVote(Section const& section)
             setup.account_reserve = temp;
         if (set(temp, "owner_reserve", section))
             setup.owner_reserve = temp;
-        if (set(temp, "extension_compute_limit", section))
+        if (set(temp, "extension_compute_limit", section) && temp <= kMaxExtensionComputeLimit)
             setup.extension_compute_limit = temp;
-        if (set(temp, "extension_size_limit", section))
+        if (set(temp, "extension_size_limit", section) && temp <= kMaxExtensionSizeLimit)
             setup.extension_size_limit = temp;
         if (set(temp, "gas_price", section))
             setup.gas_price = temp;

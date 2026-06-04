@@ -11,6 +11,7 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -305,16 +306,14 @@ class FeeVote_test : public beast::unit_test::Suite
                  "extension_compute_limit = -100",
                  "extension_size_limit = -200",
                  "gas_price = -300"});
-            // Negative values wrap to large positive uint32_t values.
-            // reference_fee is uint64_t and has bounds checking, so it keeps
-            // the default.
-            // Illegal values are ignored, and the defaults left unchanged
+            // Negative extension limit values wrap past their maximum and are
+            // ignored. Other uint32_t fields keep the existing behavior.
             auto setup = setupFeeVote(config);
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(setup.account_reserve == static_cast<std::uint32_t>(-1234567));
             BEAST_EXPECT(setup.owner_reserve == static_cast<std::uint32_t>(-1234));
-            BEAST_EXPECT(setup.extension_compute_limit == static_cast<std::uint32_t>(-100));
-            BEAST_EXPECT(setup.extension_size_limit == static_cast<std::uint32_t>(-200));
+            BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
+            BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
             BEAST_EXPECT(setup.gas_price == static_cast<std::uint32_t>(-300));
         }
         {
@@ -336,6 +335,24 @@ class FeeVote_test : public beast::unit_test::Suite
             BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
             BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
             BEAST_EXPECT(setup.gas_price == defaultSetup.gas_price);
+        }
+        {
+            Section config;
+            config.append(
+                {"extension_compute_limit = " + std::to_string(kMaxExtensionComputeLimit + 1),
+                 "extension_size_limit = " + std::to_string(kMaxExtensionSizeLimit + 1)});
+            auto const setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.extension_compute_limit == defaultSetup.extension_compute_limit);
+            BEAST_EXPECT(setup.extension_size_limit == defaultSetup.extension_size_limit);
+        }
+        {
+            Section config;
+            config.append(
+                {"extension_compute_limit = " + std::to_string(kMaxExtensionComputeLimit),
+                 "extension_size_limit = " + std::to_string(kMaxExtensionSizeLimit)});
+            auto const setup = setupFeeVote(config);
+            BEAST_EXPECT(setup.extension_compute_limit == kMaxExtensionComputeLimit);
+            BEAST_EXPECT(setup.extension_size_limit == kMaxExtensionSizeLimit);
         }
     }
 
@@ -431,6 +448,40 @@ class FeeVote_test : public beast::unit_test::Suite
 
             // Verify fee object was created/updated correctly
             BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
+        }
+
+        // Test that Smart Escrow limits reject values above their maximums.
+        {
+            jtx::Env env(*this, jtx::testableAmendments());
+            auto ledger = std::make_shared<Ledger>(
+                kCreateGenesis,
+                Rules{env.app().config().features},
+                env.app().config().FEES.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
+
+            ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
+
+            auto testBadFields = [&](FeeSettingsFields const& fields) {
+                auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
+                OpenView accum(ledger.get());
+                BEAST_EXPECT(!isTesSuccess(applyFeeAndTestResult(env, accum, feeTx)));
+            };
+
+            testBadFields(
+                {.baseFeeDrops = XRPAmount{10},
+                 .reserveBaseDrops = XRPAmount{200000},
+                 .reserveIncrementDrops = XRPAmount{50000},
+                 .extensionComputeLimit = kMaxExtensionComputeLimit + 1,
+                 .extensionSizeLimit = kMaxExtensionSizeLimit,
+                 .gasPrice = 300});
+            testBadFields(
+                {.baseFeeDrops = XRPAmount{10},
+                 .reserveBaseDrops = XRPAmount{200000},
+                 .reserveIncrementDrops = XRPAmount{50000},
+                 .extensionComputeLimit = kMaxExtensionComputeLimit,
+                 .extensionSizeLimit = kMaxExtensionSizeLimit + 1,
+                 .gasPrice = 300});
         }
 
         // Test that the Smart Escrow fields are rejected if the
@@ -1020,6 +1071,21 @@ class FeeVote_test : public beast::unit_test::Suite
             setup.gas_price = 300;
             auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
 
+            checkFeeTx(setup, feeTx, ledger);
+        }
+
+        {
+            FeeSetup setup;
+            setup.reference_fee = 42;
+            setup.account_reserve = 1234567;
+            setup.owner_reserve = 7654321;
+            setup.extension_compute_limit = kMaxExtensionComputeLimit + 1;
+            setup.extension_size_limit = kMaxExtensionSizeLimit + 1;
+            setup.gas_price = 300;
+            auto const [feeTx, ledger] = createFeeTxFromVoting(setup);
+
+            setup.extension_compute_limit = ledger->fees().extensionComputeLimit;
+            setup.extension_size_limit = ledger->fees().extensionSizeLimit;
             checkFeeTx(setup, feeTx, ledger);
         }
     }

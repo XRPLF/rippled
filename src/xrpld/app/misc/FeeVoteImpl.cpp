@@ -174,16 +174,22 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     }
     if (rules.enabled(featureSmartEscrow))
     {
-        vote(
-            lastFees.extensionComputeLimit,
-            target_.extension_compute_limit,
-            "extension compute limit",
-            sfExtensionComputeLimit);
-        vote(
-            lastFees.extensionSizeLimit,
-            target_.extension_size_limit,
-            "extension size limit",
-            sfExtensionSizeLimit);
+        if (target_.extension_compute_limit <= kMaxExtensionComputeLimit)
+        {
+            vote(
+                lastFees.extensionComputeLimit,
+                target_.extension_compute_limit,
+                "extension compute limit",
+                sfExtensionComputeLimit);
+        }
+        if (target_.extension_size_limit <= kMaxExtensionSizeLimit)
+        {
+            vote(
+                lastFees.extensionSizeLimit,
+                target_.extension_size_limit,
+                "extension size limit",
+                sfExtensionSizeLimit);
+        }
         vote(lastFees.gasPrice, target_.gas_price, "gas price", sfGasPrice);
     }
 }
@@ -205,11 +211,23 @@ FeeVoteImpl::doVoting(
 
     detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.owner_reserve);
 
+    auto validOrCurrent = [](std::uint32_t target, std::uint32_t max, std::uint32_t current) {
+        return target <= max ? target : current;
+    };
+
     detail::VotableValue extensionComputeVote(
-        lastClosedLedger->fees().extensionComputeLimit, target_.extension_compute_limit);
+        lastClosedLedger->fees().extensionComputeLimit,
+        validOrCurrent(
+            target_.extension_compute_limit,
+            kMaxExtensionComputeLimit,
+            lastClosedLedger->fees().extensionComputeLimit));
 
     detail::VotableValue extensionSizeVote(
-        lastClosedLedger->fees().extensionSizeLimit, target_.extension_size_limit);
+        lastClosedLedger->fees().extensionSizeLimit,
+        validOrCurrent(
+            target_.extension_size_limit,
+            kMaxExtensionSizeLimit,
+            lastClosedLedger->fees().extensionSizeLimit));
 
     detail::VotableValue gasPriceVote(lastClosedLedger->fees().gasPrice, target_.gas_price);
 
@@ -287,10 +305,18 @@ FeeVoteImpl::doVoting(
     {
         auto doVote = [](std::shared_ptr<STValidation> const& val,
                          detail::VotableValue<std::uint32_t>& value,
-                         SF_UINT32 const& extensionField) {
+                         SF_UINT32 const& extensionField,
+                         std::uint32_t maxValue) {
             if (auto const field = ~val->at(~extensionField); field)
             {
-                value.addVote(field.value());
+                if (field.value() <= maxValue)
+                {
+                    value.addVote(field.value());
+                }
+                else
+                {
+                    value.noVote();
+                }
             }
             else
             {
@@ -302,9 +328,9 @@ FeeVoteImpl::doVoting(
         {
             if (!val->isTrusted())
                 continue;
-            doVote(val, extensionComputeVote, sfExtensionComputeLimit);
-            doVote(val, extensionSizeVote, sfExtensionSizeLimit);
-            doVote(val, gasPriceVote, sfGasPrice);
+            doVote(val, extensionComputeVote, sfExtensionComputeLimit, kMaxExtensionComputeLimit);
+            doVote(val, extensionSizeVote, sfExtensionSizeLimit, kMaxExtensionSizeLimit);
+            doVote(val, gasPriceVote, sfGasPrice, std::numeric_limits<std::uint32_t>::max());
         }
     }
 

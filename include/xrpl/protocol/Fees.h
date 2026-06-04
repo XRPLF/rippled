@@ -2,6 +2,8 @@
 
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 // Deprecated constant for backwards compatibility with pre-XRPFees amendment.
@@ -10,6 +12,10 @@ inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
 
 // Number of micro-drops in one drop.
 constexpr std::uint32_t microDropsPerDrop{1'000'000};
+
+/** Maximum Feature Extension fee settings. */
+inline constexpr std::uint32_t kMaxExtensionComputeLimit{2'000'000};
+inline constexpr std::uint32_t kMaxExtensionSizeLimit{200'000};
 
 /** Reflects the fee settings for a particular ledger.
 

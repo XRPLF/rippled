@@ -9,6 +9,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -129,6 +130,9 @@ Change::preclaim(PreclaimContext const& ctx)
                     !ctx.tx.isFieldPresent(sfExtensionSizeLimit) ||
                     !ctx.tx.isFieldPresent(sfGasPrice))
                     return temMALFORMED;
+                if (ctx.tx[sfExtensionComputeLimit] > kMaxExtensionComputeLimit ||
+                    ctx.tx[sfExtensionSizeLimit] > kMaxExtensionSizeLimit)
+                    return temBAD_FEE;
             }
             else
             {
