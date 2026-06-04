@@ -201,7 +201,7 @@ public:
     bool
     isNewPathRequest();
     bool
-    newOrderBookDB();  // Returns true if able to fulfill request.
+    newOrderBookDB(std::shared_ptr<ReadView const> const& ledger);  // Returns true if able to fulfill request.
 
     bool
     fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash);

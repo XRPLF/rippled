@@ -208,51 +208,67 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
     }
     else
     {
-        // Run Yen's for each (src, dst) VID pair and collect unique paths.
-        // For the common case both vectors have exactly one element.
-        std::vector<PayGraph::AssetPath> allPaths;
+        // Yen's k-shortest paths between every (srcVID, dstVID) pair, sorted
+        // by ascending cumQuality.  Materialise into concrete STPaths and
+        // dedupe.
+        //
+        // Oversample (kMaxK * kOversample) so that rankPaths() has spares
+        // to fall back on when individual paths fail rippleCalc liveness
+        // checks (tecPATH_PARTIAL on thin order books, AMM overflow, etc).
+        // rankPaths has its own early-exit once it has maxPaths viable
+        // entries + 3 consecutive failures, so wasted rippleCalc work is
+        // bounded.
+        static constexpr int kOversample = 3;
+        std::vector<PayGraph::AssetPath> candidates;
         for (PayGraph::VID const vSrc : srcVIDs)
         {
             for (PayGraph::VID const vDst : dstVIDs)
             {
                 if (vSrc == vDst)
                     continue;
-                auto paths = PayGraph::kShortestPaths(*snap_, vSrc, vDst, kMaxK);
+                auto paths = PayGraph::kShortestPaths(
+                    *snap_, vSrc, vDst, kMaxK * kOversample);
                 for (auto& p : paths)
-                {
-                    // Deduplicate across (vSrc, vDst) pairs.
-                    bool dup = false;
-                    for (auto const& existing : allPaths)
-                    {
-                        if (existing.vids == p.vids)
-                        {
-                            dup = true;
-                            break;
-                        }
-                    }
-                    if (!dup)
-                        allPaths.push_back(std::move(p));
-                }
+                    candidates.push_back(std::move(p));
             }
         }
 
-        // Sort by cumQuality (best first) and cap at kMaxK.
-        std::ranges::stable_sort(
-            allPaths, [](auto const& a, auto const& b) { return a.cumQuality < b.cumQuality; });
-        if (static_cast<int>(allPaths.size()) > kMaxK)
-            allPaths.resize(kMaxK);
+        std::ranges::stable_sort(candidates, [](auto const& a, auto const& b) {
+            return a.cumQuality < b.cumQuality;
+        });
 
-        JLOG(j_.debug()) << "GraphPathfinder: " << allPaths.size() << " abstract paths found";
-
-        for (auto const& ap : allPaths)
+        int accepted = 0;
+        int const acceptCap = kMaxK * kOversample;
+        for (auto const& ap : candidates)
         {
+            if (accepted >= acceptCap)
+                break;
             if (continueCallback && !continueCallback())
                 return !completePaths_.empty();
 
             auto concrete = materialise(ap);
-            if (concrete)
-                completePaths_.pushBack(*concrete);
+            if (!concrete || concrete->empty())
+                continue;
+
+            bool dup = false;
+            for (auto const& existing : completePaths_)
+            {
+                if (existing == *concrete)
+                {
+                    dup = true;
+                    break;
+                }
+            }
+            if (dup)
+                continue;
+
+            completePaths_.pushBack(*concrete);
+            ++accepted;
         }
+
+        JLOG(j_.debug()) << "GraphPathfinder: " << candidates.size()
+                         << " abstract paths considered, " << accepted
+                         << " concrete paths accepted (cap=" << acceptCap << ")";
     }
 
     // Also try the direct (no-bridge) path: src -> dst over trust lines.
@@ -756,9 +772,14 @@ GraphPathfinder::rankPaths(
         else
         {
             // Bail early if too many consecutive failures (e.g. every path
-            // hits an AMM overflow that takes seconds to propagate). This
-            // keeps individual path-find calls within a reasonable time budget.
-            if (++consecutiveFailures >= 3)
+            // hits an AMM overflow that takes seconds to propagate).  Only
+            // apply this cap once we already have enough successful entries
+            // to satisfy the caller — otherwise we'd silently return fewer
+            // than maxPaths even when more viable paths exist later in the
+            // list.  Keeps individual path-find calls within a reasonable
+            // time budget without sacrificing path count.
+            if (++consecutiveFailures >= 3 &&
+                static_cast<int>(rankedPaths.size()) >= maxPaths)
                 break;
         }
     }

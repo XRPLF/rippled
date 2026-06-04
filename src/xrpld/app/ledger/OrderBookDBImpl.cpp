@@ -217,7 +217,7 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
         xrpDomainBooks_.swap(xrpDomainBooks);
     }
 
-    registry_.get().getLedgerMaster().newOrderBookDB();
+    registry_.get().getLedgerMaster().newOrderBookDB(ledger);
 }
 
 void

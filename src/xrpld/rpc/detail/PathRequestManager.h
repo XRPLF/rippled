@@ -112,10 +112,17 @@ public:
     /// Gates the initial PayGraph build so it never runs against an empty
     /// allBooks_ (the race that occurs on networked nodes where the scan is
     /// async).  Safe to call multiple times — only the first call matters.
+    ///
+    /// Also builds the PayGraph eagerly on the calling thread (the OB worker
+    /// thread is fine — `allBooks_` has already been swapped in by the time
+    /// this is called), so the first user path request never pays the build
+    /// cost synchronously.
     void
-    signalOrderBookReady()
+    signalOrderBookReady(std::shared_ptr<ReadView const> const& ledger)
     {
         orderBookReady_.store(true, std::memory_order_release);
+        if (ledger && app_.config().pathSearch)
+            ensurePayGraph(ledger);
     }
 
     /// One-shot synchronous helper used by tx-signing autofill (build_path)
