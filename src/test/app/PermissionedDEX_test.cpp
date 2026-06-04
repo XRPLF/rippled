@@ -1094,7 +1094,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
 
         // bob has a hybrid offer and then he is removed from the domain.
         // Domain payments must not consume the offer; regular open-book
-        // payments follow the fixCleanup3_2_0 behavior checked below.
+        // payments follow the fixCleanup3_3_0 behavior checked below.
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             PermissionedDEX(env);
@@ -1117,9 +1117,9 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(checkOffer(env, bob, hybridOfferSeq, XRP(50), USD(50), lsfHybrid, true));
 
-        if (features[fixCleanup3_2_0])
+        if (features[fixCleanup3_3_0])
         {
-            // Post-fixCleanup3_2_0: hybrid offer can still be consumed via a regular
+            // Post-fixCleanup3_3_0: hybrid offer can still be consumed via a regular
             // open-book payment even though the domain credential was revoked.
             auto const carolBalBefore = env.balance(carol, USD);
             env(pay(alice, carol, USD(5)), Path(~USD), Sendmax(XRP(5)));
@@ -1152,7 +1152,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
         else
         {
-            // Pre-fixCleanup3_2_0: the open-book traversal
+            // Pre-fixCleanup3_3_0: the open-book traversal
             // also runs the offerInDomain eviction check, so the hybrid offer
             // is treated as unfunded and the regular payment fails.
             env(pay(alice, carol, USD(5)), Path(~USD), Sendmax(XRP(5)), Ter(tecPATH_PARTIAL));
@@ -1603,7 +1603,7 @@ public:
         // Test hybrid offers
         testHybridOfferCreate(all);
         testHybridBookStep(all);
-        testHybridInvalidOffer(all - fixCleanup3_2_0);
+        testHybridInvalidOffer(all - fixCleanup3_3_0);
         testHybridInvalidOffer(all);
         testHybridOpenBookAfterCredentialExpiry(all);
         testHybridOfferDirectories(all);
