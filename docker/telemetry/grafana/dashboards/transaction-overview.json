@@ -506,6 +506,169 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "TxQ Enqueue Rate by Transaction Type",
+      "description": "Rate of txq.enqueue spans broken down by transaction type (tx_type). Shows what share of inbound demand is Payment vs OfferCreate vs other transactors, and how the mix shifts as the queue fills. A spam burst of one type is a leading indicator of fee escalation.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (tx_type, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.enqueue\"}[5m]))",
+          "legendFormat": "{{tx_type}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Enqueues / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Queue Bypass Ratio (Direct Apply vs Enqueue)",
+      "description": "Ratio of transactions that applied directly to the open ledger (txq.apply_direct) versus those that had to be queued (txq.enqueue). A falling bypass ratio is the cleanest single signal the network has entered sustained fee escalation.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.apply_direct\"}[5m])) / clamp_min(sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.apply_direct\"}[5m])) + sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.enqueue\"}[5m])), 1)",
+          "legendFormat": "Direct-Apply Fraction [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "axisLabel": "Bypass Fraction",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Queue Accept (Drain) Duration per Ledger",
+      "description": "p95/p50 duration of the txq.accept span, which drains queued transactions into a newly closed ledger. Rising drain time signals queue pressure at ledger close.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"txq.accept\"}[5m])))",
+          "legendFormat": "P95 Drain [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"txq.accept\"}[5m])))",
+          "legendFormat": "P50 Drain [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Queue Cleanup Rate (Expired Entries)",
+      "description": "Rate of txq.cleanup spans, which remove expired transactions from the queue each ledger. A rising rate means submitters under-bid the escalating fee and abandoned their transactions \u2014 a demand-frustration signal distinct from acceptance throughput.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 56
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.cleanup\"}[5m]))",
+          "legendFormat": "Cleanups / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Cleanups / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
