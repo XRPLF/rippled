@@ -23,7 +23,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -44,20 +43,18 @@ NotTEC
 PaymentChannelClaim::preflight(PreflightContext const& ctx)
 {
     auto const bal = ctx.tx[~sfBalance];
-    if (bal && (!isXRP(*bal) || *bal <= beast::kZERO))
+    if (bal && (!isXRP(*bal) || *bal <= beast::kZero))
         return temBAD_AMOUNT;
 
     auto const amt = ctx.tx[~sfAmount];
-    if (amt && (!isXRP(*amt) || *amt <= beast::kZERO))
+    if (amt && (!isXRP(*amt) || *amt <= beast::kZero))
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)
         return temBAD_AMOUNT;
 
     {
-        auto const flags = ctx.tx.getFlags();
-
-        if (((flags & tfClose) != 0u) && ((flags & tfRenew) != 0u))
+        if (ctx.tx.isFlag(tfClose) && ctx.tx.isFlag(tfRenew))
             return temMALFORMED;
     }
 
@@ -167,13 +164,13 @@ PaymentChannelClaim::doApply()
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
         XRPL_ASSERT(
-            reqDelta >= beast::kZERO, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
+            reqDelta >= beast::kZero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);
     }
 
-    if ((ctx_.tx.getFlags() & tfRenew) != 0u)
+    if (ctx_.tx.isFlag(tfRenew))
     {
         if (src != txAccount)
             return tecNO_PERMISSION;
@@ -181,7 +178,7 @@ PaymentChannelClaim::doApply()
         ctx_.view().update(slep);
     }
 
-    if ((ctx_.tx.getFlags() & tfClose) != 0u)
+    if (ctx_.tx.isFlag(tfClose))
     {
         // Channel will close immediately if dry or the receiver closes
         if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
@@ -202,10 +199,7 @@ PaymentChannelClaim::doApply()
 }
 
 void
-PaymentChannelClaim::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+PaymentChannelClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -61,7 +61,7 @@ getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
         return Unexpected(
             RPC::makeError(RpcSrcActMalformed, RPC::invalidFieldMessage("tx.Account")));
     }
-    std::shared_ptr<SLE const> const sle =
+    SLE::const_pointer const sle =
         context.app.getOpenLedger().current()->read(keylet::account(*srcAddressID));
     if (!hasTicketSeq && !sle)
     {
@@ -194,7 +194,7 @@ getTxJsonFromParams(json::Value const& params)
         try
         {
             SerialIter sitTrans(makeSlice(*unHexed));
-            txJson = STObject(std::ref(sitTrans), kSF_GENERIC).getJson(JsonOptions::Values::None);
+            txJson = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::Values::None);
         }
         catch (std::runtime_error const&)
         {
@@ -306,7 +306,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 json::Value
 doSimulate(RPC::JsonContext& context)
 {
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
 
     json::Value txJson;  // the tx as a JSON
 

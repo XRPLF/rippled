@@ -115,7 +115,7 @@ bool
 cdirFirst(
     ReadView const& view,
     uint256 const& root,
-    std::shared_ptr<SLE const>& page,
+    SLE::const_pointer& page,
     unsigned int& index,
     uint256& entry);
 
@@ -123,7 +123,7 @@ bool
 dirFirst(
     ApplyView& view,
     uint256 const& root,
-    std::shared_ptr<SLE>& page,
+    SLE::pointer& page,
     unsigned int& index,
     uint256& entry);
 /** @} */
@@ -147,7 +147,7 @@ bool
 cdirNext(
     ReadView const& view,
     uint256 const& root,
-    std::shared_ptr<SLE const>& page,
+    SLE::const_pointer& page,
     unsigned int& index,
     uint256& entry);
 
@@ -155,17 +155,14 @@ bool
 dirNext(
     ApplyView& view,
     uint256 const& root,
-    std::shared_ptr<SLE>& page,
+    SLE::pointer& page,
     unsigned int& index,
     uint256& entry);
 /** @} */
 
 /** Iterate all items in the given directory. */
 void
-forEachItem(
-    ReadView const& view,
-    Keylet const& root,
-    std::function<void(std::shared_ptr<SLE const> const&)> const& f);
+forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::const_ref)> const& f);
 
 /** Iterate all items after an item in the given directory.
     @param after The key of the item to start after
@@ -180,14 +177,11 @@ forEachItemAfter(
     uint256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(std::shared_ptr<SLE const> const&)> const& f);
+    std::function<bool(SLE::const_ref)> const& f);
 
 /** Iterate all items in an account's owner directory. */
 inline void
-forEachItem(
-    ReadView const& view,
-    AccountID const& id,
-    std::function<void(std::shared_ptr<SLE const> const&)> const& f)
+forEachItem(ReadView const& view, AccountID const& id, std::function<void(SLE::const_ref)> const& f)
 {
     forEachItem(view, keylet::ownerDir(id), f);
 }
@@ -205,7 +199,7 @@ forEachItemAfter(
     uint256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
+    std::function<bool(SLE::const_ref)> const& f)
 {
     return forEachItemAfter(view, keylet::ownerDir(id), after, hint, limit, f);
 }

@@ -2,12 +2,16 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <limits>
 #include <optional>
 #include <ostream>
+#include <set>
+#include <stdexcept>
 #include <string>
+#include <unordered_map>
 
 namespace xrpl {
 
@@ -38,17 +42,58 @@ isPowerOfTen(T value)
     return logTen(value).has_value();
 }
 
+namespace detail {
+
+/** Builds a table of the powers of 10
+ *
+ * This function is marked consteval, so it can only be run in
+ * a constexpr context. This assures that it is and can only be run at
+ * compile time. Doing it at runtime would be pretty wasteful and
+ * inefficient.
+ */
+constexpr std::size_t kInt64Digits = 20;
+consteval std::array<std::uint64_t, kInt64Digits>
+buildPowersOfTen()
+{
+    std::array<std::uint64_t, kInt64Digits> result{};
+
+    std::uint64_t power = 1;
+    std::size_t exponent = 0;
+    // end the loop early so it doesn't overflow;
+    for (; exponent < result.size() - 1; ++exponent, power *= 10)
+    {
+        result[exponent] = power;
+        if (power > std::numeric_limits<std::uint64_t>::max() / 10)
+            throw std::logic_error("Power of 10 table is too big");
+    }
+    result[exponent] = power;
+    if (power < std::numeric_limits<std::uint64_t>::max() / 10)
+        throw std::logic_error("Power of 10 table is not big enough for the uint64_t type");
+
+    return result;
+}
+
+}  // namespace detail
+
+constexpr std::array<std::uint64_t, detail::kInt64Digits> kPowerOfTen = detail::buildPowersOfTen();
+
+static_assert(kPowerOfTen[0] == 1);
+static_assert(kPowerOfTen[1] == 10);
+static_assert(kPowerOfTen[10] == 10'000'000'000);
+static_assert(
+    isPowerOfTen(kPowerOfTen.back()) && *logTen(kPowerOfTen.back()) == detail::kInt64Digits - 1);
+
 /** MantissaRange defines a range for the mantissa of a normalized Number.
  *
  * The mantissa is in the range [min, max], where
  * * min is a power of 10, and
  * * max = min * 10 - 1.
  *
- * The mantissa_scale enum indicates whether the range is "small" or "large".
- * This intentionally restricts the number of MantissaRanges that can be
- * instantiated to two: one for each scale.
+ * The MantissaScale enum indicates properties of the range: size, and some behavioral
+ * options. This intentionally restricts the number of unique MantissaRanges that can
+ * be instantiated: one for each scale.
  *
- * The "small" scale is based on the behavior of STAmount for IOUs. It has a min
+ * The "Small" scale is based on the behavior of STAmount for IOUs. It has a min
  * value of 10^15, and a max value of 10^16-1. This was sufficient for
  * uses before Lending Protocol was implemented, mostly related to AMM.
  *
@@ -59,46 +104,100 @@ isPowerOfTen(T value)
  * STNumber field type, and for internal calculations. That necessitated the
  * "large" scale.
  *
- * The "large" scale is intended to represent all values that can be represented
+ * The "Large" scales are intended to represent all values that can be represented
  * by an STAmount - IOUs, XRP, and MPTs. It has a min value of 10^18, and a max
- * value of 10^19-1.
+ * value of 10^19-1. "LargeLegacy" is like "Large", but preserves
+ * a rounding error when a computation results in a mantissa of
+ * Number::kMaxRep that needs to be rounded up, but rounds down
+ * instead. It will maintain consistent behavior until the fixCleanup3_2_0
+ * amendment is enabled.
  *
  * Note that if the mentioned amendments are eventually retired, this class
- * should be left in place, but the "small" scale option should be removed. This
+ * should be left in place, but the "Small" scale option should be removed. This
  * will allow for future expansion beyond 64-bits if it is ever needed.
  */
-struct MantissaRange
+struct MantissaRange final
 {
     using rep = std::uint64_t;
-    enum class MantissaScale { Small, Large };
 
-    explicit constexpr MantissaRange(MantissaScale scale)
-        : min(getMin(scale)), log(logTen(min).value_or(-1)), scale(scale)
+    enum class MantissaScale {
+        Small,
+        // LargeLegacy can be removed when fixCleanup3_2_0 is retired
+        LargeLegacy,
+        Large,
+    };
+
+    // This entire enum can be removed when fixCleanup3_2_0 is retired
+    enum class CuspRoundingFix : bool {
+        Disabled = false,
+        Enabled = true,
+    };
+
+    explicit constexpr MantissaRange(MantissaScale sc) : scale(sc)
     {
     }
 
-    rep min;
-    rep max{(min * 10) - 1};
-    int log;
-    MantissaScale scale;
+    MantissaScale const scale;
+    int const log{getExponent(scale)};
+    rep const min{getMin(scale, log)};
+    rep const max{(min * 10) - 1};
+    CuspRoundingFix const cuspRoundingFixEnabled{isCuspFixEnabled(scale)};
+
+    static MantissaRange const&
+    getMantissaRange(MantissaScale scale);
+
+    static std::set<MantissaScale> const&
+    getAllScales();
 
 private:
-    static constexpr rep
-    getMin(MantissaScale scale)
+    static constexpr int
+    getExponent(MantissaScale scale)
     {
         switch (scale)
         {
             case MantissaScale::Small:
-                return 1'000'000'000'000'000ULL;
+                return 15;
+            case MantissaScale::LargeLegacy:
             case MantissaScale::Large:
-                return 1'000'000'000'000'000'000ULL;
+                return 18;
+            // LCOV_EXCL_START
             default:
-                // Since this can never be called outside a non-constexpr
-                // context, this throw assures that the build fails if an
+                // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
                 throw std::runtime_error("Unknown mantissa scale");
+                // LCOV_EXCL_STOP
         }
     }
+
+    // Keep this function for future use with different ways to compute
+    // the ranges.
+    static constexpr rep
+    getMin(MantissaScale scale, int exponent)
+    {
+        if (exponent < 0 || exponent >= kPowerOfTen.size())
+            throw std::runtime_error("Invalid exponent");  // LCOV_EXCL_LINE
+        return kPowerOfTen[exponent];
+    }
+
+    static constexpr CuspRoundingFix
+    isCuspFixEnabled(MantissaScale scale)
+    {
+        switch (scale)
+        {
+            case MantissaScale::Small:
+            case MantissaScale::LargeLegacy:
+                return CuspRoundingFix::Disabled;
+            case MantissaScale::Large:
+                return CuspRoundingFix::Enabled;
+            default:
+                // If called in a constexpr context, this throw assures that the build fails if an
+                // invalid scale is used.
+                throw std::runtime_error("Unknown mantissa scale");  // LCOV_EXCL_LINE
+        }
+    }
+
+    static std::unordered_map<MantissaScale, MantissaRange> const&
+    getRanges();
 };
 
 // Like std::integral, but only 64-bit integral types.
@@ -203,7 +302,7 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  * amendments are enabled to determine which result to expect.
  *
  */
-class Number
+class Number final
 {
     using rep = std::int64_t;
     using internalrep = MantissaRange::rep;
@@ -214,12 +313,12 @@ class Number
 
 public:
     // The range for the exponent when normalized
-    constexpr static int kMIN_EXPONENT = -32768;
-    constexpr static int kMAX_EXPONENT = 32768;
+    static constexpr int kMinExponent = -32768;
+    static constexpr int kMaxExponent = 32768;
 
-    constexpr static internalrep kMAX_REP = std::numeric_limits<rep>::max();
-    static_assert(kMAX_REP == 9'223'372'036'854'775'807);
-    static_assert(-kMAX_REP == std::numeric_limits<rep>::min() + 1);
+    static constexpr internalrep kMaxRep = std::numeric_limits<rep>::max();
+    static_assert(kMaxRep == 9'223'372'036'854'775'807);
+    static_assert(-kMaxRep == std::numeric_limits<rep>::min() + 1);
 
     // May need to make unchecked private
     struct Unchecked
@@ -409,69 +508,48 @@ public:
     static internalrep
     minMantissa()
     {
-        return kRANGE.get().min;
+        return kRange.get().min;
     }
 
     static internalrep
     maxMantissa()
     {
-        return kRANGE.get().max;
+        return kRange.get().max;
     }
 
     static int
     mantissaLog()
     {
-        return kRANGE.get().log;
+        return kRange.get().log;
     }
 
-    /// oneSmall is needed because the ranges are private
-    constexpr static Number
-    oneSmall();
-    /// oneLarge is needed because the ranges are private
-    constexpr static Number
-    oneLarge();
-
-    // And one is needed because it needs to choose between oneSmall and
-    // oneLarge based on the current range
     static Number
     one();
 
-    template <Integral64 T>
+    template <
+        auto MinMantissa,
+        auto MaxMantissa,
+        Integral64 T = std::decay_t<decltype(MinMantissa)>>
     [[nodiscard]]
     std::pair<T, int>
-    normalizeToRange(T minMantissa, T maxMantissa) const;
+    normalizeToRange() const;
 
 private:
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
 
-    constexpr static MantissaRange kSMALL_RANGE{MantissaRange::MantissaScale::Small};
-    static_assert(isPowerOfTen(kSMALL_RANGE.min));
-    static_assert(kSMALL_RANGE.min == 1'000'000'000'000'000LL);
-    static_assert(kSMALL_RANGE.max == 9'999'999'999'999'999LL);
-    static_assert(kSMALL_RANGE.log == 15);
-    static_assert(kSMALL_RANGE.min < kMAX_REP);
-    static_assert(kSMALL_RANGE.max < kMAX_REP);
-    constexpr static MantissaRange kLARGE_RANGE{MantissaRange::MantissaScale::Large};
-    static_assert(isPowerOfTen(kLARGE_RANGE.min));
-    static_assert(kLARGE_RANGE.min == 1'000'000'000'000'000'000ULL);
-    static_assert(kLARGE_RANGE.max == internalrep(9'999'999'999'999'999'999ULL));
-    static_assert(kLARGE_RANGE.log == 18);
-    static_assert(kLARGE_RANGE.min < kMAX_REP);
-    static_assert(kLARGE_RANGE.max > kMAX_REP);
-
     // The range for the mantissa when normalized.
     // Use reference_wrapper to avoid making copies, and prevent accidentally
     // changing the values inside the range.
-    static thread_local std::reference_wrapper<MantissaRange const> kRANGE;
+    static thread_local std::reference_wrapper<MantissaRange const> kRange;
 
     void
-    normalize();
+    normalize(MantissaRange const& range);
 
     /** Normalize Number components to an arbitrary range.
      *
      * min/maxMantissa are parameters because this function is used by both
-     * normalize(), which reads from kRANGE, and by normalizeToRange,
+     * normalize(), which reads from kRange, and by normalizeToRange,
      * which is public and can accept an arbitrary range from the caller.
      */
     template <class T>
@@ -481,7 +559,8 @@ private:
         T& mantissa,
         int& exponent,
         internalrep const& minMantissa,
-        internalrep const& maxMantissa);
+        internalrep const& maxMantissa,
+        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled);
 
     template <class T>
     friend void
@@ -490,7 +569,9 @@ private:
         T& mantissa,
         int& exponent,
         MantissaRange::rep const& minMantissa,
-        MantissaRange::rep const& maxMantissa);
+        MantissaRange::rep const& maxMantissa,
+        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
+        bool dropped);
 
     [[nodiscard]] bool
     isnormal() const noexcept;
@@ -521,12 +602,12 @@ constexpr Number::Number(internalrep mantissa, int exponent, Unchecked) noexcept
 {
 }
 
-constexpr static Number kNUM_ZERO{};
+static constexpr Number kNumZero{};
 
 inline Number::Number(bool negative, internalrep mantissa, int exponent, Normalized)
     : Number(negative, mantissa, exponent, Unchecked{})
 {
-    normalize();
+    normalize(kRange);
 }
 
 inline Number::Number(internalrep mantissa, int exponent, Normalized)
@@ -552,10 +633,10 @@ constexpr Number::rep
 Number::mantissa() const noexcept
 {
     auto m = mantissa_;
-    if (m > kMAX_REP)
+    if (m > kMaxRep)
     {
         XRPL_ASSERT_PARTS(
-            !isnormal() || (m % 10 == 0 && m / 10 <= kMAX_REP),
+            !isnormal() || (m % 10 == 0 && m / 10 <= kMaxRep),
             "xrpl::Number::mantissa",
             "large normalized mantissa has no remainder");
         m /= 10;
@@ -573,10 +654,10 @@ constexpr int
 Number::exponent() const noexcept
 {
     auto e = exponent_;
-    if (mantissa_ > kMAX_REP)
+    if (mantissa_ > kMaxRep)
     {
         XRPL_ASSERT_PARTS(
-            !isnormal() || (mantissa_ % 10 == 0 && mantissa_ / 10 <= kMAX_REP),
+            !isnormal() || (mantissa_ % 10 == 0 && mantissa_ / 10 <= kMaxRep),
             "xrpl::Number::exponent",
             "large normalized mantissa has no remainder");
         ++e;
@@ -671,35 +752,46 @@ operator/(Number const& x, Number const& y)
 inline Number
 Number::min() noexcept
 {
-    return Number{false, kRANGE.get().min, kMIN_EXPONENT, Unchecked{}};
+    return Number{false, kRange.get().min, kMinExponent, Unchecked{}};
 }
 
 inline Number
 Number::max() noexcept
 {
-    return Number{false, std::min(kRANGE.get().max, kMAX_REP), kMAX_EXPONENT, Unchecked{}};
+    return Number{false, std::min(kRange.get().max, kMaxRep), kMaxExponent, Unchecked{}};
 }
 
 inline Number
 Number::lowest() noexcept
 {
-    return Number{true, std::min(kRANGE.get().max, kMAX_REP), kMAX_EXPONENT, Unchecked{}};
+    return Number{true, std::min(kRange.get().max, kMaxRep), kMaxExponent, Unchecked{}};
 }
 
 inline bool
 Number::isnormal() const noexcept
 {
-    MantissaRange const& range = kRANGE;
+    MantissaRange const& range = kRange;
     auto const absM = mantissa_;
     return *this == Number{} ||
-        (range.min <= absM && absM <= range.max && (absM <= kMAX_REP || absM % 10 == 0) &&
-         kMIN_EXPONENT <= exponent_ && exponent_ <= kMAX_EXPONENT);
+        (range.min <= absM && absM <= range.max && (absM <= kMaxRep || absM % 10 == 0) &&
+         kMinExponent <= exponent_ && exponent_ <= kMaxExponent);
 }
 
-template <Integral64 T>
+template <auto MinMantissa, auto MaxMantissa, Integral64 T>
 std::pair<T, int>
-Number::normalizeToRange(T minMantissa, T maxMantissa) const
+Number::normalizeToRange() const
 {
+    static_assert(std::is_same_v<T, std::uint64_t> || std::is_same_v<T, std::int64_t>);
+    static_assert(std::is_same_v<T, std::decay_t<decltype(MinMantissa)>>);
+    static_assert(std::is_same_v<T, std::decay_t<decltype(MaxMantissa)>>);
+    auto constexpr kMIN = static_cast<T>(MinMantissa);
+    auto constexpr kMAX = static_cast<T>(MaxMantissa);
+    static_assert(kMIN > 0);
+    static_assert(kMIN % 10 == 0);
+    static_assert(isPowerOfTen(kMIN));
+    static_assert(kMAX % 10 == 9);
+    static_assert((kMAX + 1) / 10 == kMIN);
+
     bool negative = negative_;
     internalrep mantissa = mantissa_;
     int exponent = exponent_;
@@ -711,7 +803,10 @@ Number::normalizeToRange(T minMantissa, T maxMantissa) const
             "xrpl::Number::normalizeToRange",
             "Number is non-negative for unsigned range.");
     }
-    Number::normalize(negative, mantissa, exponent, minMantissa, maxMantissa);
+    // Don't need to worry about the cuspRounding fix because rounding up will never take the
+    // mantissa over maxMantissa with a ones digit value other than 0. 0 can safely be truncated.
+    Number::normalize(
+        negative, mantissa, exponent, kMIN, kMAX, MantissaRange::CuspRoundingFix::Disabled);
 
     auto const sign = negative ? -1 : 1;
     return std::make_pair(static_cast<T>(sign * mantissa), exponent);
@@ -763,6 +858,8 @@ to_string(MantissaRange::MantissaScale const& scale)
     {
         case MantissaRange::MantissaScale::Small:
             return "small";
+        case MantissaRange::MantissaScale::LargeLegacy:
+            return "largeLegacy";
         case MantissaRange::MantissaScale::Large:
             return "large";
         default:

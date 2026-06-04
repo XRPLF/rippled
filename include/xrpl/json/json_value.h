@@ -102,8 +102,8 @@ operator!=(StaticString x, std::string const& y)
 /** \brief Represents a <a HREF="http://www.json.org">JSON</a> value.
  *
  * This class is a discriminated union wrapper that can represent a:
- * - signed integer [range: Value::kMIN_INT - Value::kMAX_INT]
- * - unsigned integer (range: 0 - Value::kMAX_UINT)
+ * - signed integer [range: Value::kMinInt - Value::kMaxInt]
+ * - unsigned integer (range: 0 - Value::kMaxUInt)
  * - double
  * - UTF-8 string
  * - boolean
@@ -138,10 +138,10 @@ public:
     using Int = json::Int;
     using ArrayIndex = UInt;
 
-    static Value const kNULL;
-    static constexpr Int kMIN_INT = std::numeric_limits<Int>::min();
-    static constexpr Int kMAX_INT = std::numeric_limits<Int>::max();
-    static constexpr UInt kMAX_UINT = std::numeric_limits<UInt>::max();
+    static Value const kNull;
+    static constexpr Int kMinInt = std::numeric_limits<Int>::min();
+    static constexpr Int kMaxInt = std::numeric_limits<Int>::max();
+    static constexpr UInt kMaxUInt = std::numeric_limits<UInt>::max();
 
 private:
     class CZString
@@ -472,7 +472,7 @@ operator>=(Value const& x, Value const& y)
 class ValueAllocator
 {
 public:
-    static constexpr auto kUNKNOWN = (unsigned)-1;
+    static constexpr auto kUnknown = (unsigned)-1;
 
     virtual ~ValueAllocator() = default;
 
@@ -481,7 +481,7 @@ public:
     virtual void
     releaseMemberName(char* memberName) = 0;
     virtual char*
-    duplicateStringValue(char const* value, unsigned int length = kUNKNOWN) = 0;
+    duplicateStringValue(char const* value, unsigned int length = kUnknown) = 0;
     virtual void
     releaseStringValue(char* value) = 0;
 };

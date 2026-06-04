@@ -88,13 +88,13 @@ makeFeaturesRequestHeader(
 {
     std::stringstream str;
     if (comprEnabled)
-        str << kFEATURE_COMPR << "=lz4" << kDELIM_FEATURE;
+        str << kFeatureCompr << "=lz4" << kDelimFeature;
     if (ledgerReplayEnabled)
-        str << kFEATURE_LEDGER_REPLAY << "=1" << kDELIM_FEATURE;
+        str << kFeatureLedgerReplay << "=1" << kDelimFeature;
     if (txReduceRelayEnabled)
-        str << kFEATURE_TXRR << "=1" << kDELIM_FEATURE;
+        str << kFeatureTxrr << "=1" << kDelimFeature;
     if (vpReduceRelayEnabled)
-        str << kFEATURE_VPRR << "=1" << kDELIM_FEATURE;
+        str << kFeatureVprr << "=1" << kDelimFeature;
     return str.str();
 }
 
@@ -107,14 +107,14 @@ makeFeaturesResponseHeader(
     bool vpReduceRelayEnabled)
 {
     std::stringstream str;
-    if (comprEnabled && isFeatureValue(headers, kFEATURE_COMPR, "lz4"))
-        str << kFEATURE_COMPR << "=lz4" << kDELIM_FEATURE;
-    if (ledgerReplayEnabled && featureEnabled(headers, kFEATURE_LEDGER_REPLAY))
-        str << kFEATURE_LEDGER_REPLAY << "=1" << kDELIM_FEATURE;
-    if (txReduceRelayEnabled && featureEnabled(headers, kFEATURE_TXRR))
-        str << kFEATURE_TXRR << "=1" << kDELIM_FEATURE;
-    if (vpReduceRelayEnabled && featureEnabled(headers, kFEATURE_VPRR))
-        str << kFEATURE_VPRR << "=1" << kDELIM_FEATURE;
+    if (comprEnabled && isFeatureValue(headers, kFeatureCompr, "lz4"))
+        str << kFeatureCompr << "=lz4" << kDelimFeature;
+    if (ledgerReplayEnabled && featureEnabled(headers, kFeatureLedgerReplay))
+        str << kFeatureLedgerReplay << "=1" << kDelimFeature;
+    if (txReduceRelayEnabled && featureEnabled(headers, kFeatureTxrr))
+        str << kFeatureTxrr << "=1" << kDelimFeature;
+    if (vpReduceRelayEnabled && featureEnabled(headers, kFeatureVprr))
+        str << kFeatureVprr << "=1" << kDelimFeature;
     return str.str();
 }
 
@@ -135,12 +135,12 @@ makeFeaturesResponseHeader(
 static std::optional<BaseUInt<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
-    constexpr std::size_t kSSL_MINIMUM_FINISHED_LENGTH = 12;
+    static constexpr std::size_t kSslMinimumFinishedLength = 12;
 
     unsigned char buf[1024];
     size_t const len = get(ssl, buf, sizeof(buf));
 
-    if (len < kSSL_MINIMUM_FINISHED_LENGTH)
+    if (len < kSslMinimumFinishedLength)
         return std::nullopt;
 
     sha512_hasher const h;
@@ -171,7 +171,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 
     // Both messages hash to the same value and the cookie
     // is 0. Don't allow this.
-    if (result == beast::kZERO)
+    if (result == beast::kZero)
     {
         JLOG(journal.error()) << "Cookie generation: identical finished messages";
         return std::nullopt;
@@ -209,8 +209,8 @@ buildHandshake(
 
     h.insert("Instance-Cookie", std::to_string(app.instanceID()));
 
-    if (!app.config().SERVER_DOMAIN.empty())
-        h.insert("Server-Domain", app.config().SERVER_DOMAIN);
+    if (!app.config().serverDomain.empty())
+        h.insert("Server-Domain", app.config().serverDomain);
 
     if (beast::IP::isPublic(remoteIp))
         h.insert("Remote-IP", remoteIp.to_string());
@@ -408,10 +408,10 @@ makeResponse(
         "X-Protocol-Ctl",
         makeFeaturesResponseHeader(
             req,
-            app.config().COMPRESSION,
-            app.config().LEDGER_REPLAY,
-            app.config().TX_REDUCE_RELAY_ENABLE,
-            app.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE));
+            app.config().compression,
+            app.config().ledgerReplay,
+            app.config().txReduceRelayEnable,
+            app.config().vpReduceRelayBaseSquelchEnable));
 
     buildHandshake(resp, sharedValue, networkID, publicIp, remoteIp, app);
 

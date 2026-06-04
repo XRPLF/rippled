@@ -75,7 +75,7 @@ noripple(Account const& account, Args const&... args)
 inline FeatureBitset
 testableAmendments()
 {
-    static FeatureBitset const kIDS = [] {
+    static FeatureBitset const kIds = [] {
         auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -93,7 +93,7 @@ testableAmendments()
         }
         return FeatureBitset(feats);
     }();
-    return kIDS;
+    return kIds;
 }
 
 //------------------------------------------------------------------------------
@@ -124,7 +124,7 @@ class Env
 public:
     beast::unit_test::Suite& test;
 
-    Account const& master = Account::kMASTER;
+    Account const& master = Account::kMaster;
 
     /// Used by parseResult() and postConditions()
     struct ParsedResult
@@ -192,7 +192,7 @@ public:
         , bundle_(suite, std::move(config), std::move(logs), thresh)
         , journal{bundle_.app->getJournal("Env")}
     {
-        memoize(Account::kMASTER);
+        memoize(Account::kMaster);
         Pathfinder::initPathTable();
         foreachFeature(features, [&appFeats = app().config().features](uint256 const& f) {
             appFeats.insert(f);
@@ -531,13 +531,13 @@ public:
     /** Return an account root.
         @return empty if the account does not exist.
     */
-    [[nodiscard]] std::shared_ptr<SLE const>
+    [[nodiscard]] SLE::const_pointer
     le(Account const& account) const;
 
     /** Return a ledger entry.
         @return empty if the ledger entry does not exist
     */
-    [[nodiscard]] std::shared_ptr<SLE const>
+    [[nodiscard]] SLE::const_pointer
     le(Keylet const& k) const;
 
     /** Create a JTx from parameters. */
@@ -869,7 +869,7 @@ Env::rpc(
     Args&&... args)
 {
     return doRpc(
-        RPC::kAPI_COMMAND_LINE_VERSION,
+        RPC::kApiCommandLineVersion,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);
 }

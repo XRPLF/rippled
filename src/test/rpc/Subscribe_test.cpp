@@ -321,7 +321,7 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             cfg = singleThreadIo(std::move(cfg));
             return cfg;
         }));
@@ -474,7 +474,7 @@ public:
                 if (jv[jss::ledger_index] != std::to_string(env.closed()->header().seq))
                     return false;
 
-                if (jv[jss::flags] != (kVF_FULLY_CANONICAL_SIG | kVF_FULL_VALIDATION))
+                if (jv[jss::flags] != (kVfFullyCanonicalSig | kVfFullValidation))
                     return false;
 
                 if (jv[jss::full] != true)
@@ -932,9 +932,9 @@ public:
                 auto& from = (i % 2 == 0) ? a : b;
                 auto& to = (i % 2 == 0) ? b : a;
                 env(pay(from, to, jtx::XRP(numXRP)),
-                    jtx::Seq(jtx::kAUTOFILL),
-                    jtx::Fee(jtx::kAUTOFILL),
-                    jtx::Sig(jtx::kAUTOFILL));
+                    jtx::Seq(jtx::kAutofill),
+                    jtx::Fee(jtx::kAutofill),
+                    jtx::Sig(jtx::kAutofill));
             }
             for (int i = 0; i < ledgersToClose; ++i)
                 BEAST_EXPECT(env.syncClose());
@@ -1319,7 +1319,7 @@ public:
         auto const carol = permDex.carol;
         auto const domainID = permDex.domainID;
         auto const gw = permDex.gw;
-        auto const usd = permDex.USD;
+        auto const usd = permDex.usd;
 
         auto wsc = makeWSClient(env.app().config());
 

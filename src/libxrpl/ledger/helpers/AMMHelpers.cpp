@@ -35,7 +35,6 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -205,7 +204,7 @@ adjustAmountsByLPTokens(
 
     auto const lpTokensActual = adjustLPTokens(lptAMMBalance, lpTokens, isDeposit);
 
-    if (lpTokensActual == beast::kZERO)
+    if (lpTokensActual == beast::kZero)
     {
         auto const amount2Opt = amount2 ? std::make_optional(STAmount{}) : std::nullopt;
         return std::make_tuple(STAmount{}, amount2Opt, lpTokensActual);
@@ -636,7 +635,7 @@ deleteAMMTrustLines(
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             uint256 const&,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM and MPToken
             if (nodeType == ltAMM || nodeType == ltMPTOKEN)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -644,7 +643,7 @@ deleteAMMTrustLines(
             if (nodeType == ltRIPPLE_STATE)
             {
                 // Trustlines must have zero balance
-                if (sleItem->getFieldAmount(sfBalance) != beast::kZERO)
+                if (sleItem->getFieldAmount(sfBalance) != beast::kZero)
                 {
                     // LCOV_EXCL_START
                     JLOG(j.error()) << "deleteAMMObjects: deleting trustline with "
@@ -672,7 +671,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             uint256 const&,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM
             if (nodeType == ltAMM)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -732,7 +731,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
         // LCOV_EXCL_STOP
     }
 
-    if (auto const ter = deleteAMMTrustLines(sb, ammAccountID, kMAX_DELETABLE_AMM_TRUST_LINES, j);
+    if (auto const ter = deleteAMMTrustLines(sb, ammAccountID, kMaxDeletableAmmTrustLines, j);
         !isTesSuccess(ter))
         return ter;
 
@@ -768,7 +767,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
 void
 initializeFeeAuctionVote(
     ApplyView& view,
-    std::shared_ptr<SLE>& ammSle,
+    SLE::pointer& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee)
@@ -779,7 +778,7 @@ initializeFeeAuctionVote(
     STObject voteEntry = STObject::makeInnerObject(sfVoteEntry);
     if (tfee != 0)
         voteEntry.setFieldU16(sfTradingFee, tfee);
-    voteEntry.setFieldU32(sfVoteWeight, kVOTE_WEIGHT_SCALE_FACTOR);
+    voteEntry.setFieldU32(sfVoteWeight, kVoteWeightScaleFactor);
     voteEntry.setAccountID(sfAccount, account);
     voteSlots.pushBack(voteEntry);
     ammSle->setFieldArray(sfVoteSlots, voteSlots);
@@ -797,7 +796,7 @@ initializeFeeAuctionVote(
     auto const expiration = std::chrono::duration_cast<std::chrono::seconds>(
                                 view.header().parentCloseTime.time_since_epoch())
                                 .count() +
-        kTOTAL_TIME_SLOT_SECS;
+        kTotalTimeSlotSecs;
     auctionSlot.setFieldU32(sfExpiration, expiration);
     auctionSlot.setFieldAmount(sfPrice, STAmount{lptAsset, 0});
     // Set the fee
@@ -809,7 +808,7 @@ initializeFeeAuctionVote(
     {
         ammSle->makeFieldAbsent(sfTradingFee);  // LCOV_EXCL_LINE
     }
-    if (auto const dfee = tfee / kAUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+    if (auto const dfee = tfee / kAuctionSlotDiscountedFeeFraction)
     {
         auctionSlot.setFieldU16(sfDiscountedFee, dfee);
     }
@@ -926,7 +925,7 @@ Expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    std::shared_ptr<SLE>& ammSle,
+    SLE::pointer& ammSle,
     AccountID const& account)
 {
     auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);

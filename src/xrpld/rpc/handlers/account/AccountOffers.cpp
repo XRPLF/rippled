@@ -33,7 +33,7 @@
 namespace xrpl {
 
 void
-appendOfferJson(std::shared_ptr<SLE const> const& offer, json::Value& offers)
+appendOfferJson(SLE::const_ref offer, json::Value& offers)
 {
     STAmount const dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
     json::Value& obj(offers.append(json::ValueType::Object));
@@ -83,12 +83,12 @@ doAccountOffers(RPC::JsonContext& context)
         return rpcError(RpcActNotFound);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_OFFERS, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kAccountOffers, context))
         return *err;
 
     json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
-    std::vector<std::shared_ptr<SLE const>> offers;
-    uint256 startAfter = beast::kZERO;
+    std::vector<SLE::const_pointer> offers;
+    uint256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
@@ -138,8 +138,7 @@ doAccountOffers(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&offers, &count, &marker, &limit, &nextHint, &accountID](
-                std::shared_ptr<SLE const> const& sle) {
+            [&offers, &count, &marker, &limit, &nextHint, &accountID](SLE::const_ref sle) {
                 if (!sle)
                 {
                     // LCOV_EXCL_START
@@ -177,7 +176,7 @@ doAccountOffers(RPC::JsonContext& context)
     for (auto const& offer : offers)
         appendOfferJson(offer, jsonOffers);
 
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     return result;
 }
 

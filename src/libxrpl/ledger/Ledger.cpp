@@ -46,7 +46,7 @@
 
 namespace xrpl {
 
-CreateGenesisT const kCREATE_GENESIS{};
+CreateGenesisT const kCreateGenesis{};
 
 //------------------------------------------------------------------------------
 
@@ -159,8 +159,8 @@ Ledger::Ledger(
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = 1;
-    header_.drops = kINITIAL_XRP;
-    header_.closeTimeResolution = kLEDGER_GENESIS_TIME_RESOLUTION;
+    header_.drops = kInitialXrp;
+    header_.closeTimeResolution = kLedgerGenesisTimeResolution;
 
     static auto const kID =
         calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
@@ -196,7 +196,7 @@ Ledger::Ledger(
                 sle->at(sfReserveBase) = *f;
             if (auto const f = fees.increment.dropsAs<std::uint32_t>())
                 sle->at(sfReserveIncrement) = *f;
-            sle->at(sfReferenceFeeUnits) = kFEE_UNITS_DEPRECATED;
+            sle->at(sfReferenceFeeUnits) = kFeeUnitsDeprecated;
         }
         rawInsert(sle);
     }
@@ -304,7 +304,7 @@ Ledger::Ledger(
 {
     header_.seq = ledgerSeq;
     header_.closeTime = closeTime;
-    header_.closeTimeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
+    header_.closeTimeResolution = kLedgerDefaultTimeResolution;
     setup();
 }
 
@@ -339,7 +339,7 @@ Ledger::setAccepted(
 
     header_.closeTime = closeTime;
     header_.closeTimeResolution = closeResolution;
-    header_.closeFlags = correctCloseTime ? 0 : kS_LCF_NO_CONSENSUS_TIME;
+    header_.closeFlags = correctCloseTime ? 0 : kSLcfNoConsensusTime;
     setImmutable();
 }
 
@@ -401,10 +401,10 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
     return item->key();
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Ledger::read(Keylet const& k) const
 {
-    if (k.key == beast::kZERO)
+    if (k.key == beast::kZero)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::Ledger::read : zero key");
@@ -486,7 +486,7 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
 //------------------------------------------------------------------------------
 
 void
-Ledger::rawErase(std::shared_ptr<SLE> const& sle)
+Ledger::rawErase(SLE::ref sle)
 {
     if (!stateMap_.delItem(sle->key()))
         logicError("Ledger::rawErase: key not found");
@@ -500,7 +500,7 @@ Ledger::rawErase(uint256 const& key)
 }
 
 void
-Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
+Ledger::rawInsert(SLE::ref sle)
 {
     Serializer ss;
     sle->add(ss);
@@ -512,7 +512,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
 }
 
 void
-Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
+Ledger::rawReplace(SLE::ref sle)
 {
     Serializer ss;
     sle->add(ss);
@@ -623,7 +623,7 @@ Ledger::setup()
     return ret;
 }
 
-std::shared_ptr<SLE>
+SLE::pointer
 Ledger::peek(Keylet const& k) const
 {
     auto const& value = stateMap_.peekItem(k.key);

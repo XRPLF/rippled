@@ -8,7 +8,7 @@ class VersionHandler
 {
 public:
     explicit VersionHandler(JsonContext& c)
-        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().BETA_RPC_API)
+        : apiVersion_(c.apiVersion), betaEnabled_(c.app.config().betaRpcApi)
     {
     }
 
@@ -27,9 +27,9 @@ public:
     // NOLINTBEGIN(readability-identifier-naming)
     static constexpr char const* name = "version";
 
-    static constexpr unsigned minApiVer = RPC::kAPI_MINIMUM_SUPPORTED_VERSION;
+    static constexpr unsigned minApiVer = RPC::kApiMinimumSupportedVersion;
 
-    static constexpr unsigned maxApiVer = RPC::kAPI_MAXIMUM_VALID_VERSION;
+    static constexpr unsigned maxApiVer = RPC::kApiMaximumValidVersion;
 
     static constexpr Role role = Role::USER;
 

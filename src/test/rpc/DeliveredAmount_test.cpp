@@ -40,7 +40,7 @@ class CheckDeliveredAmount
     int numExpectedNotSet_ = 0;
 
     // Increment one of the expected numExpected{Available_, Unavailable_,
-    // NotSet_} values. Which value to kINCREMENT depends on: 1) If the ledger is
+    // NotSet_} values. Which value to kIncrement depends on: 1) If the ledger is
     // before or after the switch time 2) If the tx is a partial payment 3) If
     // the payment is successful or not
     void
@@ -206,7 +206,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
         for (bool const afterSwitchTime : {true, false})
         {
             auto cfg = envconfig();
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             Env env(*this, std::move(cfg));
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(usd(1000), alice, bob, carol);
@@ -297,7 +297,7 @@ class DeliveredAmount_test : public beast::unit_test::Suite
         for (bool const afterSwitchTime : {true, false})
         {
             auto cfg = envconfig();
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             Env env(*this, std::move(cfg));
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(usd(1000), alice, bob, carol);

@@ -108,19 +108,19 @@ doAccountChannels(RPC::JsonContext& context)
         return rpcError(RpcActMalformed);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_CHANNELS, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kAccountChannels, context))
         return *err;
 
     json::Value jsonChannels{json::ValueType::Array};
     struct VisitData
     {
-        std::vector<std::shared_ptr<SLE const>> items;
+        std::vector<SLE::const_pointer> items;
         AccountID const& accountID;
         std::optional<AccountID> const& raDstAccount;
     };
     VisitData visitData = {.items = {}, .accountID = accountID, .raDstAccount = raDstAccount};
     visitData.items.reserve(limit);
-    uint256 startAfter = beast::kZERO;
+    uint256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
@@ -170,8 +170,7 @@ doAccountChannels(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&visitData, &accountID, &count, &limit, &marker, &nextHint](
-                std::shared_ptr<SLE const> const& sleCur) {
+            [&visitData, &accountID, &count, &limit, &marker, &nextHint](SLE::const_ref sleCur) {
                 if (!sleCur)
                 {
                     // LCOV_EXCL_START
@@ -214,7 +213,7 @@ doAccountChannels(RPC::JsonContext& context)
     for (auto const& item : visitData.items)
         addChannel(jsonChannels, *item);
 
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
     result[jss::channels] = std::move(jsonChannels);
     return result;
 }

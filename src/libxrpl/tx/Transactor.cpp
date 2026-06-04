@@ -27,6 +27,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>  // IWYU pragma: keep
@@ -44,7 +45,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -89,7 +89,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
     auto const txID = ctx.tx.getTransactionID();
 
-    if (txID == beast::kZERO)
+    if (txID == beast::kZero)
     {
         JLOG(ctx.j.warn()) << "applyTransaction: transaction id may not be zero";
         return temINVALID;
@@ -182,7 +182,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         return ret;
 
     auto const id = ctx.tx.getAccountID(sfAccount);
-    if (id == beast::kZERO)
+    if (id == beast::kZero)
     {
         JLOG(ctx.j.warn()) << "preflight1: bad account id";
         return temBAD_SRC_ACCOUNT;
@@ -256,13 +256,22 @@ Transactor::preflight2(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+NotTEC
+Transactor::preflightUniversal(PreflightContext const& ctx)
+{
+    if (ctx.rules.enabled(fixCleanup3_2_0) && hasInvalidAmount(ctx.tx, ctx.j))
+        return temBAD_AMOUNT;
+
+    return tesSUCCESS;
+}
+
 //------------------------------------------------------------------------------
 
 Transactor::Transactor(ApplyContext& ctx)
     : ctx_(ctx)
     , sink_(ctx.journal, toShortString(ctx.tx.getTransactionID()) + " ")
     , j_(sink_)
-    , account_(ctx.tx.getAccountID(sfAccount))
+    , accountID_(ctx.tx.getAccountID(sfAccount))
 {
 }
 
@@ -361,14 +370,14 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     if ((ctx.flags & TapBatch) != 0u)
     {
-        if (feePaid == beast::kZERO)
+        if (feePaid == beast::kZero)
             return tesSUCCESS;
 
         JLOG(ctx.j.trace()) << "Batch: Fee must be zero.";
         return temBAD_FEE;  // LCOV_EXCL_LINE
     }
 
-    if (!isLegalAmount(feePaid) || feePaid < beast::kZERO)
+    if (!isLegalAmount(feePaid) || feePaid < beast::kZero)
         return temBAD_FEE;
 
     // Only check fee is sufficient when the ledger is open.
@@ -384,7 +393,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         }
     }
 
-    if (feePaid == beast::kZERO)
+    if (feePaid == beast::kZero)
         return tesSUCCESS;
 
     auto const id = ctx.tx.getFeePayer();
@@ -406,7 +415,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
                             << " paid=" << to_string(feePaid);
 
-        if ((balance > beast::kZERO) && !ctx.view.open())
+        if ((balance > beast::kZero) && !ctx.view.open())
         {
             // Closed ledger, non-zero balance, less than fee
             return tecINSUFF_FEE;
@@ -431,7 +440,7 @@ Transactor::payFee()
     // Deduct the fee, so it's not available during the transaction.
     // Will only write the account back if the transaction succeeds.
     sle->setFieldAmount(sfBalance, sle->getFieldAmount(sfBalance) - feePaid);
-    if (feePayer != account_)
+    if (feePayer != accountID_)
         view().update(sle);  // done in `apply()` for the account
 
     // VFALCO Should we call view().rawDestroyXRP() here as well?
@@ -492,7 +501,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
         }
 
         // Transaction can never succeed if the Ticket is not in the ledger.
-        if (!view.exists(keylet::kTICKET(id, tSeqProx)))
+        if (!view.exists(keylet::kTicket(id, tSeqProx)))
         {
             JLOG(j.trace()) << "applyTransaction: ticket already used or never created "
                             << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
@@ -544,7 +553,7 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
         sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
         return tesSUCCESS;
     }
-    return ticketDelete(view(), account_, getTicketIndex(account_, seqProx), j_);
+    return ticketDelete(view(), accountID_, getTicketIndex(accountID_, seqProx), j_);
 }
 
 // Remove a single Ticket from the ledger.
@@ -557,7 +566,7 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::kTICKET(ticketIndex));
+    SLE::pointer const sleTicket = view.peek(keylet::kTicket(ticketIndex));
     if (!sleTicket)
     {
         // LCOV_EXCL_START
@@ -617,7 +626,7 @@ Transactor::ticketDelete(
 void
 Transactor::preCompute()
 {
-    XRPL_ASSERT(account_ != beast::kZERO, "xrpl::Transactor::preCompute : nonzero account");
+    XRPL_ASSERT(accountID_ != beast::kZero, "xrpl::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -627,12 +636,12 @@ Transactor::apply()
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
 
     // sle must exist except for transactions
     // that allow zero account.
     XRPL_ASSERT(
-        sle != nullptr || account_ == beast::kZERO,
+        sle != nullptr || accountID_ == beast::kZero,
         "xrpl::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
@@ -779,7 +788,7 @@ Transactor::checkSingleSign(
     ReadView const& view,
     AccountID const& idSigner,
     AccountID const& idAccount,
-    std::shared_ptr<SLE const> sleAccount,
+    SLE::const_pointer sleAccount,
     beast::Journal const j)
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
@@ -815,7 +824,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
+    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -979,7 +988,7 @@ removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast:
         {
             // offer is unfunded
             offerDelete(view, sleOffer, viewJ);
-            if (++removed == kUNFUNDED_OFFER_REMOVE_LIMIT)
+            if (++removed == kUnfundedOfferRemoveLimit)
                 return;
         }
     }
@@ -998,7 +1007,7 @@ removeExpiredNFTokenOffers(
         if (auto const offer = view.peek(keylet::nftoffer(index)))
         {
             nft::deleteTokenOffer(view, offer);
-            if (++removed == kEXPIRED_OFFER_REMOVE_LIMIT)
+            if (++removed == kExpiredOfferRemoveLimit)
                 return;
         }
     }
@@ -1027,7 +1036,7 @@ removeDeletedTrustLines(
     std::vector<uint256> const& trustLines,
     beast::Journal viewJ)
 {
-    if (trustLines.size() > kMAX_DELETABLE_AMM_TRUST_LINES)
+    if (trustLines.size() > kMaxDeletableAmmTrustLines)
     {
         JLOG(viewJ.error()) << "removeDeletedTrustLines: deleted trustlines exceed max "
                             << trustLines.size();
@@ -1079,17 +1088,17 @@ Transactor::reset(XRPAmount fee)
     // The account should never be missing from the ledger.  But if it
     // is missing then we can't very well charge it a fee, can we?
     if (!txnAcct)
-        return {tefINTERNAL, beast::kZERO};
+        return {tefINTERNAL, beast::kZero};
 
     auto const payerSle = view().peek(keylet::account(ctx_.tx.getFeePayer()));
     if (!payerSle)
-        return {tefINTERNAL, beast::kZERO};  // LCOV_EXCL_LINE
+        return {tefINTERNAL, beast::kZero};  // LCOV_EXCL_LINE
 
     auto const balance = payerSle->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
-        balance != beast::kZERO && (!view().open() || balance >= fee),
+        balance != beast::kZero && (!view().open() || balance >= fee),
         "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or
@@ -1233,12 +1242,12 @@ Transactor::operator()()
     bool applied = isTesSuccess(result);
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
 
-    if (ctx_.size() > kOVERSIZE_META_DATA_CAP)
+    if (ctx_.size() > kOversizeMetaDataCap)
         result = tecOVERSIZE;
 
     if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
     {
-        // If the tapFAIL_HARD flag is set, a tec result
+        // If the TapFailHard flag is set, a tec result
         // must not do anything
         ctx_.discard();
         applied = false;
@@ -1276,8 +1285,8 @@ Transactor::operator()()
                         &expiredCredentials](
                            uint256 const& index,
                            bool isDelete,
-                           std::shared_ptr<SLE const> const& before,
-                           std::shared_ptr<SLE const> const& after) {
+                           SLE::const_ref before,
+                           SLE::const_ref after) {
                 if (isDelete)
                 {
                     XRPL_ASSERT(
@@ -1388,14 +1397,14 @@ Transactor::operator()()
         // The transactor and invariant checkers guarantee that this will
         // *never* trigger but if it, somehow, happens, don't allow a tx
         // that charges a negative fee.
-        if (fee < beast::kZERO)
+        if (fee < beast::kZero)
             Throw<std::logic_error>("fee charged is negative!");
 
         // Charge whatever fee they specified. The fee has already been
         // deducted from the balance of the account that issued the
         // transaction. We just need to account for it in the ledger
         // header.
-        if (!view().open() && fee != beast::kZERO)
+        if (!view().open() && fee != beast::kZero)
             ctx_.destroyXRP(fee);
 
         // Once we call apply, we will no longer be able to look at view()
