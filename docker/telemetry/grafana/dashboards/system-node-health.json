@@ -229,7 +229,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Transitions",
             "spanNulls": true,
@@ -314,7 +314,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Jobs",
             "spanNulls": true,
