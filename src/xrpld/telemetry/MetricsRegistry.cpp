@@ -240,6 +240,10 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     ledgerHistoryMismatchCounter_ = meter_->CreateUInt64Counter(
         "xrpld_ledger_history_mismatch_total",
         "Total built-vs-validated ledger mismatches by reason");
+    txqExpiredCounter_ = meter_->CreateUInt64Counter(
+        "xrpld_txq_expired_total", "Total transactions expired out of the transaction queue");
+    txqDroppedCounter_ = meter_->CreateUInt64Counter(
+        "xrpld_txq_dropped_total", "Total transactions refused admission to the queue by reason");
     validationAgreementsCounter_ = meter_->CreateUInt64Counter(
         "xrpld_validation_agreements_total", "Total validation agreements");
     validationMissedCounter_ =
@@ -1335,6 +1339,24 @@ MetricsRegistry::incrementLedgerHistoryMismatch(std::string_view reason)
 #ifdef XRPL_ENABLE_TELEMETRY
     if (enabled_ && ledgerHistoryMismatchCounter_)
         ledgerHistoryMismatchCounter_->Add(1, {{"reason", std::string(reason)}});
+#endif
+}
+
+void
+MetricsRegistry::incrementTxqExpired()
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && txqExpiredCounter_)
+        txqExpiredCounter_->Add(1);
+#endif
+}
+
+void
+MetricsRegistry::incrementTxqDropped(std::string_view reason)
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && txqDroppedCounter_)
+        txqDroppedCounter_->Add(1, {{"reason", std::string(reason)}});
 #endif
 }
 

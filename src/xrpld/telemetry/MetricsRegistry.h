@@ -360,6 +360,23 @@ public:
     void
     incrementLedgerHistoryMismatch(std::string_view reason);
 
+    /** Increment the txq_expired_total counter.
+        Called from TxQ::processClosedLedger() for each queued transaction
+        removed because its LastLedgerSequence has passed — submitters who
+        under-bid the escalating fee and were never included.
+    */
+    void
+    incrementTxqExpired();
+
+    /** Increment the txq_dropped_total{reason} counter.
+        Called from TxQ::apply() when a transaction is refused admission to
+        the queue (e.g. the queue is full). Distinct from expiry (already
+        queued) and from jq_trans_overflow (job queue, not TxQ).
+        @param reason Admission-control rejection cause (e.g. "queue_full").
+    */
+    void
+    incrementTxqDropped(std::string_view reason);
+
     /** Access the validation agreement tracker.
         Used by consensus and ledger hooks to record our validations and
         network validations so the tracker can compute agreement percentages.
@@ -498,6 +515,12 @@ private:
     /// built-vs-validated ledger mismatch.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         ledgerHistoryMismatchCounter_;
+    /// Counter: xrpld_txq_expired_total — incremented per transaction expired out of the
+    /// transaction queue.
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> txqExpiredCounter_;
+    /// Counter: xrpld_txq_dropped_total{reason} — incremented when a transaction is refused
+    /// admission to the queue.
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> txqDroppedCounter_;
     /// Counter: xrpld_validation_agreements_total — incremented by ValidationTracker on
     /// agreement.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
