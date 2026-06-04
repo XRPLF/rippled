@@ -1337,38 +1337,38 @@ public:
         auto const scale = Number::getMantissaScale();
         testcase << "testToString " << to_string(scale);
 
-        auto test = [this](Number const& n, std::string const& expected) {
+        auto test = [this](Number const& n, std::string const& expected, int line) {
             auto const result = to_string(n);
             std::stringstream ss;
             ss << "to_string(" << result << "). Expected: " << expected;
-            BEAST_EXPECTS(result == expected, ss.str());
+            expect(result == expected, ss.str(), __FILE__, line);
         };
 
-        test(Number(-2, 0), "-2");
-        test(Number(0, 0), "0");
-        test(Number(2, 0), "2");
-        test(Number(25, -3), "0.025");
-        test(Number(-25, -3), "-0.025");
-        test(Number(25, 1), "250");
-        test(Number(-25, 1), "-250");
-        test(Number(2, 20), "2e20");
-        test(Number(-2, -20), "-2e-20");
+        test(Number(-2, 0), "-2", __LINE__);
+        test(Number(0, 0), "0", __LINE__);
+        test(Number(2, 0), "2", __LINE__);
+        test(Number(25, -3), "0.025", __LINE__);
+        test(Number(-25, -3), "-0.025", __LINE__);
+        test(Number(25, 1), "250", __LINE__);
+        test(Number(-25, 1), "-250", __LINE__);
+        test(Number(2, 20), "2e20", __LINE__);
+        test(Number(-2, -20), "-2e-20", __LINE__);
         // Test the edges
         // ((exponent < -(25)) || (exponent > -(5)))))
         // or ((exponent < -(28)) || (exponent > -(8)))))
-        test(Number(2, -10), "0.0000000002");
-        test(Number(2, -11), "2e-11");
+        test(Number(2, -10), "0.0000000002", __LINE__);
+        test(Number(2, -11), "2e-11", __LINE__);
 
-        test(Number(-2, 10), "-20000000000");
-        test(Number(-2, 11), "-2e11");
+        test(Number(-2, 10), "-20000000000", __LINE__);
+        test(Number(-2, 11), "-2e11", __LINE__);
 
         switch (scale)
         {
             case MantissaRange::MantissaScale::Small:
 
-                test(Number::min(), "1e-32753");
-                test(Number::max(), "9999999999999999e32768");
-                test(Number::lowest(), "-9999999999999999e32768");
+                test(Number::min(), "1e-32753", __LINE__);
+                test(Number::max(), "9999999999999999e32768", __LINE__);
+                test(Number::lowest(), "-9999999999999999e32768", __LINE__);
                 {
                     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
@@ -1376,62 +1376,83 @@ public:
                     BEAST_EXPECT(maxMantissa == 9'999'999'999'999'999);
                     test(
                         Number{false, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
-                        "9999999999999999");
+                        "9999999999999999",
+                        __LINE__);
                     test(
                         Number{true, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
-                        "-9999999999999999");
+                        "-9999999999999999",
+                        __LINE__);
 
-                    test(Number{std::numeric_limits<std::int64_t>::max(), -3}, "9223372036854775");
+                    test(
+                        Number{std::numeric_limits<std::int64_t>::max(), -3},
+                        "9223372036854775",
+                        __LINE__);
                     test(
                         -(Number{std::numeric_limits<std::int64_t>::max(), -3}),
-                        "-9223372036854775");
+                        "-9223372036854775",
+                        __LINE__);
 
                     test(
-                        Number{std::numeric_limits<std::int64_t>::min(), 0}, "-9223372036854775e3");
+                        Number{std::numeric_limits<std::int64_t>::min(), 0},
+                        "-9223372036854775e3",
+                        __LINE__);
                     test(
                         -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
-                        "9223372036854775e3");
+                        "9223372036854775e3",
+                        __LINE__);
                 }
                 break;
             case MantissaRange::MantissaScale::LargeLegacy:
             case MantissaRange::MantissaScale::Large:
                 // Test the edges
                 // ((exponent < -(28)) || (exponent > -(8)))))
-                test(Number::min(), "1e-32750");
-                test(Number::max(), "9223372036854775807e32768");
-                test(Number::lowest(), "-9223372036854775807e32768");
+                test(Number::min(), "1e-32750", __LINE__);
+                test(Number::max(), "9223372036854775807e32768", __LINE__);
+                test(Number::lowest(), "-9223372036854775807e32768", __LINE__);
                 {
                     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
                     auto const maxMantissa = Number::maxMantissa();
                     BEAST_EXPECT(maxMantissa == 9'999'999'999'999'999'999ULL);
                     test(
-                        Number{false, maxMantissa, 0, Number::Normalized{}}, "9999999999999999990");
+                        Number{false, maxMantissa, 0, Number::Normalized{}},
+                        "9999999999999999990",
+                        __LINE__);
                     test(
-                        Number{true, maxMantissa, 0, Number::Normalized{}}, "-9999999999999999990");
+                        Number{true, maxMantissa, 0, Number::Normalized{}},
+                        "-9999999999999999990",
+                        __LINE__);
 
                     test(
-                        Number{std::numeric_limits<std::int64_t>::max(), 0}, "9223372036854775807");
+                        Number{std::numeric_limits<std::int64_t>::max(), 0},
+                        "9223372036854775807",
+                        __LINE__);
                     test(
                         -(Number{std::numeric_limits<std::int64_t>::max(), 0}),
-                        "-9223372036854775807");
+                        "-9223372036854775807",
+                        __LINE__);
 
                     // Because the absolute value of min is larger than max, it
                     // will be scaled down to fit under max. Since we're
                     // rounding towards zero, the 8 at the end is dropped.
                     test(
                         Number{std::numeric_limits<std::int64_t>::min(), 0},
-                        "-9223372036854775800");
+                        "-9223372036854775800",
+                        __LINE__);
                     test(
                         -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
-                        "9223372036854775800");
+                        "9223372036854775800",
+                        __LINE__);
                 }
 
                 test(
-                    Number{std::numeric_limits<std::int64_t>::max(), 0} + 1, "9223372036854775810");
+                    Number{std::numeric_limits<std::int64_t>::max(), 0} + 1,
+                    "9223372036854775810",
+                    __LINE__);
                 test(
                     -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 1),
-                    "-9223372036854775810");
+                    "-9223372036854775810",
+                    __LINE__);
                 break;
             default:
                 BEAST_EXPECT(false);
