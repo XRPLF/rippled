@@ -436,6 +436,7 @@ MetricsRegistry::registerAsyncGauges()
     registerDbMetricsGauge();
     registerValidatorHealthGauge();
     registerPeerQualityGauge();
+    registerReduceRelayGauge();
     registerLedgerEconomyGauge();
     registerStateTrackingGauge();
     registerStorageDetailGauge();
@@ -1067,6 +1068,57 @@ MetricsRegistry::registerPeerQualityGauge()
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
                 // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerReduceRelayGauge()
+{
+    // Transaction reduce-relay efficiency. Overlay::txMetrics() exposes the
+    // rolling averages as a JSON object with string values (std::to_string),
+    // so parse each field. A high suppressed:selected ratio proves the
+    // feature is saving bandwidth; a high not_enabled count means stale peers
+    // force full relay.
+    reduceRelayGauge_ = meter_->CreateInt64ObservableGauge(
+        "xrpld_reduce_relay_metrics", "Transaction reduce-relay efficiency metrics");
+    reduceRelayGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto const tm = app.getOverlay().txMetrics();
+
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                // Each field is a decimal string; emit when present and parseable.
+                auto observeField = [&](auto const& field, char const* name) {
+                    if (tm.isMember(field))
+                    {
+                        auto const s = tm[field].asString();
+                        if (!s.empty())
+                            observe(name, static_cast<int64_t>(std::stoll(s)));
+                    }
+                };
+
+                observeField(jss::txr_selected_cnt, "selected_peers");
+                observeField(jss::txr_suppressed_cnt, "suppressed_peers");
+                observeField(jss::txr_not_enabled_cnt, "not_enabled_peers");
+                observeField(jss::txr_missing_tx_freq, "missing_tx_freq");
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready or a value is
+                // not parseable.
             }
         },
         this);

@@ -478,6 +478,10 @@ private:
     /// insane peer count, version spread, upgrade recommendation).
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
         peerQualityGauge_;
+    /// Observable gauge for transaction reduce-relay efficiency (selected vs
+    /// suppressed peers, feature-disabled peers, missing-tx frequency).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        reduceRelayGauge_;
     /// Observable gauge for ledger economy metrics (base fee, reserve,
     /// reserve increment, ledger age).
     opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
@@ -562,6 +566,8 @@ private:
     registerValidatorHealthGauge();  // Task 7.9
     void
     registerPeerQualityGauge();  // Task 7.10
+    void
+    registerReduceRelayGauge();  // Reduce-relay efficiency
     void
     registerLedgerEconomyGauge();  // Task 7.11
     void
