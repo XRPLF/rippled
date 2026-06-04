@@ -51,7 +51,7 @@ connectors:
     dimensions:
       - name: command
       - name: rpc_status
-      - name: xrpl.consensus.mode
+      - name: consensus_mode
       - name: close_time_correct
       - name: local
       - name: suppressed
