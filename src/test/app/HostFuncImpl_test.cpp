@@ -1284,11 +1284,11 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             std::vector<uint8_t> locatorVec(sizeof(int32_t) + 1);
             auto const accountFieldCode = sfAccount.getCode();
             memcpy(locatorVec.data() + 1, &accountFieldCode, sizeof(int32_t));
-            vrt.setBytes(0, locatorVec.data() + 1, sizeof(int32_t));
+            vrt.setBytes(0, locatorVec.data(), sizeof(int32_t) + 1);
 
             WasmValVec params(4), result(1);
             auto* trap =
-                ww(&import.at("get_tx_nested_field"), params, result, 0, sizeof(int32_t), 256, 256);
+                ww(&import.at("get_tx_nested_field"), params, result, 1, sizeof(int32_t), 256, 256);
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32);
             if (BEAST_EXPECTS(result[0].of.i32 > 0, std::to_string(result[0].of.i32)))

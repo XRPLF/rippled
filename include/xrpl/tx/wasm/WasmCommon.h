@@ -64,7 +64,7 @@ using EscrowResult = WasmResult<int32_t>;
 class FieldLocator
 {
     int32_t const* ptr_ = nullptr;
-    uint32_t const size_ = 0;
+    uint32_t size_ = 0;
     std::vector<int32_t> buf_;
 
 public:
@@ -76,6 +76,13 @@ public:
     FieldLocator(int32_t const* ptr, uint32_t const size) : ptr_(ptr), size_(size)
     {
     }
+
+    FieldLocator(FieldLocator const&) = delete;
+    FieldLocator&
+    operator=(FieldLocator const&) = delete;
+    FieldLocator(FieldLocator&&) = default;
+    FieldLocator&
+    operator=(FieldLocator&&) = default;
 
     int32_t
     operator[](unsigned i) const
