@@ -324,9 +324,12 @@ private:
     //--------------------------------------------------------------------------
 
     /// Current snapshot.  Read via snapshot(); written only by writeMu_ holder.
-    /// Uses std::atomic<std::shared_ptr<T>> (C++20) for lock-free atomic
-    /// load/store with default memory ordering semantics.
-    mutable std::atomic<std::shared_ptr<Snapshot const>> snap_;
+    /// Uses a plain shared_ptr + std::atomic_{load,store}_explicit with
+    /// explicit memory orders.  C++20's std::atomic<shared_ptr<T>> would be
+    /// preferable but Apple libc++ has not yet implemented the specialisation,
+    /// so the deprecated free-function API is wrapped with a localised
+    /// diagnostic-suppression pragma in PayGraph.cpp.
+    mutable std::shared_ptr<Snapshot const> snap_;
 
     /// Serialises applyLedgerDelta() / rebuild() calls.
     /// Never held during pathfinding.

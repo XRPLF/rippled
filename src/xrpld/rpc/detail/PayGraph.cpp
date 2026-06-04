@@ -28,6 +28,41 @@
 
 namespace xrpl {
 
+namespace {
+
+// Apple libc++ has not yet shipped the C++20 std::atomic<std::shared_ptr<T>>
+// specialisation, so we fall back to the (deprecated since C++20) free-function
+// API.  Wrap the calls in small helpers so the deprecation warning can be
+// suppressed in exactly one place.
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
+template <class T>
+inline std::shared_ptr<T>
+atomicLoad(std::shared_ptr<T> const* p, std::memory_order order) noexcept
+{
+    return std::atomic_load_explicit(p, order);
+}
+
+template <class T>
+inline void
+atomicStore(
+    std::shared_ptr<T>* p,
+    std::shared_ptr<T> v,
+    std::memory_order order) noexcept
+{
+    std::atomic_store_explicit(p, std::move(v), order);
+}
+
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
+}  // namespace
+
+
 //==============================================================================
 // Internal helpers
 //==============================================================================
@@ -94,7 +129,7 @@ PayGraph::PayGraph(std::optional<uint256> const& domain, beast::Journal j) : dom
 std::shared_ptr<PayGraph::Snapshot const>
 PayGraph::snapshot() const
 {
-    return snap_.load(std::memory_order_acquire);
+    return atomicLoad(&snap_, std::memory_order_acquire);
 }
 
 //==============================================================================
@@ -255,8 +290,10 @@ PayGraph::build(
     // Private constructor accessible through this factory only.
     auto pg = std::shared_ptr<PayGraph>(new PayGraph(domain, j));
     auto snap = buildSnapshot(bookDB, ledger, domain, j);
-    pg->snap_.store(
-        std::shared_ptr<Snapshot const>(std::move(snap)), std::memory_order_release);
+    atomicStore(
+        &pg->snap_,
+        std::shared_ptr<Snapshot const>(std::move(snap)),
+        std::memory_order_release);
     return pg;
 }
 
@@ -274,8 +311,10 @@ PayGraph::rebuild(OrderBookDB& bookDB, ReadView const& ledger, std::optional<uin
     if (auto cur = snapshot())
         snap->stats.totalDeltasCalled = cur->stats.totalDeltasCalled;
 
-    snap_.store(
-        std::shared_ptr<Snapshot const>(std::move(snap)), std::memory_order_release);
+    atomicStore(
+        &snap_,
+        std::shared_ptr<Snapshot const>(std::move(snap)),
+        std::memory_order_release);
 }
 
 //==============================================================================
@@ -300,13 +339,15 @@ PayGraph::applyLedgerDelta(
     std::scoped_lock const lk(writeMu_);
 
     // Shallow-copy the current snapshot.  All vectors are value-copied.
-    auto cur = snap_.load(std::memory_order_acquire);
+    auto cur = atomicLoad(&snap_, std::memory_order_acquire);
     if (!cur)
     {
         // No snapshot yet — do a full build instead.
         auto fresh = buildSnapshot(bookDB, newLedger, domain_, j_);
-        snap_.store(
-            std::shared_ptr<Snapshot const>(std::move(fresh)), std::memory_order_release);
+        atomicStore(
+            &snap_,
+            std::shared_ptr<Snapshot const>(std::move(fresh)),
+            std::memory_order_release);
         return;
     }
 
@@ -335,8 +376,10 @@ PayGraph::applyLedgerDelta(
                      << " books, delta #" << next->stats.totalDeltasCalled;
 
     // ---------- publish ---------------------------------------------------
-    snap_.store(
-        std::shared_ptr<Snapshot const>(std::move(next)), std::memory_order_release);
+    atomicStore(
+        &snap_,
+        std::shared_ptr<Snapshot const>(std::move(next)),
+        std::memory_order_release);
 }
 
 //==============================================================================
