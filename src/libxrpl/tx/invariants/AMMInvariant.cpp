@@ -35,7 +35,7 @@ ValidAMM::visitEntry(
         if (before && before->getType() == ltAMM)
         {
             ammDeleted_ = true;
-            lptAMMBalanceOnDelete_ = before->getFieldAmount(sfLPTokenBalance);
+            lptAMMBalanceBeforeDeletion_ = before->getFieldAmount(sfLPTokenBalance);
         }
         return;
     }
@@ -176,19 +176,20 @@ ValidAMM::finalizeCreate(
 }
 
 bool
-ValidAMM::finalizeDelete(bool enforce, bool enforceNew, TER res, beast::Journal const& j) const
+ValidAMM::finalizeDelete(bool enforce, bool enforceAMMDelete, TER res, beast::Journal const& j)
+    const
 {
     if (ammAccount_)
     {
         // LCOV_EXCL_START
-        std::string const msg = (isTesSuccess(res)) ? "AMM object is not deleted on tesSUCCESS"
-                                                    : "AMM object is changed on tecINCOMPLETE";
+        std::string const msg = (isTesSuccess(res)) ? "AMM object remained on tesSUCCESS"
+                                                    : "AMM object changed on tecINCOMPLETE";
         JLOG(j.error()) << "AMMDelete invariant failed: " << msg;
         if (enforce)
             return false;
         // LCOV_EXCL_STOP
     }
-    if (!enforceNew)
+    if (!enforceAMMDelete)
         return true;
 
     if (isTesSuccess(res))
@@ -196,28 +197,32 @@ ValidAMM::finalizeDelete(bool enforce, bool enforceNew, TER res, beast::Journal 
         if (!ammDeleted_)
         {
             // LCOV_EXCL_START
-            JLOG(j.error())
-                << "AMMDelete invariant failed: AMM object is not deleted on tesSUCCESS";
+            JLOG(j.error()) << "AMMDelete invariant failed: AMM object remained on tesSUCCESS";
             return false;
             // LCOV_EXCL_STOP
         }
-        // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceOnDelete_ is set with
-        // ammDeleted_ in visitEntry
-        if (*lptAMMBalanceOnDelete_ != beast::kZero)
+        if (!lptAMMBalanceBeforeDeletion_)
         {
             // LCOV_EXCL_START
-            JLOG(j.error()) << "AMMDelete invariant failed: AMM deleted with non-zero LP balance: "
-                            << *lptAMMBalanceOnDelete_;
+            JLOG(j.error()) << "AMMDelete invariant failed: AMM object deleted without LP balance";
             return false;
             // LCOV_EXCL_STOP
         }
-        // NOLINTEND(bugprone-unchecked-optional-access)
+        if (*lptAMMBalanceBeforeDeletion_ != beast::kZero)
+        {
+            // LCOV_EXCL_START
+            JLOG(j.error())
+                << "AMMDelete invariant failed: AMM object deleted with non-zero LP balance: "
+                << *lptAMMBalanceBeforeDeletion_;
+            return false;
+            // LCOV_EXCL_STOP
+        }
     }
     else if (ammDeleted_)
     {
         // AMM should not be fully deleted on tecINCOMPLETE
         // LCOV_EXCL_START
-        JLOG(j.error()) << "AMMDelete invariant failed: AMM object is deleted on tecINCOMPLETE";
+        JLOG(j.error()) << "AMMDelete invariant failed: AMM object deleted on tecINCOMPLETE";
         return false;
         // LCOV_EXCL_STOP
     }
@@ -318,14 +323,15 @@ ValidAMM::finalizeWithdraw(
 {
     if (ammDeleted_)
     {
-        // Last Withdraw or Clawback can delete the AMM. The deleted AMM entry's
-        // old LP balance is allowed to be non-zero because the transaction
-        // redeems those LP tokens and deletes the AMM in the same step.
+        // Last Withdraw or Clawback can delete the AMM. We don't have to check
+        // the LPToken balance because a final AMMWithdraw or AMMClawback can
+        // redeem the remaining LP tokens and delete the AMM entry in the same
+        // transaction.
+        return true;
     }
-    else if (ammAccount_ && !generalInvariant(tx, view, ZeroAllowed::Yes, j))
+    if (ammAccount_ && !generalInvariant(tx, view, ZeroAllowed::Yes, j) && enforce)
     {
-        if (enforce)
-            return false;
+        return false;
     }
 
     return true;
@@ -345,10 +351,10 @@ ValidAMM::finalize(
         return true;
 
     bool const enforce = view.rules().enabled(fixAMMv1_3);
-    bool const enforceNew = view.rules().enabled(fixCleanup3_2_0);
+    bool const enforceAMMDelete = view.rules().enabled(fixCleanup3_2_0);
 
     // AMM can only be deleted by AMMWithdraw, AMMClawback, and AMMDelete
-    if (enforceNew && ammDeleted_)
+    if (enforceAMMDelete && ammDeleted_)
     {
         switch (tx.getTxnType())
         {
@@ -379,7 +385,7 @@ ValidAMM::finalize(
         case ttAMM_VOTE:
             return finalizeVote(enforce, j);
         case ttAMM_DELETE:
-            return finalizeDelete(enforce, enforceNew, result, j);
+            return finalizeDelete(enforce, enforceAMMDelete, result, j);
         case ttCHECK_CASH:
         case ttOFFER_CREATE:
         case ttPAYMENT:

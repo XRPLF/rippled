@@ -15,7 +15,7 @@ class ValidAMM
     std::optional<AccountID> ammAccount_;
     std::optional<STAmount> lptAMMBalanceAfter_;
     std::optional<STAmount> lptAMMBalanceBefore_;
-    std::optional<STAmount> lptAMMBalanceOnDelete_;
+    std::optional<STAmount> lptAMMBalanceBeforeDeletion_;
     bool ammPoolChanged_{false};
     bool ammDeleted_{false};
 
@@ -37,7 +37,7 @@ private:
     [[nodiscard]] bool
     finalizeCreate(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
     [[nodiscard]] bool
-    finalizeDelete(bool enforce, bool enforceNew, TER res, beast::Journal const&) const;
+    finalizeDelete(bool enforce, bool enforceAMMDelete, TER res, beast::Journal const&) const;
     [[nodiscard]] bool
     finalizeDeposit(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
     // Includes clawback

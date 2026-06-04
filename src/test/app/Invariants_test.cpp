@@ -1281,8 +1281,8 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const fixEnabled = features[fixCleanup3_2_0];
-        testcase << "AMM delete invariants" + std::string(fixEnabled ? " fix" : "");
+        bool const enforceAMMDelete = features[fixCleanup3_2_0];
+        testcase << "AMM delete invariants" + std::string(enforceAMMDelete ? " fix" : "");
 
         Env env(*this, features);
         Account const issuer{"issuer"};
@@ -1296,11 +1296,11 @@ class Invariants_test : public beast::unit_test::Suite
             return sleAMM;
         };
 
-        auto const check = [&](TxType txType,
-                               TER result,
-                               std::optional<STAmount> const& deletedLPBalance,
-                               bool expected,
-                               std::string const& expectedLog) {
+        auto const checkInvariant = [&](TxType txType,
+                                        TER result,
+                                        std::optional<STAmount> const& deletedLPBalance,
+                                        bool expected,
+                                        std::string const& expectedLog) {
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ValidAMM invariant;
@@ -1313,9 +1313,12 @@ class Invariants_test : public beast::unit_test::Suite
 
             BEAST_EXPECTS(actual == expected, "unexpected AMM delete invariant result");
             auto const messages = sink.messages().str();
-            if (!expectedLog.empty())
+            auto const expectedLogWhenEnforced = enforceAMMDelete ? expectedLog : "";
+            if (!expectedLogWhenEnforced.empty())
             {
-                BEAST_EXPECTS(messages.find(expectedLog) != std::string::npos, expectedLog);
+                BEAST_EXPECTS(
+                    messages.find(expectedLogWhenEnforced) != std::string::npos,
+                    expectedLogWhenEnforced);
             }
             else
             {
@@ -1323,38 +1326,37 @@ class Invariants_test : public beast::unit_test::Suite
             }
         };
 
-        check(
+        checkInvariant(
             ttPAYMENT,
             tesSUCCESS,
             nonZeroLP,
-            !fixEnabled,
-            fixEnabled ? "AMM invariant failed: unexpected AMM deletion by" : "");
-        check(
+            !enforceAMMDelete,
+            "AMM invariant failed: unexpected AMM deletion by");
+        checkInvariant(
             ttAMM_DELETE,
             tesSUCCESS,
             std::nullopt,
-            !fixEnabled,
-            fixEnabled ? "AMMDelete invariant failed: AMM object is not deleted on tesSUCCESS"
-                       : "");
-        check(
+            !enforceAMMDelete,
+            "AMMDelete invariant failed: AMM object remained on tesSUCCESS");
+        checkInvariant(
             ttAMM_DELETE,
             tesSUCCESS,
             nonZeroLP,
-            !fixEnabled,
-            fixEnabled ? "AMMDelete invariant failed: AMM deleted with non-zero LP balance" : "");
-        check(
+            !enforceAMMDelete,
+            "AMMDelete invariant failed: AMM object deleted with non-zero LP balance");
+        checkInvariant(
             ttAMM_DELETE,
             tecINCOMPLETE,
             zeroLP,
-            !fixEnabled,
-            fixEnabled ? "AMMDelete invariant failed: AMM object is deleted on tecINCOMPLETE" : "");
+            !enforceAMMDelete,
+            "AMMDelete invariant failed: AMM object deleted on tecINCOMPLETE");
 
-        check(ttAMM_WITHDRAW, tesSUCCESS, nonZeroLP, true, "");
-        check(ttAMM_CLAWBACK, tesSUCCESS, nonZeroLP, true, "");
+        checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, nonZeroLP, true, "");
+        checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, nonZeroLP, true, "");
 
-        check(ttAMM_DELETE, tesSUCCESS, zeroLP, true, "");
-        check(ttAMM_WITHDRAW, tesSUCCESS, zeroLP, true, "");
-        check(ttAMM_CLAWBACK, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_DELETE, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, zeroLP, true, "");
     }
 
     static std::shared_ptr<SLE>
