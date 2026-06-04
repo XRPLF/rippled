@@ -1000,10 +1000,12 @@ MetricsRegistry::registerPeerQualityGauge()
                         ->Observe(value, {{"metric", name}});
                 };
 
-                // Collect latencies and version info from each peer's JSON.
+                // Collect latencies, version info, and tracking state from
+                // each peer's JSON.
                 std::vector<int> latencies;
                 int higherVersionCount = 0;
                 int totalPeers = 0;
+                int divergedCount = 0;
                 auto const ownVersion = std::string(BuildInfo::getVersionString());
 
                 app.getOverlay().foreach([&](std::shared_ptr<Peer> const& peer) {
@@ -1019,6 +1021,11 @@ MetricsRegistry::registerPeerQualityGauge()
                         if (!pv.empty() && pv > ownVersion)
                             ++higherVersionCount;
                     }
+                    // PeerImp::json() sets "track" to "diverged" when the peer's
+                    // tracking state is Tracking::Diverged (i.e. it is following
+                    // a different ledger chain than us).
+                    if (pj.isMember(jss::track) && pj[jss::track].asString() == "diverged")
+                        ++divergedCount;
                 });
 
                 // P90 latency across connected peers.
@@ -1041,13 +1048,11 @@ MetricsRegistry::registerPeerQualityGauge()
                     : 0.0;
                 observe("peers_higher_version_pct", higherPct);
 
-                // Count peers that are insane/diverged (tracking ==
-                // Tracking::diverged). Not directly available from the Peer
-                // interface, so we count peers with negative or zero latency
-                // as a proxy for unreachable/diverged state.
-                // TODO: expose PeerImp::tracking_ via the Peer interface for
-                //       a precise count.
-                observe("peers_insane_count", 0.0);
+                // Count peers diverged from our ledger chain, read from the
+                // peer's "track" JSON field (set by PeerImp::json()). Diverged
+                // peers are following a different chain and are a leading
+                // indicator of local sync trouble.
+                observe("peers_insane_count", static_cast<double>(divergedCount));
 
                 // Binary flag: recommend upgrade if >60% run a newer version.
                 observe("upgrade_recommended", higherPct > 60.0 ? 1.0 : 0.0);
