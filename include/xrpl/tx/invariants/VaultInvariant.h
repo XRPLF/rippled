@@ -37,7 +37,7 @@ namespace xrpl {
  */
 class ValidVault
 {
-    static constexpr Number kZero{};
+    static constexpr beast::Zero kZero{};
 
     struct Vault final
     {

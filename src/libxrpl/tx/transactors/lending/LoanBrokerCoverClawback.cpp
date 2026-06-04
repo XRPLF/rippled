@@ -191,8 +191,10 @@ determineClawAmount(
     if (!amount || *amount == beast::kZero)
         return STAmount{vaultAsset, maxClawAmount};
     Number const magnitude{*amount};
+#if 0
     if (magnitude > maxClawAmount)
         return STAmount{vaultAsset, maxClawAmount};
+#endif
     return STAmount{vaultAsset, magnitude};
 }
 

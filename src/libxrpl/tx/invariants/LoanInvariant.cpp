@@ -76,7 +76,7 @@ ValidLoan::finalize(
               &sfTotalValueOutstanding,
               &sfManagementFeeOutstanding})
         {
-            if (after->at(*field) < 0)
+            if (after->at(*field) < beast::kZero)
             {
                 JLOG(j.fatal()) << "Invariant failed: " << field->getName() << " is negative ";
                 return false;
@@ -87,7 +87,7 @@ ValidLoan::finalize(
                  &sfPeriodicPayment,
              })
         {
-            if (after->at(*field) <= 0)
+            if (after->at(*field) <= beast::kZero)
             {
                 JLOG(j.fatal()) << "Invariant failed: " << field->getName()
                                 << " is zero or negative ";

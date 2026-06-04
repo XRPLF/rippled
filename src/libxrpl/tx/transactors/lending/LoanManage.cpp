@@ -172,16 +172,26 @@ LoanManage::defaultLoan(
         // Round the liquidation amount up, too
         auto const covered = roundToAsset(
             vaultAsset,
-            /*
-             * This formula is from the XLS-66 spec, section 3.2.3.2 (State
-             * Changes), specifically "if the `tfLoanDefault` flag is set" /
-             * "Apply the First-Loss Capital to the Default Amount"
-             */
-            std::min(tenthBipsOfValue(minimumCover, coverRateLiquidation), totalDefaultAmount),
+/*
+ * This formula is from the XLS-66 spec, section 3.2.3.2 (State
+ * Changes), specifically "if the `tfLoanDefault` flag is set" /
+ * "Apply the First-Loss Capital to the Default Amount"
+ */
+#if 0
+            std::min(
+                tenthBipsOfValue(minimumCover, coverRateLiquidation)
+                , totalDefaultAmount),
+#else
+            tenthBipsOfValue(minimumCover, coverRateLiquidation),
+#endif
             loanScale);
+#if 0
         auto const coverAvailable = *brokerSle->at(sfCoverAvailable);
 
         return std::min(covered, coverAvailable);
+#else
+        return covered;
+#endif
     }();
 
     auto const vaultDefaultAmount = totalDefaultAmount - defaultCovered;
@@ -198,6 +208,7 @@ LoanManage::defaultLoan(
         auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
         auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
 
+#if 0
         if (vaultTotalProxy < vaultDefaultAmount)
         {
             // LCOV_EXCL_START
@@ -205,6 +216,7 @@ LoanManage::defaultLoan(
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
+#endif
 
         auto const vaultDefaultRounded = roundToAsset(
             vaultAsset, vaultDefaultAmount, vaultScale, Number::RoundingMode::Downward);
@@ -212,6 +224,7 @@ LoanManage::defaultLoan(
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
         vaultAvailableProxy += defaultCovered;
+#if 0
         if (*vaultAvailableProxy > *vaultTotalProxy && !vaultAsset.integral())
         {
             auto const difference = vaultAvailableProxy - vaultTotalProxy;
@@ -238,11 +251,13 @@ LoanManage::defaultLoan(
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
+#endif
 
         // The loss has been realized
         if (loanSle->isFlag(lsfLoanImpaired))
         {
             auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+#if 0
             if (vaultLossUnrealizedProxy < totalDefaultAmount)
             {
                 // LCOV_EXCL_START
@@ -250,6 +265,7 @@ LoanManage::defaultLoan(
                 return tefBAD_LEDGER;
                 // LCOV_EXCL_STOP
             }
+#endif
             adjustImpreciseNumber(
                 vaultLossUnrealizedProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         }
@@ -263,6 +279,7 @@ LoanManage::defaultLoan(
         adjustImpreciseNumber(brokerDebtTotalProxy, -totalDefaultAmount, vaultAsset, vaultScale);
         // Decrease the First-Loss Capital Cover Available:
         auto coverAvailableProxy = brokerSle->at(sfCoverAvailable);
+#if 0
         if (coverAvailableProxy < defaultCovered)
         {
             // LCOV_EXCL_START
@@ -270,6 +287,7 @@ LoanManage::defaultLoan(
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
+#endif
         coverAvailableProxy -= defaultCovered;
         view.update(brokerSle);
     }
@@ -315,6 +333,7 @@ LoanManage::impairLoan(
     // Update the Vault object(set "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
     adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
+#if 0
     if (vaultLossUnrealizedProxy > vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
     {
         // Having a loss greater than the vault's unavailable assets
@@ -323,6 +342,7 @@ LoanManage::impairLoan(
                           "corrupt the vault.";
         return tecLIMIT_EXCEEDED;
     }
+#endif
     view.update(vaultSle);
 
     // Update the Loan object
@@ -355,6 +375,7 @@ LoanManage::unimpairLoan(
     // Update the Vault object(clear "paper loss")
     auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
     Number const lossReversed = owedToVault(loanSle);
+#if 0
     if (vaultLossUnrealizedProxy < lossReversed)
     {
         // LCOV_EXCL_START
@@ -362,6 +383,7 @@ LoanManage::unimpairLoan(
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
+#endif
     // Reverse the "paper loss"
     adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
 

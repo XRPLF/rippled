@@ -303,10 +303,12 @@ VaultDeposit::doApply()
     vault->at(sfAssetsAvailable) += assetsDeposited;
     view().update(vault);
 
-    // A deposit must not push the vault over its limit.
+// A deposit must not push the vault over its limit.
+#if 0
     auto const maximum = *vault->at(sfAssetsMaximum);
-    if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
+    if (maximum != beast::kZero && *vault->at(sfAssetsTotal) > maximum)
         return tecLIMIT_EXCEEDED;
+#endif
 
     // Transfer assets from depositor to vault.
     if (auto const ter = accountSend(

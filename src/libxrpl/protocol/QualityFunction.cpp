@@ -34,7 +34,7 @@ QualityFunction::outFromAvgQ(Quality const& quality)
     {
         SaveNumberRoundMode const rm(Number::setround(Number::RoundingMode::Upward));
         auto const out = (1 / quality.rate() - b_) / m_;
-        if (out <= 0)
+        if (out <= beast::kZero)
             return std::nullopt;
         return out;
     }

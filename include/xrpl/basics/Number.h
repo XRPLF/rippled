@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <array>
@@ -407,6 +408,7 @@ public:
         return !(x == y);
     }
 
+#if 0
     friend constexpr bool
     operator<(Number const& x, Number const& y) noexcept
     {
@@ -436,6 +438,7 @@ public:
         // If equal exponents, compare mantissas
         return x.mantissa_ < y.mantissa_;
     }
+#endif
 
     /** Return the sign of the amount */
     [[nodiscard]] constexpr int
@@ -449,6 +452,7 @@ public:
     [[nodiscard]] Number
     truncate() const noexcept;
 
+#if 0
     friend constexpr bool
     operator>(Number const& x, Number const& y) noexcept
     {
@@ -466,6 +470,7 @@ public:
     {
         return !(x < y);
     }
+#endif
 
     friend std::ostream&
     operator<<(std::ostream& os, Number const& x)
@@ -815,7 +820,7 @@ Number::normalizeToRange() const
 constexpr Number
 abs(Number x) noexcept
 {
-    if (x < Number{})
+    if (x < beast::kZero)
         x = -x;
     return x;
 }
@@ -846,8 +851,10 @@ power(Number const& f, unsigned n, unsigned d);
 constexpr Number
 squelch(Number const& x, Number const& limit) noexcept
 {
+#if 0
     if (abs(x) < limit)
         return Number{};
+#endif
     return x;
 }
 

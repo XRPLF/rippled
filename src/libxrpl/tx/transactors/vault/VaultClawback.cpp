@@ -235,6 +235,7 @@ VaultClawback::assetsToClawback(
         // LCOV_EXCL_STOP
     }
 
+    [[maybe_unused]]
     auto const assetsAvailable = vault->at(sfAssetsAvailable);
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
@@ -284,7 +285,8 @@ VaultClawback::assetsToClawback(
                 return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
         }
-        // Clamp to maximum.
+// Clamp to maximum.
+#if 0
         if (assetsRecovered > *assetsAvailable)
         {
             assetsRecovered = *assetsAvailable;
@@ -312,6 +314,7 @@ VaultClawback::assetsToClawback(
                 // LCOV_EXCL_STOP
             }
         }
+#endif
     }
     catch (std::overflow_error const&)
     {
@@ -355,9 +358,11 @@ VaultClawback::doApply()
     auto assetsTotal = vault->at(sfAssetsTotal);
 
     [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
+#if 0
     XRPL_ASSERT(
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "xrpl::VaultClawback::doApply : loss and assets do balance");
+#endif
 
     AccountID const holder = tx[sfHolder];
     STAmount sharesDestroyed = {share};

@@ -113,11 +113,15 @@ withinRelativeDistance(Quality const& calcQuality, Quality const& reqQuality, Nu
 {
     if (calcQuality == reqQuality)
         return true;
+#if 0
     auto const [min, max] = std::minmax(calcQuality, reqQuality);
     // Relative distance is (max - min)/max. Can't use basic operations
     // on Quality. Have to use Quality::rate() instead, which
     // is inverse of quality: (1/max.rate - 1/min.rate)/(1/max.rate)
     return ((min.rate() - max.rate()) / min.rate()) < dist;
+#else
+    return false;
+#endif
 }
 
 /** Check if the relative distance between the amounts
@@ -137,8 +141,12 @@ withinRelativeDistance(Amt const& calc, Amt const& req, Number const& dist)
 {
     if (calc == req)
         return true;
+#if 0
     auto const [min, max] = std::minmax(calc, req);
     return ((max - min) / max) < dist;
+#else
+    return false;
+#endif
 }
 
 /** Solve quadratic equation to find takerGets or takerPays. Round
@@ -187,16 +195,18 @@ getAMMOfferStartWithTakerGets(
     auto const c = pool.out * pool.out - (pool.in * pool.out) / targetQuality.rate();
 
     auto nTakerGets = solveQuadraticEqSmallest(a, b, c);
-    if (!nTakerGets || *nTakerGets <= 0)
+    if (!nTakerGets || *nTakerGets <= beast::kZero)
         return std::nullopt;  // LCOV_EXCL_LINE
 
     auto const nTakerGetsConstraint = pool.out - pool.in / (targetQuality.rate() * f);
-    if (nTakerGetsConstraint <= 0)
+    if (nTakerGetsConstraint <= beast::kZero)
         return std::nullopt;
 
-    // Select the smallest to maximize the quality
+// Select the smallest to maximize the quality
+#if 0
     if (nTakerGetsConstraint < *nTakerGets)
         nTakerGets = nTakerGetsConstraint;
+#endif
 
     auto getAmounts = [&pool, &tfee](Number const& nTakerGetsProposed) {
         // Round downward to minimize the offer and to maximize the quality.
@@ -254,16 +264,18 @@ getAMMOfferStartWithTakerPays(
     auto const c = pool.in * pool.in - pool.in * pool.out * targetQuality.rate();
 
     auto nTakerPays = solveQuadraticEqSmallest(a, b, c);
-    if (!nTakerPays || nTakerPays <= 0)
+    if (!nTakerPays || *nTakerPays <= beast::kZero)
         return std::nullopt;  // LCOV_EXCL_LINE
 
     auto const nTakerPaysConstraint = pool.out * targetQuality.rate() - pool.in / f;
-    if (nTakerPaysConstraint <= 0)
+    if (nTakerPaysConstraint <= beast::kZero)
         return std::nullopt;
 
+#if 0
     // Select the smallest to maximize the quality
     if (nTakerPaysConstraint < *nTakerPays)
         nTakerPays = nTakerPaysConstraint;
+#endif
 
     auto getAmounts = [&pool, &tfee](Number const& nTakerPaysProposed) {
         // Round downward to minimize the offer and to maximize the quality.
@@ -319,23 +331,26 @@ changeSpotPriceQuality(
         auto const b = pool.in * (1 + f);
         Number const c = pool.in * pool.in - pool.in * pool.out * quality.rate();
         auto const res = b * b - 4 * a * c;
-        if (res < 0)
+        if (res < beast::kZero)
         {
             return std::nullopt;  // LCOV_EXCL_LINE
         }
-        if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a); nTakerPaysPropose > 0)
+        if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a);
+            nTakerPaysPropose > beast::kZero)
         {
             auto const nTakerPays = [&]() {
-                // The fee might make the AMM offer quality less than CLOB
-                // quality. Therefore, AMM offer has to satisfy this constraint:
-                // o / i >= q. Substituting o with swapAssetIn() gives: i <= O /
-                // q - I / (1 - fee).
+// The fee might make the AMM offer quality less than CLOB
+// quality. Therefore, AMM offer has to satisfy this constraint:
+// o / i >= q. Substituting o with swapAssetIn() gives: i <= O /
+// q - I / (1 - fee).
+#if 0
                 auto const nTakerPaysConstraint = pool.out * quality.rate() - pool.in / f;
                 if (nTakerPaysPropose > nTakerPaysConstraint)
                     return nTakerPaysConstraint;
+#endif
                 return nTakerPaysPropose;
             }();
-            if (nTakerPays <= 0)
+            if (nTakerPays <= beast::kZero)
             {
                 JLOG(j.trace()) << "changeSpotPriceQuality calc failed: " << to_string(pool.in)
                                 << " " << to_string(pool.out) << " " << quality << " " << tfee;

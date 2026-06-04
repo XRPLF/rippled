@@ -136,11 +136,13 @@ IOUAmount::operator==(IOUAmount const& other) const
     return exponent_ == other.exponent_ && mantissa_ == other.mantissa_;
 }
 
+#if 0
 inline bool
 IOUAmount::operator<(IOUAmount const& other) const
 {
     return Number{*this} < Number{other};
 }
+#endif
 
 inline IOUAmount::
 operator bool() const noexcept

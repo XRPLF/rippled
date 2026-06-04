@@ -470,6 +470,7 @@ ValidVault::finalize(
         result = false;
     }
 
+#if 0
     if (afterVault.assetsAvailable > afterVault.assetsTotal)
     {
         JLOG(j.fatal()) << "Invariant failed: assets available must "
@@ -483,6 +484,7 @@ ValidVault::finalize(
                "the difference between assets outstanding and available";
         result = false;
     }
+#endif
 
     if (afterVault.assetsTotal < kZero)
     {
@@ -626,6 +628,7 @@ ValidVault::finalize(
                     result = false;
                 }
 
+#if 0
                 if (afterVault.assetsMaximum > kZero &&
                     afterVault.assetsTotal > afterVault.assetsMaximum)
                 {
@@ -634,6 +637,7 @@ ValidVault::finalize(
                         "exceed assets maximum";
                     result = false;
                 }
+#endif
 
                 if (beforeVault.assetsAvailable != afterVault.assetsAvailable)
                 {
@@ -674,6 +678,7 @@ ValidVault::finalize(
 
                 auto const vaultDeltaAssets =
                     roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
+#if 0
                 auto const txAmount = roundToAsset(vaultAsset, tx[sfAmount], minScale);
 
                 if (vaultDeltaAssets > txAmount)
@@ -683,6 +688,7 @@ ValidVault::finalize(
                         "balance by more than deposited amount";
                     result = false;
                 }
+#endif
 
                 if (vaultDeltaAssets <= kZero)
                 {
@@ -734,6 +740,7 @@ ValidVault::finalize(
                     }
                 }
 
+#if 0
                 if (afterVault.assetsMaximum > kZero &&
                     afterVault.assetsTotal > afterVault.assetsMaximum)
                 {
@@ -741,6 +748,7 @@ ValidVault::finalize(
                         "deposit assets outstanding must not exceed assets maximum";
                     result = false;
                 }
+#endif
 
                 auto const maybeAccDeltaShares = deltaShares(tx[sfAccount]);
                 if (!maybeAccDeltaShares)

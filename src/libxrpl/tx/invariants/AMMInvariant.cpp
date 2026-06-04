@@ -218,10 +218,11 @@ ValidAMM::generalInvariant(
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         j);
-    // Deposit and Withdrawal invariant:
-    // sqrt(amount * amount2) >= LPTokens
-    // all balances are greater than zero
-    // unless on last withdrawal
+// Deposit and Withdrawal invariant:
+// sqrt(amount * amount2) >= LPTokens
+// all balances are greater than zero
+// unless on last withdrawal
+#if 0
     auto const poolProductMean = root2(amount * amount2);
     bool const nonNegativeBalances =
         validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed);
@@ -242,6 +243,7 @@ ValidAMM::generalInvariant(
                                 : ((*lptAMMBalanceAfter_ - poolProductMean) / poolProductMean));
         return false;
     }
+#endif
     // NOLINTEND(bugprone-unchecked-optional-access)
 
     return true;

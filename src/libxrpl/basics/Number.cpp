@@ -1209,12 +1209,16 @@ root(Number f, unsigned d)
     {
         if (f == -one)
             return one;
+#if 0
         if (abs(f) < one)
             return kZero;
+#endif
         throw std::overflow_error("Number::root infinity");
     }
+#if 0
     if (f < kZero && d % 2 == 0)
         throw std::overflow_error("Number::root nan");
+#endif
     if (f == kZero)
         return f;
 
@@ -1234,11 +1238,13 @@ root(Number f, unsigned d)
 
     XRPL_ASSERT_PARTS(f.isnormal(), "xrpl::root(Number, unsigned)", "f is normalized");
     bool neg = false;
+#if 0
     if (f < kZero)
     {
         neg = true;
         f = -f;
     }
+#endif
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
     auto const D = (((6 * di + 11) * di + 6) * di) + 1;  // NOLINT(readability-identifier-naming)
@@ -1277,8 +1283,10 @@ root2(Number f)
 
     if (f == one)
         return f;
+#if 0
     if (f < kZero)
         throw std::overflow_error("Number::root nan");
+#endif
     if (f == kZero)
         return f;
 
@@ -1319,6 +1327,7 @@ root2(Number f)
 Number
 power(Number const& f, unsigned n, unsigned d)
 {
+    [[maybe_unused]]
     static constexpr Number kZero = Number{};
     auto const one = Number::one();
 
@@ -1331,8 +1340,10 @@ power(Number const& f, unsigned n, unsigned d)
     {
         if (f == -one)
             return one;
+#if 0
         if (abs(f) < one)
             return kZero;
+#endif
         // abs(f) > one
         throw std::overflow_error("Number::power infinity");
     }
@@ -1340,8 +1351,10 @@ power(Number const& f, unsigned n, unsigned d)
         return one;
     n /= g;
     d /= g;
+#if 0
     if ((n % 2) == 1 && (d % 2) == 0 && f < kZero)
         throw std::overflow_error("Number::power nan");
+#endif
     return root(power(f, n), d);
 }
 

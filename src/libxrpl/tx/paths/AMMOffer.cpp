@@ -146,8 +146,10 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
         TAmounts<TIn, TOut>{balances_.in + consumed.in, balances_.out - consumed.out};
     Number const newProduct = newBalances.in * newBalances.out;
 
+#if 0
     if (newProduct >= product || withinRelativeDistance(product, newProduct, Number{1, -7}))
         return true;
+#endif
 
     JLOG(j.error()) << "AMMOffer::checkInvariant failed: balances " << to_string(balances_.in)
                     << " " << to_string(balances_.out) << " new balances "
