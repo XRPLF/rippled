@@ -80,15 +80,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, tx_type) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])))",
-          "legendFormat": "p95 {{tx_type}}"
+          "expr": "histogram_quantile(0.95, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])))",
+          "legendFormat": "P95 {{tx_type}} [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, tx_type) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])))",
-          "legendFormat": "p50 {{tx_type}}"
+          "expr": "histogram_quantile(0.50, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])))",
+          "legendFormat": "P50 {{tx_type}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -489,8 +489,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, tx_type) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.transactor\", tx_type=~\"$tx_type\"}[5m])))",
-          "legendFormat": "p95 {{tx_type}}"
+          "expr": "histogram_quantile(0.95, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.transactor\", tx_type=~\"$tx_type\"}[5m])))",
+          "legendFormat": "P95 {{tx_type}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
