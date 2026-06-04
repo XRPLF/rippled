@@ -169,8 +169,8 @@
       }
     },
     {
-      "title": "Job Queue Wait Time (P50, P95, P99)",
-      "description": "Histogram quantiles for time jobs spend waiting in the queue before execution starts. High values indicate thread pool saturation.",
+      "title": "Job Queue Wait Time",
+      "description": "Job queue wait time distribution (p75 typical, p99 tail). How long jobs sit in the queue before a worker picks them up.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -189,22 +189,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P50 [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P95 [{{exported_instance}}]"
+          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "legendFormat": "p75 Wait [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P99 [{{exported_instance}}]"
+          "legendFormat": "p99 Wait [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -228,8 +221,8 @@
       }
     },
     {
-      "title": "Job Execution Time (P50, P95, P99)",
-      "description": "Histogram quantiles for actual job execution time. High values indicate expensive operations or resource contention.",
+      "title": "Job Execution Time",
+      "description": "Job execution time distribution (p75 typical, p99 tail). How long jobs run once started.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -248,22 +241,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P50 [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P95 [{{exported_instance}}]"
+          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "legendFormat": "p75 Exec [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
           "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P99 [{{exported_instance}}]"
+          "legendFormat": "p99 Exec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -287,8 +273,8 @@
       }
     },
     {
-      "title": "Per-Job-Type Execution Time (P95)",
-      "description": "95th percentile execution time broken down by job type. Identifies the slowest job types.",
+      "title": "Per-Job-Type Execution Time (p99)",
+      "description": "Top 10 slowest job types by p99 execution time.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -312,7 +298,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, histogram_quantile(0.95, sum by (le, job_type, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))))",
+          "expr": "topk(10, histogram_quantile(0.99, sum by (le, job_type, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))))",
           "legendFormat": "{{job_type}} [{{exported_instance}}]"
         }
       ],
@@ -392,6 +378,67 @@
           },
           "color": {
             "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Current Job Latency (p99 Gauge)",
+      "description": "At-a-glance p99 job queue wait and execution time over the last 5 minutes. Green < 100ms, yellow 100ms-1s, red > 1s.",
+      "type": "gauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "legendFormat": "p99 Wait"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "legendFormat": "p99 Exec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "\u00b5s",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100000
+              },
+              {
+                "color": "red",
+                "value": 1000000
+              }
+            ]
           }
         },
         "overrides": []

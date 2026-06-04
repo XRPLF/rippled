@@ -50,9 +50,14 @@
 #include <opentelemetry/metrics/observer_result.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/nostd/variant.h>
+#include <opentelemetry/sdk/metrics/aggregation/aggregation_config.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_factory.h>
 #include <opentelemetry/sdk/metrics/export/periodic_exporting_metric_reader_options.h>
+#include <opentelemetry/sdk/metrics/instruments.h>
 #include <opentelemetry/sdk/metrics/meter_provider_factory.h>
+#include <opentelemetry/sdk/metrics/view/instrument_selector_factory.h>
+#include <opentelemetry/sdk/metrics/view/meter_selector_factory.h>
+#include <opentelemetry/sdk/metrics/view/view_factory.h>
 #include <opentelemetry/sdk/metrics/view/view_registry.h>
 #include <opentelemetry/sdk/resource/resource.h>
 #include <opentelemetry/semconv/incubating/service_attributes.h>
@@ -72,6 +77,64 @@
 namespace metric_sdk = opentelemetry::sdk::metrics;
 namespace otlp_http = opentelemetry::exporter::otlp;
 namespace resource = opentelemetry::sdk::resource;
+
+namespace {
+
+// Microsecond-valued duration histogram instrument names. Each is
+// referenced twice — once to register the explicit-bucket view and once
+// to create the instrument — so they are named constants to keep the two
+// sites in sync (a mismatch would silently drop the bucket override).
+constexpr char kJobQueuedDurationUs[] = "xrpld_job_queued_duration_us";
+constexpr char kJobRunningDurationUs[] = "xrpld_job_running_duration_us";
+constexpr char kRpcMethodDurationUs[] = "xrpld_rpc_method_duration_us";
+
+/** Register an explicit-bucket histogram view for a microsecond-valued
+ *  instrument.
+ *
+ *  The SDK's default histogram buckets top out at 10,000 (10 ms when the
+ *  values are microseconds), so any duration above 10 ms saturates and
+ *  every quantile reads as 10 ms. Job wait/run times and RPC latencies
+ *  routinely exceed that, so we install boundaries spanning 100 µs to
+ *  60 s to capture the real distribution.
+ *
+ *  @param views   The registry to add the view to.
+ *  @param name    Instrument name to match (e.g. "xrpld_job_running_duration_us").
+ */
+void
+addMicrosecondHistogramView(metric_sdk::ViewRegistry& views, std::string const& name)
+{
+    // Boundaries in microseconds: 100µs, 500µs, 1ms, 5ms, 10ms, 25ms, 50ms,
+    // 100ms, 250ms, 500ms, 1s, 2.5s, 5s, 10s, 30s, 60s. Covers sub-millisecond
+    // jobs through multi-second stalls without saturating.
+    auto config = std::make_shared<metric_sdk::HistogramAggregationConfig>();
+    config->boundaries_ = {
+        100.0,
+        500.0,
+        1'000.0,
+        5'000.0,
+        10'000.0,
+        25'000.0,
+        50'000.0,
+        100'000.0,
+        250'000.0,
+        500'000.0,
+        1'000'000.0,
+        2'500'000.0,
+        5'000'000.0,
+        10'000'000.0,
+        30'000'000.0,
+        60'000'000.0};
+
+    auto selector = metric_sdk::InstrumentSelectorFactory::Create(
+        metric_sdk::InstrumentType::kHistogram, name, "");
+    auto meterSelector = metric_sdk::MeterSelectorFactory::Create("xrpld", "1.0.0", "");
+    auto view =
+        metric_sdk::ViewFactory::Create(name, "", metric_sdk::AggregationType::kHistogram, config);
+
+    views.AddView(std::move(selector), std::move(meterSelector), std::move(view));
+}
+
+}  // namespace
 
 #endif  // XRPL_ENABLE_TELEMETRY
 
@@ -124,9 +187,16 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
         attrs[opentelemetry::semconv::service::kServiceInstanceId] = instanceId;
     auto resourceAttrs = resource::Resource::Create(attrs);
 
+    // Build a view registry with explicit microsecond buckets for the
+    // duration histograms. Without this they use the SDK default buckets
+    // (max 10,000 = 10 ms), saturating every quantile at 10 ms.
+    auto views = std::make_unique<metric_sdk::ViewRegistry>();
+    addMicrosecondHistogramView(*views, kJobQueuedDurationUs);
+    addMicrosecondHistogramView(*views, kJobRunningDurationUs);
+    addMicrosecondHistogramView(*views, kRpcMethodDurationUs);
+
     // Create MeterProvider with resource, then attach the metric reader.
-    provider_ = metric_sdk::MeterProviderFactory::Create(
-        std::make_unique<metric_sdk::ViewRegistry>(), resourceAttrs);
+    provider_ = metric_sdk::MeterProviderFactory::Create(std::move(views), resourceAttrs);
     provider_->AddMetricReader(std::move(reader));
 
     // Get a meter for all xrpld instruments.
@@ -142,7 +212,7 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     rpcErroredCounter_ = meter_->CreateUInt64Counter(
         "xrpld_rpc_method_errored_total", "Total RPC method calls that errored");
     rpcDurationHistogram_ = meter_->CreateDoubleHistogram(
-        "xrpld_rpc_method_duration_us", "RPC method execution time in microseconds");
+        kRpcMethodDurationUs, "RPC method execution time in microseconds");
 
     // Job queue per-type counters and histograms.
     jobQueuedCounter_ =
@@ -152,9 +222,9 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
     jobFinishedCounter_ =
         meter_->CreateUInt64Counter("xrpld_job_finished_total", "Total jobs completed");
     jobQueuedDurationHistogram_ = meter_->CreateDoubleHistogram(
-        "xrpld_job_queued_duration_us", "Time jobs spent waiting in the queue (microseconds)");
-    jobRunningDurationHistogram_ = meter_->CreateDoubleHistogram(
-        "xrpld_job_running_duration_us", "Job execution time in microseconds");
+        kJobQueuedDurationUs, "Time jobs spent waiting in the queue (microseconds)");
+    jobRunningDurationHistogram_ =
+        meter_->CreateDoubleHistogram(kJobRunningDurationUs, "Job execution time in microseconds");
 
     // --- External dashboard parity counters (Task 7.14) ---
     ledgersClosedCounter_ = meter_->CreateUInt64Counter(
