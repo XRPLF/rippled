@@ -63,6 +63,11 @@ connectors:
       - name: consensus_state
       - name: load_type
       - name: is_batch
+      # Consensus lifecycle dimensions (low cardinality, bounded value sets).
+      - name: mode_new
+      - name: consensus_stalled
+      - name: consensus_phase
+      - name: consensus_result
 
 exporters:
   debug:
