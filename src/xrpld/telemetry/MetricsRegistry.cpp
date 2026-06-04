@@ -237,6 +237,9 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
         meter_->CreateUInt64Counter("xrpld_state_changes_total", "Total operating mode changes");
     jqTransOverflowCounter_ = meter_->CreateUInt64Counter(
         "xrpld_jq_trans_overflow_total", "Total job queue transaction overflows");
+    ledgerHistoryMismatchCounter_ = meter_->CreateUInt64Counter(
+        "xrpld_ledger_history_mismatch_total",
+        "Total built-vs-validated ledger mismatches by reason");
     validationAgreementsCounter_ = meter_->CreateUInt64Counter(
         "xrpld_validation_agreements_total", "Total validation agreements");
     validationMissedCounter_ =
@@ -1323,6 +1326,15 @@ MetricsRegistry::incrementJqTransOverflow()
 #ifdef XRPL_ENABLE_TELEMETRY
     if (enabled_ && jqTransOverflowCounter_)
         jqTransOverflowCounter_->Add(1);
+#endif
+}
+
+void
+MetricsRegistry::incrementLedgerHistoryMismatch(std::string_view reason)
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && ledgerHistoryMismatchCounter_)
+        ledgerHistoryMismatchCounter_->Add(1, {{"reason", std::string(reason)}});
 #endif
 }
 

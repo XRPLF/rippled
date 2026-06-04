@@ -349,6 +349,17 @@ public:
     void
     incrementJqTransOverflow();
 
+    /** Increment the ledger_history_mismatch_total counter for a reason.
+        Called from LedgerHistory::handleMismatch() once the mismatch has
+        been classified. The reason label turns fork diagnosis from a
+        log-grep into a queryable time series.
+        @param reason Classified mismatch cause (e.g. "prior_ledger",
+                      "close_time", "consensus_txset", "same_txset_diff_result",
+                      "unknown").
+    */
+    void
+    incrementLedgerHistoryMismatch(std::string_view reason);
+
     /** Access the validation agreement tracker.
         Used by consensus and ledger hooks to record our validations and
         network validations so the tracker can compute agreement percentages.
@@ -483,6 +494,10 @@ private:
     /// Counter: xrpld_jq_trans_overflow_total — incremented on job queue transaction overflows.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         jqTransOverflowCounter_;
+    /// Counter: xrpld_ledger_history_mismatch_total{reason} — incremented per classified
+    /// built-vs-validated ledger mismatch.
+    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
+        ledgerHistoryMismatchCounter_;
     /// Counter: xrpld_validation_agreements_total — incremented by ValidationTracker on
     /// agreement.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
