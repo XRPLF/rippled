@@ -827,7 +827,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "consensus", "telemetry"],
+  "tags": ["xrpld", "consensus"],
   "templating": {
     "list": [
       {

@@ -383,7 +383,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "rpc", "pathfinding", "telemetry"],
+  "tags": ["xrpld", "statsd", "rpc", "pathfinding"],
   "templating": {
     "list": [
       {

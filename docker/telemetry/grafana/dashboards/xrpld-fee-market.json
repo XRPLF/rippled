@@ -306,7 +306,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "fee-market"],
+  "tags": ["xrpld", "fee-market"],
   "templating": {
     "list": [
       {

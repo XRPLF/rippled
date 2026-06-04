@@ -319,7 +319,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "ledger", "telemetry"],
+  "tags": ["xrpld", "ledger"],
   "templating": {
     "list": [
       {

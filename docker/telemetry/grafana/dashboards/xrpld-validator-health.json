@@ -819,7 +819,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "validator", "health", "telemetry"],
+  "tags": ["xrpld", "validator", "health"],
   "templating": {
     "list": [
       {

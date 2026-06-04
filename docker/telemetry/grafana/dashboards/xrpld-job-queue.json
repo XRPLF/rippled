@@ -446,7 +446,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "job-queue"],
+  "tags": ["xrpld", "job-queue"],
   "templating": {
     "list": [
       {

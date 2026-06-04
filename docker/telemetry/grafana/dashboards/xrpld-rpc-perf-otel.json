@@ -394,7 +394,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "rpc"],
+  "tags": ["xrpld", "rpc"],
   "templating": {
     "list": [
       {

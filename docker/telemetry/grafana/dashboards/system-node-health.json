@@ -2054,7 +2054,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "node-health", "telemetry"],
+  "tags": ["xrpld", "statsd", "node-health"],
   "templating": {
     "list": [
       {
