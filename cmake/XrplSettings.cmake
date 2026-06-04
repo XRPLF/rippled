@@ -108,6 +108,12 @@ else()
 endif()
 
 option(jemalloc "Enables jemalloc for heap profiling" OFF)
+if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    set(lto_default ON)
+else()
+    set(lto_default OFF)
+endif()
+option(lto "Enable Link Time Optimization" ${lto_default})
 option(werr "treat warnings as errors" OFF)
 option(
     local_protobuf

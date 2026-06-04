@@ -214,6 +214,8 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
             cmake_args = f"{cmake_args} -Dwextra=ON"
         if build_type == "Release":
             cmake_args = f"{cmake_args} -Dassert=ON"
+            if architecture["platform"].startswith("linux/"):
+                cmake_args = f"{cmake_args} -Dlto=ON"
 
         # We skip all RHEL on arm64 due to a build failure that needs further
         # investigation.
