@@ -30,42 +30,42 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_squelch_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_squelch_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Squelch In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_squelch_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_squelch_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Squelch Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_squelch_suppressed_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_squelch_suppressed_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Suppressed In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_squelch_suppressed_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_squelch_suppressed_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Suppressed Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_squelch_ignored_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_squelch_ignored_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Ignored In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_squelch_ignored_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_squelch_ignored_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Ignored Out [{{exported_instance}}]"
         }
       ],
@@ -104,42 +104,42 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_overhead_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_overhead_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Base Overhead In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_overhead_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_overhead_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Base Overhead Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_overhead_cluster_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_overhead_cluster_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Cluster In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_overhead_cluster_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_overhead_cluster_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Cluster Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_overhead_manifest_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_overhead_manifest_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Manifest In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_overhead_manifest_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_overhead_manifest_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Manifest Out [{{exported_instance}}]"
         }
       ],
@@ -178,28 +178,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validator_lists_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_validator_lists_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Bytes In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validator_lists_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_validator_lists_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Bytes Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validator_lists_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_validator_lists_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Messages In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_validator_lists_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_validator_lists_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Messages Out [{{exported_instance}}]"
         }
       ],
@@ -255,28 +255,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_set_get_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_set_get_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Set Get In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_set_get_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_set_get_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Set Get Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_set_share_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_set_share_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Set Share In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_set_share_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_set_share_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Set Share Out [{{exported_instance}}]"
         }
       ],
@@ -315,28 +315,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_have_transactions_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_have_transactions_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Have TX In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_have_transactions_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_have_transactions_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Have TX Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_requested_transactions_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_requested_transactions_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Requested TX In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_requested_transactions_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_requested_transactions_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Requested TX Out [{{exported_instance}}]"
         }
       ],
@@ -375,28 +375,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_unknown_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_unknown_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Unknown Bytes In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_unknown_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_unknown_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Unknown Bytes Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_unknown_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_unknown_Messages_In{exported_instance=~\"$node\"}",
           "legendFormat": "Unknown Messages In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_unknown_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_unknown_Messages_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Unknown Messages Out [{{exported_instance}}]"
         }
       ],
@@ -452,28 +452,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proof_path_request_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_proof_path_request_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Request Bytes In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proof_path_request_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_proof_path_request_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Request Bytes Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proof_path_response_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_proof_path_response_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Response Bytes In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_proof_path_response_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_proof_path_response_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Response Bytes Out [{{exported_instance}}]"
         }
       ],
@@ -512,28 +512,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_replay_delta_request_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_replay_delta_request_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Request Bytes In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_replay_delta_request_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_replay_delta_request_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Request Bytes Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_replay_delta_response_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_replay_delta_response_Bytes_In{exported_instance=~\"$node\"}",
           "legendFormat": "Response Bytes In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_replay_delta_response_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_replay_delta_response_Bytes_Out{exported_instance=~\"$node\"}",
           "legendFormat": "Response Bytes Out [{{exported_instance}}]"
         }
       ],
@@ -561,7 +561,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(rippled_squelch_Messages_In, exported_instance)",
+        "query": "label_values(xrpld_squelch_Messages_In, exported_instance)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
