@@ -57,6 +57,12 @@ on:
         type: string
         default: ""
 
+      compiler:
+        description: 'The compiler to use ("gcc" or "clang"). Leave empty for macOS/Windows (uses system default).'
+        required: false
+        type: string
+        default: ""
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -123,6 +129,12 @@ jobs:
         id: nproc
         with:
           subtract: ${{ inputs.nproc_subtract }}
+
+      - name: Set compiler environment (Linux)
+        if: ${{ runner.os == 'Linux' }}
+        uses: ./.github/actions/set-compiler-env
+        with:
+          compiler: ${{ inputs.compiler }}
 
       - name: Setup Conan
         env:
@@ -191,6 +203,21 @@ jobs:
               --parallel "${BUILD_NPROC}" \
               --target "${CMAKE_TARGET}"
 
+      # This step is needed to allow running in non-Nix environments
+      - name: Patch binary to use default loader and remove rpath (Linux)
+        if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
+        run: |
+          loader="$(/tmp/loader-path.sh)"
+          patchelf --set-interpreter "${loader}" --remove-rpath "${{ env.BUILD_DIR }}/xrpld"
+
+      # We're only running aarch64 Linux builds in Ubuntu-based images, so this is kept simple
+      - name: Install libatomic (Linux aarch64)
+        if: ${{ runner.os == 'Linux' && runner.arch == 'ARM64' }}
+        run: |
+          apt update --yes
+          apt install -y --no-install-recommends \
+              libatomic1
+
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
         run: |
@@ -217,7 +244,7 @@ jobs:
           ./xrpld --definitions | python3 -m json.tool >server_definitions.json
 
       - name: Upload server definitions
-        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-bookworm-gcc-13-amd64-release' }}
+        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-gcc-release-amd64' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: server-definitions
@@ -279,7 +306,25 @@ jobs:
           set -o pipefail
           # Coverage builds are slower due to instrumentation; use fewer parallel jobs to avoid flakiness
           [ "$COVERAGE_ENABLED" = "true" ] && BUILD_NPROC=$((BUILD_NPROC - 2))
-          ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
+
+          # The resolver/preload workaround is only correct for the ASan build:
+          # a regular build doesn't hit the __dn_expand interceptor bug, and must
+          # NOT have libasan injected. So only preload when xrpld is ASan-built.
+          #
+          # libresolv hosts getaddrinfo's resolver helpers (dn_expand, res_*). Under ASan
+          # these are intercepted via dlsym(RTLD_NEXT, ...), which yields a NULL pointer
+          # and crashes DNS resolution if libresolv isn't loaded. Linking it guarantees
+          # the symbols are present; it's a harmless no-op on glibc >= 2.34 (merged into
+          # libc) and is what the compiler driver already does for sanitizer builds.
+          #   https://github.com/llvm/llvm-project/issues/59007
+          #   https://github.com/google/sanitizers/issues/1592
+          if ldd ./xrpld | grep -q libasan; then
+              PRELOAD="$(gcc -print-file-name=libasan.so):/usr/lib/x86_64-linux-gnu/libresolv.so.2"
+          else
+              PRELOAD=""
+          fi
+
+          LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
 
       - name: Show test failure summary
         if: ${{ failure() && !inputs.build_only }}
