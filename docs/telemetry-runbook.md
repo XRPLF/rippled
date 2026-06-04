@@ -74,47 +74,47 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### Transaction Spans (Phase 3)
 
-| Span Name    | Source File     | Attributes                                                                             | Description                           |
-| ------------ | --------------- | -------------------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp  | `xrpl.tx.hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied` | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp     | `xrpl.peer.id`, `xrpl.tx.hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`   | Transaction received from peer relay  |
-| `tx.apply`   | BuildLedger.cpp | `xrpl.ledger.seq`, `tx_count`, `tx_failed`                                             | Transaction set applied per ledger    |
+| Span Name    | Source File     | Attributes                                                                        | Description                           |
+| ------------ | --------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process` | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied` | Transaction submission and processing |
+| `tx.receive` | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`        | Transaction received from peer relay  |
+| `tx.apply`   | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                             | Transaction set applied per ledger    |
 
 ### Transaction Queue Spans (Phase 3)
 
-| Span Name          | Source File | Attributes                                                    | Description                                        |
-| ------------------ | ----------- | ------------------------------------------------------------- | -------------------------------------------------- |
-| `txq.enqueue`      | TxQ.cpp     | `xrpl.tx.hash`, `tx_type`                                     | Transaction enqueue decision (child of tx.process) |
-| `txq.apply_direct` | TxQ.cpp     | --                                                            | Direct apply attempt (bypassing queue)             |
-| `txq.batch_clear`  | TxQ.cpp     | --                                                            | Batch clear of queued transactions for an account  |
-| `txq.accept`       | TxQ.cpp     | `queue_size`, `ledger_changed`                                | Ledger-close accept loop over queued transactions  |
-| `txq.accept_tx`    | TxQ.cpp     | `xrpl.tx.hash`, `retries_remaining`, `ter_code`, `txq_status` | Per-transaction apply during accept                |
-| `txq.cleanup`      | TxQ.cpp     | `xrpl.ledger.seq`                                             | Post-close cleanup of expired queue entries        |
+| Span Name          | Source File | Attributes                                               | Description                                        |
+| ------------------ | ----------- | -------------------------------------------------------- | -------------------------------------------------- |
+| `txq.enqueue`      | TxQ.cpp     | `tx_hash`, `tx_type`                                     | Transaction enqueue decision (child of tx.process) |
+| `txq.apply_direct` | TxQ.cpp     | --                                                       | Direct apply attempt (bypassing queue)             |
+| `txq.batch_clear`  | TxQ.cpp     | --                                                       | Batch clear of queued transactions for an account  |
+| `txq.accept`       | TxQ.cpp     | `queue_size`, `ledger_changed`                           | Ledger-close accept loop over queued transactions  |
+| `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status` | Per-transaction apply during accept                |
+| `txq.cleanup`      | TxQ.cpp     | `ledger_seq`                                             | Post-close cleanup of expired queue entries        |
 
 ### Consensus Spans (Phase 4)
 
-| Span Name                      | Source File      | Attributes                                                                                                                                                                                                                        | Description                                                                                                                           |
-| ------------------------------ | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.round`              | RCLConsensus.cpp | `xrpl.consensus.ledger_id`, `xrpl.ledger.seq`, `xrpl.consensus.mode`, `trace_strategy`, `xrpl.consensus.round_id`                                                                                                                 | Root span for a consensus round (deterministic or random trace ID)                                                                    |
-| `consensus.phase.open`         | Consensus.h      | --                                                                                                                                                                                                                                | Open phase duration (child of round)                                                                                                  |
-| `consensus.proposal.send`      | RCLConsensus.cpp | `xrpl.consensus.round`, `is_bow_out`                                                                                                                                                                                              | Consensus proposal broadcast                                                                                                          |
-| `consensus.ledger_close`       | RCLConsensus.cpp | `xrpl.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                                          | Ledger close event                                                                                                                    |
-| `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`                                                                                                                                                                                | Establish phase duration (child of round)                                                                                             |
-| `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`                                                                                                                                                                                 | Position update and dispute resolution (see Events below)                                                                             |
-| `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `consensus_result`                                                                                                         | Consensus threshold check                                                                                                             |
-| `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                       | Ledger accepted by consensus                                                                                                          |
-| `consensus.accept.apply`       | RCLConsensus.cpp | `xrpl.ledger.seq`, `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction`, `tx_count` | Ledger application with close time details (see Events below)                                                                         |
-| `consensus.validation.send`    | RCLConsensus.cpp | `xrpl.ledger.seq`, `proposing`, `ledger_hash`, `full_validation`, `validation_sign_time`                                                                                                                                          | Validation sent after accept (follows-from link)                                                                                      |
-| `consensus.mode_change`        | RCLConsensus.cpp | `mode_old`, `mode_new`                                                                                                                                                                                                            | Consensus mode transition                                                                                                             |
-| `consensus.proposal.receive`   | PeerImp.cpp      | `trusted`, `xrpl.consensus.round`                                                                                                                                                                                                 | Proposal received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers)   |
-| `consensus.validation.receive` | PeerImp.cpp      | `trusted`, `xrpl.ledger.seq`                                                                                                                                                                                                      | Validation received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers) |
+| Span Name                      | Source File      | Attributes                                                                                                                                                                                                                   | Description                                                                                                                           |
+| ------------------------------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.round`              | RCLConsensus.cpp | `consensus_ledger_id`, `ledger_seq`, `consensus_mode`, `trace_strategy`, `consensus_round_id`                                                                                                                                | Root span for a consensus round (deterministic or random trace ID)                                                                    |
+| `consensus.phase.open`         | Consensus.h      | --                                                                                                                                                                                                                           | Open phase duration (child of round)                                                                                                  |
+| `consensus.proposal.send`      | RCLConsensus.cpp | `consensus_round`, `is_bow_out`                                                                                                                                                                                              | Consensus proposal broadcast                                                                                                          |
+| `consensus.ledger_close`       | RCLConsensus.cpp | `ledger_seq`, `consensus_mode`                                                                                                                                                                                               | Ledger close event                                                                                                                    |
+| `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`                                                                                                                                                                           | Establish phase duration (child of round)                                                                                             |
+| `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`                                                                                                                                                                            | Position update and dispute resolution (see Events below)                                                                             |
+| `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `consensus_result`                                                                                                    | Consensus threshold check                                                                                                             |
+| `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                  | Ledger accepted by consensus                                                                                                          |
+| `consensus.accept.apply`       | RCLConsensus.cpp | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction`, `tx_count` | Ledger application with close time details (see Events below)                                                                         |
+| `consensus.validation.send`    | RCLConsensus.cpp | `ledger_seq`, `proposing`, `ledger_hash`, `full_validation`, `validation_sign_time`                                                                                                                                          | Validation sent after accept (follows-from link)                                                                                      |
+| `consensus.mode_change`        | RCLConsensus.cpp | `mode_old`, `mode_new`                                                                                                                                                                                                       | Consensus mode transition                                                                                                             |
+| `consensus.proposal.receive`   | PeerImp.cpp      | `trusted`, `consensus_round`                                                                                                                                                                                                 | Proposal received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers)   |
+| `consensus.validation.receive` | PeerImp.cpp      | `trusted`, `ledger_seq`                                                                                                                                                                                                      | Validation received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers) |
 
 #### Consensus Span Events
 
-| Parent Span                  | Event Name        | Event Attributes                                                 | Description                                             |
-| ---------------------------- | ----------------- | ---------------------------------------------------------------- | ------------------------------------------------------- |
-| `consensus.update_positions` | `dispute.resolve` | `xrpl.tx.id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` | Emitted per dispute when votes are tallied              |
-| `consensus.accept.apply`     | `tx.included`     | `xrpl.tx.id`                                                     | Emitted per transaction included in the accepted ledger |
+| Parent Span                  | Event Name        | Event Attributes                                            | Description                                             |
+| ---------------------------- | ----------------- | ----------------------------------------------------------- | ------------------------------------------------------- |
+| `consensus.update_positions` | `dispute.resolve` | `tx_id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` | Emitted per dispute when votes are tallied              |
+| `consensus.accept.apply`     | `tx.included`     | `tx_id`                                                     | Emitted per transaction included in the accepted ledger |
 
 #### Close Time Queries (Tempo TraceQL)
 
@@ -129,10 +129,10 @@ All spans instrumented in xrpld, grouped by subsystem:
 {name="consensus.accept.apply"} | duration > 5s
 
 # Find specific ledger's consensus details
-{name="consensus.accept.apply"} | xrpl.ledger.seq = 92345678
+{name="consensus.accept.apply"} | ledger_seq = 92345678
 
 # Find all spans in a consensus round (deterministic trace strategy)
-{name="consensus.round"} | xrpl.consensus.round_id = "<round_id>"
+{name="consensus.round"} | consensus_round_id = <round_id>
 
 # Find dispute resolutions
 {name="consensus.update_positions"} >> {event:name="dispute.resolve"}
@@ -140,18 +140,18 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### Ledger Spans (Phase 6)
 
-| Span Name         | Source File          | Attributes                                 | Description                   |
-| ----------------- | -------------------- | ------------------------------------------ | ----------------------------- |
-| `ledger.build`    | BuildLedger.cpp:31   | `xrpl.ledger.seq`, `tx_count`, `tx_failed` | Ledger build during consensus |
-| `ledger.validate` | LedgerMaster.cpp:915 | `xrpl.ledger.seq`, `validations`           | Ledger promoted to validated  |
-| `ledger.store`    | LedgerMaster.cpp:409 | `xrpl.ledger.seq`                          | Ledger stored in history      |
+| Span Name         | Source File          | Attributes                            | Description                   |
+| ----------------- | -------------------- | ------------------------------------- | ----------------------------- |
+| `ledger.build`    | BuildLedger.cpp:31   | `ledger_seq`, `tx_count`, `tx_failed` | Ledger build during consensus |
+| `ledger.validate` | LedgerMaster.cpp:915 | `ledger_seq`, `validations`           | Ledger promoted to validated  |
+| `ledger.store`    | LedgerMaster.cpp:409 | `ledger_seq`                          | Ledger stored in history      |
 
 ### Peer Spans (Phase 6)
 
-| Span Name                 | Source File      | Attributes                           | Description                   |
-| ------------------------- | ---------------- | ------------------------------------ | ----------------------------- |
-| `peer.proposal.receive`   | PeerImp.cpp:1667 | `xrpl.peer.id`, `proposal_trusted`   | Proposal received from peer   |
-| `peer.validation.receive` | PeerImp.cpp:2264 | `xrpl.peer.id`, `validation_trusted` | Validation received from peer |
+| Span Name                 | Source File      | Attributes                      | Description                   |
+| ------------------------- | ---------------- | ------------------------------- | ----------------------------- |
+| `peer.proposal.receive`   | PeerImp.cpp:1667 | `peer_id`, `proposal_trusted`   | Proposal received from peer   |
+| `peer.validation.receive` | PeerImp.cpp:2264 | `peer_id`, `validation_trusted` | Validation received from peer |
 
 ---
 
@@ -209,7 +209,7 @@ This section shows what questions you can answer using the span attributes, with
 {name="rpc.http_request"} | request_payload_size > 100000
 
 # Find resource-heavy RPC commands (by load_type)
-{name=~"rpc.command.*"} | load_type = "exception_rpc"
+{name=~"rpc.command.*"} | load_type = "exceptioned RPC"
 
 # Find a specific WebSocket command
 {name="rpc.ws_message"} | command = "subscribe"
@@ -355,10 +355,10 @@ all its normal attributes, it just lacks a cross-node parent link.
 {name="consensus.proposal.receive"} && nestedSetParent > 0
 
 # Trace a transaction across the network by its hash
-{name=~"tx\\..*"} | xrpl.tx.hash = "<hash>"
+{name=~"tx\\..*"} | tx_hash = "<hash>"
 
 # Find all spans in a cross-node consensus trace
-{rootServiceName="xrpld"} | xrpl.consensus.round_id = "<round_id>"
+{rootServiceName="xrpld"} | consensus_round_id = <round_id>
 
 # Compare latency between sender and receiver for validations
 {name="consensus.validation.send" || name="consensus.validation.receive"}
@@ -388,16 +388,16 @@ Every metric carries these standard labels:
 | `service_name` | Resource attribute | `xrpld`                                  |
 | `span_kind`    | Span kind          | `SPAN_KIND_INTERNAL`                     |
 
-Additionally, span attributes configured as dimensions in the collector become metric labels (dots → underscores):
+Additionally, span attributes configured as dimensions in the collector become metric labels. The collector dimensions use the bare attribute keys emitted by the code, so the label name equals the attribute name:
 
-| Span Attribute        | Metric Label                   | Applies To                      |
-| --------------------- | ------------------------------ | ------------------------------- |
-| `command`             | `xrpl_rpc_command`             | `rpc.command.*` spans           |
-| `rpc_status`          | `xrpl_rpc_status`              | `rpc.command.*` spans           |
-| `xrpl.consensus.mode` | `xrpl_consensus_mode`          | `consensus.ledger_close` spans  |
-| `local`               | `xrpl_tx_local`                | `tx.process` spans              |
-| `proposal_trusted`    | `xrpl_peer_proposal_trusted`   | `peer.proposal.receive` spans   |
-| `validation_trusted`  | `xrpl_peer_validation_trusted` | `peer.validation.receive` spans |
+| Span Attribute       | Metric Label         | Applies To                      |
+| -------------------- | -------------------- | ------------------------------- |
+| `command`            | `command`            | `rpc.command.*` spans           |
+| `rpc_status`         | `rpc_status`         | `rpc.command.*` spans           |
+| `consensus_mode`     | `consensus_mode`     | `consensus.ledger_close` spans  |
+| `local`              | `local`              | `tx.process` spans              |
+| `proposal_trusted`   | `proposal_trusted`   | `peer.proposal.receive` spans   |
+| `validation_trusted` | `validation_trusted` | `peer.validation.receive` spans |
 
 ### Histogram Buckets
 
@@ -469,44 +469,44 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### RPC Performance (`xrpld-rpc-perf`)
 
-| Panel                       | Type       | PromQL                                                                                                                                             | Labels Used                       |
-| --------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| RPC Request Rate by Command | timeseries | `sum by (xrpl_rpc_command) (rate(traces_span_metrics_calls_total{span_name=~"rpc.command.*"}[5m]))`                                                | `xrpl_rpc_command`                |
-| RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, xrpl_rpc_command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `xrpl_rpc_command`                |
-| RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `xrpl_rpc_command`                                                                                     | `xrpl_rpc_command`, `status_code` |
-| RPC Latency Heatmap         | heatmap    | `sum(increase(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                          | `le` (bucket boundaries)          |
-| Overall RPC Throughput      | timeseries | `rpc.request` + `rpc.process` rate                                                                                                                 | —                                 |
-| RPC Success vs Error        | timeseries | by `status_code` (UNSET vs ERROR)                                                                                                                  | `status_code`                     |
-| Top Commands by Volume      | bargauge   | `topk(10, ...)` by `xrpl_rpc_command`                                                                                                              | `xrpl_rpc_command`                |
-| WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                                              | —                                 |
+| Panel                       | Type       | PromQL                                                                                                                                    | Labels Used              |
+| --------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| RPC Request Rate by Command | timeseries | `sum by (command) (rate(traces_span_metrics_calls_total{span_name=~"rpc.command.*"}[5m]))`                                                | `command`                |
+| RPC Latency p95 by Command  | timeseries | `histogram_quantile(0.95, sum by (le, command) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])))` | `command`                |
+| RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `command`                                                                                     | `command`, `status_code` |
+| RPC Latency Heatmap         | heatmap    | `sum(increase(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                 | `le` (bucket boundaries) |
+| Overall RPC Throughput      | timeseries | `rpc.request` + `rpc.process` rate                                                                                                        | —                        |
+| RPC Success vs Error        | timeseries | by `status_code` (UNSET vs ERROR)                                                                                                         | `status_code`            |
+| Top Commands by Volume      | bargauge   | `topk(10, ...)` by `command`                                                                                                              | `command`                |
+| WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                                     | —                        |
 
 ### Transaction Overview (`xrpld-transactions`)
 
-| Panel                             | Type       | PromQL                                                                                       | Labels Used     |
-| --------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | --------------- |
-| Transaction Processing Rate       | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m])` and `tx.receive`         | `span_name`     |
-| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                              | —               |
-| Transaction Path Distribution     | piechart   | `sum by (xrpl_tx_local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `xrpl_tx_local` |
-| Transaction Receive vs Suppressed | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                          | —               |
-| TX Processing Duration Heatmap    | heatmap    | `tx.process` histogram buckets                                                               | `le`            |
-| TX Apply Duration per Ledger      | timeseries | p95/p50 of `tx.apply`                                                                        | —               |
-| Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                                            | —               |
-| TX Apply Failed Rate              | stat       | `tx.apply` with `STATUS_CODE_ERROR`                                                          | `status_code`   |
+| Panel                             | Type       | PromQL                                                                               | Labels Used   |
+| --------------------------------- | ---------- | ------------------------------------------------------------------------------------ | ------------- |
+| Transaction Processing Rate       | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m])` and `tx.receive` | `span_name`   |
+| Transaction Processing Latency    | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="tx.process"})`                      | —             |
+| Transaction Path Distribution     | piechart   | `sum by (local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `local`       |
+| Transaction Receive vs Suppressed | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                  | —             |
+| TX Processing Duration Heatmap    | heatmap    | `tx.process` histogram buckets                                                       | `le`          |
+| TX Apply Duration per Ledger      | timeseries | p95/p50 of `tx.apply`                                                                | —             |
+| Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                                    | —             |
+| TX Apply Failed Rate              | stat       | `tx.apply` with `STATUS_CODE_ERROR`                                                  | `status_code` |
 
 ### Consensus Health (`xrpld-consensus`)
 
-| Panel                         | Type       | PromQL                                                                             | Labels Used           |
-| ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | --------------------- |
-| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`              | —                     |
-| Consensus Proposals Sent Rate | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.proposal.send"}[5m])`   | —                     |
-| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`               | —                     |
-| Validation Send Rate          | stat       | `rate(traces_span_metrics_calls_total{span_name="consensus.validation.send"}[5m])` | —                     |
-| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`        | —                     |
-| Close Time Agreement          | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.accept.apply"}[5m])`    | —                     |
-| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `xrpl_consensus_mode`                                  | `xrpl_consensus_mode` |
-| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                                | —                     |
-| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                            | —                     |
-| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                               | `le`                  |
+| Panel                         | Type       | PromQL                                                                             | Labels Used      |
+| ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | ---------------- |
+| Consensus Round Duration      | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept"})`              | —                |
+| Consensus Proposals Sent Rate | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.proposal.send"}[5m])`   | —                |
+| Ledger Close Duration         | timeseries | `histogram_quantile(0.95, ... {span_name="consensus.ledger_close"})`               | —                |
+| Validation Send Rate          | stat       | `rate(traces_span_metrics_calls_total{span_name="consensus.validation.send"}[5m])` | —                |
+| Ledger Apply Duration         | timeseries | `histogram_quantile(0.95 / 0.50, ... {span_name="consensus.accept.apply"})`        | —                |
+| Close Time Agreement          | timeseries | `rate(traces_span_metrics_calls_total{span_name="consensus.accept.apply"}[5m])`    | —                |
+| Consensus Mode Over Time      | timeseries | `consensus.ledger_close` by `consensus_mode`                                       | `consensus_mode` |
+| Accept vs Close Rate          | timeseries | `consensus.accept` vs `consensus.ledger_close` rate                                | —                |
+| Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                            | —                |
+| Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                               | `le`             |
 
 ### Ledger Operations (`xrpld-ledger-ops`)
 
@@ -525,12 +525,12 @@ Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 Requires `trace_peer=1` in the `[telemetry]` config section.
 
-| Panel                            | Type       | PromQL                            | Labels Used                    |
-| -------------------------------- | ---------- | --------------------------------- | ------------------------------ |
-| Proposal Receive Rate            | timeseries | `peer.proposal.receive` rate      | —                              |
-| Validation Receive Rate          | timeseries | `peer.validation.receive` rate    | —                              |
-| Proposals Trusted vs Untrusted   | piechart   | by `xrpl_peer_proposal_trusted`   | `xrpl_peer_proposal_trusted`   |
-| Validations Trusted vs Untrusted | piechart   | by `xrpl_peer_validation_trusted` | `xrpl_peer_validation_trusted` |
+| Panel                            | Type       | PromQL                         | Labels Used          |
+| -------------------------------- | ---------- | ------------------------------ | -------------------- |
+| Proposal Receive Rate            | timeseries | `peer.proposal.receive` rate   | —                    |
+| Validation Receive Rate          | timeseries | `peer.validation.receive` rate | —                    |
+| Proposals Trusted vs Untrusted   | piechart   | by `proposal_trusted`          | `proposal_trusted`   |
+| Validations Trusted vs Untrusted | piechart   | by `validation_trusted`        | `validation_trusted` |
 
 ### Node Health -- System Metrics (`xrpld-system-node-health`)
 

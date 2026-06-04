@@ -33,7 +33,7 @@ connectors:
     dimensions:
       - name: command
       - name: rpc_status
-      - name: xrpl.consensus.mode
+      - name: consensus_mode
       - name: close_time_correct
       - name: local
       - name: suppressed
@@ -45,6 +45,11 @@ connectors:
       - name: consensus_state
       - name: load_type
       - name: is_batch
+      # Consensus lifecycle dimensions (low cardinality, bounded value sets).
+      - name: mode_new
+      - name: consensus_stalled
+      - name: consensus_phase
+      - name: consensus_result
 
 exporters:
   debug:
