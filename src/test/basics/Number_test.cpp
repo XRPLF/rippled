@@ -10,6 +10,7 @@
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/multiprecision/number.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cctype>
 #include <cstdint>
@@ -1389,32 +1390,58 @@ public:
         testcase << "test_relationals " << to_string(Number::getMantissaScale());
 
         {
-            // Inequality test cases are <larger, smaller, __LINE__>
-            using Case = std::tuple<Number, Number, int>;
-            auto const c = std::to_array<Case>({
-                {100, 10, __LINE__},
-                {50, 20, __LINE__},
-                {10, -100, __LINE__},
-                {100, -10, __LINE__},
-                {10, -10, __LINE__},
-                {100, 0, __LINE__},
-                {1, 0, __LINE__},
-                {0, -10, __LINE__},
-                {0, -1, __LINE__},
-                {-10, -100, __LINE__},
-                {-20, -50, __LINE__},
-            });
+            auto const nums = [this]() {
+                // Inequality test cases are built from a list of sorted integers
+                auto const values =
+                    std::to_array<int>({-100, -50, -20, -10, -1, 0, 1, 10, 20, 50, 100});
+                BEAST_EXPECT(std::ranges::is_sorted(values));
 
-            for (auto const& [larger, smaller, line] : c)
+                std::vector<Number> result;
+                result.reserve(values.size() + 1);
+                result.emplace_back(-1, 100);
+                for (auto const v : values)
+                {
+                    if (v == 0)
+                        result.emplace_back(-2, -10);
+                    result.emplace_back(v);
+                    if (v == 0)
+                        result.emplace_back(2, -10);
+                }
+                result.emplace_back(1, 100);
+                return result;
+            }();
+
+            BEAST_EXPECT(std::ranges::is_sorted(nums));
+
+            for (auto iter1 = nums.begin(); iter1 != nums.end(); ++iter1)
             {
-                std::stringstream ss;
-                ss << larger << " > " << smaller;
-                auto const str = ss.str();
+                auto iter2 = iter1;
+                for (++iter2; iter2 != nums.end(); ++iter2)
+                {
+                    Number const& smaller = *iter1;
+                    Number const& larger = *iter2;
+                    std::stringstream ss;
+                    ss << smaller << " < " << larger;
+                    auto const str = ss.str();
 
-                expect(!(larger < smaller), str + " (<)", __FILE__, line);
-                expect(larger > smaller, str + " (>)", __FILE__, line);
-                expect(larger >= smaller, str + " (>=)", __FILE__, line);
-                expect(!(larger <= smaller), str + " (<=)", __FILE__, line);
+                    // The ==/!= operators use a completely different code path than <, etc.
+                    // This helps detect a breakage in one but not the other. It also helps
+                    // verify that the values are being ordered correctly.
+                    BEAST_EXPECTS(smaller != larger, str + " (!=)");
+                    BEAST_EXPECTS(!(smaller == larger), str + " (==)");
+
+                    // true results using operator< and derived operators
+                    BEAST_EXPECTS(smaller < larger, str + " (<)");
+                    BEAST_EXPECTS(larger > smaller, str + " (>)");
+                    BEAST_EXPECTS(larger >= smaller, str + " (>=)");
+                    BEAST_EXPECTS(smaller <= larger, str + " (<=)");
+
+                    // false results using operator< and derived operators
+                    BEAST_EXPECTS(!(larger < smaller), str + " (! <)");
+                    BEAST_EXPECTS(!(smaller > larger), str + " (! >)");
+                    BEAST_EXPECTS(!(smaller >= larger), str + " (! >=)");
+                    BEAST_EXPECTS(!(larger <= smaller), str + " (! <=)");
+                }
             }
         }
 
@@ -1436,6 +1463,9 @@ public:
 
                 // NOLINTBEGIN(misc-redundant-expression) Explicitly testing operators with
                 // equivalent values
+                expect(n == n, str + " ==", __FILE__, line);
+                expect(!(n != n), str + " !=", __FILE__, line);
+
                 expect(!(n < n), str + " < ", __FILE__, line);
                 expect(!(n > n), str + " >", __FILE__, line);
                 expect(n >= n, str + " >=", __FILE__, line);
