@@ -22,6 +22,7 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
