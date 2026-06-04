@@ -1,9 +1,11 @@
 #pragma once
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 
 #include <functional>
 #include <optional>
+#include <stdexcept>
 #include <vector>
 
 namespace xrpl {

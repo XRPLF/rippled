@@ -10,6 +10,9 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
+#include <stdexcept>
+#include <string>
+
 namespace xrpl {
 
 namespace wasm_float {

@@ -149,7 +149,7 @@ locateField(STObject const& obj, FieldLocator const& locator)
             return Unexpected(HostFunctionError::FieldNotFound);
     }
 
-    for (int i = 1; i < locator.size(); ++i)
+    for (unsigned i = 1; i < locator.size(); ++i)
     {
         int32_t const sfieldCode = adjustWasmEndianess(locator[i]);
 
