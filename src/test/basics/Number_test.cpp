@@ -1404,7 +1404,7 @@ public:
                 {-20, -50, __LINE__},
             });
 
-            for (auto const [larger, smaller, line] : c)
+            for (auto const& [larger, smaller, line] : c)
             {
                 std::stringstream ss;
                 ss << larger << " > " << smaller;
@@ -1429,7 +1429,7 @@ public:
                 {-30, __LINE__},
                 {-600, __LINE__},
             });
-            for (auto const [n, line] : c)
+            for (auto const& [n, line] : c)
             {
                 auto const str = to_string(n);
 
