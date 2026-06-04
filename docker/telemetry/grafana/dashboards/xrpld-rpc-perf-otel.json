@@ -170,7 +170,7 @@
     },
     {
       "title": "RPC Latency - All Methods",
-      "description": "Histogram quantiles for RPC execution time across all methods. Sourced from rpc_method_duration_us histogram.",
+      "description": "RPC method latency distribution (p75 typical, p99 tail) across all methods.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -189,8 +189,15 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(1.0, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
-          "legendFormat": "Latency [{{exported_instance}}]"
+          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
+          "legendFormat": "p75 [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
+          "legendFormat": "p99 [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -214,8 +221,8 @@
       }
     },
     {
-      "title": "Per-Method Latency (Top 10 Slowest)",
-      "description": "95th percentile execution time per method. Identifies the slowest RPC endpoints.",
+      "title": "Per-Method Latency (p99, Top 10 Slowest)",
+      "description": "Top 10 slowest RPC methods by p99 latency.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -239,7 +246,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, histogram_quantile(1.0, sum by (le, method, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m]))))",
+          "expr": "topk(10, histogram_quantile(0.99, sum by (le, method, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m]))))",
           "legendFormat": "{{method}} [{{exported_instance}}]"
         }
       ],
@@ -324,6 +331,60 @@
               {
                 "color": "red",
                 "value": 0.25
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Current RPC Latency (p99 Gauge)",
+      "description": "At-a-glance p99 RPC method latency over the last 5 minutes. Green < 100ms, yellow 100ms-1s, red > 1s.",
+      "type": "gauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
+          "legendFormat": "p99 Latency"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "\u00b5s",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100000
+              },
+              {
+                "color": "red",
+                "value": 1000000
               }
             ]
           }
