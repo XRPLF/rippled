@@ -94,8 +94,7 @@ PayGraph::PayGraph(std::optional<uint256> const& domain, beast::Journal j) : dom
 std::shared_ptr<PayGraph::Snapshot const>
 PayGraph::snapshot() const
 {
-    return std::atomic_load_explicit(
-        &const_cast<PayGraph*>(this)->snap_, std::memory_order_acquire);
+    return snap_.load(std::memory_order_acquire);
 }
 
 //==============================================================================
@@ -256,8 +255,8 @@ PayGraph::build(
     // Private constructor accessible through this factory only.
     auto pg = std::shared_ptr<PayGraph>(new PayGraph(domain, j));
     auto snap = buildSnapshot(bookDB, ledger, domain, j);
-    std::atomic_store_explicit(
-        &pg->snap_, std::shared_ptr<Snapshot const>(std::move(snap)), std::memory_order_release);
+    pg->snap_.store(
+        std::shared_ptr<Snapshot const>(std::move(snap)), std::memory_order_release);
     return pg;
 }
 
@@ -275,8 +274,8 @@ PayGraph::rebuild(OrderBookDB& bookDB, ReadView const& ledger, std::optional<uin
     if (auto cur = snapshot())
         snap->stats.totalDeltasCalled = cur->stats.totalDeltasCalled;
 
-    std::atomic_store_explicit(
-        &snap_, std::shared_ptr<Snapshot const>(std::move(snap)), std::memory_order_release);
+    snap_.store(
+        std::shared_ptr<Snapshot const>(std::move(snap)), std::memory_order_release);
 }
 
 //==============================================================================
@@ -301,13 +300,13 @@ PayGraph::applyLedgerDelta(
     std::scoped_lock const lk(writeMu_);
 
     // Shallow-copy the current snapshot.  All vectors are value-copied.
-    auto cur = std::atomic_load_explicit(&snap_, std::memory_order_acquire);
+    auto cur = snap_.load(std::memory_order_acquire);
     if (!cur)
     {
         // No snapshot yet — do a full build instead.
         auto fresh = buildSnapshot(bookDB, newLedger, domain_, j_);
-        std::atomic_store_explicit(
-            &snap_, std::shared_ptr<Snapshot const>(std::move(fresh)), std::memory_order_release);
+        snap_.store(
+            std::shared_ptr<Snapshot const>(std::move(fresh)), std::memory_order_release);
         return;
     }
 
@@ -336,8 +335,8 @@ PayGraph::applyLedgerDelta(
                      << " books, delta #" << next->stats.totalDeltasCalled;
 
     // ---------- publish ---------------------------------------------------
-    std::atomic_store_explicit(
-        &snap_, std::shared_ptr<Snapshot const>(std::move(next)), std::memory_order_release);
+    snap_.store(
+        std::shared_ptr<Snapshot const>(std::move(next)), std::memory_order_release);
 }
 
 //==============================================================================

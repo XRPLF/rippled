@@ -324,10 +324,9 @@ private:
     //--------------------------------------------------------------------------
 
     /// Current snapshot.  Read via snapshot(); written only by writeMu_ holder.
-    /// We use a plain shared_ptr + std::atomic_{load,store} with explicit
-    /// memory orders rather than std::atomic<shared_ptr<T>> to keep
-    /// compatibility with older stdlibs on supported platforms.
-    mutable std::shared_ptr<Snapshot const> snap_;
+    /// Uses std::atomic<std::shared_ptr<T>> (C++20) for lock-free atomic
+    /// load/store with default memory ordering semantics.
+    mutable std::atomic<std::shared_ptr<Snapshot const>> snap_;
 
     /// Serialises applyLedgerDelta() / rebuild() calls.
     /// Never held during pathfinding.

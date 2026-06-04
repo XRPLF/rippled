@@ -16,12 +16,11 @@ class Paths
 {
 private:
     Asset in_;
-    int depth_;
     unsigned int limit_;
 
 public:
-    Paths(Asset const& in, int depth = 7, unsigned int limit = 4)
-        : in_(in), depth_(depth), limit_(limit)
+    Paths(Asset const& in, [[maybe_unused]] int depth = 7, unsigned int limit = 4)
+        : in_(in), limit_(limit)
     {
     }
 
