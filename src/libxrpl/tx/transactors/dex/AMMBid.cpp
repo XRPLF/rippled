@@ -269,7 +269,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
 
     auto getPayPrice = [&](Number const& computedPrice) -> Expected<Number, TER> {
         auto effectivePrice = computedPrice;
-        if (rules.enabled(fixCleanup3_2_0) && ammTradingFee == 0)
+        if (rules.enabled(fixCleanup3_3_0) && ammTradingFee == 0)
         {
             // Prevent zero-fee pools from granting auction slots at zero or dust prices.
             effectivePrice =
