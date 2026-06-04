@@ -14,13 +14,16 @@ namespace bft = boost::function_types;
 
 namespace xrpl {
 
+using wasmSecondaryCbFuncType =
+    wasm_trap_t*(HostFunctions&, wasm_val_vec_t const*, wasm_val_vec_t*);
+
 struct WasmImportFunc
 {
     std::string_view name;
     std::optional<WasmTypes> result;
     std::vector<WasmTypes> params;
-    // wasm_func_callback_with_env_t
-    void* wrap = nullptr;
+
+    wasmSecondaryCbFuncType* wrap = nullptr;
     uint32_t gas = 0;
 };
 
@@ -105,7 +108,7 @@ void
 WasmImpFunc(
     ImportVec& v,
     std::string_view impName,
-    void* fWrap,
+    wasmSecondaryCbFuncType* fWrap,
     HostFunctions& hf,
     uint32_t gas = 0)
 {
@@ -117,11 +120,9 @@ WasmImpFunc(
     v.emplace(impName, std::make_pair(HFRef(hf), std::move(e)));
 }
 
-#define WASM_IMPORT_FUNC(v, f, ...) \
-    WasmImpFunc<f##_proto>(v, #f, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
+#define WASM_IMPORT_FUNC(v, f, ...) WasmImpFunc<f##_proto>(v, #f, &f##_wrap, ##__VA_ARGS__)
 
 // n - string literal name, must have static lifetime
-#define WASM_IMPORT_FUNC2(v, f, n, ...) \
-    WasmImpFunc<f##_proto>(v, n, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
+#define WASM_IMPORT_FUNC2(v, f, n, ...) WasmImpFunc<f##_proto>(v, n, &f##_wrap, ##__VA_ARGS__)
 
 }  // namespace xrpl

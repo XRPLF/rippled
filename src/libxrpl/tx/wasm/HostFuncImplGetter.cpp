@@ -4,7 +4,6 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBitString.h>
@@ -14,7 +13,6 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <cstdint>
-#include <cstring>
 #include <utility>
 #include <variant>
 
@@ -134,33 +132,13 @@ noField(STBase const* field)
 }
 
 static Expected<FieldValue, HostFunctionError>
-locateField(STObject const& obj, Slice const& locator)
+locateField(STObject const& obj, FieldLocator const& locator)
 {
-    if (locator.empty() || ((locator.size() & 3) != 0u))  // must be multiple of 4
-        return Unexpected(HostFunctionError::LocatorMalformed);
-
-    static_assert(kMaxWasmParamLength % sizeof(int32_t) == 0);
-    int32_t locBuf[kMaxWasmParamLength / sizeof(int32_t)];
-    int32_t const* locPtr = &locBuf[0];
-    int32_t const locSize = locator.size() / sizeof(int32_t);
-
-    {
-        uintptr_t const p = reinterpret_cast<uintptr_t>(locator.data());
-        if ((p & (alignof(int32_t) - 1)) != 0u)
-        {  // unaligned
-            memcpy(&locBuf[0], locator.data(), locator.size());
-        }
-        else
-        {
-            locPtr = reinterpret_cast<int32_t const*>(locator.data());
-        }
-    }
-
     STBase const* field = nullptr;
     auto const& knownSFields = SField::getKnownCodeToField();
 
     {
-        int32_t const sfieldCode = adjustWasmEndianess(locPtr[0]);
+        int32_t const sfieldCode = adjustWasmEndianess(locator[0]);
         auto const it = knownSFields.find(sfieldCode);
         if (it == knownSFields.end())
             return Unexpected(HostFunctionError::InvalidField);
@@ -171,9 +149,9 @@ locateField(STObject const& obj, Slice const& locator)
             return Unexpected(HostFunctionError::FieldNotFound);
     }
 
-    for (int i = 1; i < locSize; ++i)
+    for (unsigned i = 1; i < locator.size(); ++i)
     {
-        int32_t const sfieldCode = adjustWasmEndianess(locPtr[i]);
+        int32_t const sfieldCode = adjustWasmEndianess(locator[i]);
 
         if (STI_ARRAY == field->getSType())
         {
@@ -285,7 +263,7 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname) 
 // Subsection: nested getters
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::getTxNestedField(Slice const& locator) const
+WasmHostFunctionsImpl::getTxNestedField(FieldLocator const& locator) const
 {
     auto const r = locateField(ctx_.tx, locator);
     if (!r)
@@ -295,7 +273,7 @@ WasmHostFunctionsImpl::getTxNestedField(Slice const& locator) const
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator) const
+WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(FieldLocator const& locator) const
 {
     auto const sle = getCurrentLedgerObj();
     if (!sle.has_value())
@@ -309,7 +287,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator) cons
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) const
+WasmHostFunctionsImpl::getLedgerObjNestedField(int32_t cacheIdx, FieldLocator const& locator) const
 {
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
@@ -374,7 +352,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(int32_t cacheIdx, SField const& fnam
 // Subsection: nested array length getters
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator) const
+WasmHostFunctionsImpl::getTxNestedArrayLen(FieldLocator const& locator) const
 {
     auto const r = locateField(ctx_.tx, locator);
     if (!r)
@@ -385,7 +363,7 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator) const
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator) const
+WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(FieldLocator const& locator) const
 {
     auto const sle = getCurrentLedgerObj();
     if (!sle.has_value())
@@ -399,7 +377,8 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator) c
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) const
+WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(int32_t cacheIdx, FieldLocator const& locator)
+    const
 {
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
     if (!normalizedIdx.has_value())
