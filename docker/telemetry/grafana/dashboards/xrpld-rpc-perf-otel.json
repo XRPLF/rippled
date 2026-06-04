@@ -209,7 +209,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "us",
+          "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 2,
@@ -259,7 +259,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "us",
+          "unit": "\u00b5s",
           "custom": {
             "drawStyle": "line",
             "lineWidth": 1,

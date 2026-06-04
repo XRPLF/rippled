@@ -384,7 +384,8 @@
           "sort": "desc"
         },
         "yAxis": {
-          "axisLabel": "Duration (ms)"
+          "axisLabel": "Duration (ms)",
+          "unit": "ms"
         }
       },
       "targets": [
@@ -396,7 +397,12 @@
           "legendFormat": "{{le}}",
           "format": "heatmap"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        }
+      }
     },
     {
       "title": "Close Time: Raw Proposals (Per Node)",
