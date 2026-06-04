@@ -965,6 +965,45 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "Ledger History Mismatch Rate by Reason",
+      "description": "Rate of built-vs-validated ledger mismatches broken down by reason (prior_ledger, close_time, consensus_txset, same_txset_diff_result, different_txset, unknown). Answers WHY the node forked \u2014 Byzantine close-time disagreement vs sync drift vs tx-processing difference.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 96
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (reason, exported_instance) (rate(xrpld_ledger_history_mismatch_total{exported_instance=~\"$node\"}[5m]))",
+          "legendFormat": "{{reason}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Mismatches / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,

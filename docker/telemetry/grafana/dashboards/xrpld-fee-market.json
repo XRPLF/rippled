@@ -375,6 +375,84 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "Queue Abandonment Rate (Expired)",
+      "description": "Rate of transactions expired out of the queue (LastLedgerSequence passed). Rising expiry means submitters under-bid the escalating fee and gave up \u2014 a demand-frustration signal.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(xrpld_txq_expired_total{exported_instance=~\"$node\"}[5m]))",
+          "legendFormat": "Expired / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Expired / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Queue Admission Rejections (Dropped)",
+      "description": "Rate of transactions refused admission to the queue, by reason. queue_full means the queue is at capacity \u2014 admission-control backpressure distinct from expiry and from job-queue overflow.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (reason, exported_instance) (rate(xrpld_txq_dropped_total{exported_instance=~\"$node\"}[5m]))",
+          "legendFormat": "{{reason}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Dropped / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,

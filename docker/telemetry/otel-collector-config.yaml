@@ -106,6 +106,9 @@ connectors:
       - name: method
       - name: grpc_role
       - name: grpc_status
+      # ledger.acquire dimensions (bounded: outcome, acquire reason).
+      - name: outcome
+      - name: acquire_reason
 
 exporters:
   debug:
