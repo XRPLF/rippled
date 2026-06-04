@@ -446,7 +446,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "otel", "job-queue"],
+  "tags": ["rippled", "job-queue"],
   "templating": {
     "list": [
       {

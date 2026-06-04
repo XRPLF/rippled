@@ -363,7 +363,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "otel", "peer", "network", "telemetry"],
+  "tags": ["rippled", "peer", "network", "telemetry"],
   "templating": {
     "list": [
       {

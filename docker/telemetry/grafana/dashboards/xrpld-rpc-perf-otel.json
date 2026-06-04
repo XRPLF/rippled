@@ -394,7 +394,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "otel", "rpc"],
+  "tags": ["rippled", "rpc"],
   "templating": {
     "list": [
       {

@@ -10,7 +10,7 @@
   "links": [],
   "panels": [
     {
-      "title": "--- Validation Agreement ---",
+      "title": "Validation Agreement",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -256,7 +256,7 @@
       }
     },
     {
-      "title": "--- Validation Rates ---",
+      "title": "Validation Rates",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -597,7 +597,7 @@
       }
     },
     {
-      "title": "--- Server State & Consensus ---",
+      "title": "Server State & Consensus",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -819,7 +819,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "otel", "validator", "health", "telemetry"],
+  "tags": ["rippled", "validator", "health", "telemetry"],
   "templating": {
     "list": [
       {

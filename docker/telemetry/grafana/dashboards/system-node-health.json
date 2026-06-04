@@ -405,7 +405,7 @@
       }
     },
     {
-      "title": "--- OTel: NodeStore I/O ---",
+      "title": "OTel: NodeStore I/O",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -646,7 +646,7 @@
       }
     },
     {
-      "title": "--- OTel: Cache Hit Rates ---",
+      "title": "OTel: Cache Hit Rates",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -781,7 +781,7 @@
       }
     },
     {
-      "title": "--- OTel: Object Instance Counts ---",
+      "title": "OTel: Object Instance Counts",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -839,7 +839,7 @@
       }
     },
     {
-      "title": "--- OTel: Server Info ---",
+      "title": "OTel: Server Info",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1185,7 +1185,7 @@
       }
     },
     {
-      "title": "--- OTel: Complete Ledgers & DB ---",
+      "title": "OTel: Complete Ledgers & DB",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1357,7 +1357,7 @@
       }
     },
     {
-      "title": "--- OTel: Ledger Economy ---",
+      "title": "OTel: Ledger Economy",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1562,7 +1562,7 @@
       }
     },
     {
-      "title": "--- Extended Metrics (Recovered from Phase 6) ---",
+      "title": "Extended Metrics (Recovered from Phase 6)",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -2054,7 +2054,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "otel", "node-health", "telemetry"],
+  "tags": ["rippled", "statsd", "node-health", "telemetry"],
   "templating": {
     "list": [
       {

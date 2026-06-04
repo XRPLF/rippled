@@ -306,7 +306,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "otel", "fee-market"],
+  "tags": ["rippled", "fee-market"],
   "templating": {
     "list": [
       {
