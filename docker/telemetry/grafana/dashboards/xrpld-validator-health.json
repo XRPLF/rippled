@@ -10,7 +10,7 @@
   "links": [],
   "panels": [
     {
-      "title": "--- Validation Agreement ---",
+      "title": "Validation Agreement",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -256,7 +256,7 @@
       }
     },
     {
-      "title": "--- Validation Rates ---",
+      "title": "Validation Rates",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -597,7 +597,7 @@
       }
     },
     {
-      "title": "--- Server State & Consensus ---",
+      "title": "Server State & Consensus",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -816,10 +816,107 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "Agreement % (7d)",
+      "description": "Validation agreement percentage over the trailing 7 days \u2014 the long-term reliability window used by external validator dashboards. Complements the 1h/24h stats.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 43
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_validation_agreement{metric=\"agreement_pct_7d\",exported_instance=~\"$node\"}",
+          "legendFormat": "Agreement 7d [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "green",
+                "value": 95
+              }
+            ]
+          },
+          "custom": {}
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Agreements vs Missed (7d)",
+      "description": "Agreed vs missed validation counts over the trailing 7 days. A rising missed trend signals sustained validator unreliability.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 43
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_validation_agreement{metric=\"agreements_7d\",exported_instance=~\"$node\"}",
+          "legendFormat": "Agreements 7d [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_validation_agreement{metric=\"missed_7d\",exported_instance=~\"$node\"}",
+          "legendFormat": "Missed 7d [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Count",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "otel", "validator", "health", "telemetry"],
+  "tags": ["xrpld", "validator", "health"],
   "templating": {
     "list": [
       {

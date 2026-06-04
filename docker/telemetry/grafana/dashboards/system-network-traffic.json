@@ -771,7 +771,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "network", "telemetry"],
+  "tags": ["xrpld", "statsd", "network"],
   "templating": {
     "list": [
       {

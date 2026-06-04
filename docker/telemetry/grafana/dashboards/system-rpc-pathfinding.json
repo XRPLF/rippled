@@ -380,10 +380,219 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "gRPC Request Rate by Method (Spans)",
+      "description": "Per-method gRPC call rate derived from the grpc.{Method} spans (GRPCServer.cpp). Covers the gRPC API used by reporting/Clio. Populated only when the node serves gRPC traffic.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (method, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m]))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Calls / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "gRPC Latency P95 by Method (Spans)",
+      "description": "p95 latency per gRPC method from grpc.{Method} span durations. Identifies slow gRPC read paths.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, method, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", method=~\"$grpc_method\", span_name=~\"grpc\\\\..*\"}[5m])))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "gRPC Error Rate by Status (Spans)",
+      "description": "Rate of gRPC spans broken down by grpc_status (success/error/resource_exhausted/failed_precondition). A rising error or resource_exhausted rate indicates gRPC clients hitting limits.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (grpc_status, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=~\"grpc\\\\..*\", grpc_status!=\"\"}[5m]))",
+          "legendFormat": "{{grpc_status}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Calls / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Pathfinding Compute Duration (Spans)",
+      "description": "p95/p50 of the pathfind.compute span, the per-request path computation. Complements the StatsD pathfind_fast/full timers with span-level visibility. Populated under pathfinding (book/path) RPC load.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"pathfind.compute\"}[5m])))",
+          "legendFormat": "P95 Compute [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"pathfind.compute\"}[5m])))",
+          "legendFormat": "P50 Compute [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Pathfinding Request & Discovery Rate (Spans)",
+      "description": "Rate of pathfind.request (client path requests) and pathfind.discover (path-discovery passes) spans. Shows pathfinding demand and the discovery cost driver for subscription-heavy nodes.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 48
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"pathfind.request\"}[5m]))",
+          "legendFormat": "Requests / Sec [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"pathfind.discover\"}[5m]))",
+          "legendFormat": "Discoveries / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Operations / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "rpc", "pathfinding", "telemetry"],
+  "tags": ["xrpld", "statsd", "rpc", "pathfinding"],
   "templating": {
     "list": [
       {
@@ -392,6 +601,26 @@
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
         "query": "label_values(xrpld_rpc_requests_total, exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "grpc_method",
+        "label": "gRPC Method",
+        "description": "Filter by gRPC method (GetLedger, GetLedgerData, GetLedgerDiff, GetLedgerEntry)",
+        "type": "query",
+        "query": "label_values(traces_span_metrics_calls_total{span_name=~\"grpc\\\\..*\"}, method)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"

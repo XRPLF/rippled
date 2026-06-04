@@ -150,10 +150,102 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "Reduce-Relay Peer Selection",
+      "description": "Transaction reduce-relay efficiency: peers selected as relay sources vs suppressed, plus peers with the feature disabled. A high suppressed:selected ratio proves reduce-relay is saving bandwidth; a high not_enabled count means stale peers force full relay.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_reduce_relay_metrics{metric=\"selected_peers\",exported_instance=~\"$node\"}",
+          "legendFormat": "Selected [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_reduce_relay_metrics{metric=\"suppressed_peers\",exported_instance=~\"$node\"}",
+          "legendFormat": "Suppressed [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_reduce_relay_metrics{metric=\"not_enabled_peers\",exported_instance=~\"$node\"}",
+          "legendFormat": "Not Enabled [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Peer Count",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Reduce-Relay Missing-Tx Frequency",
+      "description": "Frequency of on-demand transaction fetches triggered when a peer is missing a relayed transaction. A rising value means the suppression is too aggressive and the on-demand fetch path is growing.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_reduce_relay_metrics{metric=\"missing_tx_freq\",exported_instance=~\"$node\"}",
+          "legendFormat": "Missing Tx Freq [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Frequency",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "peer", "telemetry"],
+  "tags": ["xrpld", "peer"],
   "templating": {
     "list": [
       {

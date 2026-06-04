@@ -446,7 +446,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "otel", "job-queue"],
+  "tags": ["xrpld", "job-queue"],
   "templating": {
     "list": [
       {

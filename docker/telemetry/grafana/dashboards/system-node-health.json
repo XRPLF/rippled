@@ -405,7 +405,7 @@
       }
     },
     {
-      "title": "--- OTel: NodeStore I/O ---",
+      "title": "OTel: NodeStore I/O",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -646,7 +646,7 @@
       }
     },
     {
-      "title": "--- OTel: Cache Hit Rates ---",
+      "title": "OTel: Cache Hit Rates",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -781,7 +781,7 @@
       }
     },
     {
-      "title": "--- OTel: Object Instance Counts ---",
+      "title": "OTel: Object Instance Counts",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -839,7 +839,7 @@
       }
     },
     {
-      "title": "--- OTel: Server Info ---",
+      "title": "OTel: Server Info",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1185,7 +1185,7 @@
       }
     },
     {
-      "title": "--- OTel: Complete Ledgers & DB ---",
+      "title": "OTel: Complete Ledgers & DB",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1357,7 +1357,7 @@
       }
     },
     {
-      "title": "--- OTel: Ledger Economy ---",
+      "title": "OTel: Ledger Economy",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1562,7 +1562,7 @@
       }
     },
     {
-      "title": "--- Extended Metrics (Recovered from Phase 6) ---",
+      "title": "Extended Metrics (Recovered from Phase 6)",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -2051,10 +2051,95 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "Ledger Acquire Duration (Inbound Fetch)",
+      "description": "p95/p50 duration of the ledger.acquire span (InboundLedger): how long it takes to fetch a missing ledger from peers. A spike signals the node is falling behind or recovering from a fork. Populated under back-fill / sync activity.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 126
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"ledger.acquire\"}[5m])))",
+          "legendFormat": "P95 Acquire [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"ledger.acquire\"}[5m])))",
+          "legendFormat": "P50 Acquire [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger Acquire Rate by Outcome",
+      "description": "Rate of completed ledger.acquire spans broken down by outcome (complete / failed). A rising failed rate indicates the node cannot fetch needed ledgers from its peers. Requires the outcome spanmetrics dimension.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 126
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (outcome, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"ledger.acquire\"}[5m]))",
+          "legendFormat": "{{outcome}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Acquisitions / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "otel", "node-health", "telemetry"],
+  "tags": ["xrpld", "statsd", "node-health"],
   "templating": {
     "list": [
       {

@@ -4,6 +4,7 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
+#include <xrpld/app/ledger/detail/LedgerSpanNames.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Message.h>
@@ -30,6 +31,8 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
@@ -46,6 +49,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
@@ -94,6 +98,23 @@ InboundLedger::init(ScopedLockType& collectionLock)
 {
     ScopedLockType sl(mtx_);
     collectionLock.unlock();
+
+    // Span the acquire lifecycle so back-fill / fork-recovery cost is
+    // observable. Finalized in done() with the outcome and timeout count.
+    {
+        using namespace telemetry;
+        acquireSpan_.emplace(
+            SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::acquire));
+        if (*acquireSpan_)
+        {
+            acquireSpan_->setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(seq_));
+            std::string_view const reasonVal = reason_ == Reason::HISTORY
+                ? std::string_view(ledger_span::val::history)
+                : reason_ == Reason::CONSENSUS ? std::string_view(ledger_span::val::consensus)
+                                               : std::string_view(ledger_span::val::generic);
+            acquireSpan_->setAttribute(ledger_span::attr::acquireReason, reasonVal);
+        }
+    }
 
     tryDB(app_.getNodeFamily().db());
     if (failed_)
@@ -415,6 +436,21 @@ InboundLedger::done()
 
     signaled_ = true;
     touch();
+
+    // Finalize the acquire span with the outcome, timeout count, and peer
+    // count, then end it (reset) so its duration is exported.
+    if (acquireSpan_ && *acquireSpan_)
+    {
+        using namespace telemetry;
+        acquireSpan_->setAttribute(
+            ledger_span::attr::outcome,
+            failed_ ? std::string_view(ledger_span::val::failed)
+                    : std::string_view(ledger_span::val::complete));
+        acquireSpan_->setAttribute(ledger_span::attr::timeouts, static_cast<int64_t>(timeouts_));
+        acquireSpan_->setAttribute(
+            ledger_span::attr::peerCount, static_cast<int64_t>(getPeerCount()));
+    }
+    acquireSpan_.reset();
 
     JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
                            << ((timeouts_ == 0)

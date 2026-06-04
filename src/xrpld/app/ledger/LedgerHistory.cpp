@@ -4,6 +4,7 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/telemetry/MetricsRegistry.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -323,11 +324,19 @@ LedgerHistory::handleMismatch(
     auto builtLedger = getLedgerByHash(built);
     auto validLedger = getLedgerByHash(valid);
 
+    // Records the classified mismatch reason as a labeled OTel counter so
+    // fork diagnosis is a queryable time series, not just a log grep.
+    auto recordReason = [this](std::string_view reason) {
+        if (auto* mr = app_.getMetricsRegistry())
+            mr->incrementLedgerHistoryMismatch(reason);
+    };
+
     if (!builtLedger || !validLedger)
     {
         JLOG(j_.error()) << "MISMATCH cannot be analyzed:"
                          << " builtLedger: " << to_string(built) << " -> " << builtLedger
                          << " validLedger: " << to_string(valid) << " -> " << validLedger;
+        recordReason("unknown");
         return;
     }
 
@@ -349,6 +358,7 @@ LedgerHistory::handleMismatch(
     if (builtLedger->header().parentHash != validLedger->header().parentHash)
     {
         JLOG(j_.error()) << "MISMATCH on prior ledger";
+        recordReason("prior_ledger");
         return;
     }
 
@@ -356,6 +366,7 @@ LedgerHistory::handleMismatch(
     if (builtLedger->header().closeTime != validLedger->header().closeTime)
     {
         JLOG(j_.error()) << "MISMATCH on close time";
+        recordReason("close_time");
         return;
     }
 
@@ -366,6 +377,7 @@ LedgerHistory::handleMismatch(
             JLOG(j_.error()) << "MISMATCH on consensus transaction set "
                              << " built: " << to_string(*builtConsensusHash)
                              << " validated: " << to_string(*validatedConsensusHash);
+            recordReason("consensus_txset");
         }
         else
             JLOG(j_.error()) << "MISMATCH with same consensus transaction set: "
@@ -379,10 +391,14 @@ LedgerHistory::handleMismatch(
     if (builtTx == validTx)
     {
         JLOG(j_.error()) << "MISMATCH with same " << builtTx.size() << " transactions";
+        recordReason("same_txset_diff_result");
     }
     else
+    {
         JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and " << validTx.size()
                          << " valid transactions.";
+        recordReason("different_txset");
+    }
 
     JLOG(j_.error()) << "built\n" << getJson({*builtLedger, {}});
     JLOG(j_.error()) << "valid\n" << getJson({*validLedger, {}});

@@ -85,7 +85,7 @@ connectors:
     dimensions:
       - name: command
       - name: rpc_status
-      - name: xrpl.consensus.mode
+      - name: consensus_mode
       - name: close_time_correct
       - name: consensus_state
       - name: local
@@ -97,6 +97,18 @@ connectors:
       - name: txq_status
       - name: load_type
       - name: is_batch
+      # Consensus lifecycle dimensions (low cardinality, bounded value sets).
+      - name: mode_new
+      - name: consensus_stalled
+      - name: consensus_phase
+      - name: consensus_result
+      # gRPC surface dimensions (bounded: method names, role, status).
+      - name: method
+      - name: grpc_role
+      - name: grpc_status
+      # ledger.acquire dimensions (bounded: outcome, acquire reason).
+      - name: outcome
+      - name: acquire_reason
 
 exporters:
   debug:

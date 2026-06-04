@@ -237,6 +237,13 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
         meter_->CreateUInt64Counter("xrpld_state_changes_total", "Total operating mode changes");
     jqTransOverflowCounter_ = meter_->CreateUInt64Counter(
         "xrpld_jq_trans_overflow_total", "Total job queue transaction overflows");
+    ledgerHistoryMismatchCounter_ = meter_->CreateUInt64Counter(
+        "xrpld_ledger_history_mismatch_total",
+        "Total built-vs-validated ledger mismatches by reason");
+    txqExpiredCounter_ = meter_->CreateUInt64Counter(
+        "xrpld_txq_expired_total", "Total transactions expired out of the transaction queue");
+    txqDroppedCounter_ = meter_->CreateUInt64Counter(
+        "xrpld_txq_dropped_total", "Total transactions refused admission to the queue by reason");
     validationAgreementsCounter_ = meter_->CreateUInt64Counter(
         "xrpld_validation_agreements_total", "Total validation agreements");
     validationMissedCounter_ =
@@ -429,6 +436,7 @@ MetricsRegistry::registerAsyncGauges()
     registerDbMetricsGauge();
     registerValidatorHealthGauge();
     registerPeerQualityGauge();
+    registerReduceRelayGauge();
     registerLedgerEconomyGauge();
     registerStateTrackingGauge();
     registerStorageDetailGauge();
@@ -1000,10 +1008,12 @@ MetricsRegistry::registerPeerQualityGauge()
                         ->Observe(value, {{"metric", name}});
                 };
 
-                // Collect latencies and version info from each peer's JSON.
+                // Collect latencies, version info, and tracking state from
+                // each peer's JSON.
                 std::vector<int> latencies;
                 int higherVersionCount = 0;
                 int totalPeers = 0;
+                int divergedCount = 0;
                 auto const ownVersion = std::string(BuildInfo::getVersionString());
 
                 app.getOverlay().foreach([&](std::shared_ptr<Peer> const& peer) {
@@ -1019,6 +1029,11 @@ MetricsRegistry::registerPeerQualityGauge()
                         if (!pv.empty() && pv > ownVersion)
                             ++higherVersionCount;
                     }
+                    // PeerImp::json() sets "track" to "diverged" when the peer's
+                    // tracking state is Tracking::Diverged (i.e. it is following
+                    // a different ledger chain than us).
+                    if (pj.isMember(jss::track) && pj[jss::track].asString() == "diverged")
+                        ++divergedCount;
                 });
 
                 // P90 latency across connected peers.
@@ -1041,13 +1056,11 @@ MetricsRegistry::registerPeerQualityGauge()
                     : 0.0;
                 observe("peers_higher_version_pct", higherPct);
 
-                // Count peers that are insane/diverged (tracking ==
-                // Tracking::diverged). Not directly available from the Peer
-                // interface, so we count peers with negative or zero latency
-                // as a proxy for unreachable/diverged state.
-                // TODO: expose PeerImp::tracking_ via the Peer interface for
-                //       a precise count.
-                observe("peers_insane_count", 0.0);
+                // Count peers diverged from our ledger chain, read from the
+                // peer's "track" JSON field (set by PeerImp::json()). Diverged
+                // peers are following a different chain and are a leading
+                // indicator of local sync trouble.
+                observe("peers_insane_count", static_cast<double>(divergedCount));
 
                 // Binary flag: recommend upgrade if >60% run a newer version.
                 observe("upgrade_recommended", higherPct > 60.0 ? 1.0 : 0.0);
@@ -1055,6 +1068,57 @@ MetricsRegistry::registerPeerQualityGauge()
             catch (...)  // NOLINT(bugprone-empty-catch)
             {
                 // Silently skip if services are not yet ready.
+            }
+        },
+        this);
+}
+
+void
+MetricsRegistry::registerReduceRelayGauge()
+{
+    // Transaction reduce-relay efficiency. Overlay::txMetrics() exposes the
+    // rolling averages as a JSON object with string values (std::to_string),
+    // so parse each field. A high suppressed:selected ratio proves the
+    // feature is saving bandwidth; a high not_enabled count means stale peers
+    // force full relay.
+    reduceRelayGauge_ = meter_->CreateInt64ObservableGauge(
+        "xrpld_reduce_relay_metrics", "Transaction reduce-relay efficiency metrics");
+    reduceRelayGauge_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            auto& app = self->app_;
+
+            try
+            {
+                auto const tm = app.getOverlay().txMetrics();
+
+                auto observe = [&](char const* name, int64_t value) {
+                    opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                        opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                        ->Observe(value, {{"metric", name}});
+                };
+
+                // Each field is a decimal string; emit when present and parseable.
+                auto observeField = [&](auto const& field, char const* name) {
+                    if (tm.isMember(field))
+                    {
+                        auto const s = tm[field].asString();
+                        if (!s.empty())
+                            observe(name, static_cast<int64_t>(std::stoll(s)));
+                    }
+                };
+
+                observeField(jss::txr_selected_cnt, "selected_peers");
+                observeField(jss::txr_suppressed_cnt, "suppressed_peers");
+                observeField(jss::txr_not_enabled_cnt, "not_enabled_peers");
+                observeField(jss::txr_missing_tx_freq, "missing_tx_freq");
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip if services are not yet ready or a value is
+                // not parseable.
             }
         },
         this);
@@ -1318,6 +1382,33 @@ MetricsRegistry::incrementJqTransOverflow()
 #ifdef XRPL_ENABLE_TELEMETRY
     if (enabled_ && jqTransOverflowCounter_)
         jqTransOverflowCounter_->Add(1);
+#endif
+}
+
+void
+MetricsRegistry::incrementLedgerHistoryMismatch(std::string_view reason)
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && ledgerHistoryMismatchCounter_)
+        ledgerHistoryMismatchCounter_->Add(1, {{"reason", std::string(reason)}});
+#endif
+}
+
+void
+MetricsRegistry::incrementTxqExpired()
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && txqExpiredCounter_)
+        txqExpiredCounter_->Add(1);
+#endif
+}
+
+void
+MetricsRegistry::incrementTxqDropped(std::string_view reason)
+{
+#ifdef XRPL_ENABLE_TELEMETRY
+    if (enabled_ && txqDroppedCounter_)
+        txqDroppedCounter_->Add(1, {{"reason", std::string(reason)}});
 #endif
 }
 

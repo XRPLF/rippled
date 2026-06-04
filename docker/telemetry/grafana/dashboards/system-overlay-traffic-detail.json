@@ -553,7 +553,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "overlay", "network", "telemetry"],
+  "tags": ["xrpld", "statsd", "overlay", "network"],
   "templating": {
     "list": [
       {
