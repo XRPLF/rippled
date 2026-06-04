@@ -584,15 +584,15 @@ PathRequest::findPaths(
 
     auto const dstAmount = convertAmount(saDstAmount_, convertAll_);
 
-    // Shared post-processing: update context, run rippleCalc, append JSON.
+    // Shared post-processing: run rippleCalc, append JSON.
+    //
+    // We deliberately do NOT carry paths across ticks.  Yen's K-Shortest
+    // re-runs every tick on the current PayGraph snapshot, so the freshly
+    // discovered paths already reflect the latest order-book state.
+    // Feeding the previous tick's results back in as extraPaths would only
+    // re-price stale path shapes and let them out-rank current ones on a
+    // quality tie.
     auto processResult = [&](STPathSet ps, Asset const& asset) {
-        // Only update context from the full pass (ranked paths).  Updating it
-        // from the fast-pass unranked fallback pollutes extraPaths on the next
-        // getBestPaths call, causing the same paths to appear in both
-        // pathRanks_ and extraRanks and filling maxPaths slots with duplicates.
-        if (!fast)
-            context_[asset] = ps;
-
         auto const& sourceAccount = [&] {
             if (!isXRP(asset.getIssuer()))
                 return asset.getIssuer();
@@ -725,8 +725,8 @@ PathRequest::findPaths(
                 continue;
             }
 
-            auto ps =
-                pf->getBestPaths(kMaxPaths, context_[asset], asset.getIssuer(), continueCallback);
+            auto ps = pf->getBestPaths(
+                kMaxPaths, STPathSet{}, asset.getIssuer(), continueCallback);
             processResult(std::move(ps), asset);
         }
     }

@@ -10,7 +10,6 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/InfoSub.h>
 
-#include <map>
 #include <mutex>
 #include <optional>
 #include <set>
@@ -138,7 +137,6 @@ private:
     std::optional<STAmount> saSendMax_;
 
     std::set<Asset> sciSourceAssets_;
-    std::map<Asset, STPathSet> context_;
 
     std::optional<uint256> domain_;
 
