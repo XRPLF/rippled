@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -1433,10 +1434,13 @@ public:
             {
                 auto const str = to_string(n);
 
+                // NOLINTBEGIN(misc-redundant-expression) Explicitly testing operators with
+                // equivalent values
                 expect(!(n < n), str + " < ", __FILE__, line);
                 expect(!(n > n), str + " >", __FILE__, line);
                 expect(n >= n, str + " >=", __FILE__, line);
                 expect(n <= n, str + " <=", __FILE__, line);
+                // NOLINTEND(misc-redundant-expression)
             }
         }
     }
