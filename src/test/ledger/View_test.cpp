@@ -61,7 +61,7 @@ class View_test : public beast::unit_test::Suite
     }
 
     // Create SLE with key and payload
-    static std::shared_ptr<SLE>
+    static SLE::pointer
     sle(std::uint64_t id, std::uint32_t seq = 1)
     {
         auto const le = std::make_shared<SLE>(k(id));
@@ -79,7 +79,7 @@ class View_test : public beast::unit_test::Suite
 
     // Set payload on SLE
     static void
-    seq(std::shared_ptr<SLE> const& le, std::uint32_t seq)
+    seq(SLE::ref le, std::uint32_t seq)
     {
         le->setFieldU32(sfSequence, seq);
     }
@@ -153,7 +153,7 @@ class View_test : public beast::unit_test::Suite
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{config.features},
-            config.FEES.toFees(),
+            config.fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto const ledger =
@@ -421,7 +421,7 @@ class View_test : public beast::unit_test::Suite
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{config.features},
-            config.FEES.toFees(),
+            config.fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto const ledger =
@@ -630,7 +630,7 @@ class View_test : public beast::unit_test::Suite
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
             kCreateGenesis,
             Rules{config.features},
-            config.FEES.toFees(),
+            config.fees.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto const ledger =
@@ -1020,7 +1020,7 @@ class View_test : public beast::unit_test::Suite
             std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
                 kCreateGenesis,
                 Rules{config.features},
-                config.FEES.toFees(),
+                config.fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
             auto const ledger =

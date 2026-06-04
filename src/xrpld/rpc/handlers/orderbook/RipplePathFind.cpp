@@ -23,7 +23,7 @@ namespace xrpl {
 json::Value
 doRipplePathFind(RPC::JsonContext& context)
 {
-    if (context.app.config().PATH_SEARCH_MAX == 0)
+    if (context.app.config().pathSearchMax == 0)
         return rpcError(RpcNotSupported);
 
     context.loadType = Resource::kFeeHeavyBurdenRpc;

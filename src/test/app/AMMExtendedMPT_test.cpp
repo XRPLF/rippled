@@ -3114,10 +3114,8 @@ private:
         btc.set({.holder = bob, .flags = tfMPTLock});
 
         {
-            // different from IOU. The offer is created but not crossed.
-            env(offer(bob, btc(5), XRP(25)));
+            env(offer(bob, btc(5), XRP(25)), Ter(tecLOCKED));
             env.close();
-            BEAST_EXPECT(expectOffers(env, bob, 1, {{{btc(5), XRP(25)}}}));
             BEAST_EXPECT(ammAlice.expectBalances(XRP(500), btc(105), ammAlice.tokens()));
         }
 
@@ -3220,7 +3218,7 @@ private:
             btc.set({.flags = tfMPTLock});
 
             // assets can't be bought on the market
-            AMM const ammA3(env, a3, btc(1), XRP(1), Ter(tecFROZEN));
+            AMM const ammA3(env, a3, btc(1), XRP(1), Ter(tecLOCKED));
 
             // direct issues can be sent
             env(pay(g1, a2, btc(1)));

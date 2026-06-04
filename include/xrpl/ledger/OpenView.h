@@ -76,7 +76,7 @@ private:
 
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
-    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonic_resource_;
+    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonicResource_;
     txs_map txs_;
     Rules rules_;
     LedgerHeader header_;
@@ -197,7 +197,7 @@ public:
     std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     read(Keylet const& k) const override;
 
     std::unique_ptr<SlesType::iter_base>
@@ -224,13 +224,13 @@ public:
     // RawView
 
     void
-    rawErase(std::shared_ptr<SLE> const& sle) override;
+    rawErase(SLE::ref sle) override;
 
     void
-    rawInsert(std::shared_ptr<SLE> const& sle) override;
+    rawInsert(SLE::ref sle) override;
 
     void
-    rawReplace(std::shared_ptr<SLE> const& sle) override;
+    rawReplace(SLE::ref sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& fee) override;

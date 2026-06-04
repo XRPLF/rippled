@@ -203,7 +203,7 @@ Message::getBuffer(Compressed tryCompressed)
     if (tryCompressed == Compressed::Off)
         return buffer_;
 
-    std::call_once(once_flag_, &Message::compress, this);
+    std::call_once(onceFlag_, &Message::compress, this);
 
     if (!bufferCompressed_.empty())
     {

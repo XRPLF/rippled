@@ -25,7 +25,7 @@ public:
         can calculate metadata.
     */
     virtual void
-    rawErase(std::shared_ptr<SLE> const& sle) = 0;
+    rawErase(SLE::ref sle) = 0;
 
     /** Unconditionally insert a state item.
 
@@ -39,7 +39,7 @@ public:
         @note The key is taken from the SLE
     */
     virtual void
-    rawInsert(std::shared_ptr<SLE> const& sle) = 0;
+    rawInsert(SLE::ref sle) = 0;
 
     /** Unconditionally replace a state item.
 
@@ -54,7 +54,7 @@ public:
         @note The key is taken from the SLE
     */
     virtual void
-    rawReplace(std::shared_ptr<SLE> const& sle) = 0;
+    rawReplace(SLE::ref sle) = 0;
 
     /** Destroy XRP.
 

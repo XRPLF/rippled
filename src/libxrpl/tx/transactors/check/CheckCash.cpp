@@ -31,7 +31,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -139,6 +138,11 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         }(ctx.tx)};
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
+        // A legacy Check may contain a non-canonical MPT sfSendMax. Universal
+        // preflight only validates the CheckCash transaction, not the stored Check.
+        if (ctx.view.rules().enabled(fixCleanup3_2_0) && !isLegalMPT(sendMax))
+            return tefBAD_LEDGER;
+
         if (!equalTokens(value.asset(), sendMax.asset()))
         {
             JLOG(ctx.j.warn()) << "Check cash does not match check currency.";
@@ -264,9 +268,10 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         return tecLOCKED;
                     }
 
-                    if (auto const err = canTrade(ctx.view, value.asset()); !isTesSuccess(err))
+                    if (auto const err = canTransfer(ctx.view, issue, srcId, dstId);
+                        !isTesSuccess(err))
                     {
-                        JLOG(ctx.j.warn()) << "MPT DEX is not allowed.";
+                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
                         return err;
                     }
 
@@ -382,7 +387,7 @@ CheckCash::doApply()
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
-            auto checkReserve = [&]() -> std::shared_ptr<SLE> {
+            auto checkReserve = [&]() -> SLE::pointer {
                 auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?
@@ -586,10 +591,7 @@ CheckCash::doApply()
 }
 
 void
-CheckCash::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+CheckCash::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
