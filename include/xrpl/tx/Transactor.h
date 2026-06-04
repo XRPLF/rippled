@@ -6,6 +6,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/CheckInvariants.h>
 
 #include <utility>
 
@@ -142,19 +143,30 @@ public:
         return ctx_.view();
     }
 
+    /** Whether to run the transaction-specific invariant check.
+     *
+     *  After a fee-claim reset the transaction's effects have been rolled back,
+     *  so only the protocol invariants are meaningful; pass @c Yes to skip the
+     *  transaction-specific check in that case.
+     */
+    enum class SkipTxInvariants : bool { No = false, Yes = true };
+
     /** Check all invariants for the current transaction.
      *
-     *  Runs transaction-specific invariants first (visitInvariantEntry +
-     *  finalizeInvariants), then protocol-level invariants.  Both layers
-     *  always run; the worst failure code is returned.
+     *  Delegates to the free @c xrpl::checkInvariants runner.  Unless @p skip is
+     *  @c SkipTxInvariants::Yes, the transaction-specific adapter is passed so
+     *  both layers share a single walk of the modified ledger entries.
+     *  Protocol faults (tefINVARIANT_FAILED) take priority over transaction
+     *  faults (tecINVARIANT_FAILED).
      *
      *  @param result  the tentative TER from transaction processing.
      *  @param fee     the fee consumed by the transaction.
+     *  @param skip    whether to skip the transaction-specific invariant check.
      *
      *  @return the final TER after all invariant checks.
      */
     [[nodiscard]] TER
-    checkInvariants(TER result, XRPAmount fee);
+    checkInvariants(TER result, XRPAmount fee, SkipTxInvariants skip);
 
     /////////////////////////////////////////////////////
     /*
@@ -404,20 +416,34 @@ private:
     static NotTEC
     preflightUniversal(PreflightContext const& ctx);
 
-    /** Check transaction-specific invariants only.
-     *
-     *  Walks every modified ledger entry via visitInvariantEntry, then
-     *  calls finalizeInvariants on the derived transactor.  Returns
-     *  tecINVARIANT_FAILED if any transaction invariant is violated.
-     *
-     *  @param result  the tentative TER from transaction processing.
-     *  @param fee     the fee consumed by the transaction.
-     *
-     *  @return the original result if all invariants pass, or
-     *          tecINVARIANT_FAILED otherwise.
-     */
-    [[nodiscard]] TER
-    checkTransactionInvariants(TER result, XRPAmount fee);
+    /** Bridges the transaction-specific two-phase invariant hooks
+     *  (visitInvariantEntry + finalizeInvariants) into the InvariantCheck
+     *  interface consumed by the free xrpl::checkInvariants runner. */
+    class InvariantCheckAdapter : public InvariantCheck
+    {
+        Transactor& self_;
+
+    public:
+        explicit InvariantCheckAdapter(Transactor& self) : self_(self)
+        {
+        }
+
+        void
+        visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override
+        {
+            self_.visitInvariantEntry(isDelete, before, after);
+        }
+
+        [[nodiscard]] bool
+        finalize(
+            STTx const& tx,
+            TER result,
+            XRPAmount fee,
+            ReadView const& view,
+            beast::Journal const& j) const override;
+    };
+
+    InvariantCheckAdapter invariantCheck_{*this};
 };
 
 inline bool

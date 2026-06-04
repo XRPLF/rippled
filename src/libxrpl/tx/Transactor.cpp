@@ -44,7 +44,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -1135,58 +1134,24 @@ Transactor::trapTransaction(uint256 txHash) const
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
 
-[[nodiscard]] TER
-Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
+[[nodiscard]] bool
+Transactor::InvariantCheckAdapter::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const fee,
+    ReadView const& view,
+    beast::Journal const& j) const
 {
-    try
-    {
-        // Phase 1: visit modified entries
-        ctx_.visit(
-            [this](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
-                this->visitInvariantEntry(isDelete, before, after);
-            });
-
-        // Phase 2: finalize
-        if (!this->finalizeInvariants(ctx_.tx, result, fee, ctx_.view(), ctx_.journal))
-        {
-            JLOG(ctx_.journal.fatal()) <<                                             //
-                "Transaction has failed one or more transaction invariants, tx: " <<  //
-                to_string(ctx_.tx.getJson(JsonOptions::Values::None));
-            return tecINVARIANT_FAILED;
-        }
-    }
-    catch (std::exception const& ex)
-    {
-        JLOG(ctx_.journal.fatal()) <<                               //
-            "Exception while checking transaction invariants: " <<  //
-            ex.what() <<                                            //
-            ", tx: " <<                                             //
-            to_string(ctx_.tx.getJson(JsonOptions::Values::None));
-
-        return tecINVARIANT_FAILED;
-    }
-
-    return result;
+    return self_.finalizeInvariants(tx, result, fee, view, j);
 }
 
 [[nodiscard]] TER
-Transactor::checkInvariants(TER result, XRPAmount fee)
+Transactor::checkInvariants(TER result, XRPAmount fee, SkipTxInvariants skip)
 {
-    // Transaction invariants first (more specific). These check post-conditions of the specific
-    // transaction. If these fail, the transaction's core logic is wrong.
-    auto const txResult = checkTransactionInvariants(result, fee);
+    if (skip == SkipTxInvariants::Yes)
+        return xrpl::checkInvariants(ctx_, result, fee);
 
-    // Protocol invariants second (broader). These check properties that must hold regardless of
-    // transaction type.
-    auto const protoResult = ctx_.checkInvariants(result, fee);
-
-    // Fail if either check failed. tef (fatal) takes priority over tec.
-    if (protoResult == tefINVARIANT_FAILED)
-        return tefINVARIANT_FAILED;
-    if (txResult == tecINVARIANT_FAILED || protoResult == tecINVARIANT_FAILED)
-        return tecINVARIANT_FAILED;
-
-    return result;
+    return xrpl::checkInvariants(ctx_, result, fee, std::ref(invariantCheck_));
 }
 //------------------------------------------------------------------------------
 ApplyResult
@@ -1364,7 +1329,7 @@ Transactor::operator()()
     {
         // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
         // proceed to apply the tx
-        result = checkInvariants(result, fee);
+        result = checkInvariants(result, fee, SkipTxInvariants::No);
         if (result == tecINVARIANT_FAILED)
         {
             // Reset to fee-claim only
@@ -1375,11 +1340,11 @@ Transactor::operator()()
             fee = resetResult.second;
 
             // Check invariants again to ensure the fee claiming doesn't violate
-            // invariants. After reset, only protocol invariants are re-checked.
-            // Transaction invariants are not meaningful here — the transaction's
-            // effects have been rolled back.
+            // invariants. After reset, only protocol invariants are re-checked;
+            // the transaction's effects have been rolled back, so the
+            // transaction-specific invariants are no longer meaningful.
             if (isTesSuccess(result) || isTecClaim(result))
-                result = ctx_.checkInvariants(result, fee);
+                result = checkInvariants(result, fee, SkipTxInvariants::Yes);
         }
 
         // We ran through the invariant checker, which can, in some cases,

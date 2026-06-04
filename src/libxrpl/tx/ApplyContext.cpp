@@ -12,15 +12,10 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/invariants/InvariantCheck.h>
 
-#include <array>
 #include <cstddef>
-#include <exception>
 #include <functional>
 #include <optional>
-#include <tuple>
-#include <utility>
 
 namespace xrpl {
 
@@ -72,77 +67,6 @@ ApplyContext::visit(
     std::function<void(uint256 const&, bool, SLE::const_ref, SLE::const_ref)> const& func)
 {
     view_->visit(base_, func);  // NOLINT(bugprone-unchecked-optional-access)
-}
-
-TER
-ApplyContext::failInvariantCheck(TER const result)
-{
-    // If we already failed invariant checks before and we are now attempting to
-    // only charge a fee, and even that fails the invariant checks something is
-    // very wrong. We switch to tefINVARIANT_FAILED, which does NOT get included
-    // in a ledger.
-
-    return (result == tecINVARIANT_FAILED || result == tefINVARIANT_FAILED)
-        ? TER{tefINVARIANT_FAILED}
-        : TER{tecINVARIANT_FAILED};
-}
-
-template <std::size_t... Is>
-TER
-ApplyContext::checkInvariantsHelper(
-    TER const result,
-    XRPAmount const fee,
-    std::index_sequence<Is...>)
-{
-    try
-    {
-        auto checkers = getInvariantChecks();
-
-        // call each check's per-entry method
-        visit(
-            [&checkers](
-                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
-                (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
-            });
-
-        // Note: do not replace this logic with a `...&&` fold expression.
-        // The fold expression will only run until the first check fails (it
-        // short-circuits). While the logic is still correct, the log
-        // message won't be. Every failed invariant should write to the log,
-        // not just the first one.
-        std::array<bool, sizeof...(Is)> const finalizers{{std::get<Is>(checkers).finalize(
-            tx, result, fee, *view_, journal)...}};  // NOLINT(bugprone-unchecked-optional-access)
-
-        // call each check's finalizer to see that it passes
-        if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
-        {
-            JLOG(journal.fatal()) << "Transaction has failed one or more global invariants: "
-                                  << to_string(tx.getJson(JsonOptions::Values::None));
-
-            return failInvariantCheck(result);
-        }
-    }
-    catch (std::exception const& ex)
-    {
-        JLOG(journal.fatal()) << "Transaction caused an exception in a global invariant"
-                              << ", ex: " << ex.what()
-                              << ", tx: " << to_string(tx.getJson(JsonOptions::Values::None));
-
-        return failInvariantCheck(result);
-    }
-
-    return result;
-}
-
-TER
-ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
-{
-    XRPL_ASSERT(
-        isTesSuccess(result) || isTecClaim(result),
-        "xrpl::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
-
-    return checkInvariantsHelper(
-        result, fee, std::make_index_sequence<std::tuple_size_v<InvariantChecks>>{});
 }
 
 }  // namespace xrpl

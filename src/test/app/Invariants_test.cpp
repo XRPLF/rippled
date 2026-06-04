@@ -199,7 +199,8 @@ class Invariants_test : public beast::unit_test::Suite
         TER terActual = tesSUCCESS;
         for (TER const& terExpect : ters)
         {
-            terActual = transactor->checkInvariants(terActual, fee);
+            terActual =
+                transactor->checkInvariants(terActual, fee, Transactor::SkipTxInvariants::No);
             BEAST_EXPECTS(
                 terExpect == terActual,
                 "expected: " + transToken(terExpect) + " got: " + transToken(terActual));
