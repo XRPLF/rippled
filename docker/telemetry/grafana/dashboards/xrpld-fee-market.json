@@ -303,6 +303,78 @@
         },
         "overrides": []
       }
+    },
+    {
+      "title": "Load Factor Attribution (Stacked Components)",
+      "description": "Stacked contribution of each load-factor component (fee escalation, queue, local, net, cluster) to the effective transaction cost. Shows WHICH component is driving the fee at any moment, which the aggregate load_factor hides.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_load_factor_metrics{metric=\"load_factor_fee_escalation\",exported_instance=~\"$node\"}",
+          "legendFormat": "Fee Escalation [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_load_factor_metrics{metric=\"load_factor_fee_queue\",exported_instance=~\"$node\"}",
+          "legendFormat": "Fee Queue [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_load_factor_metrics{metric=\"load_factor_local\",exported_instance=~\"$node\"}",
+          "legendFormat": "Local [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_load_factor_metrics{metric=\"load_factor_net\",exported_instance=~\"$node\"}",
+          "legendFormat": "Net [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "xrpld_load_factor_metrics{metric=\"load_factor_cluster\",exported_instance=~\"$node\"}",
+          "legendFormat": "Cluster [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "axisLabel": "Load Factor Multiplier",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            },
+            "fillOpacity": 30
+          }
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
