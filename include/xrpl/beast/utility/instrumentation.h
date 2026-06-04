@@ -11,7 +11,7 @@
 // Macros below are copied from antithesis_sdk.h and slightly simplified
 // The duplication is because Visual Studio 2019 cannot compile that header
 // even with the option -Zc:__cplusplus added.
-// // NOTE: cond must not contain bare commas outside () or []. Commas inside {}
+// NOTE: cond must not contain bare commas outside () or []. Commas inside {}
 // are not protected by the preprocessor and would be parsed as extra arguments.
 #define ALWAYS(cond, message, ...) assert((message) && (cond))
 #define ALWAYS_OR_UNREACHABLE(cond, message) assert((message) && (cond))
