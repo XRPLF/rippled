@@ -169,7 +169,7 @@
       }
     },
     {
-      "title": "Job Queue Wait Time (P50, P95, P99)",
+      "title": "Job Queue Wait Time",
       "description": "Histogram quantiles for time jobs spend waiting in the queue before execution starts. High values indicate thread pool saturation.",
       "type": "timeseries",
       "gridPos": {
@@ -189,22 +189,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P50 [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P95 [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P99 [{{exported_instance}}]"
+          "expr": "histogram_quantile(1.0, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "legendFormat": "Wait [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -228,7 +214,7 @@
       }
     },
     {
-      "title": "Job Execution Time (P50, P95, P99)",
+      "title": "Job Execution Time",
       "description": "Histogram quantiles for actual job execution time. High values indicate expensive operations or resource contention.",
       "type": "timeseries",
       "gridPos": {
@@ -248,22 +234,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P50 [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P95 [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "P99 [{{exported_instance}}]"
+          "expr": "histogram_quantile(1.0, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "legendFormat": "Exec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -287,7 +259,7 @@
       }
     },
     {
-      "title": "Per-Job-Type Execution Time (P95)",
+      "title": "Per-Job-Type Execution Time",
       "description": "95th percentile execution time broken down by job type. Identifies the slowest job types.",
       "type": "timeseries",
       "gridPos": {
@@ -312,7 +284,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, histogram_quantile(0.95, sum by (le, job_type, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))))",
+          "expr": "topk(10, histogram_quantile(1.0, sum by (le, job_type, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))))",
           "legendFormat": "{{job_type}} [{{exported_instance}}]"
         }
       ],

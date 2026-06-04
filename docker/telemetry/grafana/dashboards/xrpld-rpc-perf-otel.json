@@ -169,7 +169,7 @@
       }
     },
     {
-      "title": "RPC Latency (P50, P95, P99) - All Methods",
+      "title": "RPC Latency - All Methods",
       "description": "Histogram quantiles for RPC execution time across all methods. Sourced from rpc_method_duration_us histogram.",
       "type": "timeseries",
       "gridPos": {
@@ -189,22 +189,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
-          "legendFormat": "P50 [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
-          "legendFormat": "P95 [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
-          "legendFormat": "P99 [{{exported_instance}}]"
+          "expr": "histogram_quantile(1.0, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m])))",
+          "legendFormat": "Latency [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -228,7 +214,7 @@
       }
     },
     {
-      "title": "Per-Method Latency P95 (Top 10 Slowest)",
+      "title": "Per-Method Latency (Top 10 Slowest)",
       "description": "95th percentile execution time per method. Identifies the slowest RPC endpoints.",
       "type": "timeseries",
       "gridPos": {
@@ -253,7 +239,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, histogram_quantile(0.95, sum by (le, method, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m]))))",
+          "expr": "topk(10, histogram_quantile(1.0, sum by (le, method, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", method=~\"$method\"}[5m]))))",
           "legendFormat": "{{method}} [{{exported_instance}}]"
         }
       ],
