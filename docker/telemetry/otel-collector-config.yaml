@@ -50,6 +50,10 @@ connectors:
       - name: consensus_stalled
       - name: consensus_phase
       - name: consensus_result
+      # gRPC surface dimensions (bounded: method names, role, status).
+      - name: method
+      - name: grpc_role
+      - name: grpc_status
 
 exporters:
   debug:
