@@ -174,7 +174,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Messages",
             "spanNulls": true,
@@ -227,7 +227,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Messages",
             "spanNulls": true,
@@ -287,7 +287,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Messages",
             "spanNulls": true,
@@ -347,7 +347,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none",
+          "unit": "short",
           "custom": {
             "axisLabel": "Messages",
             "spanNulls": true,
