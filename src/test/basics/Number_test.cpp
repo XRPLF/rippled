@@ -1386,10 +1386,59 @@ public:
     testRelationals()
     {
         testcase << "test_relationals " << to_string(Number::getMantissaScale());
-        BEAST_EXPECT(!(Number{100} < Number{10}));
-        BEAST_EXPECT(Number{100} > Number{10});
-        BEAST_EXPECT(Number{100} >= Number{10});
-        BEAST_EXPECT(!(Number{100} <= Number{10}));
+
+        {
+            // Inequality test cases are <larger, smaller, __LINE__>
+            using Case = std::tuple<Number, Number, int>;
+            auto const c = std::to_array<Case>({
+                {100, 10, __LINE__},
+                {50, 20, __LINE__},
+                {10, -100, __LINE__},
+                {100, -10, __LINE__},
+                {10, -10, __LINE__},
+                {100, 0, __LINE__},
+                {1, 0, __LINE__},
+                {0, -10, __LINE__},
+                {0, -1, __LINE__},
+                {-10, -100, __LINE__},
+                {-20, -50, __LINE__},
+            });
+
+            for (auto const [larger, smaller, line] : c)
+            {
+                std::stringstream ss;
+                ss << larger << " > " << smaller;
+                auto const str = ss.str();
+
+                expect(!(larger < smaller), str + " (<)", __FILE__, line);
+                expect(larger > smaller, str + " (>)", __FILE__, line);
+                expect(larger >= smaller, str + " (>=)", __FILE__, line);
+                expect(!(larger <= smaller), str + " (<=)", __FILE__, line);
+            }
+        }
+
+        {
+            // Equality test cases are <Number, __LINE__>. Number will be compared against itself
+            using Case = std::pair<Number, int>;
+            auto const c = std::to_array<Case>({
+                {700, __LINE__},
+                {50, __LINE__},
+                {1, __LINE__},
+                {0, __LINE__},
+                {-1, __LINE__},
+                {-30, __LINE__},
+                {-600, __LINE__},
+            });
+            for (auto const [n, line] : c)
+            {
+                auto const str = to_string(n);
+
+                expect(!(n < n), str + " < ", __FILE__, line);
+                expect(!(n > n), str + " >", __FILE__, line);
+                expect(n >= n, str + " >=", __FILE__, line);
+                expect(n <= n, str + " <=", __FILE__, line);
+            }
+        }
     }
 
     void
