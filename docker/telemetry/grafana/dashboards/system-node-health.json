@@ -30,7 +30,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_LedgerMaster_Validated_Ledger_Age{exported_instance=~\"$node\"}",
+          "expr": "xrpld_LedgerMaster_Validated_Ledger_Age{exported_instance=~\"$node\"}",
           "legendFormat": "Validated Age [{{exported_instance}}]"
         }
       ],
@@ -78,7 +78,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_LedgerMaster_Published_Ledger_Age{exported_instance=~\"$node\"}",
+          "expr": "xrpld_LedgerMaster_Published_Ledger_Age{exported_instance=~\"$node\"}",
           "legendFormat": "Published Age [{{exported_instance}}]"
         }
       ],
@@ -126,35 +126,35 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Full_duration{exported_instance=~\"$node\"}",
+          "expr": "xrpld_State_Accounting_Full_duration{exported_instance=~\"$node\"}",
           "legendFormat": "Full [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Tracking_duration{exported_instance=~\"$node\"}",
+          "expr": "xrpld_State_Accounting_Tracking_duration{exported_instance=~\"$node\"}",
           "legendFormat": "Tracking [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Syncing_duration{exported_instance=~\"$node\"}",
+          "expr": "xrpld_State_Accounting_Syncing_duration{exported_instance=~\"$node\"}",
           "legendFormat": "Syncing [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Connected_duration{exported_instance=~\"$node\"}",
+          "expr": "xrpld_State_Accounting_Connected_duration{exported_instance=~\"$node\"}",
           "legendFormat": "Connected [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Disconnected_duration{exported_instance=~\"$node\"}",
+          "expr": "xrpld_State_Accounting_Disconnected_duration{exported_instance=~\"$node\"}",
           "legendFormat": "Disconnected [{{exported_instance}}]"
         }
       ],
@@ -193,35 +193,35 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Full_transitions{exported_instance=~\"$node\"}",
+          "expr": "xrpld_State_Accounting_Full_transitions{exported_instance=~\"$node\"}",
           "legendFormat": "Full [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Tracking_transitions{exported_instance=~\"$node\"}",
+          "expr": "xrpld_State_Accounting_Tracking_transitions{exported_instance=~\"$node\"}",
           "legendFormat": "Tracking [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Syncing_transitions{exported_instance=~\"$node\"}",
+          "expr": "xrpld_State_Accounting_Syncing_transitions{exported_instance=~\"$node\"}",
           "legendFormat": "Syncing [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Connected_transitions{exported_instance=~\"$node\"}",
+          "expr": "xrpld_State_Accounting_Connected_transitions{exported_instance=~\"$node\"}",
           "legendFormat": "Connected [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_State_Accounting_Disconnected_transitions{exported_instance=~\"$node\"}",
+          "expr": "xrpld_State_Accounting_Disconnected_transitions{exported_instance=~\"$node\"}",
           "legendFormat": "Disconnected [{{exported_instance}}]"
         }
       ],
@@ -260,14 +260,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(rippled_ios_latency_bucket{exported_instance=~\"$node\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_ios_latency_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "P95 I/O Latency [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(rippled_ios_latency_bucket{exported_instance=~\"$node\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(xrpld_ios_latency_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "P50 I/O Latency [{{exported_instance}}]"
         }
       ],
@@ -306,7 +306,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_job_count{exported_instance=~\"$node\"}",
+          "expr": "xrpld_job_count{exported_instance=~\"$node\"}",
           "legendFormat": "Job Queue Depth [{{exported_instance}}]"
         }
       ],
@@ -345,7 +345,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_ledger_fetches_total{exported_instance=~\"$node\"}[5m])",
+          "expr": "rate(xrpld_ledger_fetches_total{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Fetches / Sec [{{exported_instance}}]"
         }
       ],
@@ -377,7 +377,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_ledger_history_mismatch_total{exported_instance=~\"$node\"}[5m])",
+          "expr": "rate(xrpld_ledger_history_mismatch_total{exported_instance=~\"$node\"}[5m])",
           "legendFormat": "Mismatches / Sec [{{exported_instance}}]"
         }
       ],
@@ -433,77 +433,77 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_acceptLedger{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_acceptLedger_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Accept Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_advanceLedger{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_advanceLedger_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Advance Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_transaction{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_transaction_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Transaction [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_writeObjects{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_writeObjects_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Write Objects [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_heartbeat{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_heartbeat_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Heartbeat [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_sweep{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_sweep_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Sweep [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_trustedValidation{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_trustedValidation_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Trusted Validation [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_trustedProposal{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_trustedProposal_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Trusted Proposal [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_publishNewLedger{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_publishNewLedger_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Publish New Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_clientRPC{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_clientRPC_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Client RPC [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_ledgerData{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_ledgerData_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Ledger Data [{{quantile}}]"
         }
       ],
@@ -542,77 +542,77 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_acceptLedger_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_acceptLedger_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Accept Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_advanceLedger_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_advanceLedger_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Advance Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_transaction_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_transaction_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Transaction [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_writeObjects_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_writeObjects_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Write Objects [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_heartbeat_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_heartbeat_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Heartbeat [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_sweep_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_sweep_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Sweep [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_trustedValidation_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_trustedValidation_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Trusted Validation [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_trustedProposal_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_trustedProposal_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Trusted Proposal [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_publishNewLedger_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_publishNewLedger_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Publish New Ledger [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_clientRPC_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_clientRPC_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Client RPC [{{quantile}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_ledgerData_q{quantile=\"$quantile\", exported_instance=~\"$node\"}",
+          "expr": "histogram_quantile($quantile, sum by (le, exported_instance) (rate(xrpld_ledgerData_q_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "Ledger Data [{{quantile}}]"
         }
       ],
@@ -651,7 +651,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Node_family_full_below_cache_size{exported_instance=~\"$node\"}",
+          "expr": "xrpld_Node_family_full_below_cache_size{exported_instance=~\"$node\"}",
           "legendFormat": "FullBelowCache Size"
         }
       ],
@@ -690,7 +690,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Node_family_full_below_cache_hit_rate{exported_instance=~\"$node\"}",
+          "expr": "xrpld_Node_family_full_below_cache_hit_rate{exported_instance=~\"$node\"}",
           "legendFormat": "Hit Rate"
         }
       ],
@@ -740,7 +740,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_LedgerMaster_Published_Ledger_Age{exported_instance=~\"$node\"} - rippled_LedgerMaster_Validated_Ledger_Age{exported_instance=~\"$node\"}",
+          "expr": "xrpld_LedgerMaster_Published_Ledger_Age{exported_instance=~\"$node\"} - xrpld_LedgerMaster_Validated_Ledger_Age{exported_instance=~\"$node\"}",
           "legendFormat": "Publish Gap"
         }
       ],
@@ -788,14 +788,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_State_Accounting_Full_duration{exported_instance=~\"$node\"}[5m]) / 1000000",
+          "expr": "rate(xrpld_State_Accounting_Full_duration{exported_instance=~\"$node\"}[5m]) / 1000000",
           "legendFormat": "Full Mode Rate"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(rippled_State_Accounting_Tracking_duration{exported_instance=~\"$node\"}[5m]) / 1000000",
+          "expr": "rate(xrpld_State_Accounting_Tracking_duration{exported_instance=~\"$node\"}[5m]) / 1000000",
           "legendFormat": "Tracking Mode Rate"
         }
       ],
@@ -834,8 +834,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "{__name__=~\"rippled_(makeFetchPack|publishAcqLedger|untrustedValidation|manifest|localTransaction|ledgerReplayRequest|ledgerRequest|untrustedProposal|ledgerReplayTask|ledgerData|clientCommand|clientSubscribe|clientFeeChange|clientConsensus|clientAccountHistory|clientRPC|clientWebsocket|RPC|updatePaths|transaction|batch|advanceLedger|publishNewLedger|fetchTxnData|writeAhead|trustedValidation|writeObjects|acceptLedger|trustedProposal|sweep|clusterReport|heartbeat|administration|handleHaveTransactions|doTransactions)\", quantile=\"$quantile\", exported_instance=~\"$node\"}",
-          "legendFormat": "{{__name__}} [{{quantile}}]"
+          "expr": "histogram_quantile($quantile, sum by (le, __name__) (rate({__name__=~\"xrpld_(makeFetchPack|publishAcqLedger|untrustedValidation|manifest|localTransaction|ledgerReplayRequest|ledgerRequest|untrustedProposal|ledgerReplayTask|ledgerData|clientCommand|clientSubscribe|clientFeeChange|clientConsensus|clientAccountHistory|clientRPC|clientWebsocket|RPC|updatePaths|transaction|batch|advanceLedger|publishNewLedger|fetchTxnData|writeAhead|trustedValidation|writeObjects|acceptLedger|trustedProposal|sweep|clusterReport|heartbeat|administration|handleHaveTransactions|doTransactions)_milliseconds_bucket\", exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "{{__name__}}"
         }
       ],
       "fieldConfig": {
@@ -873,8 +873,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "{__name__=~\"rippled_(makeFetchPack_q|publishAcqLedger_q|untrustedValidation_q|manifest_q|localTransaction_q|ledgerReplayRequest_q|ledgerRequest_q|untrustedProposal_q|ledgerReplayTask_q|ledgerData_q|clientCommand_q|clientSubscribe_q|clientFeeChange_q|clientConsensus_q|clientAccountHistory_q|clientRPC_q|clientWebsocket_q|RPC_q|updatePaths_q|transaction_q|batch_q|advanceLedger_q|publishNewLedger_q|fetchTxnData_q|writeAhead_q|trustedValidation_q|writeObjects_q|acceptLedger_q|trustedProposal_q|sweep_q|clusterReport_q|heartbeat_q|administration_q|handleHaveTransactions_q|doTransactions_q)\", quantile=\"$quantile\", exported_instance=~\"$node\"}",
-          "legendFormat": "{{__name__}} [{{quantile}}]"
+          "expr": "histogram_quantile($quantile, sum by (le, __name__) (rate({__name__=~\"xrpld_(makeFetchPack_q|publishAcqLedger_q|untrustedValidation_q|manifest_q|localTransaction_q|ledgerReplayRequest_q|ledgerRequest_q|untrustedProposal_q|ledgerReplayTask_q|ledgerData_q|clientCommand_q|clientSubscribe_q|clientFeeChange_q|clientConsensus_q|clientAccountHistory_q|clientRPC_q|clientWebsocket_q|RPC_q|updatePaths_q|transaction_q|batch_q|advanceLedger_q|publishNewLedger_q|fetchTxnData_q|writeAhead_q|trustedValidation_q|writeObjects_q|acceptLedger_q|trustedProposal_q|sweep_q|clusterReport_q|heartbeat_q|administration_q|handleHaveTransactions_q|doTransactions_q)_milliseconds_bucket\", exported_instance=~\"$node\"}[5m])))",
+          "legendFormat": "{{__name__}}"
         }
       ],
       "fieldConfig": {
@@ -901,7 +901,7 @@
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
         "type": "query",
-        "query": "label_values(rippled_LedgerMaster_Validated_Ledger_Age, exported_instance)",
+        "query": "label_values(xrpld_LedgerMaster_Validated_Ledger_Age, exported_instance)",
         "datasource": {
           "type": "prometheus",
           "uid": "prometheus"
@@ -915,6 +915,40 @@
         "multi": true,
         "refresh": 2,
         "sort": 1
+      },
+      {
+        "name": "quantile",
+        "label": "Quantile",
+        "type": "custom",
+        "query": "0.5,0.75,0.95,0.99",
+        "current": {
+          "text": "0.95",
+          "value": "0.95"
+        },
+        "options": [
+          {
+            "text": "0.5",
+            "value": "0.5",
+            "selected": false
+          },
+          {
+            "text": "0.75",
+            "value": "0.75",
+            "selected": false
+          },
+          {
+            "text": "0.95",
+            "value": "0.95",
+            "selected": true
+          },
+          {
+            "text": "0.99",
+            "value": "0.99",
+            "selected": false
+          }
+        ],
+        "includeAll": false,
+        "multi": false
       }
     ]
   },
