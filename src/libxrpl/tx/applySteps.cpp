@@ -189,8 +189,10 @@ invokePreflight(PreflightContext const& ctx)
                 tec, isTesSuccess(tec) ? consequencesHelper<T>(ctx) : TxConsequences{tec});
         });
         if (span)
+        {
             span.setAttribute(
                 telemetry::tx_apply_span::attr::terResult, transToken(result.first).c_str());
+        }
         return result;
     }
     catch (UnknownTxnType const& e)
@@ -266,8 +268,10 @@ invokePreclaim(PreclaimContext const& ctx)
                 return T::preclaim(ctx);
             });
         if (span)
+        {
             span.setAttribute(
                 telemetry::tx_apply_span::attr::terResult, transToken(preclaimTer).c_str());
+        }
         return preclaimTer;
     }
     catch (UnknownTxnType const& e)
