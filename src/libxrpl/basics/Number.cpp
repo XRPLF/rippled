@@ -65,7 +65,7 @@ MantissaRange::getRanges()
             static_assert(kRange.log == 15);
             static_assert(kRange.min < Number::kMaxRep);
             static_assert(kRange.max < Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFixEnabled == CuspRoundingFix::Disabled);
+            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Disabled);
         }
         {
             [[maybe_unused]]
@@ -76,7 +76,7 @@ MantissaRange::getRanges()
             static_assert(kRange.log == 18);
             static_assert(kRange.min < Number::kMaxRep);
             static_assert(kRange.max > Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFixEnabled == CuspRoundingFix::Disabled);
+            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Disabled);
         }
         {
             [[maybe_unused]]
@@ -87,7 +87,7 @@ MantissaRange::getRanges()
             static_assert(kRange.log == 18);
             static_assert(kRange.min < Number::kMaxRep);
             static_assert(kRange.max > Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFixEnabled == CuspRoundingFix::Enabled);
+            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled);
         }
         return map;
     }();
@@ -171,7 +171,21 @@ class Number::Guard
     std::uint8_t sbit_ : 1 {0};  // the sign of the guard digits
 
 public:
-    explicit Guard() = default;
+    internalrep const minMantissa_;
+    internalrep const maxMantissa_;
+    MantissaRange::CuspRoundingFix const cuspRoundingFix_;
+
+    explicit Guard(
+        internalrep const& minMantissa,
+        internalrep const& maxMantissa,
+        MantissaRange::CuspRoundingFix cuspRoundingFix)
+        : minMantissa_(minMantissa), maxMantissa_(maxMantissa), cuspRoundingFix_(cuspRoundingFix)
+    {
+    }
+
+    explicit Guard(MantissaRange const& range) : Guard(range.min, range.max, range.cuspRoundingFix)
+    {
+    }
 
     // set & test the sign bit
     void
@@ -221,19 +235,12 @@ public:
     // Modify the result to the correctly rounded value
     template <UnsignedMantissa T>
     void
-    doRoundUp(
-        bool& negative,
-        T& mantissa,
-        int& exponent,
-        internalrep const& minMantissa,
-        internalrep const& maxMantissa,
-        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
-        std::string location);
+    doRoundUp(bool& negative, T& mantissa, int& exponent, std::string location);
 
     // Modify the result to the correctly rounded value
     template <UnsignedMantissa T>
     void
-    doRoundDown(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa);
+    doRoundDown(bool& negative, T& mantissa, int& exponent);
 
     // Modify the result to the correctly rounded value
     void
@@ -245,7 +252,7 @@ private:
 
     template <UnsignedMantissa T>
     void
-    bringIntoRange(bool& negative, T& mantissa, int& exponent, internalrep const& minMantissa);
+    bringIntoRange(bool& negative, T& mantissa, int& exponent);
 };
 
 inline void
@@ -359,15 +366,11 @@ Number::Guard::round() const noexcept
 
 template <UnsignedMantissa T>
 void
-Number::Guard::bringIntoRange(
-    bool& negative,
-    T& mantissa,
-    int& exponent,
-    internalrep const& minMantissa)
+Number::Guard::bringIntoRange(bool& negative, T& mantissa, int& exponent)
 {
     // Bring mantissa back into the minMantissa / maxMantissa range AFTER
     // rounding
-    if (mantissa < minMantissa)
+    if (mantissa < minMantissa_)
     {
         mantissa *= 10;
         --exponent;
@@ -384,22 +387,15 @@ Number::Guard::bringIntoRange(
 
 template <UnsignedMantissa T>
 void
-Number::Guard::doRoundUp(
-    bool& negative,
-    T& mantissa,
-    int& exponent,
-    internalrep const& minMantissa,
-    internalrep const& maxMantissa,
-    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
-    std::string location)
+Number::Guard::doRoundUp(bool& negative, T& mantissa, int& exponent, std::string location)
 {
     auto r = round();
     if (r == Round::Up || (r == Round::Even && (mantissa & 1) == 1))
     {
-        auto const safeToIncrement = [&maxMantissa](auto const& mantissa) {
-            return mantissa < maxMantissa && mantissa < kMaxRep;
+        auto const safeToIncrement = [this](auto const& mantissa) {
+            return mantissa < maxMantissa_ && mantissa < kMaxRep;
         };
-        if (cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled)
+        if (cuspRoundingFix_ == MantissaRange::CuspRoundingFix::Enabled)
         {
             // Ensure mantissa after incrementing fits within both the
             // min/maxMantissa range and is a valid "rep".
@@ -420,14 +416,7 @@ Number::Guard::doRoundUp(
                     safeToIncrement(mantissa),
                     "xrpl::Number::Guard::doRoundUp",
                     "can't recurse more than once");
-                doRoundUp(
-                    negative,
-                    mantissa,
-                    exponent,
-                    minMantissa,
-                    maxMantissa,
-                    cuspRoundingFixEnabled,
-                    location);
+                doRoundUp(negative, mantissa, exponent, location);
                 return;
             }
         }
@@ -438,7 +427,7 @@ Number::Guard::doRoundUp(
             ++mantissa;
             // Ensure mantissa after incrementing fits within both the
             // min/maxMantissa range and is a valid "rep".
-            if (mantissa > maxMantissa || mantissa > kMaxRep)
+            if (mantissa > maxMantissa_ || mantissa > kMaxRep)
             {
                 // Don't use doDropDigit here
                 mantissa /= 10;
@@ -446,30 +435,26 @@ Number::Guard::doRoundUp(
             }
         }
     }
-    bringIntoRange(negative, mantissa, exponent, minMantissa);
+    bringIntoRange(negative, mantissa, exponent);
     if (exponent > kMaxExponent)
         Throw<std::overflow_error>(std::string(location));
 }
 
 template <UnsignedMantissa T>
 void
-Number::Guard::doRoundDown(
-    bool& negative,
-    T& mantissa,
-    int& exponent,
-    internalrep const& minMantissa)
+Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent)
 {
     auto r = round();
     if (r == Round::Up || (r == Round::Even && (mantissa & 1) == 1))
     {
         --mantissa;
-        if (mantissa < minMantissa)
+        if (mantissa < minMantissa_)
         {
             mantissa *= 10;
             --exponent;
         }
     }
-    bringIntoRange(negative, mantissa, exponent, minMantissa);
+    bringIntoRange(negative, mantissa, exponent);
 }
 
 // Modify the result to the correctly rounded value
@@ -536,7 +521,7 @@ doNormalize(
     int& exponent,
     MantissaRange::rep const& minMantissa,
     MantissaRange::rep const& maxMantissa,
-    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
+    MantissaRange::CuspRoundingFix cuspRoundingFix,
     bool dropped)
 {
     static constexpr auto kMinExponent = Number::kMinExponent;
@@ -559,7 +544,7 @@ doNormalize(
         m *= 10;
         --exponent;
     }
-    Guard g;
+    Guard g(minMantissa, maxMantissa, cuspRoundingFix);
     if (negative)
         g.setNegative();
     if (dropped)
@@ -604,14 +589,7 @@ doNormalize(
     XRPL_ASSERT_PARTS(m <= kMaxRep, "xrpl::doNormalize", "intermediate mantissa fits in int64");
     mantissa = m;
 
-    g.doRoundUp(
-        negative,
-        mantissa,
-        exponent,
-        minMantissa,
-        maxMantissa,
-        cuspRoundingFixEnabled,
-        "Number::normalize 2");
+    g.doRoundUp(negative, mantissa, exponent, "Number::normalize 2");
     XRPL_ASSERT_PARTS(
         mantissa >= minMantissa && mantissa <= maxMantissa,
         "xrpl::doNormalize",
@@ -626,13 +604,12 @@ Number::normalize<uint128_t>(
     int& exponent,
     internalrep const& minMantissa,
     internalrep const& maxMantissa,
-    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
+    MantissaRange::CuspRoundingFix cuspRoundingFix)
 {
     // Not used by every compiler version, and thus not necessarily
     // counted by coverage build
     // LCOV_EXCL_START
-    doNormalize(
-        negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled, false);
+    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFix, false);
     // LCOV_EXCL_STOP
 }
 
@@ -644,13 +621,12 @@ Number::normalize<unsigned long long>(
     int& exponent,
     internalrep const& minMantissa,
     internalrep const& maxMantissa,
-    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
+    MantissaRange::CuspRoundingFix cuspRoundingFix)
 {
     // Not used by every compiler version, and thus not necessarily
     // counted by coverage build
     // LCOV_EXCL_START
-    doNormalize(
-        negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled, false);
+    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFix, false);
     // LCOV_EXCL_STOP
 }
 
@@ -662,16 +638,27 @@ Number::normalize<unsigned long>(
     int& exponent,
     internalrep const& minMantissa,
     internalrep const& maxMantissa,
-    MantissaRange::CuspRoundingFix cuspRoundingFixEnabled)
+    MantissaRange::CuspRoundingFix cuspRoundingFix)
 {
-    doNormalize(
-        negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFixEnabled, false);
+    doNormalize(negative, mantissa, exponent, minMantissa, maxMantissa, cuspRoundingFix, false);
 }
 
 void
 Number::normalize(MantissaRange const& range)
 {
-    normalize(negative_, mantissa_, exponent_, range.min, range.max, range.cuspRoundingFixEnabled);
+    normalize(negative_, mantissa_, exponent_, range.min, range.max, range.cuspRoundingFix);
+}
+
+void
+Number::normalize(Guard const& guard)
+{
+    normalize(
+        negative_,
+        mantissa_,
+        exponent_,
+        guard.minMantissa_,
+        guard.maxMantissa_,
+        guard.cuspRoundingFix_);
 }
 
 // Copy the number, but set a new exponent. Because the mantissa doesn't change,
@@ -725,19 +712,20 @@ Number::operator+=(Number const& y)
     bool const yn = y.negative_;
     uint128_t ym = y.mantissa_;
     auto ye = y.exponent_;
-    Guard g;
+    Guard g(kRange);
 
-    auto const& range = kRange.get();
+    auto const& minMantissa = g.minMantissa_;
+    auto const& maxMantissa = g.maxMantissa_;
+    auto const cuspRoundingFix = g.cuspRoundingFix_;
 
     // Bring the exponents of both values into agreement, so the mantissas are on the same scale
     //   and can be added directly together
     // expandM / expandE: First try to expand the mantissa and bring the exponent down
     // shringM / shrinkE: Then shrink the mantissa and bring the exponent up, if necessary
-    auto const adjust = [&g, &range](
-                            uint128_t& expandM, int& expandE, uint128_t& shrinkM, int& shrinkE) {
+    auto const adjust = [&g](uint128_t& expandM, int& expandE, uint128_t& shrinkM, int& shrinkE) {
         constexpr uint128_t kSafeLimit = kPowerOfTenImpl<uint128_t, detail::kUint128Digits>[37];
 
-        if (range.cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled)
+        if (g.cuspRoundingFix_ == MantissaRange::CuspRoundingFix::Enabled)
         {
             while (shrinkE < expandE && shrinkM % 10 == 0)
             {
@@ -774,14 +762,10 @@ Number::operator+=(Number const& y)
         adjust(xm, xe, ym, ye);
     }
 
-    auto const& minMantissa = range.min;
-    auto const& maxMantissa = range.max;
-    auto const cuspRoundingFixEnabled = range.cuspRoundingFixEnabled;
-
     if (xn == yn)
     {
         xm += ym;
-        if (range.cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled)
+        if (cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled)
         {
             while (xm > maxMantissa || xm > kMaxRep)
             {
@@ -795,14 +779,7 @@ Number::operator+=(Number const& y)
                 g.doDropDigit(xm, xe);
             }
         }
-        g.doRoundUp(
-            xn,
-            xm,
-            xe,
-            minMantissa,
-            maxMantissa,
-            cuspRoundingFixEnabled,
-            "Number::addition overflow");
+        g.doRoundUp(xn, xm, xe, "Number::addition overflow");
     }
     else
     {
@@ -822,32 +799,25 @@ Number::operator+=(Number const& y)
             xm -= g.pop();
             --xe;
         }
-        g.doRoundDown(xn, xm, xe, minMantissa);
-        if (range.cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled && xm != 0)
+        g.doRoundDown(xn, xm, xe);
+        if (cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled && xm != 0)
         {
-            // make a new guard
-            Guard g;
+            // this will be going away
+            Guard g(kRange);
             if (xn)
                 g.setNegative();
             while (xm > maxMantissa || xm > kMaxRep)
             {
                 g.doDropDigit(xm, xe);
             }
-            g.doRoundUp(
-                xn,
-                xm,
-                xe,
-                minMantissa,
-                maxMantissa,
-                cuspRoundingFixEnabled,
-                "Number::addition overflow");
+            g.doRoundUp(xn, xm, xe, "Number::addition overflow");
         }
     }
 
     negative_ = xn;
     mantissa_ = static_cast<internalrep>(xm);
     exponent_ = xe;
-    normalize(range);
+    normalize(g);
     return *this;
 }
 
@@ -881,14 +851,11 @@ Number::operator*=(Number const& y)
     auto ze = xe + ye;
     auto zs = xs * ys;
     bool zn = (zs == -1);
-    Guard g;
+    Guard g(kRange);
     if (zn)
         g.setNegative();
 
-    auto const& range = kRange.get();
-    auto const& minMantissa = range.min;
-    auto const& maxMantissa = range.max;
-    auto const cuspRoundingFixEnabled = range.cuspRoundingFixEnabled;
+    auto const& maxMantissa = g.maxMantissa_;
 
     while (zm > maxMantissa || zm > kMaxRep)
     {
@@ -897,19 +864,12 @@ Number::operator*=(Number const& y)
 
     xm = static_cast<internalrep>(zm);
     xe = ze;
-    g.doRoundUp(
-        zn,
-        xm,
-        xe,
-        minMantissa,
-        maxMantissa,
-        cuspRoundingFixEnabled,
-        "Number::multiplication overflow : exponent is " + std::to_string(xe));
+    g.doRoundUp(zn, xm, xe, "Number::multiplication overflow : exponent is " + std::to_string(xe));
     negative_ = zn;
     mantissa_ = xm;
     exponent_ = xe;
 
-    normalize(range);
+    normalize(g);
     return *this;
 }
 
@@ -945,7 +905,7 @@ Number::operator/=(Number const& y)
     auto const& range = kRange.get();
     auto const& minMantissa = range.min;
     auto const& maxMantissa = range.max;
-    auto const cuspRoundingFixEnabled = range.cuspRoundingFixEnabled;
+    auto const cuspRoundingFix = range.cuspRoundingFix;
 
     // Division operates on two large integers (16-digit for small
     // mantissas, 19-digit for large) using integer math. If the values
@@ -1077,14 +1037,14 @@ Number::operator/=(Number const& y)
             // rounding fix is enabled, flag if there is still
             // a remainder from stage 2.
             bool const useTrailingRemainder =
-                cuspRoundingFixEnabled == MantissaRange::CuspRoundingFix::Enabled;
+                cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled;
             if (useTrailingRemainder)
             {
                 dropped = partialNumerator % dm != 0;
             }
         }
     }
-    doNormalize(zp, zm, ze, minMantissa, maxMantissa, cuspRoundingFixEnabled, dropped);
+    doNormalize(zp, zm, ze, minMantissa, maxMantissa, cuspRoundingFix, dropped);
     negative_ = zp;
     mantissa_ = static_cast<internalrep>(zm);
     exponent_ = ze;
@@ -1098,7 +1058,7 @@ operator rep() const
 {
     rep drops = mantissa();
     int offset = exponent();
-    Guard g;
+    Guard g(kRange);
     if (drops != 0)
     {
         if (negative_)
