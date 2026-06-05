@@ -313,13 +313,13 @@
     },
     {
       "title": "Consensus Rounds per Ledger (Establish Count)",
-      "description": "Number of establish-phase iterations (proposal rounds) before agreement, from establish_count on consensus.establish. 1 = agreed on first proposal; higher = more rounds of re-proposing to converge.",
+      "description": "Distribution of ledgers by the number of establish-phase rounds (establish_count) needed to converge. Each series is an integer round count: 1 = agreed on the first proposal, 2/3 = needed more rounds. Watch for a shift toward higher counts under disagreement.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 24
+        "w": 24,
+        "x": 0,
+        "y": 32
       },
       "options": {
         "tooltip": {
@@ -340,31 +340,22 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.establish\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.establish_count)",
-          "legendFormat": "Avg Rounds [{{resource.service.instance.id}}]",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "tempo",
-            "uid": "tempo"
-          },
-          "queryType": "traceql",
-          "query": "{name=\"consensus.establish\" && resource.service.instance.id=~\"$node\"} | max_over_time(span.establish_count)",
-          "legendFormat": "Max Rounds [{{resource.service.instance.id}}]",
-          "refId": "B"
+          "refId": "A",
+          "query": "{name=\"consensus.establish\" && resource.service.instance.id=~\"$node\"} | count_over_time() by (span.establish_count)",
+          "legendFormat": "{{span.establish_count}} Rounds"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "none",
           "custom": {
-            "axisLabel": "Rounds per Ledger",
+            "axisLabel": "Ledgers in Window",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
             "pointSize": 3
-          }
+          },
+          "decimals": 0
         },
         "overrides": []
       },
@@ -378,7 +369,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 40
       },
       "options": {
         "tooltip": {
@@ -421,7 +412,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 40
       },
       "options": {
         "tooltip": {
@@ -461,7 +452,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 48
       },
       "options": {
         "tooltip": {
@@ -501,7 +492,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 40
+        "y": 48
       },
       "targets": [
         {
@@ -535,7 +526,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 48
+        "y": 56
       },
       "options": {
         "tooltip": {
@@ -572,7 +563,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 48
+        "y": 56
       },
       "targets": [
         {
@@ -606,7 +597,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 56
+        "y": 64
       },
       "fieldConfig": {
         "defaults": {
@@ -653,7 +644,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 56
+        "y": 64
       },
       "fieldConfig": {
         "defaults": {
@@ -700,7 +691,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 64
+        "y": 72
       },
       "fieldConfig": {
         "defaults": {
@@ -791,7 +782,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 64
+        "y": 72
       },
       "fieldConfig": {
         "defaults": {
@@ -839,7 +830,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 72
+        "y": 80
       },
       "fieldConfig": {
         "defaults": {
@@ -885,9 +876,9 @@
       "type": "piechart",
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 72
+        "w": 24,
+        "x": 0,
+        "y": 88
       },
       "options": {
         "legend": {
@@ -924,7 +915,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 80
+        "y": 96
       },
       "options": {
         "tooltip": {
@@ -971,7 +962,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 80
+        "y": 96
       },
       "options": {
         "tooltip": {
@@ -1018,7 +1009,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 88
+        "y": 104
       },
       "options": {
         "tooltip": {
@@ -1058,7 +1049,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 88
+        "y": 104
       },
       "options": {
         "tooltip": {
