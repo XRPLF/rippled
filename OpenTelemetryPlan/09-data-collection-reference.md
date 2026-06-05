@@ -78,7 +78,7 @@ There are two independent telemetry pipelines entering a single **OTel Collector
 
 ## 1. OpenTelemetry Spans
 
-### 1.1 Complete Span Inventory (~36 spans)
+### 1.1 Complete Span Inventory (~37 spans)
 
 > **See also**: [02-design-decisions.md §2.3](./02-design-decisions.md#23-span-naming-conventions) for naming conventions and the full span catalog with rationale. [04-code-samples.md §4.6](./04-code-samples.md#46-span-flow-visualization) for span flow diagrams.
 
@@ -193,11 +193,12 @@ round trace via context propagation rather than direct parenting. The
 
 Controlled by `trace_ledger=1` in `[telemetry]` config.
 
-| Span Name         | Parent | Source File      | Description                                    |
-| ----------------- | ------ | ---------------- | ---------------------------------------------- |
-| `ledger.build`    | —      | BuildLedger.cpp  | Build new ledger from accepted transaction set |
-| `ledger.validate` | —      | LedgerMaster.cpp | Ledger promoted to validated status            |
-| `ledger.store`    | —      | LedgerMaster.cpp | Ledger stored to database/history              |
+| Span Name         | Parent | Source File       | Description                                    |
+| ----------------- | ------ | ----------------- | ---------------------------------------------- |
+| `ledger.build`    | —      | BuildLedger.cpp   | Build new ledger from accepted transaction set |
+| `ledger.validate` | —      | LedgerMaster.cpp  | Ledger promoted to validated status            |
+| `ledger.store`    | —      | LedgerMaster.cpp  | Ledger stored to database/history              |
+| `ledger.acquire`  | —      | InboundLedger.cpp | Fetch a missing ledger from peers              |
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"ledger.*"}`
 
@@ -382,9 +383,14 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 | `tx_count`            | int64   | `tx.apply`                                        | Transactions applied to the ledger               |
 | `tx_failed`           | int64   | `tx.apply`                                        | Failed transactions in the apply set             |
 | `validations`         | int64   | `ledger.validate`                                 | Number of validations received for this ledger   |
+| `acquire_reason`      | string  | `ledger.acquire`                                  | Why the ledger fetch was triggered               |
+| `timeouts`            | int64   | `ledger.acquire`                                  | Number of fetch timeouts                         |
+| `peer_count`          | int64   | `ledger.acquire`                                  | Peers queried during the fetch                   |
+| `outcome`             | string  | `ledger.acquire`                                  | Fetch outcome                                    |
 
 The apply-step span `tx.apply` (child of `ledger.build`) carries `tx_count`/`tx_failed`;
 the parent `ledger.build` carries `ledger_seq` and the close-time attributes.
+`ledger.acquire` (InboundLedger) also sets `ledger_seq`.
 
 **Tempo query**: `{span.ledger_seq=12345}` to find all spans for a specific ledger.
 
