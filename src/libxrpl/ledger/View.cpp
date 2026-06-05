@@ -52,12 +52,10 @@ hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
     return exp && (view.parentCloseTime() >= tp{d{*exp}});
 }
 
-bool
-isVaultPseudoAccountFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptShare,
-    std::uint8_t depth)
+namespace {
+
+std::optional<bool>
+checkVaultPseudoAccountFrozenPreconditions(ReadView const& view, std::uint8_t depth)
 {
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
@@ -70,21 +68,31 @@ isVaultPseudoAccountFrozen(
         // LCOV_EXCL_STOP
     }
 
-    auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
-    if (mptIssuance == nullptr)
-        return false;  // zero MPToken won't block deletion of MPTokenIssuance
+    return std::nullopt;
+}
 
-    auto const issuer = mptIssuance->getAccountID(sfIssuer);
+bool
+isVaultPseudoAccountFrozenForIssuance(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth)
+{
+    XRPL_ASSERT(
+        issuanceSle.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isVaultPseudoAccountFrozenForIssuance : MPTokenIssuance SLE");
+
+    auto const issuer = issuanceSle.getAccountID(sfIssuer);
 
     // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
     // to the vault pseudo's MPToken or RippleState for the underlying.
     // Read it to derive the underlying asset and recurse, skipping the
     // issuer-account-then-vault chain. Pre-amendment shares (no field)
     // fall back to the chain lookup below.
-    if (mptIssuance->isFieldPresent(sfReferenceHolding))
+    if (issuanceSle.isFieldPresent(sfReferenceHolding))
     {
         auto const sleHolding =
-            view.read(keylet::unchecked(mptIssuance->getFieldH256(sfReferenceHolding)));
+            view.read(keylet::unchecked(issuanceSle.getFieldH256(sfReferenceHolding)));
         if (!sleHolding)
         {
             // LCOV_EXCL_START
@@ -93,7 +101,7 @@ isVaultPseudoAccountFrozen(
             // LCOV_EXCL_STOP
         }
         return isAnyFrozen(
-            view, {issuer, account}, assetOfHolding(*mptIssuance, *sleHolding), depth + 1);
+            view, {issuer, account}, assetOfHolding(issuanceSle, *sleHolding), depth + 1);
     }
 
     auto const mptIssuer = view.read(keylet::account(issuer));
@@ -117,6 +125,38 @@ isVaultPseudoAccountFrozen(
     }
 
     return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
+}
+
+}  // namespace
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    SLE const& issuanceSle,
+    std::uint8_t depth)
+{
+    if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
+        return *result;
+
+    return isVaultPseudoAccountFrozenForIssuance(view, account, issuanceSle, depth);
+}
+
+bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptShare,
+    std::uint8_t depth)
+{
+    if (auto const result = checkVaultPseudoAccountFrozenPreconditions(view, depth))
+        return *result;
+
+    auto const issuanceSle = view.read(keylet::mptIssuance(mptShare.getMptID()));
+    if (issuanceSle == nullptr)
+        return false;  // zero MPToken won't block deletion of MPTokenIssuance
+
+    return isVaultPseudoAccountFrozenForIssuance(view, account, *issuanceSle, depth);
 }
 
 bool

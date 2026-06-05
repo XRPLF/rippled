@@ -37,20 +37,51 @@
 
 namespace xrpl {
 
+namespace {
+
+bool
+isMPTLocked(SLE const& sle)
+{
+    XRPL_ASSERT(
+        sle.getType() == ltMPTOKEN || sle.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::isMPTLocked : MPToken or MPTokenIssuance SLE");
+
+    return sle.isFlag(lsfMPTLocked);
+}
+
+}  // namespace
+
 bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 {
     if (auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID())))
-        return sle->isFlag(lsfMPTLocked);
+        return isGlobalFrozen(*sle);
     return false;
+}
+
+bool
+isGlobalFrozen(SLE const& issuance)
+{
+    XRPL_ASSERT(
+        issuance.getType() == ltMPTOKEN_ISSUANCE, "xrpl::isGlobalFrozen : MPTokenIssuance SLE");
+
+    return isMPTLocked(issuance);
 }
 
 bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue)
 {
     if (auto const sle = view.read(keylet::mptoken(mptIssue.getMptID(), account)))
-        return sle->isFlag(lsfMPTLocked);
+        return isIndividualFrozen(*sle);
     return false;
+}
+
+bool
+isIndividualFrozen(SLE const& mptSle)
+{
+    XRPL_ASSERT(mptSle.getType() == ltMPTOKEN, "xrpl::isIndividualFrozen : MPToken SLE");
+
+    return isMPTLocked(mptSle);
 }
 
 bool
@@ -62,6 +93,23 @@ isFrozen(
 {
     return isGlobalFrozen(view, mptIssue) || isIndividualFrozen(view, account, mptIssue) ||
         isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
+}
+
+bool
+isFrozen(ReadView const& view, AccountID const& account, SLE const& mptSle, std::uint8_t depth)
+{
+    XRPL_ASSERT(mptSle.getType() == ltMPTOKEN, "xrpl::isFrozen : MPToken SLE");
+
+    MPTID const mptID = mptSle[sfMPTokenIssuanceID];
+    auto const issuanceSle = view.read(keylet::mptIssuance(mptID));
+
+    if ((issuanceSle && isGlobalFrozen(*issuanceSle)) || isIndividualFrozen(mptSle))
+        return true;
+
+    if (issuanceSle)
+        return isVaultPseudoAccountFrozen(view, account, *issuanceSle, depth);
+
+    return isVaultPseudoAccountFrozen(view, account, MPTIssue{mptID}, depth);
 }
 
 [[nodiscard]] bool

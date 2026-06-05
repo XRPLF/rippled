@@ -24,7 +24,13 @@ namespace xrpl {
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
 [[nodiscard]] bool
+isGlobalFrozen(SLE const& issuanceSle);
+
+[[nodiscard]] bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
+
+[[nodiscard]] bool
+isIndividualFrozen(SLE const& mptSle);
 
 [[nodiscard]] bool
 isFrozen(
@@ -32,6 +38,9 @@ isFrozen(
     AccountID const& account,
     MPTIssue const& mptIssue,
     std::uint8_t depth = 0);
+
+[[nodiscard]] bool
+isFrozen(ReadView const& view, AccountID const& account, SLE const& mptSle, std::uint8_t depth = 0);
 
 [[nodiscard]] bool
 isAnyFrozen(

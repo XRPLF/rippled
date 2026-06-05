@@ -338,7 +338,7 @@ accountHolds(
     {
         amount.clear(mptIssue);
     }
-    else if (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && isFrozen(view, account, mptIssue))
+    else if (zeroIfFrozen == FreezeHandling::ZeroIfFrozen && isFrozen(view, account, *sleMpt))
     {
         amount.clear(mptIssue);
     }
