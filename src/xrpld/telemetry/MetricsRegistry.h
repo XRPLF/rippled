@@ -529,13 +529,16 @@ private:
     /// Counter: xrpld_txq_dropped_total{reason} — incremented when a transaction is refused
     /// admission to the queue.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>> txqDroppedCounter_;
-    /// Counter: xrpld_validation_agreements_total — incremented by ValidationTracker on
-    /// agreement.
-    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
-        validationAgreementsCounter_;
-    /// Counter: xrpld_validation_missed_total — incremented by ValidationTracker on miss.
-    opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
-        validationMissedCounter_;
+    /// ObservableCounter: xrpld_validation_agreements_total — observed from
+    /// ValidationTracker::totalAgreementsEver() (monotonic gross lifetime
+    /// tally, initial-classification semantics).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        validationAgreementsObservable_;
+    /// ObservableCounter: xrpld_validation_missed_total — observed from
+    /// ValidationTracker::totalMissedEver() (monotonic gross lifetime tally,
+    /// initial-classification semantics).
+    opentelemetry::nostd::shared_ptr<opentelemetry::metrics::ObservableInstrument>
+        validationMissedObservable_;
 
     /** Register all observable gauge callbacks with the OTel SDK.
         Dispatches to one helper per metric domain so that each helper
@@ -580,6 +583,8 @@ private:
     registerStorageDetailGauge();  // Task 7.13
     void
     registerValidationAgreementGauge();  // Task 7.15
+    void
+    registerValidationTotalsCounters();  // gap-fill: lifetime agree/miss _total
 #endif                                   // XRPL_ENABLE_TELEMETRY
 };
 

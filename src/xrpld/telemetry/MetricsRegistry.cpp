@@ -244,10 +244,9 @@ MetricsRegistry::start(std::string const& endpoint, std::string const& instanceI
         "xrpld_txq_expired_total", "Total transactions expired out of the transaction queue");
     txqDroppedCounter_ = meter_->CreateUInt64Counter(
         "xrpld_txq_dropped_total", "Total transactions refused admission to the queue by reason");
-    validationAgreementsCounter_ = meter_->CreateUInt64Counter(
-        "xrpld_validation_agreements_total", "Total validation agreements");
-    validationMissedCounter_ =
-        meter_->CreateUInt64Counter("xrpld_validation_missed_total", "Total validation misses");
+    // Note: xrpld_validation_agreements_total / xrpld_validation_missed_total
+    // are monotonic ObservableCounters created in registerValidationTotalsCounters()
+    // (below), observed from ValidationTracker's gross lifetime tallies.
 
     // Register all observable (async) gauges.
     registerAsyncGauges();
@@ -441,6 +440,7 @@ MetricsRegistry::registerAsyncGauges()
     registerStateTrackingGauge();
     registerStorageDetailGauge();
     registerValidationAgreementGauge();
+    registerValidationTotalsCounters();
 }
 
 void
@@ -1325,13 +1325,67 @@ MetricsRegistry::registerValidationAgreementGauge()
             }
         },
         this);
+}
 
-    // Note: validationAgreementsCounter_ and validationMissedCounter_ are
-    // created above but not currently incremented.  The
-    // xrpld_validation_agreement gauge already provides agreement and miss
-    // counts from ValidationTracker's rolling windows and lifetime totals.
-    // These counters are reserved for future use if a push-style counter
-    // integration with ValidationTracker is desired.
+void
+MetricsRegistry::registerValidationTotalsCounters()
+{
+    // Lifetime validation agreement/miss counters.
+    //
+    // These are monotonic ObservableCounters (not the sync Counters they used
+    // to be): a Prometheus _total must never decrease, but ValidationTracker's
+    // NET totals are non-monotonic (a late repair decrements the net miss
+    // count). We therefore observe the tracker's GROSS lifetime tallies, which
+    // count each ledger once at first classification and are never adjusted on
+    // repair (initial-classification semantics — see ValidationTracker). The
+    // repaired/agreement view remains available from xrpld_validation_agreement.
+    //
+    // reconcile() is called first so pending events are resolved before the
+    // tallies are read; the callback fires every ~10 s from the
+    // PeriodicExportingMetricReader thread.
+    validationAgreementsObservable_ = meter_->CreateInt64ObservableCounter(
+        "xrpld_validation_agreements_total",
+        "Lifetime validations that initially agreed with network consensus");
+    validationAgreementsObservable_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            try
+            {
+                self->validationTracker_.reconcile();
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                    ->Observe(static_cast<int64_t>(self->validationTracker_.totalAgreementsEver()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip on error.
+            }
+        },
+        this);
+
+    validationMissedObservable_ = meter_->CreateInt64ObservableCounter(
+        "xrpld_validation_missed_total",
+        "Lifetime validations that initially missed network consensus");
+    validationMissedObservable_->AddCallback(
+        [](opentelemetry::metrics::ObserverResult result, void* state) {
+            auto* self = static_cast<MetricsRegistry*>(state);
+            if (self->callbacksDetached_.load(std::memory_order_acquire))
+                return;
+            try
+            {
+                self->validationTracker_.reconcile();
+                opentelemetry::nostd::get<opentelemetry::nostd::shared_ptr<
+                    opentelemetry::metrics::ObserverResultT<int64_t>>>(result)
+                    ->Observe(static_cast<int64_t>(self->validationTracker_.totalMissedEver()));
+            }
+            catch (...)  // NOLINT(bugprone-empty-catch)
+            {
+                // Silently skip on error.
+            }
+        },
+        this);
 }
 
 #endif  // XRPL_ENABLE_TELEMETRY

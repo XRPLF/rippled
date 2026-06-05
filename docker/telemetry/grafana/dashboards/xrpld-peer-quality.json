@@ -303,14 +303,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Peer_Finder_Active_Inbound_Peers{exported_instance=~\"$node\"}",
+          "expr": "xrpld_Peer_Finder_Active_Inbound_Peers{exported_instance=~\"$node\"}",
           "legendFormat": "Inbound [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_Peer_Finder_Active_Outbound_Peers{exported_instance=~\"$node\"}",
+          "expr": "xrpld_Peer_Finder_Active_Outbound_Peers{exported_instance=~\"$node\"}",
           "legendFormat": "Outbound [{{exported_instance}}]"
         }
       ],
