@@ -1,51 +1,56 @@
-include(XrplAddTest)
+include(GoogleTest)
+include(isolate_headers)
 
 # Test requirements.
 find_package(GTest REQUIRED)
 
-# Custom target for all tests defined in this file
-add_custom_target(xrpl.tests)
-
-# Test helpers
-add_library(xrpl.helpers.test STATIC)
-target_sources(
-    xrpl.helpers.test
-    PRIVATE helpers/Account.cpp helpers/TestSink.cpp helpers/TxTest.cpp
+# Single combined gtest binary built from the shared test helpers and all test
+# modules below.
+add_executable(
+    xrpl_tests
+    main.cpp
+    helpers/Account.cpp
+    helpers/TestSink.cpp
+    helpers/TxTest.cpp
 )
-target_include_directories(xrpl.helpers.test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(xrpl.helpers.test PUBLIC xrpl.libxrpl gtest::gtest)
-
-# Common library dependencies for the rest of the tests.
-add_library(xrpl.imports.test INTERFACE)
-target_link_libraries(
-    xrpl.imports.test
-    INTERFACE gtest::gtest xrpl.libxrpl xrpl.helpers.test
+set_target_properties(
+    xrpl_tests
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
+# Lets test sources include the shared helpers as <helpers/...>.
+target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(xrpl_tests PRIVATE GTest::gtest xrpl.libxrpl)
 
-# One test for each module.
-xrpl_add_test(basics)
-target_link_libraries(xrpl.test.basics PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.basics)
-
-xrpl_add_test(crypto)
-target_link_libraries(xrpl.test.crypto PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.crypto)
-
-xrpl_add_test(json)
-target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.json)
-
-xrpl_add_test(tx)
-target_link_libraries(xrpl.test.tx PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.tx)
-
-xrpl_add_test(protocol_autogen)
-target_link_libraries(xrpl.test.protocol_autogen PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.protocol_autogen)
-
-# Network unit tests are currently not supported on Windows
+# One source subdirectory per module. Network unit tests are currently not
+# supported on Windows.
+set(test_modules
+    basics
+    crypto
+    json
+    tx
+    protocol_autogen
+)
 if(NOT WIN32)
-    xrpl_add_test(net)
-    target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
-    add_dependencies(xrpl.tests xrpl.test.net)
+    list(APPEND test_modules net)
 endif()
+
+foreach(module IN LISTS test_modules)
+    # Append the module's sources (${module}/*.cpp and ${module}.cpp, if any).
+    file(
+        GLOB_RECURSE sources
+        CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
+    )
+    target_sources(xrpl_tests PRIVATE ${sources})
+
+    # Expose the module's private headers under their canonical include path.
+    isolate_headers(
+        xrpl_tests
+        "${CMAKE_SOURCE_DIR}"
+        "${CMAKE_SOURCE_DIR}/tests/${module}"
+        PRIVATE
+    )
+endforeach()
+
+gtest_discover_tests(xrpl_tests)

@@ -25,7 +25,6 @@
 
 #include <cstdint>
 #include <limits>
-#include <memory>
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -71,7 +70,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 }
 
 TER
-deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Journal j)
+deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
 {
     if (!sleCredential)
         return tecNO_ENTRY;
@@ -231,7 +230,7 @@ TER
 authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, AccountID const& dst)
 {
     std::set<std::pair<AccountID, Slice>> sorted;
-    std::vector<std::shared_ptr<SLE const>> lifeExtender;
+    std::vector<SLE::const_pointer> lifeExtender;
     lifeExtender.reserve(credIDs.size());
     for (auto const& h : credIDs)
     {
@@ -352,7 +351,7 @@ verifyDepositPreauth(
     ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    std::shared_ptr<SLE const> const& sleDst,
+    SLE::const_ref sleDst,
     beast::Journal j)
 {
     // If depositPreauth is enabled, then an account that requires
