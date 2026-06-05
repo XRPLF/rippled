@@ -2,7 +2,7 @@
 #
 # Runs a 5-node validator cluster with full OTel telemetry stack:
 #   - 5 rippled validator nodes (consensus network)
-#   - OTel Collector (traces + StatsD metrics)
+#   - OTel Collector (traces + native OTLP metrics)
 #   - Tempo (trace backend + search API)
 #   - Prometheus (metrics)
 #   - Loki (log aggregation for log-trace correlation)
@@ -34,8 +34,7 @@ services:
     command: ["--config=/etc/otel-collector-config.yaml"]
     ports:
       - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
-      - "8125:8125/udp" # StatsD UDP (beast::insight metrics)
+      - "4318:4318" # OTLP HTTP (traces + beast::insight metrics)
       - "8889:8889" # Prometheus metrics endpoint
       - "13133:13133" # Health check
     volumes:

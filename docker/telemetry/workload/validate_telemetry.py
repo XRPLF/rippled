@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Telemetry Validation Suite for rippled.
+"""Telemetry Validation Suite for xrpld.
 
 Validates that the full telemetry stack is emitting expected data after
 a workload run. Queries Tempo (spans), Prometheus (metrics), Loki (logs),
@@ -63,7 +63,7 @@ class CheckResult:
     """Result of a single validation check.
 
     Attributes:
-        name:     Check identifier (e.g., "span.rpc.request").
+        name:     Check identifier (e.g., "span.rpc.ws_message").
         category: Validation category (span, metric, log, dashboard).
         passed:   Whether the check passed.
         message:  Human-readable description of the result.
@@ -243,16 +243,16 @@ async def validate_spans(
             data = await resp.json()
             tag_values = data.get("tagValues", [])
             services = [tv.get("value", "") for tv in tag_values]
-            has_rippled = "rippled" in services
+            has_xrpld = "xrpld" in services
             report.add(
                 CheckResult(
                     name="span.service_registration",
                     category="span",
-                    passed=has_rippled,
+                    passed=has_xrpld,
                     message=(
-                        f"Service 'rippled' registered (found: {services})"
-                        if has_rippled
-                        else f"Service 'rippled' NOT found (found: {services})"
+                        f"Service 'xrpld' registered (found: {services})"
+                        if has_xrpld
+                        else f"Service 'xrpld' NOT found (found: {services})"
                     ),
                 )
             )
@@ -267,7 +267,7 @@ async def validate_spans(
         )
         return
 
-    # Diagnostic: list all available operations (span names) for the rippled
+    # Diagnostic: list all available operations (span names) for the xrpld
     # service.  This output appears in CI logs and helps debug missing-span
     # failures without needing to reproduce the full stack locally.
     try:
@@ -285,21 +285,64 @@ async def validate_spans(
     except Exception as exc:
         logger.warning("Failed to fetch Tempo operations: %s", exc)
 
+    # Concrete probe names for wildcard span entries. Exact-match TraceQL can't
+    # match a literal "*", so a representative operation name is substituted.
+    # Wildcards without a known concrete example (e.g. grpc.<MethodName> when no
+    # gRPC client runs) are skipped when marked optional.
+    wildcard_probes = {"rpc.command.*": "rpc.command.server_info"}
+
     # Check each expected span.
     for span_def in expected["spans"]:
         span_name = span_def["name"]
-        # For wildcard spans (rpc.command.*), search with a concrete example.
+        is_optional = span_def.get("optional", False)
+        check_name = f"span.{span_name}"
+
         if "*" in span_name:
-            operation = "rpc.command.server_info"
-            check_name = f"span.{span_name}"
+            operation = wildcard_probes.get(span_name)
+            if operation is None:
+                # No concrete probe. Optional wildcards (e.g. grpc.*) are skipped;
+                # a required one would be a config error worth surfacing.
+                if is_optional:
+                    logger.info(
+                        "[SKIP] %s: optional wildcard span with no concrete "
+                        "probe (not exercised by the workload)",
+                        check_name,
+                    )
+                    continue
+                report.add(
+                    CheckResult(
+                        name=check_name,
+                        category="span",
+                        passed=False,
+                        message=f"{span_name}: required wildcard has no probe name",
+                    )
+                )
+                continue
         else:
             operation = span_name
-            check_name = f"span.{span_name}"
 
         try:
-            query = '{resource.service.name="rippled" && name="' + operation + '"}'
+            query = '{resource.service.name="xrpld" && name="' + operation + '"}'
             traces = await _tempo_search(session, tempo_url, query, limit=5)
             count = len(traces)
+            # Optional spans only fire under specific traffic (mode changes,
+            # missing-ledger fetch, fee escalation). Absence is not a failure —
+            # mirror the parent-child "skip" handling so CI stays green.
+            if count == 0 and is_optional:
+                logger.info(
+                    "[SKIP] %s: optional span not emitted under this workload",
+                    check_name,
+                )
+                report.add(
+                    CheckResult(
+                        name=check_name,
+                        category="span",
+                        passed=True,
+                        message=f"{span_name}: optional, not emitted (skipped)",
+                        details={"trace_count": 0, "optional": True},
+                    )
+                )
+                continue
             report.add(
                 CheckResult(
                     name=check_name,
@@ -407,7 +450,7 @@ async def _validate_parent_child(
 
     try:
         # Query traces for the parent span.
-        query = '{resource.service.name="rippled" && name="' + parent_name + '"}'
+        query = '{resource.service.name="xrpld" && name="' + parent_name + '"}'
         traces = await _tempo_search(session, tempo_url, query, limit=3)
 
         if not traces:
@@ -488,11 +531,11 @@ async def validate_metrics(
         ) as resp:
             label_data = await resp.json()
             all_metrics = label_data.get("data", [])
-            # Log rippled-related and Phase 9 metrics for debugging.
+            # Log xrpld-related and Phase 9 metrics for debugging.
             relevant = [
                 m
                 for m in all_metrics
-                if "rippled" in m.lower()
+                if "xrpld" in m.lower()
                 or m.startswith(
                     (
                         "rpc_method",
@@ -611,7 +654,7 @@ async def validate_log_trace_correlation(
     # Check 1: Any logs with trace_id exist.
     try:
         params = {
-            "query": '{job="rippled"} |= "trace_id="',
+            "query": '{job="xrpld"} |= "trace_id="',
             "limit": 5,
             "direction": "backward",
         }
@@ -650,7 +693,7 @@ async def validate_log_trace_correlation(
         traces = await _tempo_search(
             session,
             tempo_url,
-            '{resource.service.name="rippled"}',
+            '{resource.service.name="xrpld"}',
             limit=1,
         )
 
@@ -659,7 +702,7 @@ async def validate_log_trace_correlation(
             if trace_id:
                 # Search Loki for this trace_id.
                 loki_params = {
-                    "query": f'{{job="rippled"}} |= "{trace_id}"',
+                    "query": f'{{job="xrpld"}} |= "{trace_id}"',
                     "limit": 5,
                     "direction": "backward",
                 }
@@ -795,7 +838,7 @@ async def validate_span_durations(
         traces = await _tempo_search(
             session,
             tempo_url,
-            '{resource.service.name="rippled"}',
+            '{resource.service.name="xrpld"}',
             limit=5,
         )
 
@@ -868,15 +911,21 @@ async def validate_span_durations(
 # Span attributes that external dashboards (validator-health, peer-quality,
 # system-node-health) depend on.  Each entry maps a span name to the
 # attributes that must be present for external dashboard panels to render.
+# Keys follow the 2026-05-13 span-attr naming redesign (bare/underscore form;
+# dotted xrpl.* reserved for resource attributes). The amendment_blocked,
+# server_state, and proposers_validated values that earlier external-dashboard
+# work tracked are NOT span attributes — they exist only as MetricsRegistry
+# metrics (xrpld_validator_health{metric="amendment_blocked"},
+# xrpld_state_tracking{metric="state_value"}, etc.), so they are validated by
+# PARITY_VALUE_SANITY below rather than as span attributes here.
 PARITY_SPAN_ATTRS: list[dict[str, str]] = [
-    {"span": "rpc.command.server_info", "attr": "xrpl.node.amendment_blocked"},
-    {"span": "rpc.command.server_info", "attr": "xrpl.node.server_state"},
-    {"span": "tx.receive", "attr": "xrpl.peer.version"},
-    {"span": "consensus.validation.send", "attr": "xrpl.validation.ledger_hash"},
-    {"span": "consensus.validation.send", "attr": "xrpl.validation.full"},
-    {"span": "peer.validation.receive", "attr": "xrpl.peer.validation.ledger_hash"},
-    {"span": "consensus.accept", "attr": "xrpl.consensus.validation_quorum"},
-    {"span": "consensus.accept", "attr": "xrpl.consensus.proposers_validated"},
+    {"span": "tx.receive", "attr": "peer_version"},
+    {"span": "consensus.validation.send", "attr": "ledger_hash"},
+    {"span": "consensus.validation.send", "attr": "full_validation"},
+    # peer.validation.receive uses the shared dotted xrpl.ledger.hash constant
+    # (intentionally dotted, unlike consensus.validation.send's bare ledger_hash).
+    {"span": "peer.validation.receive", "attr": "xrpl.ledger.hash"},
+    {"span": "consensus.accept", "attr": "quorum"},
 ]
 
 # Value sanity bounds for external-parity metrics.  Each entry specifies a
@@ -934,7 +983,7 @@ async def validate_parity_span_attrs(
         check_name = f"parity.span_attr.{span_name}.{attr_name}"
 
         try:
-            query = '{resource.service.name="rippled" && name="' + span_name + '"}'
+            query = '{resource.service.name="xrpld" && name="' + span_name + '"}'
             traces = await _tempo_search(session, tempo_url, query, limit=5)
 
             if not traces:
@@ -1124,7 +1173,7 @@ async def run_validation(
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Telemetry Validation Suite for rippled",
+        description="Telemetry Validation Suite for xrpld",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

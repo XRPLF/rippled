@@ -38,6 +38,16 @@
           }
         },
         {
+          "name": "txq-burst",
+          "description": "Single-type Payment burst at high TPS to force open-ledger fee escalation and TxQ queueing, exercising the txq.* spans (txq.enqueue / txq.accept / txq.accept.tx / txq.cleanup)",
+          "duration_sec": 30,
+          "rpc": { "rate": 5, "weights": { "fee": 100 } },
+          "tx": {
+            "tps": 60,
+            "weights": { "Payment": 100 }
+          }
+        },
+        {
           "name": "mixed-peak",
           "description": "Realistic peak load — consensus and ledger ops under stress",
           "duration_sec": 60,

@@ -288,10 +288,10 @@ The validation report (`validation-report.json`) is structured as:
   },
   "checks": [
     {
-      "name": "span.rpc.request",
+      "name": "span.rpc.ws_message",
       "category": "span",
       "passed": true,
-      "message": "rpc.request: 15 traces found",
+      "message": "rpc.ws_message: 15 traces found",
       "details": { "trace_count": 15 }
     }
   ]
@@ -347,10 +347,10 @@ required attributes, and the `config_flag` that must be enabled:
 
 ```json
 {
-  "name": "rpc.request",
+  "name": "rpc.command.*",
   "category": "rpc",
-  "parent": null,
-  "required_attributes": ["rpc.method", "rpc.grpc.status_code"],
+  "parent": "rpc.process",
+  "required_attributes": ["command", "version", "rpc_role", "rpc_status"],
   "config_flag": "trace_rpc"
 }
 ```

@@ -90,15 +90,15 @@
       "unit": "ms",
       "value": null
     },
-    "span.rpc.request.p50": {
+    "span.rpc.ws_message.p50": {
       "unit": "ms",
       "value": null
     },
-    "span.rpc.request.p95": {
+    "span.rpc.ws_message.p95": {
       "unit": "ms",
       "value": null
     },
-    "span.rpc.request.p99": {
+    "span.rpc.ws_message.p99": {
       "unit": "ms",
       "value": null
     },

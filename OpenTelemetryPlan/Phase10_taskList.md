@@ -22,7 +22,7 @@
 
 Before Phases 1-9 can be considered production-ready, we need proof that:
 
-1. All 16 spans fire with correct attributes under real transaction workloads
+1. All required spans fire with correct attributes under real transaction workloads
 2. All 255+ StatsD metrics + ~50 Phase 9 metrics appear in Prometheus with non-zero values
 3. Log-trace correlation (Phase 8) produces clickable trace_id links in Loki
 4. All 10 Grafana dashboards render meaningful data (no empty panels)
@@ -122,9 +122,12 @@ Before Phases 1-9 can be considered production-ready, we need proof that:
 - Create `docker/telemetry/workload/validate_telemetry.py`:
 
   **Span validation** (queries Tempo API):
-  - Assert all 16 span names appear in traces
-  - Assert each span has its required attributes (22 total attributes across spans)
-  - Assert parent-child relationships are correct (`rpc.request` → `rpc.process` → `rpc.command.*`)
+  - Assert all required span names appear in traces (conditional spans — `grpc.*`,
+    `ledger.acquire`, `txq.*`, `consensus.mode_change` — are marked `optional` and
+    skipped when not exercised by the workload)
+  - Assert each span has its required attributes (bare/underscore keys per the
+    2026-05-13 span-attr naming redesign; dotted `xrpl.*` reserved for resource attrs)
+  - Assert parent-child relationships are correct (`rpc.ws_message` → `rpc.process` → `rpc.command.*`)
   - Assert span durations are reasonable (> 0, < 60s)
 
   **Metric validation** (queries Prometheus API):

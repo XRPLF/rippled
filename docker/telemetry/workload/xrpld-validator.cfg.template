@@ -9,8 +9,8 @@
 #   {{VALIDATION_SEED}}   — Validator seed from key generation
 #   {{VALIDATORS_FILE}}   — Path to shared validators.txt
 #   {{IPS_FIXED}}         — Peer addresses (one per line)
-#   {{OTEL_ENDPOINT}}     — OTel Collector OTLP/HTTP endpoint
-#   {{STATSD_ADDRESS}}    — StatsD UDP address (host:port)
+#   {{OTEL_ENDPOINT}}     — OTel Collector OTLP/HTTP traces endpoint
+#   {{OTEL_METRICS_ENDPOINT}} — OTel Collector OTLP/HTTP metrics endpoint
 #   {{LOG_LEVEL}}         — Log level (debug, info, warning, error)
 
 [server]
@@ -74,11 +74,14 @@ trace_consensus=1
 trace_peer=1
 trace_ledger=1
 
-# --- StatsD metrics (beast::insight) ---
+# --- Native OTel metrics (beast::insight over OTLP/HTTP) ---
+# The collector has no StatsD receiver (metrics pipeline is [otlp, spanmetrics]),
+# so beast::insight exports natively over OTLP. prefix=xrpld matches the OTel
+# resource service name and the xrpld_* names the dashboards query.
 [insight]
-server=statsd
-address={{STATSD_ADDRESS}}
-prefix=rippled
+server=otel
+endpoint={{OTEL_METRICS_ENDPOINT}}
+prefix=xrpld
 
 [rpc_startup]
 { "command": "log_level", "severity": "{{LOG_LEVEL}}" }

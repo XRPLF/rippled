@@ -11,6 +11,7 @@ Command distribution (default weights):
   15%  Explorer:        ledger, ledger_data
   10%  TX lookups:      tx, account_tx
    5%  DEX queries:     book_offers, amm_info
+   3%  Pathfinding:     ripple_path_find
 
 Usage:
     python3 rpc_load_generator.py --endpoints ws://localhost:6006 --rate 50 --duration 120
@@ -61,6 +62,10 @@ DEFAULT_WEIGHTS: dict[str, int] = {
     # 5% DEX queries
     "book_offers": 3,
     "amm_info": 2,
+    # Pathfinding — exercises the pathfind.request/compute/discover spans.
+    # ripple_path_find is the synchronous (one-shot) variant that fits this
+    # fire-one-request WS client; path_find is a streaming subscription.
+    "ripple_path_find": 3,
 }
 
 # Well-known genesis account for queries that require an account parameter.
@@ -162,7 +167,7 @@ def build_rpc_request(command: str) -> dict[str, Any]:
         req["limit"] = 5
     elif command == "tx":
         # Use a dummy hash — returns "txnNotFound" error but still exercises
-        # the full RPC span pipeline (rpc.request -> rpc.process -> rpc.command.tx).
+        # the full RPC span pipeline (rpc.ws_message -> rpc.process -> rpc.command.tx).
         req["transaction"] = "0" * 64
         req["binary"] = False
     elif command == "account_tx":
@@ -184,6 +189,13 @@ def build_rpc_request(command: str) -> dict[str, Any]:
             "currency": "USD",
             "issuer": GENESIS_ACCOUNT,
         }
+    elif command == "ripple_path_find":
+        # Self-to-self XRP path search. It returns no usable paths, but the
+        # server still runs the full pathfinding pipeline (pathfind.request ->
+        # pathfind.compute -> pathfind.discover), which is what we trace.
+        req["source_account"] = GENESIS_ACCOUNT
+        req["destination_account"] = GENESIS_ACCOUNT
+        req["destination_amount"] = "1000000"  # 1 XRP in drops
 
     return req
 

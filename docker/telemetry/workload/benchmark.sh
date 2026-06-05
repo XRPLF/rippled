@@ -156,9 +156,9 @@ trace_peer=1
 trace_ledger=1
 
 [insight]
-server=statsd
-address=127.0.0.1:8125
-prefix=rippled"
+server=otel
+endpoint=http://localhost:4318/v1/metrics
+prefix=xrpld"
         else
             telemetry_section="
 [telemetry]

@@ -296,9 +296,13 @@ trace_peer=1
 trace_ledger=1
 
 [insight]
-server=statsd
-address=127.0.0.1:8125
-prefix=rippled
+# Native OTel metrics via OTLP/HTTP. The collector has no StatsD receiver
+# (metrics pipeline is [otlp, spanmetrics]), so beast::insight must export
+# over OTLP for system metrics to reach Prometheus. prefix=xrpld matches the
+# OTel resource service name and the xrpld_* names the dashboards query.
+server=otel
+endpoint=http://localhost:4318/v1/metrics
+prefix=xrpld
 
 [rpc_startup]
 { "command": "log_level", "severity": "warning" }
