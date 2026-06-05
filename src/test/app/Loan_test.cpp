@@ -8834,6 +8834,40 @@ protected:
 
             BEAST_EXPECT(env.le(loanKeylet));
         }
+
+        // Test 5: When the broker owner submits, the domain check must validate
+        // the borrower (the counterparty), not the submitting account. The
+        // broker owner (alice) is the domain owner and holds credentials, so a
+        // bug that checked the submitter instead of the borrower would let a
+        // borrower without credentials (carol) through.
+        {
+            auto setTx = env.jt(loan::set(alice, brokerKeylet.key, asset(100).number()));
+            Sig(sfCounterpartySignature, carol)(env, setTx);
+            Fee{env.current()->fees().base * 2}(env, setTx);
+            loan::kCounterparty(carol)(env, setTx);
+            loan::kInterestRate(TenthBips32{1000})(env, setTx);
+            loan::kPaymentTotal(2)(env, setTx);
+            loan::kPaymentInterval(100)(env, setTx);
+            env(setTx, Ter(tecNO_AUTH));
+        }
+
+        // Test 6: Broker owner submits with a credentialed borrower (bob) as
+        // counterparty. This must succeed, confirming the domain check uses the
+        // borrower's credentials regardless of who submits.
+        {
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 2);
+            auto setTx = env.jt(loan::set(alice, brokerKeylet.key, asset(100).number()));
+            Sig(sfCounterpartySignature, bob)(env, setTx);
+            Fee{env.current()->fees().base * 2}(env, setTx);
+            loan::kCounterparty(bob)(env, setTx);
+            loan::kInterestRate(TenthBips32{1000})(env, setTx);
+            loan::kPaymentTotal(2)(env, setTx);
+            loan::kPaymentInterval(100)(env, setTx);
+            env(setTx);
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+        }
     }
 
     void
@@ -8917,6 +8951,17 @@ protected:
         auto const credKeylet = credentials::keylet(bob, credIssuer, credType);
         BEAST_EXPECT(!env.le(credKeylet));
 
+        // Capture the pre-payment loan state and borrower balance so we can
+        // confirm the payment is genuinely applied, not merely that the loan
+        // object survives.
+        auto const bobBalanceBefore = env.balance(bob, asset).value();
+        auto const sleLoanBefore = env.le(loanKeylet);
+        if (!BEAST_EXPECT(sleLoanBefore))
+            return;
+        auto const paymentRemainingBefore = sleLoanBefore->at(sfPaymentRemaining);
+        auto const principalBefore = sleLoanBefore->at(sfPrincipalOutstanding);
+        auto const totalValueBefore = sleLoanBefore->at(sfTotalValueOutstanding);
+
         // Bob should still be able to make a loan payment even without credentials
         env(loan::pay(bob, loanKeylet.key, asset(51)));
         env.close();
@@ -8924,6 +8969,17 @@ protected:
         // Verify the loan still exists and payment was processed
         auto const sleLoan = env.le(loanKeylet);
         BEAST_EXPECT(sleLoan);
+
+        // Verify the payment was actually applied: the borrower's IOU balance
+        // dropped (fees are charged separately in XRP), one payment period was
+        // consumed, and the loan's outstanding figures decreased.
+        BEAST_EXPECT(env.balance(bob, asset).value() < bobBalanceBefore);
+        if (BEAST_EXPECT(sleLoan))
+        {
+            BEAST_EXPECT(sleLoan->at(sfPaymentRemaining) == paymentRemainingBefore - 1);
+            BEAST_EXPECT(sleLoan->at(sfPrincipalOutstanding) < principalBefore);
+            BEAST_EXPECT(sleLoan->at(sfTotalValueOutstanding) < totalValueBefore);
+        }
 
         // Bob should NOT be able to create a NEW loan (no credentials)
         {

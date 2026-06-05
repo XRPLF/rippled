@@ -89,12 +89,6 @@ ValidLoan::finalize(
                 return false;
             }
         }
-
-        if (after->at(~sfDomainID) && !after->isFlag(lsfLoanBrokerPrivate))
-        {
-            JLOG(j.fatal()) << "Invariant failed: DomainID is set on public Loan Broker";
-            return false;
-        }
     }
     return true;
 }

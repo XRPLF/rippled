@@ -380,7 +380,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
 
         if (auto const ter = credentials::validDomain(ctx.view, *domainID, borrower);
-            !isTesSuccess(ter))
+            !isTesSuccess(ter) && ter != tecEXPIRED)
             return ter;
     }
 
@@ -432,7 +432,7 @@ LoanSet::doApply()
             return tefBAD_LEDGER;  // LCOV_EXCL_LINE
         }
 
-        if (auto const ter = verifyValidDomain(view, accountID_, *domainID, j_); !isTesSuccess(ter))
+        if (auto const ter = verifyValidDomain(view, borrower, *domainID, j_); !isTesSuccess(ter))
             return ter;
     }
 
