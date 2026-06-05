@@ -1,16 +1,15 @@
 #include <xrpld/rpc/detail/PayGraph.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
-
-#include "xrpl/basics/UnorderedContainers.h"
-#include "xrpl/basics/base_uint.h"
-#include "xrpl/beast/utility/Journal.h"
-#include "xrpl/ledger/OrderBookDB.h"
-#include "xrpl/protocol/Asset.h"
-#include "xrpl/protocol/Book.h"
-#include "xrpl/protocol/Issue.h"
+#include <xrpl/protocol/Issue.h>
 
 #include <algorithm>
 #include <atomic>
@@ -48,10 +47,7 @@ atomicLoad(std::shared_ptr<T> const* p, std::memory_order order) noexcept
 
 template <class T>
 inline void
-atomicStore(
-    std::shared_ptr<T>* p,
-    std::shared_ptr<T> v,
-    std::memory_order order) noexcept
+atomicStore(std::shared_ptr<T>* p, std::shared_ptr<T> v, std::memory_order order) noexcept
 {
     std::atomic_store_explicit(p, std::move(v), order);
 }
@@ -61,7 +57,6 @@ atomicStore(
 #endif
 
 }  // namespace
-
 
 //==============================================================================
 // Internal helpers
@@ -291,9 +286,7 @@ PayGraph::build(
     auto pg = std::shared_ptr<PayGraph>(new PayGraph(domain, j));
     auto snap = buildSnapshot(bookDB, ledger, domain, j);
     atomicStore(
-        &pg->snap_,
-        std::shared_ptr<Snapshot const>(std::move(snap)),
-        std::memory_order_release);
+        &pg->snap_, std::shared_ptr<Snapshot const>(std::move(snap)), std::memory_order_release);
     return pg;
 }
 
@@ -312,9 +305,7 @@ PayGraph::rebuild(OrderBookDB& bookDB, ReadView const& ledger, std::optional<uin
         snap->stats.totalDeltasCalled = cur->stats.totalDeltasCalled;
 
     atomicStore(
-        &snap_,
-        std::shared_ptr<Snapshot const>(std::move(snap)),
-        std::memory_order_release);
+        &snap_, std::shared_ptr<Snapshot const>(std::move(snap)), std::memory_order_release);
 }
 
 //==============================================================================
@@ -345,9 +336,7 @@ PayGraph::applyLedgerDelta(
         // No snapshot yet — do a full build instead.
         auto fresh = buildSnapshot(bookDB, newLedger, domain_, j_);
         atomicStore(
-            &snap_,
-            std::shared_ptr<Snapshot const>(std::move(fresh)),
-            std::memory_order_release);
+            &snap_, std::shared_ptr<Snapshot const>(std::move(fresh)), std::memory_order_release);
         return;
     }
 
@@ -377,9 +366,7 @@ PayGraph::applyLedgerDelta(
 
     // ---------- publish ---------------------------------------------------
     atomicStore(
-        &snap_,
-        std::shared_ptr<Snapshot const>(std::move(next)),
-        std::memory_order_release);
+        &snap_, std::shared_ptr<Snapshot const>(std::move(next)), std::memory_order_release);
 }
 
 //==============================================================================

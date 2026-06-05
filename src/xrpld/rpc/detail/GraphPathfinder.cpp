@@ -8,6 +8,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
@@ -18,10 +19,8 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/RippleCalc.h>
-
-#include "xrpl/beast/utility/Zero.h"
-#include "xrpl/protocol/UintTypes.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -226,16 +225,14 @@ GraphPathfinder::findPaths(std::function<bool()> const& continueCallback)
             {
                 if (vSrc == vDst)
                     continue;
-                auto paths = PayGraph::kShortestPaths(
-                    *snap_, vSrc, vDst, kMaxK * kOversample);
+                auto paths = PayGraph::kShortestPaths(*snap_, vSrc, vDst, kMaxK * kOversample);
                 for (auto& p : paths)
                     candidates.push_back(std::move(p));
             }
         }
 
-        std::ranges::stable_sort(candidates, [](auto const& a, auto const& b) {
-            return a.cumQuality < b.cumQuality;
-        });
+        std::ranges::stable_sort(
+            candidates, [](auto const& a, auto const& b) { return a.cumQuality < b.cumQuality; });
 
         int accepted = 0;
         int const acceptCap = kMaxK * kOversample;
@@ -778,8 +775,7 @@ GraphPathfinder::rankPaths(
             // than maxPaths even when more viable paths exist later in the
             // list.  Keeps individual path-find calls within a reasonable
             // time budget without sacrificing path count.
-            if (++consecutiveFailures >= 3 &&
-                static_cast<int>(rankedPaths.size()) >= maxPaths)
+            if (++consecutiveFailures >= 3 && static_cast<int>(rankedPaths.size()) >= maxPaths)
                 break;
         }
     }

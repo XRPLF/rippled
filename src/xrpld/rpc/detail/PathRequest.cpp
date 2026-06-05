@@ -725,8 +725,7 @@ PathRequest::findPaths(
                 continue;
             }
 
-            auto ps = pf->getBestPaths(
-                kMaxPaths, STPathSet{}, asset.getIssuer(), continueCallback);
+            auto ps = pf->getBestPaths(kMaxPaths, STPathSet{}, asset.getIssuer(), continueCallback);
             processResult(std::move(ps), asset);
         }
     }
