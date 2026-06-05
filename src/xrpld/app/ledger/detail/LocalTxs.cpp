@@ -48,7 +48,7 @@ class LocalTx
 public:
     LocalTx(LedgerIndex index, std::shared_ptr<STTx const> const& txn)
         : txn_(txn)
-        , expire_(index + LocalTxs::kHOLD_LEDGERS)
+        , expire_(index + LocalTxs::kHoldLedgers)
         , id_(txn->getTransactionID())
         , account_(txn->getAccountID(sfAccount))
         , seqProxy_(txn->getSeqProxy())
@@ -163,7 +163,7 @@ public:
 
             // Ticket should have been created by now.  Remove if ticket
             // does not exist.
-            return !view.exists(keylet::kTICKET(acctID, seqProx));
+            return !view.exists(keylet::kTicket(acctID, seqProx));
         });
     }
 

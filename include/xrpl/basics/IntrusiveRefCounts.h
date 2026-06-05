@@ -98,11 +98,11 @@ private:
     // enough for strong pointers and 14 bit counts are enough for weak
     // pointers. Use type aliases to make it easy to switch types.
     using CountType = std::uint16_t;
-    static constexpr size_t kSTRONG_COUNT_NUM_BITS = sizeof(CountType) * 8;
-    static constexpr size_t kWEAK_COUNT_NUM_BITS = kSTRONG_COUNT_NUM_BITS - 2;
+    static constexpr size_t kStrongCountNumBits = sizeof(CountType) * 8;
+    static constexpr size_t kWeakCountNumBits = kStrongCountNumBits - 2;
     using FieldType = std::uint32_t;
-    static constexpr size_t kFIELD_TYPE_BITS = sizeof(FieldType) * 8;
-    static constexpr FieldType kONE = 1;
+    static constexpr size_t kFieldTypeBits = sizeof(FieldType) * 8;
+    static constexpr FieldType kOne = 1;
 
     /** `refCounts` consists of four fields that are treated atomically:
 
@@ -137,21 +137,21 @@ private:
 
          */
 
-    mutable std::atomic<FieldType> refCounts_{kSTRONG_DELTA};
+    mutable std::atomic<FieldType> refCounts_{kStrongDelta};
 
     /**  Amount to change the strong count when adding or releasing a reference
 
          Note: The strong count is stored in the low `StrongCountNumBits` bits
        of refCounts
       */
-    static constexpr FieldType kSTRONG_DELTA = 1;
+    static constexpr FieldType kStrongDelta = 1;
 
     /**  Amount to change the weak count when adding or releasing a reference
 
          Note: The weak count is stored in the high `WeakCountNumBits` bits of
          refCounts
       */
-    static constexpr FieldType kWEAK_DELTA = (kONE << kSTRONG_COUNT_NUM_BITS);
+    static constexpr FieldType kWeakDelta = (kOne << kStrongCountNumBits);
 
     /**  Flag that is set when the partialDestroy function has started running
          (or is about to start running).
@@ -159,34 +159,33 @@ private:
          See description of the `refCounts` field for a fuller description of
          this field.
       */
-    static constexpr FieldType kPARTIAL_DESTROY_STARTED_MASK = (kONE << (kFIELD_TYPE_BITS - 1));
+    static constexpr FieldType kPartialDestroyStartedMask = (kOne << (kFieldTypeBits - 1));
 
     /**  Flag that is set when the partialDestroy function has finished running
 
          See description of the `refCounts` field for a fuller description of
          this field.
       */
-    static constexpr FieldType kPARTIAL_DESTROY_FINISHED_MASK = (kONE << (kFIELD_TYPE_BITS - 2));
+    static constexpr FieldType kPartialDestroyFinishedMask = (kOne << (kFieldTypeBits - 2));
 
     /** Mask that will zero out all the `count` bits and leave the tag bits
         unchanged.
       */
-    static constexpr FieldType kTAG_MASK =
-        kPARTIAL_DESTROY_STARTED_MASK | kPARTIAL_DESTROY_FINISHED_MASK;
+    static constexpr FieldType kTagMask = kPartialDestroyStartedMask | kPartialDestroyFinishedMask;
 
     /** Mask that will zero out the `tag` bits and leave the count bits
         unchanged.
       */
-    static constexpr FieldType kVALUE_MASK = ~kTAG_MASK;
+    static constexpr FieldType kValueMask = ~kTagMask;
 
     /** Mask that will zero out everything except the strong count.
      */
-    static constexpr FieldType kSTRONG_MASK = ((kONE << kSTRONG_COUNT_NUM_BITS) - 1) & kVALUE_MASK;
+    static constexpr FieldType kStrongMask = ((kOne << kStrongCountNumBits) - 1) & kValueMask;
 
     /** Mask that will zero out everything except the weak count.
      */
-    static constexpr FieldType kWEAK_MASK =
-        (((kONE << kWEAK_COUNT_NUM_BITS) - 1) << kSTRONG_COUNT_NUM_BITS) & kVALUE_MASK;
+    static constexpr FieldType kWeakMask =
+        (((kOne << kWeakCountNumBits) - 1) << kStrongCountNumBits) & kValueMask;
 
     /** Unpack the count and tag fields from the packed atomic integer form. */
     struct RefCountPair
@@ -211,29 +210,29 @@ private:
         [[nodiscard]] FieldType
         combinedValue() const noexcept;
 
-        static constexpr CountType kMAX_STRONG_VALUE =
-            static_cast<CountType>((kONE << kSTRONG_COUNT_NUM_BITS) - 1);
-        static constexpr CountType kMAX_WEAK_VALUE =
-            static_cast<CountType>((kONE << kWEAK_COUNT_NUM_BITS) - 1);
+        static constexpr CountType kMaxStrongValue =
+            static_cast<CountType>((kOne << kStrongCountNumBits) - 1);
+        static constexpr CountType kMaxWeakValue =
+            static_cast<CountType>((kOne << kWeakCountNumBits) - 1);
         /**  Put an extra margin to detect when running up against limits.
              This is only used in debug code, and is useful if we reduce the
              number of bits in the strong and weak counts (to 16 and 14 bits).
          */
-        static constexpr CountType kCHECK_STRONG_MAX_VALUE = kMAX_STRONG_VALUE - 32;
-        static constexpr CountType kCHECK_WEAK_MAX_VALUE = kMAX_WEAK_VALUE - 32;
+        static constexpr CountType kCheckStrongMaxValue = kMaxStrongValue - 32;
+        static constexpr CountType kCheckWeakMaxValue = kMaxWeakValue - 32;
     };
 };
 
 inline void
 IntrusiveRefCounts::addStrongRef() const noexcept
 {
-    refCounts_.fetch_add(kSTRONG_DELTA, std::memory_order_acq_rel);
+    refCounts_.fetch_add(kStrongDelta, std::memory_order_acq_rel);
 }
 
 inline void
 IntrusiveRefCounts::addWeakRef() const noexcept
 {
-    refCounts_.fetch_add(kWEAK_DELTA, std::memory_order_acq_rel);
+    refCounts_.fetch_add(kWeakDelta, std::memory_order_acq_rel);
 }
 
 inline ReleaseStrongRefAction
@@ -252,10 +251,10 @@ IntrusiveRefCounts::releaseStrongRef() const
     {
         RefCountPair const prevVal{prevIntVal};
         XRPL_ASSERT(
-            (prevVal.strong >= kSTRONG_DELTA),
+            (prevVal.strong >= kStrongDelta),
             "xrpl::IntrusiveRefCounts::releaseStrongRef : previous ref "
             "higher than new");
-        auto nextIntVal = prevIntVal - kSTRONG_DELTA;
+        auto nextIntVal = prevIntVal - kStrongDelta;
         ReleaseStrongRefAction action = NoOp;
         if (prevVal.strong == 1)
         {
@@ -265,7 +264,7 @@ IntrusiveRefCounts::releaseStrongRef() const
             }
             else
             {
-                nextIntVal |= kPARTIAL_DESTROY_STARTED_MASK;
+                nextIntVal |= kPartialDestroyStartedMask;
                 action = PartialDestroy;
             }
         }
@@ -276,7 +275,7 @@ IntrusiveRefCounts::releaseStrongRef() const
             // count to zero can start a partial destroy, and that can't happen
             // twice.
             XRPL_ASSERT(
-                (action == NoOp) || !(prevIntVal & kPARTIAL_DESTROY_STARTED_MASK),
+                (action == NoOp) || !(prevIntVal & kPartialDestroyStartedMask),
                 "xrpl::IntrusiveRefCounts::releaseStrongRef : not in partial "
                 "destroy");
             return action;
@@ -289,8 +288,8 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
 {
     using enum ReleaseStrongRefAction;
 
-    static_assert(kWEAK_DELTA > kSTRONG_DELTA);
-    auto constexpr kDELTA = kWEAK_DELTA - kSTRONG_DELTA;
+    static_assert(kWeakDelta > kStrongDelta);
+    static constexpr auto kDelta = kWeakDelta - kStrongDelta;
     auto prevIntVal = refCounts_.load(std::memory_order_acquire);
     // This loop will almost always run once. The loop is needed to atomically
     // change the counts and flags (the count could be atomically changed, but
@@ -312,7 +311,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
             "xrpl::IntrusiveRefCounts::addWeakReleaseStrongRef : not in "
             "partial destroy");
 
-        auto nextIntVal = prevIntVal + kDELTA;
+        auto nextIntVal = prevIntVal + kDelta;
         ReleaseStrongRefAction action = NoOp;
         if (prevVal.strong == 1)
         {
@@ -322,14 +321,14 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
             }
             else
             {
-                nextIntVal |= kPARTIAL_DESTROY_STARTED_MASK;
+                nextIntVal |= kPartialDestroyStartedMask;
                 action = PartialDestroy;
             }
         }
         if (refCounts_.compare_exchange_weak(prevIntVal, nextIntVal, std::memory_order_acq_rel))
         {
             XRPL_ASSERT(
-                (!(prevIntVal & kPARTIAL_DESTROY_STARTED_MASK)),
+                (!(prevIntVal & kPartialDestroyStartedMask)),
                 "xrpl::IntrusiveRefCounts::addWeakReleaseStrongRef : not "
                 "started partial destroy");
             return action;
@@ -340,7 +339,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
 inline ReleaseWeakRefAction
 IntrusiveRefCounts::releaseWeakRef() const
 {
-    auto prevIntVal = refCounts_.fetch_sub(kWEAK_DELTA, std::memory_order_acq_rel);
+    auto prevIntVal = refCounts_.fetch_sub(kWeakDelta, std::memory_order_acq_rel);
     RefCountPair prev = prevIntVal;
     if (prev.weak == 1 && prev.strong == 0)
     {
@@ -357,7 +356,7 @@ IntrusiveRefCounts::releaseWeakRef() const
         {
             // partial destroy MUST finish before running a full destroy (when
             // using weak pointers)
-            refCounts_.wait(prevIntVal - kWEAK_DELTA, std::memory_order_acquire);
+            refCounts_.wait(prevIntVal - kWeakDelta, std::memory_order_acquire);
         }
         return ReleaseWeakRefAction::Destroy;
     }
@@ -376,7 +375,7 @@ IntrusiveRefCounts::checkoutStrongRefFromWeak() const noexcept
         if (prev.strong == 0u)
             return false;
 
-        desiredValue = curValue + kSTRONG_DELTA;
+        desiredValue = curValue + kStrongDelta;
     }
     return true;
 }
@@ -400,23 +399,22 @@ inline IntrusiveRefCounts::~IntrusiveRefCounts() noexcept
 #ifndef NDEBUG
     auto v = refCounts_.load(std::memory_order_acquire);
     XRPL_ASSERT(
-        (!(v & kVALUE_MASK)), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
-    auto t = v & kTAG_MASK;
-    XRPL_ASSERT(
-        (!t || t == kTAG_MASK), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
+        (!(v & kValueMask)), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");
+    auto t = v & kTagMask;
+    XRPL_ASSERT((!t || t == kTagMask), "xrpl::IntrusiveRefCounts::~IntrusiveRefCounts : valid tag");
 #endif
 }
 
 //------------------------------------------------------------------------------
 
 inline IntrusiveRefCounts::RefCountPair::RefCountPair(IntrusiveRefCounts::FieldType v) noexcept
-    : strong{static_cast<CountType>(v & kSTRONG_MASK)}
-    , weak{static_cast<CountType>((v & kWEAK_MASK) >> kSTRONG_COUNT_NUM_BITS)}
-    , partialDestroyStartedBit{v & kPARTIAL_DESTROY_STARTED_MASK}
-    , partialDestroyFinishedBit{v & kPARTIAL_DESTROY_FINISHED_MASK}
+    : strong{static_cast<CountType>(v & kStrongMask)}
+    , weak{static_cast<CountType>((v & kWeakMask) >> kStrongCountNumBits)}
+    , partialDestroyStartedBit{v & kPartialDestroyStartedMask}
+    , partialDestroyFinishedBit{v & kPartialDestroyFinishedMask}
 {
     XRPL_ASSERT(
-        (strong < kCHECK_STRONG_MAX_VALUE && weak < kCHECK_WEAK_MAX_VALUE),
+        (strong < kCheckStrongMaxValue && weak < kCheckWeakMaxValue),
         "xrpl::IntrusiveRefCounts::RefCountPair(FieldType) : inputs inside "
         "range");
 }
@@ -427,7 +425,7 @@ inline IntrusiveRefCounts::RefCountPair::RefCountPair(
     : strong{s}, weak{w}
 {
     XRPL_ASSERT(
-        (strong < kCHECK_STRONG_MAX_VALUE && weak < kCHECK_WEAK_MAX_VALUE),
+        (strong < kCheckStrongMaxValue && weak < kCheckWeakMaxValue),
         "xrpl::IntrusiveRefCounts::RefCountPair(CountType, CountType) : "
         "inputs inside range");
 }
@@ -436,11 +434,11 @@ inline IntrusiveRefCounts::FieldType
 IntrusiveRefCounts::RefCountPair::combinedValue() const noexcept
 {
     XRPL_ASSERT(
-        (strong < kCHECK_STRONG_MAX_VALUE && weak < kCHECK_WEAK_MAX_VALUE),
+        (strong < kCheckStrongMaxValue && weak < kCheckWeakMaxValue),
         "xrpl::IntrusiveRefCounts::RefCountPair::combinedValue : inputs "
         "inside range");
     return (static_cast<IntrusiveRefCounts::FieldType>(weak)
-            << IntrusiveRefCounts::kSTRONG_COUNT_NUM_BITS) |
+            << IntrusiveRefCounts::kStrongCountNumBits) |
         static_cast<IntrusiveRefCounts::FieldType>(strong) | partialDestroyStartedBit |
         partialDestroyFinishedBit;
 }
@@ -451,7 +449,7 @@ partialDestructorFinished(T** o)
 {
     T& self = **o;
     IntrusiveRefCounts::RefCountPair const p =
-        self.refCounts_.fetch_or(IntrusiveRefCounts::kPARTIAL_DESTROY_FINISHED_MASK);
+        self.refCounts_.fetch_or(IntrusiveRefCounts::kPartialDestroyFinishedMask);
     XRPL_ASSERT(
         (!p.partialDestroyFinishedBit && p.partialDestroyStartedBit && !p.strong),
         "xrpl::partialDestructorFinished : not a weak ref");
