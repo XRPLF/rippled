@@ -590,100 +590,6 @@
       "id": 14
     },
     {
-      "title": "Close Time: Raw Proposals (Per Node)",
-      "description": "Each node's raw proposed close time (close_time_self) \u2014 the unrounded wall clock value at the moment the node closed its ledger. Compare across nodes to see clock drift. Value is Ripple-epoch seconds (Unix = value + 946684800); it tracks wall-clock so the absolute number is large and near-constant \u2014 watch per-node spread and raw-vs-effective gap, not the absolute level.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 64
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "custom": {
-            "drawStyle": "points",
-            "pointSize": 6,
-            "showPoints": "always",
-            "axisLabel": "Close Time (Ripple Seconds)"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": ["lastNotNull"]
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "tempo",
-            "uid": "tempo"
-          },
-          "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time_self) by (resource.service.instance.id)",
-          "legendFormat": "Raw Close Time [{{resource.service.instance.id}}]",
-          "refId": "A"
-        }
-      ],
-      "id": 15
-    },
-    {
-      "title": "Close Time: Effective / Quantized",
-      "description": "The consensus-agreed close time after rounding to the current resolution bin (close_time). This is the value written to the ledger header. All nodes in agreement produce the same value. Value is Ripple-epoch seconds (Unix = value + 946684800); it tracks wall-clock so the absolute number is large and near-constant \u2014 watch per-node spread and raw-vs-effective gap, not the absolute level.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 64
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "custom": {
-            "drawStyle": "points",
-            "pointSize": 6,
-            "showPoints": "always",
-            "axisLabel": "Close Time (Ripple Seconds)"
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": ["lastNotNull"]
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "tempo",
-            "uid": "tempo"
-          },
-          "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time) by (resource.service.instance.id)",
-          "legendFormat": "Effective Close Time [{{resource.service.instance.id}}]",
-          "refId": "A"
-        }
-      ],
-      "id": 16
-    },
-    {
       "title": "Close Time Vote Bins & Resolution",
       "description": "Number of distinct close time vote bins (close_time_vote_bins) and the bin size / resolution in ms (close_resolution_ms). More bins = more clock disagreement. Resolution adapts: finer (10s) when validators agree, coarser (120s) when they disagree.",
       "type": "timeseries",
@@ -691,7 +597,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 72
+        "y": 64
       },
       "fieldConfig": {
         "defaults": {
@@ -772,7 +678,7 @@
           "refId": "B"
         }
       ],
-      "id": 17
+      "id": 15
     },
     {
       "title": "Close Time Resolution Direction",
@@ -782,7 +688,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 72
+        "y": 64
       },
       "fieldConfig": {
         "defaults": {
@@ -820,7 +726,7 @@
           "refId": "A"
         }
       ],
-      "id": 18
+      "id": 16
     },
     {
       "title": "Close Time Bin Distribution",
@@ -830,7 +736,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 80
+        "y": 72
       },
       "fieldConfig": {
         "defaults": {
@@ -868,7 +774,7 @@
           "refId": "A"
         }
       ],
-      "id": 19
+      "id": 17
     },
     {
       "title": "Consensus Outcome Distribution",
@@ -878,7 +784,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 88
+        "y": 80
       },
       "options": {
         "legend": {
@@ -905,7 +811,7 @@
         },
         "overrides": []
       },
-      "id": 20
+      "id": 18
     },
     {
       "title": "Consensus Failures Over Time",
@@ -915,7 +821,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 96
+        "y": 88
       },
       "options": {
         "tooltip": {
@@ -952,7 +858,7 @@
         },
         "overrides": []
       },
-      "id": 21
+      "id": 19
     },
     {
       "title": "Consensus Stall Rate",
@@ -962,7 +868,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 96
+        "y": 88
       },
       "options": {
         "tooltip": {
@@ -999,7 +905,7 @@
         },
         "overrides": []
       },
-      "id": 22
+      "id": 20
     },
     {
       "title": "Consensus Mode-Change Rate by Target Mode",
@@ -1009,7 +915,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 104
+        "y": 96
       },
       "options": {
         "tooltip": {
@@ -1039,7 +945,7 @@
         },
         "overrides": []
       },
-      "id": 23
+      "id": 21
     },
     {
       "title": "Ledger History Mismatch Rate by Reason",
@@ -1049,7 +955,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 104
+        "y": 96
       },
       "options": {
         "tooltip": {
@@ -1079,7 +985,7 @@
         },
         "overrides": []
       },
-      "id": 24
+      "id": 22
     }
   ],
   "schemaVersion": 39,
