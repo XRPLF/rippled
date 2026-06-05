@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <array>
+#include <compare>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -401,45 +402,43 @@ public:
             x.exponent_ == y.exponent_;
     }
 
-    friend constexpr bool
-    operator!=(Number const& x, Number const& y) noexcept
-    {
-        return !(x == y);
-    }
-
-    friend constexpr bool
-    operator<(Number const& l, Number const& r) noexcept
+    // operator!=, >, <=, >= are synthesized from operator== and operator<=>.
+    friend constexpr std::strong_ordering
+    operator<=>(Number const& l, Number const& r) noexcept
     {
         bool const lneg = l.negative_;
         bool const rneg = r.negative_;
 
         // If the two amounts have different signs (zero is treated as positive)
-        // then the comparison is true iff the left is negative.
+        // then the negative one is smaller.
         if (lneg != rneg)
-            return lneg;
+        {
+            return lneg ? std::strong_ordering::less
+                        : std::strong_ordering::greater;
+        }
 
-        // Both have same sign and the left is zero: both must be non-negative.
-        // If the right is greater than 0, then it is larger, so the comparison is true.
-        if (l.mantissa_ == 0)
-            return r.mantissa_ > 0;
+        // Same sign: compare the unsigned magnitudes |a| <=> |b|. For negative
+        // values the order is reversed (larger magnitude == smaller value), so
+        // swap the operands. A negative value is never zero, so the zero checks
+        // below only ever fire for the non-negative case.
+        Number const& a = lneg ? r : l;
+        Number const& b = lneg ? l : r;
 
-        // Both have same sign, the right is zero and the left is non-zero, so the left must be
-        // positive, and thus is larger, so the comparison is false.
-        if (r.mantissa_ == 0)
-            return false;
+        // A zero mantissa carries a sentinel exponent, so zero has to be handled
+        // before the exponents can be compared.
+        if (a.mantissa_ == 0)
+        {
+            return b.mantissa_ == 0 ? std::strong_ordering::equal
+                                    : std::strong_ordering::less;
+        }
+        if (b.mantissa_ == 0)
+            return std::strong_ordering::greater;
 
-        // Both have the same sign, compare by exponents:
-        if (l.exponent_ > r.exponent_)
-            return lneg;
-        if (l.exponent_ < r.exponent_)
-            return !lneg;
-
-        // If equal signs and exponents, compare mantissas.
-        if (lneg)
-            // If negative, the operator is reversed.
-            return l.mantissa_ > r.mantissa_;
-
-        return l.mantissa_ < r.mantissa_;
+        // Both are non-zero and normalized, so the exponent dominates and the
+        // mantissa breaks ties.
+        if (auto const cmp = a.exponent_ <=> b.exponent_; cmp != 0)
+            return cmp;
+        return a.mantissa_ <=> b.mantissa_;
     }
 
     /** Return the sign of the amount */
@@ -453,24 +452,6 @@ public:
 
     [[nodiscard]] Number
     truncate() const noexcept;
-
-    friend constexpr bool
-    operator>(Number const& x, Number const& y) noexcept
-    {
-        return y < x;
-    }
-
-    friend constexpr bool
-    operator<=(Number const& x, Number const& y) noexcept
-    {
-        return !(y < x);
-    }
-
-    friend constexpr bool
-    operator>=(Number const& x, Number const& y) noexcept
-    {
-        return !(x < y);
-    }
 
     friend std::ostream&
     operator<<(std::ostream& os, Number const& x)
