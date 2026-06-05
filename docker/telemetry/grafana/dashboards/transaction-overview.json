@@ -766,7 +766,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 72
+        "y": 80
       },
       "options": {
         "tooltip": {
@@ -793,6 +793,50 @@
           "unit": "ops",
           "custom": {
             "axisLabel": "Failed Spans / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Tx Apply Pipeline Latency by Type and Stage (p95)",
+      "description": "95th-percentile duration broken down by both transaction type and apply-pipeline stage. Shows, for each transaction type, which stage (preflight, preclaim, apply) dominates its latency. Higher cardinality than the by-stage view; filter with the $tx_type and $stage variables.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 72
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, tx_type, stage, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", tx_type=~\"$tx_type\", stage=~\"$stage\"}[5m])))",
+          "legendFormat": "P95 {{tx_type}} {{stage}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
