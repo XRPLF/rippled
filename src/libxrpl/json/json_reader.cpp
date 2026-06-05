@@ -102,7 +102,7 @@ Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
     {
         // Set error location to start of doc, ideally should be first token
         // found in doc
-        token.type = TokenType::Error;
+        token.type = TokenError;
         token.start = beginDoc;
         token.end = endDoc;
         addError("A valid JSON document must be either an array or an object value.", token);
@@ -117,41 +117,41 @@ Reader::readValue(unsigned depth)
 {
     Token token{};
     skipCommentTokens(token);
-    if (depth > kNestLimit)
+    if (depth > kNEST_LIMIT)
         return addError("Syntax error: maximum nesting depth exceeded", token);
     bool successful = true;
 
     switch (token.type)
     {
-        case TokenType::ObjectBegin:
+        case TokenObjectBegin:
             successful = readObject(token, depth);
             break;
 
-        case TokenType::ArrayBegin:
+        case TokenArrayBegin:
             successful = readArray(token, depth);
             break;
 
-        case TokenType::Integer:
+        case TokenInteger:
             successful = decodeNumber(token);
             break;
 
-        case TokenType::Double:
+        case TokenDouble:
             successful = decodeDouble(token);
             break;
 
-        case TokenType::String:
+        case TokenString:
             successful = decodeString(token);
             break;
 
-        case TokenType::True:
+        case TokenTrue:
             currentValue() = true;
             break;
 
-        case TokenType::False:
+        case TokenFalse:
             currentValue() = false;
             break;
 
-        case TokenType::Null:
+        case TokenNull:
             currentValue() = Value();
             break;
 
@@ -168,7 +168,7 @@ Reader::skipCommentTokens(Token& token)
     do
     {
         readToken(token);
-    } while (token.type == TokenType::Comment);
+    } while (token.type == TokenComment);
 }
 
 bool
@@ -193,28 +193,28 @@ Reader::readToken(Token& token)
     switch (c)
     {
         case '{':
-            token.type = TokenType::ObjectBegin;
+            token.type = TokenObjectBegin;
             break;
 
         case '}':
-            token.type = TokenType::ObjectEnd;
+            token.type = TokenObjectEnd;
             break;
 
         case '[':
-            token.type = TokenType::ArrayBegin;
+            token.type = TokenArrayBegin;
             break;
 
         case ']':
-            token.type = TokenType::ArrayEnd;
+            token.type = TokenArrayEnd;
             break;
 
         case '"':
-            token.type = TokenType::String;
+            token.type = TokenString;
             ok = readString();
             break;
 
         case '/':
-            token.type = TokenType::Comment;
+            token.type = TokenComment;
             ok = readComment();
             break;
 
@@ -233,30 +233,30 @@ Reader::readToken(Token& token)
             break;
 
         case 't':
-            token.type = TokenType::True;
+            token.type = TokenTrue;
             ok = match("rue", 3);
             break;
 
         case 'f':
-            token.type = TokenType::False;
+            token.type = TokenFalse;
             ok = match("alse", 4);  // cspell:disable-line
             break;
 
         case 'n':
-            token.type = TokenType::Null;
+            token.type = TokenNull;
             ok = match("ull", 3);
             break;
 
         case ',':
-            token.type = TokenType::ArraySeparator;
+            token.type = TokenArraySeparator;
             break;
 
         case ':':
-            token.type = TokenType::MemberSeparator;
+            token.type = TokenMemberSeparator;
             break;
 
         case 0:
-            token.type = TokenType::EndOfStream;
+            token.type = TokenEndOfStream;
             break;
 
         default:
@@ -265,7 +265,7 @@ Reader::readToken(Token& token)
     }
 
     if (!ok)
-        token.type = TokenType::Error;
+        token.type = TokenError;
 
     token.end = current_;
     return true;
@@ -352,9 +352,9 @@ Reader::readCppStyleComment()
 Reader::TokenType
 Reader::readNumber()
 {
-    static char const kExtendedTokens[] = {'.', 'e', 'E', '+', '-'};
+    static char const kEXTENDED_TOKENS[] = {'.', 'e', 'E', '+', '-'};
 
-    TokenType type = TokenType::Integer;
+    TokenType type = TokenInteger;
 
     if (current_ != end_)
     {
@@ -365,12 +365,12 @@ Reader::readNumber()
         {
             if (std::isdigit(static_cast<unsigned char>(*current_)) == 0)
             {
-                auto ret = std::ranges::find(kExtendedTokens, *current_);
+                auto ret = std::ranges::find(kEXTENDED_TOKENS, *current_);
 
-                if (ret == std::end(kExtendedTokens))
+                if (ret == std::end(kEXTENDED_TOKENS))
                     break;
 
-                type = TokenType::Double;
+                type = TokenDouble;
             }
 
             ++current_;
@@ -407,35 +407,35 @@ Reader::readObject(Token& tokenStart, unsigned depth)
 {
     Token tokenName{};
     std::string name;
-    currentValue() = Value(ValueType::Object);
+    currentValue() = Value(ObjectValue);
 
     while (readToken(tokenName))
     {
         bool initialTokenOk = true;
 
-        while (tokenName.type == TokenType::Comment && initialTokenOk)
+        while (tokenName.type == TokenComment && initialTokenOk)
             initialTokenOk = readToken(tokenName);
 
         if (!initialTokenOk)
             break;
 
-        if (tokenName.type == TokenType::ObjectEnd && name.empty())  // empty object
+        if (tokenName.type == TokenObjectEnd && name.empty())  // empty object
             return true;
 
-        if (tokenName.type != TokenType::String)
+        if (tokenName.type != TokenString)
             break;
 
         name = "";
 
         if (!decodeString(tokenName, name))
-            return recoverFromError(TokenType::ObjectEnd);
+            return recoverFromError(TokenObjectEnd);
 
         Token colon{};
 
-        if (!readToken(colon) || colon.type != TokenType::MemberSeparator)
+        if (!readToken(colon) || colon.type != TokenMemberSeparator)
         {
             return addErrorAndRecover(
-                "Missing ':' after object member name", colon, TokenType::ObjectEnd);
+                "Missing ':' after object member name", colon, TokenObjectEnd);
         }
 
         // Reject duplicate names
@@ -448,34 +448,34 @@ Reader::readObject(Token& tokenStart, unsigned depth)
         nodes_.pop();
 
         if (!ok)  // error already set
-            return recoverFromError(TokenType::ObjectEnd);
+            return recoverFromError(TokenObjectEnd);
 
         Token comma{};
 
         if (!readToken(comma) ||
-            (comma.type != TokenType::ObjectEnd && comma.type != TokenType::ArraySeparator &&
-             comma.type != TokenType::Comment))
+            (comma.type != TokenObjectEnd && comma.type != TokenArraySeparator &&
+             comma.type != TokenComment))
         {
             return addErrorAndRecover(
-                "Missing ',' or '}' in object declaration", comma, TokenType::ObjectEnd);
+                "Missing ',' or '}' in object declaration", comma, TokenObjectEnd);
         }
 
         bool finalizeTokenOk = true;
 
-        while (comma.type == TokenType::Comment && finalizeTokenOk)
+        while (comma.type == TokenComment && finalizeTokenOk)
             finalizeTokenOk = readToken(comma);
 
-        if (comma.type == TokenType::ObjectEnd)
+        if (comma.type == TokenObjectEnd)
             return true;
     }
 
-    return addErrorAndRecover("Missing '}' or object member name", tokenName, TokenType::ObjectEnd);
+    return addErrorAndRecover("Missing '}' or object member name", tokenName, TokenObjectEnd);
 }
 
 bool
 Reader::readArray(Token& tokenStart, unsigned depth)
 {
-    currentValue() = Value(ValueType::Array);
+    currentValue() = Value(ArrayValue);
     skipSpaces();
 
     if (*current_ == ']')  // empty array
@@ -495,27 +495,27 @@ Reader::readArray(Token& tokenStart, unsigned depth)
         nodes_.pop();
 
         if (!ok)  // error already set
-            return recoverFromError(TokenType::ArrayEnd);
+            return recoverFromError(TokenArrayEnd);
 
         Token token{};
         // Accept Comment after last item in the array.
         ok = readToken(token);
 
-        while (token.type == TokenType::Comment && ok)
+        while (token.type == TokenComment && ok)
         {
             ok = readToken(token);
         }
 
         bool const badTokenType =
-            (token.type != TokenType::ArraySeparator && token.type != TokenType::ArrayEnd);
+            (token.type != TokenArraySeparator && token.type != TokenArrayEnd);
 
         if (!ok || badTokenType)
         {
             return addErrorAndRecover(
-                "Missing ',' or ']' in array declaration", token, TokenType::ArrayEnd);
+                "Missing ',' or ']' in array declaration", token, TokenArrayEnd);
         }
 
-        if (token.type == TokenType::ArrayEnd)
+        if (token.type == TokenArrayEnd)
             break;
     }
 
@@ -542,10 +542,10 @@ Reader::decodeNumber(Token& token)
     std::int64_t value = 0;
 
     static_assert(
-        sizeof(value) > sizeof(Value::kMaxUInt),
+        sizeof(value) > sizeof(Value::kMAX_U_INT),
         "The JSON integer overflow logic will need to be reworked.");
 
-    while (current < token.end && (value <= Value::kMaxUInt))
+    while (current < token.end && (value <= Value::kMAX_U_INT))
     {
         Char const c = *current++;
 
@@ -569,7 +569,7 @@ Reader::decodeNumber(Token& token)
     {
         value = -value;
 
-        if (value < Value::kMinInt || value > Value::kMaxInt)
+        if (value < Value::kMIN_INT || value > Value::kMAX_INT)
         {
             return addError(
                 "'" + std::string(token.start, token.end) + "' exceeds the allowable range.",
@@ -580,7 +580,7 @@ Reader::decodeNumber(Token& token)
     }
     else
     {
-        if (value > Value::kMaxUInt)
+        if (value > Value::kMAX_U_INT)
         {
             return addError(
                 "'" + std::string(token.start, token.end) + "' exceeds the allowable range.",
@@ -588,7 +588,7 @@ Reader::decodeNumber(Token& token)
         }
 
         // If it's representable as a signed integer, construct it as one.
-        if (value <= Value::kMaxInt)
+        if (value <= Value::kMAX_INT)
         {
             currentValue() = static_cast<Value::Int>(value);
         }
@@ -834,7 +834,7 @@ Reader::recoverFromError(TokenType skipUntilToken)
         if (!readToken(skip))
             errors_.resize(errorCount);  // discard errors caused by recovery
 
-        if (skip.type == skipUntilToken || skip.type == TokenType::EndOfStream)
+        if (skip.type == skipUntilToken || skip.type == TokenEndOfStream)
             break;
     }
 

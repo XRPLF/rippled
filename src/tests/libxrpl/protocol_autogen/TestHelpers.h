@@ -28,60 +28,60 @@ namespace xrpl {
 
 // Typed field canonical values
 
-using UInt8Value = std::decay_t<typename SF_UINT8::type::value_type>;
-inline UInt8Value
+using Uint8Value = std::decay_t<typename SF_UINT8::type::value_type>;
+inline Uint8Value
 canonical_UINT8()
 {
-    return UInt8Value{1};
+    return Uint8Value{1};
 }
 
-using UInt16Value = std::decay_t<typename SF_UINT16::type::value_type>;
-inline UInt16Value
+using Uint16Value = std::decay_t<typename SF_UINT16::type::value_type>;
+inline Uint16Value
 canonical_UINT16()
 {
-    return UInt16Value{1};
+    return Uint16Value{1};
 }
 
-using UInt32Value = std::decay_t<typename SF_UINT32::type::value_type>;
-inline UInt32Value
+using Uint32Value = std::decay_t<typename SF_UINT32::type::value_type>;
+inline Uint32Value
 canonical_UINT32()
 {
-    return UInt32Value{1};
+    return Uint32Value{1};
 }
 
-using UInt64Value = std::decay_t<typename SF_UINT64::type::value_type>;
-inline UInt64Value
+using Uint64Value = std::decay_t<typename SF_UINT64::type::value_type>;
+inline Uint64Value
 canonical_UINT64()
 {
-    return UInt64Value{1};
+    return Uint64Value{1};
 }
 
-using UInt128Value = std::decay_t<typename SF_UINT128::type::value_type>;
-inline UInt128Value
+using Uint128Value = std::decay_t<typename SF_UINT128::type::value_type>;
+inline Uint128Value
 canonical_UINT128()
 {
-    return UInt128Value{1};
+    return Uint128Value{1};
 }
 
-using UInt160Value = std::decay_t<typename SF_UINT160::type::value_type>;
-inline UInt160Value
+using Uint160Value = std::decay_t<typename SF_UINT160::type::value_type>;
+inline Uint160Value
 canonical_UINT160()
 {
-    return UInt160Value{1};
+    return Uint160Value{1};
 }
 
-using UInt192Value = std::decay_t<typename SF_UINT192::type::value_type>;
-inline UInt192Value
+using Uint192Value = std::decay_t<typename SF_UINT192::type::value_type>;
+inline Uint192Value
 canonical_UINT192()
 {
-    return UInt192Value{1};
+    return Uint192Value{1};
 }
 
-using UInt256Value = std::decay_t<typename SF_UINT256::type::value_type>;
-inline UInt256Value
+using Uint256Value = std::decay_t<typename SF_UINT256::type::value_type>;
+inline Uint256Value
 canonical_UINT256()
 {
-    return UInt256Value{1};
+    return Uint256Value{1};
 }
 
 using Int32Value = std::decay_t<typename SF_INT32::type::value_type>;
@@ -159,7 +159,7 @@ canonical_ARRAY()
 inline STObject
 canonical_OBJECT()
 {
-    return STObject{sfGeneric};
+    return STObject{kSF_GENERIC};
 }
 
 inline STPathSet

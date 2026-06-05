@@ -20,6 +20,8 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <memory>
+
 namespace xrpl {
 
 using namespace credentials;
@@ -41,7 +43,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     }
 
     auto const credType = ctx.tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
+    if (credType.empty() || (credType.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
@@ -71,7 +73,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if (sleCred->isFlag(lsfAccepted))
+    if ((sleCred->getFieldU32(sfFlags) & lsfAccepted) != 0u)
     {
         JLOG(ctx.j.warn()) << "Credential already accepted: " << to_string(subject) << ", "
                            << to_string(issuer) << ", " << credType;
@@ -87,7 +89,7 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    auto const sleSubject = view().peek(keylet::account(accountID_));
+    auto const sleSubject = view().peek(keylet::account(account_));
     auto const sleIssuer = view().peek(keylet::account(issuer));
 
     if (!sleSubject || !sleIssuer)
@@ -101,12 +103,10 @@ CredentialAccept::doApply()
     }
 
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
+    Keylet const credentialKey = keylet::credential(account_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
-    if (!sleCred)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (checkExpired(*sleCred, view().header().parentCloseTime))
+    if (checkExpired(sleCred, view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
@@ -124,9 +124,11 @@ CredentialAccept::doApply()
 }
 
 void
-CredentialAccept::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+CredentialAccept::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -137,7 +139,6 @@ CredentialAccept::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

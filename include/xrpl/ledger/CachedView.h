@@ -36,7 +36,7 @@ public:
     bool
     exists(Keylet const& k) const override;
 
-    SLE::const_pointer
+    std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
 
     bool

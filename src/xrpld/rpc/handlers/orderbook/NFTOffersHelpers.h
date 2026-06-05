@@ -17,9 +17,12 @@
 namespace xrpl {
 
 inline void
-appendNftOfferJson(Application const& app, SLE::const_ref offer, json::Value& offers)
+appendNftOfferJson(
+    Application const& app,
+    std::shared_ptr<SLE const> const& offer,
+    json::Value& offers)
 {
-    json::Value& obj(offers.append(json::ValueType::Object));
+    json::Value& obj(offers.append(json::ObjectValue));
 
     obj[jss::nft_offer_index] = to_string(offer->key());
     obj[jss::flags] = (*offer)[sfFlags];
@@ -45,7 +48,7 @@ inline json::Value
 enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const& directory)
 {
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kNftOffers, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kNFT_OFFERS, context))
         return *err;
 
     std::shared_ptr<ReadView const> ledger;
@@ -59,9 +62,9 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     json::Value result;
     result[jss::nft_id] = to_string(nftId);
 
-    json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
+    json::Value& jsonOffers(result[jss::offers] = json::ArrayValue);
 
-    std::vector<SLE::const_pointer> offers;
+    std::vector<std::shared_ptr<SLE const>> offers;
     unsigned int reserve(limit);
     uint256 startAfter;
     std::uint64_t startHint = 0;
@@ -94,7 +97,12 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     }
 
     if (!forEachItemAfter(
-            *ledger, directory, startAfter, startHint, reserve, [&offers](SLE::const_ref offer) {
+            *ledger,
+            directory,
+            startAfter,
+            startHint,
+            reserve,
+            [&offers](std::shared_ptr<SLE const> const& offer) {
                 if (offer->getType() == ltNFTOKEN_OFFER)
                 {
                     offers.emplace_back(offer);
@@ -117,7 +125,7 @@ enumerateNFTOffers(RPC::JsonContext& context, uint256 const& nftId, Keylet const
     for (auto const& offer : offers)
         appendNftOfferJson(context.app, offer, jsonOffers);
 
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
     return result;
 }
 

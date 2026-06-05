@@ -38,7 +38,8 @@ public:
         {
             using namespace jtx;
             auto const alice = Account{"alice"};
-            Env env{*this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::Severity::All};
+            Env env{
+                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::severities::KAll};
             env.memoize(env.master);
             env.memoize(alice);
 

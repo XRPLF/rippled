@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <exception>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -69,7 +70,11 @@ ApplyContext::size()
 
 void
 ApplyContext::visit(
-    std::function<void(uint256 const&, bool, SLE::const_ref, SLE::const_ref)> const& func)
+    std::function<void(
+        uint256 const&,
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&)> const& func)
 {
     view_->visit(base_, func);  // NOLINT(bugprone-unchecked-optional-access)
 }
@@ -99,11 +104,13 @@ ApplyContext::checkInvariantsHelper(
         auto checkers = getInvariantChecks();
 
         // call each check's per-entry method
-        visit(
-            [&checkers](
-                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
-                (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
-            });
+        visit([&checkers](
+                  uint256 const& index,
+                  bool isDelete,
+                  std::shared_ptr<SLE const> const& before,
+                  std::shared_ptr<SLE const> const& after) {
+            (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
+        });
 
         // Note: do not replace this logic with a `...&&` fold expression.
         // The fold expression will only run until the first check fails (it
@@ -117,7 +124,7 @@ ApplyContext::checkInvariantsHelper(
         if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
         {
             JLOG(journal.fatal()) << "Transaction has failed one or more global invariants: "
-                                  << to_string(tx.getJson(JsonOptions::Values::None));
+                                  << to_string(tx.getJson(JsonOptions::KNone));
 
             return failInvariantCheck(result);
         }
@@ -126,7 +133,7 @@ ApplyContext::checkInvariantsHelper(
     {
         JLOG(journal.fatal()) << "Transaction caused an exception in a global invariant"
                               << ", ex: " << ex.what()
-                              << ", tx: " << to_string(tx.getJson(JsonOptions::Values::None));
+                              << ", tx: " << to_string(tx.getJson(JsonOptions::KNone));
 
         return failInvariantCheck(result);
     }

@@ -33,7 +33,7 @@ public:
      * @brief Construct a Amendments ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Amendments(SLE::const_pointer sle)
+    explicit Amendments(std::shared_ptr<SLE const> sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -166,7 +166,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    AmendmentsBuilder(SLE::const_pointer sle)
+    AmendmentsBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltAMENDMENTS)
         {

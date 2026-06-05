@@ -28,7 +28,7 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
 {
     auto const currencyOrAccount = sit.get160();
 
-    if (isXRP(Currency::fromRaw(currencyOrAccount)))
+    if (isXRP(static_cast<Currency>(currencyOrAccount)))
     {
         asset_ = xrpIssue();
     }
@@ -39,7 +39,7 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
         // - 160 bits MPT issuer account
         // - 160 bits black hole account
         // - 32 bits sequence
-        AccountID const account = AccountID::fromRaw(sit.get160());
+        AccountID const account = static_cast<AccountID>(sit.get160());
         // MPT
         if (noAccount() == account)
         {

@@ -43,8 +43,8 @@ class PublicKey
 protected:
     // All the constructed public keys are valid, non-empty and contain 33
     // bytes of data.
-    static constexpr std::size_t kSize = 33;
-    std::uint8_t buf_[kSize]{};  // should be large enough
+    static constexpr std::size_t kSIZE = 33;
+    std::uint8_t buf_[kSIZE]{};  // should be large enough
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -72,7 +72,7 @@ public:
     static std::size_t
     size() noexcept
     {
-        return kSize;
+        return kSIZE;
     }
 
     [[nodiscard]] const_iterator
@@ -90,19 +90,19 @@ public:
     [[nodiscard]] const_iterator
     end() const noexcept
     {
-        return buf_ + kSize;
+        return buf_ + kSIZE;
     }
 
     [[nodiscard]] const_iterator
     cend() const noexcept
     {
-        return buf_ + kSize;
+        return buf_ + kSIZE;
     }
 
     [[nodiscard]] Slice
     slice() const noexcept
     {
-        return {buf_, kSize};
+        return {buf_, kSIZE};
     }
 
     operator Slice() const noexcept
@@ -267,10 +267,10 @@ getOrThrow(json::Value const& v, xrpl::SField const& field)
 {
     using namespace xrpl;
     std::string const b58 = getOrThrow<std::string>(v, field);
-    if (auto pubKeyBlob = strUnHex(b58);
-        pubKeyBlob.has_value() && publicKeyType(makeSlice(*pubKeyBlob)))
+    if (auto pubKeyBlob = strUnHex(b58); pubKeyBlob && publicKeyType(makeSlice(*pubKeyBlob)))
     {
-        return PublicKey{makeSlice(*pubKeyBlob)};
+        return PublicKey{makeSlice(
+            *pubKeyBlob)};  // NOLINT(bugprone-unchecked-optional-access) checked in condition above
     }
     for (auto const tokenType : {TokenType::NodePublic, TokenType::AccountPublic})
     {

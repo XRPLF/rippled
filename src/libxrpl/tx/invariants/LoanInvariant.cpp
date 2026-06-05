@@ -12,10 +12,15 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <memory>
+
 namespace xrpl {
 
 void
-ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidLoan::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
 {
     if (after && after->getType() == ltLOAN)
     {
@@ -39,9 +44,9 @@ ValidLoan::finalize(
         // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
         // If `Loan.PaymentRemaining = 0` then the loan MUST be fully paid off
         if (after->at(sfPaymentRemaining) == 0 &&
-            (after->at(sfTotalValueOutstanding) != beast::kZero ||
-             after->at(sfPrincipalOutstanding) != beast::kZero ||
-             after->at(sfManagementFeeOutstanding) != beast::kZero))
+            (after->at(sfTotalValueOutstanding) != beast::kZERO ||
+             after->at(sfPrincipalOutstanding) != beast::kZERO ||
+             after->at(sfManagementFeeOutstanding) != beast::kZERO))
         {
             JLOG(j.fatal()) << "Invariant failed: Loan with zero payments "
                                "remaining has not been paid off";
@@ -50,9 +55,9 @@ ValidLoan::finalize(
         // If `Loan.PaymentRemaining != 0` then the loan MUST NOT be fully paid
         // off
         if (after->at(sfPaymentRemaining) != 0 &&
-            after->at(sfTotalValueOutstanding) == beast::kZero &&
-            after->at(sfPrincipalOutstanding) == beast::kZero &&
-            after->at(sfManagementFeeOutstanding) == beast::kZero)
+            after->at(sfTotalValueOutstanding) == beast::kZERO &&
+            after->at(sfPrincipalOutstanding) == beast::kZERO &&
+            after->at(sfManagementFeeOutstanding) == beast::kZERO)
         {
             JLOG(j.fatal()) << "Invariant failed: Fully paid off Loan still has payments remaining";
             return false;

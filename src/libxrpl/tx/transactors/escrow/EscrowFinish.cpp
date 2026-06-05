@@ -30,6 +30,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <memory>
 #include <system_error>
 #include <variant>
 
@@ -38,8 +39,8 @@ namespace xrpl {
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
 // fulfillment matches and validates the condition.
-constexpr HashRouterFlags kSfCfInvalid = HashRouterFlags::PRIVATE5;
-constexpr HashRouterFlags kSfCfValid = HashRouterFlags::PRIVATE6;
+constexpr HashRouterFlags kSF_CF_INVALID = HashRouterFlags::PRIVATE5;
+constexpr HashRouterFlags kSF_CF_VALID = HashRouterFlags::PRIVATE6;
 
 //------------------------------------------------------------------------------
 
@@ -97,15 +98,15 @@ EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
         // If we haven't checked the condition, check it
         // now. Whether it passes or not isn't important
         // in preflight.
-        if (!any(flags & (kSfCfInvalid | kSfCfValid)))
+        if (!any(flags & (kSF_CF_INVALID | kSF_CF_VALID)))
         {
             if (checkCondition(*fb, *cb))
             {
-                router.setFlags(id, kSfCfValid);
+                router.setFlags(id, kSF_CF_VALID);
             }
             else
             {
-                router.setFlags(id, kSfCfInvalid);
+                router.setFlags(id, kSF_CF_INVALID);
             }
         }
     }
@@ -260,7 +261,7 @@ EscrowFinish::doApply()
         // It's unlikely that the results of the check will
         // expire from the hash router, but if it happens,
         // simply re-run the check.
-        if (cb && !any(flags & (kSfCfInvalid | kSfCfValid)))
+        if (cb && !any(flags & (kSF_CF_INVALID | kSF_CF_VALID)))
         {
             // LCOV_EXCL_START
             auto const fb = ctx_.tx[~sfFulfillment];
@@ -270,11 +271,11 @@ EscrowFinish::doApply()
 
             if (checkCondition(*fb, *cb))
             {
-                flags = kSfCfValid;
+                flags = kSF_CF_VALID;
             }
             else
             {
-                flags = kSfCfInvalid;
+                flags = kSF_CF_INVALID;
             }
 
             ctx_.registry.get().getHashRouter().setFlags(id, flags);
@@ -283,7 +284,7 @@ EscrowFinish::doApply()
 
         // If the check failed, then simply return an error
         // and don't look at anything else.
-        if (any(flags & kSfCfInvalid))
+        if (any(flags & kSF_CF_INVALID))
             return tecCRYPTOCONDITION_ERROR;
 
         // Check against condition in the ledger entry:
@@ -309,8 +310,7 @@ EscrowFinish::doApply()
     if (!sled)
         return tecNO_DST;
 
-    if (auto err =
-            verifyDepositPreauth(ctx_.tx, ctx_.view(), accountID_, destID, sled, ctx_.journal);
+    if (auto err = verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -353,9 +353,9 @@ EscrowFinish::doApply()
 
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
             ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
-            : kParityRate;
+            : kPARITY_RATE;
         auto const issuer = amount.getIssuer();
-        bool const createAsset = destID == accountID_;
+        bool const createAsset = destID == account_;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
@@ -400,9 +400,11 @@ EscrowFinish::doApply()
 }
 
 void
-EscrowFinish::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+EscrowFinish::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -413,7 +415,6 @@ EscrowFinish::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

@@ -12,7 +12,7 @@ namespace xrpl {
 std::vector<SOElement> const&
 TxFormats::getCommonFields()
 {
-    static auto const kCommonFields = std::vector<SOElement>{
+    static auto const kCOMMON_FIELDS = std::vector<SOElement>{
         {sfTransactionType, SoeRequired},
         {sfFlags, SoeOptional},
         {sfSourceTag, SoeOptional},
@@ -31,7 +31,7 @@ TxFormats::getCommonFields()
         {sfNetworkID, SoeOptional},
         {sfDelegate, SoeOptional},
     };
-    return kCommonFields;
+    return kCOMMON_FIELDS;
 }
 
 TxFormats::TxFormats()
@@ -56,8 +56,8 @@ TxFormats::TxFormats()
 TxFormats const&
 TxFormats::getInstance()
 {
-    static TxFormats const kInstance;
-    return kInstance;
+    static TxFormats const kINSTANCE;
+    return kINSTANCE;
 }
 
 }  // namespace xrpl

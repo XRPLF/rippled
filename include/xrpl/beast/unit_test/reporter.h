@@ -62,7 +62,9 @@ private:
     {
         using run_time = std::pair<std::string, typename clock_type::duration>;
 
-        static constexpr auto kMaxTop = 10;
+        // Need to be named before converting
+        // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+        enum { MaxTop = 10 };
 
         std::size_t suites = 0;
         std::size_t cases = 0;
@@ -77,8 +79,8 @@ private:
 
     std::ostream& os_;
     Results results_;
-    SuiteResults suiteResults_;
-    CaseResults caseResults_;
+    SuiteResults suite_results_;
+    CaseResults case_results_;
 
 public:
     Reporter(Reporter const&) = delete;
@@ -146,11 +148,11 @@ Reporter<Unused>::Results::add(SuiteResults const& r)
             });
         if (iter != top.end())
         {
-            if (top.size() == kMaxTop)
+            if (top.size() == MaxTop)
                 top.resize(top.size() - 1);
             top.emplace(iter, r.name, elapsed);
         }
-        else if (top.size() < kMaxTop)
+        else if (top.size() < MaxTop)
         {
             top.emplace_back(r.name, elapsed);
         }
@@ -196,22 +198,22 @@ template <class Unused>
 void
 Reporter<Unused>::onSuiteBegin(SuiteInfo const& info)
 {
-    suiteResults_ = SuiteResults{info.fullName()};
+    suite_results_ = SuiteResults{info.fullName()};
 }
 
 template <class Unused>
 void
 Reporter<Unused>::onSuiteEnd()
 {
-    results_.add(suiteResults_);
+    results_.add(suite_results_);
 }
 
 template <class Unused>
 void
 Reporter<Unused>::onCaseBegin(std::string const& name)
 {
-    caseResults_ = CaseResults(name);
-    os_ << suiteResults_.name << (caseResults_.name.empty() ? "" : (" " + caseResults_.name))
+    case_results_ = CaseResults(name);
+    os_ << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
         << std::endl;
 }
 
@@ -219,23 +221,23 @@ template <class Unused>
 void
 Reporter<Unused>::onCaseEnd()
 {
-    suiteResults_.add(caseResults_);
+    suite_results_.add(case_results_);
 }
 
 template <class Unused>
 void
 Reporter<Unused>::onPass()
 {
-    ++caseResults_.total;
+    ++case_results_.total;
 }
 
 template <class Unused>
 void
 Reporter<Unused>::onFail(std::string const& reason)
 {
-    ++caseResults_.failed;
-    ++caseResults_.total;
-    os_ << "#" << caseResults_.total << " failed" << (reason.empty() ? "" : ": ") << reason
+    ++case_results_.failed;
+    ++case_results_.total;
+    os_ << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ") << reason
         << std::endl;
 }
 

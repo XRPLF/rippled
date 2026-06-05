@@ -23,9 +23,9 @@ class SkipList_test : public beast::unit_test::Suite
         {
             Config const config;
             auto prev = std::make_shared<Ledger>(
-                kCreateGenesis,
+                kCREATE_GENESIS,
                 Rules{config.features},
-                config.fees.toFees(),
+                config.FEES.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
             history.push_back(prev);

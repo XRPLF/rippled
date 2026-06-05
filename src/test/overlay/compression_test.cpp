@@ -112,23 +112,23 @@ public:
             return;
 
         std::vector<std::uint8_t> decompressed;
-        decompressed.resize(header->uncompressedSize);
+        decompressed.resize(header->uncompressed_size);
 
-        BEAST_EXPECT(header->payloadWireSize == buffer.size() - header->headerSize);
+        BEAST_EXPECT(header->payload_wire_size == buffer.size() - header->header_size);
 
         ZeroCopyInputStream stream(buffers.data());
-        stream.Skip(header->headerSize);
+        stream.Skip(header->header_size);
 
         auto decompressedSize = xrpl::compression::decompress(
-            stream, header->payloadWireSize, decompressed.data(), header->uncompressedSize);
-        BEAST_EXPECT(decompressedSize == header->uncompressedSize);
+            stream, header->payload_wire_size, decompressed.data(), header->uncompressed_size);
+        BEAST_EXPECT(decompressedSize == header->uncompressed_size);
         auto const proto1 = std::make_shared<T>();
 
         BEAST_EXPECT(proto1->ParseFromArray(decompressed.data(), decompressedSize));
         auto uncompressed = m.getBuffer(Compressed::Off);
         BEAST_EXPECT(
             std::equal(
-                uncompressed.begin() + xrpl::compression::kHeaderBytes,
+                uncompressed.begin() + xrpl::compression::kHEADER_BYTES,
                 uncompressed.end(),
                 decompressed.begin()));
     }
@@ -142,7 +142,7 @@ public:
         {
             auto master = randomKeyPair(KeyType::Ed25519);
             auto signing = randomKeyPair(KeyType::Ed25519);
-            STObject st(sfGeneric);
+            STObject st(kSF_GENERIC);
             st[sfSequence] = i;
             st[sfPublicKey] = std::get<0>(master);
             st[sfSigningPubKey] = std::get<0>(signing);
@@ -299,7 +299,7 @@ public:
 
         auto master = randomKeyPair(KeyType::Ed25519);
         auto signing = randomKeyPair(KeyType::Ed25519);
-        STObject st(sfGeneric);
+        STObject st(kSF_GENERIC);
         st[sfSequence] = 0;
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
@@ -326,7 +326,7 @@ public:
 
         auto master = randomKeyPair(KeyType::Ed25519);
         auto signing = randomKeyPair(KeyType::Ed25519);
-        STObject st(sfGeneric);
+        STObject st(kSF_GENERIC);
         st[sfSequence] = 0;
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
@@ -350,7 +350,7 @@ public:
     void
     testProtocol()
     {
-        auto thresh = beast::Severity::Info;
+        auto thresh = beast::severities::Severity::KInfo;
         auto logs = std::make_unique<Logs>(thresh);
 
         protocol::TMManifests const manifests;
@@ -408,8 +408,9 @@ public:
                 << enable << "\n";
             c.loadFromString(str.str());
             auto env = std::make_shared<jtx::Env>(*this);
-            env->app().config().compression = c.compression;
-            env->app().config().vpReduceRelayBaseSquelchEnable = c.vpReduceRelayBaseSquelchEnable;
+            env->app().config().COMPRESSION = c.COMPRESSION;
+            env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
             return env;
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {
@@ -418,10 +419,10 @@ public:
             auto env = getEnv(outboundEnable);
             auto request = xrpl::makeRequest(
                 true,
-                env->app().config().compression,
+                env->app().config().COMPRESSION,
                 false,
-                env->app().config().txReduceRelayEnable,
-                env->app().config().vpReduceRelayBaseSquelchEnable);
+                env->app().config().TX_REDUCE_RELAY_ENABLE,
+                env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
             http_request_type httpRequest;
             httpRequest.version(request.version());
             httpRequest.base() = request.base();
@@ -431,7 +432,7 @@ public:
             // inbound is enabled if the request's header has the feature
             // enabled and the peer's configuration is enabled
             auto const inboundEnabled =
-                peerFeatureEnabled(httpRequest, kFeatureCompr, "lz4", inboundEnable);
+                peerFeatureEnabled(httpRequest, kFEATURE_COMPR, "lz4", inboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ inboundEnabled));
 
             env.reset();
@@ -441,7 +442,7 @@ public:
             // outbound is enabled if the response's header has the feature
             // enabled and the peer's configuration is enabled
             auto const outboundEnabled =
-                peerFeatureEnabled(httpResp, kFeatureCompr, "lz4", outboundEnable);
+                peerFeatureEnabled(httpResp, kFEATURE_COMPR, "lz4", outboundEnable);
             BEAST_EXPECT(!(peerEnabled ^ outboundEnabled));
         };
         handshake(1, 1);

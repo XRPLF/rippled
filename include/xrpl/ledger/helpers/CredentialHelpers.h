@@ -19,11 +19,15 @@ namespace credentials {
 
 // Check if credential sfExpiration field has passed ledger's parentCloseTime
 bool
-checkExpired(SLE const& sleCredential, NetClock::time_point const& closed);
+checkExpired(std::shared_ptr<SLE const> const& sleCredential, NetClock::time_point const& closed);
+
+// Return true if any expired credential was found in arr (and deleted)
+bool
+removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j);
 
 // Actually remove a credentials object from the ledger
-[[nodiscard]] TER
-deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j);
+TER
+deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Journal j);
 
 // Amendment and parameters checks for sfCredentialIDs field
 NotTEC
@@ -84,7 +88,7 @@ verifyDepositPreauth(
     ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    SLE::const_ref sleDst,
+    std::shared_ptr<SLE const> const& sleDst,
     beast::Journal j);
 
 }  // namespace xrpl

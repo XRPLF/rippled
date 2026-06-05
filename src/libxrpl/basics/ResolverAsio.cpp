@@ -108,7 +108,7 @@ public:
 
     beast::Journal journal;
 
-    boost::asio::io_context& ioContext;
+    boost::asio::io_context& io_context;
     boost::asio::strand<boost::asio::io_context::executor_type> strand;
     boost::asio::ip::tcp::resolver resolver;
 
@@ -116,7 +116,7 @@ public:
     std::mutex mut;
     bool asyncHandlersCompleted{true};
 
-    std::atomic<bool> stopCalled;
+    std::atomic<bool> stop_called;
     std::atomic<bool> stopped;
 
     // Represents a unit of work for the resolver to do
@@ -138,10 +138,10 @@ public:
 
     ResolverAsioImpl(boost::asio::io_context& ioContext, beast::Journal journal)
         : journal(journal)
-        , ioContext(ioContext)
+        , io_context(ioContext)
         , strand(boost::asio::make_strand(ioContext))
         , resolver(ioContext)
-        , stopCalled(false)
+        , stop_called(false)
         , stopped(true)
     {
     }
@@ -172,7 +172,7 @@ public:
     start() override
     {
         XRPL_ASSERT(stopped == true, "xrpl::ResolverAsioImpl::start : stopped");
-        XRPL_ASSERT(stopCalled == false, "xrpl::ResolverAsioImpl::start : not stopping");
+        XRPL_ASSERT(stop_called == false, "xrpl::ResolverAsioImpl::start : not stopping");
 
         if (stopped.exchange(false))
         {
@@ -187,10 +187,10 @@ public:
     void
     stopAsync() override
     {
-        if (!stopCalled.exchange(true))
+        if (!stop_called.exchange(true))
         {
             boost::asio::dispatch(
-                ioContext,
+                io_context,
                 boost::asio::bind_executor(
                     strand, std::bind(&ResolverAsioImpl::doStop, this, CompletionCounter(this))));
 
@@ -213,13 +213,13 @@ public:
     void
     resolve(std::vector<std::string> const& names, HandlerType const& handler) override
     {
-        XRPL_ASSERT(stopCalled == false, "xrpl::ResolverAsioImpl::resolve : not stopping");
+        XRPL_ASSERT(stop_called == false, "xrpl::ResolverAsioImpl::resolve : not stopping");
         XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::resolve : names non-empty");
 
         // TODO NIKB use rvalue references to construct and move
         //           reducing cost.
         boost::asio::dispatch(
-            ioContext,
+            io_context,
             boost::asio::bind_executor(
                 strand,
                 std::bind(
@@ -231,7 +231,7 @@ public:
     void
     doStop(CompletionCounter)
     {
-        XRPL_ASSERT(stopCalled == true, "xrpl::ResolverAsioImpl::doStop : stopping");
+        XRPL_ASSERT(stop_called == true, "xrpl::ResolverAsioImpl::do_stop : stopping");
 
         if (!stopped.exchange(true))
         {
@@ -270,7 +270,7 @@ public:
         handler(name, addresses);
 
         boost::asio::post(
-            ioContext,
+            io_context,
             boost::asio::bind_executor(
                 strand, std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
     }
@@ -324,7 +324,7 @@ public:
     void
     doWork(CompletionCounter)
     {
-        if (stopCalled)
+        if (stop_called)
             return;
 
         // We don't have any work to do at this time
@@ -346,7 +346,7 @@ public:
             JLOG(journal.error()) << "Unable to parse '" << name << "'";
 
             boost::asio::post(
-                ioContext,
+                io_context,
                 boost::asio::bind_executor(
                     strand, std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));
 
@@ -369,9 +369,9 @@ public:
     void
     doResolve(std::vector<std::string> const& names, HandlerType const& handler, CompletionCounter)
     {
-        XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::doResolve : names non-empty");
+        XRPL_ASSERT(!names.empty(), "xrpl::ResolverAsioImpl::do_resolve : names non-empty");
 
-        if (!stopCalled)
+        if (!stop_called)
         {
             work.emplace_back(names, handler);
 
@@ -381,7 +381,7 @@ public:
             if (!work.empty())
             {
                 boost::asio::post(
-                    ioContext,
+                    io_context,
                     boost::asio::bind_executor(
                         strand,
                         std::bind(&ResolverAsioImpl::doWork, this, CompletionCounter(this))));

@@ -14,6 +14,8 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <memory>
+
 namespace xrpl {
 
 NotTEC
@@ -100,15 +102,16 @@ CheckCancel::doApply()
 }
 
 void
-CheckCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+CheckCancel::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
 CheckCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

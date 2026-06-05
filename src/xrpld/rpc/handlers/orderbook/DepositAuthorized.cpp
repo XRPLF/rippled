@@ -86,11 +86,11 @@ doDepositAuthorized(RPC::JsonContext& context)
         return result;
     }
 
-    bool const reqAuth = sleDest->isFlag(lsfDepositAuth) && (srcAcct != dstAcct);
+    bool const reqAuth = ((sleDest->getFlags() & lsfDepositAuth) != 0u) && (srcAcct != dstAcct);
     bool const credentialsPresent = params.isMember(jss::credentials);
 
     std::set<std::pair<AccountID, Slice>> sorted;
-    std::vector<SLE::const_pointer> lifeExtender;
+    std::vector<std::shared_ptr<SLE const>> lifeExtender;
     if (credentialsPresent)
     {
         auto const& creds(params[jss::credentials]);
@@ -101,7 +101,7 @@ doDepositAuthorized(RPC::JsonContext& context)
                 RPC::expectedFieldMessage(
                     jss::credentials, "is non-empty array of CredentialID(hash256)"));
         }
-        if (creds.size() > kMaxCredentialsArraySize)
+        if (creds.size() > kMAX_CREDENTIALS_ARRAY_SIZE)
         {
             return RPC::makeError(
                 RpcInvalidParams, RPC::expectedFieldMessage(jss::credentials, "array too long"));
@@ -128,20 +128,20 @@ doDepositAuthorized(RPC::JsonContext& context)
                         jss::credentials, "an array of CredentialID(hash256)"));
             }
 
-            SLE::const_pointer sleCred = ledger->read(keylet::credential(credH));
+            std::shared_ptr<SLE const> sleCred = ledger->read(keylet::credential(credH));
             if (!sleCred)
             {
                 RPC::injectError(RpcBadCredentials, "credentials don't exist", result);
                 return result;
             }
 
-            if (!sleCred->isFlag(lsfAccepted))
+            if ((sleCred->getFlags() & lsfAccepted) == 0u)
             {
                 RPC::injectError(RpcBadCredentials, "credentials aren't accepted", result);
                 return result;
             }
 
-            if (credentials::checkExpired(*sleCred, ledger->header().parentCloseTime))
+            if (credentials::checkExpired(sleCred, ledger->header().parentCloseTime))
             {
                 RPC::injectError(RpcBadCredentials, "credentials are expired", result);
                 return result;

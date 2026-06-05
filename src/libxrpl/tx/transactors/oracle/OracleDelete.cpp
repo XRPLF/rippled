@@ -13,6 +13,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <memory>
+
 namespace xrpl {
 
 NotTEC
@@ -49,7 +51,7 @@ OracleDelete::preclaim(PreclaimContext const& ctx)
 TER
 OracleDelete::deleteOracle(
     ApplyView& view,
-    SLE::ref sle,
+    std::shared_ptr<SLE> const& sle,
     AccountID const& account,
     beast::Journal j)
 {
@@ -80,16 +82,18 @@ OracleDelete::deleteOracle(
 TER
 OracleDelete::doApply()
 {
-    if (auto sle = ctx_.view().peek(keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID])))
-        return deleteOracle(ctx_.view(), sle, accountID_, j_);
+    if (auto sle = ctx_.view().peek(keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])))
+        return deleteOracle(ctx_.view(), sle, account_, j_);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 void
-OracleDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+OracleDelete::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -100,7 +104,6 @@ OracleDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

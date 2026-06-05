@@ -22,7 +22,7 @@ set(jtx::Account const& account,
     jv[jss::TransactionType] = jss::DelegateSet;
     jv[jss::Account] = account.human();
     jv[sfAuthorize.jsonName] = authorize.human();
-    json::Value permissionsJson(json::ValueType::Array);
+    json::Value permissionsJson(json::ArrayValue);
     for (auto const& permission : permissions)
     {
         json::Value permissionValue;

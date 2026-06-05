@@ -496,7 +496,12 @@ struct Peer
         return Result(
             TxSet{openTxs},
             Proposal(
-                prevLedger.id(), Proposal::kSeqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
+                prevLedger.id(),
+                Proposal::kSEQ_JOIN,
+                TxSet::calcID(openTxs),
+                closeTime,
+                now(),
+                id));
     }
 
     void

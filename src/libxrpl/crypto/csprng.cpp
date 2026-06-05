@@ -80,8 +80,8 @@ CsprngEngine::operator()()
 CsprngEngine&
 cryptoPrng()
 {
-    static CsprngEngine kEngine;
-    return kEngine;
+    static CsprngEngine kENGINE;
+    return kENGINE;
 }
 
 }  // namespace xrpl

@@ -16,7 +16,7 @@ namespace xrpl {
 class OracleDelete : public Transactor
 {
 public:
-    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit OracleDelete(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -32,7 +32,10 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -43,7 +46,11 @@ public:
         beast::Journal const& j) override;
 
     static TER
-    deleteOracle(ApplyView& view, SLE::ref sle, AccountID const& account, beast::Journal j);
+    deleteOracle(
+        ApplyView& view,
+        std::shared_ptr<SLE> const& sle,
+        AccountID const& account,
+        beast::Journal j);
 };
 
 }  // namespace xrpl

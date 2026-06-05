@@ -30,8 +30,8 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
               stopwatch(),
               app.getJournal("NodeFamilyFulLBelowCache"),
               cm.collector(),
-              kFullBelowTargetSize,
-              kFullBelowExpiration))
+              kFULL_BELOW_TARGET_SIZE,
+              kFULL_BELOW_EXPIRATION))
     , tnCache_(
           std::make_shared<TreeNodeCache>(
               "Node family tree node cache",

@@ -37,7 +37,7 @@ public:
     {
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->networkId = networkID;
+            cfg->NETWORK_ID = networkID;
             return cfg;
         });
     }

@@ -15,7 +15,12 @@ private:
     soci::session sqlDb_;
 
 public:
-    static constexpr auto kCurrentSchemaVersion = 4;  // on-database format version
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+    enum {
+        // This determines the on-database format of the data
+        CurrentSchemaVersion = 4
+    };
 
     explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
         : journal_(journal)
@@ -68,7 +73,7 @@ public:
     void
     update()
     {
-        updatePeerFinderDB(sqlDb_, kCurrentSchemaVersion, journal_);
+        updatePeerFinderDB(sqlDb_, CurrentSchemaVersion, journal_);
     }
 
 private:

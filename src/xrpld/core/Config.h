@@ -48,13 +48,13 @@ A default-constructed Setup contains recommended values.
 struct FeeSetup
 {
     /** The cost of a reference transaction in drops. */
-    XRPAmount referenceFee{10};
+    XRPAmount reference_fee{10};
 
     /** The account reserve requirement in drops. */
-    XRPAmount accountReserve{10 * kDropsPerXrp};
+    XRPAmount account_reserve{10 * kDROPS_PER_XRP};
 
     /** The per-owned item reserve requirement in drops. */
-    XRPAmount ownerReserve{2 * kDropsPerXrp};
+    XRPAmount owner_reserve{2 * kDROPS_PER_XRP};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
@@ -63,7 +63,7 @@ struct FeeSetup
     [[nodiscard]] Fees
     toFees() const
     {
-        return Fees{referenceFee, accountReserve, ownerReserve};
+        return Fees{reference_fee, account_reserve, owner_reserve};
     }
 };
 
@@ -76,30 +76,30 @@ class Config : public BasicConfig
 {
 public:
     // Settings related to the configuration file location and directories
-    static char const* const kConfigFileName;
-    static char const* const kConfigLegacyName;
-    static char const* const kDatabaseDirName;
-    static char const* const kValidatorsFileName;
+    static char const* const kCONFIG_FILE_NAME;
+    static char const* const kCONFIG_LEGACY_NAME;
+    static char const* const kDATABASE_DIR_NAME;
+    static char const* const kVALIDATORS_FILE_NAME;
 
     /** Returns the full path and filename of the debug log file. */
     [[nodiscard]] boost::filesystem::path
     getDebugLogFile() const;
 
 private:
-    boost::filesystem::path configFile_;
+    boost::filesystem::path CONFIG_FILE_;
 
 public:
-    boost::filesystem::path configDir;
+    boost::filesystem::path CONFIG_DIR;
 
 private:
-    boost::filesystem::path debugLogfile_;
+    boost::filesystem::path DEBUG_LOGFILE_;
 
     void
     load();
     beast::Journal const j_;
 
-    bool quiet_ = false;   // Minimize logging verbosity.
-    bool silent_ = false;  // No output to console after startup.
+    bool QUIET_ = false;   // Minimize logging verbosity.
+    bool SILENT_ = false;  // No output to console after startup.
     /** Operate in stand-alone mode.
 
         In stand alone mode:
@@ -109,9 +109,9 @@ private:
         - If no ledger is loaded, the default ledger with the root
           account is created.
     */
-    bool runStandalone_ = false;
+    bool RUN_STANDALONE_ = false;
 
-    bool useTxTables_ = true;
+    bool USE_TX_TABLES_ = true;
 
     /** Determines if the server will sign a tx, given an account's secret seed.
 
@@ -126,45 +126,45 @@ private:
 
 public:
     bool doImport = false;
-    bool elbSupport = false;
+    bool ELB_SUPPORT = false;
 
     // Entries from [ips] config stanza
-    std::vector<std::string> ips;
+    std::vector<std::string> IPS;
 
     // Entries from [ips_fixed] config stanza
-    std::vector<std::string> ipsFixed;
+    std::vector<std::string> IPS_FIXED;
 
-    StartUpType startUp = StartUpType::Normal;
+    StartUpType START_UP = StartUpType::Normal;
 
-    bool startValid = false;
+    bool START_VALID = false;
 
-    std::string startLedger;
+    std::string START_LEDGER;
 
-    std::optional<uint256> trapTxHash;
+    std::optional<uint256> TRAP_TX_HASH;
 
     // Network parameters
-    uint32_t networkId = 0;
+    uint32_t NETWORK_ID = 0;
 
     // Note: The following parameters do not relate to the UNL or trust at all
     // Minimum number of nodes to consider the network present
-    std::size_t networkQuorum = 1;
+    std::size_t NETWORK_QUORUM = 1;
 
     // Peer networking parameters
     // 1 = relay, 0 = do not relay (but process), -1 = drop completely (do NOT
     // process)
-    int relayUntrustedValidations = 1;
-    int relayUntrustedProposals = 0;
+    int RELAY_UNTRUSTED_VALIDATIONS = 1;
+    int RELAY_UNTRUSTED_PROPOSALS = 0;
 
     // True to ask peers not to relay current IP.
-    bool peerPrivate = false;
+    bool PEER_PRIVATE = false;
     // peers_max is a legacy configuration, which is going to be replaced
     // with individual inbound peers peers_in_max and outbound peers
     // peers_out_max configuration. for now we support both the legacy and
     // the new configuration. if peers_max is configured then peers_in_max and
     // peers_out_max are ignored.
-    std::size_t peersMax = 0;
-    std::size_t peersOutMax = 0;
-    std::size_t peersInMax = 0;
+    std::size_t PEERS_MAX = 0;
+    std::size_t PEERS_OUT_MAX = 0;
+    std::size_t PEERS_IN_MAX = 0;
 
     // Path searching: these were reasonable default values at some point but
     //                 further research is needed to decide if they still are
@@ -178,110 +178,110 @@ public:
     //                 Servers operating as validators disable path finding by
     //                 default by setting the `PATH_SEARCH_MAX` option to 0
     //                 unless it is explicitly set in the configuration file.
-    int pathSearchOld = 2;
-    int pathSearch = 2;
-    int pathSearchFast = 2;
-    int pathSearchMax = 3;
+    int PATH_SEARCH_OLD = 2;
+    int PATH_SEARCH = 2;
+    int PATH_SEARCH_FAST = 2;
+    int PATH_SEARCH_MAX = 3;
 
     // Validation
-    std::optional<std::size_t> validationQuorum;  // validations to consider ledger authoritative
+    std::optional<std::size_t> VALIDATION_QUORUM;  // validations to consider ledger authoritative
 
-    FeeSetup fees;
+    FeeSetup FEES;
 
     // Node storage configuration
-    std::uint32_t ledgerHistory = 256;
-    std::uint32_t fetchDepth = 1000000000;
+    std::uint32_t LEDGER_HISTORY = 256;
+    std::uint32_t FETCH_DEPTH = 1000000000;
 
     // Tunable that adjusts various parameters, typically associated
     // with hardware parameters (RAM size and CPU cores). The default
     // is 'tiny'.
-    std::size_t nodeSize = 0;
+    std::size_t NODE_SIZE = 0;
 
-    bool sslVerify = true;
-    std::string sslVerifyFile;
-    std::string sslVerifyDir;
+    bool SSL_VERIFY = true;
+    std::string SSL_VERIFY_FILE;
+    std::string SSL_VERIFY_DIR;
 
     // Compression
-    bool compression = false;
+    bool COMPRESSION = false;
 
     // Enable the experimental Ledger Replay functionality
-    bool ledgerReplay = false;
+    bool LEDGER_REPLAY = false;
 
     // Work queue limits
-    int maxTransactions = 250;
-    static constexpr int kMaxJobQueueTx = 1000;
-    static constexpr int kMinJobQueueTx = 100;
+    int MAX_TRANSACTIONS = 250;
+    static constexpr int kMAX_JOB_QUEUE_TX = 1000;
+    static constexpr int kMIN_JOB_QUEUE_TX = 100;
 
     // Amendment majority time
-    std::chrono::seconds amendmentMajorityTime = kDefaultAmendmentMajorityTime;
+    std::chrono::seconds AMENDMENT_MAJORITY_TIME = kDEFAULT_AMENDMENT_MAJORITY_TIME;
 
     // Thread pool configuration (0 = choose for me)
-    int workers = 0;          // jobqueue thread count. default: upto 6
-    int ioWorkers = 0;        // io svc thread count. default: 2
-    int prefetchWorkers = 0;  // prefetch thread count. default: 4
+    int WORKERS = 0;           // jobqueue thread count. default: upto 6
+    int IO_WORKERS = 0;        // io svc thread count. default: 2
+    int PREFETCH_WORKERS = 0;  // prefetch thread count. default: 4
 
     // Can only be set in code, specifically unit tests
-    bool forceMultiThread = false;
+    bool FORCE_MULTI_THREAD = false;
 
     // Normally the sweep timer is automatically deduced based on the node
     // size, but we allow admins to explicitly set it in the config.
-    std::optional<int> sweepInterval;
+    std::optional<int> SWEEP_INTERVAL;
 
     // Reduce-relay - Experimental parameters to control p2p routing algorithms
 
     // Enable base squelching of duplicate validation/proposal messages
-    bool vpReduceRelayBaseSquelchEnable = false;
+    bool VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
 
     /////////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
     // Temporary squelching config for the peers selected as a source of  //
     // validator messages. The config must be removed once squelching is  //
     // made the default routing algorithm                                 //
-    std::size_t vpReduceRelaySquelchMaxSelectedPeers = 5;
+    std::size_t VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS = 5;
     /////////////////    END OF TEMPORARY CODE BLOCK    /////////////////////
 
     // Transaction reduce-relay feature
-    bool txReduceRelayEnable = false;
+    bool TX_REDUCE_RELAY_ENABLE = false;
     // If tx reduce-relay feature is disabled
     // and this flag is enabled then some
     // tx-related metrics is collected. It
     // is ignored if tx reduce-relay feature is
     // enabled. It is used in debugging to compare
     // metrics with the feature disabled/enabled.
-    bool txReduceRelayMetrics = false;
+    bool TX_REDUCE_RELAY_METRICS = false;
     // Minimum peers a server should have before
     // selecting random peers
-    std::size_t txReduceRelayMinPeers = 20;
+    std::size_t TX_REDUCE_RELAY_MIN_PEERS = 20;
     // Percentage of peers with the tx reduce-relay feature enabled
     // to relay to out of total active peers
-    std::size_t txRelayPercentage = 25;
+    std::size_t TX_RELAY_PERCENTAGE = 25;
 
     // These override the command line client settings
-    std::optional<beast::IP::Endpoint> rpcIp;
+    std::optional<beast::IP::Endpoint> rpc_ip;
 
     std::unordered_set<uint256, beast::Uhash<>> features;
 
-    std::string serverDomain;
+    std::string SERVER_DOMAIN;
 
     // How long can a peer remain in the "unknown" state
-    std::chrono::seconds maxUnknownTime{600};
+    std::chrono::seconds MAX_UNKNOWN_TIME{600};
 
     // How long can a peer remain in the "diverged" state
-    std::chrono::seconds maxDivergedTime{300};
+    std::chrono::seconds MAX_DIVERGED_TIME{300};
 
     // Enable the beta API version
-    bool betaRpcApi = false;
+    bool BETA_RPC_API = false;
 
     // First, attempt to load the latest ledger directly from disk.
-    bool fastLoad = false;
+    bool FAST_LOAD = false;
     // When starting xrpld with existing database it do not know it has those
     // ledgers locally until the server naturally tries to backfill. This makes
     // is difficult to test some functionality (in particular performance
     // testing sidechains). With this variable the user is able to force xrpld
     // to consider the ledger range to be present. It should be used for testing
     // only.
-    std::optional<std::pair<std::uint32_t, std::uint32_t>> forcedLedgerRangePresent;
+    std::optional<std::pair<std::uint32_t, std::uint32_t>> FORCED_LEDGER_RANGE_PRESENT;
 
-    std::optional<std::size_t> validatorListThreshold;
+    std::optional<std::size_t> VALIDATOR_LIST_THRESHOLD;
 
 public:
     Config();
@@ -305,23 +305,23 @@ public:
     [[nodiscard]] bool
     quiet() const
     {
-        return quiet_;
+        return QUIET_;
     }
     [[nodiscard]] bool
     silent() const
     {
-        return silent_;
+        return SILENT_;
     }
     [[nodiscard]] bool
     standalone() const
     {
-        return runStandalone_;
+        return RUN_STANDALONE_;
     }
 
     [[nodiscard]] bool
     useTxTables() const
     {
-        return useTxTables_;
+        return USE_TX_TABLES_;
     }
 
     [[nodiscard]] bool

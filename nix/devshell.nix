@@ -1,6 +1,19 @@
 { pkgs, ... }:
 let
-  inherit (import ./packages.nix { inherit pkgs; }) commonPackages;
+  commonPackages = with pkgs; [
+    ccache
+    cmake
+    conan
+    gcovr
+    git
+    gnumake
+    llvmPackages_21.clang-tools
+    ninja
+    perl # needed for openssl
+    pkg-config
+    pre-commit
+    python314
+  ];
 
   # Supported compiler versions
   gccVersion = pkgs.lib.range 13 15;

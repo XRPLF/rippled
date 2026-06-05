@@ -72,7 +72,7 @@ PerfLogImp::Counters::Counters(std::set<char const*> const& labels, JobTypes con
 json::Value
 PerfLogImp::Counters::countersJson() const
 {
-    json::Value rpcobj(json::ValueType::Object);
+    json::Value rpcobj(json::ObjectValue);
     // totalRpc represents all rpc methods. All that started, finished, etc.
     Rpc totalRpc;
     for (auto const& proc : rpc)
@@ -88,7 +88,7 @@ PerfLogImp::Counters::countersJson() const
             value = proc.second.value;
         }
 
-        json::Value p(json::ValueType::Object);
+        json::Value p(json::ObjectValue);
         p[jss::started] = std::to_string(value.started);
         totalRpc.started += value.started;
         p[jss::finished] = std::to_string(value.finished);
@@ -102,7 +102,7 @@ PerfLogImp::Counters::countersJson() const
 
     if (totalRpc.started != 0u)
     {
-        json::Value totalRpcJson(json::ValueType::Object);
+        json::Value totalRpcJson(json::ObjectValue);
         totalRpcJson[jss::started] = std::to_string(totalRpc.started);
         totalRpcJson[jss::finished] = std::to_string(totalRpc.finished);
         totalRpcJson[jss::errored] = std::to_string(totalRpc.errored);
@@ -110,7 +110,7 @@ PerfLogImp::Counters::countersJson() const
         rpcobj[jss::total] = totalRpcJson;
     }
 
-    json::Value jobQueueObj(json::ValueType::Object);
+    json::Value jobQueueObj(json::ObjectValue);
     // totalJq represents all jobs. All enqueued, started, finished, etc.
     Jq totalJq;
     for (auto const& proc : jq)
@@ -126,7 +126,7 @@ PerfLogImp::Counters::countersJson() const
             value = proc.second.value;
         }
 
-        json::Value j(json::ValueType::Object);
+        json::Value j(json::ObjectValue);
         j[jss::queued] = std::to_string(value.queued);
         totalJq.queued += value.queued;
         j[jss::started] = std::to_string(value.started);
@@ -142,7 +142,7 @@ PerfLogImp::Counters::countersJson() const
 
     if (totalJq.queued != 0u)
     {
-        json::Value totalJqJson(json::ValueType::Object);
+        json::Value totalJqJson(json::ObjectValue);
         totalJqJson[jss::queued] = std::to_string(totalJq.queued);
         totalJqJson[jss::started] = std::to_string(totalJq.started);
         totalJqJson[jss::finished] = std::to_string(totalJq.finished);
@@ -151,7 +151,7 @@ PerfLogImp::Counters::countersJson() const
         jobQueueObj[jss::total] = totalJqJson;
     }
 
-    json::Value counters(json::ValueType::Object);
+    json::Value counters(json::ObjectValue);
     // Be kind to reporting tools and let them expect rpc and jq objects
     // even if empty.
     counters[jss::rpc] = rpcobj;
@@ -164,7 +164,7 @@ PerfLogImp::Counters::currentJson() const
 {
     auto const present = steady_clock::now();
 
-    json::Value jobsArray(json::ValueType::Array);
+    json::Value jobsArray(json::ArrayValue);
     auto const jobs = [this] {
         std::scoped_lock const lock(jobsMutex);
         return this->jobs;
@@ -174,14 +174,14 @@ PerfLogImp::Counters::currentJson() const
     {
         if (j.first == JtInvalid)
             continue;
-        json::Value jobj(json::ValueType::Object);
+        json::Value jobj(json::ObjectValue);
         jobj[jss::job] = JobTypes::name(j.first);
         jobj[jss::duration_us] =
             std::to_string(std::chrono::duration_cast<microseconds>(present - j.second).count());
         jobsArray.append(jobj);
     }
 
-    json::Value methodsArray(json::ValueType::Array);
+    json::Value methodsArray(json::ArrayValue);
     std::vector<MethodStart> methods;
     {
         std::scoped_lock const lock(methodsMutex);
@@ -191,14 +191,14 @@ PerfLogImp::Counters::currentJson() const
     }
     for (auto m : methods)
     {
-        json::Value methodobj(json::ValueType::Object);
+        json::Value methodobj(json::ObjectValue);
         methodobj[jss::method] = m.first;
         methodobj[jss::duration_us] =
             std::to_string(std::chrono::duration_cast<microseconds>(present - m.second).count());
         methodsArray.append(methodobj);
     }
 
-    json::Value current(json::ValueType::Object);
+    json::Value current(json::ObjectValue);
     current[jss::jobs] = jobsArray;
     current[jss::methods] = methodsArray;
     return current;
@@ -277,7 +277,7 @@ PerfLogImp::report()
         return;
     lastLog_ = present;
 
-    json::Value report(json::ValueType::Object);
+    json::Value report(json::ObjectValue);
     report[jss::time] = to_string(std::chrono::floor<microseconds>(present));
     {
         std::scoped_lock const lock{counters_.jobsMutex};
@@ -285,7 +285,7 @@ PerfLogImp::report()
     }
     report[jss::hostid] = hostname_;
     report[jss::counters] = counters_.countersJson();
-    report[jss::nodestore] = json::ValueType::Object;
+    report[jss::nodestore] = json::ObjectValue;
     app_.getNodeStore().getCountsJson(report[jss::nodestore]);
     report[jss::current_activities] = counters_.currentJson();
     app_.getOPs().stateAccounting(report);

@@ -20,23 +20,27 @@
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 #include <cstddef>
+#include <memory>
 #include <optional>
 
 namespace xrpl {
 
 void
-ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidNFTokenPage::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
 {
-    static constexpr uint256 const& kPageBits = nft::kPageMask;
-    static constexpr uint256 kAccountBits = ~kPageBits;
+    static constexpr uint256 const& kPAGE_BITS = nft::kPAGE_MASK;
+    static constexpr uint256 const kACCOUNT_BITS = ~kPAGE_BITS;
 
     if ((before && before->getType() != ltNFTOKEN_PAGE) ||
         (after && after->getType() != ltNFTOKEN_PAGE))
         return;
 
-    auto check = [this, isDelete](SLE::const_ref sle) {
-        uint256 const account = sle->key() & kAccountBits;
-        uint256 const hiLimit = sle->key() & kPageBits;
+    auto check = [this, isDelete](std::shared_ptr<SLE const> const& sle) {
+        uint256 const account = sle->key() & kACCOUNT_BITS;
+        uint256 const hiLimit = sle->key() & kPAGE_BITS;
         std::optional<uint256> const prev = (*sle)[~sfPreviousPageMin];
 
         // Make sure that any page links...
@@ -44,19 +48,19 @@ ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         //  2. The page is correctly ordered between links.
         if (prev)
         {
-            if (account != (*prev & kAccountBits))
+            if (account != (*prev & kACCOUNT_BITS))
                 badLink_ = true;
 
-            if (hiLimit <= (*prev & kPageBits))
+            if (hiLimit <= (*prev & kPAGE_BITS))
                 badLink_ = true;
         }
 
         if (auto const next = (*sle)[~sfNextPageMin])
         {
-            if (account != (*next & kAccountBits))
+            if (account != (*next & kACCOUNT_BITS))
                 badLink_ = true;
 
-            if (hiLimit >= (*next & kPageBits))
+            if (hiLimit >= (*next & kPAGE_BITS))
                 badLink_ = true;
         }
 
@@ -65,12 +69,12 @@ ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
 
             // An NFTokenPage should never contain too many tokens or be empty.
             if (std::size_t const nftokenCount = nftokens.size();
-                (!isDelete && nftokenCount == 0) || nftokenCount > kDirMaxTokensPerPage)
+                (!isDelete && nftokenCount == 0) || nftokenCount > kDIR_MAX_TOKENS_PER_PAGE)
                 invalidSize_ = true;
 
             // If prev is valid, use it to establish a lower bound for
             // page entries.  If prev is not valid the lower bound is zero.
-            uint256 const loLimit = prev ? *prev & kPageBits : uint256(beast::kZero);
+            uint256 const loLimit = prev ? *prev & kPAGE_BITS : uint256(beast::kZERO);
 
             // Also verify that all NFTokenIDs in the page are sorted.
             uint256 loCmp = loLimit;
@@ -83,7 +87,7 @@ ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
 
                 // None of the NFTs on this page should belong on lower or
                 // higher pages.
-                if (uint256 const tokenPageBits = tokenID & kPageBits;
+                if (uint256 const tokenPageBits = tokenID & kPAGE_BITS;
                     tokenPageBits < loLimit || tokenPageBits >= hiLimit)
                     badEntry_ = true;
 
@@ -100,7 +104,7 @@ ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         // While an account's NFToken directory contains any NFTokens, the last
         // NFTokenPage (with 96 bits of 1 in the low part of the index) should
         // never be deleted.
-        if (isDelete && (before->key() & nft::kPageMask) == nft::kPageMask &&
+        if (isDelete && (before->key() & nft::kPAGE_MASK) == nft::kPAGE_MASK &&
             before->isFieldPresent(sfPreviousPageMin))
         {
             deletedFinalPage_ = true;
@@ -117,7 +121,7 @@ ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         //  2. This is not the last page in the directory
         // Then we have identified a corruption in the links between the
         // NFToken pages in the NFToken directory.
-        if ((before->key() & nft::kPageMask) != nft::kPageMask &&
+        if ((before->key() & nft::kPAGE_MASK) != nft::kPAGE_MASK &&
             before->isFieldPresent(sfNextPageMin) && !after->isFieldPresent(sfNextPageMin))
         {
             deletedLink_ = true;
@@ -183,7 +187,10 @@ ValidNFTokenPage::finalize(
 
 //------------------------------------------------------------------------------
 void
-NFTokenCountTracking::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+NFTokenCountTracking::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
 {
     if (before && before->getType() == ltACCOUNT_ROOT)
     {

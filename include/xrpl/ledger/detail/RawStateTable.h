@@ -19,17 +19,17 @@ public:
     // Initial size for the monotonic_buffer_resource used for allocations
     // The size was chosen from the old `qalloc` code (which this replaces).
     // It is unclear how the size initially chosen in qalloc.
-    static constexpr size_t kInitialBufferSize = kilobytes(256);
+    static constexpr size_t kINITIAL_BUFFER_SIZE = kilobytes(256);
 
     RawStateTable()
-        : monotonicResource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-              kInitialBufferSize)}
-        , items_{monotonicResource_.get()} {};
+        : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+              kINITIAL_BUFFER_SIZE)}
+        , items_{monotonic_resource_.get()} {};
 
     RawStateTable(RawStateTable const& rhs)
-        : monotonicResource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-              kInitialBufferSize)}
-        , items_{rhs.items_, monotonicResource_.get()}
+        : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+              kINITIAL_BUFFER_SIZE)}
+        , items_{rhs.items_, monotonic_resource_.get()}
         , dropsDestroyed_{rhs.dropsDestroyed_} {};
 
     RawStateTable(RawStateTable&&) = default;
@@ -49,15 +49,15 @@ public:
     succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
 
     void
-    erase(SLE::ref sle);
+    erase(std::shared_ptr<SLE> const& sle);
 
     void
-    insert(SLE::ref sle);
+    insert(std::shared_ptr<SLE> const& sle);
 
     void
-    replace(SLE::ref sle);
+    replace(std::shared_ptr<SLE> const& sle);
 
-    [[nodiscard]] SLE::const_pointer
+    [[nodiscard]] std::shared_ptr<SLE const>
     read(ReadView const& base, Keylet const& k) const;
 
     void
@@ -84,10 +84,10 @@ private:
     struct SleAction
     {
         Action action;
-        SLE::pointer sle;
+        std::shared_ptr<SLE> sle;
 
         // Constructor needed for emplacement in std::map
-        SleAction(Action action, SLE::pointer sle) : action(action), sle(std::move(sle))
+        SleAction(Action action, std::shared_ptr<SLE> const& sle) : action(action), sle(sle)
         {
         }
     };
@@ -101,7 +101,7 @@ private:
         boost::container::pmr::polymorphic_allocator<std::pair<key_type const, SleAction>>>;
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
-    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonicResource_;
+    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonic_resource_;
     items_t items_;
 
     XRPAmount dropsDestroyed_{0};

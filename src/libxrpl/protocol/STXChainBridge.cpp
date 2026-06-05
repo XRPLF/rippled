@@ -64,12 +64,11 @@ STXChainBridge::STXChainBridge(SField const& name, json::Value const& v) : STBas
     }
 
     auto checkExtra = [](json::Value const& v) {
-        static auto const kBridgeJson =
-            xrpl::STXChainBridge().getJson(xrpl::JsonOptions::Values::None);
+        static auto const kBRIDGE_JSON = xrpl::STXChainBridge().getJson(xrpl::JsonOptions::KNone);
         for (auto it = v.begin(); it != v.end(); ++it)
         {
             std::string const name = it.memberName();
-            if (!kBridgeJson.isMember(name))
+            if (!kBRIDGE_JSON.isMember(name))
             {
                 Throw<std::runtime_error>("STXChainBridge extra field detected: " + name);
             }

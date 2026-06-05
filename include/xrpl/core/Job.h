@@ -127,7 +127,7 @@ private:
     std::function<void()> job_;
     std::shared_ptr<LoadEvent> loadEvent_;
     std::string name_;
-    clock_type::time_point queueTime_;
+    clock_type::time_point queue_time_;
 };
 
 using JobCounter = ClosureCounter<void>;

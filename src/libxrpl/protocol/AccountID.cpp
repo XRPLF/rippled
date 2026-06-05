@@ -103,9 +103,9 @@ std::optional<AccountID>
 parseBase58(std::string const& s)
 {
     auto const result = decodeBase58Token(s, TokenType::AccountID);
-    if (result.size() != AccountID::kBytes)
+    if (result.size() != AccountID::kBYTES)
         return std::nullopt;
-    return AccountID::fromRaw(result);
+    return AccountID{result};
 }
 
 //------------------------------------------------------------------------------
@@ -146,25 +146,25 @@ parseBase58(std::string const& s)
 AccountID
 calcAccountID(PublicKey const& pk)
 {
-    static_assert(AccountID::kBytes == sizeof(RipeshaHasher::result_type));
+    static_assert(AccountID::kBYTES == sizeof(RipeshaHasher::result_type));
 
     RipeshaHasher rsh;
     rsh(pk.data(), pk.size());
-    return AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));
+    return AccountID{static_cast<RipeshaHasher::result_type>(rsh)};
 }
 
 AccountID const&
 xrpAccount()
 {
-    static AccountID const kAccount(beast::kZero);
-    return kAccount;
+    static AccountID const kACCOUNT(beast::kZERO);
+    return kACCOUNT;
 }
 
 AccountID const&
 noAccount()
 {
-    static AccountID const kAccount(1);
-    return kAccount;
+    static AccountID const kACCOUNT(1);
+    return kACCOUNT;
 }
 
 bool

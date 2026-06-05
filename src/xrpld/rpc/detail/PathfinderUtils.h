@@ -10,10 +10,10 @@ largestAmount(STAmount const& amt)
     return amt.asset().visit(
         [&](Issue const& issue) -> STAmount {
             if (issue.native())
-                return kInitialXrp;
-            return STAmount(amt.asset(), STAmount::kMaxValue, STAmount::kMaxOffset);
+                return kINITIAL_XRP;
+            return STAmount(amt.asset(), STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
         },
-        [&](MPTIssue const&) { return STAmount(amt.asset(), kMaxMpTokenAmount, 0); });
+        [&](MPTIssue const&) { return STAmount(amt.asset(), kMAX_MP_TOKEN_AMOUNT, 0); });
 }
 
 inline STAmount

@@ -50,7 +50,7 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
             if (issue.native())
             {
                 // measure in hundredths
-                auto const c = kJtxDropsPerXrp.drops() / 100;
+                auto const c = kJTX_DROPS_PER_XRP.drops() / 100;
                 auto const n = amount.value().mantissa();
                 if (n < c)
                 {
@@ -65,7 +65,7 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
                 }
                 else
                 {
-                    auto const d = double(n) / kJtxDropsPerXrp.drops();
+                    auto const d = double(n) / kJTX_DROPS_PER_XRP.drops();
                     if (amount.value().negative())
                     {
                         os << "-";
@@ -117,6 +117,6 @@ operator<<(std::ostream& os, MPT const& mpt)
     return os;
 }
 
-AnyT const kAny{};
+AnyT const kANY{};
 
 }  // namespace xrpl::test::jtx

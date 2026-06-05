@@ -7,7 +7,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
@@ -84,7 +83,7 @@ public:
     void
     run() override
     {
-        using beast::Severity;
+        using namespace beast::severities;
         test::SuiteJournal journal("SHAMapSync_test", *this);
 
         TestNodeFamily f(journal), f2(journal);

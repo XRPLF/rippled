@@ -78,9 +78,9 @@ public:
 OpenView::OpenView(OpenView const& rhs)
     : ReadView(rhs)
     , TxsRawView(rhs)
-    , monotonicResource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-          kInitialBufferSize)}
-    , txs_{rhs.txs_, monotonicResource_.get()}
+    , monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+          kINITIAL_BUFFER_SIZE)}
+    , txs_{rhs.txs_, monotonic_resource_.get()}
     , rules_{rhs.rules_}
     , header_{rhs.header_}
     , base_{rhs.base_}
@@ -89,9 +89,9 @@ OpenView::OpenView(OpenView const& rhs)
     , open_{rhs.open_} {};
 
 OpenView::OpenView(OpenLedgerT, ReadView const* base, Rules rules, std::shared_ptr<void const> hold)
-    : monotonicResource_{
-          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kInitialBufferSize)}
-    , txs_{monotonicResource_.get()}
+    : monotonic_resource_{
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kINITIAL_BUFFER_SIZE)}
+    , txs_{monotonic_resource_.get()}
     , rules_(std::move(rules))
     , header_(base->header())
     , base_(base)
@@ -105,9 +105,9 @@ OpenView::OpenView(OpenLedgerT, ReadView const* base, Rules rules, std::shared_p
 }
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
-    : monotonicResource_{
-          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kInitialBufferSize)}
-    , txs_{monotonicResource_.get()}
+    : monotonic_resource_{
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kINITIAL_BUFFER_SIZE)}
+    , txs_{monotonic_resource_.get()}
     , rules_(base->rules())
     , header_(base->header())
     , base_(base)
@@ -163,7 +163,7 @@ OpenView::succ(key_type const& key, std::optional<key_type> const& last) const
     return items_.succ(*base_, key, last);
 }
 
-SLE::const_pointer
+std::shared_ptr<SLE const>
 OpenView::read(Keylet const& k) const
 {
     return items_.read(*base_, k);
@@ -228,19 +228,19 @@ OpenView::txRead(key_type const& key) const -> tx_type
 //---
 
 void
-OpenView::rawErase(SLE::ref sle)
+OpenView::rawErase(std::shared_ptr<SLE> const& sle)
 {
     items_.erase(sle);
 }
 
 void
-OpenView::rawInsert(SLE::ref sle)
+OpenView::rawInsert(std::shared_ptr<SLE> const& sle)
 {
     items_.insert(sle);
 }
 
 void
-OpenView::rawReplace(SLE::ref sle)
+OpenView::rawReplace(std::shared_ptr<SLE> const& sle)
 {
     items_.replace(sle);
 }

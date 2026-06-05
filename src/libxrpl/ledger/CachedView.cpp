@@ -7,6 +7,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
+#include <memory>
 #include <mutex>
 #include <optional>
 
@@ -18,12 +19,12 @@ CachedViewImpl::exists(Keylet const& k) const
     return read(k) != nullptr;
 }
 
-SLE::const_pointer
+std::shared_ptr<SLE const>
 CachedViewImpl::read(Keylet const& k) const
 {
-    static CountedObjects::Counter kHits{"CachedView::hit"};
-    static CountedObjects::Counter kHitsExpired{"CachedView::hitExpired"};
-    static CountedObjects::Counter kMisses{"CachedView::miss"};
+    static CountedObjects::Counter kHITS{"CachedView::hit"};
+    static CountedObjects::Counter kHITSEXPIRED{"CachedView::hitExpired"};
+    static CountedObjects::Counter kMISSES{"CachedView::miss"};
     bool cacheHit = false;
     bool baseRead = false;
 
@@ -49,15 +50,15 @@ CachedViewImpl::read(Keylet const& k) const
     XRPL_ASSERT(sle || baseRead, "xrpl::CachedView::read : null SLE result from base");
     if (cacheHit && baseRead)
     {
-        kHitsExpired.increment();
+        kHITSEXPIRED.increment();
     }
     else if (cacheHit)
     {
-        kHits.increment();
+        kHITS.increment();
     }
     else
     {
-        kMisses.increment();
+        kMISSES.increment();
     }
 
     if (!cacheHit)

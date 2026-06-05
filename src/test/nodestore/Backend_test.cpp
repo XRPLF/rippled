@@ -4,7 +4,6 @@
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/nodestore/Backend.h>
@@ -41,7 +40,7 @@ public:
         // Create a batch
         auto batch = createPredictableBatch(numObjsToTest, rng());
 
-        using beast::Severity;
+        using namespace beast::severities;
         test::SuiteJournal journal("Backend_test", *this);
 
         {

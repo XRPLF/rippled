@@ -131,7 +131,7 @@ public:
     [[nodiscard]] ID
     id() const
     {
-        return map->getHash().asUInt256();
+        return map->getHash().asUint256();
     }
 
     /** Find transactions not in common between this and another transaction

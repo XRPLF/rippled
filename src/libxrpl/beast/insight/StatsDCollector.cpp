@@ -164,7 +164,7 @@ public:
 private:
     std::shared_ptr<StatsDCollectorImp> impl_;
     std::string name_;
-    GaugeImpl::value_type lastValue_{0};
+    GaugeImpl::value_type last_value_{0};
     GaugeImpl::value_type value_{0};
     bool dirty_{false};
 };
@@ -204,12 +204,17 @@ class StatsDCollectorImp : public StatsDCollector,
                            public std::enable_shared_from_this<StatsDCollectorImp>
 {
 private:
-    static constexpr auto kMaxPacketSize = 1472;
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+    enum {
+        // MaxPacketSize = 484
+        MaxPacketSize = 1472
+    };
 
     Journal journal_;
     IP::Endpoint address_;
     std::string prefix_;
-    boost::asio::io_context ioContext_;
+    boost::asio::io_context io_context_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
@@ -232,10 +237,10 @@ public:
         : journal_(journal)
         , address_(std::move(address))
         , prefix_(std::move(prefix))
-        , work_(boost::asio::make_work_guard(ioContext_))
-        , strand_(boost::asio::make_strand(ioContext_))
-        , timer_(ioContext_)
-        , socket_(ioContext_)
+        , work_(boost::asio::make_work_guard(io_context_))
+        , strand_(boost::asio::make_strand(io_context_))
+        , timer_(io_context_)
+        , socket_(io_context_)
         , thread_(&StatsDCollectorImp::run, this)
     {
     }
@@ -306,7 +311,7 @@ public:
     boost::asio::io_context&
     getIoContext()
     {
-        return ioContext_;
+        return io_context_;
     }
 
     std::string const&
@@ -325,7 +330,7 @@ public:
     postBuffer(std::string&& buffer)
     {
         boost::asio::dispatch(
-            ioContext_,
+            io_context_,
             boost::asio::bind_executor(
                 strand_, std::bind(&StatsDCollectorImp::doPostBuffer, this, std::move(buffer))));
     }
@@ -387,7 +392,7 @@ public:
                 !s.empty(),
                 "beast::insight::detail::StatsDCollectorImp::sendBuffers : "
                 "non-empty payload");
-            if (!buffers.empty() && (size + length) > kMaxPacketSize)
+            if (!buffers.empty() && (size + length) > MaxPacketSize)
             {
                 log(buffers);
                 socket_.async_send(
@@ -465,14 +470,14 @@ public:
 
         setTimer();
 
-        ioContext_.run();
+        io_context_.run();
 
         // NOLINTNEXTLINE(bugprone-unused-return-value)
         socket_.shutdown(boost::asio::ip::udp::socket::shutdown_send, ec);
 
         socket_.close();
 
-        ioContext_.poll();
+        io_context_.poll();
     }
 };
 
@@ -628,9 +633,9 @@ StatsDGaugeImpl::doSet(GaugeImpl::value_type value)
 {
     value_ = value;
 
-    if (value_ != lastValue_)
+    if (value_ != last_value_)
     {
-        lastValue_ = value_;
+        last_value_ = value_;
         dirty_ = true;
     }
 }

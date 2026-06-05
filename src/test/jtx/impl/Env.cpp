@@ -73,25 +73,25 @@ Env::AppBundle::AppBundle(
     beast::unit_test::Suite& suite,
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
-    beast::Severity thresh)
+    beast::severities::Severity thresh)
     : AppBundle()
 {
-    using beast::Severity;
+    using namespace beast::severities;
     if (logs)
     {
-        setDebugLogSink(logs->makeSink("Debug", Severity::Fatal));
+        setDebugLogSink(logs->makeSink("Debug", KFatal));
     }
     else
     {
         logs = std::make_unique<SuiteLogs>(suite);
         // Use kFatal threshold to reduce noise from STObject.
-        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", Severity::Fatal, suite));
+        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", KFatal, suite));
     }
     auto tk = std::make_unique<ManualTimeKeeper>();
     timeKeeper = tk.get();
     // Hack so we don't have to call Config::setup
     HTTPClient::initializeSSLContext(
-        config->sslVerifyDir, config->sslVerifyFile, config->sslVerify, debugLog());
+        config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
     owned = makeApplication(std::move(config), std::move(logs), std::move(tk));
     app = owned.get();
     app->getLogs().threshold(thresh);
@@ -280,13 +280,13 @@ Env::seq(Account const& account) const
     return sle->getFieldU32(sfSequence);
 }
 
-SLE::const_pointer
+std::shared_ptr<SLE const>
 Env::le(Account const& account) const
 {
     return le(keylet::account(account.id()));
 }
 
-SLE::const_pointer
+std::shared_ptr<SLE const>
 Env::le(Keylet const& k) const
 {
     return current()->read(k);
@@ -301,23 +301,23 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
         // VFALCO NOTE Is the fee formula correct?
         apply(
             pay(master, account, amount + drops(current()->fees().base)),
-            jtx::Seq(jtx::kAutofill),
-            Fee(jtx::kAutofill),
-            Sig(jtx::kAutofill));
+            jtx::Seq(jtx::kAUTOFILL),
+            Fee(jtx::kAUTOFILL),
+            Sig(jtx::kAUTOFILL));
         apply(
             fset(account, asfDefaultRipple),
-            jtx::Seq(jtx::kAutofill),
-            Fee(jtx::kAutofill),
-            Sig(jtx::kAutofill));
+            jtx::Seq(jtx::kAUTOFILL),
+            Fee(jtx::kAUTOFILL),
+            Sig(jtx::kAUTOFILL));
         require(Flags(account, asfDefaultRipple));
     }
     else
     {
         apply(
             pay(master, account, amount),
-            jtx::Seq(jtx::kAutofill),
-            Fee(jtx::kAutofill),
-            Sig(jtx::kAutofill));
+            jtx::Seq(jtx::kAUTOFILL),
+            Fee(jtx::kAUTOFILL),
+            Sig(jtx::kAUTOFILL));
         require(Nflags(account, asfDefaultRipple));
     }
     require(jtx::Balance(account, amount));
@@ -331,14 +331,14 @@ Env::trust(STAmount const& amount, Account const& account)
     auto const start = balance(account);
     apply(
         jtx::trust(account, amount),
-        jtx::Seq(jtx::kAutofill),
-        Fee(jtx::kAutofill),
-        Sig(jtx::kAutofill));
+        jtx::Seq(jtx::kAUTOFILL),
+        Fee(jtx::kAUTOFILL),
+        Sig(jtx::kAUTOFILL));
     apply(
         pay(master, account, drops(current()->fees().base)),
-        jtx::Seq(jtx::kAutofill),
-        Fee(jtx::kAutofill),
-        Sig(jtx::kAutofill));
+        jtx::Seq(jtx::kAUTOFILL),
+        Fee(jtx::kAUTOFILL),
+        Sig(jtx::kAUTOFILL));
     test.expect(balance(account) == start);
 }
 

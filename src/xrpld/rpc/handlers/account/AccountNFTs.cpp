@@ -58,7 +58,7 @@ doAccountNFTs(RPC::JsonContext& context)
         return rpcError(RpcActNotFound);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kAccountNfTokens, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_NF_TOKENS, context))
         return *err;
 
     uint256 marker;
@@ -81,12 +81,12 @@ doAccountNFTs(RPC::JsonContext& context)
         Keylet(ltNFTOKEN_PAGE, ledger->succ(first.key, last.key.next()).value_or(last.key)));
 
     std::uint32_t cnt = 0;
-    auto& nfts = (result[jss::account_nfts] = json::ValueType::Array);
+    auto& nfts = (result[jss::account_nfts] = json::ArrayValue);
 
     // Continue iteration from the current page:
     bool pastMarker = marker.isZero();
     bool markerFound = false;
-    uint256 const maskedMarker = marker & nft::kPageMask;
+    uint256 const maskedMarker = marker & nft::kPAGE_MASK;
     while (cp)
     {
         auto arr = cp->getFieldArray(sfNFTokens);
@@ -105,7 +105,7 @@ doAccountNFTs(RPC::JsonContext& context)
             //     in that case then we need to compare against the full
             //     256 bits.
             uint256 const nftokenID = o[sfNFTokenID];
-            uint256 const maskedNftokenID = nftokenID & nft::kPageMask;
+            uint256 const maskedNftokenID = nftokenID & nft::kPAGE_MASK;
 
             if (!pastMarker)
             {
@@ -128,7 +128,7 @@ doAccountNFTs(RPC::JsonContext& context)
             pastMarker = true;
 
             {
-                json::Value& obj = nfts.append(o.getJson(JsonOptions::Values::None));
+                json::Value& obj = nfts.append(o.getJson(JsonOptions::KNone));
 
                 // Pull out the components of the nft ID.
                 obj[sfFlags.jsonName] = nft::getFlags(nftokenID);
@@ -161,7 +161,7 @@ doAccountNFTs(RPC::JsonContext& context)
         return RPC::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
     return result;
 }
 

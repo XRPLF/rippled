@@ -75,19 +75,19 @@ Results::add(SuiteResults const& r)
 
         if (iter != top.end())
         {
-            if (top.size() == kMaxTop && iter == top.end() - 1)
+            if (top.size() == MaxTop && iter == top.end() - 1)
             {
                 // avoid invalidating the iterator
                 *iter = run_time{static_string{static_string::string_view_type{r.name}}, elapsed};
             }
             else
             {
-                if (top.size() == kMaxTop)
+                if (top.size() == MaxTop)
                     top.resize(top.size() - 1);
                 top.emplace(iter, static_string{static_string::string_view_type{r.name}}, elapsed);
             }
         }
-        else if (top.size() < kMaxTop)
+        else if (top.size() < MaxTop)
         {
             top.emplace_back(static_string{static_string::string_view_type{r.name}}, elapsed);
         }
@@ -103,14 +103,14 @@ Results::merge(Results const& r)
     failed += r.failed;
 
     // combine the two top collections
-    boost::container::static_vector<run_time, 2 * kMaxTop> topResult;
+    boost::container::static_vector<run_time, 2 * MaxTop> topResult;
     topResult.resize(top.size() + r.top.size());
     std::ranges::merge(top, r.top, topResult.begin(), [](run_time const& t1, run_time const& t2) {
         return t1.second > t2.second;
     });
 
-    if (topResult.size() > kMaxTop)
-        topResult.resize(kMaxTop);
+    if (topResult.size() > MaxTop)
+        topResult.resize(MaxTop);
 
     top = topResult;
 }
@@ -139,28 +139,28 @@ template <bool IsParent>
 std::size_t
 MultiRunnerBase<IsParent>::Inner::checkoutJobIndex()
 {
-    return jobIndex++;
+    return job_index++;
 }
 
 template <bool IsParent>
 std::size_t
 MultiRunnerBase<IsParent>::Inner::checkoutTestIndex()
 {
-    return testIndex++;
+    return test_index++;
 }
 
 template <bool IsParent>
 bool
 MultiRunnerBase<IsParent>::Inner::anyFailed() const
 {
-    return anyFailedFlag;
+    return any_failed;
 }
 
 template <bool IsParent>
 void
 MultiRunnerBase<IsParent>::Inner::anyFailed(bool v)
 {
-    anyFailedFlag = anyFailedFlag || v;
+    any_failed = any_failed || v;
 }
 
 template <bool IsParent>
@@ -183,14 +183,14 @@ template <bool IsParent>
 void
 MultiRunnerBase<IsParent>::Inner::incKeepAliveCount()
 {
-    ++keepAlive;
+    ++keep_alive;
 }
 
 template <bool IsParent>
 std::size_t
 MultiRunnerBase<IsParent>::Inner::getKeepAliveCount()
 {
-    return keepAlive;
+    return keep_alive;
 }
 
 template <bool IsParent>
@@ -218,34 +218,34 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
         if (IsParent)
         {
             // cleanup any leftover state for any previous failed runs
-            boost::interprocess::shared_memory_object::remove(kSharedMemName);
-            boost::interprocess::message_queue::remove(kMessageQueueName);
+            boost::interprocess::shared_memory_object::remove(kSHARED_MEM_NAME);
+            boost::interprocess::message_queue::remove(kMESSAGE_QUEUE_NAME);
         }
 
-        sharedMem_ = boost::interprocess::shared_memory_object{
+        shared_mem_ = boost::interprocess::shared_memory_object{
             std::conditional_t<
                 IsParent,
                 boost::interprocess::create_only_t,
                 boost::interprocess::open_only_t>{},
-            kSharedMemName,
+            kSHARED_MEM_NAME,
             boost::interprocess::read_write};
 
         if (IsParent)
         {
-            sharedMem_.truncate(sizeof(Inner));
-            messageQueue_ = std::make_unique<boost::interprocess::message_queue>(
+            shared_mem_.truncate(sizeof(Inner));
+            message_queue_ = std::make_unique<boost::interprocess::message_queue>(
                 boost::interprocess::create_only,
-                kMessageQueueName,
+                kMESSAGE_QUEUE_NAME,
                 /*max messages*/ 16,
                 /*max message size*/ 1 << 20);
         }
         else
         {
-            messageQueue_ = std::make_unique<boost::interprocess::message_queue>(
-                boost::interprocess::open_only, kMessageQueueName);
+            message_queue_ = std::make_unique<boost::interprocess::message_queue>(
+                boost::interprocess::open_only, kMESSAGE_QUEUE_NAME);
         }
 
-        region_ = boost::interprocess::mapped_region{sharedMem_, boost::interprocess::read_write};
+        region_ = boost::interprocess::mapped_region{shared_mem_, boost::interprocess::read_write};
         if (IsParent)
         {
             inner_ = new (region_.get_address()) Inner{};
@@ -259,8 +259,8 @@ MultiRunnerBase<IsParent>::MultiRunnerBase()
     {
         if (IsParent)
         {
-            boost::interprocess::shared_memory_object::remove(kSharedMemName);
-            boost::interprocess::message_queue::remove(kMessageQueueName);
+            boost::interprocess::shared_memory_object::remove(kSHARED_MEM_NAME);
+            boost::interprocess::message_queue::remove(kMESSAGE_QUEUE_NAME);
         }
         throw;
     }
@@ -272,8 +272,8 @@ MultiRunnerBase<IsParent>::~MultiRunnerBase()
     if (IsParent)
     {
         inner_->~Inner();
-        boost::interprocess::shared_memory_object::remove(kSharedMemName);
-        boost::interprocess::message_queue::remove(kMessageQueueName);
+        boost::interprocess::shared_memory_object::remove(kSHARED_MEM_NAME);
+        boost::interprocess::message_queue::remove(kMESSAGE_QUEUE_NAME);
     }
 }
 
@@ -340,8 +340,8 @@ MultiRunnerBase<IsParent>::messageQueueSend(MessageType mt, std::string const& s
 {
     // must use a mutex since the two "sends" must happen in order
     std::scoped_lock const l{inner_->m};
-    messageQueue_->send(&mt, sizeof(mt), /*priority*/ 0);
-    messageQueue_->send(s.c_str(), s.size(), /*priority*/ 0);
+    message_queue_->send(&mt, sizeof(mt), /*priority*/ 0);
+    message_queue_->send(s.c_str(), s.size(), /*priority*/ 0);
 }
 
 template <bool IsParent>
@@ -376,13 +376,13 @@ namespace test {
 
 MultiRunnerParent::MultiRunnerParent() : os_(std::cout)
 {
-    messageQueueThread_ = std::thread([this] {
+    message_queue_thread_ = std::thread([this] {
         std::vector<char> buf(1 << 20);
-        while (this->continueMessageQueue_ || this->messageQueue_->get_num_msg())
+        while (this->continue_message_queue_ || this->message_queue_->get_num_msg())
         {
             // let children know the parent is still alive
             this->incKeepAliveCount();
-            if (!this->messageQueue_->get_num_msg())
+            if (!this->message_queue_->get_num_msg())
             {
                 // If a child does not see the keep alive count incremented,
                 // it will assume the parent has died. This sleep time needs
@@ -395,13 +395,13 @@ MultiRunnerParent::MultiRunnerParent() : os_(std::cout)
             {
                 std::size_t recvdSize = 0;
                 unsigned int priority = 0;
-                this->messageQueue_->receive(buf.data(), buf.size(), recvdSize, priority);
+                this->message_queue_->receive(buf.data(), buf.size(), recvdSize, priority);
                 if (!recvdSize)
                     continue;
                 assert(recvdSize == 1);
                 MessageType const mt{*reinterpret_cast<MessageType*>(buf.data())};
 
-                this->messageQueue_->receive(buf.data(), buf.size(), recvdSize, priority);
+                this->message_queue_->receive(buf.data(), buf.size(), recvdSize, priority);
                 if (recvdSize)
                 {
                     std::string s{buf.data(), recvdSize};
@@ -412,10 +412,10 @@ MultiRunnerParent::MultiRunnerParent() : os_(std::cout)
                             this->os_.flush();
                             break;
                         case MessageType::TestStart:
-                            runningSuites_.insert(std::move(s));
+                            running_suites_.insert(std::move(s));
                             break;
                         case MessageType::TestEnd:
-                            runningSuites_.erase(s);
+                            running_suites_.erase(s);
                             break;
                         default:
                             assert(0);  // unknown message type
@@ -440,14 +440,14 @@ MultiRunnerParent::~MultiRunnerParent()
 {
     using namespace beast::unit_test;
 
-    continueMessageQueue_ = false;
-    messageQueueThread_.join();
+    continue_message_queue_ = false;
+    message_queue_thread_.join();
 
-    addFailures(runningSuites_.size());
+    addFailures(running_suites_.size());
 
     printResults(os_);
 
-    for (auto const& s : runningSuites_)
+    for (auto const& s : running_suites_)
     {
         os_ << "\nSuite: " << s << " failed to complete. The child process may have crashed.\n";
     }
@@ -480,13 +480,16 @@ MultiRunnerParent::addFailures(std::size_t failures)
 //------------------------------------------------------------------------------
 
 MultiRunnerChild::MultiRunnerChild(std::size_t numJobs, bool quiet, bool printLog)
-    : jobIndex_{checkoutJobIndex()}, numJobs_{numJobs}, quiet_{quiet}, printLog_{!quiet || printLog}
+    : job_index_{checkoutJobIndex()}
+    , num_jobs_{numJobs}
+    , quiet_{quiet}
+    , print_log_{!quiet || printLog}
 {
-    if (numJobs_ > 1)
+    if (num_jobs_ > 1)
     {
-        keepAliveThread_ = std::thread([this] {
+        keep_alive_thread_ = std::thread([this] {
             std::size_t lastCount = getKeepAliveCount();
-            while (this->continueKeepAlive_)
+            while (this->continue_keep_alive_)
             {
                 // Use a small sleep time so in the normal case the child
                 // process may shutdown quickly. However, to protect against
@@ -501,7 +504,7 @@ MultiRunnerChild::MultiRunnerChild(std::size_t numJobs, bool quiet, bool printLo
                     if (curCount == lastCount)
                     {
                         // assume parent process is no longer alive
-                        std::cerr << "multi_runner_child " << jobIndex_
+                        std::cerr << "multi_runner_child " << job_index_
                                   << ": Assuming parent died, exiting.\n";
                         std::exit(EXIT_FAILURE);
                     }
@@ -514,10 +517,10 @@ MultiRunnerChild::MultiRunnerChild(std::size_t numJobs, bool quiet, bool printLo
 
 MultiRunnerChild::~MultiRunnerChild()
 {
-    if (numJobs_ > 1)
+    if (num_jobs_ > 1)
     {
-        continueKeepAlive_ = false;
-        keepAliveThread_.join();
+        continue_keep_alive_ = false;
+        keep_alive_thread_.join();
     }
 
     add(results_);
@@ -545,74 +548,75 @@ MultiRunnerChild::addFailures(std::size_t failures)
 void
 MultiRunnerChild::onSuiteBegin(beast::unit_test::SuiteInfo const& info)
 {
-    suiteResults_ = detail::SuiteResults{info.fullName()};
-    messageQueueSend(MessageType::TestStart, suiteResults_.name);
+    suite_results_ = detail::SuiteResults{info.fullName()};
+    messageQueueSend(MessageType::TestStart, suite_results_.name);
 }
 
 void
 MultiRunnerChild::onSuiteEnd()
 {
-    if (printLog_ || suiteResults_.failed > 0)
+    if (print_log_ || suite_results_.failed > 0)
     {
         std::stringstream s;
-        if (numJobs_ > 1)
-            s << jobIndex_ << "> ";
-        s << (suiteResults_.failed > 0 ? "failed: " : "") << suiteResults_.name << " had "
-          << suiteResults_.failed << " failures." << std::endl;
+        if (num_jobs_ > 1)
+            s << job_index_ << "> ";
+        s << (suite_results_.failed > 0 ? "failed: " : "") << suite_results_.name << " had "
+          << suite_results_.failed << " failures." << std::endl;
         messageQueueSend(MessageType::Log, s.str());
     }
-    results_.add(suiteResults_);
-    messageQueueSend(MessageType::TestEnd, suiteResults_.name);
+    results_.add(suite_results_);
+    messageQueueSend(MessageType::TestEnd, suite_results_.name);
 }
 
 void
 MultiRunnerChild::onCaseBegin(std::string const& name)
 {
-    caseResults_ = detail::CaseResults(name);
+    case_results_ = detail::CaseResults(name);
 
     if (quiet_)
         return;
 
     std::stringstream s;
-    if (numJobs_ > 1)
-        s << jobIndex_ << "> ";
-    s << suiteResults_.name << (caseResults_.name.empty() ? "" : (" " + caseResults_.name)) << '\n';
+    if (num_jobs_ > 1)
+        s << job_index_ << "> ";
+    s << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
+      << '\n';
     messageQueueSend(MessageType::Log, s.str());
 }
 
 void
 MultiRunnerChild::onCaseEnd()
 {
-    suiteResults_.add(caseResults_);
+    suite_results_.add(case_results_);
 }
 
 void
 MultiRunnerChild::onPass()
 {
-    ++caseResults_.total;
+    ++case_results_.total;
 }
 
 void
 MultiRunnerChild::onFail(std::string const& reason)
 {
-    ++caseResults_.failed;
-    ++caseResults_.total;
+    ++case_results_.failed;
+    ++case_results_.total;
     std::stringstream s;
-    if (numJobs_ > 1)
-        s << jobIndex_ << "> ";
-    s << "#" << caseResults_.total << " failed" << (reason.empty() ? "" : ": ") << reason << '\n';
+    if (num_jobs_ > 1)
+        s << job_index_ << "> ";
+    s << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ") << reason << '\n';
     messageQueueSend(MessageType::Log, s.str());
 }
 
 void
 MultiRunnerChild::onLog(std::string const& msg)
 {
-    if (!printLog_)
+    if (!print_log_)
         return;
 
     std::stringstream s;
-    if (numJobs_ > 1)
-        s << jobIndex_ << "> ";
+    if (num_jobs_ > 1)
+        s << job_index_ << "> ";
     s << msg;
     messageQueueSend(MessageType::Log, s.str());
 }

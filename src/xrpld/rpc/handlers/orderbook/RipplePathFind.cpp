@@ -23,10 +23,10 @@ namespace xrpl {
 json::Value
 doRipplePathFind(RPC::JsonContext& context)
 {
-    if (context.app.config().pathSearchMax == 0)
+    if (context.app.config().PATH_SEARCH_MAX == 0)
         return rpcError(RpcNotSupported);
 
-    context.loadType = Resource::kFeeHeavyBurdenRpc;
+    context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
 
     std::shared_ptr<ReadView const> lpLedger;
     json::Value jvResult;
@@ -37,7 +37,7 @@ doRipplePathFind(RPC::JsonContext& context)
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine
         if (context.app.getLedgerMaster().getValidatedLedgerAge() >
-            RPC::Tuning::kMaxValidatedLedgerAge)
+            RPC::Tuning::kMAX_VALIDATED_LEDGER_AGE)
         {
             if (context.apiVersion == 1)
                 return rpcError(RpcNoNetwork);

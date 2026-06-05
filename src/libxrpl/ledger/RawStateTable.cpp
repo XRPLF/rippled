@@ -20,10 +20,10 @@ namespace xrpl::detail {
 class RawStateTable::SlesIterImpl : public ReadView::SlesType::iter_base
 {
 private:
-    SLE::const_pointer sle0_;
+    std::shared_ptr<SLE const> sle0_;
     ReadView::SlesType::Iterator iter0_;
     ReadView::SlesType::Iterator end0_;
-    SLE::const_pointer sle1_;
+    std::shared_ptr<SLE const> sle1_;
     items_t::const_iterator iter1_;
     items_t::const_iterator end1_;
 
@@ -241,7 +241,7 @@ RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key
 }
 
 void
-RawStateTable::erase(SLE::ref sle)
+RawStateTable::erase(std::shared_ptr<SLE> const& sle)
 {
     // The base invariant is checked during apply
     auto const result = items_.emplace(
@@ -267,7 +267,7 @@ RawStateTable::erase(SLE::ref sle)
 }
 
 void
-RawStateTable::insert(SLE::ref sle)
+RawStateTable::insert(std::shared_ptr<SLE> const& sle)
 {
     auto const result = items_.emplace(
         std::piecewise_construct,
@@ -292,7 +292,7 @@ RawStateTable::insert(SLE::ref sle)
 }
 
 void
-RawStateTable::replace(SLE::ref sle)
+RawStateTable::replace(std::shared_ptr<SLE> const& sle)
 {
     auto const result = items_.emplace(
         std::piecewise_construct,
@@ -313,7 +313,7 @@ RawStateTable::replace(SLE::ref sle)
     }
 }
 
-SLE::const_pointer
+std::shared_ptr<SLE const>
 RawStateTable::read(ReadView const& base, Keylet const& k) const
 {
     auto const iter = items_.find(k.key);
@@ -323,7 +323,7 @@ RawStateTable::read(ReadView const& base, Keylet const& k) const
     if (item.action == Action::Erase)
         return nullptr;
     // Convert to SLE const
-    SLE::const_pointer sle = item.sle;
+    std::shared_ptr<SLE const> sle = item.sle;
     if (!k.check(*sle))
         return nullptr;
     return sle;

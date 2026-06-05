@@ -52,19 +52,19 @@ public:
     beast::IP::Endpoint const&
     remoteEndpoint() const override
     {
-        return remoteEndpoint_;
+        return remote_endpoint_;
     }
 
     std::optional<beast::IP::Endpoint> const&
     localEndpoint() const override
     {
-        return localEndpoint_;
+        return local_endpoint_;
     }
 
     std::optional<PublicKey> const&
     publicKey() const override
     {
-        return publicKey_;
+        return public_key_;
     }
 
     std::string
@@ -76,8 +76,8 @@ public:
     std::optional<std::uint16_t>
     listeningPort() const override
     {
-        std::uint32_t const value = listeningPort_;
-        if (value == kUnknownPort)
+        std::uint32_t const value = listening_port_;
+        if (value == kUNKNOWN_PORT)
             return std::nullopt;
         return value;
     }
@@ -85,25 +85,25 @@ public:
     void
     setListeningPort(std::uint16_t port)
     {
-        listeningPort_ = port;
+        listening_port_ = port;
     }
 
     void
     localEndpoint(beast::IP::Endpoint const& endpoint)
     {
-        localEndpoint_ = endpoint;
+        local_endpoint_ = endpoint;
     }
 
     void
     remoteEndpoint(beast::IP::Endpoint const& endpoint)
     {
-        remoteEndpoint_ = endpoint;
+        remote_endpoint_ = endpoint;
     }
 
     void
     publicKey(PublicKey const& key)
     {
-        publicKey_ = key;
+        public_key_ = key;
     }
 
     void
@@ -160,12 +160,12 @@ private:
     bool const fixed_;
     bool reserved_;
     State state_;
-    beast::IP::Endpoint remoteEndpoint_;
-    std::optional<beast::IP::Endpoint> localEndpoint_;
-    std::optional<PublicKey> publicKey_;
+    beast::IP::Endpoint remote_endpoint_;
+    std::optional<beast::IP::Endpoint> local_endpoint_;
+    std::optional<PublicKey> public_key_;
 
-    static constexpr std::int32_t kUnknownPort = -1;
-    std::atomic<std::int32_t> listeningPort_;
+    static std::int32_t constexpr kUNKNOWN_PORT = -1;
+    std::atomic<std::int32_t> listening_port_;
 
 public:
     // DEPRECATED public data members

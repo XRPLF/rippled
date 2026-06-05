@@ -22,12 +22,12 @@ class Dir
 private:
     ReadView const* view_ = nullptr;
     Keylet root_;
-    SLE::const_pointer sle_;
+    std::shared_ptr<SLE const> sle_;
     STVector256 const* indexes_ = nullptr;
 
 public:
     class ConstIterator;
-    using value_type = SLE::const_pointer;
+    using value_type = std::shared_ptr<SLE const>;
 
     Dir(ReadView const&, Keylet const&);
 
@@ -102,7 +102,7 @@ private:
     Keylet page_;
     uint256 index_;
     std::optional<value_type> mutable cache_;
-    SLE::const_pointer sle_;
+    std::shared_ptr<SLE const> sle_;
     STVector256 const* indexes_ = nullptr;
     std::vector<uint256>::const_iterator it_;
 };

@@ -23,7 +23,7 @@ private:
 
 public:
     /** The master account. */
-    static Account const kMaster;
+    static Account const kMASTER;
 
     Account() = delete;
     Account(Account&&) = default;

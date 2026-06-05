@@ -33,7 +33,7 @@ class ValidNFTokenPage
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -61,7 +61,7 @@ class NFTokenCountTracking
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;

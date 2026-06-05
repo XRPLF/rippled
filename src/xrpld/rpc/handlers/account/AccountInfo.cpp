@@ -49,7 +49,7 @@ namespace xrpl {
 void
 injectSLE(json::Value& jv, SLE const& sle)
 {
-    jv = sle.getJson(JsonOptions::Values::None);
+    jv = sle.getJson(JsonOptions::KNone);
     if (sle.getType() == ltACCOUNT_ROOT)
     {
         if (sle.isFieldPresent(sfEmailHash))
@@ -121,7 +121,7 @@ doAccountInfo(RPC::JsonContext& context)
     }
     auto const accountID{id.value()};
 
-    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> kLsFlags{
+    static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> kLS_FLAGS{
         {{"defaultRipple", lsfDefaultRipple},
          {"depositAuth", lsfDepositAuth},
          {"disableMasterKey", lsfDisableMaster},
@@ -133,17 +133,17 @@ doAccountInfo(RPC::JsonContext& context)
          {"requireDestinationTag", lsfRequireDestTag}}};
 
     static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 4>
-        kDisallowIncomingFlags{
+        kDISALLOW_INCOMING_FLAGS{
             {{"disallowIncomingNFTokenOffer", lsfDisallowIncomingNFTokenOffer},
              {"disallowIncomingCheck", lsfDisallowIncomingCheck},
              {"disallowIncomingPayChan", lsfDisallowIncomingPayChan},
              {"disallowIncomingTrustline", lsfDisallowIncomingTrustline}}};
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineClawbackFlag{
-        "allowTrustLineClawback", lsfAllowTrustLineClawback};
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags>
+        kALLOW_TRUST_LINE_CLAWBACK_FLAG{"allowTrustLineClawback", lsfAllowTrustLineClawback};
 
-    static constexpr std::pair<std::string_view, LedgerSpecificFlags> kAllowTrustLineLockingFlag{
-        "allowTrustLineLocking", lsfAllowTrustLineLocking};
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags>
+        kALLOW_TRUST_LINE_LOCKING_FLAG{"allowTrustLineLocking", lsfAllowTrustLineLocking};
 
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
@@ -158,27 +158,27 @@ doAccountInfo(RPC::JsonContext& context)
             return result;
         }
 
-        json::Value jvAccepted(json::ValueType::Object);
+        json::Value jvAccepted(json::ObjectValue);
         injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
 
-        json::Value acctFlags{json::ValueType::Object};
-        for (auto const& lsf : kLsFlags)
+        json::Value acctFlags{json::ObjectValue};
+        for (auto const& lsf : kLS_FLAGS)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
-        for (auto const& lsf : kDisallowIncomingFlags)
+        for (auto const& lsf : kDISALLOW_INCOMING_FLAGS)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
         if (ledger->rules().enabled(featureClawback))
         {
-            acctFlags[kAllowTrustLineClawbackFlag.first.data()] =
-                sleAccepted->isFlag(kAllowTrustLineClawbackFlag.second);
+            acctFlags[kALLOW_TRUST_LINE_CLAWBACK_FLAG.first.data()] =
+                sleAccepted->isFlag(kALLOW_TRUST_LINE_CLAWBACK_FLAG.second);
         }
 
         if (ledger->rules().enabled(featureTokenEscrow))
         {
-            acctFlags[kAllowTrustLineLockingFlag.first.data()] =
-                sleAccepted->isFlag(kAllowTrustLineLockingFlag.second);
+            acctFlags[kALLOW_TRUST_LINE_LOCKING_FLAG.first.data()] =
+                sleAccepted->isFlag(kALLOW_TRUST_LINE_LOCKING_FLAG.second);
         }
 
         result[jss::account_flags] = std::move(acctFlags);
@@ -218,13 +218,13 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
-            json::Value jvSignerList = json::ValueType::Array;
+            json::Value jvSignerList = json::ArrayValue;
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
             auto const sleSigners = ledger->read(keylet::signers(accountID));
             if (sleSigners)
-                jvSignerList.append(sleSigners->getJson(JsonOptions::Values::None));
+                jvSignerList.append(sleSigners->getJson(JsonOptions::KNone));
 
             // Documentation states this is returned as part of the account_info
             // response, but previously the code put it under account_data. We
@@ -242,7 +242,7 @@ doAccountInfo(RPC::JsonContext& context)
         // Return queue info if that is requested
         if (queue)
         {
-            json::Value jvQueueData = json::ValueType::Object;
+            json::Value jvQueueData = json::ObjectValue;
 
             auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
@@ -250,7 +250,7 @@ doAccountInfo(RPC::JsonContext& context)
                 jvQueueData[jss::txn_count] = static_cast<json::UInt>(txs.size());
 
                 auto& jvQueueTx = jvQueueData[jss::transactions];
-                jvQueueTx = json::ValueType::Array;
+                jvQueueTx = json::ArrayValue;
 
                 std::uint32_t seqCount = 0;
                 std::uint32_t ticketCount = 0;
@@ -266,7 +266,7 @@ doAccountInfo(RPC::JsonContext& context)
                 SeqProxy prevSeqProxy = SeqProxy::sequence(0);
                 for (auto const& tx : txs)
                 {
-                    json::Value jvTx = json::ValueType::Object;
+                    json::Value jvTx = json::ObjectValue;
 
                     if (tx.seqProxy.isSeq())
                     {

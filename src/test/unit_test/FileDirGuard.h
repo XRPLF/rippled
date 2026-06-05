@@ -45,9 +45,9 @@ public:
     {
         using namespace boost::filesystem;
 
-        static auto kSubDirCounter = 0;
+        static auto kSUB_DIR_COUNTER = 0;
         if (useCounter)
-            subDir_ += std::to_string(++kSubDirCounter);
+            subDir_ += std::to_string(++kSUB_DIR_COUNTER);
         if (!exists(subDir_))
         {
             create_directory(subDir_);

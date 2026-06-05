@@ -180,48 +180,48 @@ public:
     json::Value
     getJson()
     {
-        return getJson(kWarningThreshold);
+        return getJson(WarningThreshold);
     }
 
-    /** Returns a json::ValueType::Object. */
+    /** Returns a json::objectValue. */
     json::Value
     getJson(int threshold)
     {
         clock_type::time_point const now(clock_.now());
 
-        json::Value ret(json::ValueType::Object);
+        json::Value ret(json::ObjectValue);
         std::scoped_lock const _(lock_);
 
         for (auto& inboundEntry : inbound_)
         {
-            int const localBalance = inboundEntry.localBalance.value(now);
-            if ((localBalance + inboundEntry.remoteBalance) >= threshold)
+            int const localBalance = inboundEntry.local_balance.value(now);
+            if ((localBalance + inboundEntry.remote_balance) >= threshold)
             {
-                json::Value& entry = (ret[inboundEntry.toString()] = json::ValueType::Object);
+                json::Value& entry = (ret[inboundEntry.toString()] = json::ObjectValue);
                 entry[jss::local] = localBalance;
-                entry[jss::remote] = inboundEntry.remoteBalance;
+                entry[jss::remote] = inboundEntry.remote_balance;
                 entry[jss::type] = "inbound";
             }
         }
         for (auto& outboundEntry : outbound_)
         {
-            int const localBalance = outboundEntry.localBalance.value(now);
-            if ((localBalance + outboundEntry.remoteBalance) >= threshold)
+            int const localBalance = outboundEntry.local_balance.value(now);
+            if ((localBalance + outboundEntry.remote_balance) >= threshold)
             {
-                json::Value& entry = (ret[outboundEntry.toString()] = json::ValueType::Object);
+                json::Value& entry = (ret[outboundEntry.toString()] = json::ObjectValue);
                 entry[jss::local] = localBalance;
-                entry[jss::remote] = outboundEntry.remoteBalance;
+                entry[jss::remote] = outboundEntry.remote_balance;
                 entry[jss::type] = "outbound";
             }
         }
         for (auto& adminEntry : admin_)
         {
-            int const localBalance = adminEntry.localBalance.value(now);
-            if ((localBalance + adminEntry.remoteBalance) >= threshold)
+            int const localBalance = adminEntry.local_balance.value(now);
+            if ((localBalance + adminEntry.remote_balance) >= threshold)
             {
-                json::Value& entry = (ret[adminEntry.toString()] = json::ValueType::Object);
+                json::Value& entry = (ret[adminEntry.toString()] = json::ObjectValue);
                 entry[jss::local] = localBalance;
-                entry[jss::remote] = adminEntry.remoteBalance;
+                entry[jss::remote] = adminEntry.remote_balance;
                 entry[jss::type] = "admin";
             }
         }
@@ -242,8 +242,8 @@ public:
         for (auto& inboundEntry : inbound_)
         {
             Gossip::Item item;
-            item.balance = inboundEntry.localBalance.value(now);
-            if (item.balance >= kMinimumGossipBalance)
+            item.balance = inboundEntry.local_balance.value(now);
+            if (item.balance >= MinimumGossipBalance)
             {
                 item.address = inboundEntry.key->address;
                 gossip.items.push_back(item);
@@ -270,7 +270,7 @@ public:
             {
                 // This is a new import
                 Import& next(resultIt->second);
-                next.whenExpires = elapsed + kGossipExpirationSeconds;
+                next.whenExpires = elapsed + kGOSSIP_EXPIRATION_SECONDS;
                 next.items.reserve(gossip.items.size());
 
                 for (auto const& gossipItem : gossip.items)
@@ -278,7 +278,7 @@ public:
                     Import::Item item;
                     item.balance = gossipItem.balance;
                     item.consumer = newInboundEndpoint(gossipItem.address);
-                    item.consumer.entry().remoteBalance += item.balance;
+                    item.consumer.entry().remote_balance += item.balance;
                     next.items.push_back(item);
                 }
             }
@@ -288,21 +288,21 @@ public:
                 // balances and then deduct the old remote balances.
 
                 Import next;
-                next.whenExpires = elapsed + kGossipExpirationSeconds;
+                next.whenExpires = elapsed + kGOSSIP_EXPIRATION_SECONDS;
                 next.items.reserve(gossip.items.size());
                 for (auto const& gossipItem : gossip.items)
                 {
                     Import::Item item;
                     item.balance = gossipItem.balance;
                     item.consumer = newInboundEndpoint(gossipItem.address);
-                    item.consumer.entry().remoteBalance += item.balance;
+                    item.consumer.entry().remote_balance += item.balance;
                     next.items.push_back(item);
                 }
 
                 Import& prev(resultIt->second);
                 for (auto& item : prev.items)
                 {
-                    item.consumer.entry().remoteBalance -= item.balance;
+                    item.consumer.entry().remote_balance -= item.balance;
                 }
 
                 std::swap(next, prev);
@@ -345,7 +345,7 @@ public:
                 for (auto itemIter(import.items.begin()); itemIter != import.items.end();
                      ++itemIter)
                 {
-                    itemIter->consumer.entry().remoteBalance -= itemIter->balance;
+                    itemIter->consumer.entry().remote_balance -= itemIter->balance;
                 }
 
                 iter = importTable_.erase(iter);
@@ -363,10 +363,10 @@ public:
     static Disposition
     disposition(int balance)
     {
-        if (balance >= kDropThreshold)
+        if (balance >= DropThreshold)
             return Disposition::Drop;
 
-        if (balance >= kWarningThreshold)
+        if (balance >= WarningThreshold)
             return Disposition::Warn;
 
         return Disposition::Ok;
@@ -417,25 +417,26 @@ public:
                     // LCOV_EXCL_STOP
             }
             inactive_.pushBack(entry);
-            entry.whenExpires = clock_.now() + kSecondsUntilExpiration;
+            entry.whenExpires = clock_.now() + kSECONDS_UNTIL_EXPIRATION;
         }
     }
 
     Disposition
     charge(Entry& entry, Charge const& fee, std::string context = {})
     {
-        static constexpr Charge::value_type kFeeLogAsWarn = 3000;
-        static constexpr Charge::value_type kFeeLogAsInfo = 1000;
-        static constexpr Charge::value_type kFeeLogAsDebug = 100;
+        static constexpr Charge::value_type kFEE_LOG_AS_WARN = 3000;
+        static constexpr Charge::value_type kFEE_LOG_AS_INFO = 1000;
+        static constexpr Charge::value_type kFEE_LOG_AS_DEBUG = 100;
         static_assert(
-            kFeeLogAsWarn > kFeeLogAsInfo && kFeeLogAsInfo > kFeeLogAsDebug && kFeeLogAsDebug > 10);
+            kFEE_LOG_AS_WARN > kFEE_LOG_AS_INFO && kFEE_LOG_AS_INFO > kFEE_LOG_AS_DEBUG &&
+            kFEE_LOG_AS_DEBUG > 10);
 
-        static auto kGetStream = [](Resource::Charge::value_type cost, beast::Journal& journal) {
-            if (cost >= kFeeLogAsWarn)
+        static auto kGET_STREAM = [](Resource::Charge::value_type cost, beast::Journal& journal) {
+            if (cost >= kFEE_LOG_AS_WARN)
                 return journal.warn();
-            if (cost >= kFeeLogAsInfo)
+            if (cost >= kFEE_LOG_AS_INFO)
                 return journal.info();
-            if (cost >= kFeeLogAsDebug)
+            if (cost >= kFEE_LOG_AS_DEBUG)
                 return journal.debug();
             return journal.trace();
         };
@@ -446,7 +447,8 @@ public:
         std::scoped_lock const _(lock_);
         clock_type::time_point const now(clock_.now());
         int const balance(entry.add(fee.cost(), now));
-        JLOG(kGetStream(fee.cost(), journal_)) << "Charging " << entry << " for " << fee << context;
+        JLOG(kGET_STREAM(fee.cost(), journal_))
+            << "Charging " << entry << " for " << fee << context;
         return disposition(balance);
     }
 
@@ -459,9 +461,9 @@ public:
         std::scoped_lock const _(lock_);
         bool notify(false);
         auto const elapsed = clock_.now();
-        if (entry.balance(clock_.now()) >= kWarningThreshold && elapsed != entry.lastWarningTime)
+        if (entry.balance(clock_.now()) >= WarningThreshold && elapsed != entry.lastWarningTime)
         {
-            charge(entry, kFeeWarning);
+            charge(entry, kFEE_WARNING);
             notify = true;
             entry.lastWarningTime = elapsed;
         }
@@ -483,15 +485,15 @@ public:
         bool drop(false);
         clock_type::time_point const now(clock_.now());
         int const balance(entry.balance(now));
-        if (balance >= kDropThreshold)
+        if (balance >= DropThreshold)
         {
             JLOG(journal_.warn()) << "Consumer entry " << entry << " dropped with balance "
-                                  << balance << " at or above drop threshold " << kDropThreshold;
+                                  << balance << " at or above drop threshold " << DropThreshold;
 
             // Adding feeDrop at this point keeps the dropped connection
             // from re-connecting for at least a little while after it is
             // dropped.
-            charge(entry, kFeeDrop);
+            charge(entry, kFEE_DROP);
             ++stats_.drop;
             drop = true;
         }
@@ -520,8 +522,8 @@ public:
                 item["count"] = entry.refcount;
             item["name"] = entry.toString();
             item["balance"] = entry.balance(now);
-            if (entry.remoteBalance != 0)
-                item["remote_balance"] = entry.remoteBalance;
+            if (entry.remote_balance != 0)
+                item["remote_balance"] = entry.remote_balance;
         }
     }
 

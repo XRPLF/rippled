@@ -56,7 +56,7 @@ PaymentChannelCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelCreate::preflight(PreflightContext const& ctx)
 {
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
+    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZERO))
         return temBAD_AMOUNT;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -96,11 +96,13 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         if (!sled)
             return tecNO_DST;
 
+        auto const flags = sled->getFlags();
+
         // Check if they have disallowed incoming payment channels
-        if (sled->isFlag(lsfDisallowIncomingPayChan))
+        if ((flags & lsfDisallowIncomingPayChan) != 0u)
             return tecNO_PERMISSION;
 
-        if (sled->isFlag(lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
+        if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Pseudo-accounts cannot receive payment channels, other than native
@@ -185,9 +187,11 @@ PaymentChannelCreate::doApply()
 }
 
 void
-PaymentChannelCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+PaymentChannelCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -198,7 +202,6 @@ PaymentChannelCreate::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

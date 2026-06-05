@@ -388,8 +388,8 @@ class Batch_test : public beast::unit_test::Suite
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = pay(alice, bob, XRP(1));
-            tx1[sfSigners.jsonName] = json::ValueType::Array;
-            tx1[sfSigners.jsonName][0U][sfSigner.jsonName] = json::ValueType::Object;
+            tx1[sfSigners.jsonName] = json::ArrayValue;
+            tx1[sfSigners.jsonName][0U][sfSigner.jsonName] = json::ObjectValue;
             tx1[sfSigners.jsonName][0U][sfSigner.jsonName][sfAccount.jsonName] = alice.human();
             tx1[sfSigners.jsonName][0U][sfSigner.jsonName][sfSigningPubKey.jsonName] =
                 strHex(alice.pk());
@@ -1363,8 +1363,8 @@ class Batch_test : public beast::unit_test::Suite
             auto const ammCreate = [&alice](STAmount const& amount, STAmount const& amount2) {
                 json::Value jv;
                 jv[jss::Account] = alice.human();
-                jv[jss::Amount] = amount.getJson(JsonOptions::Values::None);
-                jv[jss::Amount2] = amount2.getJson(JsonOptions::Values::None);
+                jv[jss::Amount] = amount.getJson(JsonOptions::KNone);
+                jv[jss::Amount2] = amount2.getJson(JsonOptions::KNone);
                 jv[jss::TradingFee] = 0;
                 jv[jss::TransactionType] = jss::AMMCreate;
                 return jv;
@@ -2346,7 +2346,7 @@ class Batch_test : public beast::unit_test::Suite
         // + has `tfInnerBatchTxn` flag
         {
             auto txn = batch::Inner(pay(alice, bob, XRP(1)), env.seq(alice));
-            txn[sfSigners] = json::ValueType::Array;
+            txn[sfSigners] = json::ArrayValue;
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
@@ -2401,7 +2401,7 @@ class Batch_test : public beast::unit_test::Suite
                 obj.setFieldU32(sfLedgerSequence, seq);
                 obj.setFieldU32(sfFlags, tfInnerBatchTxn);
             });
-            auto txn = batch::Inner(amendTx.getJson(JsonOptions::Values::None), env.seq(alice));
+            auto txn = batch::Inner(amendTx.getJson(JsonOptions::KNone), env.seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
@@ -2658,7 +2658,7 @@ class Batch_test : public beast::unit_test::Suite
         testcase("loan");
 
         bool const lendingBatchEnabled = !std::ranges::any_of(
-            Batch::kDisabledTxTypes,
+            Batch::kDISABLED_TX_TYPES,
             [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
 
         using namespace test::jtx;
@@ -2699,10 +2699,10 @@ class Batch_test : public beast::unit_test::Suite
         {
             using namespace loanBroker;
             env(set(lender, vaultKeylet.key),
-                kManagementFeeRate(TenthBips16(100)),
-                kDebtMaximum(debtMaximumValue),
-                kCoverRateMinimum(TenthBips32(percentageToTenthBips(10))),
-                kCoverRateLiquidation(TenthBips32(percentageToTenthBips(25))));
+                kMANAGEMENT_FEE_RATE(TenthBips16(100)),
+                kDEBT_MAXIMUM(debtMaximumValue),
+                kCOVER_RATE_MINIMUM(TenthBips32(percentageToTenthBips(10))),
+                kCOVER_RATE_LIQUIDATION(TenthBips32(percentageToTenthBips(25))));
 
             env(coverDeposit(lender, brokerKeylet.key, coverDepositValue));
 
@@ -2727,9 +2727,9 @@ class Batch_test : public beast::unit_test::Suite
                             set(lender, brokerKeylet.key, asset(1000).value()),
                             // Not allowed to include the counterparty signature
                             Sig(sfCounterpartySignature, borrower),
-                            Sig(kNone),
-                            Fee(kNone),
-                            Seq(kNone)),
+                            Sig(kNONE),
+                            Fee(kNONE),
+                            Seq(kNONE)),
                         lenderSeq + 1),
                     batch::Inner(
                         pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}),
@@ -2744,9 +2744,9 @@ class Batch_test : public beast::unit_test::Suite
                         env.json(
                             set(lender, brokerKeylet.key, asset(1000).value()),
                             // Counterparty must be set
-                            Sig(kNone),
-                            Fee(kNone),
-                            Seq(kNone)),
+                            Sig(kNONE),
+                            Fee(kNONE),
+                            Seq(kNONE)),
                         lenderSeq + 1),
                     batch::Inner(
                         pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}),
@@ -2761,10 +2761,10 @@ class Batch_test : public beast::unit_test::Suite
                         env.json(
                             set(lender, brokerKeylet.key, asset(1000).value()),
                             // Counterparty must sign the outer transaction
-                            kCounterparty(borrower.id()),
-                            Sig(kNone),
-                            Fee(kNone),
-                            Seq(kNone)),
+                            kCOUNTERPARTY(borrower.id()),
+                            Sig(kNONE),
+                            Fee(kNONE),
+                            Seq(kNONE)),
                         lenderSeq + 1),
                     batch::Inner(
                         pay(lender, loanKeylet.key, STAmount{asset, asset(500).value()}),
@@ -2782,10 +2782,10 @@ class Batch_test : public beast::unit_test::Suite
                     batch::Inner(
                         env.json(
                             set(lender, brokerKeylet.key, asset(1000).value()),
-                            kCounterparty(borrower.id()),
-                            Sig(kNone),
-                            Fee(kNone),
-                            Seq(kNone)),
+                            kCOUNTERPARTY(borrower.id()),
+                            Sig(kNONE),
+                            Fee(kNONE),
+                            Seq(kNONE)),
                         lenderSeq + 1),
                     batch::Inner(
                         pay(
@@ -2814,10 +2814,10 @@ class Batch_test : public beast::unit_test::Suite
                     batch::Inner(
                         env.json(
                             set(lender, brokerKeylet.key, asset(1000).value()),
-                            kCounterparty(borrower.id()),
-                            Sig(kNone),
-                            Fee(kNone),
-                            Seq(kNone)),
+                            kCOUNTERPARTY(borrower.id()),
+                            Sig(kNONE),
+                            Fee(kNONE),
+                            Seq(kNONE)),
                         lenderSeq + 1),
                     batch::Inner(manage(lender, loanKeylet.key, tfLoanImpair), lenderSeq + 2),
                     batch::Sig(borrower));
@@ -3784,7 +3784,7 @@ class Batch_test : public beast::unit_test::Suite
                 makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
                 features,
                 nullptr,
-                beast::Severity::Error};
+                beast::severities::KError};
 
             auto alice = Account("alice");
             auto bob = Account("bob");
@@ -3840,7 +3840,7 @@ class Batch_test : public beast::unit_test::Suite
                 makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
                 features,
                 nullptr,
-                beast::Severity::Error};
+                beast::severities::KError};
 
             auto alice = Account("alice");
             auto bob = Account("bob");
@@ -3885,7 +3885,7 @@ class Batch_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        Env env(*this, envconfig(), features, nullptr, beast::Severity::Disabled);
+        Env env(*this, envconfig(), features, nullptr, beast::severities::KDisabled);
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -4321,7 +4321,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(batch::outer(alice, seq, batchFee, tfAllOrNothing), seq),
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 2));
             XRPAmount const txBaseFee = getBaseFee(jtx);
-            BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
+            BEAST_EXPECT(txBaseFee == XRPAmount(kINITIAL_XRP));
         }
 
         // bad: Raw Transactions array exceeds max entries.
@@ -4342,7 +4342,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(1)), seq + 9));
 
             XRPAmount const txBaseFee = getBaseFee(jtx);
-            BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
+            BEAST_EXPECT(txBaseFee == XRPAmount(kINITIAL_XRP));
         }
 
         // bad: Signers array exceeds max entries.
@@ -4356,7 +4356,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(alice, bob, XRP(5)), seq + 2),
                 batch::Sig(bob, carol, alice, bob, carol, alice, bob, carol, alice, alice));
             XRPAmount const txBaseFee = getBaseFee(jtx);
-            BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
+            BEAST_EXPECT(txBaseFee == XRPAmount(kINITIAL_XRP));
         }
 
         // good:

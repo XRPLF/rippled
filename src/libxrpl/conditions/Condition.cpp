@@ -52,7 +52,7 @@ namespace detail {
 //      ed25519Sha256    (4)
 //    }
 
-constexpr std::size_t kFingerprintSize = 32;
+constexpr std::size_t kFINGERPRINT_SIZE = 32;
 
 std::unique_ptr<Condition>
 loadSimpleSha256(Type type, Slice s, std::error_code& ec)
@@ -76,7 +76,7 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
         return {};
     }
 
-    if (p.length != kFingerprintSize)
+    if (p.length != kFINGERPRINT_SIZE)
     {
         ec = Error::FingerprintSize;
         return {};
@@ -118,7 +118,7 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
     switch (type)
     {
         case Type::PreimageSha256:
-            if (cost > PreimageSha256::kMaxPreimageLength)
+            if (cost > PreimageSha256::kMAX_PREIMAGE_LENGTH)
             {
                 ec = Error::PreimageTooLong;
                 return {};
@@ -173,7 +173,7 @@ Condition::deserialize(Slice s, std::error_code& ec)
         return {};
     }
 
-    if (s.size() > kMaxSerializedCondition)
+    if (s.size() > kMAX_SERIALIZED_CONDITION)
     {
         ec = Error::LargeSize;
         return {};

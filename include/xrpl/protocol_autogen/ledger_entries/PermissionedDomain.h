@@ -33,7 +33,7 @@ public:
      * @brief Construct a PermissionedDomain ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit PermissionedDomain(SLE::const_pointer sle)
+    explicit PermissionedDomain(std::shared_ptr<SLE const> sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -148,7 +148,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    PermissionedDomainBuilder(SLE::const_pointer sle)
+    PermissionedDomainBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltPERMISSIONED_DOMAIN)
         {

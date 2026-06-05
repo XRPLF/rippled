@@ -41,10 +41,10 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
     : TimeoutCounter(
           app,
           ledgerHash,
-          LedgerReplayParameters::kSubTaskTimeout,
+          LedgerReplayParameters::kSUB_TASK_TIMEOUT,
           {.jobType = JtReplayTask,
            .jobName = "LedReplDelta",
-           .jobLimit = LedgerReplayParameters::kMaxQueuedTasks},
+           .jobLimit = LedgerReplayParameters::kMAX_QUEUED_TASKS},
           app.getJournal("LedgerReplayDelta"))
     , inboundLedgers_(inboundLedgers)
     , ledgerSeq_(ledgerSeq)
@@ -99,10 +99,10 @@ LedgerDeltaAcquire::trigger(std::size_t limit, ScopedLockType& sl)
                 }
                 else
                 {
-                    if (++noFeaturePeerCount_ >= LedgerReplayParameters::kMaxNoFeaturePeerCount)
+                    if (++noFeaturePeerCount_ >= LedgerReplayParameters::kMAX_NO_FEATURE_PEER_COUNT)
                     {
                         JLOG(journal_.debug()) << "Fall back for " << hash_;
-                        timerInterval_ = LedgerReplayParameters::kSubTaskFallbackTimeout;
+                        timerInterval_ = LedgerReplayParameters::kSUB_TASK_FALLBACK_TIMEOUT;
                         fallBack_ = true;
                     }
                 }
@@ -117,7 +117,7 @@ void
 LedgerDeltaAcquire::onTimer(bool progress, ScopedLockType& sl)
 {
     JLOG(journal_.trace()) << "timeouts_=" << timeouts_ << " for " << hash_;
-    if (timeouts_ > LedgerReplayParameters::kSubTaskMaxTimeouts)
+    if (timeouts_ > LedgerReplayParameters::kSUB_TASK_MAX_TIMEOUTS)
     {
         failed_ = true;
         JLOG(journal_.debug()) << "too many timeouts " << hash_;

@@ -70,12 +70,9 @@ bridgeCreate(
 
     jv[jss::Account] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
-    jv[sfSignatureReward.getJsonName()] = reward.getJson(JsonOptions::Values::None);
+    jv[sfSignatureReward.getJsonName()] = reward.getJson(JsonOptions::KNone);
     if (minAccountCreate)
-    {
-        jv[sfMinAccountCreateAmount.getJsonName()] =
-            minAccountCreate->getJson(JsonOptions::Values::None);
-    }
+        jv[sfMinAccountCreateAmount.getJsonName()] = minAccountCreate->getJson(JsonOptions::KNone);
 
     jv[jss::TransactionType] = jss::XChainCreateBridge;
     return jv;
@@ -93,12 +90,9 @@ bridgeModify(
     jv[jss::Account] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
     if (reward)
-        jv[sfSignatureReward.getJsonName()] = reward->getJson(JsonOptions::Values::None);
+        jv[sfSignatureReward.getJsonName()] = reward->getJson(JsonOptions::KNone);
     if (minAccountCreate)
-    {
-        jv[sfMinAccountCreateAmount.getJsonName()] =
-            minAccountCreate->getJson(JsonOptions::Values::None);
-    }
+        jv[sfMinAccountCreateAmount.getJsonName()] = minAccountCreate->getJson(JsonOptions::KNone);
 
     jv[jss::TransactionType] = jss::XChainModifyBridge;
     return jv;
@@ -115,7 +109,7 @@ xchainCreateClaimId(
 
     jv[jss::Account] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
-    jv[sfSignatureReward.getJsonName()] = reward.getJson(JsonOptions::Values::None);
+    jv[sfSignatureReward.getJsonName()] = reward.getJson(JsonOptions::KNone);
     jv[sfOtherChainSource.getJsonName()] = otherChainSource.human();
 
     jv[jss::TransactionType] = jss::XChainCreateClaimID;
@@ -135,7 +129,7 @@ xchainCommit(
     jv[jss::Account] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
     jv[sfXChainClaimID.getJsonName()] = claimID;
-    jv[jss::Amount] = amt.value.getJson(JsonOptions::Values::None);
+    jv[jss::Amount] = amt.value.getJson(JsonOptions::KNone);
     if (dst)
         jv[sfOtherChainDestination.getJsonName()] = dst->human();
 
@@ -157,7 +151,7 @@ xchainClaim(
     jv[sfXChainBridge.getJsonName()] = bridge;
     jv[sfXChainClaimID.getJsonName()] = claimID;
     jv[sfDestination.getJsonName()] = dst.human();
-    jv[sfAmount.getJsonName()] = amt.value.getJson(JsonOptions::Values::None);
+    jv[sfAmount.getJsonName()] = amt.value.getJson(JsonOptions::KNone);
 
     jv[jss::TransactionType] = jss::XChainClaim;
     return jv;
@@ -176,8 +170,8 @@ sidechainXchainAccountCreate(
     jv[sfAccount.getJsonName()] = acc.human();
     jv[sfXChainBridge.getJsonName()] = bridge;
     jv[sfDestination.getJsonName()] = dst.human();
-    jv[sfAmount.getJsonName()] = amt.value.getJson(JsonOptions::Values::None);
-    jv[sfSignatureReward.getJsonName()] = reward.value.getJson(JsonOptions::Values::None);
+    jv[sfAmount.getJsonName()] = amt.value.getJson(JsonOptions::KNone);
+    jv[sfSignatureReward.getJsonName()] = reward.value.getJson(JsonOptions::KNone);
 
     jv[jss::TransactionType] = jss::XChainAccountCreateCommit;
     return jv;
@@ -219,11 +213,11 @@ claimAttestation(
     result[sfPublicKey.getJsonName()] = strHex(pk.slice());
     result[sfSignature.getJsonName()] = strHex(sig);
     result[sfOtherChainSource.getJsonName()] = toBase58(sendingAccount);
-    result[sfAmount.getJsonName()] = sendingAmount.value.getJson(JsonOptions::Values::None);
+    result[sfAmount.getJsonName()] = sendingAmount.value.getJson(JsonOptions::KNone);
     result[sfAttestationRewardAccount.getJsonName()] = toBase58(rewardAccount);
     result[sfWasLockingChainSend.getJsonName()] = wasLockingChainSend ? 1 : 0;
 
-    result[sfXChainClaimID.getJsonName()] = STUInt64{claimID}.getJson(JsonOptions::Values::None);
+    result[sfXChainClaimID.getJsonName()] = STUInt64{claimID}.getJson(JsonOptions::KNone);
     if (dst)
         result[sfDestination.getJsonName()] = toBase58(*dst);
 
@@ -270,14 +264,14 @@ createAccountAttestation(
     result[sfPublicKey.getJsonName()] = strHex(pk.slice());
     result[sfSignature.getJsonName()] = strHex(sig);
     result[sfOtherChainSource.getJsonName()] = toBase58(sendingAccount);
-    result[sfAmount.getJsonName()] = sendingAmount.value.getJson(JsonOptions::Values::None);
+    result[sfAmount.getJsonName()] = sendingAmount.value.getJson(JsonOptions::KNone);
     result[sfAttestationRewardAccount.getJsonName()] = toBase58(rewardAccount);
     result[sfWasLockingChainSend.getJsonName()] = wasLockingChainSend ? 1 : 0;
 
     result[sfXChainAccountCreateCount.getJsonName()] =
-        STUInt64{createCount}.getJson(JsonOptions::Values::None);
+        STUInt64{createCount}.getJson(JsonOptions::KNone);
     result[sfDestination.getJsonName()] = toBase58(dst);
-    result[sfSignatureReward.getJsonName()] = rewardAmount.value.getJson(JsonOptions::Values::None);
+    result[sfSignatureReward.getJsonName()] = rewardAmount.value.getJson(JsonOptions::KNone);
 
     result[jss::TransactionType] = jss::XChainAddAccountCreateAttestation;
 
@@ -379,15 +373,15 @@ XChainBridgeObjects::XChainBridgeObjects()
     , scuGw("scuGw")
     , mcUSD(mcGw["USD"])
     , scUSD(scGw["USD"])
-    , jvXRPBridgeRPC(bridgeRpc(mcDoor, xrpIssue(), Account::kMaster, xrpIssue()))
-    , jvb(bridge(mcDoor, xrpIssue(), Account::kMaster, xrpIssue()))
-    , jvub(bridge(mcuDoor, xrpIssue(), Account::kMaster, xrpIssue()))
+    , jvXRPBridgeRPC(bridgeRpc(mcDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
+    , jvb(bridge(mcDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
+    , jvub(bridge(mcuDoor, xrpIssue(), Account::kMASTER, xrpIssue()))
     , features(testableAmendments() | FeatureBitset{featureXChainBridge})
     , signers([] {
-        static constexpr int kNumSigners = kUtXchainDefaultNumSigners;
+        constexpr int kNUM_SIGNERS = kUT_XCHAIN_DEFAULT_NUM_SIGNERS;
         std::vector<Signer> result;
-        result.reserve(kNumSigners);
-        for (int i = 0; i < kNumSigners; ++i)
+        result.reserve(kNUM_SIGNERS);
+        for (int i = 0; i < kNUM_SIGNERS; ++i)
         {
             using namespace std::literals;
             auto const a = Account(
@@ -396,11 +390,11 @@ XChainBridgeObjects::XChainBridgeObjects()
         }
         return result;
     }())
-    , altSigners([] {
-        static constexpr int kNumSigners = kUtXchainDefaultNumSigners;
+    , alt_signers([] {
+        constexpr int kNUM_SIGNERS = kUT_XCHAIN_DEFAULT_NUM_SIGNERS;
         std::vector<Signer> result;
-        result.reserve(kNumSigners);
-        for (int i = 0; i < kNumSigners; ++i)
+        result.reserve(kNUM_SIGNERS);
+        for (int i = 0; i < kNUM_SIGNERS; ++i)
         {
             using namespace std::literals;
             auto const a = Account(
@@ -431,16 +425,20 @@ XChainBridgeObjects::XChainBridgeObjects()
         return r;
     }())
     , reward(XRP(1))
-    , splitRewardQuorum(divide(reward, STAmount(kUtXchainDefaultQuorum), reward.get<Issue>()))
-    , splitRewardEveryone(divide(reward, STAmount(kUtXchainDefaultNumSigners), reward.get<Issue>()))
-    , tinyReward(drops(37))
-    , tinyRewardSplit(
-          (divide(tinyReward, STAmount(kUtXchainDefaultQuorum), tinyReward.get<Issue>())))
-    , tinyRewardRemainder(
-          tinyReward -
-          multiply(tinyRewardSplit, STAmount(kUtXchainDefaultQuorum), tinyReward.get<Issue>()))
-    , oneXrp(XRP(1))
-    , xrpDust(divide(oneXrp, STAmount(10000), oneXrp.get<Issue>()))
+    , split_reward_quorum(divide(reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), reward.get<Issue>()))
+    , split_reward_everyone(
+          divide(reward, STAmount(kUT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.get<Issue>()))
+    , tiny_reward(drops(37))
+    , tiny_reward_split(
+          (divide(tiny_reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.get<Issue>())))
+    , tiny_reward_remainder(
+          tiny_reward -
+          multiply(
+              tiny_reward_split,
+              STAmount(kUT_XCHAIN_DEFAULT_QUORUM),
+              tiny_reward.get<Issue>()))
+    , one_xrp(XRP(1))
+    , xrp_dust(divide(one_xrp, STAmount(10000), one_xrp.get<Issue>()))
 {
 }
 
@@ -468,13 +466,13 @@ XChainBridgeObjects::createScBridgeObjects(Env& scEnv)
     scEnv.fund(xrpFunds, scDoor, scAlice, scBob, scCarol, scGw, scAttester, scReward);
 
     // Signer's list must match the attestation signers
-    scEnv(jtx::signers(Account::kMaster, signers.size(), signers));
+    scEnv(jtx::signers(Account::kMASTER, signers.size(), signers));
 
     // create XRP bridges in both direction
     auto const reward = XRP(1);
     STAmount const minCreate = XRP(20);
 
-    scEnv(bridgeCreate(Account::kMaster, jvb, reward, minCreate));
+    scEnv(bridgeCreate(Account::kMASTER, jvb, reward, minCreate));
     scEnv.close();
 }
 

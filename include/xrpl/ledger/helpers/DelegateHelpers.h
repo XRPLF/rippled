@@ -15,7 +15,7 @@ namespace xrpl {
  * if not.
  */
 NotTEC
-checkTxPermission(SLE::const_ref delegate, STTx const& tx);
+checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx);
 
 /**
  * Load the granular permissions granted to the delegate account for the
@@ -28,7 +28,7 @@ checkTxPermission(SLE::const_ref delegate, STTx const& tx);
  */
 void
 loadGranularPermission(
-    SLE::const_ref delegate,
+    std::shared_ptr<SLE const> const& delegate,
     TxType const& type,
     std::unordered_set<GranularPermissionType>& granularPermissions);
 

@@ -20,7 +20,7 @@ namespace xrpl::test::jtx {
 
 class MPTTester;
 
-auto const kMptDexFlags = tfMPTCanTrade | tfMPTCanTransfer;
+auto const kMPT_DEX_FLAGS = tfMPTCanTrade | tfMPTCanTransfer;
 
 /*Helper lambda to create a zero-initialized buffer.
 WHY THIS IS NEEDED: In C++, xrpl::Buffer(size) allocates uninitialized heap memory.
@@ -127,7 +127,7 @@ struct MPTInit
     // create MPTIssuanceID if seated and follow rules for MPTCreate args
     std::optional<MPTCreate> create = std::nullopt;
 };
-static MPTInit const kMptInitNoFund{.fund = false};
+static MPTInit const kMPT_INIT_NO_FUND{.fund = false};
 
 struct MPTInitDef
 {
@@ -137,7 +137,7 @@ struct MPTInitDef
     std::optional<Account> auditor = std::nullopt;
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
-    std::uint32_t flags = kMptDexFlags;
+    std::uint32_t flags = kMPT_DEX_FLAGS;
     std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;

@@ -101,8 +101,8 @@ public:
     static JobTypes const&
     instance()
     {
-        static JobTypes const kTypes;
-        return kTypes;
+        static JobTypes const kTYPES;
+        return kTYPES;
     }
 
     static std::string const&

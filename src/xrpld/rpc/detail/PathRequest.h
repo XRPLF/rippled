@@ -140,7 +140,7 @@ private:
 
     std::optional<uint256> domain_;
 
-    bool convertAll_{};
+    bool convert_all_{};
 
     std::recursive_mutex indexLock_;
     LedgerIndex lastIndex_;
@@ -152,10 +152,10 @@ private:
     int const iIdentifier_;
 
     std::chrono::steady_clock::time_point const created_;
-    std::chrono::steady_clock::time_point quickReply_;
-    std::chrono::steady_clock::time_point fullReply_;
+    std::chrono::steady_clock::time_point quick_reply_;
+    std::chrono::steady_clock::time_point full_reply_;
 
-    static unsigned int const kMaxPaths = 4;
+    static unsigned int const kMAX_PATHS = 4;
 };
 
 }  // namespace xrpl

@@ -32,7 +32,7 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
 
-    if (ctx.tx[sfMPTAmount] > kMaxMpTokenAmount)
+    if (ctx.tx[sfMPTAmount] > kMAX_MP_TOKEN_AMOUNT)
         return temBAD_AMOUNT;
 
     if (ctx.tx.isFieldPresent(sfHolderEncryptionKey))
@@ -46,7 +46,7 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // verify schnorr proof length when registering holder ec public key
-        if (ctx.tx[sfZKProof].size() != kEcSchnorrProofLength)
+        if (ctx.tx[sfZKProof].size() != kEC_SCHNORR_PROOF_LENGTH)
             return temMALFORMED;
     }
     else
@@ -69,9 +69,9 @@ XRPAmount
 ConfidentialMPTConvert::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge kConfidentialFeeMultiplier extra base fees so the total is
+    // We charge kCONFIDENTIAL_FEE_MULTIPLIER extra base fees so the total is
     // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kCONFIDENTIAL_FEE_MULTIPLIER;
 }
 
 TER
@@ -205,7 +205,7 @@ ConfidentialMPTConvert::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, account_));
     if (!sleMptoken)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -222,7 +222,7 @@ ConfidentialMPTConvert::doApply()
     // Converting decreases regular balance and increases confidential outstanding.
     // The confidential outstanding tracks total tokens in confidential form globally.
     auto const currentCOA = (*sleIssuance)[~sfConfidentialOutstandingAmount].valueOr(0);
-    if (amtToConvert > kMaxMpTokenAmount - currentCOA)
+    if (amtToConvert > kMAX_MP_TOKEN_AMOUNT - currentCOA)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     (*sleMptoken)[sfMPTAmount] = amt - amtToConvert;
@@ -287,7 +287,7 @@ ConfidentialMPTConvert::doApply()
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.
         auto zeroBalance = encryptCanonicalZeroAmount(
-            (*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
+            (*sleMptoken)[sfHolderEncryptionKey], account_, mptIssuanceID);
 
         if (!zeroBalance)
             return tecINTERNAL;  // LCOV_EXCL_LINE

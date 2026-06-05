@@ -183,15 +183,15 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // ripple state entry
-    SLE::ref sleAccount,        // the account being set.
-    bool const bAuth,           // authorize account.
-    bool const bNoRipple,       // others cannot ripple through
-    bool const bFreeze,         // funds cannot leave
-    bool bDeepFreeze,           // can neither receive nor send funds
-    STAmount const& saBalance,  // balance of account being set.
+    uint256 const& uIndex,      // --> ripple state entry
+    SLE::ref sleAccount,        // --> the account being set.
+    bool const bAuth,           // --> authorize account.
+    bool const bNoRipple,       // --> others cannot ripple through
+    bool const bFreeze,         // --> funds cannot leave
+    bool bDeepFreeze,           // --> can neither receive nor send funds
+    STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()
-    STAmount const& saLimit,    // limit for account being set.
+    STAmount const& saLimit,    // --> limit for account being set.
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
@@ -274,7 +274,7 @@ trustCreate(
         uFlags |= (bSetHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
     }
 
-    if (!slePeer->isFlag(lsfDefaultRipple))
+    if ((slePeer->getFlags() & lsfDefaultRipple) == 0)
     {
         // The other side's default is no rippling
         uFlags |= (bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
@@ -294,7 +294,7 @@ trustCreate(
 TER
 trustDelete(
     ApplyView& view,
-    SLE::ref sleRippleState,
+    std::shared_ptr<SLE> const& sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j)
@@ -341,25 +341,22 @@ updateTrustLine(
 {
     if (!state)
         return false;
+    std::uint32_t const flags(state->getFieldU32(sfFlags));
 
     auto sle = view.peek(keylet::account(sender));
     if (!sle)
         return false;
 
-    auto const senderReserveFlag = bSenderHigh ? lsfHighReserve : lsfLowReserve;
-    auto const senderNoRippleFlag = bSenderHigh ? lsfHighNoRipple : lsfLowNoRipple;
-    auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
-    auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
-
     // YYY Could skip this if rippling in reverse.
-    if (before > beast::kZero
+    if (before > beast::kZERO
         // Sender balance was positive.
-        && after <= beast::kZero
+        && after <= beast::kZERO
         // Sender is zero or negative.
-        && state->isFlag(senderReserveFlag)
+        && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
         // Sender reserve is set.
-        && state->isFlag(senderNoRippleFlag) != sle->isFlag(lsfDefaultRipple) &&
-        !state->isFlag(senderFreezeFlag) &&
+        && static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
+            static_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
+        ((flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
         !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.
         && (state->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
@@ -372,10 +369,11 @@ updateTrustLine(
         adjustOwnerCount(view, sle, -1, j);
 
         // Clear reserve flag.
-        state->clearFlag(senderReserveFlag);
+        state->setFieldU32(sfFlags, flags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
 
         // Balance is zero, receiver reserve is clear.
-        if (!after && !state->isFlag(receiverReserveFlag))
+        if (!after  // Balance is zero.
+            && ((flags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u))
             return true;
     }
     return false;
@@ -455,7 +453,7 @@ issueIOU(
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const noRipple = !receiverAccount->isFlag(lsfDefaultRipple);
+    bool const noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
 
     return trustCreate(
         view,
@@ -566,11 +564,12 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
     if (auto const issuerAccount = view.read(keylet::account(issue.account));
-        issuerAccount && issuerAccount->isFlag(lsfRequireAuth))
+        issuerAccount && (((*issuerAccount)[sfFlags] & lsfRequireAuth) != 0u))
     {
         if (trustLine)
         {
-            return trustLine->isFlag((account > issue.account) ? lsfLowAuth : lsfHighAuth)
+            return (((*trustLine)[sfFlags] &
+                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth)) != 0u)
                 ? tesSUCCESS
                 : TER{tecNO_AUTH};
         }
@@ -699,7 +698,7 @@ removeEmptyHolding(
     auto const line = view.peek(keylet::line(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
-    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)
+    if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZERO)
         return tecHAS_OBLIGATIONS;
 
     // Adjust the owner count(s)
@@ -738,7 +737,7 @@ removeEmptyHolding(
 TER
 deleteAMMTrustLine(
     ApplyView& view,
-    SLE::pointer sleState,
+    std::shared_ptr<SLE> sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j)
 {
@@ -775,7 +774,7 @@ deleteAMMTrustLine(
     }
 
     auto const uFlags = !ammLow ? lsfLowReserve : lsfHighReserve;
-    if (!sleState->isFlag(uFlags))
+    if ((sleState->getFlags() & uFlags) == 0u)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
@@ -786,7 +785,7 @@ deleteAMMTrustLine(
 TER
 deleteAMMMPToken(
     ApplyView& view,
-    SLE::pointer sleMpt,
+    std::shared_ptr<SLE> sleMpt,
     AccountID const& ammAccountID,
     beast::Journal j)
 {

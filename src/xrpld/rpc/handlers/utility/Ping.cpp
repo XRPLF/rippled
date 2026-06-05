@@ -13,7 +13,7 @@ struct JsonContext;
 json::Value
 doPing(RPC::JsonContext& context)
 {
-    json::Value ret(json::ValueType::Object);
+    json::Value ret(json::ObjectValue);
     switch (context.role)
     {
         case Role::ADMIN:

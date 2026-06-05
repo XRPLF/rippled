@@ -10,7 +10,6 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -57,11 +56,6 @@ MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
-    // sfReferenceHolding is set only internally by VaultCreate. Reject
-    // any user-submitted MPTokenIssuanceCreate that attempts to carry it.
-    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx.isFieldPresent(sfReferenceHolding))
-        return temMALFORMED;
-
     // If the mutable flags field is included, at least one flag must be
     // specified.
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
@@ -70,7 +64,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const fee = ctx.tx[~sfTransferFee])
     {
-        if (fee > kMaxTransferFee)
+        if (fee > kMAX_TRANSFER_FEE)
             return temBAD_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
@@ -85,17 +79,17 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::kZero)
+        if (*domain == beast::kZERO)
             return temMALFORMED;
 
         // Domain present implies that MPTokenIssuance is not public
-        if (!ctx.tx.isFlag(tfMPTRequireAuth))
+        if ((ctx.tx.getFlags() & tfMPTRequireAuth) == 0)
             return temMALFORMED;
     }
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
             return temMALFORMED;
     }
 
@@ -105,7 +99,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         if (maxAmt == 0)
             return temMALFORMED;
 
-        if (maxAmt > kMaxMpTokenAmount)
+        if (maxAmt > kMAX_MP_TOKEN_AMOUNT)
             return temMALFORMED;
     }
     return tesSUCCESS;
@@ -158,22 +152,6 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
         if (args.mutableFlags)
             (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
 
-        if (args.referenceHolding)
-        {
-            // Defensive: the holding must already exist and be of an
-            // expected type. Callers (currently only VaultCreate)
-            // populate this after the pseudo-account's MPToken /
-            // RippleState has been installed. A missing holding here
-            // would dangle the pointer and is a programmer error.
-            auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
-            if (!sleHolding)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-            auto const type = sleHolding->getType();
-            if (type != ltMPTOKEN && type != ltRIPPLE_STATE)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-            (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
-        }
-
         view.insert(mptIssuance);
     }
 
@@ -192,7 +170,7 @@ MPTokenIssuanceCreate::doApply()
         j_,
         {
             .priorBalance = preFeeBalance_,
-            .account = accountID_,
+            .account = account_,
             .sequence = tx.getSeqValue(),
             .flags = tx.getFlags(),
             .maxAmount = tx[~sfMaximumAmount],
@@ -206,9 +184,11 @@ MPTokenIssuanceCreate::doApply()
 }
 
 void
-MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+MPTokenIssuanceCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -219,7 +199,6 @@ MPTokenIssuanceCreate::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

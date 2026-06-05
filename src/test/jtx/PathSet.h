@@ -18,7 +18,7 @@ countOffers(
     Asset const& takerGets)
 {
     size_t count = 0;
-    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
+    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
         if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays).asset() == takerPays &&
             sle->getFieldAmount(sfTakerGets).asset() == takerGets)
             ++count;
@@ -34,7 +34,7 @@ countOffers(
     STAmount const& takerGets)
 {
     size_t count = 0;
-    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
+    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
         if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays) == takerPays &&
             sle->getFieldAmount(sfTakerGets) == takerGets)
             ++count;
@@ -109,7 +109,7 @@ TestPath::pushBack(Issue const& iss)
 {
     path.emplaceBack(
         STPathElement::TypeCurrency | STPathElement::TypeIssuer,
-        beast::kZero,
+        beast::kZERO,
         iss.currency,
         iss.account);
     return *this;
@@ -120,7 +120,7 @@ TestPath::pushBack(MPTIssue const& iss)
 {
     path.emplaceBack(
         STPathElement::TypeMpt | STPathElement::TypeIssuer,
-        beast::kZero,
+        beast::kZERO,
         iss.getMptID(),
         iss.getIssuer());
     return *this;
@@ -129,7 +129,7 @@ TestPath::pushBack(MPTIssue const& iss)
 inline TestPath&
 TestPath::pushBack(jtx::Account const& account)
 {
-    path.emplaceBack(account.id(), Currency{beast::kZero}, beast::kZero);
+    path.emplaceBack(account.id(), Currency{beast::kZERO}, beast::kZERO);
     return *this;
 }
 
@@ -145,7 +145,7 @@ TestPath::addHelper(First&& first, Rest&&... rest)
 inline json::Value
 TestPath::json() const
 {
-    return path.getJson(JsonOptions::Values::None);
+    return path.getJson(JsonOptions::KNone);
 }
 
 class PathSet
@@ -170,7 +170,7 @@ public:
     json() const
     {
         json::Value v;
-        v["Paths"] = paths.getJson(JsonOptions::Values::None);
+        v["Paths"] = paths.getJson(JsonOptions::KNone);
         return v;
     }
 

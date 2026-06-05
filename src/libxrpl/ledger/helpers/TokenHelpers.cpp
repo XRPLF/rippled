@@ -28,7 +28,6 @@
 
 #include <cstdint>
 #include <initializer_list>
-#include <limits>
 #include <string>
 #include <variant>
 
@@ -56,14 +55,6 @@ isGlobalFrozen(ReadView const& view, Asset const& asset)
         [&](MPTIssue const& issue) { return isGlobalFrozen(view, issue); });
 }
 
-TER
-checkGlobalFrozen(ReadView const& view, Asset const& asset)
-{
-    if (isGlobalFrozen(view, asset))
-        return asset.holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
-    return tesSUCCESS;
-}
-
 bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
@@ -71,16 +62,8 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& 
         [&](auto const& issue) { return isIndividualFrozen(view, account, issue); }, asset.value());
 }
 
-TER
-checkIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
-{
-    if (isIndividualFrozen(view, account, asset))
-        return asset.holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
-    return tesSUCCESS;
-}
-
 bool
-isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, std::uint8_t depth)
+isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth)
 {
     return std::visit(
         [&](auto const& issue) { return isFrozen(view, account, issue, depth); }, asset.value());
@@ -124,7 +107,7 @@ isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     Asset const& asset,
-    std::uint8_t depth)
+    int depth)
 {
     return asset.visit(
         [&](Issue const& issue) { return isAnyFrozen(view, accounts, issue); },
@@ -132,11 +115,7 @@ isAnyFrozen(
 }
 
 bool
-isDeepFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    MPTIssue const& mptIssue,
-    std::uint8_t depth)
+isDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
 {
     // Unlike IOUs, frozen / locked MPTs are not allowed to send or receive
     // funds, so checking "deep frozen" is the same as checking "frozen".
@@ -144,7 +123,7 @@ isDeepFrozen(
 }
 
 bool
-isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, std::uint8_t depth)
+isDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset, int depth)
 {
     return std::visit(
         [&](auto const& issue) { return isDeepFrozen(view, account, issue, depth); },
@@ -278,7 +257,7 @@ accountHolds(
     {
         // If the account is the issuer, then their limit is effectively
         // infinite
-        return STAmount{Issue{currency, issuer}, STAmount::kMaxValue, STAmount::kMaxOffset};
+        return STAmount{Issue{currency, issuer}, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET};
     }
 
     // IOU: Return balance on trust line modulo freeze
@@ -522,19 +501,13 @@ requireAuth(ReadView const& view, Asset const& asset, AccountID const& account, 
 }
 
 TER
-canTransfer(
-    ReadView const& view,
-    Asset const& asset,
-    AccountID const& from,
-    AccountID const& to,
-    WaiveMPTCanTransfer waive,
-    std::uint8_t depth)
+canTransfer(ReadView const& view, Asset const& asset, AccountID const& from, AccountID const& to)
 {
-    return asset.visit(
-        [&](MPTIssue const& issue) -> TER {
-            return canTransfer(view, issue, from, to, waive, depth);
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            return canTransfer(view, issue, from, to);
         },
-        [&](Issue const& issue) -> TER { return canTransfer(view, issue, from, to); });
+        asset.value());
 }
 
 //------------------------------------------------------------------------------
@@ -597,41 +570,39 @@ directSendNoFeeIOU(
                         << " amount=" << saAmount.getFullText()
                         << " after=" << saBalance.getFullText();
 
+        std::uint32_t const uFlags(sleRippleState->getFieldU32(sfFlags));
         bool bDelete = false;
-
-        auto const senderReserveFlag = bSenderHigh ? lsfHighReserve : lsfLowReserve;
-        auto const senderNoRippleFlag = bSenderHigh ? lsfHighNoRipple : lsfLowNoRipple;
-        auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
-        auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
 
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
         //       for anyone to understand.
-        if (saBefore > beast::kZero
+        if (saBefore > beast::kZERO
             // Sender balance was positive.
-            && saBalance <= beast::kZero
+            && saBalance <= beast::kZERO
             // Sender is zero or negative.
-            && sleRippleState->isFlag(senderReserveFlag)
+            && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
             // Sender reserve is set.
-            && sleRippleState->isFlag(senderNoRippleFlag) !=
-                view.read(keylet::account(uSenderID))->isFlag(lsfDefaultRipple) &&
-            !sleRippleState->isFlag(senderFreezeFlag) &&
-            !sleRippleState->getFieldAmount(bSenderHigh ? sfHighLimit : sfLowLimit)
+            && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
+                static_cast<bool>(
+                    view.read(keylet::account(uSenderID))->getFlags() & lsfDefaultRipple) &&
+            ((uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
+            !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.
-            && (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityIn : sfLowQualityIn) == 0u)
+            && (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityIn : sfHighQualityIn) == 0u)
             // Sender quality in is 0.
             &&
-            (sleRippleState->getFieldU32(bSenderHigh ? sfHighQualityOut : sfLowQualityOut) == 0u))
+            (sleRippleState->getFieldU32(!bSenderHigh ? sfLowQualityOut : sfHighQualityOut) == 0u))
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
             adjustOwnerCount(view, view.peek(keylet::account(uSenderID)), -1, j);
 
             // Clear reserve flag.
-            sleRippleState->clearFlag(senderReserveFlag);
+            sleRippleState->setFieldU32(
+                sfFlags, uFlags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
 
             // Balance is zero, receiver reserve is clear.
             bDelete = !saBalance  // Balance is zero.
-                && !sleRippleState->isFlag(receiverReserveFlag);
+                && ((uFlags & (bSenderHigh ? lsfLowReserve : lsfHighReserve)) == 0u);
             // Receiver reserve is clear.
         }
 
@@ -648,7 +619,7 @@ directSendNoFeeIOU(
                 view,
                 sleRippleState,
                 bSenderHigh ? uReceiverID : uSenderID,
-                bSenderHigh ? uSenderID : uReceiverID,
+                !bSenderHigh ? uReceiverID : uSenderID,
                 j);
         }
 
@@ -670,7 +641,7 @@ directSendNoFeeIOU(
     if (!sleAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const noRipple = !sleAccount->isFlag(lsfDefaultRipple);
+    bool const noRipple = (sleAccount->getFlags() & lsfDefaultRipple) == 0;
 
     return trustCreate(
         view,
@@ -825,7 +796,7 @@ accountSendIOU(
 {
     if (view.rules().enabled(fixAMMv1_1))
     {
-        if (saAmount < beast::kZero || saAmount.holds<MPTIssue>())
+        if (saAmount < beast::kZERO || saAmount.holds<MPTIssue>())
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
@@ -834,7 +805,7 @@ accountSendIOU(
     {
         // LCOV_EXCL_START
         XRPL_ASSERT(
-            saAmount >= beast::kZero && !saAmount.holds<MPTIssue>(),
+            saAmount >= beast::kZERO && !saAmount.holds<MPTIssue>(),
             "xrpl::accountSendIOU : minimum amount and not MPT");
         // LCOV_EXCL_STOP
     }
@@ -863,9 +834,9 @@ accountSendIOU(
     TER terResult(tesSUCCESS);
 
     SLE::pointer const sender =
-        uSenderID != beast::kZero ? view.peek(keylet::account(uSenderID)) : SLE::pointer();
+        uSenderID != beast::kZERO ? view.peek(keylet::account(uSenderID)) : SLE::pointer();
     SLE::pointer const receiver =
-        uReceiverID != beast::kZero ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
+        uReceiverID != beast::kZERO ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
 
     if (auto stream = j.trace())
     {
@@ -959,7 +930,7 @@ accountSendMultiIOU(
      */
 
     SLE::pointer const sender =
-        senderID != beast::kZero ? view.peek(keylet::account(senderID)) : SLE::pointer();
+        senderID != beast::kZERO ? view.peek(keylet::account(senderID)) : SLE::pointer();
 
     if (auto stream = j.trace())
     {
@@ -979,7 +950,7 @@ accountSendMultiIOU(
         auto const& receiverID = r.first;
         STAmount const amount{issue, r.second};
 
-        if (amount < beast::kZero)
+        if (amount < beast::kZERO)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
@@ -991,7 +962,7 @@ accountSendMultiIOU(
             continue;
 
         SLE::pointer const receiver =
-            receiverID != beast::kZero ? view.peek(keylet::account(receiverID)) : SLE::pointer();
+            receiverID != beast::kZERO ? view.peek(keylet::account(receiverID)) : SLE::pointer();
 
         if (auto stream = j.trace())
         {
@@ -1123,13 +1094,6 @@ directSendNoFeeMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
-            if (view.rules().enabled(featureMPTokensV2))
-            {
-                if ((*sle)[sfMPTAmount] > (std::numeric_limits<std::uint64_t>::max() - amt))
-                {
-                    return tecINTERNAL;  // LCOV_EXCL_LINE
-                }
-            }
             view.creditHookMPT(uSenderID, uReceiverID, saAmount, (*sle)[sfMPTAmount], available);
             (*sle)[sfMPTAmount] += amt;
             view.update(sle);
@@ -1226,9 +1190,9 @@ directSendNoLimitMultiMPT(
     // Use uint64_t, not STAmount, to keep MaximumAmount comparisons in exact
     // integer arithmetic. STAmount implicitly converts to Number, whose
     // small-scale mantissa (~16 digits) can lose precision for values near
-    // kMaxMpTokenAmount (19 digits).
+    // maxMPTokenAmount (19 digits).
     std::uint64_t totalSendAmount{0};
-    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(kMaxMpTokenAmount);
+    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(kMAX_MP_TOKEN_AMOUNT);
     std::uint64_t const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
 
     // actual accumulates the total cost to the sender (includes transfer
@@ -1242,7 +1206,7 @@ directSendNoLimitMultiMPT(
     {
         STAmount const amount{mptIssue, amt};
 
-        if (amount < beast::kZero)
+        if (amount < beast::kZERO)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (!amount || senderID == receiverID)
@@ -1253,15 +1217,15 @@ directSendNoLimitMultiMPT(
             if (senderID == issuer)
             {
                 XRPL_ASSERT_PARTS(
-                    takeFromSender == beast::kZero,
+                    takeFromSender == beast::kZERO,
                     "xrpl::directSendNoLimitMultiMPT",
                     "sender == issuer, takeFromSender == zero");
 
                 std::uint64_t const sendAmount = amount.mpt().value();
 
-                if (view.rules().enabled(fixCleanup3_1_3))
+                if (view.rules().enabled(fixSecurity3_1_3))
                 {
-                    // Post-fixCleanup3_1_3: aggregate MaximumAmount
+                    // Post-fixSecurity3_1_3: aggregate MaximumAmount
                     // check. WARNING: the order of conditions is
                     // critical — each guards the subtraction in the
                     // next against unsigned underflow. Do not reorder.
@@ -1279,7 +1243,7 @@ directSendNoLimitMultiMPT(
                 }
                 else
                 {
-                    // Pre-fixCleanup3_1_3: per-iteration MaximumAmount
+                    // Pre-fixSecurity3_1_3: per-iteration MaximumAmount
                     // check. Reads sfOutstandingAmount from a stale
                     // view.read() snapshot — incorrect for multi-destination
                     // sends but retained for ledger replay compatibility.
@@ -1335,7 +1299,7 @@ accountSendMPT(
     AllowMPTOverflow allowOverflow)
 {
     XRPL_ASSERT(
-        saAmount >= beast::kZero && saAmount.holds<MPTIssue>(),
+        saAmount >= beast::kZERO && saAmount.holds<MPTIssue>(),
         "xrpl::accountSendMPT : minimum amount and MPT");
 
     /* If we aren't sending anything or if the sender is the same as the
@@ -1437,8 +1401,8 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j)
 {
-    XRPL_ASSERT(from != beast::kZero, "xrpl::transferXRP : nonzero from account");
-    XRPL_ASSERT(to != beast::kZero, "xrpl::transferXRP : nonzero to account");
+    XRPL_ASSERT(from != beast::kZERO, "xrpl::transferXRP : nonzero from account");
+    XRPL_ASSERT(to != beast::kZERO, "xrpl::transferXRP : nonzero to account");
     XRPL_ASSERT(from != to, "xrpl::transferXRP : sender is not receiver");
     XRPL_ASSERT(amount.native(), "xrpl::transferXRP : amount is XRP");
 

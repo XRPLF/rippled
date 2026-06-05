@@ -7,8 +7,6 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/State.h>
-#include <xrpl/shamap/FullBelowCache.h>
-#include <xrpl/shamap/TreeNodeCache.h>
 
 #include <atomic>
 #include <chrono>
@@ -59,16 +57,16 @@ private:
     // check health/stop status as records are copied
     std::uint64_t const checkHealthInterval_ = 1000;
     // minimum # of ledgers to maintain for health of network
-    static std::uint32_t const kMinimumDeletionInterval = 256;
+    static std::uint32_t const kMINIMUM_DELETION_INTERVAL = 256;
     // minimum # of ledgers required for standalone mode.
-    static std::uint32_t const kMinimumDeletionIntervalSa = 8;
+    static std::uint32_t const kMINIMUM_DELETION_INTERVAL_SA = 8;
     // minimum ledger to maintain online.
     std::atomic<LedgerIndex> minimumOnline_;
 
     NodeStore::Scheduler& scheduler_;
     beast::Journal const journal_;
     NodeStore::DatabaseRotating* dbRotating_ = nullptr;
-    SavedStateDB stateDb_;
+    SavedStateDB state_db_;
     std::thread thread_;
     bool stop_ = false;
     bool healthy_ = true;
@@ -95,10 +93,8 @@ private:
     // as of run() or before
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
-    FullBelowCache* fullBelowCache_ = nullptr;
-    TreeNodeCache* treeNodeCache_ = nullptr;
 
-    static constexpr auto kNodeStoreName = "NodeStore";
+    static constexpr auto kNODE_STORE_NAME = "NodeStore";
 
 public:
     SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
@@ -117,7 +113,7 @@ public:
     {
         if (advisoryDelete_)
             canDelete_ = seq;
-        return stateDb_.setCanDelete(seq);
+        return state_db_.setCanDelete(seq);
     }
 
     bool
@@ -131,7 +127,7 @@ public:
     LedgerIndex
     getLastRotated() override
     {
-        return stateDb_.getState().lastRotated;
+        return state_db_.getState().lastRotated;
     }
 
     // All ledgers before and including this are unprotected

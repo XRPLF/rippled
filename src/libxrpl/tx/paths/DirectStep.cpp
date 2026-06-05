@@ -269,7 +269,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
     [[nodiscard]] TER
-    check(StrandContext const& ctx, SLE::const_ref sleSrc) const;
+    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const;
 
     [[nodiscard]] std::string
     logString() const override
@@ -327,7 +327,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
     static TER
-    check(StrandContext const& ctx, SLE::const_ref sleSrc);
+    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc);
 
     [[nodiscard]] std::string
     logString() const override
@@ -415,7 +415,7 @@ DirectIOfferCrossingStep::maxFlow(ReadView const& sb, IOUAmount const& desired) 
 }
 
 TER
-DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
+DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const
 {
     // Since this is a payment a trust line must be present.  Perform all
     // trust line related checks.
@@ -429,8 +429,8 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
-        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField) &&
-            (*sleLine)[sfBalance] == beast::kZero)
+        if ((((*sleSrc)[sfFlags] & lsfRequireAuth) != 0u) &&
+            (((*sleLine)[sfFlags] & authField) == 0u) && (*sleLine)[sfBalance] == beast::kZERO)
         {
             JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
                              << " src: " << src_;
@@ -441,7 +441,9 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
         {
             if (ctx.prevStep->bookStepBook())
             {
-                if (sleLine->isFlag((src_ > dst_) ? lsfHighNoRipple : lsfLowNoRipple))
+                auto const noRippleSrcToDst =
+                    ((*sleLine)[sfFlags] & ((src_ > dst_) ? lsfHighNoRipple : lsfLowNoRipple));
+                if (noRippleSrcToDst != 0u)
                     return terNO_RIPPLE;
             }
         }
@@ -449,7 +451,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 
     {
         auto const owed = creditBalance(ctx.view, dst_, src_, currency_);
-        if (owed <= beast::kZero)
+        if (owed <= beast::kZERO)
         {
             auto const limit = creditLimit(ctx.view, dst_, src_, currency_);
             if (-owed >= limit)
@@ -463,7 +465,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 }
 
 TER
-DirectIOfferCrossingStep::check(StrandContext const&, SLE::const_ref)
+DirectIOfferCrossingStep::check(StrandContext const&, std::shared_ptr<const SLE> const&)
 {
     // The standard checks are all we can do because any remaining checks
     // require the existence of a trust line.  Offer crossing does not
@@ -526,8 +528,8 @@ DirectStepI<TDerived>::revImp(
     {
         JLOG(j_.trace()) << "DirectStepI::rev: dry";
         cache_.emplace(
-            IOUAmount(beast::kZero), IOUAmount(beast::kZero), IOUAmount(beast::kZero), srcDebtDir);
-        return {beast::kZero, beast::kZero};
+            IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), srcDebtDir);
+        return {beast::kZERO, beast::kZERO};
     }
 
     IOUAmount const srcToDst = mulRatio(out, QUALITY_ONE, dstQIn, /*roundUp*/ true);
@@ -639,8 +641,8 @@ DirectStepI<TDerived>::fwdImp(
     {
         JLOG(j_.trace()) << "DirectStepI::fwd: dry";
         cache_.emplace(
-            IOUAmount(beast::kZero), IOUAmount(beast::kZero), IOUAmount(beast::kZero), srcDebtDir);
-        return {beast::kZero, beast::kZero};
+            IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), IOUAmount(beast::kZERO), srcDebtDir);
+        return {beast::kZERO, beast::kZERO};
     }
 
     IOUAmount const srcToDst = mulRatio(in, QUALITY_ONE, srcQOut, /*roundUp*/ false);
@@ -688,7 +690,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
     if (!cache_)
     {
         JLOG(j_.trace()) << "Expected valid cache in validFwd";
-        return {false, EitherAmount(IOUAmount(beast::kZero))};
+        return {false, EitherAmount(IOUAmount(beast::kZERO))};
     }
 
     auto const savCache = *cache_;
@@ -706,7 +708,7 @@ DirectStepI<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmo
     }
     catch (FlowException const&)
     {
-        return {false, EitherAmount(IOUAmount(beast::kZero))};
+        return {false, EitherAmount(IOUAmount(beast::kZERO))};
     }
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access) fwdImp sets cache_ on success

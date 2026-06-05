@@ -189,9 +189,9 @@ toStrand(
         (dst == noAccount()) || (deliver.getIssuer() == noAccount()))
         return {temBAD_PATH, Strand{}};
 
-    if ((deliver.holds<MPTIssue>() && deliver.getIssuer() == beast::kZero) ||
+    if ((deliver.holds<MPTIssue>() && deliver.getIssuer() == beast::kZERO) ||
         (sendMaxAsset && sendMaxAsset->holds<MPTIssue>() &&
-         sendMaxAsset->getIssuer() == beast::kZero))
+         sendMaxAsset->getIssuer() == beast::kZERO))
         return {temBAD_PATH, Strand{}};
 
     for (std::size_t i = 0; i < path.size(); ++i)
@@ -662,7 +662,7 @@ toStrands(
         {
             lastFailTer = ter;
             JLOG(j.trace()) << "failed to add path: ter: " << ter
-                            << "path: " << p.getJson(JsonOptions::Values::None);
+                            << "path: " << p.getJson(JsonOptions::KNone);
             if (isTemMalformed(ter))
                 return {ter, std::vector<Strand>{}};
         }

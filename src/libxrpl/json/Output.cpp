@@ -10,41 +10,41 @@ namespace json {
 namespace {
 
 void
-outputJson(Value const& value, Writer& writer)
+outputJson(json::Value const& value, Writer& writer)
 {
     switch (value.type())
     {
-        case ValueType::Null: {
+        case json::NullValue: {
             writer.output(nullptr);
             break;
         }
 
-        case ValueType::Int: {
+        case json::IntValue: {
             writer.output(value.asInt());
             break;
         }
 
-        case ValueType::UInt: {
+        case json::UintValue: {
             writer.output(value.asUInt());
             break;
         }
 
-        case ValueType::Real: {
+        case json::RealValue: {
             writer.output(value.asDouble());
             break;
         }
 
-        case ValueType::String: {
+        case json::StringValue: {
             writer.output(value.asString());
             break;
         }
 
-        case ValueType::Boolean: {
+        case json::BooleanValue: {
             writer.output(value.asBool());
             break;
         }
 
-        case ValueType::Array: {
+        case json::ArrayValue: {
             writer.startRoot(Writer::CollectionType::Array);
             for (auto const& i : value)
             {
@@ -55,7 +55,7 @@ outputJson(Value const& value, Writer& writer)
             break;
         }
 
-        case ValueType::Object: {
+        case json::ObjectValue: {
             writer.startRoot(Writer::CollectionType::Object);
             auto members = value.getMemberNames();
             for (auto const& tag : members)
@@ -72,14 +72,14 @@ outputJson(Value const& value, Writer& writer)
 }  // namespace
 
 void
-outputJson(Value const& value, Output const& out)
+outputJson(json::Value const& value, Output const& out)
 {
     Writer writer(out);
     outputJson(value, writer);
 }
 
 std::string
-jsonAsString(Value const& value)
+jsonAsString(json::Value const& value)
 {
     std::string s;
     Writer writer(stringOutput(s));

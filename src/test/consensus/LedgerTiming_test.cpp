@@ -24,7 +24,7 @@ class LedgerTiming_test : public beast::unit_test::Suite
             run(bool previousAgree, std::uint32_t rounds)
             {
                 TestRes res;
-                auto closeResolution = kLedgerDefaultTimeResolution;
+                auto closeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
                 auto nextCloseResolution = closeResolution;
                 std::uint32_t round = 0;
                 do

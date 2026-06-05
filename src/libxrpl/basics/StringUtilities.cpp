@@ -37,7 +37,7 @@ bool
 parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
-    static boost::regex const kReUrl(
+    static boost::regex const kRE_URL(
         "(?i)\\`\\s*"
         // required scheme
         "([[:alpha:]][-+.[:alpha:][:digit:]]*?):"
@@ -58,7 +58,7 @@ parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
     // Bail if there is no match.
     try
     {
-        if (!boost::regex_match(strUrl, smMatch, kReUrl))
+        if (!boost::regex_match(strUrl, smMatch, kRE_URL))
             return false;
     }
     catch (...)
@@ -101,7 +101,7 @@ trimWhitespace(std::string str)
 }
 
 std::optional<std::uint64_t>
-toUInt64(std::string const& s)
+toUint64(std::string const& s)
 {
     std::uint64_t result = 0;
     if (beast::lexicalCastChecked(result, s))

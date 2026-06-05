@@ -157,7 +157,7 @@ public:
     /** Fetch an item from the cache.
         If the digest was not found, Handler
         will be called with this signature:
-            SLE::const_pointer(void)
+            std::shared_ptr<SLE const>(void)
     */
     template <class Handler>
     SharedPointerType
@@ -181,14 +181,14 @@ private:
             beast::insight::Collector::ptr const& collector)
             : hook(collector->makeHook(handler))
             , size(collector->makeGauge(prefix, "size"))
-            , hitRate(collector->makeGauge(prefix, "hit_rate"))
+            , hit_rate(collector->makeGauge(prefix, "hit_rate"))
 
         {
         }
 
         beast::insight::Hook hook;
         beast::insight::Gauge size;
-        beast::insight::Gauge hitRate;
+        beast::insight::Gauge hit_rate;
 
         std::size_t hits{0};
         std::size_t misses{0};
@@ -197,16 +197,16 @@ private:
     class KeyOnlyEntry
     {
     public:
-        clock_type::time_point lastAccess;
+        clock_type::time_point last_access;
 
-        explicit KeyOnlyEntry(clock_type::time_point const& lastAccess) : lastAccess(lastAccess)
+        explicit KeyOnlyEntry(clock_type::time_point const& lastAccess) : last_access(lastAccess)
         {
         }
 
         void
         touch(clock_type::time_point const& now)
         {
-            lastAccess = now;
+            last_access = now;
         }
     };
 
@@ -214,10 +214,10 @@ private:
     {
     public:
         shared_weak_combo_pointer_type ptr;
-        clock_type::time_point lastAccess;
+        clock_type::time_point last_access;
 
         ValueEntry(clock_type::time_point const& lastAccess, shared_pointer_type const& ptr)
-            : ptr(ptr), lastAccess(lastAccess)
+            : ptr(ptr), last_access(lastAccess)
         {
         }
 
@@ -246,7 +246,7 @@ private:
         void
         touch(clock_type::time_point const& now)
         {
-            lastAccess = now;
+            last_access = now;
         }
     };
 
@@ -286,13 +286,13 @@ private:
     std::string name_;
 
     // Desired number of cache entries (0 = ignore)
-    int const targetSize_;
+    int const target_size_;
 
     // Desired maximum cache age
-    clock_type::duration const targetAge_;
+    clock_type::duration const target_age_;
 
     // Number of items cached
-    int cacheCount_{0};
+    int cache_count_{0};
     cache_type cache_;  // Hold strong reference to recent objects
     std::uint64_t hits_{0};
     std::uint64_t misses_{0};

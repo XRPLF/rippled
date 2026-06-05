@@ -23,9 +23,9 @@ SlotImp::SlotImp(
     , fixed_(fixed)
     , reserved_(false)
     , state_(State::Accept)
-    , remoteEndpoint_(std::move(remoteEndpoint))
-    , localEndpoint_(localEndpoint)
-    , listeningPort_(kUnknownPort)
+    , remote_endpoint_(std::move(remoteEndpoint))
+    , local_endpoint_(localEndpoint)
+    , listening_port_(kUNKNOWN_PORT)
     , checked(false)
     , canAccept(false)
     , connectivityCheckInProgress(false)
@@ -38,8 +38,8 @@ SlotImp::SlotImp(beast::IP::Endpoint remoteEndpoint, bool fixed, clock_type& clo
     , fixed_(fixed)
     , reserved_(false)
     , state_(State::Connect)
-    , remoteEndpoint_(std::move(remoteEndpoint))
-    , listeningPort_(kUnknownPort)
+    , remote_endpoint_(std::move(remoteEndpoint))
+    , listening_port_(kUNKNOWN_PORT)
     , checked(true)
     , canAccept(true)
     , connectivityCheckInProgress(false)
@@ -131,7 +131,7 @@ SlotImp::RecentT::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
 void
 SlotImp::RecentT::expire()
 {
-    beast::expire(cache_, Tuning::kLiveCacheSecondsToLive);
+    beast::expire(cache_, Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
 }
 
 }  // namespace xrpl::PeerFinder

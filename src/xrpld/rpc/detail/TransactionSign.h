@@ -25,8 +25,8 @@ getCurrentNetworkFee(
     TxQ const& txQ,
     Application const& app,
     json::Value const& tx,
-    int mult = Tuning::kDefaultAutoFillFeeMultiplier,
-    int div = Tuning::kDefaultAutoFillFeeDivisor);
+    int mult = Tuning::kDEFAULT_AUTO_FILL_FEE_MULTIPLIER,
+    int div = Tuning::kDEFAULT_AUTO_FILL_FEE_DIVISOR);
 
 /** Fill in the fee on behalf of the client.
     This is called when the client does not explicitly specify the fee.
@@ -84,7 +84,7 @@ getProcessTxnFn(NetworkOPs& netOPs)
     };
 }
 
-/** Returns a json::ValueType::Object. */
+/** Returns a json::objectValue. */
 json::Value
 transactionSign(
     json::Value params,  // Passed by value so it can be modified locally.
@@ -94,7 +94,7 @@ transactionSign(
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-/** Returns a json::ValueType::Object. */
+/** Returns a json::objectValue. */
 json::Value
 transactionSubmit(
     json::Value params,  // Passed by value so it can be modified locally.
@@ -105,7 +105,7 @@ transactionSubmit(
     Application& app,
     ProcessTransactionFn const& processTransaction);
 
-/** Returns a json::ValueType::Object. */
+/** Returns a json::objectValue. */
 json::Value
 transactionSignFor(
     json::Value params,  // Passed by value so it can be modified locally.
@@ -115,7 +115,7 @@ transactionSignFor(
     std::chrono::seconds validatedLedgerAge,
     Application& app);
 
-/** Returns a json::ValueType::Object. */
+/** Returns a json::objectValue. */
 json::Value
 transactionSubmitMultiSigned(
     json::Value params,  // Passed by value so it can be modified locally.

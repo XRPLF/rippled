@@ -33,7 +33,6 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
     auto const mutableFlagsValue = canonical_UINT32();
-    auto const referenceHoldingValue = canonical_UINT256();
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
@@ -54,7 +53,6 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setDomainID(domainIDValue);
     builder.setMutableFlags(mutableFlagsValue);
-    builder.setReferenceHolding(referenceHoldingValue);
     builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
     builder.setConfidentialOutstandingAmount(confidentialOutstandingAmountValue);
@@ -161,14 +159,6 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = referenceHoldingValue;
-        auto const actualOpt = entry.getReferenceHolding();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfReferenceHolding");
-        EXPECT_TRUE(entry.hasReferenceHolding());
-    }
-
-    {
         auto const& expected = issuerEncryptionKeyValue;
         auto const actualOpt = entry.getIssuerEncryptionKey();
         ASSERT_TRUE(actualOpt.has_value());
@@ -218,7 +208,6 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const previousTxnLgrSeqValue = canonical_UINT32();
     auto const domainIDValue = canonical_UINT256();
     auto const mutableFlagsValue = canonical_UINT32();
-    auto const referenceHoldingValue = canonical_UINT256();
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
@@ -238,7 +227,6 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
     sle->at(sfDomainID) = domainIDValue;
     sle->at(sfMutableFlags) = mutableFlagsValue;
-    sle->at(sfReferenceHolding) = referenceHoldingValue;
     sle->at(sfIssuerEncryptionKey) = issuerEncryptionKeyValue;
     sle->at(sfAuditorEncryptionKey) = auditorEncryptionKeyValue;
     sle->at(sfConfidentialOutstandingAmount) = confidentialOutstandingAmountValue;
@@ -404,19 +392,6 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = referenceHoldingValue;
-
-        auto const fromSleOpt = entryFromSle.getReferenceHolding();
-        auto const fromBuilderOpt = entryFromBuilder.getReferenceHolding();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfReferenceHolding");
-        expectEqualField(expected, *fromBuilderOpt, "sfReferenceHolding");
-    }
-
-    {
         auto const& expected = issuerEncryptionKeyValue;
 
         auto const fromSleOpt = entryFromSle.getIssuerEncryptionKey();
@@ -533,8 +508,6 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getDomainID().has_value());
     EXPECT_FALSE(entry.hasMutableFlags());
     EXPECT_FALSE(entry.getMutableFlags().has_value());
-    EXPECT_FALSE(entry.hasReferenceHolding());
-    EXPECT_FALSE(entry.getReferenceHolding().has_value());
     EXPECT_FALSE(entry.hasIssuerEncryptionKey());
     EXPECT_FALSE(entry.getIssuerEncryptionKey().has_value());
     EXPECT_FALSE(entry.hasAuditorEncryptionKey());

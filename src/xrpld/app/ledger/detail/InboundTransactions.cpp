@@ -28,8 +28,14 @@
 namespace xrpl {
 
 // Need to be named before converting
-static constexpr auto kStartPeers = 2;     // ideal number of peers to start with
-static constexpr auto kSetKeepRounds = 3;  // how many rounds to keep a set
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum {
+    // Ideal number of peers to start with
+    StartPeers = 2,
+
+    // How many rounds to keep a set
+    SetKeepRounds = 3,
+};
 
 class InboundTransactionSet
 {
@@ -114,7 +120,7 @@ public:
             obj.seq = seq_;
         }
 
-        ta->init(kStartPeers);
+        ta->init(StartPeers);
 
         return {};
     }
@@ -136,7 +142,7 @@ public:
 
         if (ta == nullptr)
         {
-            peer->charge(Resource::kFeeUselessData, "ledger_data");
+            peer->charge(Resource::kFEE_USELESS_DATA, "ledger_data");
             return;
         }
 
@@ -147,7 +153,7 @@ public:
         {
             if (!node.has_nodeid() || !node.has_nodedata())
             {
-                peer->charge(Resource::kFeeMalformedRequest, "ledger_data");
+                peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data");
                 return;
             }
 
@@ -155,7 +161,7 @@ public:
 
             if (!id)
             {
-                peer->charge(Resource::kFeeInvalidData, "ledger_data");
+                peer->charge(Resource::kFEE_INVALID_DATA, "ledger_data");
                 return;
             }
 
@@ -163,7 +169,7 @@ public:
         }
 
         if (!ta->takeNodes(data, peer).isUseful())
-            peer->charge(Resource::kFeeUselessData, "ledger_data not useful");
+            peer->charge(Resource::kFEE_USELESS_DATA, "ledger_data not useful");
     }
 
     void
@@ -208,8 +214,8 @@ public:
 
             auto it = map_.begin();
 
-            std::uint32_t const minSeq = (seq < kSetKeepRounds) ? 0 : (seq - kSetKeepRounds);
-            std::uint32_t const maxSeq = seq + kSetKeepRounds;
+            std::uint32_t const minSeq = (seq < SetKeepRounds) ? 0 : (seq - SetKeepRounds);
+            std::uint32_t const maxSeq = seq + SetKeepRounds;
 
             while (it != map_.end())
             {

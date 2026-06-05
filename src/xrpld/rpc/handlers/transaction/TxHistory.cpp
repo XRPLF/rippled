@@ -21,7 +21,7 @@ doTxHistory(RPC::JsonContext& context)
     if (!context.app.config().useTxTables())
         return rpcError(RpcNotEnabled);
 
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
     if (!context.params.isMember(jss::start))
         return rpcError(RpcInvalidParams);
@@ -39,7 +39,7 @@ doTxHistory(RPC::JsonContext& context)
 
     for (auto const& t : trans)
     {
-        json::Value txJson = t->getJson(JsonOptions::Values::None);
+        json::Value txJson = t->getJson(JsonOptions::KNone);
         RPC::insertDeliverMax(txJson, t->getSTransaction()->getTxnType(), context.apiVersion);
         txs.append(txJson);
     }

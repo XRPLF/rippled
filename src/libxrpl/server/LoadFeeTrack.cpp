@@ -27,9 +27,9 @@ LoadFeeTrack::raiseLocalFee()
     localTxnLoadFee_ = std::max(localTxnLoadFee_, remoteTxnLoadFee_);
 
     // Increase slowly
-    localTxnLoadFee_ += (localTxnLoadFee_ / kLftFeeIncFraction);
+    localTxnLoadFee_ += (localTxnLoadFee_ / kLFT_FEE_INC_FRACTION);
 
-    localTxnLoadFee_ = std::min(localTxnLoadFee_, kLftFeeMax);
+    localTxnLoadFee_ = std::min(localTxnLoadFee_, kLFT_FEE_MAX);
 
     if (origFee == localTxnLoadFee_)
         return false;
@@ -46,9 +46,9 @@ LoadFeeTrack::lowerLocalFee()
     raiseCount_ = 0;
 
     // Reduce slowly
-    localTxnLoadFee_ -= (localTxnLoadFee_ / kLftFeeDecFraction);
+    localTxnLoadFee_ -= (localTxnLoadFee_ / kLFT_FEE_DEC_FRACTION);
 
-    localTxnLoadFee_ = std::max(localTxnLoadFee_, kLftNormalFee);
+    localTxnLoadFee_ = std::max(localTxnLoadFee_, kLFT_NORMAL_FEE);
 
     if (origFee == localTxnLoadFee_)
         return false;

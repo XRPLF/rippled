@@ -18,11 +18,11 @@ public:
     // Restrict number of AMM offers. If this restriction is removed
     // then need to restrict in some other way because AMM offers are
     // not counted in the BookStep offer counter.
-    static constexpr std::uint8_t kMaxIterations = 30;
+    constexpr static std::uint8_t kMAX_ITERATIONS = 30;
 
 private:
     // Tx account owner is required to get the AMM trading fee in BookStep
-    AccountID accountID_;
+    AccountID account_;
     // true if payment has multiple paths
     bool multiPath_{false};
     // Is true if AMM offer is consumed during a payment engine iteration.
@@ -31,8 +31,7 @@ private:
     std::uint16_t ammIters_{0};
 
 public:
-    AMMContext(AccountID const& account, bool multiPath)
-        : accountID_(account), multiPath_(multiPath)
+    AMMContext(AccountID const& account, bool multiPath) : account_(account), multiPath_(multiPath)
     {
     }
     ~AMMContext() = default;
@@ -69,7 +68,7 @@ public:
     [[nodiscard]] bool
     maxItersReached() const
     {
-        return ammIters_ >= kMaxIterations;
+        return ammIters_ >= kMAX_ITERATIONS;
     }
 
     [[nodiscard]] std::uint16_t
@@ -81,7 +80,7 @@ public:
     [[nodiscard]] AccountID
     account() const
     {
-        return accountID_;
+        return account_;
     }
 
     /** Strand execution may fail. Reset the flag at the start

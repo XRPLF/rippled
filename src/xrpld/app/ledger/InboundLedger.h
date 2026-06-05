@@ -78,7 +78,7 @@ public:
 
     using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
 
-    /** Return a json::ValueType::Object. */
+    /** Return a json::objectValue. */
     json::Value
     getJson(int);
 

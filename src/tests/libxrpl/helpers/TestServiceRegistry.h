@@ -16,18 +16,19 @@
 #include <optional>
 #include <stdexcept>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 /** Logs implementation that creates TestSink instances. */
 class TestLogs : public Logs
 {
 public:
-    explicit TestLogs(beast::Severity level = beast::Severity::Warning) : Logs(level)
+    explicit TestLogs(beast::severities::Severity level = beast::severities::KWarning) : Logs(level)
     {
     }
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(std::string const&, beast::Severity threshold) override
+    makeSink(std::string const&, beast::severities::Severity threshold) override
     {
         return std::make_unique<TestSink>(threshold);
     }
@@ -61,8 +62,8 @@ private:
 */
 class TestServiceRegistry : public ServiceRegistry
 {
-    TestLogs logs_{beast::Severity::Warning};
-    boost::asio::io_context ioContext_;
+    TestLogs logs_{beast::severities::KWarning};
+    boost::asio::io_context io_context_;
     TestFamily family_{logs_.journal("TestFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};
     TestNetworkIDService networkIDService_;
@@ -343,7 +344,7 @@ public:
     boost::asio::io_context&
     getIOContext() override
     {
-        return ioContext_;
+        return io_context_;
     }
 
     Logs&
@@ -373,4 +374,5 @@ public:
     }
 };
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

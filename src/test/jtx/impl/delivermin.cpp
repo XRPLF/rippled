@@ -10,7 +10,7 @@ namespace xrpl::test::jtx {
 void
 DeliverMin::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[jss::DeliverMin] = amount_.getJson(JsonOptions::Values::None);
+    jt.jv[jss::DeliverMin] = amount_.getJson(JsonOptions::KNone);
 }
 
 }  // namespace xrpl::test::jtx

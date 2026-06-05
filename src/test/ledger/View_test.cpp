@@ -61,7 +61,7 @@ class View_test : public beast::unit_test::Suite
     }
 
     // Create SLE with key and payload
-    static SLE::pointer
+    static std::shared_ptr<SLE>
     sle(std::uint64_t id, std::uint32_t seq = 1)
     {
         auto const le = std::make_shared<SLE>(k(id));
@@ -79,7 +79,7 @@ class View_test : public beast::unit_test::Suite
 
     // Set payload on SLE
     static void
-    seq(SLE::ref le, std::uint32_t seq)
+    seq(std::shared_ptr<SLE> const& le, std::uint32_t seq)
     {
         le->setFieldU32(sfSequence, seq);
     }
@@ -151,9 +151,9 @@ class View_test : public beast::unit_test::Suite
         Env env(*this);
         Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            kCreateGenesis,
+            kCREATE_GENESIS,
             Rules{config.features},
-            config.fees.toFees(),
+            config.FEES.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto const ledger =
@@ -419,9 +419,9 @@ class View_test : public beast::unit_test::Suite
         Env env(*this);
         Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            kCreateGenesis,
+            kCREATE_GENESIS,
             Rules{config.features},
-            config.fees.toFees(),
+            config.FEES.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto const ledger =
@@ -628,9 +628,9 @@ class View_test : public beast::unit_test::Suite
         Env env(*this);
         Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            kCreateGenesis,
+            kCREATE_GENESIS,
             Rules{config.features},
-            config.fees.toFees(),
+            config.FEES.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         auto const ledger =
@@ -935,7 +935,7 @@ class View_test : public beast::unit_test::Suite
 
         auto rdView = env.closed();
         // Test with no rate set on gw1.
-        BEAST_EXPECT(transferRate(*rdView, gw1) == kParityRate);
+        BEAST_EXPECT(transferRate(*rdView, gw1) == kPARITY_RATE);
 
         env(rate(gw1, 1.02));
         env.close();
@@ -958,7 +958,7 @@ class View_test : public beast::unit_test::Suite
         auto const bob = Account("bob");
 
         // The first Env.
-        Env eA(*this, envconfig(), nullptr, beast::Severity::Disabled);
+        Env eA(*this, envconfig(), nullptr, beast::severities::KDisabled);
 
         eA.fund(XRP(10000), alice);
         eA.close();
@@ -970,7 +970,7 @@ class View_test : public beast::unit_test::Suite
 
         // The two Env's can't share the same ports, so modify the config
         // of the second Env to use higher port numbers
-        Env eB{*this, envconfig(), nullptr, beast::Severity::Disabled};
+        Env eB{*this, envconfig(), nullptr, beast::severities::KDisabled};
 
         // Make ledgers that are incompatible with the first ledgers.  Note
         // that bob is funded before alice.
@@ -1018,9 +1018,9 @@ class View_test : public beast::unit_test::Suite
             Env env(*this);
             Config const config;
             std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-                kCreateGenesis,
+                kCREATE_GENESIS,
                 Rules{config.features},
-                config.fees.toFees(),
+                config.FEES.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
             auto const ledger =

@@ -646,22 +646,22 @@ STObject::getFieldVL(SField const& field) const
 STAmount const&
 STObject::getFieldAmount(SField const& field) const
 {
-    static STAmount const kEmpty{};
-    return getFieldByConstRef<STAmount>(field, kEmpty);
+    static STAmount const kEMPTY{};
+    return getFieldByConstRef<STAmount>(field, kEMPTY);
 }
 
 STPathSet const&
 STObject::getFieldPathSet(SField const& field) const
 {
-    static STPathSet const kEmpty{};
-    return getFieldByConstRef<STPathSet>(field, kEmpty);
+    static STPathSet const kEMPTY{};
+    return getFieldByConstRef<STPathSet>(field, kEMPTY);
 }
 
 STVector256 const&
 STObject::getFieldV256(SField const& field) const
 {
-    static STVector256 const kEmpty{};
-    return getFieldByConstRef<STVector256>(field, kEmpty);
+    static STVector256 const kEMPTY{};
+    return getFieldByConstRef<STVector256>(field, kEMPTY);
 }
 
 STObject
@@ -677,22 +677,22 @@ STObject::getFieldObject(SField const& field) const
 STArray const&
 STObject::getFieldArray(SField const& field) const
 {
-    static STArray const kEmpty{};
-    return getFieldByConstRef<STArray>(field, kEmpty);
+    static STArray const kEMPTY{};
+    return getFieldByConstRef<STArray>(field, kEMPTY);
 }
 
 STCurrency const&
 STObject::getFieldCurrency(SField const& field) const
 {
-    static STCurrency const kEmpty{};
-    return getFieldByConstRef<STCurrency>(field, kEmpty);
+    static STCurrency const kEMPTY{};
+    return getFieldByConstRef<STCurrency>(field, kEMPTY);
 }
 
 STNumber const&
 STObject::getFieldNumber(SField const& field) const
 {
-    static STNumber const kEmpty{};
-    return getFieldByConstRef<STNumber>(field, kEmpty);
+    static STNumber const kEMPTY{};
+    return getFieldByConstRef<STNumber>(field, kEMPTY);
 }
 
 void
@@ -834,7 +834,7 @@ STObject::setFieldObject(SField const& field, STObject const& v)
 json::Value
 STObject::getJson(JsonOptions options) const
 {
-    json::Value ret(json::ValueType::Object);
+    json::Value ret(json::ObjectValue);
 
     for (auto const& elem : v_)
     {

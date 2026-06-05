@@ -7,7 +7,8 @@
 
 #include <memory>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 /** Test implementation of Family for unit tests.
 
@@ -48,7 +49,7 @@ public:
         return *db_;
     }
 
-    [[nodiscard]] NodeStore::Database const&
+    NodeStore::Database const&
     db() const override
     {
         return *db_;
@@ -94,8 +95,8 @@ public:
     void
     reset() override
     {
-        (*fbCache_).reset();
-        (*tnCache_).reset();
+        fbCache_->reset();
+        tnCache_->reset();
     }
 
     /** Access the test clock for time manipulation in tests. */
@@ -106,4 +107,5 @@ public:
     }
 };
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

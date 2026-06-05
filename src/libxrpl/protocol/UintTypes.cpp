@@ -18,41 +18,41 @@ namespace detail {
 
 // Characters we are willing to allow in the ASCII representation of a
 // three-letter currency code.
-constexpr std::string_view kIsoCharSet =
+constexpr std::string_view kISO_CHAR_SET =
     "abcdefghijklmnopqrstuvwxyz"
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "0123456789"
     "<>(){}[]|?!@#$%^&*";
 
 // The location (in bytes) of the 3 digit currency inside a 160-bit value
-constexpr std::size_t kIsoCodeOffset = 12;
+constexpr std::size_t kISO_CODE_OFFSET = 12;
 
 // The length of an ISO-4217 like code
-constexpr std::size_t kIsoCodeLength = 3;
+constexpr std::size_t kISO_CODE_LENGTH = 3;
 
 }  // namespace detail
 
 std::string
 to_string(Currency const& currency)
 {
-    if (currency == beast::kZero)
+    if (currency == beast::kZERO)
         return systemCurrencyCode();
 
     if (currency == noCurrency())
         return "1";
 
-    static constexpr Currency kSIsoBits("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
+    static constexpr Currency kS_ISO_BITS("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
 
-    if ((currency & kSIsoBits).isZero())
+    if ((currency & kS_ISO_BITS).isZero())
     {
         std::string const iso(
-            currency.data() + detail::kIsoCodeOffset,
-            currency.data() + detail::kIsoCodeOffset + detail::kIsoCodeLength);
+            currency.data() + detail::kISO_CODE_OFFSET,
+            currency.data() + detail::kISO_CODE_OFFSET + detail::kISO_CODE_LENGTH);
 
         // Specifying the system currency code using ISO-style representation
         // is not allowed.
         if ((iso != systemCurrencyCode()) &&
-            (iso.find_first_not_of(detail::kIsoCharSet) == std::string::npos))
+            (iso.find_first_not_of(detail::kISO_CHAR_SET) == std::string::npos))
         {
             return iso;
         }
@@ -66,19 +66,19 @@ toCurrency(Currency& currency, std::string const& code)
 {
     if (code.empty() || (code.compare(systemCurrencyCode()) == 0))
     {
-        currency = beast::kZero;
+        currency = beast::kZERO;
         return true;
     }
 
     // Handle ISO-4217-like 3-digit character codes.
-    if (code.size() == detail::kIsoCodeLength)
+    if (code.size() == detail::kISO_CODE_LENGTH)
     {
-        if (code.find_first_not_of(detail::kIsoCharSet) != std::string::npos)
+        if (code.find_first_not_of(detail::kISO_CHAR_SET) != std::string::npos)
             return false;
 
-        currency = beast::kZero;
+        currency = beast::kZERO;
 
-        std::ranges::copy(code, currency.begin() + detail::kIsoCodeOffset);
+        std::ranges::copy(code, currency.begin() + detail::kISO_CODE_OFFSET);
 
         return true;
     }
@@ -98,22 +98,22 @@ toCurrency(std::string const& code)
 Currency const&
 xrpCurrency()
 {
-    static Currency const kCurrency(beast::kZero);
-    return kCurrency;
+    static Currency const kCURRENCY(beast::kZERO);
+    return kCURRENCY;
 }
 
 Currency const&
 noCurrency()
 {
-    static Currency const kCurrency(1);
-    return kCurrency;
+    static Currency const kCURRENCY(1);
+    return kCURRENCY;
 }
 
 Currency const&
 badCurrency()
 {
-    static Currency const kCurrency(0x5852500000000000);
-    return kCurrency;
+    static Currency const kCURRENCY(0x5852500000000000);
+    return kCURRENCY;
 }
 
 }  // namespace xrpl

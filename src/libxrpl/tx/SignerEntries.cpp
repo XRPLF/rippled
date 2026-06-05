@@ -28,7 +28,7 @@ SignerEntries::deserialize(STObject const& obj, beast::Journal journal, std::str
     }
 
     std::vector<SignerEntry> accountVec;
-    accountVec.reserve(STTx::kMaxMultiSigners);
+    accountVec.reserve(STTx::kMAX_MULTI_SIGNERS);
 
     STArray const& sEntries(obj.getFieldArray(sfSignerEntries));
     for (STObject const& sEntry : sEntries)

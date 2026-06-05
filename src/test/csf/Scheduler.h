@@ -91,7 +91,7 @@ private:
             make_multiset<Event, boost::intrusive::constant_time_size<false>>::type;
         // alloc_ is owned by the scheduler
         boost::container::pmr::monotonic_buffer_resource* alloc_;
-        by_when_set byWhen_;
+        by_when_set by_when_;
 
     public:
         using iterator = typename by_when_set::iterator;
@@ -258,7 +258,7 @@ inline Scheduler::QueueType::QueueType(boost::container::pmr::monotonic_buffer_r
 
 inline Scheduler::QueueType::~QueueType()
 {
-    for (auto iter = byWhen_.begin(); iter != byWhen_.end();)
+    for (auto iter = by_when_.begin(); iter != by_when_.end();)
     {
         auto e = &*iter;
         ++iter;
@@ -270,19 +270,19 @@ inline Scheduler::QueueType::~QueueType()
 inline bool
 Scheduler::QueueType::empty() const
 {
-    return byWhen_.empty();
+    return by_when_.empty();
 }
 
 inline auto
 Scheduler::QueueType::begin() -> iterator
 {
-    return byWhen_.begin();
+    return by_when_.begin();
 }
 
 inline auto
 Scheduler::QueueType::end() -> iterator
 {
-    return byWhen_.end();
+    return by_when_.end();
 }
 
 template <class Handler>
@@ -292,14 +292,14 @@ Scheduler::QueueType::emplace(time_point when, Handler&& h) -> typename by_when_
     using event_type = EventImpl<std::decay_t<Handler>>;
     auto const p = alloc_->allocate(sizeof(event_type));
     auto& e = *new (p) event_type(when, std::forward<Handler>(h));
-    return byWhen_.insert(e);
+    return by_when_.insert(e);
 }
 
 inline auto
 Scheduler::QueueType::erase(iterator iter) -> typename by_when_set::iterator
 {
     auto& e = *iter;
-    auto next = byWhen_.erase(iter);
+    auto next = by_when_.erase(iter);
     e.~Event();
     alloc_->deallocate(&e, sizeof(e));
     return next;

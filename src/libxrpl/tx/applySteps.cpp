@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -65,15 +66,26 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     // so these need to be more global.
     //
     // To prevent unintentional side effects on existing checks, they will be
-    // set for every operation only once at least one of the relevant amendments
-    // are enabled.
+    // set for every operation only once SingleAssetVault (or later
+    // LendingProtocol) are enabled.
     //
     // See also Transactor::operator().
     //
     std::optional<NumberSO> stNumberSO;
     std::optional<CurrentTransactionRulesGuard> rulesGuard;
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
-    createGuards(rules, stNumberSO, rulesGuard, mantissaScaleGuard);
+    if (rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol))
+    {
+        // raii classes for the current ledger rules.
+        // fixUniversalNumber predates the rulesGuard and should be replaced.
+        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
+        rulesGuard.emplace(rules);
+    }
+    else
+    {
+        // Without those features enabled, always use the old number rules.
+        mantissaScaleGuard.emplace(MantissaRange::MantissaScale::Small);
+    }
 
     switch (txnType)
     {
@@ -94,36 +106,36 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 }
 }  // namespace
 
-// Templates so preflight does the right thing with T::kConsequencesFactory.
+// Templates so preflight does the right thing with T::kCONSEQUENCES_FACTORY.
 //
 // This could be done more easily using if constexpr, but Visual Studio
 // 2017 doesn't handle if constexpr correctly.  So once we're no longer
 // building with Visual Studio 2017 we can consider replacing the four
 // templates with a single template function that uses if constexpr.
 //
-// For ConsequencesFactoryType::Normal
+// For Transactor::Normal
 //
 
 template <class T>
-    requires(T::kConsequencesFactory == Transactor::ConsequencesFactoryType::Normal)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::Normal)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
 
-// For ConsequencesFactoryType::Blocker
+// For Transactor::Blocker
 template <class T>
-    requires(T::kConsequencesFactory == Transactor::ConsequencesFactoryType::Blocker)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::Blocker)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx, TxConsequences::Category::Blocker);
 };
 
-// For ConsequencesFactoryType::Custom
+// For Transactor::Custom
 template <class T>
-    requires(T::kConsequencesFactory == Transactor::ConsequencesFactoryType::Custom)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::Custom)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
@@ -146,7 +158,7 @@ invokePreflight(PreflightContext const& ctx)
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preflight: " << e.txnType;
-        UNREACHABLE("xrpl::invokePreflight : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_preflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
         // LCOV_EXCL_STOP
     }
@@ -174,7 +186,7 @@ invokePreclaim(PreclaimContext const& ctx)
             // a flagged a failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
 
-            if (id != beast::kZero)
+            if (id != beast::kZERO)
             {
                 if (NotTEC const preSigResult = [&]() -> NotTEC {
                         if (NotTEC const result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
@@ -205,7 +217,7 @@ invokePreclaim(PreclaimContext const& ctx)
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preclaim: " << e.txnType;
-        UNREACHABLE("xrpl::invokePreclaim : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_preclaim : unknown transaction type");
         return temUNKNOWN;
         // LCOV_EXCL_STOP
     }
@@ -247,8 +259,8 @@ invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
 
 TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
-    , fee_(beast::kZero)
-    , potentialSpend_(beast::kZero)
+    , fee_(beast::kZERO)
+    , potentialSpend_(beast::kZERO)
     , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
@@ -258,8 +270,8 @@ TxConsequences::TxConsequences(NotTEC pfResult)
 
 TxConsequences::TxConsequences(STTx const& tx)
     : isBlocker_(false)
-    , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::kZero)
-    , potentialSpend_(beast::kZero)
+    , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::kZERO)
+    , potentialSpend_(beast::kZERO)
     , seqProx_(tx.getSeqProxy())
     , sequencesConsumed_(tx.getSeqProxy().isSeq() ? 1 : 0)
 {
@@ -295,7 +307,7 @@ invokeApply(ApplyContext& ctx)
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.journal.fatal()) << "Unknown transaction type in apply: " << e.txnType;
-        UNREACHABLE("xrpl::invokeApply : unknown transaction type");
+        UNREACHABLE("xrpl::invoke_apply : unknown transaction type");
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }

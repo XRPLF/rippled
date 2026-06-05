@@ -13,13 +13,15 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
+
 namespace xrpl {
 
 bool
 dirFirst(
     ApplyView& view,
     uint256 const& root,
-    SLE::pointer& page,
+    std::shared_ptr<SLE>& page,
     unsigned int& index,
     uint256& entry)
 {
@@ -30,7 +32,7 @@ bool
 dirNext(
     ApplyView& view,
     uint256 const& root,
-    SLE::pointer& page,
+    std::shared_ptr<SLE>& page,
     unsigned int& index,
     uint256& entry)
 {
@@ -41,7 +43,7 @@ bool
 cdirFirst(
     ReadView const& view,
     uint256 const& root,
-    SLE::const_pointer& page,
+    std::shared_ptr<SLE const>& page,
     unsigned int& index,
     uint256& entry)
 {
@@ -52,7 +54,7 @@ bool
 cdirNext(
     ReadView const& view,
     uint256 const& root,
-    SLE::const_pointer& page,
+    std::shared_ptr<SLE const>& page,
     unsigned int& index,
     uint256& entry)
 {
@@ -60,7 +62,10 @@ cdirNext(
 }
 
 void
-forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::const_ref)> const& f)
+forEachItem(
+    ReadView const& view,
+    Keylet const& root,
+    std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::forEachItem : valid root type");
 
@@ -90,7 +95,7 @@ forEachItemAfter(
     uint256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(SLE::const_ref)> const& f)
+    std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
 {
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::forEachItemAfter : valid root type");
 
@@ -179,7 +184,7 @@ dirIsEmpty(ReadView const& view, Keylet const& k)
 std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account)
 {
-    return [account](SLE::ref sle) { (*sle)[sfOwner] = account; };
+    return [account](std::shared_ptr<SLE> const& sle) { (*sle)[sfOwner] = account; };
 }
 
 }  // namespace xrpl

@@ -90,14 +90,10 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             if (hasAccount)
                 account = sit.get160();
 
-            if (hasCurrency && hasMPT)
-            {
-                JLOG(debugLog().error()) << "Bad path element MPT and Currency in pathset";
-                Throw<std::runtime_error>("bad path element: MPT and Currency");
-            }
-
+            XRPL_ASSERT(
+                !(hasCurrency && hasMPT), "xrpl::STPathSet::STPathSet : not has Currency and MPT");
             if (hasCurrency)
-                asset = Currency::fromRaw(sit.get160());
+                asset = static_cast<Currency>(sit.get160());
 
             if (hasMPT)
                 asset = sit.get192();
@@ -105,7 +101,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             if (hasIssuer)
                 issuer = sit.get160();
 
-            path.emplace_back(account, asset, issuer, hasCurrency || hasMPT);
+            path.emplace_back(account, asset, issuer, hasCurrency);
         }
     }
 }
@@ -171,11 +167,11 @@ STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID cons
 json::Value
 STPath::getJson(JsonOptions) const
 {
-    json::Value ret(json::ValueType::Array);
+    json::Value ret(json::ArrayValue);
 
     for (auto const& it : path_)
     {
-        json::Value elem(json::ValueType::Object);
+        json::Value elem(json::ObjectValue);
         auto const iType = it.getNodeType();
 
         elem[jss::type] = iType;
@@ -205,7 +201,7 @@ STPath::getJson(JsonOptions) const
 json::Value
 STPathSet::getJson(JsonOptions options) const
 {
-    json::Value ret(json::ValueType::Array);
+    json::Value ret(json::ArrayValue);
     for (auto const& it : value_)
         ret.append(it.getJson(options));
 

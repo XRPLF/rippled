@@ -23,6 +23,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <memory>
 #include <variant>
 
 namespace xrpl {
@@ -177,13 +178,13 @@ EscrowCancel::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         auto const issuer = amount.getIssuer();
-        bool const createAsset = account == accountID_;
+        bool const createAsset = account == account_;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
-                        kParityRate,
-                        ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : slep,
+                        kPARITY_RATE,
+                        slep,
                         preFeeBalance_,
                         amount,
                         issuer,
@@ -219,9 +220,11 @@ EscrowCancel::doApply()
 }
 
 void
-EscrowCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+EscrowCancel::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -232,7 +235,6 @@ EscrowCancel::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

@@ -25,11 +25,11 @@ struct Key
         std::size_t
         operator()(Key const& v) const
         {
-            return addrHash_(v.address);
+            return addr_hash_(v.address);
         }
 
     private:
-        beast::Uhash<> addrHash_;
+        beast::Uhash<> addr_hash_;
     };
 
     struct KeyEqual

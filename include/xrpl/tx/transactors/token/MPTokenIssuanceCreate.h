@@ -6,33 +6,28 @@
 
 namespace xrpl {
 
-// NOLINTBEGIN(readability-redundant-member-init)
 struct MPTCreateArgs
 {
     std::optional<XRPAmount> priorBalance;
     AccountID const& account;
     std::uint32_t sequence = 0;
     std::uint32_t flags = 0;
-    std::optional<std::uint64_t> maxAmount = std::nullopt;
-    std::optional<std::uint8_t> assetScale = std::nullopt;
-    std::optional<std::uint16_t> transferFee = std::nullopt;
+    std::optional<std::uint64_t> maxAmount =
+        std::nullopt;  // NOLINT(readability-redundant-member-init)
+    std::optional<std::uint8_t> assetScale =
+        std::nullopt;  // NOLINT(readability-redundant-member-init)
+    std::optional<std::uint16_t> transferFee =
+        std::nullopt;  // NOLINT(readability-redundant-member-init)
     std::optional<Slice> const& metadata{};
-    std::optional<uint256> domainId = std::nullopt;
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
-    // Set only by callers that issue an MPT representing a wrapped asset
-    // (e.g. VaultCreate's share token). The keylet must point to an
-    // existing MPToken or RippleState owned by `account`. Surfaces on
-    // the resulting MPTokenIssuance via the optional sfReferenceHolding
-    // field. Used by readers (canTransfer, canTrade, freezing) to
-    // inherit the underlying asset's transferability.
-    std::optional<uint256> referenceHolding = std::nullopt;
+    std::optional<uint256> domainId = std::nullopt;  // NOLINT(readability-redundant-member-init)
+    std::optional<std::uint32_t> mutableFlags =
+        std::nullopt;  // NOLINT(readability-redundant-member-init)
 };
-// NOLINTEND(readability-redundant-member-init)
 
 class MPTokenIssuanceCreate : public Transactor
 {
 public:
-    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit MPTokenIssuanceCreate(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -51,7 +46,10 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

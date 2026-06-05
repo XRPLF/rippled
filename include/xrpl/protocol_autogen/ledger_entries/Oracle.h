@@ -33,7 +33,7 @@ public:
      * @brief Construct a Oracle ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Oracle(SLE::const_pointer sle)
+    explicit Oracle(std::shared_ptr<SLE const> sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -222,7 +222,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    OracleBuilder(SLE::const_pointer sle)
+    OracleBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltORACLE)
         {

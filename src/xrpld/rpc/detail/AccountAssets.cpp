@@ -32,7 +32,7 @@ accountSourceAssets(
             auto& saBalance = rspEntry.getBalance();
 
             // Filter out non
-            if (saBalance > beast::kZero
+            if (saBalance > beast::kZERO
                 // Have IOUs to send.
                 || (rspEntry.getLimitPeer()
                     // Peer extends credit.
