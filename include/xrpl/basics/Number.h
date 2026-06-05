@@ -413,8 +413,7 @@ public:
         // then the negative one is smaller.
         if (lneg != rneg)
         {
-            return lneg ? std::strong_ordering::less
-                        : std::strong_ordering::greater;
+            return lneg ? std::strong_ordering::less : std::strong_ordering::greater;
         }
 
         // Same sign: compare the unsigned magnitudes |a| <=> |b|. For negative
@@ -428,8 +427,7 @@ public:
         // before the exponents can be compared.
         if (a.mantissa_ == 0)
         {
-            return b.mantissa_ == 0 ? std::strong_ordering::equal
-                                    : std::strong_ordering::less;
+            return b.mantissa_ == 0 ? std::strong_ordering::equal : std::strong_ordering::less;
         }
         if (b.mantissa_ == 0)
             return std::strong_ordering::greater;
