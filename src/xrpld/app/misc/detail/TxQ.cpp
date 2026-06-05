@@ -607,7 +607,8 @@ TxQ::tryClearAccountQueueUpThruTx(
     if (txResult.applied)
     {
         // All of the queued transactions applied, so remove them from the
-        // queue.
+        // queue.  `dist` queued txs preceded the current one in the batch.
+        span.setAttribute(txq_span::attr::numCleared, static_cast<std::int64_t>(dist));
         endTxIter = erase(accountIter->second, beginTxIter, endTxIter);
         // If `tx` is replacing a queued tx, delete that one, too.
         if (endTxIter != accountIter->second.transactions.end() && endTxIter->first == tSeqProx)
@@ -744,6 +745,9 @@ TxQ::apply(
     span.setAttribute(txq_span::attr::txHash, to_string(tx->getTransactionID()).c_str());
     if (auto const* fmt = TxFormats::getInstance().findByType(tx->getTxnType()))
         span.setAttribute(txq_span::attr::txType, fmt->getName().c_str());
+    // Default outcome; overridden below on the direct-apply and queued paths.
+    // Every other early return leaves the tx rejected from the queue.
+    span.setAttribute(txq_span::attr::txqStatus, txq_span::val::rejected);
 
     NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
@@ -757,7 +761,10 @@ TxQ::apply(
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
+    {
+        span.setAttribute(txq_span::attr::txqStatus, txq_span::val::appliedDirect);
         return *directApplied;
+    }
 
     if ((flags & TapDryRun) != 0u)
         return {telCAN_NOT_QUEUE, false};
@@ -884,6 +891,10 @@ TxQ::apply(
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
     auto const feeLevelPaid = getFeeLevelPaid(view, *tx);
     auto const requiredFeeLevel = getRequiredFeeLevel(view, flags, metricsSnapshot, lock);
+    span.setAttribute(
+        txq_span::attr::feeLevelPaid, static_cast<std::int64_t>(feeLevelPaid.value()));
+    span.setAttribute(
+        txq_span::attr::requiredFeeLevel, static_cast<std::int64_t>(requiredFeeLevel.value()));
 
     // Is there a blocker already in the account's queue?  If so, don't
     // allow additional transactions in the queue.
@@ -1217,6 +1228,7 @@ TxQ::apply(
             /* Can't erase (*replacedTxIter) here because success
                 implies that it has already been deleted.
             */
+            span.setAttribute(txq_span::attr::txqStatus, txq_span::val::applied);
             return result;
         }
     }
@@ -1332,6 +1344,7 @@ TxQ::apply(
                      << " to queue."
                      << " Flags: " << flags;
 
+    span.setAttribute(txq_span::attr::txqStatus, txq_span::val::queued);
     return {terQUEUED, false};
 }
 
@@ -1366,18 +1379,21 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
         maxSize_ = std::max(snapshot.txnsExpected * setup_.ledgersInQueue, setup_.queueSizeMin);
 
     // Remove any queued candidates whose LastLedgerSequence has gone by.
+    std::int64_t expiredCount = 0;
     for (auto candidateIter = byFee_.begin(); candidateIter != byFee_.end();)
     {
         if (candidateIter->lastValid && *candidateIter->lastValid <= ledgerSeq)
         {
             byAccount_.at(candidateIter->account).dropPenalty = true;
             candidateIter = erase(candidateIter);
+            ++expiredCount;
         }
         else
         {
             ++candidateIter;
         }
     }
+    span.setAttribute(txq_span::attr::expiredCount, expiredCount);
 
     // Remove any TxQAccounts that don't have candidates
     // under them
