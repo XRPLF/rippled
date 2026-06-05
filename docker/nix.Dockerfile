@@ -47,6 +47,12 @@ COPY --from=builder /tmp/build/result /nix/ci-env
 
 ENV PATH="/nix/ci-env/bin:${PATH}"
 
+# Point HTTPS clients (git, curl, conan, ...) at the CA bundle shipped in the
+# Nix CI environment, so TLS verification works without ca-certificates being
+# installed in the system.
+ENV SSL_CERT_FILE="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
+ENV GIT_SSL_CAINFO="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
+
 # Externally-built dynamically-linked ELF binaries hard-code the loader path
 # (e.g. /lib64/ld-linux-x86-64.so.2) in their PT_INTERP header. Install it
 # from the Nix store when the base image doesn't already provide one.
@@ -65,8 +71,8 @@ if [ ! -e "${target}" ]; then
 fi
 EOF
 
-COPY docker/check-tool-versions.sh /tmp/check-tool-versions.sh
-RUN /tmp/check-tool-versions.sh
+COPY docker/check-tools.sh /tmp/check-tools.sh
+RUN /tmp/check-tools.sh
 
 # Sanity-check that the g++/clang++ are able to build binaries, including sanitizer-instrumented ones.
 COPY docker/test_files/cpp_sources/ /tmp/cpp_sources/
