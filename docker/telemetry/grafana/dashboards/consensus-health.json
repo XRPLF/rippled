@@ -406,7 +406,8 @@
           "custom": {
             "drawStyle": "points",
             "pointSize": 6,
-            "showPoints": "always"
+            "showPoints": "always",
+            "axisLabel": "Close Time (Ripple Seconds)"
           }
         },
         "overrides": []
@@ -430,7 +431,7 @@
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time_self) by (resource.service.instance.id)",
-          "legendFormat": "{{resource.service.instance.id}}",
+          "legendFormat": "Raw Close Time [{{resource.service.instance.id}}]",
           "refId": "A"
         }
       ]
@@ -451,7 +452,8 @@
           "custom": {
             "drawStyle": "points",
             "pointSize": 6,
-            "showPoints": "always"
+            "showPoints": "always",
+            "axisLabel": "Close Time (Ripple Seconds)"
           }
         },
         "overrides": []
@@ -475,7 +477,7 @@
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time) by (resource.service.instance.id)",
-          "legendFormat": "{{resource.service.instance.id}}",
+          "legendFormat": "Effective Close Time [{{resource.service.instance.id}}]",
           "refId": "A"
         }
       ]
@@ -496,8 +498,10 @@
             "drawStyle": "line",
             "lineInterpolation": "stepAfter",
             "pointSize": 5,
-            "showPoints": "auto"
-          }
+            "showPoints": "auto",
+            "axisLabel": "Count / Milliseconds"
+          },
+          "unit": "none"
         },
         "overrides": [
           {
@@ -584,8 +588,10 @@
             "drawStyle": "bars",
             "fillOpacity": 40,
             "pointSize": 5,
-            "showPoints": "auto"
-          }
+            "showPoints": "auto",
+            "axisLabel": "Rounds in Window"
+          },
+          "unit": "none"
         },
         "overrides": []
       },
@@ -608,7 +614,7 @@
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
-          "legendFormat": "{{span.resolution_direction}}",
+          "legendFormat": "Resolution Direction [{{span.resolution_direction}}]",
           "refId": "A"
         }
       ]
@@ -625,9 +631,10 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "custom": {
-            "fillOpacity": 60
+            "fillOpacity": 60,
+            "axisLabel": "Rounds in Window"
           }
         },
         "overrides": []
@@ -654,7 +661,7 @@
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | count_over_time() by (span.close_time_vote_bins)",
-          "legendFormat": "{{span.close_time_vote_bins}} bins",
+          "legendFormat": "{{span.close_time_vote_bins}} Vote Bins",
           "refId": "A"
         }
       ]
