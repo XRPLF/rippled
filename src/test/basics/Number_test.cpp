@@ -1794,7 +1794,7 @@ public:
             BigInt const exactProduct = BigInt(kAValue) * BigInt(kBValue);
 
             // What Number actually stored.
-            BigInt storedValue = toBigInt(product);
+            BigInt const storedValue = toBigInt(product);
 
             BigInt const signedDifference = storedValue - exactProduct;
 
@@ -2026,9 +2026,13 @@ public:
 
             BEAST_EXPECT(toBigInt(a) == BigInt{"100000000000000000000"});
             if (scale != MantissaRange::MantissaScale::Small)
+            {
                 BEAST_EXPECT(toBigInt(b) == BigInt{"-1000000000000000001"});
+            }
             else
+            {
                 BEAST_EXPECT(toBigInt(b) == BigInt{"-1000000000000000000"});
+            }
 
             Number sum;
             {

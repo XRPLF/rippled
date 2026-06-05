@@ -54,11 +54,11 @@ namespace detail {
 constexpr std::size_t kUint64Digits = 20;
 constexpr std::size_t kUint128Digits = 39;
 
-template <typename T, std::size_t digits>
-consteval std::array<T, digits>
+template <typename T, std::size_t Digits>
+consteval std::array<T, Digits>
 buildPowersOfTen()
 {
-    std::array<T, digits> result{};
+    std::array<T, Digits> result{};
 
     T power = 1;
     std::size_t exponent = 0;
@@ -78,8 +78,8 @@ buildPowersOfTen()
 
 }  // namespace detail
 
-template <typename T = std::uint64_t, std::size_t digits = detail::kUint64Digits>
-constexpr std::array<T, digits> kPowerOfTenImpl = detail::buildPowersOfTen<T, digits>();
+template <typename T = std::uint64_t, std::size_t Digits = detail::kUint64Digits>
+constexpr std::array<T, Digits> kPowerOfTenImpl = detail::buildPowersOfTen<T, Digits>();
 
 constexpr auto kPowerOfTen = kPowerOfTenImpl<std::uint64_t, detail::kUint64Digits>;
 
