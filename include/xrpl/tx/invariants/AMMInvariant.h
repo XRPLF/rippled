@@ -42,7 +42,12 @@ private:
     finalizeDeposit(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
     // Includes clawback
     [[nodiscard]] bool
-    finalizeWithdraw(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
+    finalizeWithdraw(
+        STTx const&,
+        ReadView const&,
+        bool enforce,
+        bool enforceAMMDelete,
+        beast::Journal const&) const;
     [[nodiscard]] bool
     finalizeDEX(bool enforce, beast::Journal const&) const;
     [[nodiscard]] bool

@@ -320,9 +320,10 @@ ValidAMM::finalizeWithdraw(
     xrpl::STTx const& tx,
     xrpl::ReadView const& view,
     bool enforce,
+    bool enforceAMMDelete,
     beast::Journal const& j) const
 {
-    if (ammDeleted_)
+    if (enforceAMMDelete && ammDeleted_)
     {
         // Last Withdraw or Clawback can delete the AMM. We don't have to check
         // the LPToken balance because a final AMMWithdraw or AMMClawback can
@@ -380,7 +381,7 @@ ValidAMM::finalize(
             return finalizeDeposit(tx, view, enforce, j);
         case ttAMM_CLAWBACK:
         case ttAMM_WITHDRAW:
-            return finalizeWithdraw(tx, view, enforce, j);
+            return finalizeWithdraw(tx, view, enforce, enforceAMMDelete, j);
         case ttAMM_BID:
             return finalizeBid(enforce, j);
         case ttAMM_VOTE:
