@@ -17,6 +17,14 @@ stream_over_http_enabled: true
 server:
   http_listen_port: 3200
 
+# Raise the TraceQL metrics query range limit. The default
+# query_frontend.metrics.max_duration is 3h, so a dashboard set to a longer
+# window (e.g. 6h/12h) fails with "range exceeds 3h0m0s". 168h matches the
+# search max_duration and gives dashboards generous headroom.
+query_frontend:
+  metrics:
+    max_duration: 168h
+
 distributor:
   receivers:
     otlp:
