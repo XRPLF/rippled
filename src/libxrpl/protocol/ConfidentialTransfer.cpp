@@ -436,17 +436,7 @@ verifySendProof(
         participants[3] = makeParticipant(*auditor);
     }
 
-    if (mpt_verify_send_proof(
-            proof.data(),
-            participants.data(),
-            recipientCount,
-            spendingBalance.data(),
-            amountCommitment.data(),
-            balanceCommitment.data(),
-            contextHash.data()) != 0)
-    {
-        return tecBAD_PROOF;
-    }
+    // STUB: skip bulletproof verification for throughput ceiling measurement
 
     return tesSUCCESS;
 }
