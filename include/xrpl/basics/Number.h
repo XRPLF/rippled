@@ -147,7 +147,7 @@ struct MantissaRange final
     int const log{getExponent(scale)};
     rep const min{getMin(scale, log)};
     rep const max{(min * 10) - 1};
-    CuspRoundingFix const cuspRoundingFixEnabled{isCuspFixEnabled(scale)};
+    CuspRoundingFix const cuspRoundingFix{isCuspFixEnabled(scale)};
 
     static MantissaRange const&
     getMantissaRange(MantissaScale scale);
@@ -556,8 +556,14 @@ private:
     // changing the values inside the range.
     static thread_local std::reference_wrapper<MantissaRange const> kRange;
 
+    class Guard;
+
     void
     normalize(MantissaRange const& range);
+
+    // Guard has the fields that we need, as well as MantissaRange, so if we have a guard, use that
+    void
+    normalize(Guard const& guard);
 
     /** Normalize Number components to an arbitrary range.
      *
@@ -573,7 +579,7 @@ private:
         int& exponent,
         internalrep const& minMantissa,
         internalrep const& maxMantissa,
-        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled);
+        MantissaRange::CuspRoundingFix cuspRoundingFix);
 
     template <class T>
     friend void
@@ -583,7 +589,7 @@ private:
         int& exponent,
         MantissaRange::rep const& minMantissa,
         MantissaRange::rep const& maxMantissa,
-        MantissaRange::CuspRoundingFix cuspRoundingFixEnabled,
+        MantissaRange::CuspRoundingFix cuspRoundingFix,
         bool dropped);
 
     [[nodiscard]] bool
@@ -601,8 +607,6 @@ private:
     // UB, and can vary across compilers.
     static internalrep
     externalToInternal(rep mantissa);
-
-    class Guard;
 };
 
 constexpr Number::Number(bool negative, internalrep mantissa, int exponent, Unchecked) noexcept
