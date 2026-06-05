@@ -108,10 +108,20 @@ InboundLedger::init(ScopedLockType& collectionLock)
         if (*acquireSpan_)
         {
             acquireSpan_->setAttribute(ledger_span::attr::ledgerSeq, static_cast<int64_t>(seq_));
-            std::string_view const reasonVal = reason_ == Reason::HISTORY
-                ? std::string_view(ledger_span::val::history)
-                : reason_ == Reason::CONSENSUS ? std::string_view(ledger_span::val::consensus)
-                                               : std::string_view(ledger_span::val::generic);
+            // Map the acquire reason to its span-attribute value. A switch
+            // keeps the mapping flat and exhaustive over the Reason enum.
+            std::string_view reasonVal = ledger_span::val::generic;
+            switch (reason_)
+            {
+                case Reason::HISTORY:
+                    reasonVal = ledger_span::val::history;
+                    break;
+                case Reason::CONSENSUS:
+                    reasonVal = ledger_span::val::consensus;
+                    break;
+                case Reason::GENERIC:
+                    break;
+            }
             acquireSpan_->setAttribute(ledger_span::attr::acquireReason, reasonVal);
         }
     }
