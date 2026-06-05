@@ -31,9 +31,11 @@ compactor:
   compaction:
     block_retention: 1h
 
-# Enable metrics generator for service graph and span metrics.
-# Produces RED metrics (rate, errors, duration) per service/span,
-# feeding Grafana's service map visualization.
+# Enable metrics generator for service graph, span metrics, and the
+# local-blocks processor. Produces RED metrics (rate, errors, duration) per
+# service/span for the service map, and keeps recent trace blocks queryable so
+# TraceQL metrics queries (quantile_over_time, count_over_time, etc. via
+# /api/metrics/query_range) work.
 metrics_generator:
   registry:
     external_labels:
@@ -44,6 +46,18 @@ metrics_generator:
     # to enable remote_write for service graph metrics:
     # remote_write:
     #   - url: http://prometheus:9090/api/v1/write
+  # Separate WAL the local-blocks processor flushes traces to for metrics
+  # queries. Required when flush_to_storage is true.
+  traces_storage:
+    path: /var/tempo/generator/traces
+  processor:
+    local_blocks:
+      # xrpld consensus/transaction spans are SPAN_KIND_INTERNAL. By default
+      # local-blocks keeps only server spans for TraceQL metrics, so attribute
+      # aggregations over internal spans return nothing. Keep all spans.
+      filter_server_spans: false
+      # Flush recent blocks to traces_storage so query_range can read them.
+      flush_to_storage: true
 
 overrides:
   defaults:
@@ -51,6 +65,7 @@ overrides:
       processors:
         - service-graphs
         - span-metrics
+        - local-blocks
 
 storage:
   trace:
