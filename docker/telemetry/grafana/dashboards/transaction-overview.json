@@ -105,47 +105,6 @@
       "id": 2
     },
     {
-      "title": "Transaction Receive vs Suppressed",
-      "description": "Total rate of raw transaction messages received from peers (tx.receive span from PeerImp.cpp). This fires before deduplication via the HashRouter, so the difference between tx.receive and tx.process reflects suppressed duplicate transactions.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 12
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (suppressed, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"tx.receive\", tx_type=~\"$tx_type\", exported_instance=~\"$node\"}[$__rate_interval]))",
-          "legendFormat": "Suppressed [{{suppressed}}, {{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "axisLabel": "Transactions / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      },
-      "id": 3
-    },
-    {
       "title": "Transaction Rate by Type",
       "description": "Transaction processing rate broken down by tx_type (Payment, OfferCreate, AMMDeposit, etc.). Requires tx_type dimension in spanmetrics.",
       "type": "timeseries",
@@ -153,7 +112,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 12
       },
       "options": {
         "tooltip": {
@@ -189,7 +148,7 @@
         },
         "overrides": []
       },
-      "id": 4
+      "id": 3
     },
     {
       "title": "Transaction Results by Type",
@@ -199,7 +158,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -235,6 +194,47 @@
         },
         "overrides": []
       },
+      "id": 4
+    },
+    {
+      "title": "Transaction Receive vs Suppressed",
+      "description": "Total rate of raw transaction messages received from peers (tx.receive span from PeerImp.cpp). This fires before deduplication via the HashRouter, so the difference between tx.receive and tx.process reflects suppressed duplicate transactions.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (suppressed, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"tx.receive\", tx_type=~\"$tx_type\", exported_instance=~\"$node\"}[$__rate_interval]))",
+          "legendFormat": "Suppressed [{{suppressed}}, {{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Transactions / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
       "id": 5
     },
     {
@@ -244,8 +244,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 36
+        "x": 12,
+        "y": 28
       },
       "options": {
         "tooltip": {
@@ -292,7 +292,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 36
       },
       "options": {
@@ -320,8 +320,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 44
+        "x": 12,
+        "y": 36
       },
       "options": {
         "tooltip": {
@@ -358,7 +358,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 44
       },
       "options": {
@@ -669,7 +669,7 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 24,
+        "w": 12,
         "x": 0,
         "y": 100
       },
@@ -711,8 +711,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 108
+        "x": 12,
+        "y": 100
       },
       "options": {
         "legend": {
@@ -749,7 +749,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 108
       },
       "options": {
@@ -790,8 +790,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 116
+        "x": 12,
+        "y": 108
       },
       "options": {
         "tooltip": {
@@ -831,7 +831,7 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
+        "x": 0,
         "y": 116
       },
       "options": {
