@@ -44,6 +44,7 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/detail/TxApplySpanNames.h>
 
 #include <cstddef>
 #include <cstdint>
@@ -1199,9 +1200,11 @@ Transactor::operator()()
     auto span = telemetry::SpanGuard::span(
         telemetry::TraceCategory::Transactions,
         telemetry::seg::tx,
-        telemetry::makeStr("transactor"));
+        telemetry::tx_apply_span::op::transactor);
+    // "apply" — the third apply-pipeline stage, after preflight and preclaim.
+    span.setAttribute(telemetry::tx_apply_span::attr::stage, telemetry::tx_apply_span::val::apply);
     if (auto const* fmt = TxFormats::getInstance().findByType(ctx_.tx.getTxnType()))
-        span.setAttribute("tx_type", fmt->getName().c_str());
+        span.setAttribute(telemetry::tx_apply_span::attr::txType, fmt->getName().c_str());
 
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
 
@@ -1429,8 +1432,8 @@ Transactor::operator()()
 
     JLOG(j_.trace()) << (applied ? "applied " : "not applied ") << transToken(result);
 
-    span.setAttribute("ter_result", transToken(result).c_str());
-    span.setAttribute("applied", applied);
+    span.setAttribute(telemetry::tx_apply_span::attr::terResult, transToken(result).c_str());
+    span.setAttribute(telemetry::tx_apply_span::attr::applied, applied);
 
     return {result, applied, metadata};
 }
