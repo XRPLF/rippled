@@ -392,7 +392,7 @@
     },
     {
       "title": "Close Time: Raw Proposals (Per Node)",
-      "description": "Each node's raw proposed close time (close_time_self) \u2014 the unrounded wall clock value at the moment the node closed its ledger. Compare across nodes to see clock drift.",
+      "description": "Each node's raw proposed close time (close_time_self) \u2014 the unrounded wall clock value at the moment the node closed its ledger. Compare across nodes to see clock drift. Values are Ripple-epoch seconds (since 2000-01-01).",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -402,7 +402,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "dateTimeFromNow",
+          "unit": "s",
           "custom": {
             "drawStyle": "points",
             "pointSize": 6,
@@ -425,17 +425,19 @@
       "targets": [
         {
           "datasource": {
-            "type": "tempo"
+            "type": "tempo",
+            "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time_self)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | quantile_over_time(span.close_time_self, .5) by (resource.service.instance.id)",
+          "legendFormat": "{{service.instance.id}}",
           "refId": "A"
         }
       ]
     },
     {
       "title": "Close Time: Effective / Quantized",
-      "description": "The consensus-agreed close time after rounding to the current resolution bin (close_time). This is the value written to the ledger header. All nodes in agreement produce the same value.",
+      "description": "The consensus-agreed close time after rounding to the current resolution bin (close_time). This is the value written to the ledger header. All nodes in agreement produce the same value. Values are Ripple-epoch seconds (since 2000-01-01).",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -445,7 +447,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "dateTimeFromNow",
+          "unit": "s",
           "custom": {
             "drawStyle": "points",
             "pointSize": 6,
@@ -468,10 +470,12 @@
       "targets": [
         {
           "datasource": {
-            "type": "tempo"
+            "type": "tempo",
+            "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | quantile_over_time(span.close_time, .5) by (resource.service.instance.id)",
+          "legendFormat": "{{service.instance.id}}",
           "refId": "A"
         }
       ]
@@ -544,18 +548,22 @@
       "targets": [
         {
           "datasource": {
-            "type": "tempo"
+            "type": "tempo",
+            "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time_vote_bins)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | avg_over_time(span.close_time_vote_bins)",
+          "legendFormat": "Avg Vote Bins",
           "refId": "A"
         },
         {
           "datasource": {
-            "type": "tempo"
+            "type": "tempo",
+            "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_resolution_ms)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | avg_over_time(span.close_resolution_ms)",
+          "legendFormat": "Avg Resolution (ms)",
           "refId": "B"
         }
       ]
@@ -595,10 +603,12 @@
       "targets": [
         {
           "datasource": {
-            "type": "tempo"
+            "type": "tempo",
+            "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\" && span.resolution_direction=~\"$resolution_direction\"} | select(span.resolution_direction)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
+          "legendFormat": "{{span.resolution_direction}}",
           "refId": "A"
         }
       ]
@@ -639,10 +649,12 @@
       "targets": [
         {
           "datasource": {
-            "type": "tempo"
+            "type": "tempo",
+            "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | select(span.close_time, span.close_time_vote_bins)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | count_over_time() by (span.close_time_vote_bins)",
+          "legendFormat": "{{span.close_time_vote_bins}} bins",
           "refId": "A"
         }
       ]
