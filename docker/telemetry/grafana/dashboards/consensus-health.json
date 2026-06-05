@@ -392,7 +392,7 @@
     },
     {
       "title": "Close Time: Raw Proposals (Per Node)",
-      "description": "Each node's raw proposed close time (close_time_self) \u2014 the unrounded wall clock value at the moment the node closed its ledger. Compare across nodes to see clock drift. Values are Ripple-epoch seconds (since 2000-01-01).",
+      "description": "Each node's raw proposed close time (close_time_self) \u2014 the unrounded wall clock value at the moment the node closed its ledger. Compare across nodes to see clock drift. Value is Ripple-epoch seconds (Unix = value + 946684800); it tracks wall-clock so the absolute number is large and near-constant \u2014 watch per-node spread and raw-vs-effective gap, not the absolute level.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -402,7 +402,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
+          "unit": "none",
           "custom": {
             "drawStyle": "points",
             "pointSize": 6,
@@ -429,7 +429,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.close_time_self, .5) by (resource.service.instance.id)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time_self) by (resource.service.instance.id)",
           "legendFormat": "{{service.instance.id}}",
           "refId": "A"
         }
@@ -437,7 +437,7 @@
     },
     {
       "title": "Close Time: Effective / Quantized",
-      "description": "The consensus-agreed close time after rounding to the current resolution bin (close_time). This is the value written to the ledger header. All nodes in agreement produce the same value. Values are Ripple-epoch seconds (since 2000-01-01).",
+      "description": "The consensus-agreed close time after rounding to the current resolution bin (close_time). This is the value written to the ledger header. All nodes in agreement produce the same value. Value is Ripple-epoch seconds (Unix = value + 946684800); it tracks wall-clock so the absolute number is large and near-constant \u2014 watch per-node spread and raw-vs-effective gap, not the absolute level.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -447,7 +447,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
+          "unit": "none",
           "custom": {
             "drawStyle": "points",
             "pointSize": 6,
@@ -474,7 +474,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.close_time, .5) by (resource.service.instance.id)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time) by (resource.service.instance.id)",
           "legendFormat": "{{service.instance.id}}",
           "refId": "A"
         }
