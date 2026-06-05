@@ -429,7 +429,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | quantile_over_time(span.close_time_self, .5) by (resource.service.instance.id)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.close_time_self, .5) by (resource.service.instance.id)",
           "legendFormat": "{{service.instance.id}}",
           "refId": "A"
         }
@@ -474,7 +474,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | quantile_over_time(span.close_time, .5) by (resource.service.instance.id)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.close_time, .5) by (resource.service.instance.id)",
           "legendFormat": "{{service.instance.id}}",
           "refId": "A"
         }
@@ -552,7 +552,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | avg_over_time(span.close_time_vote_bins)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time_vote_bins)",
           "legendFormat": "Avg Vote Bins",
           "refId": "A"
         },
@@ -562,7 +562,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | avg_over_time(span.close_resolution_ms)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_resolution_ms)",
           "legendFormat": "Avg Resolution (ms)",
           "refId": "B"
         }
@@ -607,7 +607,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
           "legendFormat": "{{span.resolution_direction}}",
           "refId": "A"
         }
@@ -653,7 +653,7 @@
             "uid": "tempo"
           },
           "queryType": "traceql",
-          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.close_time_correct=~\"$close_time_correct\"} | count_over_time() by (span.close_time_vote_bins)",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | count_over_time() by (span.close_time_vote_bins)",
           "legendFormat": "{{span.close_time_vote_bins}} bins",
           "refId": "A"
         }
