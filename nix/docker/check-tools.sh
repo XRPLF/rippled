@@ -10,7 +10,6 @@ cmake --version
 conan --version
 curl --version
 doxygen --version
-dpkg-buildpackage --version
 g++ --version
 gcc --version
 gcov --version
@@ -26,7 +25,6 @@ perl --version
 pkg-config --version
 pre-commit --version
 python3 --version
-rpmbuild --version
 run-clang-tidy --help
 vim --version
 
