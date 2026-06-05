@@ -185,9 +185,8 @@ public:
     //                 options; higher values result in exponentially higher
     //                 resource usage.
     //
-    //                 Path finding is enabled by default. Set `PATH_SEARCH`
-    //                 to 0 in the configuration file to disable it.
-    bool pathSearch = true;
+    // Path searching is disabled by default
+    bool pathSearch = false;
     int pathWorkers = 2;
 
     // Validation
