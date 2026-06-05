@@ -56,7 +56,7 @@
     },
     {
       "title": "Transaction Processing Latency by Type",
-      "description": "Per-transaction-type processing latency (p95 and p50). Filter with $tx_type variable above.",
+      "description": "Per-transaction-type processing latency (p95). Filter with $tx_type variable above.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -82,13 +82,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])))",
           "legendFormat": "P95 {{tx_type}} [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])))",
-          "legendFormat": "P50 {{tx_type}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -208,7 +201,7 @@
     },
     {
       "title": "Transaction Apply Duration per Ledger",
-      "description": "p95 and p50 latency of applying the consensus transaction set to a new ledger. The tx.apply span (BuildLedger.cpp) wraps the applyTransactions() function that iterates through the CanonicalTXSet and applies each transaction to the OpenView. Long durations indicate heavy transaction sets or expensive transaction processing.",
+      "description": "p95 latency of applying the consensus transaction set to a new ledger. The tx.apply span (BuildLedger.cpp) wraps the applyTransactions() function that iterates through the CanonicalTXSet and applies each transaction to the OpenView. Long durations indicate heavy transaction sets or expensive transaction processing.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -229,13 +222,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.apply\"}[5m])))",
           "legendFormat": "P95 tx.apply [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.apply\"}[5m])))",
-          "legendFormat": "P50 tx.apply [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -587,7 +573,7 @@
     },
     {
       "title": "Queue Accept (Drain) Duration per Ledger",
-      "description": "p95/p50 duration of the txq.accept span, which drains queued transactions into a newly closed ledger. Rising drain time signals queue pressure at ledger close.",
+      "description": "p95 duration of the txq.accept span, which drains queued transactions into a newly closed ledger. Rising drain time signals queue pressure at ledger close.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -608,13 +594,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"txq.accept\"}[5m])))",
           "legendFormat": "P95 Drain [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"txq.accept\"}[5m])))",
-          "legendFormat": "P50 Drain [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -661,6 +640,138 @@
           "unit": "ops",
           "custom": {
             "axisLabel": "Cleanups / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Tx Apply Pipeline Rate by Stage",
+      "description": "Span rate for each apply-pipeline stage (preflight, preclaim, apply). A drop between stages shows where transactions are filtered out. Requires the stage dimension in spanmetrics.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 64
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (stage, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[5m]))",
+          "legendFormat": "{{stage}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Spans / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Tx Apply Pipeline Latency by Stage (p95)",
+      "description": "95th-percentile duration of each apply-pipeline stage. Isolates which stage (preflight, preclaim, apply) dominates transaction processing time.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 64
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, stage, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\"}[5m])))",
+          "legendFormat": "P95 {{stage}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Tx Apply Pipeline Failure Rate by Stage",
+      "description": "Rate of apply-pipeline spans whose ter_result is not tesSUCCESS, split by stage. Shows whether failures concentrate in preflight, preclaim, or apply. Filters on ter_result rather than span status because a failing ter code completes the span normally; only thrown exceptions set an error status.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 72
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (stage, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage=~\"$stage\", ter_result!~\"tesSUCCESS|\"}[5m]))",
+          "legendFormat": "{{stage}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Failed Spans / Sec",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
@@ -768,6 +879,24 @@
         },
         "sort": 1,
         "label": "Queue Status"
+      },
+      {
+        "name": "stage",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus"
+        },
+        "query": "label_values(traces_span_metrics_calls_total{span_name=~\"tx.preflight|tx.preclaim|tx.transactor\", stage!=\"\"}, stage)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "sort": 1,
+        "label": "Apply Stage"
       }
     ]
   },

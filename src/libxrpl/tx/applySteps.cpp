@@ -13,13 +13,16 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/detail/TxApplySpanNames.h>
 
 #include <cstdint>
 #include <exception>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <utility>
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
@@ -50,6 +53,47 @@ struct UnknownTxnType : std::exception
     {
     }
 };
+
+/** Look up the human-readable transaction type name for span attributes.
+ *  Returns nullptr if the type is unknown so the caller can skip the
+ *  attribute rather than emit an empty value.
+ */
+char const*
+txTypeName(TxType txnType)
+{
+    if (auto const* fmt = TxFormats::getInstance().findByType(txnType))
+        return fmt->getName().c_str();
+    return nullptr;
+}
+
+/** Create a deterministic-trace span for an apply-pipeline stage.
+ *
+ *  The trace_id is derived from txID[0:16] so the preflight, preclaim, and
+ *  transactor spans of one transaction share a trace even though they run
+ *  sequentially and often on different threads. Sets the stage, tx_type, and
+ *  (after the stage runs) ter_result attributes that drive the collector
+ *  spanmetrics dimensions. A no-op when telemetry is disabled.
+ *
+ *  @param name   Full span name (tx_apply_span::preflight / ::preclaim).
+ *  @param stage  Stage attribute value (tx_apply_span::val::*).
+ *  @param tx     The transaction supplying the id and type.
+ */
+[[nodiscard]] telemetry::SpanGuard
+makeStageSpan(std::string_view name, std::string_view stage, STTx const& tx)
+{
+    auto const txID = tx.getTransactionID();
+    auto span = telemetry::SpanGuard::hashSpan(
+        telemetry::TraceCategory::Transactions, name, txID.data(), txID.kBytes);
+    // Guard the type lookup behind the active check: preflight runs for every
+    // transaction, so findByType() must not run when tracing is off/disabled.
+    if (span)
+    {
+        span.setAttribute(telemetry::tx_apply_span::attr::stage, stage);
+        if (char const* typeName = txTypeName(tx.getTxnType()))
+            span.setAttribute(telemetry::tx_apply_span::attr::txType, typeName);
+    }
+    return span;
+}
 
 // Call a lambda with the concrete transaction type as a template parameter
 // throw an "UnknownTxnType" exception on error
@@ -133,81 +177,121 @@ consequencesHelper(PreflightContext const& ctx)
 static std::pair<NotTEC, TxConsequences>
 invokePreflight(PreflightContext const& ctx)
 {
+    // Trace the preflight stage. The span shares the transaction's
+    // deterministic trace_id so it correlates with preclaim and transactor.
+    auto span = makeStageSpan(
+        telemetry::tx_apply_span::preflight, telemetry::tx_apply_span::val::preflight, ctx.tx);
     try
     {
-        return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
+        auto result = withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
             auto const tec = Transactor::invokePreflight<T>(ctx);
             return std::make_pair(
                 tec, isTesSuccess(tec) ? consequencesHelper<T>(ctx) : TxConsequences{tec});
         });
+        if (span)
+        {
+            span.setAttribute(
+                telemetry::tx_apply_span::attr::terResult, transToken(result.first).c_str());
+        }
+        return result;
     }
     catch (UnknownTxnType const& e)
     {
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preflight: " << e.txnType;
+        span.recordException(e);
         UNREACHABLE("xrpl::invokePreflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
         // LCOV_EXCL_STOP
+    }
+    catch (std::exception const& e)
+    {
+        // The caller's preflight() maps this to tefEXCEPTION. Record it on the
+        // span before unwinding so per-stage error counts include exceptions.
+        span.setAttribute(
+            telemetry::tx_apply_span::attr::terResult, transToken(tefEXCEPTION).c_str());
+        span.recordException(e);
+        throw;
     }
 }
 
 static TER
 invokePreclaim(PreclaimContext const& ctx)
 {
+    // Trace the preclaim stage under the transaction's deterministic trace_id.
+    auto span = makeStageSpan(
+        telemetry::tx_apply_span::preclaim, telemetry::tx_apply_span::val::preclaim, ctx.tx);
     try
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return withTxnType(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
-            // preclaim functionality is divided into two sections:
-            // 1. Up to and including the signature check: returns NotTEC.
-            //    All transaction checks before and including checkSign
-            //    MUST return NotTEC, or something more restrictive.
-            //    Allowing tec results in these steps risks theft or
-            //    destruction of funds, as a fee will be charged before the
-            //    signature is checked.
-            // 2. After the signature check: returns TER.
+        TER const preclaimTer =
+            withTxnType(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+                // preclaim functionality is divided into two sections:
+                // 1. Up to and including the signature check: returns NotTEC.
+                //    All transaction checks before and including checkSign
+                //    MUST return NotTEC, or something more restrictive.
+                //    Allowing tec results in these steps risks theft or
+                //    destruction of funds, as a fee will be charged before the
+                //    signature is checked.
+                // 2. After the signature check: returns TER.
 
-            // If the transactor requires a valid account and the
-            // transaction doesn't list one, preflight will have already
-            // a flagged a failure.
-            auto const id = ctx.tx.getAccountID(sfAccount);
+                // If the transactor requires a valid account and the
+                // transaction doesn't list one, preflight will have already
+                // a flagged a failure.
+                auto const id = ctx.tx.getAccountID(sfAccount);
 
-            if (id != beast::kZero)
-            {
-                if (NotTEC const preSigResult = [&]() -> NotTEC {
-                        if (NotTEC const result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
-                            return result;
+                if (id != beast::kZero)
+                {
+                    if (NotTEC const preSigResult = [&]() -> NotTEC {
+                            if (NotTEC const result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
+                                return result;
 
-                        if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
-                            return result;
+                            if (NotTEC const result = T::checkPriorTxAndLastLedger(ctx))
+                                return result;
 
-                        if (NotTEC const result = T::checkPermission(ctx.view, ctx.tx))
-                            return result;
+                            if (NotTEC const result = T::checkPermission(ctx.view, ctx.tx))
+                                return result;
 
-                        if (NotTEC const result = T::checkSign(ctx))
-                            return result;
+                            if (NotTEC const result = T::checkSign(ctx))
+                                return result;
 
-                        return tesSUCCESS;
-                    }())
-                    return preSigResult;
+                            return tesSUCCESS;
+                        }())
+                        return preSigResult;
 
-                if (TER const result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
-                    return result;
-            }
+                    if (TER const result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx)))
+                        return result;
+                }
 
-            return T::preclaim(ctx);
-        });
+                return T::preclaim(ctx);
+            });
+        if (span)
+        {
+            span.setAttribute(
+                telemetry::tx_apply_span::attr::terResult, transToken(preclaimTer).c_str());
+        }
+        return preclaimTer;
     }
     catch (UnknownTxnType const& e)
     {
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preclaim: " << e.txnType;
+        span.recordException(e);
         UNREACHABLE("xrpl::invokePreclaim : unknown transaction type");
         return temUNKNOWN;
         // LCOV_EXCL_STOP
+    }
+    catch (std::exception const& e)
+    {
+        // The caller's preclaim() maps this to tefEXCEPTION. Record it on the
+        // span before unwinding so per-stage error counts include exceptions.
+        span.setAttribute(
+            telemetry::tx_apply_span::attr::terResult, transToken(tefEXCEPTION).c_str());
+        span.recordException(e);
+        throw;
     }
 }
 

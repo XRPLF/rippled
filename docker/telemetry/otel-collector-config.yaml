@@ -94,6 +94,9 @@ connectors:
       - name: validation_trusted
       - name: tx_type
       - name: ter_result
+      # Apply-pipeline stage (preflight|preclaim|apply) — splits the
+      # tx.preflight/tx.preclaim/tx.transactor span RED metrics per stage.
+      - name: stage
       - name: txq_status
       - name: load_type
       - name: is_batch

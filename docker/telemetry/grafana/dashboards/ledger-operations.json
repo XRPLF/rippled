@@ -42,7 +42,7 @@
     },
     {
       "title": "Ledger Build Duration",
-      "description": "p95 and p50 duration of ledger builds. Measures the full buildLedgerImpl() call including transaction application, SHAMap flushing, and ledger acceptance. The span records xrpl.ledger.seq as an attribute. Long build times indicate expensive transaction sets or I/O pressure from SHAMap flushes.",
+      "description": "p95 duration of ledger builds. Measures the full buildLedgerImpl() call including transaction application, SHAMap flushing, and ledger acceptance. The span records xrpl.ledger.seq as an attribute. Long build times indicate expensive transaction sets or I/O pressure from SHAMap flushes.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -63,13 +63,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"ledger.build\"}[5m])))",
           "legendFormat": "P95 Build Duration [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"ledger.build\"}[5m])))",
-          "legendFormat": "P50 Build Duration [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -156,7 +149,7 @@
     },
     {
       "title": "Transaction Apply Duration",
-      "description": "p95 and p50 duration of applying the consensus transaction set during ledger building. The tx.apply span (BuildLedger.cpp) wraps applyTransactions() which iterates through the CanonicalTXSet with multiple retry passes. Records tx_count (successful) and tx_failed (failed) as attributes.",
+      "description": "p95 duration of applying the consensus transaction set during ledger building. The tx.apply span (BuildLedger.cpp) wraps applyTransactions() which iterates through the CanonicalTXSet with multiple retry passes. Records tx_count (successful) and tx_failed (failed) as attributes.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -177,13 +170,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.apply\"}[5m])))",
           "legendFormat": "P95 tx.apply [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.apply\"}[5m])))",
-          "legendFormat": "P50 tx.apply [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {

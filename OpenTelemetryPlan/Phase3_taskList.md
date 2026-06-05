@@ -474,17 +474,22 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
 **Attributes added**:
 
-| Span            | Attribute        | Type   | Source                                                              |
-| --------------- | ---------------- | ------ | ------------------------------------------------------------------- |
-| `tx.process`    | `tx_type`        | string | `TxFormats::getInstance().findByType(stx->getTxnType())->getName()` |
-| `tx.process`    | `fee`            | int64  | `stx->getFieldAmount(sfFee).xrp().drops()`                          |
-| `tx.process`    | `sequence`       | int64  | `stx->getSeqProxy().value()`                                        |
-| `tx.process`    | `ter_result`     | string | `transToken(e.result)` (set after batch application)                |
-| `tx.process`    | `applied`        | bool   | `e.applied` (set after batch application)                           |
-| `tx.receive`    | `tx_type`        | string | `TxFormats::getInstance().findByType(stx->getTxnType())->getName()` |
-| `txq.enqueue`   | `tx_type`        | string | same pattern as above                                               |
-| `txq.accept.tx` | `txq_status`     | string | `applied` / `failed` / `retried`                                    |
-| `txq.accept`    | `ledger_changed` | bool   | set at end of accept loop                                           |
+| Span              | Attribute            | Type   | Source                                                              |
+| ----------------- | -------------------- | ------ | ------------------------------------------------------------------- |
+| `tx.process`      | `tx_type`            | string | `TxFormats::getInstance().findByType(stx->getTxnType())->getName()` |
+| `tx.process`      | `fee`                | int64  | `stx->getFieldAmount(sfFee).xrp().drops()`                          |
+| `tx.process`      | `sequence`           | int64  | `stx->getSeqProxy().value()`                                        |
+| `tx.process`      | `ter_result`         | string | `transToken(e.result)` (set after batch application)                |
+| `tx.process`      | `applied`            | bool   | `e.applied` (set after batch application)                           |
+| `tx.receive`      | `tx_type`            | string | `TxFormats::getInstance().findByType(stx->getTxnType())->getName()` |
+| `txq.enqueue`     | `tx_type`            | string | same pattern as above                                               |
+| `txq.enqueue`     | `txq_status`         | string | `queued` / `applied_direct` / `applied` / `rejected`                |
+| `txq.enqueue`     | `fee_level_paid`     | int64  | `getFeeLevelPaid(view, *tx).value()`                                |
+| `txq.enqueue`     | `required_fee_level` | int64  | `getRequiredFeeLevel(...).value()`                                  |
+| `txq.batch_clear` | `num_cleared`        | int64  | queued txs cleared ahead of the applying tx                         |
+| `txq.cleanup`     | `expired_count`      | int64  | entries dropped for passed `LastLedgerSequence`                     |
+| `txq.accept.tx`   | `txq_status`         | string | `applied` / `failed` / `retried`                                    |
+| `txq.accept`      | `ledger_changed`     | bool   | set at end of accept loop                                           |
 
 **New attr keys**: `TxSpanNames.h` (`txType`, `fee`, `sequence`, `terResult`, `applied`), `TxQSpanNames.h` (`txType`).
 

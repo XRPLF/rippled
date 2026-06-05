@@ -243,7 +243,7 @@
     },
     {
       "title": "I/O Latency",
-      "description": "P95 and P50 of the I/O service loop latency in milliseconds. Sourced from the ios_latency event (Application.cpp) which measures how long it takes for the io_context to process a timer callback. Values above 10ms are logged; above 500ms trigger warnings. High values indicate thread pool saturation or blocking operations.",
+      "description": "P95 of the I/O service loop latency in milliseconds. Sourced from the ios_latency event (Application.cpp) which measures how long it takes for the io_context to process a timer callback. Values above 10ms are logged; above 500ms trigger warnings. High values indicate thread pool saturation or blocking operations.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -264,13 +264,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_ios_latency_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "P95 I/O Latency [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(xrpld_ios_latency_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
-          "legendFormat": "P50 I/O Latency [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -2054,7 +2047,7 @@
     },
     {
       "title": "Ledger Acquire Duration (Inbound Fetch)",
-      "description": "p95/p50 duration of the ledger.acquire span (InboundLedger): how long it takes to fetch a missing ledger from peers. A spike signals the node is falling behind or recovering from a fork. Populated under back-fill / sync activity.",
+      "description": "p95 duration of the ledger.acquire span (InboundLedger): how long it takes to fetch a missing ledger from peers. A spike signals the node is falling behind or recovering from a fork. Populated under back-fill / sync activity.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -2075,13 +2068,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"ledger.acquire\"}[5m])))",
           "legendFormat": "P95 Acquire [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"ledger.acquire\"}[5m])))",
-          "legendFormat": "P50 Acquire [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {

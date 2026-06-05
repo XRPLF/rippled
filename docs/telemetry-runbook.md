@@ -75,11 +75,20 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### Transaction Spans (Phase 3)
 
-| Span Name    | Source File     | Attributes                                                                        | Description                           |
-| ------------ | --------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied` | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`        | Transaction received from peer relay  |
-| `tx.apply`   | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                             | Transaction set applied per ledger    |
+| Span Name       | Source File     | Attributes                                                                        | Description                           |
+| --------------- | --------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied` | Transaction submission and processing |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`        | Transaction received from peer relay  |
+| `tx.apply`      | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                             | Transaction set applied per ledger    |
+| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                  | Stateless checks stage                |
+| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                  | Ledger-aware checks stage             |
+| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`                                       | Apply stage (transactor runs)         |
+
+The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
+share a deterministic `trace_id` from `txID[0:16]`, so they group under one
+trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
+`apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
+RED metrics on the _Transaction Overview_ dashboard.
 
 ### Transaction Queue Spans (Phase 3)
 
@@ -119,21 +128,23 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 #### Close Time Queries (Tempo TraceQL)
 
+Span attributes are filtered with `span.<attr>` inside `{}`. Combine conditions with `&&`.
+
 ```
 # Find rounds where validators disagreed on close time
-{name="consensus.accept.apply"} | close_time_correct = false
+{name="consensus.accept.apply" && span.close_time_correct = false}
 
 # Find consensus failures (moved_on)
-{name="consensus.accept.apply"} | consensus_state = "moved_on"
+{name="consensus.accept.apply" && span.consensus_state = "moved_on"}
 
 # Find slow ledger applications (>5s)
-{name="consensus.accept.apply"} | duration > 5s
+{name="consensus.accept.apply" && duration > 5000ms}
 
 # Find specific ledger's consensus details
-{name="consensus.accept.apply"} | ledger_seq = 92345678
+{name="consensus.accept.apply" && span.ledger_seq = 92345678}
 
 # Find all spans in a consensus round (deterministic trace strategy)
-{name="consensus.round"} | consensus_round_id = <round_id>
+{name="consensus.round" && span.consensus_round_id = "<round_id>"}
 
 # Find dispute resolutions
 {name="consensus.update_positions"} >> {event:name="dispute.resolve"}
@@ -160,127 +171,246 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 This section shows what questions you can answer using the span attributes, with example Tempo TraceQL queries.
 
+**TraceQL syntax note:** span attributes must be referenced with the `span.` prefix inside `{}`.
+Conditions are combined with `&&`. The `|` pipeline operator is not supported on this Tempo version.
+
+```
+# General pattern
+{name="<span-name>" && span.<attr> = <value> && span.<attr2> != <value2>}
+
+# Duration filter (no prefix needed)
+{name="<span-name>" && duration > 500ms}
+
+# Regex match
+{name="<span-name>" && span.<attr> =~ "<pattern>.*"}
+
+# Multiple span names
+{name = "<span-a>" || name = "<span-b>"}
+
+# Name regex
+{name =~ "<pattern>.*" && span.<attr> = <value>}
+
+# Structural: find parent spans that have a matching child/event
+{name="<parent>"} >> {event:name="<event-name>"}
+```
+
 ### Transaction Workflow Analysis
 
 ```
-# Find all AMM transactions (AMMDeposit, AMMWithdraw, AMMCreate, etc.)
-{name="tx.process"} | tx_type =~ "AMM.*"
+# Find all AMM transactions (AMMDeposit, AMMWithdraw, AMMVote)
+{name="tx.process" && span.tx_type =~ "AMM.*"}
+
+# Find a specific AMM operation
+{name="tx.process" && span.tx_type = "AMMDeposit"}
+{name="tx.process" && span.tx_type = "AMMWithdraw"}
+{name="tx.process" && span.tx_type = "AMMVote"}
 
 # Find Payment transactions that failed
-{name="tx.process"} | tx_type = "Payment" && ter_result != "tesSUCCESS"
+{name="tx.process" && span.tx_type = "Payment" && span.ter_result != "tesSUCCESS"}
+
+# Find Payment failures due to path issues
+{name="tx.process" && span.tx_type = "Payment" && span.ter_result =~ "tecPATH.*"}
 
 # Compare latency of different transaction types
-{name="tx.process"} | tx_type = "OfferCreate"
-{name="tx.process"} | tx_type = "Payment"
+{name="tx.process" && span.tx_type = "OfferCreate"}
+{name="tx.process" && span.tx_type = "Payment"}
 
 # Find high-fee transactions (fee > 1 XRP = 1000000 drops)
-{name="tx.process"} | fee > 1000000
+{name="tx.process" && span.fee > 1000000}
 
 # Find transactions that were not applied
-{name="tx.process"} | applied = false
+{name="tx.process" && span.applied = false}
 
-# Trace a specific transaction by type across the network
-{name=~"tx\\..*"} | tx_type = "NFTokenMint"
+# Find NFTokenMint across tx and txq spans
+{name =~ "tx.*|txq.*" && span.tx_type = "NFTokenMint"}
+
+# Find all NFT-related activity
+{name =~ "tx.*|txq.*" && span.tx_type =~ "NFToken.*"}
+
+# Find TrustSet transactions (IOU trust lines)
+{name="tx.process" && span.tx_type = "TrustSet"}
+
+# Find oracle price updates
+{name="tx.process" && span.tx_type = "OracleSet"}
 ```
+
+### DEX (OfferCreate / OfferCancel)
+
+```
+# All DEX offer creates
+{name="tx.process" && span.tx_type = "OfferCreate"}
+
+# Offers killed (ImmediateOrCancel/FillOrKill with no fill)
+{name="tx.process" && span.tx_type = "OfferCreate" && span.ter_result = "tecKILLED"}
+
+# Offers that failed due to insufficient funds
+{name="tx.process" && span.tx_type = "OfferCreate" && span.ter_result = "tecUNFUNDED_OFFER"}
+
+# Offers failed due to insufficient reserve to place the offer
+{name="tx.process" && span.tx_type = "OfferCreate" && span.ter_result = "tecINSUF_RESERVE_OFFER"}
+
+# Offer cancellations
+{name="tx.process" && span.tx_type = "OfferCancel"}
+
+# OfferCreate transactions received from peers (cross-node relay)
+{name="tx.receive" && span.tx_type = "OfferCreate"}
+```
+
+### Apply Pipeline by Stage
+
+```
+# All three stages of one transaction (preflight -> preclaim -> apply)
+{name=~"tx.preflight|tx.preclaim|tx.transactor"}
+
+# Transactions that failed at the preclaim stage
+{name="tx.preclaim"} | ter_result != "tesSUCCESS"
+
+# Transactions that hard-failed preflight (never reached preclaim/apply)
+{name="tx.preflight"} | ter_result != "tesSUCCESS"
+```
+
+PromQL on the span-derived metrics (dashboard: _Transaction Overview_):
+
+```
+# Per-stage throughput — the funnel preflight >= preclaim >= apply
+sum by (stage) (rate(traces_span_metrics_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m]))
+
+# Per-stage p95 latency
+histogram_quantile(0.95, sum by (le, stage) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m])))
+
+# Per-stage failure rate (ter_result != tesSUCCESS; a failing ter completes the
+# span normally, so filter on the attribute, not status_code which only flags exceptions)
+sum by (stage) (rate(traces_span_metrics_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor", ter_result!~"tesSUCCESS|"}[5m]))
+```
+
+> **Alerting**: a rising `tx.preflight` / `tx.preclaim` failure rate points to
+> malformed or stale-sequence submissions (often spam or a misbehaving client);
+> a rising `tx.transactor` failure rate points to apply-time problems. Alert per
+> stage rather than on a single aggregate so the failing stage is obvious.
+
+> **Sampling caveat**: these stage metrics are span-derived and inherit the
+> **tracer head-sampling** ratio (`sampling_ratio`). At `sampling_ratio < 1.0`
+> they undercount proportionally — treat them as relative trends, not absolute
+> transaction counts. Native StatsD metrics are unsampled.
 
 ### Transaction Queue Health
 
 ```
 # Find transactions rejected from the queue
-{name="txq.accept_tx"} | txq_status = "failed"
+{name="txq.accept_tx" && span.txq_status = "failed"}
 
-# Which transaction types get queued most often?
-{name="txq.enqueue"} | tx_type = "Payment"
-{name="txq.enqueue"} | tx_type = "OfferCreate"
-
-# Find ledger closes that applied queued transactions
-{name="txq.accept"} | ledger_changed = true
+# Find transactions being retried
+{name="txq.accept_tx" && span.txq_status = "retried"}
 
 # Find transactions that exhausted retries
-{name="txq.accept_tx"} | txq_status = "retried" && retries_remaining = 0
+{name="txq.accept_tx" && span.txq_status = "retried" && span.retries_remaining = 0}
+
+# Which transaction types get queued most often?
+{name="txq.enqueue" && span.tx_type = "Payment"}
+{name="txq.enqueue" && span.tx_type = "OfferCreate"}
+{name="txq.enqueue" && span.tx_type =~ "NFToken.*"}
+
+# Find ledger closes that applied queued transactions
+{name="txq.accept" && span.ledger_changed = true}
 ```
 
 ### RPC Debugging
 
 ```
 # Find batch RPC requests
-{name="rpc.process"} | is_batch = true
+{name="rpc.process" && span.is_batch = true}
 
 # Find large RPC payloads (>100KB)
-{name="rpc.http_request"} | request_payload_size > 100000
+{name="rpc.http_request" && span.request_payload_size > 100000}
 
 # Find resource-heavy RPC commands (by load_type)
-{name=~"rpc.command.*"} | load_type = "exceptioned RPC"
+{name =~ "rpc.command.*" && span.load_type = "exceptioned RPC"}
 
 # Find a specific WebSocket command
-{name="rpc.ws_message"} | command = "subscribe"
+{name="rpc.ws_message" && span.command = "subscribe"}
+
+# Find server_info calls
+{name="rpc.command.server_info"}
 
 # Find slow pathfinding with many source assets
-{name="pathfind.discover"} | pathfind_num_source_assets > 10
+{name="pathfind.discover" && span.pathfind_num_source_assets > 10}
 ```
 
 ### PathFinding Performance
 
 ```
 # Find pathfinding for specific currencies
-{name="pathfind.compute"} | pathfind_dest_currency = "USD"
+{name="pathfind.compute" && span.pathfind_dest_currency = "USD"}
 
 # Find expensive pathfinding (many source assets to explore)
-{name="pathfind.discover"} | pathfind_num_source_assets > 20
+{name="pathfind.discover" && span.pathfind_num_source_assets > 20}
 
-# Find large pathfinding requests
-{name="pathfind.compute"} | duration > 1s
+# Find slow pathfinding requests
+{name="pathfind.compute" && duration > 1000ms}
 ```
 
 ### Consensus Health
 
 ```
 # Find rounds where consensus timed out (expired)
-{name="consensus.accept"} | consensus_state = "expired"
+{name="consensus.accept" && span.consensus_state = "expired"}
 
 # Find rounds where we moved on without full agreement
-{name="consensus.accept"} | consensus_state = "moved_on"
+{name="consensus.accept" && span.consensus_state = "moved_on"}
 
 # Find rounds with many disputes
-{name="consensus.accept"} | disputes_count > 5
+{name="consensus.accept" && span.disputes_count > 5}
+
+# Find slow consensus rounds (>5s)
+{name="consensus.accept" && span.round_time_ms > 5000}
 
 # Find bow-out proposals (node resigned from round)
-{name="consensus.proposal.send"} | is_bow_out = true
+{name="consensus.proposal.send" && span.is_bow_out = true}
 
 # Correlate validation with its ledger
-{name="consensus.validation.send"} | ledger_hash = "<hash>"
+{name="consensus.validation.send" && span.ledger_hash = "<hash>"}
 
 # Find rounds where validators disagreed on close time
-{name="consensus.accept.apply"} | close_time_correct = false
+{name="consensus.accept.apply" && span.close_time_correct = false}
+
+# Find both validation send and receive (compare sender vs receiver latency)
+{name = "consensus.validation.send" || name = "consensus.validation.receive"}
 ```
 
 ### Cross-Subsystem Correlation
 
 ```
 # Follow a transaction from receive through queue to ledger
-{name=~"tx\\..*|txq\\..*"} | tx_type = "Payment" && duration > 500ms
+{name =~ "tx.*|txq.*" && span.tx_type = "Payment" && duration > 500ms}
 
-# Find all NFT-related activity
-{name=~"tx\\..*|txq\\..*"} | tx_type =~ "NFToken.*"
+# Find all NFT-related activity across tx and txq spans
+{name =~ "tx.*|txq.*" && span.tx_type =~ "NFToken.*"}
 
-# Find consensus rounds with slow transactions
-{name="consensus.accept"} | round_time_ms > 5000
+# Find all AMM activity across tx and txq spans
+{name =~ "tx.*|txq.*" && span.tx_type =~ "AMM.*"}
+
+# Find cross-node transaction receives (no errors)
+{name="tx.receive" && status != error}
 ```
 
 ### Where to Look (Quick Reference)
 
-| Question                            | Span                        | Key Attributes                 |
-| ----------------------------------- | --------------------------- | ------------------------------ |
-| "Which tx type is slowest?"         | `tx.process`                | `tx_type` + duration           |
-| "Why was my tx rejected?"           | `tx.process`                | `ter_result`, `applied`        |
-| "Is the TxQ backing up?"            | `txq.accept`                | `queue_size`, `ledger_changed` |
-| "Why was my tx dropped from queue?" | `txq.accept_tx`             | `txq_status`, `ter_code`       |
-| "Are batch requests a problem?"     | `rpc.process`               | `is_batch`, `batch_size`       |
-| "Which RPC is expensive?"           | `rpc.command.*`             | `load_type`, duration          |
-| "Did consensus stall?"              | `consensus.check`           | `consensus_stalled`            |
-| "Was consensus outcome normal?"     | `consensus.accept`          | `consensus_state`              |
-| "Did a validator bow out?"          | `consensus.proposal.send`   | `is_bow_out`                   |
-| "Which ledger was validated?"       | `consensus.validation.send` | `ledger_hash`                  |
+| Question                            | Span                        | Key Attributes                           |
+| ----------------------------------- | --------------------------- | ---------------------------------------- |
+| "Which tx type is slowest?"         | `tx.process`                | `span.tx_type` + duration                |
+| "Why was my tx rejected?"           | `tx.process`                | `span.ter_result`, `span.applied`        |
+| "What AMM operations happened?"     | `tx.process`                | `span.tx_type =~ "AMM.*"`                |
+| "What DEX offers failed?"           | `tx.process`                | `span.tx_type`, `span.ter_result`        |
+| "What NFT activity occurred?"       | `tx.process`, `txq.enqueue` | `span.tx_type =~ "NFToken.*"`            |
+| "Is the TxQ backing up?"            | `txq.accept`                | `span.queue_size`, `span.ledger_changed` |
+| "Why was my tx dropped from queue?" | `txq.accept_tx`             | `span.txq_status`, `span.ter_code`       |
+| "Are batch requests a problem?"     | `rpc.process`               | `span.is_batch`, `span.batch_size`       |
+| "Which RPC is expensive?"           | `rpc.command.*`             | `span.load_type`, duration               |
+| "Did consensus reach threshold?"    | `consensus.check`           | `span.consensus_result`                  |
+| "Was consensus outcome normal?"     | `consensus.accept`          | `span.consensus_state`                   |
+| "Did a validator bow out?"          | `consensus.proposal.send`   | `span.is_bow_out`                        |
+| "Which ledger was validated?"       | `consensus.validation.send` | `span.ledger_hash`                       |
+| "Did close time agreement fail?"    | `consensus.accept.apply`    | `span.close_time_correct`                |
 
 ---
 
@@ -349,20 +479,20 @@ all its normal attributes, it just lacks a cross-node parent link.
 ### Example Tempo Queries
 
 ```
-# Find cross-node transaction traces (tx.process -> tx.receive across nodes)
-{name="tx.receive"} && status != error
+# Find cross-node transaction traces (tx.receive spans with no errors)
+{name="tx.receive" && status != error}
 
 # Find proposals received with cross-node parent context
-{name="consensus.proposal.receive"} && nestedSetParent > 0
+{name="consensus.proposal.receive"}
 
 # Trace a transaction across the network by its hash
-{name=~"tx\\..*"} | tx_hash = "<hash>"
+{name =~ "tx.*" && span.tx_hash = "<hash>"}
 
 # Find all spans in a cross-node consensus trace
-{rootServiceName="xrpld"} | consensus_round_id = <round_id>
+{resource.service.name="xrpld" && span.consensus_round_id = "<round_id>"}
 
 # Compare latency between sender and receiver for validations
-{name="consensus.validation.send" || name="consensus.validation.receive"}
+{name = "consensus.validation.send" || name = "consensus.validation.receive"}
 ```
 
 ## Prometheus Metrics (Spanmetrics)
@@ -672,21 +802,26 @@ Log files are ingested by the OTel Collector's `filelog` receiver, which tails `
 
 ### LogQL Query Examples
 
+The OTel Collector emits logs to Loki with `service_name="xrpld"` (not `job="xrpld"`).
+
 ```logql
 # Find all logs for a specific trace
-{job="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
+{service_name="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
 
 # Error logs with trace context (log lines with ERR severity that have a trace_id)
-{job="xrpld"} |= "ERR" |= "trace_id="
+{service_name="xrpld"} |= "ERR" |= "trace_id="
 
 # All logs from a specific partition that were emitted during a span
-{job="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+{service_name="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+
+# Logs from a specific subsystem during a span (e.g. LedgerConsensus)
+{service_name="xrpld"} |= "LedgerConsensus" |= "trace_id="
 
 # Logs from the last hour containing trace context
-{job="xrpld"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
+{service_name="xrpld"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
 
 # Count of traced vs untraced log lines
-count_over_time({job="xrpld"} |= "trace_id=" [5m])
+count_over_time({service_name="xrpld"} |= "trace_id=" [5m])
 ```
 
 ### Verifying Log Correlation
@@ -694,7 +829,7 @@ count_over_time({job="xrpld"} |= "trace_id=" [5m])
 1. Start the observability stack and xrpld with telemetry enabled.
 2. Send an RPC request: `curl http://localhost:5005 -d '{"method":"server_info"}'`
 3. Check the debug.log for `trace_id=` entries: `grep trace_id= /path/to/debug.log`
-4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{job="xrpld"} |= "trace_id="`.
+4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{service_name="xrpld"} |= "trace_id="`.
 5. Click the TraceID link to navigate to the corresponding trace in Tempo.
 
 ## Troubleshooting

@@ -43,7 +43,7 @@
     },
     {
       "title": "RPC Response Time (System Metrics)",
-      "description": "P95 and P50 of RPC response time from the beast::insight timer. Sourced from the rpc.time event (ServerHandler.cpp) which records elapsed milliseconds for each RPC response. This measures the full HTTP handler time, not just command execution. Compare with span-based rpc.request duration.",
+      "description": "P95 of RPC response time from the beast::insight timer. Sourced from the rpc.time event (ServerHandler.cpp) which records elapsed milliseconds for each RPC response. This measures the full HTTP handler time, not just command execution. Compare with span-based rpc.request duration.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -64,13 +64,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_rpc_time_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "P95 Response Time [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(xrpld_rpc_time_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
-          "legendFormat": "P50 Response Time [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -89,7 +82,7 @@
     },
     {
       "title": "RPC Response Size",
-      "description": "P95 and P50 of RPC response payload size in bytes. Sourced from the rpc.size event (ServerHandler.cpp) which records the byte length of each RPC JSON response. Large responses may indicate expensive queries (e.g. account_tx with many results) or API misuse.",
+      "description": "P95 of RPC response payload size in bytes. Sourced from the rpc.size event (ServerHandler.cpp) which records the byte length of each RPC JSON response. Large responses may indicate expensive queries (e.g. account_tx with many results) or API misuse.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -110,13 +103,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_rpc_size_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "P95 Response Size [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(xrpld_rpc_size_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
-          "legendFormat": "P50 Response Size [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -135,7 +121,7 @@
     },
     {
       "title": "RPC Response Time Distribution",
-      "description": "Distribution of RPC response times from the beast::insight timer showing P50, P90, P95, and P99 quantiles. Sourced from the rpc.time event (ServerHandler.cpp). Useful for detecting bimodal latency or long-tail requests.",
+      "description": "Distribution of RPC response times from the beast::insight timer showing P90, P95, and P99 quantiles. Sourced from the rpc.time event (ServerHandler.cpp). Useful for detecting bimodal latency or long-tail requests.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -150,13 +136,6 @@
         }
       },
       "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(xrpld_rpc_time_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
-          "legendFormat": "P50 [{{exported_instance}}]"
-        },
         {
           "datasource": {
             "type": "prometheus"
@@ -195,7 +174,7 @@
     },
     {
       "title": "Pathfinding Fast Duration",
-      "description": "P95 and P50 of fast pathfinding execution time. Sourced from the pathfind_fast event (PathRequests.h) which records the duration of the fast pathfinding algorithm. Fast pathfinding uses a simplified search that trades accuracy for speed.",
+      "description": "P95 of fast pathfinding execution time. Sourced from the pathfind_fast event (PathRequests.h) which records the duration of the fast pathfinding algorithm. Fast pathfinding uses a simplified search that trades accuracy for speed.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -216,13 +195,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_pathfind_fast_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "P95 Fast Pathfind [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(xrpld_pathfind_fast_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
-          "legendFormat": "P50 Fast Pathfind [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -241,7 +213,7 @@
     },
     {
       "title": "Pathfinding Full Duration",
-      "description": "P95 and P50 of full pathfinding execution time. Sourced from the pathfind_full event (PathRequests.h) which records the duration of the exhaustive pathfinding search. Full pathfinding is more expensive and can take significantly longer than fast mode.",
+      "description": "P95 of full pathfinding execution time. Sourced from the pathfind_full event (PathRequests.h) which records the duration of the exhaustive pathfinding search. Full pathfinding is more expensive and can take significantly longer than fast mode.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -262,13 +234,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(xrpld_pathfind_full_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
           "legendFormat": "P95 Full Pathfind [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(xrpld_pathfind_full_milliseconds_bucket{exported_instance=~\"$node\"}[5m])))",
-          "legendFormat": "P50 Full Pathfind [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -500,7 +465,7 @@
     },
     {
       "title": "Pathfinding Compute Duration (Spans)",
-      "description": "p95/p50 of the pathfind.compute span, the per-request path computation. Complements the StatsD pathfind_fast/full timers with span-level visibility. Populated under pathfinding (book/path) RPC load.",
+      "description": "p95 of the pathfind.compute span, the per-request path computation. Complements the StatsD pathfind_fast/full timers with span-level visibility. Populated under pathfinding (book/path) RPC load.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -521,13 +486,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"pathfind.compute\"}[5m])))",
           "legendFormat": "P95 Compute [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"pathfind.compute\"}[5m])))",
-          "legendFormat": "P50 Compute [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {

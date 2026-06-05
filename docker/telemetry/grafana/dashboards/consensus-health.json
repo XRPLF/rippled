@@ -10,7 +10,7 @@
   "panels": [
     {
       "title": "Consensus Round Duration",
-      "description": "p95 and p50 duration of consensus accept rounds. The consensus.accept span (RCLConsensus.cpp) measures the time to process an accepted ledger including transaction application and state finalization. The span carries proposers and round_time_ms attributes. Normal range is 3-6 seconds on mainnet.",
+      "description": "p95 duration of consensus accept rounds. The consensus.accept span (RCLConsensus.cpp) measures the time to process an accepted ledger including transaction application and state finalization. The span carries proposers and round_time_ms attributes. Normal range is 3-6 seconds on mainnet.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -31,13 +31,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept\"}[5m])))",
           "legendFormat": "P95 Round Duration [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept\"}[5m])))",
-          "legendFormat": "P50 Round Duration [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -181,13 +174,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept.apply\"}[5m])))",
           "legendFormat": "P95 Apply Duration [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept.apply\"}[5m])))",
-          "legendFormat": "P50 Apply Duration [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -745,7 +731,7 @@
     },
     {
       "title": "Consensus Round Duration (Full Round)",
-      "description": "p95/p50 duration of the full consensus round. The consensus.round span (RCLConsensus.cpp startRound) wraps an entire round end-to-end. Filterable by consensus mode. This is the single most important consensus-health signal; rising round time precedes ledger-age alarms.",
+      "description": "p95 duration of the full consensus round. The consensus.round span (RCLConsensus.cpp startRound) wraps an entire round end-to-end. Filterable by consensus mode. This is the single most important consensus-health signal; rising round time precedes ledger-age alarms.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -766,13 +752,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.round\"}[5m])))",
           "legendFormat": "P95 Round [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", consensus_mode=~\"$consensus_mode\", span_name=\"consensus.round\"}[5m])))",
-          "legendFormat": "P50 Round [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -837,7 +816,7 @@
     },
     {
       "title": "Position Update Duration",
-      "description": "p95/p50 duration of the consensus.update_positions span, which tallies disputes and updates this node's position each round. Long durations indicate heavy dispute resolution or slow convergence on close time.",
+      "description": "p95 duration of the consensus.update_positions span, which tallies disputes and updates this node's position each round. Long durations indicate heavy dispute resolution or slow convergence on close time.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -858,13 +837,6 @@
           },
           "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.update_positions\"}[5m])))",
           "legendFormat": "P95 Update [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.5, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.update_positions\"}[5m])))",
-          "legendFormat": "P50 Update [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
