@@ -9,6 +9,7 @@ clang-format --version
 cmake --version
 conan --version
 curl --version
+doxygen --version
 g++ --version
 gcc --version
 gcov --version

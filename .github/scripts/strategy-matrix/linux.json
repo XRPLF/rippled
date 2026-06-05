@@ -1,221 +1,83 @@
 {
-  "architecture": [
-    {
-      "platform": "linux/amd64",
-      "runner": ["self-hosted", "Linux", "X64", "heavy"]
-    },
-    {
-      "platform": "linux/arm64",
-      "runner": ["self-hosted", "Linux", "ARM64", "heavy-arm64"]
-    }
-  ],
-  "os": [
-    {
-      "distro_name": "debian",
-      "distro_version": "bookworm",
-      "compiler_name": "gcc",
-      "compiler_version": "12",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "bookworm",
-      "compiler_name": "gcc",
-      "compiler_version": "13",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "bookworm",
-      "compiler_name": "gcc",
-      "compiler_version": "14",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "bookworm",
-      "compiler_name": "gcc",
-      "compiler_version": "15",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "bookworm",
-      "compiler_name": "clang",
-      "compiler_version": "16",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "bookworm",
-      "compiler_name": "clang",
-      "compiler_version": "17",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "bookworm",
-      "compiler_name": "clang",
-      "compiler_version": "18",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "bookworm",
-      "compiler_name": "clang",
-      "compiler_version": "19",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "bookworm",
-      "compiler_name": "clang",
-      "compiler_version": "20",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "trixie",
-      "compiler_name": "gcc",
-      "compiler_version": "14",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "trixie",
-      "compiler_name": "gcc",
-      "compiler_version": "15",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "trixie",
-      "compiler_name": "clang",
-      "compiler_version": "20",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "trixie",
-      "compiler_name": "clang",
-      "compiler_version": "21",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "debian",
-      "distro_version": "trixie",
-      "compiler_name": "clang",
-      "compiler_version": "22",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "rhel",
-      "distro_version": "8",
-      "compiler_name": "gcc",
-      "compiler_version": "14",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "rhel",
-      "distro_version": "8",
-      "compiler_name": "clang",
-      "compiler_version": "any",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "rhel",
-      "distro_version": "9",
-      "compiler_name": "gcc",
-      "compiler_version": "12",
-      "image_sha": "4c086b9",
-      "package": true
-    },
-    {
-      "distro_name": "rhel",
-      "distro_version": "9",
-      "compiler_name": "gcc",
-      "compiler_version": "13",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "rhel",
-      "distro_version": "9",
-      "compiler_name": "gcc",
-      "compiler_version": "14",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "rhel",
-      "distro_version": "9",
-      "compiler_name": "clang",
-      "compiler_version": "any",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "rhel",
-      "distro_version": "10",
-      "compiler_name": "gcc",
-      "compiler_version": "14",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "rhel",
-      "distro_version": "10",
-      "compiler_name": "clang",
-      "compiler_version": "any",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "ubuntu",
-      "distro_version": "jammy",
-      "compiler_name": "gcc",
-      "compiler_version": "12",
-      "image_sha": "4c086b9",
-      "package": true
-    },
-    {
-      "distro_name": "ubuntu",
-      "distro_version": "noble",
-      "compiler_name": "gcc",
-      "compiler_version": "13",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "ubuntu",
-      "distro_version": "noble",
-      "compiler_name": "gcc",
-      "compiler_version": "14",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "ubuntu",
-      "distro_version": "noble",
-      "compiler_name": "clang",
-      "compiler_version": "16",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "ubuntu",
-      "distro_version": "noble",
-      "compiler_name": "clang",
-      "compiler_version": "17",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "ubuntu",
-      "distro_version": "noble",
-      "compiler_name": "clang",
-      "compiler_version": "18",
-      "image_sha": "4c086b9"
-    },
-    {
-      "distro_name": "ubuntu",
-      "distro_version": "noble",
-      "compiler_name": "clang",
-      "compiler_version": "19",
-      "image_sha": "4c086b9"
-    }
-  ],
-  "build_type": ["Debug", "Release"],
-  "cmake_args": [""]
+  "image_tag": "sha-6c54342",
+  "configs": {
+    "ubuntu": [
+      {
+        "compiler": ["gcc", "clang"],
+        "build_type": ["Debug", "Release"],
+        "arch": ["amd64", "arm64"]
+      },
+
+      {
+        "compiler": ["gcc", "clang"],
+        "build_type": ["Debug"],
+        "arch": ["amd64"],
+        "sanitizers": ["address", "undefinedbehavior"]
+      },
+
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Debug"],
+        "arch": ["amd64"],
+        "suffix": "coverage",
+        "extra_cmake_args": "-DUNIT_TEST_REFERENCE_FEE=500 -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0"
+      },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Debug"],
+        "arch": ["amd64"],
+        "suffix": "voidstar",
+        "extra_cmake_args": "-Dvoidstar=ON"
+      },
+      {
+        "compiler": ["clang"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "suffix": "reffee",
+        "extra_cmake_args": "-DUNIT_TEST_REFERENCE_FEE=1000"
+      },
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Debug"],
+        "arch": ["amd64"],
+        "suffix": "unity",
+        "extra_cmake_args": "-Dunity=ON"
+      }
+    ],
+
+    "debian": [
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"]
+      }
+    ],
+
+    "rhel": [
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"]
+      }
+    ]
+  },
+  "package_configs": {
+    "debian": [
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "image": "debian:bookworm"
+      }
+    ],
+
+    "rhel": [
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "image": "registry.access.redhat.com/ubi9/ubi:latest"
+      }
+    ]
+  }
 }
