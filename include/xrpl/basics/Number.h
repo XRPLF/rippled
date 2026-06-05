@@ -884,6 +884,26 @@ to_string(MantissaRange::MantissaScale const& scale)
     }
 }
 
+inline std::string
+to_string(Number::RoundingMode const& round)
+{
+    switch (round)
+    {
+        enum class RoundingMode { ToNearest, TowardsZero, Downward, Upward };
+
+        case Number::RoundingMode::ToNearest:
+            return "ToNearest";
+        case Number::RoundingMode::TowardsZero:
+            return "TowardsZero";
+        case Number::RoundingMode::Downward:
+            return "Downward";
+        case Number::RoundingMode::Upward:
+            return "Upward";
+        default:
+            throw std::runtime_error("Bad rounding mode");
+    }
+}
+
 class SaveNumberRoundMode
 {
     Number::RoundingMode mode_;
