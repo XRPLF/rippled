@@ -10,380 +10,6 @@
   "links": [],
   "panels": [
     {
-      "title": "Job Throughput Rate (Per Second)",
-      "description": "Rate of jobs queued, started, and finished across all job types. Computed as rate() over the OTel counter values. High queue rates with low finish rates indicate backlog.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(xrpld_job_queued_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
-          "legendFormat": "Queued/s [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(xrpld_job_started_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
-          "legendFormat": "Started/s [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(xrpld_job_finished_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
-          "legendFormat": "Finished/s [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "axisLabel": "Operations / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Per-Job-Type Queued Rate",
-      "description": "Rate of jobs queued broken down by job_type label. Identifies which job types contribute most to queue activity.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 8
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "calcs": ["mean", "max"]
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "topk(10, rate(xrpld_job_queued_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
-          "legendFormat": "{{job_type}} [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 5,
-            "axisLabel": "Operations / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Per-Job-Type Finish Rate",
-      "description": "Rate of jobs completing broken down by job_type. Compare with queued rate to identify backlog per type.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "calcs": ["mean", "max"]
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "topk(10, rate(xrpld_job_finished_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
-          "legendFormat": "{{job_type}} [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 5,
-            "axisLabel": "Operations / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Job Queue Wait Time",
-      "description": "Job queue wait time distribution (p75 typical, p99 tail). How long jobs sit in the queue before a worker picks them up.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "p75 Wait [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "p99 Wait [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "\u00b5s",
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "axisLabel": "Duration (\u03bcs)",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Job Execution Time",
-      "description": "Job execution time distribution (p75 typical, p99 tail). How long jobs run once started.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "p75 Exec [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
-          "legendFormat": "p99 Exec [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "\u00b5s",
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 5,
-            "axisLabel": "Duration (\u03bcs)",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Per-Job-Type Execution Time (p99)",
-      "description": "Top 10 slowest job types by p99 execution time.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "calcs": ["mean", "max"]
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "topk(10, histogram_quantile(0.99, sum by (le, job_type, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))))",
-          "legendFormat": "{{job_type}} [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "\u00b5s",
-          "custom": {
-            "drawStyle": "line",
-            "lineWidth": 1,
-            "fillOpacity": 5,
-            "axisLabel": "Duration (\u03bcs)",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Transaction Overflow Rate",
-      "description": "Rate of job queue transaction overflows per minute. Overflows occur when the job queue's transaction limit is exceeded, causing transactions to be dropped. Non-zero values indicate the node is under heavy transaction load.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 32
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "rate(xrpld_jq_trans_overflow_total{exported_instance=~\"$node\"}[5m]) * 60",
-          "legendFormat": "Overflows/min [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none",
-          "thresholds": {
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 10
-              }
-            ]
-          },
-          "custom": {
-            "axisLabel": "Overflows / Min",
-            "drawStyle": "line",
-            "lineWidth": 2,
-            "fillOpacity": 10,
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          },
-          "color": {
-            "mode": "palette-classic"
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
       "title": "Current Job Latency (p99 Gauge)",
       "description": "At-a-glance p99 job queue wait and execution time over the last 5 minutes. Green < 100ms, yellow 100ms-1s, red > 1s.",
       "type": "gauge",
@@ -391,7 +17,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 0
       },
       "options": {
         "reduceOptions": {
@@ -442,7 +68,389 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 1
+    },
+    {
+      "title": "Job Throughput Rate (Per Second)",
+      "description": "Rate of jobs queued, started, and finished across all job types. Computed as rate() over the OTel counter values. High queue rates with low finish rates indicate backlog.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(xrpld_job_queued_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "legendFormat": "Queued/s [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(xrpld_job_started_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "legendFormat": "Started/s [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(xrpld_job_finished_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "legendFormat": "Finished/s [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Operations / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 2
+    },
+    {
+      "title": "Per-Job-Type Queued Rate",
+      "description": "Rate of jobs queued broken down by job_type label. Identifies which job types contribute most to queue activity.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(10, rate(xrpld_job_queued_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "legendFormat": "{{job_type}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "axisLabel": "Operations / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 3
+    },
+    {
+      "title": "Per-Job-Type Finish Rate",
+      "description": "Rate of jobs completing broken down by job_type. Compare with queued rate to identify backlog per type.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(10, rate(xrpld_job_finished_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "legendFormat": "{{job_type}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "axisLabel": "Operations / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 4
+    },
+    {
+      "title": "Job Queue Wait Time",
+      "description": "Job queue wait time distribution (p75 typical, p99 tail). How long jobs sit in the queue before a worker picks them up.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "legendFormat": "p75 Wait [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "legendFormat": "p99 Wait [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "\u00b5s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "axisLabel": "Duration (\u03bcs)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 5
+    },
+    {
+      "title": "Job Execution Time",
+      "description": "Job execution time distribution (p75 typical, p99 tail). How long jobs run once started.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "legendFormat": "p75 Exec [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "legendFormat": "p99 Exec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "\u00b5s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "axisLabel": "Duration (\u03bcs)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 6
+    },
+    {
+      "title": "Per-Job-Type Execution Time (p99)",
+      "description": "Top 10 slowest job types by p99 execution time.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(10, histogram_quantile(0.99, sum by (le, job_type, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))))",
+          "legendFormat": "{{job_type}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "\u00b5s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "axisLabel": "Duration (\u03bcs)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 7
+    },
+    {
+      "title": "Transaction Overflow Rate",
+      "description": "Rate of job queue transaction overflows per minute. Overflows occur when the job queue's transaction limit is exceeded, causing transactions to be dropped. Non-zero values indicate the node is under heavy transaction load.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(xrpld_jq_trans_overflow_total{exported_instance=~\"$node\"}[5m]) * 60",
+          "legendFormat": "Overflows/min [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "custom": {
+            "axisLabel": "Overflows / Min",
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 8
     }
   ],
   "schemaVersion": 39,
