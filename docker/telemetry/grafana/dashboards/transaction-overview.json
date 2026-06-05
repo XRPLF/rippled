@@ -9,290 +9,14 @@
   "links": [],
   "panels": [
     {
-      "title": "Transaction Processing Rate",
-      "description": "Rate of transactions entering the processing pipeline. tx.process (NetworkOPs.cpp) fires when a transaction is submitted locally or received from a peer and enters processTransaction(). tx.receive (PeerImp.cpp) fires when a raw transaction message arrives from a peer before deduplication.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
-          "legendFormat": "tx.process / Sec [{{exported_instance}}]"
-        },
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[5m]))",
-          "legendFormat": "tx.receive / Sec [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "axisLabel": "Transactions / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Transaction Processing Latency by Type",
-      "description": "Per-transaction-type processing latency (p95). Filter with $tx_type variable above.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        },
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "calcs": ["mean", "max", "lastNotNull"]
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])))",
-          "legendFormat": "{{tx_type}} [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "custom": {
-            "axisLabel": "Latency (ms)",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Transaction Path Distribution",
-      "description": "Breakdown of transactions by origin path. The local attribute indicates whether the transaction was submitted locally (true) or received from a peer (false). Helps understand the ratio of locally-originated vs relayed transactions.",
-      "type": "piechart",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 8
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (local, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
-          "legendFormat": "Local [{{local}}, {{exported_instance}}]"
-        }
-      ]
-    },
-    {
-      "title": "Transaction Receive vs Suppressed",
-      "description": "Total rate of raw transaction messages received from peers (tx.receive span from PeerImp.cpp). This fires before deduplication via the HashRouter, so the difference between tx.receive and tx.process reflects suppressed duplicate transactions.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (suppressed, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"tx.receive\", tx_type=~\"$tx_type\", exported_instance=~\"$node\"}[$__rate_interval]))",
-          "legendFormat": "Suppressed [{{suppressed}}, {{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "axisLabel": "Transactions / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Transaction Processing Duration Heatmap",
-      "description": "Heatmap showing the distribution of tx.process span durations across histogram buckets over time. Each cell represents the count of transactions that completed within that latency bucket in a 5m window. Reveals whether processing times are consistent or exhibit multi-modal patterns.",
-      "type": "heatmap",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        },
-        "yAxis": {
-          "axisLabel": "Duration (ms)",
-          "unit": "ms"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])) by (le)",
-          "legendFormat": "{{le}}",
-          "format": "heatmap"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms"
-        }
-      }
-    },
-    {
-      "title": "Transaction Apply Duration per Ledger",
-      "description": "p95 latency of applying the consensus transaction set to a new ledger. The tx.apply span (BuildLedger.cpp) wraps the applyTransactions() function that iterates through the CanonicalTXSet and applies each transaction to the OpenView. Long durations indicate heavy transaction sets or expensive transaction processing.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.apply\"}[5m])))",
-          "legendFormat": "tx.apply [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "custom": {
-            "axisLabel": "Latency (ms)",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Peer Transaction Receive Rate",
-      "description": "Rate of transaction messages received from network peers. Sourced from the tx.receive span (PeerImp.cpp) which fires in the onMessage(TMTransaction) handler. High rates may indicate network-wide transaction volume spikes or peer flooding.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 24
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[5m]))",
-          "legendFormat": "tx.receive / Sec [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "axisLabel": "Transactions / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
       "title": "Transaction Apply Failed Rate",
       "description": "Rate of tx.apply spans completing with error status, indicating transaction application failures during ledger building. The span records tx_failed as an attribute. Thresholds: green < 0.1/sec, yellow 0.1-1/sec, red > 1/sec. Some failures are normal (e.g. conflicting offers) but sustained high rates may indicate issues.",
       "type": "stat",
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 24
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
       },
       "options": {
         "tooltip": {
@@ -331,7 +55,95 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 1
+    },
+    {
+      "title": "Transaction Processing Latency by Type",
+      "description": "Per-transaction-type processing latency (p95). Filter with $tx_type variable above.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 4
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max", "lastNotNull"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, tx_type, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])))",
+          "legendFormat": "{{tx_type}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 2
+    },
+    {
+      "title": "Transaction Receive vs Suppressed",
+      "description": "Total rate of raw transaction messages received from peers (tx.receive span from PeerImp.cpp). This fires before deduplication via the HashRouter, so the difference between tx.receive and tx.process reflects suppressed duplicate transactions.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (suppressed, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"tx.receive\", tx_type=~\"$tx_type\", exported_instance=~\"$node\"}[$__rate_interval]))",
+          "legendFormat": "Suppressed [{{suppressed}}, {{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Transactions / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 3
     },
     {
       "title": "Transaction Rate by Type",
@@ -339,9 +151,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 32
+        "y": 20
       },
       "options": {
         "tooltip": {
@@ -376,7 +188,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 4
     },
     {
       "title": "Transaction Results by Type",
@@ -384,9 +197,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 32
+        "w": 24,
+        "x": 0,
+        "y": 28
       },
       "options": {
         "tooltip": {
@@ -421,26 +234,23 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
-      "title": "TxQ Accept Status",
-      "description": "TxQ accept outcomes: applied (included in ledger), failed (removed), retried (kept for next round).",
-      "type": "piechart",
+      "title": "Transaction Processing Rate",
+      "description": "Rate of transactions entering the processing pipeline. tx.process (NetworkOPs.cpp) fires when a transaction is submitted locally or received from a peer and enters processTransaction(). tx.receive (PeerImp.cpp) fires when a raw transaction message arrives from a peer before deduplication.",
+      "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 12,
         "x": 0,
-        "y": 40
+        "y": 36
       },
       "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "right",
-          "values": ["value", "percent"]
-        },
         "tooltip": {
           "mode": "multi",
+          "sort": "desc",
           "maxHeight": 500
         }
       },
@@ -449,16 +259,138 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (txq_status, exported_instance) (increase(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.accept_tx\", txq_status=~\"$txq_status\"}[5m]))",
-          "legendFormat": "{{txq_status}} [{{exported_instance}}]"
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
+          "legendFormat": "tx.process / Sec [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[5m]))",
+          "legendFormat": "tx.receive / Sec [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Transactions / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
         },
         "overrides": []
-      }
+      },
+      "id": 6
+    },
+    {
+      "title": "Transaction Path Distribution",
+      "description": "Breakdown of transactions by origin path. The local attribute indicates whether the transaction was submitted locally (true) or received from a peer (false). Helps understand the ratio of locally-originated vs relayed transactions.",
+      "type": "piechart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 36
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (local, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", local=~\"$tx_origin\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m]))",
+          "legendFormat": "Local [{{local}}, {{exported_instance}}]"
+        }
+      ],
+      "id": 7
+    },
+    {
+      "title": "Transaction Processing Duration Heatmap",
+      "description": "Heatmap showing the distribution of tx.process span durations across histogram buckets over time. Each cell represents the count of transactions that completed within that latency bucket in a 5m window. Reveals whether processing times are consistent or exhibit multi-modal patterns.",
+      "type": "heatmap",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 44
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        },
+        "yAxis": {
+          "axisLabel": "Duration (ms)",
+          "unit": "ms"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.process\", tx_type=~\"$tx_type\"}[5m])) by (le)",
+          "legendFormat": "{{le}}",
+          "format": "heatmap"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        }
+      },
+      "id": 8
+    },
+    {
+      "title": "Peer Transaction Receive Rate",
+      "description": "Rate of transaction messages received from network peers. Sourced from the tx.receive span (PeerImp.cpp) which fires in the onMessage(TMTransaction) handler. High rates may indicate network-wide transaction volume spikes or peer flooding.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 44
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"tx.receive\", tx_type=~\"$tx_type\"}[5m]))",
+          "legendFormat": "tx.receive / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Transactions / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 9
     },
     {
       "title": "Transactor Duration by Type (p95)",
@@ -466,9 +398,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 16,
-        "x": 8,
-        "y": 40
+        "w": 24,
+        "x": 0,
+        "y": 52
       },
       "options": {
         "tooltip": {
@@ -503,167 +435,8 @@
           }
         },
         "overrides": []
-      }
-    },
-    {
-      "title": "TxQ Enqueue Rate by Transaction Type",
-      "description": "Rate of txq.enqueue spans broken down by transaction type (tx_type). Shows what share of inbound demand is Payment vs OfferCreate vs other transactors, and how the mix shifts as the queue fills. A spam burst of one type is a leading indicator of fee escalation.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 48
       },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (tx_type, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.enqueue\"}[5m]))",
-          "legendFormat": "{{tx_type}} [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "axisLabel": "Enqueues / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Queue Bypass Ratio (Direct Apply vs Enqueue)",
-      "description": "Ratio of transactions that applied directly to the open ledger (txq.apply_direct) versus those that had to be queued (txq.enqueue). A falling bypass ratio is the cleanest single signal the network has entered sustained fee escalation.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 48
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.apply_direct\"}[5m])) / clamp_min(sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.apply_direct\"}[5m])) + sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.enqueue\"}[5m])), 1)",
-          "legendFormat": "Direct-Apply Fraction [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "custom": {
-            "axisLabel": "Bypass Fraction",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Queue Accept (Drain) Duration per Ledger",
-      "description": "p95 duration of the txq.accept span, which drains queued transactions into a newly closed ledger. Rising drain time signals queue pressure at ledger close.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 56
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"txq.accept\"}[5m])))",
-          "legendFormat": "Drain [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "custom": {
-            "axisLabel": "Duration (ms)",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
-    },
-    {
-      "title": "Queue Cleanup Rate (Expired Entries)",
-      "description": "Rate of txq.cleanup spans, which remove expired transactions from the queue each ledger. A rising rate means submitters under-bid the escalating fee and abandoned their transactions \u2014 a demand-frustration signal distinct from acceptance throughput.",
-      "type": "timeseries",
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 56
-      },
-      "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc",
-          "maxHeight": 500
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus"
-          },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.cleanup\"}[5m]))",
-          "legendFormat": "Cleanups / Sec [{{exported_instance}}]"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "custom": {
-            "axisLabel": "Cleanups / Sec",
-            "spanNulls": true,
-            "insertNulls": false,
-            "showPoints": "auto",
-            "pointSize": 3
-          }
-        },
-        "overrides": []
-      }
+      "id": 10
     },
     {
       "title": "Tx Apply Pipeline Rate by Stage",
@@ -671,9 +444,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 64
+        "y": 60
       },
       "options": {
         "tooltip": {
@@ -708,7 +481,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 11
     },
     {
       "title": "Tx Apply Pipeline Latency by Stage (p95)",
@@ -716,9 +490,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 64
+        "w": 24,
+        "x": 0,
+        "y": 68
       },
       "options": {
         "tooltip": {
@@ -753,7 +527,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 12
     },
     {
       "title": "Tx Apply Pipeline Failure Rate by Stage",
@@ -763,7 +538,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 80
+        "y": 76
       },
       "options": {
         "tooltip": {
@@ -798,7 +573,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 13
     },
     {
       "title": "Tx Apply Pipeline Latency by Type and Stage (p95)",
@@ -808,7 +584,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 72
+        "y": 84
       },
       "options": {
         "tooltip": {
@@ -843,7 +619,251 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 14
+    },
+    {
+      "title": "Transaction Apply Duration per Ledger",
+      "description": "p95 latency of applying the consensus transaction set to a new ledger. The tx.apply span (BuildLedger.cpp) wraps the applyTransactions() function that iterates through the CanonicalTXSet and applies each transaction to the OpenView. Long durations indicate heavy transaction sets or expensive transaction processing.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 92
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"tx.apply\"}[5m])))",
+          "legendFormat": "tx.apply [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 15
+    },
+    {
+      "title": "TxQ Enqueue Rate by Transaction Type",
+      "description": "Rate of txq.enqueue spans broken down by transaction type (tx_type). Shows what share of inbound demand is Payment vs OfferCreate vs other transactors, and how the mix shifts as the queue fills. A spam burst of one type is a leading indicator of fee escalation.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 100
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (tx_type, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.enqueue\"}[5m]))",
+          "legendFormat": "{{tx_type}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Enqueues / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 16
+    },
+    {
+      "title": "TxQ Accept Status",
+      "description": "TxQ accept outcomes: applied (included in ledger), failed (removed), retried (kept for next round).",
+      "type": "piechart",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 108
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": ["value", "percent"]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "maxHeight": 500
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (txq_status, exported_instance) (increase(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.accept_tx\", txq_status=~\"$txq_status\"}[5m]))",
+          "legendFormat": "{{txq_status}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "id": 17
+    },
+    {
+      "title": "Queue Bypass Ratio (Direct Apply vs Enqueue)",
+      "description": "Ratio of transactions that applied directly to the open ledger (txq.apply_direct) versus those that had to be queued (txq.enqueue). A falling bypass ratio is the cleanest single signal the network has entered sustained fee escalation.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 108
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.apply_direct\"}[5m])) / clamp_min(sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.apply_direct\"}[5m])) + sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.enqueue\"}[5m])), 1)",
+          "legendFormat": "Direct-Apply Fraction [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "axisLabel": "Bypass Fraction",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 18
+    },
+    {
+      "title": "Queue Accept (Drain) Duration per Ledger",
+      "description": "p95 duration of the txq.accept span, which drains queued transactions into a newly closed ledger. Rising drain time signals queue pressure at ledger close.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 116
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"txq.accept\"}[5m])))",
+          "legendFormat": "Drain [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 19
+    },
+    {
+      "title": "Queue Cleanup Rate (Expired Entries)",
+      "description": "Rate of txq.cleanup spans, which remove expired transactions from the queue each ledger. A rising rate means submitters under-bid the escalating fee and abandoned their transactions \u2014 a demand-frustration signal distinct from acceptance throughput.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 116
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc",
+          "maxHeight": 500
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"txq.cleanup\"}[5m]))",
+          "legendFormat": "Cleanups / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Cleanups / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      },
+      "id": 20
     }
   ],
   "schemaVersion": 39,
