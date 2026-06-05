@@ -132,6 +132,8 @@ TEST_F(ValidationTrackerTest, EmptyWindowReturnsZero)
     EXPECT_EQ(tracker_.missed24h(), 0u);
     EXPECT_EQ(tracker_.totalAgreements(), 0u);
     EXPECT_EQ(tracker_.totalMissed(), 0u);
+    EXPECT_EQ(tracker_.totalAgreementsEver(), 0u);
+    EXPECT_EQ(tracker_.totalMissedEver(), 0u);
     EXPECT_EQ(tracker_.totalValidationsSent(), 0u);
     EXPECT_EQ(tracker_.totalValidationsChecked(), 0u);
 }
@@ -281,4 +283,92 @@ TEST_F(ValidationTrackerTest, OnlyWeValidated)
     EXPECT_EQ(tracker_.totalMissed(), 1u);
     EXPECT_EQ(tracker_.missed1h(), 1u);
     EXPECT_DOUBLE_EQ(tracker_.agreementPct1h(), 0.0);
+}
+
+// ---------------------------------------------------------------
+// 10. Gross miss tally is monotonic across a late repair
+//     The gross lifetime tallies (totalAgreementsEver/totalMissedEver)
+//     back the monotonic Prometheus _total counters. A late repair must
+//     move the NET totals (miss -> agreement) but must NOT move the gross
+//     tallies: a miss already counted stays counted, and the repair does
+//     not add a second (agreement) count for the same ledger.
+// ---------------------------------------------------------------
+TEST_F(ValidationTrackerTest, GrossMissedNeverDecrementsOnRepair)
+{
+    auto const hash = makeHash(10);
+    LedgerIndex const seq = 1000;
+
+    // Network validates, we do not (yet).
+    tracker_.recordNetworkValidation(hash, seq);
+
+    // Grace period elapses -- reconciled as a miss.
+    std::this_thread::sleep_for(std::chrono::seconds(9));
+    tracker_.reconcile();
+
+    // Net and gross both show exactly one initial miss, zero agreements.
+    EXPECT_EQ(tracker_.totalMissed(), 1u);
+    EXPECT_EQ(tracker_.totalMissedEver(), 1u);
+    EXPECT_EQ(tracker_.totalAgreements(), 0u);
+    EXPECT_EQ(tracker_.totalAgreementsEver(), 0u);
+
+    // Late arrival of our validation repairs the miss to an agreement.
+    tracker_.recordOurValidation(hash, seq);
+    tracker_.reconcile();
+
+    // Net totals reflect the repair...
+    EXPECT_EQ(tracker_.totalMissed(), 0u);
+    EXPECT_EQ(tracker_.totalAgreements(), 1u);
+    // ...but the gross tallies are frozen at first classification: the miss
+    // stays counted and no agreement was added (repair path excluded).
+    EXPECT_EQ(tracker_.totalMissedEver(), 1u);
+    EXPECT_EQ(tracker_.totalAgreementsEver(), 0u);
+}
+
+// ---------------------------------------------------------------
+// 11. Gross tallies count initial classification only (additive)
+//     With a mix of initial agreements and misses the gross tallies equal
+//     the net totals. A subsequent repair shifts the net totals but leaves
+//     the gross tallies unchanged, and the gross sum equals the number of
+//     reconciled ledgers (the additive invariant the _total counters rely on).
+// ---------------------------------------------------------------
+TEST_F(ValidationTrackerTest, GrossAgreementsCountInitialOnly)
+{
+    // 3 initial agreements: both sides validate.
+    for (int i = 1; i <= 3; ++i)
+    {
+        auto const h = makeHash(static_cast<std::uint64_t>(i));
+        tracker_.recordOurValidation(h, static_cast<LedgerIndex>(i));
+        tracker_.recordNetworkValidation(h, static_cast<LedgerIndex>(i));
+    }
+
+    // 2 initial misses: only network validates.
+    for (int i = 4; i <= 5; ++i)
+    {
+        auto const h = makeHash(static_cast<std::uint64_t>(i));
+        tracker_.recordNetworkValidation(h, static_cast<LedgerIndex>(i));
+    }
+
+    // Grace period elapses -- all five reconciled at first classification.
+    std::this_thread::sleep_for(std::chrono::seconds(9));
+    tracker_.reconcile();
+
+    // Before any repair, gross equals net.
+    EXPECT_EQ(tracker_.totalAgreements(), 3u);
+    EXPECT_EQ(tracker_.totalAgreementsEver(), 3u);
+    EXPECT_EQ(tracker_.totalMissed(), 2u);
+    EXPECT_EQ(tracker_.totalMissedEver(), 2u);
+
+    // Repair one of the misses (hash 4) within the repair window.
+    tracker_.recordOurValidation(makeHash(4), 4);
+    tracker_.reconcile();
+
+    // Net totals shift by the repair...
+    EXPECT_EQ(tracker_.totalAgreements(), 4u);
+    EXPECT_EQ(tracker_.totalMissed(), 1u);
+    // ...gross tallies stay at the initial classification.
+    EXPECT_EQ(tracker_.totalAgreementsEver(), 3u);
+    EXPECT_EQ(tracker_.totalMissedEver(), 2u);
+
+    // Additive invariant: gross agree + gross miss == ledgers reconciled.
+    EXPECT_EQ(tracker_.totalAgreementsEver() + tracker_.totalMissedEver(), 5u);
 }

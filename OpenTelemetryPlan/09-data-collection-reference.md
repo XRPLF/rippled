@@ -337,7 +337,7 @@ prefix=xrpld
 | `xrpld_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
 | `xrpld_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
 | `xrpld_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
-| `xrpld_job_count`                                 | JobQueue.cpp          | Current job queue depth                   | 0–100 (healthy)                 |
+| `xrpld_jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (group `jobq`)    | 0–100 (healthy)                 |
 
 **Grafana dashboard**: _Node Health (System Metrics)_ (`xrpld-system-node-health`)
 
@@ -592,90 +592,22 @@ count_over_time({job="xrpld"} |= "trace_id=" [5m])
 
 ---
 
-## 5b. Future: Internal Metric Gap Fill (Phase 9)
+## 5b. Internal Metric Gap Fill (Phase 9)
 
-> **Status**: Planned, not yet implemented.
+> **Status**: Implemented.
 > **Plan details**: [06-implementation-phases.md §6.8.2](./06-implementation-phases.md) — motivation, architecture, third-party context
 > **Task breakdown**: [Phase9_taskList.md](./Phase9_taskList.md) — per-task implementation details
 
-Phase 9 fills ~50+ metrics that exist inside xrpld but currently lack time-series export. Uses a hybrid approach: `beast::insight` extensions for NodeStore I/O, OTel `ObservableGauge` async callbacks for new categories.
+Phase 9 fills the metrics that exist inside xrpld but previously lacked time-series export. It
+uses a hybrid approach: `beast::insight` extensions for NodeStore I/O plus OTel `ObservableGauge`
+async callbacks for new categories.
 
-### New Metric Categories
-
-#### NodeStore I/O (via beast::insight)
-
-| Prometheus Metric                  | Type  | Description                         |
-| ---------------------------------- | ----- | ----------------------------------- |
-| `xrpld_nodestore_reads_total`      | Gauge | Cumulative read operations          |
-| `xrpld_nodestore_reads_hit`        | Gauge | Cache-served reads                  |
-| `xrpld_nodestore_writes`           | Gauge | Cumulative write operations         |
-| `xrpld_nodestore_written_bytes`    | Gauge | Cumulative bytes written            |
-| `xrpld_nodestore_read_bytes`       | Gauge | Cumulative bytes read               |
-| `xrpld_nodestore_read_duration_us` | Gauge | Cumulative read time (microseconds) |
-| `xrpld_nodestore_write_load`       | Gauge | Current write load score            |
-| `xrpld_nodestore_read_queue`       | Gauge | Items in read queue                 |
-
-#### Cache Hit Rates (via OTel MetricsRegistry)
-
-| Prometheus Metric             | Type  | Description                          |
-| ----------------------------- | ----- | ------------------------------------ |
-| `xrpld_cache_SLE_hit_rate`    | Gauge | SLE cache hit rate (0.0-1.0)         |
-| `xrpld_cache_ledger_hit_rate` | Gauge | Ledger object cache hit rate         |
-| `xrpld_cache_AL_hit_rate`     | Gauge | AcceptedLedger cache hit rate        |
-| `xrpld_cache_treenode_size`   | Gauge | SHAMap TreeNode cache size (entries) |
-| `xrpld_cache_fullbelow_size`  | Gauge | FullBelow cache size                 |
-
-#### Transaction Queue (via OTel MetricsRegistry)
-
-| Prometheus Metric                    | Type  | Description                      |
-| ------------------------------------ | ----- | -------------------------------- |
-| `xrpld_txq_count`                    | Gauge | Current transactions in queue    |
-| `xrpld_txq_max_size`                 | Gauge | Maximum queue capacity           |
-| `xrpld_txq_in_ledger`                | Gauge | Transactions in open ledger      |
-| `xrpld_txq_per_ledger`               | Gauge | Expected transactions per ledger |
-| `xrpld_txq_open_ledger_fee_level`    | Gauge | Open ledger fee escalation level |
-| `xrpld_txq_med_fee_level`            | Gauge | Median fee level in queue        |
-| `xrpld_txq_reference_fee_level`      | Gauge | Reference fee level              |
-| `xrpld_txq_min_processing_fee_level` | Gauge | Minimum fee to get processed     |
-
-#### PerfLog Per-RPC Method (via OTel Metrics SDK)
-
-| Prometheus Metric                     | Type      | Labels            | Description                 |
-| ------------------------------------- | --------- | ----------------- | --------------------------- |
-| `xrpld_rpc_method_started_total`      | Counter   | `method="<name>"` | RPC calls started           |
-| `xrpld_rpc_method_finished_total`     | Counter   | `method="<name>"` | RPC calls completed         |
-| `xrpld_rpc_method_errored_total`      | Counter   | `method="<name>"` | RPC calls errored           |
-| `xrpld_rpc_method_duration_us_bucket` | Histogram | `method="<name>"` | Execution time distribution |
-
-#### PerfLog Per-Job Type (via OTel Metrics SDK)
-
-| Prometheus Metric                      | Type      | Labels              | Description     |
-| -------------------------------------- | --------- | ------------------- | --------------- |
-| `xrpld_job_queued_total`               | Counter   | `job_type="<name>"` | Jobs queued     |
-| `xrpld_job_started_total`              | Counter   | `job_type="<name>"` | Jobs started    |
-| `xrpld_job_finished_total`             | Counter   | `job_type="<name>"` | Jobs completed  |
-| `xrpld_job_queued_duration_us_bucket`  | Histogram | `job_type="<name>"` | Queue wait time |
-| `xrpld_job_running_duration_us_bucket` | Histogram | `job_type="<name>"` | Execution time  |
-
-#### Counted Object Instances (via OTel MetricsRegistry)
-
-| Prometheus Metric    | Type  | Labels          | Description                     |
-| -------------------- | ----- | --------------- | ------------------------------- |
-| `xrpld_object_count` | Gauge | `type="<name>"` | Live instances of internal type |
-
-Tracked types: `Transaction`, `Ledger`, `NodeObject`, `STTx`, `STLedgerEntry`, `InboundLedger`, `Pathfinder`, `PathRequest`, `HashRouterEntry`
-
-#### Fee Escalation & Load Factors (via OTel MetricsRegistry)
-
-| Prometheus Metric                  | Type  | Description                          |
-| ---------------------------------- | ----- | ------------------------------------ |
-| `xrpld_load_factor`                | Gauge | Combined transaction cost multiplier |
-| `xrpld_load_factor_server`         | Gauge | Server + cluster + network load      |
-| `xrpld_load_factor_local`          | Gauge | Local server load only               |
-| `xrpld_load_factor_net`            | Gauge | Network-wide load estimate           |
-| `xrpld_load_factor_cluster`        | Gauge | Cluster peer load                    |
-| `xrpld_load_factor_fee_escalation` | Gauge | Open ledger fee escalation           |
-| `xrpld_load_factor_fee_queue`      | Gauge | Queue entry fee level                |
+> **Authoritative metric names live in [§ Phase 9: OTel SDK-Exported Metrics](#phase-9-otel-sdk-exported-metrics-metricsregistry) below.**
+> Most internal metrics are emitted as **labeled** gauges — one instrument carrying many logical
+> values via a `metric` label (e.g. `xrpld_cache_metrics{metric="SLE_hit_rate"}`,
+> `xrpld_txq_metrics{metric="txq_count"}`, `xrpld_load_factor_metrics{metric="load_factor"}`,
+> `xrpld_nodestore_state{metric="node_reads_total"}`) — not the flat per-name form. Query the
+> labeled names; the flat names (`xrpld_cache_SLE_hit_rate`, `xrpld_txq_count`, …) are **not** emitted.
 
 #### Server Info (via OTel MetricsRegistry)
 
@@ -746,15 +678,23 @@ Phase 10 builds a 5-node validator docker-compose harness with RPC load generato
 
 ### Validated Telemetry Inventory
 
-| Category           | Expected Count | Validation Method                |
-| ------------------ | -------------- | -------------------------------- |
-| Trace spans        | 16             | Jaeger/Tempo API query           |
-| Span attributes    | 22             | Per-span attribute assertion     |
-| StatsD metrics     | 255+           | Prometheus query                 |
-| Phase 9 metrics    | 68+            | Prometheus query                 |
-| SpanMetrics RED    | 4 per span     | Prometheus query                 |
-| Grafana dashboards | 10             | Dashboard API "no data" check    |
-| Log-trace links    | Present        | Loki query + Tempo reverse check |
+> **Counting note — families vs series.** A _metric family_ is one distinct Prometheus `__name__`
+> (histogram `_bucket`/`_count`/`_sum` collapsed to one). A _series_ is a family × its label
+> combinations. The legacy overlay-traffic block is the bulk of the count: ~56 message categories ×
+> 4 (`_Bytes_In/_Out`, `_Messages_In/_Out`) ≈ 224 families on its own. The labeled gauges
+> (`xrpld_cache_metrics{metric}`, …) are few families but many series. Validate against the figures
+> below as **families currently emitting** (idle nodes under-report — workload-gated metrics such as
+> per-RPC/error counters appear only once exercised, which is Phase 10's purpose).
+
+| Category                  | Expected Count      | Validation Method                |
+| ------------------------- | ------------------- | -------------------------------- |
+| Trace spans               | 16                  | Jaeger/Tempo API query           |
+| Span attributes           | 22                  | Per-span attribute assertion     |
+| Legacy `xrpld_*` families | ~270 (≈224 traffic) | Prometheus `__name__` query      |
+| Native MetricsRegistry    | 35 instruments      | Prometheus query                 |
+| SpanMetrics RED           | 4 per span          | Prometheus query                 |
+| Grafana dashboards        | 10                  | Dashboard API "no data" check    |
+| Log-trace links           | Present             | Loki query + Tempo reverse check |
 
 ---
 
@@ -998,15 +938,27 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 
 #### Synchronous Counters (Phase 7+)
 
-| Prometheus Metric                   | Type    | Description                      | Increment Site        |
-| ----------------------------------- | ------- | -------------------------------- | --------------------- |
-| `xrpld_ledgers_closed_total`        | Counter | Ledgers closed by consensus      | RCLConsensus.cpp      |
-| `xrpld_validations_sent_total`      | Counter | Validations sent                 | RCLConsensus.cpp      |
-| `xrpld_validations_checked_total`   | Counter | Network validations observed     | LedgerMaster.cpp      |
-| `xrpld_validation_agreements_total` | Counter | Cumulative validation agreements | ValidationTracker.cpp |
-| `xrpld_validation_missed_total`     | Counter | Cumulative validation misses     | ValidationTracker.cpp |
-| `xrpld_state_changes_total`         | Counter | Operating mode transitions       | NetworkOPs.cpp        |
-| `xrpld_jq_trans_overflow_total`     | Counter | Job queue transaction overflows  | JobQueue.cpp          |
+| Prometheus Metric                 | Type    | Description                     | Increment Site   |
+| --------------------------------- | ------- | ------------------------------- | ---------------- |
+| `xrpld_ledgers_closed_total`      | Counter | Ledgers closed by consensus     | RCLConsensus.cpp |
+| `xrpld_validations_sent_total`    | Counter | Validations sent                | RCLConsensus.cpp |
+| `xrpld_validations_checked_total` | Counter | Network validations observed    | LedgerMaster.cpp |
+| `xrpld_state_changes_total`       | Counter | Operating mode transitions      | NetworkOPs.cpp   |
+| `xrpld_jq_trans_overflow_total`   | Counter | Job queue transaction overflows | JobQueue.cpp     |
+
+Lifetime validation agreement/miss tallies are exported as monotonic **ObservableCounters**
+(not synchronous counters) observed from `ValidationTracker`'s gross lifetime totals:
+
+| Prometheus Metric                   | Type              | Description                                | Source                |
+| ----------------------------------- | ----------------- | ------------------------------------------ | --------------------- |
+| `xrpld_validation_agreements_total` | ObservableCounter | Lifetime validations that initially agreed | ValidationTracker.cpp |
+| `xrpld_validation_missed_total`     | ObservableCounter | Lifetime validations that initially missed | ValidationTracker.cpp |
+
+> **Counting semantics (initial-classification only):** each reconciled ledger increments exactly
+> one of these two counters, at first classification. A later late-repair (miss → agreement) does
+> **not** move either counter — keeping both strictly monotonic (a Prometheus `_total` must never
+> decrease) and additive (`agreements_total + missed_total` = ledgers reconciled). The
+> repair-aware, windowed view remains on `xrpld_validation_agreement{metric="…"}`.
 
 #### Span Attribute Enrichments (Phases 2-4)
 
@@ -1071,7 +1023,7 @@ State value encoding: 0=disconnected, 1=connected, 2=syncing, 3=tracking, 4=full
 | Issue                                                              | Impact                                           | Status                                                               |
 | ------------------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
 | `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp |
-| `xrpld_job_count` may not emit in standalone mode                  | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
+| `xrpld_jobq_job_count` may not emit in standalone mode             | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
 | `xrpld_rpc_requests` depends on `[insight]` config                 | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
 | Peer tracing disabled by default                                   | No `peer.*` spans unless `trace_peer=1`          | Intentional — high volume on mainnet                                 |
 

@@ -63,10 +63,16 @@ ValidationTracker::reconcile()
             if (evt.agreed)
             {
                 totalAgreements_.fetch_add(1, std::memory_order_relaxed);
+                // Gross tally: count the initial agreement once. See the
+                // counting-decision note below (repair branch).
+                totalAgreementsGross_.fetch_add(1, std::memory_order_relaxed);
             }
             else
             {
                 totalMissed_.fetch_add(1, std::memory_order_relaxed);
+                // Gross tally: count the initial miss once. See the
+                // counting-decision note below (repair branch).
+                totalMissedGross_.fetch_add(1, std::memory_order_relaxed);
             }
 
             WindowEvent const we{.time = now, .ledgerHash = evt.ledgerHash, .agreed = evt.agreed};
@@ -78,10 +84,19 @@ ValidationTracker::reconcile()
             evt.reconciled && !evt.agreed && evt.weValidated && evt.networkValidated &&
             (now - evt.recordTime) <= kLateRepairWindow)
         {
-            // Late repair: was a miss, now both flags set.
+            // Late repair: was a miss, now both flags set. Adjust the NET
+            // totals (used by the windowed agreement gauge) so the live view
+            // reflects the repair.
             evt.agreed = true;
             totalMissed_.fetch_sub(1, std::memory_order_relaxed);
             totalAgreements_.fetch_add(1, std::memory_order_relaxed);
+
+            // Counting decision (initial-classification only): the gross
+            // tallies (totalAgreementsGross_ / totalMissedGross_) that back the
+            // monotonic Prometheus _total counters are deliberately NOT touched
+            // here. Each ledger is counted once, at first classification; a
+            // repair must not decrement missed (a _total may never decrease)
+            // nor add a second agreement (which would double-count the ledger).
 
             // Flip the corresponding window entries from miss to agreement.
             repairWindowEntry(window1h_, evt.ledgerHash);
@@ -251,6 +266,18 @@ uint64_t
 ValidationTracker::totalMissed() const
 {
     return totalMissed_.load(std::memory_order_relaxed);
+}
+
+uint64_t
+ValidationTracker::totalAgreementsEver() const
+{
+    return totalAgreementsGross_.load(std::memory_order_relaxed);
+}
+
+uint64_t
+ValidationTracker::totalMissedEver() const
+{
+    return totalMissedGross_.load(std::memory_order_relaxed);
 }
 
 uint64_t
