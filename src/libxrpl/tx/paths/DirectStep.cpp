@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -848,6 +849,15 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         auto const ter = checkFreeze(ctx.view, src_, dst_, currency_);
         if (!isTesSuccess(ter))
             return ter;
+
+        // An LPToken redeemed against its AMM (dst_ is the LPToken issuer on
+        // this hop) cannot move if a pool asset is an MPT that forbids
+        // transfers between these accounts. Treat it like a frozen pool asset
+        // (return terNO_LINE) so frozen and non-transferable LPTokens behave
+        // identically. A no-op unless dst_ is an AMM whose pool holds such an
+        // MPT (so it is implicitly gated by featureMPTokensV2).
+        if (!isTesSuccess(canTransferLPToken(ctx.view, src_, dst_, dst_)))
+            return terNO_LINE;
     }
 
     // If previous step was a direct step then we need to check
