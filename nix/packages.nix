@@ -12,6 +12,7 @@ in
     cmake
     conan
     curlMinimal # needed for codecov/codecov-action
+    doxygen
     gcovr
     git
     gnumake

@@ -36,7 +36,7 @@ jobs:
     needs: [determine-files]
     if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.cpp_changed_files != '' || needs.determine-files.outputs.clang_tidy_config_changed == 'true') }}
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: "ghcr.io/xrplf/ci/debian-trixie:clang-21-sha-53033a2"
+    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-8abe82e"
     permissions:
       contents: read
       issues: write
@@ -55,6 +55,11 @@ jobs:
       - name: Get number of processors
         uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
         id: nproc
+
+      - name: Set compiler environment
+        uses: ./.github/actions/set-compiler-env
+        with:
+          compiler: clang
 
       - name: Setup Conan
         uses: ./.github/actions/setup-conan

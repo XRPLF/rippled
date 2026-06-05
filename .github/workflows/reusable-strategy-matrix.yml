@@ -4,15 +4,9 @@ on:
   workflow_call:
     inputs:
       os:
-        description: 'The operating system to use for the build ("linux", "macos", "windows").'
+        description: 'The operating system to use for the build ("linux", "macos", "windows", or empty for all).'
         required: false
         type: string
-      strategy_matrix:
-        # TODO: Support additional strategies, e.g. "ubuntu" for generating all Ubuntu configurations.
-        description: 'The strategy matrix to use for generating the configurations ("minimal", "all").'
-        required: false
-        type: string
-        default: "minimal"
     outputs:
       matrix:
         description: "The generated strategy matrix."
@@ -34,12 +28,11 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: 3.13
+          python-version: "3.13"
 
       - name: Generate strategy matrix
         working-directory: .github/scripts/strategy-matrix
         id: generate
         env:
-          GENERATE_CONFIG: ${{ inputs.os != '' && format('--config={0}.json', inputs.os) || '' }}
-          GENERATE_OPTION: ${{ inputs.strategy_matrix == 'all' && '--all' || '' }}
-        run: ./generate.py ${GENERATE_OPTION} ${GENERATE_CONFIG} >>"${GITHUB_OUTPUT}"
+          GENERATE_CONFIG: ${{ inputs.os != '' && format('--config={0}', inputs.os) || '' }}
+        run: ./generate.py ${GENERATE_CONFIG} >>"${GITHUB_OUTPUT}"
