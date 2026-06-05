@@ -85,7 +85,7 @@ private:
     /** The sequence of the ledger that this map references, if any. */
     std::uint32_t ledgerSeq_ = 0;
 
-    intr_ptr::SharedPtr<SHAMapTreeNode> root_;
+    SHAMapTreeNodePtr root_;
     mutable SHAMapState state_;
     SHAMapType const type_;
     bool backed_ = true;         // Map is backed by the database
@@ -94,10 +94,10 @@ private:
 public:
     /** Number of children each non-leaf node has (the 'radix tree' part of the
      * map) */
-    static inline constexpr unsigned int branchFactor = SHAMapInnerNode::branchFactor;
+    static constexpr unsigned int kBranchFactor = SHAMapInnerNode::kBranchFactor;
 
     /** The depth of the hash map: data is only present in the leaves */
-    static inline constexpr unsigned int leafDepth = 64;
+    static constexpr unsigned int kLeafDepth = 64;
 
     using DeltaItem =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
@@ -136,11 +136,11 @@ public:
         This is always a const iterator.
         Meets the requirements of ForwardRange.
     */
-    class const_iterator;
+    class ConstIterator;
 
-    const_iterator
+    ConstIterator
     begin() const;
-    const_iterator
+    ConstIterator
     end() const;
 
     //--------------------------------------------------------------------------
@@ -199,8 +199,8 @@ public:
 
         @note The item does not need to exist.
      */
-    const_iterator
-    upper_bound(uint256 const& id) const;
+    ConstIterator
+    upperBound(uint256 const& id) const;
 
     /** Find the object with the greatest object id smaller than the input id.
 
@@ -208,8 +208,8 @@ public:
 
         @note The item does not need to exist.
      */
-    const_iterator
-    lower_bound(uint256 const& id) const;
+    ConstIterator
+    lowerBound(uint256 const& id) const;
 
     /**  Visit every node in this SHAMap
 
@@ -326,36 +326,32 @@ public:
     invariants() const;
 
 private:
-    using SharedPtrNodeStack =
-        std::stack<std::pair<intr_ptr::SharedPtr<SHAMapTreeNode>, SHAMapNodeID>>;
+    using SharedPtrNodeStack = std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>>;
     using DeltaRef =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
 
     // tree node cache operations
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     cacheLookup(SHAMapHash const& hash) const;
 
     void
-    canonicalize(SHAMapHash const& hash, intr_ptr::SharedPtr<SHAMapTreeNode>&) const;
+    canonicalize(SHAMapHash const& hash, SHAMapTreeNodePtr&) const;
 
     // database operations
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     fetchNodeFromDB(SHAMapHash const& hash) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     fetchNodeNT(SHAMapHash const& hash) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter* filter) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     fetchNode(SHAMapHash const& hash) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const;
 
     /** Update hashes up to the root */
     void
-    dirtyUp(
-        SharedPtrNodeStack& stack,
-        uint256 const& target,
-        intr_ptr::SharedPtr<SHAMapTreeNode> terminal);
+    dirtyUp(SharedPtrNodeStack& stack, uint256 const& target, SHAMapTreeNodePtr terminal);
 
     /** Walk towards the specified id, returning the node.  Caller must check
         if the return is nullptr, and if not, if the node->peekItem()->key() ==
@@ -377,25 +373,21 @@ private:
     preFlushNode(intr_ptr::SharedPtr<Node> node) const;
 
     /** write and canonicalize modified node */
-    intr_ptr::SharedPtr<SHAMapTreeNode>
-    writeNode(NodeObjectType t, intr_ptr::SharedPtr<SHAMapTreeNode> node) const;
+    SHAMapTreeNodePtr
+    writeNode(NodeObjectType t, SHAMapTreeNodePtr node) const;
 
     // returns the first item at or below this node
     SHAMapLeafNode*
-    firstBelow(intr_ptr::SharedPtr<SHAMapTreeNode>, SharedPtrNodeStack& stack, int branch = 0)
-        const;
+    firstBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = 0) const;
 
     // returns the last item at or below this node
     SHAMapLeafNode*
-    lastBelow(
-        intr_ptr::SharedPtr<SHAMapTreeNode> node,
-        SharedPtrNodeStack& stack,
-        int branch = branchFactor) const;
+    lastBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = kBranchFactor) const;
 
     // helper function for firstBelow and lastBelow
     SHAMapLeafNode*
     belowHelper(
-        intr_ptr::SharedPtr<SHAMapTreeNode> node,
+        SHAMapTreeNodePtr node,
         SharedPtrNodeStack& stack,
         int branch,
         std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const& loopParams)
@@ -407,15 +399,14 @@ private:
     descend(SHAMapInnerNode*, int branch) const;
     SHAMapTreeNode*
     descendThrow(SHAMapInnerNode*, int branch) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     descend(SHAMapInnerNode&, int branch) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     descendThrow(SHAMapInnerNode&, int branch) const;
 
     // Descend with filter
     // If pending, callback is called as if it called fetchNodeNT
-    using descendCallback =
-        std::function<void(intr_ptr::SharedPtr<SHAMapTreeNode>, SHAMapHash const&)>;
+    using descendCallback = std::function<void(SHAMapTreeNodePtr, SHAMapHash const&)>;
     SHAMapTreeNode*
     descendAsync(
         SHAMapInnerNode* parent,
@@ -433,7 +424,7 @@ private:
 
     // Non-storing
     // Does not hook the returned node to its parent
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     descendNoStore(SHAMapInnerNode&, int branch) const;
 
     /** If there is only one leaf below this node, get its contents */
@@ -469,14 +460,14 @@ private:
         operator=(MissingNodes const&) = delete;
 
         // basic parameters
-        int max_;
-        SHAMapSyncFilter* filter_;
-        int const maxDefer_;
-        std::uint32_t generation_;
+        int max;
+        SHAMapSyncFilter* filter;
+        int const maxDefer;
+        std::uint32_t generation;
 
         // nodes we have discovered to be missing
-        std::vector<std::pair<SHAMapNodeID, uint256>> missingNodes_;
-        std::set<SHAMapHash> missingHashes_;
+        std::vector<std::pair<SHAMapNodeID, uint256>> missingNodes;
+        std::set<SHAMapHash> missingHashes;
 
         // nodes we are in the process of traversing
         using StackEntry = std::tuple<
@@ -491,40 +482,40 @@ private:
         // elements will not be invalidated during the course of element
         // insertion and removal. Containers that do not offer this guarantee,
         // such as std::vector, can't be used here.
-        std::stack<StackEntry, std::deque<StackEntry>> stack_;
+        std::stack<StackEntry, std::deque<StackEntry>> stack;
 
         // nodes we may have acquired from deferred reads
         using DeferredNode = std::tuple<
-            SHAMapInnerNode*,                      // parent node
-            SHAMapNodeID,                          // parent node ID
-            int,                                   // branch
-            intr_ptr::SharedPtr<SHAMapTreeNode>>;  // node
+            SHAMapInnerNode*,    // parent node
+            SHAMapNodeID,        // parent node ID
+            int,                 // branch
+            SHAMapTreeNodePtr>;  // node
 
-        int deferred_;
-        std::mutex deferLock_;
-        std::condition_variable deferCondVar_;
-        std::vector<DeferredNode> finishedReads_;
+        int deferred;
+        std::mutex deferLock;
+        std::condition_variable deferCondVar;
+        std::vector<DeferredNode> finishedReads;
 
         // nodes we need to resume after we get their children from deferred
         // reads
-        std::map<SHAMapInnerNode*, SHAMapNodeID> resumes_;
+        std::map<SHAMapInnerNode*, SHAMapNodeID> resumes;
 
         MissingNodes(int max, SHAMapSyncFilter* filter, int maxDefer, std::uint32_t generation)
-            : max_(max), filter_(filter), maxDefer_(maxDefer), generation_(generation), deferred_(0)
+            : max(max), filter(filter), maxDefer(maxDefer), generation(generation), deferred(0)
         {
-            missingNodes_.reserve(max);
-            finishedReads_.reserve(maxDefer);
+            missingNodes.reserve(max);
+            finishedReads.reserve(maxDefer);
         }
     };
 
     // getMissingNodes helper functions
     void
-    gmn_ProcessNodes(MissingNodes&, MissingNodes::StackEntry& node);
-    void
-    gmn_ProcessDeferredReads(MissingNodes&);
+    gmnProcessNodes(MissingNodes&, MissingNodes::StackEntry& node);
+    static void
+    gmnProcessDeferredReads(MissingNodes&);
 
     // fetch from DB helper function
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& object) const;
 };
 
@@ -579,7 +570,7 @@ SHAMap::setUnbacked()
 
 //------------------------------------------------------------------------------
 
-class SHAMap::const_iterator
+class SHAMap::ConstIterator
 {
 public:
     using iterator_category = std::forward_iterator_tag;
@@ -594,47 +585,47 @@ private:
     pointer item_ = nullptr;
 
 public:
-    const_iterator() = delete;
+    ConstIterator() = delete;
 
-    const_iterator(const_iterator const& other) = default;
-    const_iterator&
-    operator=(const_iterator const& other) = default;
+    ConstIterator(ConstIterator const& other) = default;
+    ConstIterator&
+    operator=(ConstIterator const& other) = default;
 
-    ~const_iterator() = default;
+    ~ConstIterator() = default;
 
     reference
     operator*() const;
     pointer
     operator->() const;
 
-    const_iterator&
+    ConstIterator&
     operator++();
-    const_iterator
+    ConstIterator
     operator++(int);
 
 private:
-    explicit const_iterator(SHAMap const* map);
-    const_iterator(SHAMap const* map, std::nullptr_t);
-    const_iterator(SHAMap const* map, pointer item, SharedPtrNodeStack&& stack);
+    explicit ConstIterator(SHAMap const* map);
+    ConstIterator(SHAMap const* map, std::nullptr_t);
+    ConstIterator(SHAMap const* map, pointer item, SharedPtrNodeStack&& stack);
 
     friend bool
-    operator==(const_iterator const& x, const_iterator const& y);
+    operator==(ConstIterator const& x, ConstIterator const& y);
     friend class SHAMap;
 };
 
-inline SHAMap::const_iterator::const_iterator(SHAMap const* map) : map_(map)
+inline SHAMap::ConstIterator::ConstIterator(SHAMap const* map) : map_(map)
 {
-    XRPL_ASSERT(map_, "xrpl::SHAMap::const_iterator::const_iterator : non-null input");
+    XRPL_ASSERT(map_, "xrpl::SHAMap::ConstIterator::ConstIterator : non-null input");
 
     if (auto temp = map_->peekFirstItem(stack_))
         item_ = temp->peekItem().get();
 }
 
-inline SHAMap::const_iterator::const_iterator(SHAMap const* map, std::nullptr_t) : map_(map)
+inline SHAMap::ConstIterator::ConstIterator(SHAMap const* map, std::nullptr_t) : map_(map)
 {
 }
 
-inline SHAMap::const_iterator::const_iterator(
+inline SHAMap::ConstIterator::ConstIterator(
     SHAMap const* map,
     pointer item,
     SharedPtrNodeStack&& stack)
@@ -642,30 +633,34 @@ inline SHAMap::const_iterator::const_iterator(
 {
 }
 
-inline SHAMap::const_iterator::reference
-SHAMap::const_iterator::operator*() const
+inline SHAMap::ConstIterator::reference
+SHAMap::ConstIterator::operator*() const
 {
     return *item_;
 }
 
-inline SHAMap::const_iterator::pointer
-SHAMap::const_iterator::operator->() const
+inline SHAMap::ConstIterator::pointer
+SHAMap::ConstIterator::operator->() const
 {
     return item_;
 }
 
-inline SHAMap::const_iterator&
-SHAMap::const_iterator::operator++()
+inline SHAMap::ConstIterator&
+SHAMap::ConstIterator::operator++()
 {
     if (auto temp = map_->peekNextItem(item_->key(), stack_))
+    {
         item_ = temp->peekItem().get();
+    }
     else
+    {
         item_ = nullptr;
+    }
     return *this;
 }
 
-inline SHAMap::const_iterator
-SHAMap::const_iterator::operator++(int)
+inline SHAMap::ConstIterator
+SHAMap::ConstIterator::operator++(int)
 {
     auto tmp = *this;
     ++(*this);
@@ -673,7 +668,7 @@ SHAMap::const_iterator::operator++(int)
 }
 
 inline bool
-operator==(SHAMap::const_iterator const& x, SHAMap::const_iterator const& y)
+operator==(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
 {
     XRPL_ASSERT(
         x.map_ == y.map_,
@@ -683,21 +678,21 @@ operator==(SHAMap::const_iterator const& x, SHAMap::const_iterator const& y)
 }
 
 inline bool
-operator!=(SHAMap::const_iterator const& x, SHAMap::const_iterator const& y)
+operator!=(SHAMap::ConstIterator const& x, SHAMap::ConstIterator const& y)
 {
     return !(x == y);
 }
 
-inline SHAMap::const_iterator
+inline SHAMap::ConstIterator
 SHAMap::begin() const
 {
-    return const_iterator(this);
+    return ConstIterator(this);
 }
 
-inline SHAMap::const_iterator
+inline SHAMap::ConstIterator
 SHAMap::end() const
 {
-    return const_iterator(this, nullptr);
+    return ConstIterator(this, nullptr);
 }
 
 }  // namespace xrpl

@@ -15,23 +15,23 @@
 
 namespace xrpl {
 
-enum TxnSql : char {
-    txnSqlNew = 'N',
-    txnSqlConflict = 'C',
-    txnSqlHeld = 'H',
-    txnSqlValidated = 'V',
-    txnSqlIncluded = 'I',
-    txnSqlUnknown = 'U'
+enum class TxnSql : char {
+    New = 'N',
+    Conflict = 'C',
+    Held = 'H',
+    Validated = 'V',
+    Included = 'I',
+    Unknown = 'U'
 };
 
 class STTx final : public STObject, public CountedObject<STTx>
 {
     uint256 tid_;
-    TxType tx_type_;
+    TxType txType_;
 
 public:
-    static constexpr std::size_t minMultiSigners = 1;
-    static constexpr std::size_t maxMultiSigners = 32;
+    static constexpr std::size_t kMinMultiSigners = 1;
+    static constexpr std::size_t kMaxMultiSigners = 32;
 
     STTx() = delete;
     STTx(STTx const& other) = default;
@@ -83,16 +83,19 @@ public:
     std::uint32_t
     getSeqValue() const;
 
+    AccountID
+    getFeePayer() const;
+
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
     uint256
     getTransactionID() const;
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options) const override;
 
-    Json::Value
+    json::Value
     getJson(JsonOptions options, bool binary) const;
 
     void
@@ -122,7 +125,7 @@ public:
     getMetaSQL(
         Serializer rawTxn,
         std::uint32_t inLedger,
-        char status,
+        TxnSql status,
         std::string const& escapedMetaData) const;
 
     std::vector<uint256> const&
@@ -176,14 +179,15 @@ sterilize(STTx const& stx);
 bool
 isPseudoTx(STObject const& tx);
 
-inline STTx::STTx(SerialIter&& sit) : STTx(sit)
+inline STTx::STTx(SerialIter&& sit)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    : STTx(sit)
 {
 }
 
 inline TxType
 STTx::getTxnType() const
 {
-    return tx_type_;
+    return txType_;
 }
 
 inline Blob

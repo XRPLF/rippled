@@ -51,6 +51,9 @@ endfunction()
 function(add_module parent name)
 endfunction()
 
+function(setup_protocol_autogen)
+endfunction()
+
 function(target_link_modules parent scope)
 endfunction()
 

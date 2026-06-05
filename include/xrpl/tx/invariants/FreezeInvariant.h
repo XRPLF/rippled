@@ -22,7 +22,7 @@ class TransfersNotFrozen
 {
     struct BalanceChange
     {
-        std::shared_ptr<SLE const> const line;
+        SLE::const_pointer const line;
         int const balanceChangeSign;
     };
 
@@ -35,43 +35,40 @@ class TransfersNotFrozen
     using ByIssuer = std::map<Issue, IssuerChanges>;
     ByIssuer balanceChanges_;
 
-    std::map<AccountID, std::shared_ptr<SLE const> const> possibleIssuers_;
+    std::map<AccountID, SLE::const_pointer const> possibleIssuers_;
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 
 private:
     bool
-    isValidEntry(std::shared_ptr<SLE const> const& before, std::shared_ptr<SLE const> const& after);
+    isValidEntry(SLE::const_ref before, SLE::const_ref after);
 
-    STAmount
-    calculateBalanceChange(
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after,
-        bool isDelete);
+    static STAmount
+    calculateBalanceChange(SLE::const_ref before, SLE::const_ref after, bool isDelete);
 
     void
     recordBalance(Issue const& issue, BalanceChange change);
 
     void
-    recordBalanceChanges(std::shared_ptr<SLE const> const& after, STAmount const& balanceChange);
+    recordBalanceChanges(SLE::const_ref after, STAmount const& balanceChange);
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     findIssuer(AccountID const& issuerID, ReadView const& view);
 
-    bool
+    static bool
     validateIssuerChanges(
-        std::shared_ptr<SLE const> const& issuer,
+        SLE::const_ref issuer,
         IssuerChanges const& changes,
         STTx const& tx,
         beast::Journal const& j,
         bool enforce);
 
-    bool
+    static bool
     validateFrozenState(
         BalanceChange const& change,
         bool high,

@@ -44,8 +44,13 @@ suggestWords:
 words:
   - abempty
   - AMMID
+  - AMMMPT
+  - AMMMPToken
+  - AMMMPTokens
+  - AMMXRP
   - amt
   - amts
+  - archs
   - asnode
   - asynchrony
   - attestation
@@ -59,6 +64,7 @@ words:
   - Bougalis
   - Britto
   - Btrfs
+  - Buildx
   - canonicality
   - changespq
   - checkme
@@ -67,6 +73,7 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - cmaketoolchain
   - coeffs
   - coldwallet
   - compr
@@ -87,18 +94,24 @@ words:
   - daria
   - dcmake
   - dearmor
+  - dedented
   - deleteme
   - demultiplexer
   - deserializaton
   - desync
   - desynced
   - determ
+  - disablerepo
   - distro
   - doxyfile
   - dxrpl
+  - enabled
+  - enablerepo
   - endmacro
   - exceptioned
+  - EXPECT_STREQ
   - Falco
+  - fcontext
   - finalizers
   - firewalled
   - fmtdur
@@ -108,9 +121,11 @@ words:
   - gcovr
   - ghead
   - Gnutella
+  - godexsoft
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hwaddress
   - hwrap
   - ifndef
   - inequation
@@ -120,6 +135,7 @@ words:
   - iou
   - ious
   - isrdc
+  - isystem
   - itype
   - jemalloc
   - jlog
@@ -144,17 +160,22 @@ words:
   - lseq
   - lsmf
   - ltype
+  - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
+  - MPTAMM
+  - MPTDEX
   - Merkle
   - Metafuncton
   - misprediction
+  - missingok
   - mptbalance
   - MPTDEX
   - mptflags
   - mptid
   - mptissuance
   - mptissuanceid
+  - mptissue
   - mptoken
   - mptokenid
   - mptokenissuance
@@ -179,11 +200,15 @@ words:
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
+  - noreplace
   - noripple
+  - nostdinc
+  - notifempty
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
+  - onlatest
   - ostr
   - pargs
   - partitioner
@@ -199,11 +224,13 @@ words:
   - preauthorize
   - preauthorizes
   - preclaim
+  - preun
   - protobuf
   - protos
   - ptrs
   - pushd
   - pyenv
+  - pyparsing
   - qalloc
   - queuable
   - Raphson
@@ -229,14 +256,18 @@ words:
   - seqit
   - sf
   - SFIELD
+  - sfields
   - shamap
   - shamapitem
+  - shfmt
+  - shlibs
   - sidechain
   - SIGGOOD
   - sle
   - sles
   - soci
   - socidb
+  - SRPMS
   - sslws
   - statsd
   - STATSDCOLLECTOR
@@ -264,8 +295,8 @@ words:
   - txn
   - txns
   - txs
-  - UBSAN
   - ubsan
+  - UBSAN
   - umant
   - unacquired
   - unambiguity
@@ -273,6 +304,7 @@ words:
   - unauthorizing
   - unergonomic
   - unfetched
+  - unfindable
   - unflatten
   - unfund
   - unimpair
@@ -293,6 +325,7 @@ words:
   - venv
   - vfalco
   - vinnie
+  - wasmi
   - wextra
   - wptr
   - writeme
@@ -301,7 +334,6 @@ words:
   - xbridge
   - xchain
   - ximinez
-  - EXPECT_STREQ
   - XMACRO
   - xrpkuwait
   - xrpl
@@ -309,3 +341,4 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - CGNAT

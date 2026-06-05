@@ -1,14 +1,33 @@
-#include <xrpl/basics/Expected.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/InnerObjectFormats.h>
-#include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenMint.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/Transactor.h>
 
 #include <boost/endian/conversion.hpp>
 
 #include <array>
+#include <cstdint>
+#include <cstring>
+#include <iterator>  // IWYU pragma: keep
+#include <utility>
 
 namespace xrpl {
 
@@ -47,11 +66,16 @@ NFTokenMint::getFlagsMask(PreflightContext const& ctx)
     // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
     // tfTrustLine flag as a way to prevent the attack.  But until the
     // amendment passes we still need to keep the old behavior available.
-    std::uint32_t const nfTokenMintMask = ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
-        // if featureDynamicNFT enabled then new flag allowing mutable URI available
-        ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMask : tfNFTokenMintMaskWithoutMutable
-        : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
-                                               : tfNFTokenMintOldMask;
+    std::uint32_t const nfTokenMintMask = [&]() -> std::uint32_t {
+        if (ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine))
+        {
+            // if featureDynamicNFT enabled then new flag allowing mutable URI available
+            return ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMask
+                                                        : tfNFTokenMintMaskWithoutMutable;
+        }
+        return ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
+                                                    : tfNFTokenMintOldMask;
+    }();
 
     return nfTokenMintMask;
 }
@@ -61,7 +85,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 {
     if (auto const f = ctx.tx[~sfTransferFee])
     {
-        if (f > maxTransferFee)
+        if (f > kMaxTransferFee)
             return temBAD_NFTOKEN_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
@@ -76,7 +100,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
 
     if (auto uri = ctx.tx[~sfURI])
     {
-        if (uri->length() == 0 || uri->length() > maxTokenURILength)
+        if (uri->empty() || uri->length() > kMaxTokenUriLength)
             return temMALFORMED;
     }
 
@@ -197,13 +221,15 @@ NFTokenMint::preclaim(PreclaimContext const& ctx)
 TER
 NFTokenMint::doApply()
 {
-    auto const issuer = ctx_.tx[~sfIssuer].value_or(account_);
+    auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
 
     auto const tokenSeq = [this, &issuer]() -> Expected<std::uint32_t, TER> {
         auto const root = view().peek(keylet::account(issuer));
         if (root == nullptr)
+        {
             // Should not happen.  Checked in preclaim.
             return Unexpected(tecNO_ISSUER);
+        }
 
         // If the issuer hasn't minted an NFToken before we must add a
         // FirstNFTokenSequence field to the issuer's AccountRoot.  The
@@ -229,7 +255,7 @@ NFTokenMint::doApply()
                                                                                      : acctSeq - 1;
         }
 
-        std::uint32_t const mintedNftCnt = (*root)[~sfMintedNFTokens].value_or(0u);
+        std::uint32_t const mintedNftCnt = (*root)[~sfMintedNFTokens].valueOr(0u);
 
         (*root)[sfMintedNFTokens] = mintedNftCnt + 1u;
         if ((*root)[sfMintedNFTokens] == 0u)
@@ -252,15 +278,17 @@ NFTokenMint::doApply()
         return (tokenSeq.error());
 
     std::uint32_t const ownerCountBefore =
-        view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+        view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);
 
     // Assemble the new NFToken.
     SOTemplate const* nfTokenTemplate =
         InnerObjectFormats::getInstance().findSOTemplateBySField(sfNFToken);
 
     if (nfTokenTemplate == nullptr)
+    {
         // Should never happen.
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     auto const nftokenID = createNFTokenID(
         extractNFTokenFlagsFromTxFlags(ctx_.tx.getFlags()),
@@ -276,8 +304,8 @@ NFTokenMint::doApply()
             object.setFieldVL(sfURI, *uri);
     });
 
-    if (TER const ret = nft::insertToken(ctx_.view(), account_, std::move(newToken));
-        ret != tesSUCCESS)
+    if (TER const ret = nft::insertToken(ctx_.view(), accountID_, std::move(newToken));
+        !isTesSuccess(ret))
         return ret;
 
     if (ctx_.tx.isFieldPresent(sfAmount))
@@ -293,7 +321,7 @@ NFTokenMint::doApply()
                 ctx_.tx[~sfExpiration],
                 ctx_.tx.getSeqProxy(),
                 nftokenID,
-                mPriorBalance,
+                preFeeBalance_,
                 j_);
             !isTesSuccess(ter))
             return ter;
@@ -304,14 +332,27 @@ NFTokenMint::doApply()
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
     if (auto const ownerCountAfter =
-            view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
+            view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
         if (auto const reserve = view().fees().accountReserve(ownerCountAfter);
-            mPriorBalance < reserve)
+            preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
+}
+
+void
+NFTokenMint::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+NFTokenMint::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

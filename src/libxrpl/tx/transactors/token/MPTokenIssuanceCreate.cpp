@@ -1,7 +1,28 @@
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -29,15 +50,20 @@ MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
+    // sfReferenceHolding is set only internally by VaultCreate. Reject
+    // any user-submitted MPTokenIssuanceCreate that attempts to carry it.
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx.isFieldPresent(sfReferenceHolding))
+        return temMALFORMED;
+
     // If the mutable flags field is included, at least one flag must be
     // specified.
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags];
-        mutableFlags && (!*mutableFlags || *mutableFlags & tmfMPTokenIssuanceCreateMutableMask))
+    if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
+        ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceCreateMutableMask) != 0u)))
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])
     {
-        if (fee > maxTransferFee)
+        if (fee > kMaxTransferFee)
             return temBAD_TRANSFER_FEE;
 
         // If a non-zero TransferFee is set then the tfTransferable flag
@@ -48,17 +74,17 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::zero)
+        if (*domain == beast::kZero)
             return temMALFORMED;
 
         // Domain present implies that MPTokenIssuance is not public
-        if ((ctx.tx.getFlags() & tfMPTRequireAuth) == 0)
+        if (!ctx.tx.isFlag(tfMPTRequireAuth))
             return temMALFORMED;
     }
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -68,7 +94,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         if (maxAmt == 0)
             return temMALFORMED;
 
-        if (maxAmt > maxMPTokenAmount)
+        if (maxAmt > kMaxMpTokenAmount)
             return temMALFORMED;
     }
     return tesSUCCESS;
@@ -121,6 +147,22 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
         if (args.mutableFlags)
             (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
 
+        if (args.referenceHolding)
+        {
+            // Defensive: the holding must already exist and be of an
+            // expected type. Callers (currently only VaultCreate)
+            // populate this after the pseudo-account's MPToken /
+            // RippleState has been installed. A missing holding here
+            // would dangle the pointer and is a programmer error.
+            auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
+            if (!sleHolding)
+                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+            auto const type = sleHolding->getType();
+            if (type != ltMPTOKEN && type != ltRIPPLE_STATE)
+                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+            (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
+        }
+
         view.insert(mptIssuance);
     }
 
@@ -138,8 +180,8 @@ MPTokenIssuanceCreate::doApply()
         view(),
         j_,
         {
-            .priorBalance = mPriorBalance,
-            .account = account_,
+            .priorBalance = preFeeBalance_,
+            .account = accountID_,
             .sequence = tx.getSeqValue(),
             .flags = tx.getFlags(),
             .maxAmount = tx[~sfMaximumAmount],
@@ -150,6 +192,24 @@ MPTokenIssuanceCreate::doApply()
             .mutableFlags = tx[~sfMutableFlags],
         });
     return result ? tesSUCCESS : result.error();
+}
+
+void
+MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+MPTokenIssuanceCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

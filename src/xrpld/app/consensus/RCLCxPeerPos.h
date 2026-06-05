@@ -40,7 +40,7 @@ public:
         PublicKey const& publicKey,
         Slice const& signature,
         uint256 const& suppress,
-        Proposal&& proposal);
+        Proposal const& proposal);  // trivially copyable
 
     //! Verify the signing hash of the proposal
     bool
@@ -74,7 +74,7 @@ public:
     }
 
     //! JSON representation of proposal
-    Json::Value
+    json::Value
     getJson() const;
 
     std::string
@@ -91,11 +91,11 @@ private:
 
     template <class Hasher>
     void
-    hash_append(Hasher& h) const
+    hash_append(Hasher& h) const  // NOLINT(readability-identifier-naming)
     {
         using beast::hash_append;
-        hash_append(h, HashPrefix::proposal);
-        hash_append(h, std::uint32_t(proposal().proposeSeq()));
+        hash_append(h, HashPrefix::Proposal);
+        hash_append(h, proposal().proposeSeq());
         hash_append(h, proposal().closeTime());
         hash_append(h, proposal().prevLedger());
         hash_append(h, proposal().position());

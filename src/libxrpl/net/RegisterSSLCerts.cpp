@@ -1,5 +1,10 @@
 #include <xrpl/net/RegisterSSLCerts.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
+#include <boost/asio/ssl/context.hpp>
+#include <boost/system/detail/error_code.hpp>
+
 #if BOOST_OS_WINDOWS
 #include <boost/asio/ssl/error.hpp>
 #include <boost/system/error_code.hpp>
@@ -79,6 +84,7 @@ registerSSLCerts(boost::asio::ssl::context& ctx, boost::system::error_code& ec, 
     SSL_CTX_set_cert_store(ctx.native_handle(), store.release());
 
 #else
+    // NOLINTNEXTLINE(bugprone-unused-return-value)
     ctx.set_default_verify_paths(ec);
 #endif
 }

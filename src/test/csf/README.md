@@ -2,7 +2,7 @@
 
 The Consensus Simulation Framework is a set of software components for
 describing, running and analyzing simulations of the consensus algorithm in a
-controlled manner. It is also used to unit test the generic Ripple consensus
+controlled manner. It is also used to unit test the generic XRPL consensus
 algorithm implementation. The framework is in its early stages, so the design
 and supported features are subject to change.
 

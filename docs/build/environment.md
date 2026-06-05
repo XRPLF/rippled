@@ -55,7 +55,7 @@ clang --version
 ### Install Xcode Specific Version (Optional)
 
 If you develop other applications using XCode you might be consistently updating to the newest version of Apple Clang.
-This will likely cause issues building rippled. You may want to install a specific version of Xcode:
+This will likely cause issues building xrpld. You may want to install a specific version of Xcode:
 
 1. **Download Xcode**
    - Visit [Apple Developer Downloads](https://developer.apple.com/download/more/)
@@ -109,3 +109,32 @@ Install CMake with Homebrew too:
 ```
 brew install cmake
 ```
+
+## Clang-tidy
+
+Clang-tidy is required to run static analysis checks locally (see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
+It is not required to build the project. Currently this project uses clang-tidy version 21.
+
+### Linux
+
+LLVM 21 is not available in the default Debian 12 (Bookworm) repositories.
+Install it using the official LLVM apt installer:
+
+```
+wget https://apt.llvm.org/llvm.sh
+chmod +x llvm.sh
+sudo ./llvm.sh 21
+sudo apt install --yes clang-tidy-21
+```
+
+Then use `run-clang-tidy-21` when running clang-tidy locally.
+
+### macOS
+
+Install LLVM 21 via Homebrew:
+
+```
+brew install llvm@21
+```
+
+Then use `run-clang-tidy` from the LLVM 21 Homebrew prefix when running clang-tidy locally.

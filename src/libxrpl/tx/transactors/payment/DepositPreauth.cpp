@@ -1,12 +1,31 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/CredentialHelpers.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <set>
+#include <utility>
 
 namespace xrpl {
 
@@ -17,10 +36,7 @@ DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
     bool const unauthArrPresent = ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
     bool const authCredPresent = authArrPresent || unauthArrPresent;
 
-    if (authCredPresent && !ctx.rules.enabled(featureCredentials))
-        return false;
-
-    return true;
+    return !authCredPresent || ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC
@@ -44,9 +60,10 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (authPresent)
+    if (authPresent != 0)
     {
         // Make sure that the passed account is valid.
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) authPresent != 0 guarantees one is set
         AccountID const& target(optAuth ? *optAuth : *optUnauth);
         if (!target)
         {
@@ -67,7 +84,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
         if (auto err = credentials::checkArray(
                 ctx.tx.getFieldArray(
                     authArrPresent ? sfAuthorizeCredentials : sfUnauthorizeCredentials),
-                maxCredentialsArraySize,
+                kMaxCredentialsArraySize,
                 ctx.j);
             !isTesSuccess(err))
             return err;
@@ -136,7 +153,7 @@ DepositPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
-        auto const sleOwner = view().peek(keylet::account(account_));
+        auto const sleOwner = view().peek(keylet::account(accountID_));
         if (!sleOwner)
             return {tefINTERNAL};
 
@@ -147,22 +164,22 @@ DepositPreauth::doApply()
             STAmount const reserve{
                 view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
-            if (mPriorBalance < reserve)
+            if (preFeeBalance_ < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
 
         // Preclaim already verified that the Preauth entry does not yet exist.
         // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
-        Keylet const preauthKeylet = keylet::depositPreauth(account_, auth);
+        Keylet const preauthKeylet = keylet::depositPreauth(accountID_, auth);
         auto slePreauth = std::make_shared<SLE>(preauthKeylet);
 
-        slePreauth->setAccountID(sfAccount, account_);
+        slePreauth->setAccountID(sfAccount, accountID_);
         slePreauth->setAccountID(sfAuthorize, auth);
         view().insert(slePreauth);
 
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), preauthKeylet, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), preauthKeylet, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Adding DepositPreauth to owner directory "
                          << to_string(preauthKeylet.key) << ": " << (page ? "success" : "failure");
@@ -177,13 +194,13 @@ DepositPreauth::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
-        auto const preauth = keylet::depositPreauth(account_, ctx_.tx[sfUnauthorize]);
+        auto const preauth = keylet::depositPreauth(accountID_, ctx_.tx[sfUnauthorize]);
 
         return DepositPreauth::removeFromLedger(view(), preauth.key, j_);
     }
     else if (ctx_.tx.isFieldPresent(sfAuthorizeCredentials))
     {
-        auto const sleOwner = view().peek(keylet::account(account_));
+        auto const sleOwner = view().peek(keylet::account(accountID_));
         if (!sleOwner)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -194,7 +211,7 @@ DepositPreauth::doApply()
             STAmount const reserve{
                 view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
-            if (mPriorBalance < reserve)
+            if (preFeeBalance_ < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
 
@@ -209,21 +226,21 @@ DepositPreauth::doApply()
             auto cred = STObject::makeInnerObject(sfCredential);
             cred.setAccountID(sfIssuer, p.first);
             cred.setFieldVL(sfCredentialType, p.second);
-            sortedLE.push_back(std::move(cred));
+            sortedLE.pushBack(std::move(cred));
         }
 
-        Keylet const preauthKey = keylet::depositPreauth(account_, sortedTX);
+        Keylet const preauthKey = keylet::depositPreauth(accountID_, sortedTX);
         auto slePreauth = std::make_shared<SLE>(preauthKey);
         if (!slePreauth)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        slePreauth->setAccountID(sfAccount, account_);
+        slePreauth->setAccountID(sfAccount, accountID_);
         slePreauth->peekFieldArray(sfAuthorizeCredentials) = std::move(sortedLE);
 
         view().insert(slePreauth);
 
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), preauthKey, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), preauthKey, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Adding DepositPreauth to owner directory " << to_string(preauthKey.key)
                          << ": " << (page ? "success" : "failure");
@@ -239,7 +256,7 @@ DepositPreauth::doApply()
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
         auto const preauthKey = keylet::depositPreauth(
-            account_, credentials::makeSorted(ctx_.tx.getFieldArray(sfUnauthorizeCredentials)));
+            accountID_, credentials::makeSorted(ctx_.tx.getFieldArray(sfUnauthorizeCredentials)));
         return DepositPreauth::removeFromLedger(view(), preauthKey.key, j_);
     }
 
@@ -249,7 +266,7 @@ DepositPreauth::doApply()
 TER
 DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
 {
-    // Existence already checked in preclaim and DeleteAccount
+    // Existence already checked in preclaim and AccountDelete
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
     if (!slePreauth)
     {
@@ -278,6 +295,24 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     view.erase(slePreauth);
 
     return tesSUCCESS;
+}
+
+void
+DepositPreauth::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+DepositPreauth::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

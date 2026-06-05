@@ -1,10 +1,34 @@
-#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerCleaner.h>
-#include <xrpld/app/ledger/LedgerMaster.h>
 
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
+#include <xrpld/app/main/Application.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+
+#include <chrono>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <thread>
 
 namespace xrpl {
 
@@ -32,8 +56,8 @@ class LedgerCleanerImp : public LedgerCleaner
 
     std::thread thread_;
 
-    enum class State : char { notCleaning = 0, cleaning };
-    State state_ = State::notCleaning;
+    enum class State : char { NotCleaning = 0, Cleaning };
+    State state_ = State::NotCleaning;
     bool shouldExit_ = false;
 
     // The lowest ledger in the range we're checking.
@@ -60,7 +84,7 @@ public:
     ~LedgerCleanerImp() override
     {
         if (thread_.joinable())
-            LogicError("LedgerCleanerImp::stop not called.");
+            logicError("LedgerCleanerImp::stop not called.");
     }
 
     void
@@ -74,7 +98,7 @@ public:
     {
         JLOG(j_.info()) << "Stopping";
         {
-            std::lock_guard lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             shouldExit_ = true;
             wakeup_.notify_one();
         }
@@ -90,10 +114,12 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map) override
     {
-        std::lock_guard lock(mutex_);
+        std::scoped_lock const lock(mutex_);
 
         if (maxRange_ == 0)
+        {
             map["status"] = "idle";
+        }
         else
         {
             map["status"] = "running";
@@ -113,14 +139,14 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    clean(Json::Value const& params) override
+    clean(json::Value const& params) override
     {
         LedgerIndex minRange = 0;
         LedgerIndex maxRange = 0;
         app_.getLedgerMaster().getFullValidatedRange(minRange, maxRange);
 
         {
-            std::lock_guard lock(mutex_);
+            std::scoped_lock const lock(mutex_);
 
             maxRange_ = maxRange;
             minRange_ = minRange;
@@ -185,7 +211,7 @@ public:
             if (params.isMember(jss::stop) && params[jss::stop].asBool())
                 minRange_ = maxRange_ = 0;
 
-            state_ = State::cleaning;
+            state_ = State::Cleaning;
             wakeup_.notify_one();
         }
     }
@@ -206,11 +232,11 @@ private:
         {
             {
                 std::unique_lock<std::mutex> lock(mutex_);
-                state_ = State::notCleaning;
-                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::cleaning); });
+                state_ = State::NotCleaning;
+                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::Cleaning); });
                 if (shouldExit_)
                     break;
-                XRPL_ASSERT(state_ == State::cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
+                XRPL_ASSERT(state_ == State::Cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
             }
             doLedgerCleaner();
         }
@@ -231,7 +257,7 @@ private:
             app_.getInboundLedgers().acquire(
                 ledger->header().hash, ledger->header().seq, InboundLedger::Reason::GENERIC);
         }
-        return hash ? *hash : beast::zero;  // kludge
+        return hash ? *hash : beast::kZero;  // kludge
     }
 
     /** Process a single ledger
@@ -259,7 +285,9 @@ private:
             return false;
         }
 
-        auto dbLedger = loadByIndex(ledgerIndex, app_);
+        Rules const rules{app_.config().features};
+        Fees const fees = app_.config().fees.toFees();
+        auto const dbLedger = loadByIndex(ledgerIndex, rules, fees, app_);
         if (!dbLedger || (dbLedger->header().hash != ledgerHash) ||
             (dbLedger->header().parentHash != nodeLedger->header().parentHash))
         {
@@ -274,7 +302,7 @@ private:
             doTxns = true;
         }
 
-        if (doNodes && !nodeLedger->walkLedger(app_.journal("Ledger")))
+        if (doNodes && !nodeLedger->walkLedger(app_.getJournal("Ledger")))
         {
             JLOG(j_.debug()) << "Ledger " << ledgerIndex << " is missing nodes";
             app_.getLedgerMaster().clearLedger(ledgerIndex);
@@ -321,8 +349,8 @@ private:
                 // No. Try to get another ledger that might have the hash we
                 // need: compute the index and hash of a ledger that will have
                 // the hash we need.
-                LedgerIndex refIndex = getCandidateLedger(ledgerIndex);
-                LedgerHash refHash = getLedgerHash(referenceLedger, refIndex);
+                LedgerIndex const refIndex = getCandidateLedger(ledgerIndex);
+                LedgerHash const refHash = getLedgerHash(referenceLedger, refIndex);
 
                 bool const nonzero(refHash.isNonZero());
                 XRPL_ASSERT(nonzero, "xrpl::LedgerCleanerImp::getHash : nonzero hash");
@@ -348,7 +376,7 @@ private:
     doLedgerCleaner()
     {
         auto shouldExit = [this] {
-            std::lock_guard lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             return shouldExit_;
         };
 
@@ -356,10 +384,10 @@ private:
 
         while (!shouldExit())
         {
-            LedgerIndex ledgerIndex;
+            LedgerIndex ledgerIndex = 0;
             LedgerHash ledgerHash;
-            bool doNodes;
-            bool doTxns;
+            bool doNodes = false;
+            bool doTxns = false;
 
             if (app_.getFeeTrack().isLoadedLocal())
             {
@@ -369,7 +397,7 @@ private:
             }
 
             {
-                std::lock_guard lock(mutex_);
+                std::scoped_lock const lock(mutex_);
                 if ((minRange_ > maxRange_) || (maxRange_ == 0) || (minRange_ == 0))
                 {
                     minRange_ = maxRange_ = 0;
@@ -397,7 +425,7 @@ private:
             if (fail)
             {
                 {
-                    std::lock_guard lock(mutex_);
+                    std::scoped_lock const lock(mutex_);
                     ++failures_;
                 }
                 // Wait for acquiring to catch up to us
@@ -406,7 +434,7 @@ private:
             else
             {
                 {
-                    std::lock_guard lock(mutex_);
+                    std::scoped_lock const lock(mutex_);
                     if (ledgerIndex == minRange_)
                         ++minRange_;
                     if (ledgerIndex == maxRange_)
@@ -421,7 +449,7 @@ private:
 };
 
 std::unique_ptr<LedgerCleaner>
-make_LedgerCleaner(Application& app, beast::Journal journal)
+makeLedgerCleaner(Application& app, beast::Journal journal)
 {
     return std::make_unique<LedgerCleanerImp>(app, journal);
 }

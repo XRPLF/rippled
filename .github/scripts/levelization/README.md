@@ -1,14 +1,14 @@
 # Levelization
 
-Levelization is the term used to describe efforts to prevent rippled from
+Levelization is the term used to describe efforts to prevent xrpld from
 having or creating cyclic dependencies.
 
-rippled code is organized into directories under `src/xrpld`, `src/libxrpl` (and
+xrpld code is organized into directories under `src/xrpld`, `src/libxrpl` (and
 `src/test`) representing modules. The modules are intended to be
 organized into "tiers" or "levels" such that a module from one level can
 only include code from lower levels. Additionally, a module
 in one level should never include code in an `impl` or `detail` folder of any level
-other than it's own.
+other than its own.
 
 The codebase is split into two main areas:
 
@@ -22,7 +22,7 @@ levelization violations they find (by moving files or individual
 classes). At the very least, don't make things worse.
 
 The table below summarizes the _desired_ division of modules, based on the current
-state of the rippled code. The levels are numbered from
+state of the xrpld code. The levels are numbered from
 the bottom up with the lower level, lower numbered, more independent
 modules listed first, and the higher level, higher numbered modules with
 more dependencies listed later.
@@ -70,12 +70,12 @@ that `test` code should _never_ be included in `xrpl` or `xrpld` code.)
 
 ## Validation
 
-The [levelization](generate.sh) script takes no parameters,
+The [levelization](generate.py) script takes no parameters,
 reads no environment variables, and can be run from any directory,
-as long as it is in the expected location in the rippled repo.
+as long as it is in the expected location in the xrpld repo.
 It can be run at any time from within a checked out repo, and will
 do an analysis of all the `#include`s in
-the rippled source. The only caveat is that it runs much slower
+the xrpld source. The only caveat is that it runs much slower
 under Windows than in Linux. It hasn't yet been tested under MacOS.
 It generates many files of [results](results):
 
@@ -104,7 +104,7 @@ It generates many files of [results](results):
   Github Actions workflow to test that levelization loops haven't
   changed. Unfortunately, if changes are detected, it can't tell if
   they are improvements or not, so if you have resolved any issues or
-  done anything else to improve levelization, run `levelization.sh`,
+  done anything else to improve levelization, run `generate.py`,
   and commit the updated results.
 
 The `loops.txt` and `ordering.txt` files relate the modules
@@ -128,7 +128,7 @@ The committed files hide the detailed values intentionally, to
 prevent false alarms and merging issues, and because it's easy to
 get those details locally.
 
-1. Run `levelization.sh`
+1. Run `generate.py`
 2. Grep the modules in `paths.txt`.
    - For example, if a cycle is found `A ~= B`, simply `grep -w
 A .github/scripts/levelization/results/paths.txt | grep -w B`

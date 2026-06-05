@@ -1,7 +1,8 @@
+#include <xrpl/protocol/STBase.h>
+
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
@@ -11,20 +12,23 @@
 
 namespace xrpl {
 
-STBase::STBase() : fName(&sfGeneric)
+STBase::STBase() : fName_(&sfGeneric)
 {
 }
 
-STBase::STBase(SField const& n) : fName(&n)
+STBase::STBase(SField const& n) : fName_(&n)
 {
-    XRPL_ASSERT(fName, "xrpl::STBase::STBase : field is set");
+    XRPL_ASSERT(fName_, "xrpl::STBase::STBase : field is set");
 }
 
 STBase&
 STBase::operator=(STBase const& t)
 {
-    if (!fName->isUseful())
-        fName = t.fName;
+    if (this == &t)
+        return *this;
+
+    if (!fName_->isUseful())
+        fName_ = t.fName_;
     return *this;
 }
 
@@ -65,9 +69,9 @@ STBase::getFullText() const
 
     if (getSType() != STI_NOTPRESENT)
     {
-        if (fName->hasName())
+        if (fName_->hasName())
         {
-            ret = fName->fieldName;
+            ret = fName_->fieldName;
             ret += " = ";
         }
 
@@ -83,7 +87,7 @@ STBase::getText() const
     return std::string();
 }
 
-Json::Value
+json::Value
 STBase::getJson(JsonOptions /*options*/) const
 {
     return getText();
@@ -114,21 +118,21 @@ STBase::isDefault() const
 void
 STBase::setFName(SField const& n)
 {
-    fName = &n;
-    XRPL_ASSERT(fName, "xrpl::STBase::setFName : field is set");
+    fName_ = &n;
+    XRPL_ASSERT(fName_, "xrpl::STBase::setFName : field is set");
 }
 
 SField const&
 STBase::getFName() const
 {
-    return *fName;
+    return *fName_;
 }
 
 void
 STBase::addFieldID(Serializer& s) const
 {
-    XRPL_ASSERT(fName->isBinary(), "xrpl::STBase::addFieldID : field is binary");
-    s.addFieldID(fName->fieldType, fName->fieldValue);
+    XRPL_ASSERT(fName_->isBinary(), "xrpl::STBase::addFieldID : field is binary");
+    s.addFieldID(fName_->fieldType, fName_->fieldValue);
 }
 
 //------------------------------------------------------------------------------

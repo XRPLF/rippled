@@ -1,0 +1,131 @@
+#pragma once
+
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/TER.h>
+
+namespace xrpl {
+
+template <typename TIn, typename TOut>
+class AMMLiquidity;
+class QualityFunction;
+
+/** Represents synthetic AMM offer in BookStep. AMMOffer mirrors TOffer
+ * methods for use in generic BookStep methods. AMMOffer amounts
+ * are changed indirectly in BookStep limiting steps.
+ */
+template <StepAmount TIn, StepAmount TOut>
+class AMMOffer
+{
+private:
+    AMMLiquidity<TIn, TOut> const& ammLiquidity_;
+    // Initial offer amounts. It is fibonacci seq generated for multi-path.
+    // If the offer size is set based on the competing CLOB offer then
+    // the AMM offer size is such that if the offer is consumed then
+    // the updated AMM pool SP quality is going to be equal to competing
+    // CLOB offer quality. If there is no competing CLOB offer then
+    // the initial size is set to in=cMax[Native,Value],balances.out.
+    // While this is not a "real" offer it simulates the case of
+    // the swap out of the entire side of the pool, in which case
+    // the swap in amount is infinite.
+    TAmounts<TIn, TOut> const amounts_;
+    // Current pool balances.
+    TAmounts<TIn, TOut> const balances_;
+    // The Spot Price quality if balances != amounts
+    // else the amounts quality
+    Quality const quality_;
+    // AMM offer can be consumed once at a given iteration
+    bool consumed_{false};
+
+public:
+    AMMOffer(
+        AMMLiquidity<TIn, TOut> const& ammLiquidity,
+        TAmounts<TIn, TOut> const& amounts,
+        TAmounts<TIn, TOut> const& balances,
+        Quality const& quality);
+
+    [[nodiscard]] Quality
+    quality() const noexcept
+    {
+        return quality_;
+    }
+
+    [[nodiscard]] Asset const&
+    assetIn() const;
+
+    [[nodiscard]] Asset const&
+    assetOut() const;
+
+    [[nodiscard]] AccountID const&
+    owner() const;
+
+    [[nodiscard]] std::optional<uint256>
+    key() const
+    {
+        return std::nullopt;
+    }
+
+    [[nodiscard]] TAmounts<TIn, TOut> const&
+    amount() const;
+
+    void
+    consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed);
+
+    [[nodiscard]] bool
+    fullyConsumed() const
+    {
+        return consumed_;
+    }
+
+    /** Limit out of the provided offer. If one-path then swapOut
+     * using current balances. If multi-path then ceil_out using
+     * current quality.
+     */
+    [[nodiscard]] TAmounts<TIn, TOut>
+    limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
+
+    /** Limit in of the provided offer. If one-path then swapIn
+     * using current balances. If multi-path then ceil_in using
+     * current quality.
+     */
+    [[nodiscard]] TAmounts<TIn, TOut>
+    limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const;
+
+    [[nodiscard]] QualityFunction
+    getQualityFunc() const;
+
+    /** Send funds without incurring the transfer fee
+     */
+    template <typename... Args>
+    static TER
+    send(Args&&... args)
+    {
+        return accountSend(
+            std::forward<Args>(args)..., WaiveTransferFee::Yes, AllowMPTOverflow::Yes);
+    }
+
+    [[nodiscard]] bool
+    isFunded() const
+    {
+        // AMM offer is fully funded by the pool
+        return true;
+    }
+
+    static std::pair<std::uint32_t, std::uint32_t>
+    adjustRates(std::uint32_t ofrInRate, std::uint32_t ofrOutRate)
+    {
+        // AMM doesn't pay transfer fee on Payment tx
+        return {ofrInRate, QUALITY_ONE};
+    }
+
+    /** Check the new pool product is greater or equal to the old pool
+     * product or if decreases then within some threshold.
+     */
+    [[nodiscard]] bool
+    checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const;
+};
+
+}  // namespace xrpl
