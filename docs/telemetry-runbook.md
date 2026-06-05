@@ -74,11 +74,20 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### Transaction Spans (Phase 3)
 
-| Span Name    | Source File     | Attributes                                                                        | Description                           |
-| ------------ | --------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied` | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`        | Transaction received from peer relay  |
-| `tx.apply`   | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                             | Transaction set applied per ledger    |
+| Span Name       | Source File     | Attributes                                                                        | Description                           |
+| --------------- | --------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process`    | NetworkOPs.cpp  | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied` | Transaction submission and processing |
+| `tx.receive`    | PeerImp.cpp     | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`        | Transaction received from peer relay  |
+| `tx.apply`      | BuildLedger.cpp | `ledger_seq`, `tx_count`, `tx_failed`                                             | Transaction set applied per ledger    |
+| `tx.preflight`  | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                  | Stateless checks stage                |
+| `tx.preclaim`   | applySteps.cpp  | `stage`, `tx_type`, `ter_result`                                                  | Ledger-aware checks stage             |
+| `tx.transactor` | Transactor.cpp  | `stage`, `tx_type`, `ter_result`, `applied`                                       | Apply stage (transactor runs)         |
+
+The three apply-pipeline spans (`tx.preflight`, `tx.preclaim`, `tx.transactor`)
+share a deterministic `trace_id` from `txID[0:16]`, so they group under one
+trace per transaction. The `stage` attribute (`preflight` / `preclaim` /
+`apply`) drives the collector spanmetrics `stage` dimension, giving per-stage
+RED metrics on the _Transaction Overview_ dashboard.
 
 ### Transaction Queue Spans (Phase 3)
 
@@ -181,6 +190,43 @@ This section shows what questions you can answer using the span attributes, with
 # Trace a specific transaction by type across the network
 {name=~"tx\\..*"} | tx_type = "NFTokenMint"
 ```
+
+### Apply Pipeline by Stage
+
+```
+# All three stages of one transaction (preflight -> preclaim -> apply)
+{name=~"tx.preflight|tx.preclaim|tx.transactor"}
+
+# Transactions that failed at the preclaim stage
+{name="tx.preclaim"} | ter_result != "tesSUCCESS"
+
+# Transactions that hard-failed preflight (never reached preclaim/apply)
+{name="tx.preflight"} | ter_result != "tesSUCCESS"
+```
+
+PromQL on the span-derived metrics (dashboard: _Transaction Overview_):
+
+```
+# Per-stage throughput — the funnel preflight >= preclaim >= apply
+sum by (stage) (rate(traces_span_metrics_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m]))
+
+# Per-stage p95 latency
+histogram_quantile(0.95, sum by (le, stage) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=~"tx.preflight|tx.preclaim|tx.transactor"}[5m])))
+
+# Per-stage failure rate (ter_result != tesSUCCESS; a failing ter completes the
+# span normally, so filter on the attribute, not status_code which only flags exceptions)
+sum by (stage) (rate(traces_span_metrics_calls_total{span_name=~"tx.preflight|tx.preclaim|tx.transactor", ter_result!~"tesSUCCESS|"}[5m]))
+```
+
+> **Alerting**: a rising `tx.preflight` / `tx.preclaim` failure rate points to
+> malformed or stale-sequence submissions (often spam or a misbehaving client);
+> a rising `tx.transactor` failure rate points to apply-time problems. Alert per
+> stage rather than on a single aggregate so the failing stage is obvious.
+
+> **Sampling caveat**: these stage metrics are span-derived and inherit the
+> **tracer head-sampling** ratio (`sampling_ratio`). At `sampling_ratio < 1.0`
+> they undercount proportionally — treat them as relative trends, not absolute
+> transaction counts. Native StatsD metrics are unsampled.
 
 ### Transaction Queue Health
 

@@ -102,13 +102,23 @@ Controlled by `trace_rpc=1` in `[telemetry]` config.
 
 Controlled by `trace_transactions=1` in `[telemetry]` config.
 
-| Span Name    | Parent         | Source File     | Description                                                       |
-| ------------ | -------------- | --------------- | ----------------------------------------------------------------- |
-| `tx.process` | —              | NetworkOPs.cpp  | Transaction submission entry point (local or peer-relayed)        |
-| `tx.receive` | —              | PeerImp.cpp     | Raw transaction received from peer overlay (before deduplication) |
-| `tx.apply`   | `ledger.build` | BuildLedger.cpp | Transaction set applied to new ledger during consensus            |
+| Span Name       | Parent         | Source File     | Description                                                       |
+| --------------- | -------------- | --------------- | ----------------------------------------------------------------- |
+| `tx.process`    | —              | NetworkOPs.cpp  | Transaction submission entry point (local or peer-relayed)        |
+| `tx.receive`    | —              | PeerImp.cpp     | Raw transaction received from peer overlay (before deduplication) |
+| `tx.apply`      | `ledger.build` | BuildLedger.cpp | Transaction set applied to new ledger during consensus            |
+| `tx.preflight`  | —              | applySteps.cpp  | Stateless checks stage (`stage=preflight`)                        |
+| `tx.preclaim`   | —              | applySteps.cpp  | Ledger-aware checks stage before fee claim (`stage=preclaim`)     |
+| `tx.transactor` | —              | Transactor.cpp  | Apply stage — the transactor runs (`stage=apply`)                 |
+
+The three apply-pipeline spans share a deterministic `trace_id` derived from
+`txID[0:16]`, so preflight, preclaim, and transactor for one transaction group
+under a single trace even though they run sequentially and often on different
+threads. A transaction that hard-fails preflight or preclaim never reaches the
+later spans — the `stage` attribute identifies where it stopped.
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"tx.process|tx.receive"}`
+or, for the apply pipeline: `{resource.service.name="xrpld" && name=~"tx.preflight|tx.preclaim|tx.transactor"}`
 
 **Grafana dashboard**: _Transaction Overview_ (`xrpld-transactions`)
 
@@ -229,15 +239,19 @@ Every span can carry key-value attributes that provide context for filtering and
 
 #### Transaction Attributes
 
-| Attribute           | Type    | Set On                     | Description                                          |
-| ------------------- | ------- | -------------------------- | ---------------------------------------------------- |
-| `xrpl.tx.hash`      | string  | `tx.process`, `tx.receive` | Transaction hash (hex-encoded)                       |
-| `local`             | boolean | `tx.process`               | `true` if locally submitted, `false` if peer-relayed |
-| `path`              | string  | `tx.process`               | Submission path: `"sync"` or `"async"`               |
-| `suppressed`        | boolean | `tx.receive`               | `true` if transaction was suppressed (duplicate)     |
-| `tx_status`         | string  | `tx.receive`               | Transaction status (e.g., `"known_bad"`)             |
-| `xrpl.peer.id`      | int64   | `tx.receive`               | Peer identifier (also set on peer spans)             |
-| `xrpl.peer.version` | string  | `tx.receive`               | Peer protocol version string                         |
+| Attribute           | Type    | Set On                                         | Description                                                           |
+| ------------------- | ------- | ---------------------------------------------- | --------------------------------------------------------------------- |
+| `xrpl.tx.hash`      | string  | `tx.process`, `tx.receive`                     | Transaction hash (hex-encoded)                                        |
+| `local`             | boolean | `tx.process`                                   | `true` if locally submitted, `false` if peer-relayed                  |
+| `path`              | string  | `tx.process`                                   | Submission path: `"sync"` or `"async"`                                |
+| `suppressed`        | boolean | `tx.receive`                                   | `true` if transaction was suppressed (duplicate)                      |
+| `tx_status`         | string  | `tx.receive`                                   | Transaction status (e.g., `"known_bad"`)                              |
+| `xrpl.peer.id`      | int64   | `tx.receive`                                   | Peer identifier (also set on peer spans)                              |
+| `xrpl.peer.version` | string  | `tx.receive`                                   | Peer protocol version string                                          |
+| `stage`             | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` | Apply-pipeline stage: `preflight`, `preclaim`, or `apply`             |
+| `tx_type`           | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` | Transaction type name (e.g., `Payment`)                               |
+| `ter_result`        | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` | Engine result token for that stage (e.g., `tesSUCCESS`, `terPRE_SEQ`) |
+| `applied`           | boolean | `tx.transactor`                                | `true` if the transaction was applied to the ledger                   |
 
 **Tempo query**: `{span.xrpl.tx.hash="<hash>"}` to trace a specific transaction across nodes.
 
@@ -375,14 +389,25 @@ The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Er
 
 **Additional dimension labels** (configured in `otel-collector-config.yaml`):
 
-| Span Attribute        | Prometheus Label               | Applies To                |
-| --------------------- | ------------------------------ | ------------------------- |
-| `command`             | `xrpl_rpc_command`             | `rpc.command.*`           |
-| `rpc_status`          | `xrpl_rpc_status`              | `rpc.command.*`           |
-| `xrpl.consensus.mode` | `xrpl_consensus_mode`          | `consensus.ledger_close`  |
-| `local`               | `xrpl_tx_local`                | `tx.process`              |
-| `proposal_trusted`    | `xrpl_peer_proposal_trusted`   | `peer.proposal.receive`   |
-| `validation_trusted`  | `xrpl_peer_validation_trusted` | `peer.validation.receive` |
+| Span Attribute        | Prometheus Label               | Applies To                                     |
+| --------------------- | ------------------------------ | ---------------------------------------------- |
+| `command`             | `xrpl_rpc_command`             | `rpc.command.*`                                |
+| `rpc_status`          | `xrpl_rpc_status`              | `rpc.command.*`                                |
+| `xrpl.consensus.mode` | `xrpl_consensus_mode`          | `consensus.ledger_close`                       |
+| `local`               | `xrpl_tx_local`                | `tx.process`                                   |
+| `proposal_trusted`    | `xrpl_peer_proposal_trusted`   | `peer.proposal.receive`                        |
+| `validation_trusted`  | `xrpl_peer_validation_trusted` | `peer.validation.receive`                      |
+| `stage`               | `stage`                        | `tx.preflight`, `tx.preclaim`, `tx.transactor` |
+
+The `stage` dimension (3 values: `preflight`, `preclaim`, `apply`) turns the
+apply-pipeline spans into per-stage RED metrics with no native instruments — the
+_Transaction Overview_ dashboard charts rate, p95 latency, and failure rate by stage.
+
+> **Sampling caveat**: span-derived metrics inherit the **tracer head-sampling**
+> ratio (`sampling_ratio` in `[telemetry]`, via `TraceIdRatioBasedSampler`). At
+> `sampling_ratio < 1.0` the stage RED metrics undercount proportionally — they
+> reflect sampled traces, not the full transaction volume. Native StatsD/meter
+> metrics do not sample. Account for this when reading absolute stage rates.
 
 **Where to query**: Prometheus → `traces_span_metrics_calls_total{span_name="rpc.command.server_info"}`
 
