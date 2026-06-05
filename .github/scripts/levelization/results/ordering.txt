@@ -240,6 +240,7 @@ xrpl.tx > xrpl.basics
 xrpl.tx > xrpl.core
 xrpl.tx > xrpl.ledger
 xrpl.tx > xrpl.protocol
+xrpl.tx > xrpl.telemetry
 xrpld.app > test.unit_test
 xrpld.app > xrpl.basics
 xrpld.app > xrpl.core
