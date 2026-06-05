@@ -1,6 +1,7 @@
-# This workflow builds the documentation for the repository, and publishes it to
-# GitHub Pages when changes are merged into the default branch.
-name: Build and publish documentation
+# Builds Doxygen XML + HTML in a single pass, runs documentation coverage
+# checks on pull requests, and publishes the HTML to GitHub Pages when changes
+# land on `develop`.
+name: Documentation (build, coverage, publish)
 
 on:
   push:
@@ -8,6 +9,8 @@ on:
       - "develop"
     paths:
       - ".github/workflows/publish-docs.yml"
+      - ".github/doc-coverage-thresholds.json"
+      - ".github/scripts/doc-coverage-check.py"
       - "*.md"
       - "**/*.md"
       - "docs/**"
@@ -17,6 +20,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/publish-docs.yml"
+      - ".github/doc-coverage-thresholds.json"
+      - ".github/scripts/doc-coverage-check.py"
       - "*.md"
       - "**/*.md"
       - "docs/**"
@@ -42,9 +47,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: ghcr.io/xrplf/ci/tools-rippled-documentation:sha-a8c7be1
+    permissions:
+      pull-requests: write
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
 
       - name: Prepare runner
         uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
@@ -57,13 +67,17 @@ jobs:
         with:
           subtract: ${{ env.NPROC_SUBTRACT }}
 
+      - name: Install coverxygen
+        # TODO: drop pin once upstream fixes the 1.8.x regression.
+        # 1.8.2 crashes on enums when no --exclude is configured:
+        #   AttributeError: 'str' object has no attribute 'iter'
+        #   at coverxygen/__init__.py extract_enum_qualified_name
+        run: pip install 'coverxygen<1.8'
+
       - name: Check configuration
         run: |
           echo 'Checking path.'
           echo ${PATH} | tr ':' '\n'
-
-          echo 'Checking environment variables.'
-          env | sort
 
           echo 'Checking CMake version.'
           cmake --version
@@ -71,7 +85,7 @@ jobs:
           echo 'Checking Doxygen version.'
           doxygen --version
 
-      - name: Build documentation
+      - name: Build documentation (PR/HEAD)
         env:
           BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
         run: |
@@ -79,6 +93,91 @@ jobs:
           cd "${BUILD_DIR}"
           cmake -Donly_docs=ON ..
           cmake --build . --target docs --parallel ${BUILD_NPROC}
+
+      - name: Determine changed C++ files
+        if: github.event_name == 'pull_request'
+        id: changed
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            include/**/*.h
+            src/**/*.h
+            src/**/*.cpp
+
+      - name: Cache base-branch Doxygen XML
+        if: github.event_name == 'pull_request'
+        id: base-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: build-base/docs/xml
+          key: doxygen-xml-${{ github.event.pull_request.base.sha }}-${{ hashFiles('docs/Doxyfile') }}
+
+      - name: Build base-branch Doxygen XML (cache miss)
+        if: github.event_name == 'pull_request' && steps.base-cache.outputs.cache-hit != 'true'
+        env:
+          BUILD_NPROC: ${{ steps.nproc.outputs.nproc }}
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }}
+          mkdir -p build-base
+          cd build-base
+          if ! cmake -Donly_docs=ON .. > cmake.log 2>&1; then
+            echo "::warning::Base-branch cmake configure failed; ratchet disabled for this PR"
+            cat cmake.log
+          elif ! cmake --build . --target docs --parallel ${BUILD_NPROC} > build.log 2>&1; then
+            echo "::warning::Base-branch Doxygen build failed; ratchet disabled for this PR"
+            tail -50 build.log
+          fi
+          cd ..
+          git checkout ${{ github.event.pull_request.head.sha }}
+
+      - name: Generate coverage report (PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 -m coverxygen \
+            --xml-dir ${BUILD_DIR}/docs/xml \
+            --src-dir . \
+            --output doc-coverage.info \
+            --kind class,struct,function,enum,typedef,variable \
+            --scope public
+
+      - name: Generate coverage report (base)
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -d "build-base/docs/xml" ]; then
+            python3 -m coverxygen \
+              --xml-dir build-base/docs/xml \
+              --src-dir . \
+              --output base-doc-coverage.info \
+              --kind class,struct,function,enum,typedef,variable \
+              --scope public || true
+          fi
+
+      - name: Check coverage thresholds
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE_FLAG=""
+          if [ -f "base-doc-coverage.info" ]; then
+            BASE_FLAG="--base-lcov-file base-doc-coverage.info"
+          fi
+
+          NEW_FILES=""
+          if [ -n "${{ steps.changed.outputs.added_files }}" ]; then
+            NEW_FILES="--new-files ${{ steps.changed.outputs.added_files }}"
+          fi
+
+          python3 .github/scripts/doc-coverage-check.py \
+            --lcov-file doc-coverage.info \
+            --threshold-file .github/doc-coverage-thresholds.json \
+            --output doc-coverage-report.md \
+            ${BASE_FLAG} \
+            ${NEW_FILES} || true
+
+      - name: Post coverage report to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # v2.9.2
+        with:
+          header: doc-coverage
+          path: doc-coverage-report.md
 
       - name: Create documentation artifact
         if: ${{ github.event.repository.visibility == 'public' && github.event_name == 'push' }}

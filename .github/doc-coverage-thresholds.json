@@ -1,0 +1,22 @@
+{
+  "global_minimum": 0,
+  "ratchet_mode": "no_decrease",
+  "new_file_minimum": 80,
+  "module_thresholds": {
+    "include/xrpl/basics/": 0,
+    "include/xrpl/crypto/": 0,
+    "include/xrpl/protocol/": 0,
+    "include/xrpl/ledger/": 0,
+    "include/xrpl/tx/": 0,
+    "include/xrpl/server/": 0,
+    "include/xrpl/nodestore/": 0,
+    "include/xrpl/shamap/": 0,
+    "include/xrpl/resource/": 0,
+    "xrpld/rpc/": 0,
+    "xrpld/overlay/": 0,
+    "xrpld/peerfinder/": 0,
+    "xrpld/consensus/": 0,
+    "xrpld/app/": 0,
+    "libxrpl/": 0
+  }
+}

@@ -1,6 +1,10 @@
 # .gitignore
 # cspell: disable
 
+# AI-generated documentation source (temporary, used by doc-agent
+# during the initial documentation pass; removed once docs are merged).
+*.ai.md
+
 # Macintosh Desktop Services Store files.
 .DS_Store
 
@@ -15,6 +19,12 @@ Release/
 /.build/
 /.venv/
 /build/
+/build-base/
+/doc-coverage.info
+/base-doc-coverage.info
+/doc-coverage-report.md
+/doc-review-report.md
+/doc-review-comments.json
 /db/
 /out.txt
 /Testing/

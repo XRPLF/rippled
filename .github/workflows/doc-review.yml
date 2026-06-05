@@ -1,0 +1,90 @@
+name: Documentation Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'include/**/*.h'
+      - 'src/libxrpl/**/*.h'
+      - 'src/libxrpl/**/*.cpp'
+      - 'src/xrpld/**/*.h'
+      - 'src/xrpld/**/*.cpp'
+
+concurrency:
+  group: doc-review-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  review:
+    if: github.head_ref != 'dangell7/docs' && github.head_ref != 'dangell7/docs-full'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: .github/scripts/doc-agent/package-lock.json
+
+      - name: Install doc-agent dependencies
+        working-directory: .github/scripts/doc-agent
+        run: npm ci
+
+      - name: Run documentation review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          cd .github/scripts/doc-agent
+          npm run review -- "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+
+      - name: Post review summary
+        if: always()
+        uses: marocchino/sticky-pull-request-comment@67d0dec7b07ed060a405f9b2a64b8ab319fdd7db # v2.9.2
+        with:
+          header: doc-review
+          path: .github/scripts/doc-agent/doc-review-report.md
+
+      - name: Post inline review comments
+        if: always()
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const path = '.github/scripts/doc-agent/doc-review-comments.json';
+            if (!fs.existsSync(path)) return;
+
+            const comments = JSON.parse(fs.readFileSync(path, 'utf8'));
+            if (comments.length === 0) return;
+
+            const pull_number = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            for (const comment of comments) {
+              try {
+                await github.rest.pulls.createReviewComment({
+                  owner,
+                  repo,
+                  pull_number,
+                  body: comment.body,
+                  commit_id: '${{ github.event.pull_request.head.sha }}',
+                  path: comment.path,
+                  line: comment.line,
+                  side: 'RIGHT',
+                });
+              } catch (e) {
+                console.log(`Failed to post comment on ${comment.path}:${comment.line}: ${e.message}`);
+              }
+            }

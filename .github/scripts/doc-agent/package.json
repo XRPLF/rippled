@@ -1,0 +1,36 @@
+{
+  "name": "xrpld-doc-agent",
+  "version": "0.1.0",
+  "description": "Automated documentation agent for the xrpld C++ codebase. Uses the Claude Agent SDK to generate Doxygen documentation and detect doc drift on PRs.",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "doc-agent": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "dev": "tsx --env-file-if-exists=.env src/index.ts",
+    "document": "tsx --env-file-if-exists=.env src/index.ts document",
+    "review": "tsx --env-file-if-exists=.env src/index.ts review",
+    "audit": "tsx --env-file-if-exists=.env src/index.ts audit",
+    "regen-skills": "tsx --env-file-if-exists=.env src/index.ts regen-skills",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome lint src",
+    "format": "biome format --write src",
+    "check": "biome check src",
+    "check:fix": "biome check --write src"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.10"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20.12"
+  }
+}
