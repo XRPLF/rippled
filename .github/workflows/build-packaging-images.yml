@@ -1,0 +1,48 @@
+name: Build packaging Docker images
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - ".github/workflows/build-packaging-images.yml"
+      - ".github/workflows/reusable-build-docker-image.yml"
+      - ".github/workflows/reusable-build-merge-docker-images.yml"
+      - "package/Dockerfile"
+      - "package/install-packaging-tools.sh"
+  pull_request:
+    paths:
+      - ".github/workflows/build-packaging-images.yml"
+      - ".github/workflows/reusable-build-docker-image.yml"
+      - ".github/workflows/reusable-build-merge-docker-images.yml"
+      - "package/Dockerfile"
+      - "package/install-packaging-tools.sh"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-merge:
+    name: Build and push packaging-${{ matrix.distro.name }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        distro:
+          - name: debian
+            base_image: debian:bookworm
+          - name: rhel
+            base_image: registry.access.redhat.com/ubi9/ubi:latest
+    uses: ./.github/workflows/reusable-build-merge-docker-images.yml
+    with:
+      image_name: ghcr.io/xrplf/xrpld/packaging-${{ matrix.distro.name }}
+      dockerfile: package/Dockerfile
+      base_image: ${{ matrix.distro.base_image }}
