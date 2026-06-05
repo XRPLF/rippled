@@ -556,8 +556,8 @@
       "id": 13
     },
     {
-      "title": "Close Time Agreement",
-      "description": "Rate of close time agreement vs disagreement across consensus rounds. Based on close_time_correct attribute (true = validators agreed, false = agreed to disagree per avCT_CONSENSUS_PCT).",
+      "title": "Close-Time Agreement Rate (Agreed vs Disagreed)",
+      "description": "Rate of consensus rounds where validators agreed on the close time (close_time_correct=true) versus agreed to disagree (false). 'Disagreed' is normal when validators' clocks differ slightly; a sustained rise indicates clock drift or network latency across the validator set.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -571,7 +571,7 @@
             "type": "prometheus"
           },
           "expr": "sum by (close_time_correct, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"consensus.accept.apply\", consensus_mode=~\"$consensus_mode\", exported_instance=~\"$node\"}[$__rate_interval]))",
-          "legendFormat": "Close Time Correct={{close_time_correct}} [{{exported_instance}}]"
+          "legendFormat": "{{close_time_correct}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -587,7 +587,23 @@
         },
         "overrides": []
       },
-      "id": 14
+      "id": 14,
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": ".*true.*",
+            "renamePattern": "Agreed"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": ".*false.*",
+            "renamePattern": "Disagreed"
+          }
+        }
+      ]
     },
     {
       "title": "Close Time Vote Bins & Resolution",
@@ -681,9 +697,9 @@
       "id": 15
     },
     {
-      "title": "Close Time Resolution Direction",
-      "description": "Whether close time resolution increased (coarser bins, more disagreement), decreased (finer bins, better agreement), or stayed unchanged relative to the previous ledger. Based on resolution_direction attribute.",
-      "type": "timeseries",
+      "title": "Close-Time Resolution Change (per Round)",
+      "description": "How the close-time resolution (the rounding granularity used to bin close-time votes) changed versus the previous round: Coarser = increased (more disagreement, wider bins), Finer = decreased (better agreement), Steady = unchanged. Mostly Steady is healthy; frequent Coarser shifts indicate the network is struggling to agree on close time.",
+      "type": "bargauge",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -692,26 +708,26 @@
       },
       "fieldConfig": {
         "defaults": {
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 40,
-            "pointSize": 5,
-            "showPoints": "auto",
-            "axisLabel": "Rounds in Window"
-          },
-          "unit": "none"
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
         },
         "overrides": []
       },
       "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
         },
         "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": ["lastNotNull"]
+          "showLegend": false
         }
       },
       "targets": [
@@ -722,16 +738,39 @@
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
-          "legendFormat": "Resolution Direction [{{span.resolution_direction}}]",
+          "legendFormat": "{{span.resolution_direction}}",
           "refId": "A"
         }
       ],
-      "id": 16
+      "id": 16,
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "increased",
+            "renamePattern": "Coarser (more disagreement)"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "decreased",
+            "renamePattern": "Finer (better agreement)"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "unchanged",
+            "renamePattern": "Steady"
+          }
+        }
+      ]
     },
     {
-      "title": "Close Time Bin Distribution",
-      "description": "Distribution of raw proposed close times across quantized bins. Shows how many nodes' proposals landed in each resolution bin per consensus round. A single dominant bin indicates good clock agreement; spread across bins indicates drift or network latency.",
-      "type": "barchart",
+      "title": "Close-Time Proposal Spread (Distinct Positions per Round)",
+      "description": "How spread out the validators' proposed close times were. close_time_vote_bins is the number of DISTINCT close-time values proposed by peers in a round (rawCloseTimes.peers.size()): 1 = everyone proposed the same time (tight agreement), 2-3 = proposals split across several times (clock drift or latency). Each bar series is a distinct-position count; the value is how many rounds in the window had that many distinct positions. Lower is better; a shift toward 2+ signals growing disagreement on close time.",
+      "type": "bargauge",
       "gridPos": {
         "h": 8,
         "w": 12,
@@ -741,26 +780,26 @@
       "fieldConfig": {
         "defaults": {
           "unit": "none",
-          "custom": {
-            "fillOpacity": 60,
-            "axisLabel": "Rounds in Window"
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
           }
         },
         "overrides": []
       },
       "options": {
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": ["sum"],
+          "fields": "",
+          "values": false
         },
         "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "calcs": ["sum"]
-        },
-        "xTickLabelRotation": -45,
-        "barWidth": 0.8,
-        "stacking": "normal"
+          "showLegend": false
+        }
       },
       "targets": [
         {
@@ -770,15 +809,15 @@
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | count_over_time() by (span.close_time_vote_bins)",
-          "legendFormat": "{{span.close_time_vote_bins}} Vote Bins",
+          "legendFormat": "{{span.close_time_vote_bins}} Distinct Position(s)",
           "refId": "A"
         }
       ],
       "id": 17
     },
     {
-      "title": "Consensus Outcome Distribution",
-      "description": "Distribution of consensus.accept outcomes: yes (normal), moved_on (without full agreement), expired (timeout). Non-yes outcomes indicate network stress.",
+      "title": "Consensus Outcome Distribution (per Round)",
+      "description": "How consensus rounds concluded, from consensus_state on consensus.accept. Agreed = normal success (all validators agreed); Moved On = closed the ledger without full agreement (a minority position was abandoned); Expired = the round timed out; No = consensus not reached. A healthy network is almost entirely Agreed; a rising Moved On / Expired share signals network stress or disagreement.",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -811,7 +850,37 @@
         },
         "overrides": []
       },
-      "id": 18
+      "id": 18,
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "yes",
+            "renamePattern": "Agreed"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "moved_on",
+            "renamePattern": "Moved On (partial)"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "expired",
+            "renamePattern": "Expired (timeout)"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "^no$",
+            "renamePattern": "No Consensus"
+          }
+        }
+      ]
     },
     {
       "title": "Consensus Failures Over Time",
