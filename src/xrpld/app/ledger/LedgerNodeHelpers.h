@@ -14,24 +14,6 @@ class TMLedgerNode;
 namespace xrpl {
 
 /**
- * @brief Validates a ledger node proto message.
- *
- * This function checks whether a ledger node has the expected fields (for non-ledger base data):
- * - The node must have `nodedata`.
- * - If the legacy `nodeid` field is present then the new `id` and `depth` fields must not be
- *   present, and `nodeid` must be a valid serialized SHAMapNodeID.
- * - If the new `id` or `depth` fields are present (it is a oneof field, so only one of the two can
- *   be set) then the legacy `nodeid` must not be present.
- * - If the `id` field is present then it must be a valid serialized SHAMapNodeID.
- * - If the `depth` field is present then it must be between 0 and SHAMap::kLeafDepth (inclusive).
- *
- * @param ledgerNode The ledger node to validate.
- * @return true if the ledger node has the expected fields, false otherwise.
- */
-[[nodiscard]] bool
-validateLedgerNode(protocol::TMLedgerNode const& ledgerNode);
-
-/**
  * @brief Deserializes a SHAMapTreeNode from wire format data.
  *
  * This function attempts to create a SHAMapTreeNode from the provided data string. If the data is
@@ -64,8 +46,6 @@ getTreeNode(std::string_view data);
  * @param treeNode The deserialized tree node (inner or leaf node).
  * @return An optional containing the node ID if extraction/reconstruction succeeds, or std::nullopt
  *         if the required fields are missing or validation fails.
- * @note This function expects that the caller has already validated the ledger node by calling the
- *       `validateLedgerNode` function and obtained a valid tree node by calling `getTreeNode`.
  */
 [[nodiscard]] std::optional<SHAMapNodeID>
 getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNode const& treeNode);

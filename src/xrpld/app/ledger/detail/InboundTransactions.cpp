@@ -1,6 +1,6 @@
 #include <xrpld/app/ledger/InboundTransactions.h>
 
-#include <xrpld/app/ledger/detail/LedgerNodeHelpers.h>
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
@@ -137,7 +137,7 @@ public:
 
         if (ta == nullptr)
         {
-            peer->charge(Resource::kFeeUselessData, "ledger_data");
+            peer->charge(Resource::kFeeUselessData, "ledger_data useless");
             return;
         }
 
@@ -146,18 +146,11 @@ public:
 
         for (auto const& ledgerNode : packet.nodes())
         {
-            if (!validateLedgerNode(ledgerNode))
-            {
-                JLOG(j_.warn()) << "Got malformed ledger node";
-                peer->charge(Resource::kFeeMalformedRequest, "ledger_node");
-                return;
-            }
-
             auto treeNode = getTreeNode(ledgerNode.nodedata());
             if (!treeNode)
             {
                 JLOG(j_.warn()) << "Got invalid node data";
-                peer->charge(Resource::kFeeInvalidData, "node_data");
+                peer->charge(Resource::kFeeInvalidData, "ledger_node.node_data invalid");
                 return;
             }
 
@@ -165,15 +158,22 @@ public:
             if (!nodeID)
             {
                 JLOG(j_.warn()) << "Got invalid node id";
-                peer->charge(Resource::kFeeInvalidData, "node_id");
+                peer->charge(Resource::kFeeInvalidData, "ledger_node.node_id invalid");
                 return;
             }
 
             data.emplace_back(*nodeID, std::move(treeNode));
         }
 
-        if (!ta->takeNodes(std::move(data), peer).isUseful())
-            peer->charge(Resource::kFeeUselessData, "ledger_data not useful");
+        auto const san = ta->takeNodes(std::move(data), peer);
+        if (san.isInvalid())
+        {
+            peer->charge(Resource::kFeeInvalidData, "ledger_data invalid");
+        }
+        else if (!san.isUseful())
+        {
+            peer->charge(Resource::kFeeUselessData, "ledger_data useless");
+        }
     }
 
     void

@@ -1,4 +1,4 @@
-#include <xrpld/app/ledger/detail/LedgerNodeHelpers.h>
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/base_uint.h>
@@ -39,131 +39,6 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
         node->serializeForWire(s);
         auto const slice = s.slice();
         return std::string(std::bit_cast<char const*>(slice.data()), slice.size());
-    }
-
-    void
-    testValidateLedgerNode()
-    {
-        testcase("validateLedgerNode");
-
-        auto const validID = SHAMapNodeID::createID(3, uint256{}).getRawString();
-
-        // Invalid: missing all fields.
-        {
-            protocol::TMLedgerNode const node;
-            BEAST_EXPECT(!validateLedgerNode(node));
-        }
-
-        // Invalid: missing `nodedata` field.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodeid(validID);
-            BEAST_EXPECT(!validateLedgerNode(node));
-        }
-
-        // Invalid: missing `nodedata` field.
-        {
-            protocol::TMLedgerNode node;
-            node.set_id(validID);
-            BEAST_EXPECT(!validateLedgerNode(node));
-        }
-
-        // Invalid: missing `nodedata` field.
-        {
-            protocol::TMLedgerNode node;
-            node.set_depth(1);
-            BEAST_EXPECT(!validateLedgerNode(node));
-        }
-
-        // Valid: legacy `nodeid` field.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_nodeid(validID);
-            BEAST_EXPECT(validateLedgerNode(node));
-        }
-
-        // Invalid: legacy `nodeid` field with garbage content.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_nodeid("garbage");
-            BEAST_EXPECT(!validateLedgerNode(node));
-        }
-
-        // Invalid: has both legacy `nodeid` and new `id` fields.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_nodeid(validID);
-            node.set_id(validID);
-            BEAST_EXPECT(!validateLedgerNode(node));
-        }
-
-        // Invalid: has both legacy `nodeid` and new `depth` fields.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_nodeid(validID);
-            node.set_depth(5);
-            BEAST_EXPECT(!validateLedgerNode(node));
-        }
-
-        // Valid: new `id` field.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_id(validID);
-            BEAST_EXPECT(validateLedgerNode(node));
-        }
-
-        // Invalid: new `id` field with garbage content.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_id("garbage");
-            BEAST_EXPECT(!validateLedgerNode(node));
-        }
-
-        // Valid: new `depth` field.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_depth(5);
-            BEAST_EXPECT(validateLedgerNode(node));
-        }
-
-        // Valid: `depth` at minimum depth.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_depth(0);
-            BEAST_EXPECT(validateLedgerNode(node));
-        }
-
-        // Valid: `depth` at arbitrary depth between minimum and maximum.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_depth(10);
-            BEAST_EXPECT(validateLedgerNode(node));
-        }
-
-        // Valid: `depth` at maximum depth.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_depth(SHAMap::kLeafDepth);
-            BEAST_EXPECT(validateLedgerNode(node));
-        }
-
-        // Invalid: `depth` is greater than maximum depth.
-        {
-            protocol::TMLedgerNode node;
-            node.set_nodedata("test_data");
-            node.set_depth(SHAMap::kLeafDepth + 1);
-            BEAST_EXPECT(!validateLedgerNode(node));
-        }
     }
 
     void
@@ -232,10 +107,10 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 auto const innerDepth = 3;
                 auto const innerID = SHAMapNodeID::createID(innerDepth, uint256{});
 
-                protocol::TMLedgerNode node;
-                node.set_nodedata(innerData);
-                node.set_nodeid(innerID.getRawString());
-                auto const result = getSHAMapNodeID(node, *innerNode);
+                protocol::TMLedgerNode ledgerNode;
+                ledgerNode.set_nodedata(innerData);
+                ledgerNode.set_nodeid(innerID.getRawString());
+                auto const result = getSHAMapNodeID(ledgerNode, *innerNode);
                 BEAST_EXPECT(result == innerID);
             }
 
@@ -244,19 +119,32 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 auto const innerDepth = 0;
                 auto const innerID = SHAMapNodeID::createID(innerDepth, uint256{});
 
-                protocol::TMLedgerNode node;
-                node.set_nodedata(innerData);
-                node.set_id(innerID.getRawString());
-                auto const result = getSHAMapNodeID(node, *innerNode);
+                protocol::TMLedgerNode ledgerNode;
+                ledgerNode.set_nodedata(innerData);
+                ledgerNode.set_id(innerID.getRawString());
+                auto const result = getSHAMapNodeID(ledgerNode, *innerNode);
                 BEAST_EXPECT(result == innerID);
             }
 
             // Invalid: new `depth` field should not be used for inner nodes.
             {
-                protocol::TMLedgerNode node;
-                node.set_nodedata(innerData);
-                node.set_depth(10);
-                auto const result = getSHAMapNodeID(node, *innerNode);
+                protocol::TMLedgerNode ledgerNode;
+                ledgerNode.set_nodedata(innerData);
+                ledgerNode.set_depth(10);
+                auto const result = getSHAMapNodeID(ledgerNode, *innerNode);
+                BEAST_EXPECT(!result);
+            }
+
+            // Invalid: both legacy `nodeid` and new `id` fields set for an inner node.
+            {
+                auto const innerDepth = 9;
+                auto const innerID = SHAMapNodeID::createID(innerDepth, uint256{});
+
+                protocol::TMLedgerNode ledgerNode;
+                ledgerNode.set_nodedata(innerData);
+                ledgerNode.set_nodeid(innerID.getRawString());
+                ledgerNode.set_id(innerID.getRawString());
+                auto const result = getSHAMapNodeID(ledgerNode, *innerNode);
                 BEAST_EXPECT(!result);
             }
         }
@@ -297,10 +185,10 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 auto const kLeafDepth = 0;
                 auto const leafID = SHAMapNodeID::createID(kLeafDepth, leafKey);
 
-                protocol::TMLedgerNode node;
-                node.set_nodedata(leafData);
-                node.set_depth(kLeafDepth);
-                auto const result = getSHAMapNodeID(node, *leafNode);
+                protocol::TMLedgerNode ledgerNode;
+                ledgerNode.set_nodedata(leafData);
+                ledgerNode.set_depth(kLeafDepth);
+                auto const result = getSHAMapNodeID(ledgerNode, *leafNode);
                 BEAST_EXPECT(result == leafID);
             }
 
@@ -324,10 +212,10 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 auto const kLeafDepth = SHAMap::kLeafDepth;
                 auto const leafID = SHAMapNodeID::createID(kLeafDepth, leafKey);
 
-                protocol::TMLedgerNode node;
-                node.set_nodedata(leafData);
-                node.set_depth(kLeafDepth);
-                auto const result = getSHAMapNodeID(node, *leafNode);
+                protocol::TMLedgerNode ledgerNode;
+                ledgerNode.set_nodedata(leafData);
+                ledgerNode.set_depth(kLeafDepth);
+                auto const result = getSHAMapNodeID(ledgerNode, *leafNode);
                 BEAST_EXPECT(result == leafID);
             }
 
@@ -348,13 +236,21 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!result);
             }
         }
+
+        // Invalid: no field set.
+        {
+            auto const innerNode = intr_ptr::makeShared<SHAMapInnerNode>(1);
+            protocol::TMLedgerNode ledgerNode;
+            ledgerNode.set_nodedata("test_data");
+            auto const result = getSHAMapNodeID(ledgerNode, *innerNode);
+            BEAST_EXPECT(!result);
+        }
     }
 
 public:
     void
     run() override
     {
-        testValidateLedgerNode();
         testGetTreeNode();
         testGetSHAMapNodeID();
     }

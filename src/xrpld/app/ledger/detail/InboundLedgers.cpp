@@ -2,7 +2,7 @@
 
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/detail/LedgerNodeHelpers.h>
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
@@ -250,9 +250,6 @@ public:
         {
             for (auto const& ledgerNode : packetPtr->nodes())
             {
-                if (!validateLedgerNode(ledgerNode))
-                    return;
-
                 auto const treeNode = getTreeNode(ledgerNode.nodedata());
                 if (!treeNode)
                     return;

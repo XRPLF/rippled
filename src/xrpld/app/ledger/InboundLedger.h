@@ -135,7 +135,10 @@ private:
     takeHeader(std::string_view data);
 
     void
-    receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san);
+    receiveNode(
+        std::shared_ptr<Peer> const& peer,
+        protocol::TMLedgerData& packet,
+        SHAMapAddNode& san);
 
     bool
     takeTxRootNode(std::string_view data, SHAMapAddNode& san);

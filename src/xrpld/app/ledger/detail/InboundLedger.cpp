@@ -3,8 +3,8 @@
 #include <xrpld/app/ledger/AccountStateSF.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
-#include <xrpld/app/ledger/detail/LedgerNodeHelpers.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Message.h>
@@ -821,7 +821,10 @@ InboundLedger::takeHeader(std::string_view data)
     Call with a lock
 */
 void
-InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
+InboundLedger::receiveNode(
+    std::shared_ptr<Peer> const& peer,
+    protocol::TMLedgerData& packet,
+    SHAMapAddNode& san)
 {
     if (!haveHeader_)
     {
@@ -870,6 +873,7 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
             if (!treeNode)
             {
                 JLOG(journal_.warn()) << "Got invalid node data";
+                peer->charge(Resource::kFeeInvalidData, "ledger_node.node_data invalid");
                 san.incInvalid();
                 return;
             }
@@ -878,6 +882,7 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
             if (!nodeID)
             {
                 JLOG(journal_.warn()) << "Got invalid node id";
+                peer->charge(Resource::kFeeInvalidData, "ledger_node.node_id invalid");
                 san.incInvalid();
                 return;
             }
@@ -893,14 +898,16 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
 
             if (!san.isGood())
             {
-                JLOG(journal_.warn()) << "Received bad node data";
+                JLOG(journal_.warn()) << "Got invalid node";
+                peer->charge(Resource::kFeeInvalidData, "ledger_node invalid");
                 return;
             }
         }
     }
     catch (std::exception const& e)
     {
-        JLOG(journal_.error()) << "Received bad node data: " << e.what();
+        // If we get here it is not necessarily because the node was bad, so don't charge the peer.
+        JLOG(journal_.error()) << "Could not process node: " << e.what();
         san.incInvalid();
         return;
     }
@@ -1132,23 +1139,17 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
 
         ScopedLockType const sl(mtx_);
 
-        // Verify nodes are complete
-        for (auto const& ledgerNode : packet.nodes())
-        {
-            if (!validateLedgerNode(ledgerNode))
-            {
-                JLOG(journal_.warn()) << "Got malformed ledger node";
-                peer->charge(Resource::kFeeMalformedRequest, "ledger_node");
-                return -1;
-            }
-        }
-
         SHAMapAddNode san;
-        receiveNode(packet, san);
+        receiveNode(peer, packet, san);
 
         JLOG(journal_.debug()) << "Ledger "
                                << ((packet.type() == protocol::liTX_NODE) ? "TX" : "AS")
                                << " node stats: " << san.get();
+
+        // Note: Peer charges for invalid/malformed data are issued from within receiveNode at the
+        // exact failure site, so the peer is only charged for problems they are responsible for.
+        if (san.isInvalid())
+            return -1;
 
         if (san.isUseful())
             progress_ = true;

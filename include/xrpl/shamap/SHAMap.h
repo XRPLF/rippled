@@ -81,8 +81,8 @@ enum class SHAMapState {
 struct SHAMapNodeData
 {
     SHAMapNodeID nodeID;
-    Blob data;
     bool isLeaf;
+    Blob data;  // Placed last, so `isLeaf` can fit into the alignment padding of `nodeID`.
 };
 
 class SHAMap
@@ -320,8 +320,9 @@ public:
      * @param filter Optional sync filter to track received nodes.
      * @return Status indicating whether the node was useful, duplicate, or invalid.
      *
-     * @note This function expects that the caller has already validated that the nodeID is
-     * consistent with the node's content.
+     * @note This function expects the treeNode to be a valid, deserialized SHAMapTreeNode. The
+     *       caller is responsible for deserialization and basic validation before calling this
+     *       function. This also means that the nodeID must be consistent with the node's content.
      */
     SHAMapAddNode
     addKnownNode(

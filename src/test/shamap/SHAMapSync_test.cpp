@@ -124,6 +124,7 @@ public:
             auto node = SHAMapTreeNode::makeFromWire(makeSlice(a[0].data));
             if (!node)
                 fail("", __FILE__, __LINE__);
+            BEAST_EXPECT(a[0].isLeaf == node->isLeaf());
             BEAST_EXPECT(
                 destination.addRootNode(source.getHash(), std::move(node), nullptr).isGood());
         }
@@ -163,6 +164,8 @@ public:
                 // should be deterministic
                 auto node = SHAMapTreeNode::makeFromWire(makeSlice(b[i].data));
                 if (!node)
+                    fail("", __FILE__, __LINE__);
+                if (b[i].isLeaf != node->isLeaf())
                     fail("", __FILE__, __LINE__);
                 if (!destination.addKnownNode(b[i].nodeID, std::move(node), nullptr).isUseful())
                     fail("", __FILE__, __LINE__);

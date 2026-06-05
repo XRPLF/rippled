@@ -5,6 +5,7 @@
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/ValidatorList.h>
@@ -1496,27 +1497,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
-    // Verify and parse ledger node IDs
-    std::vector<SHAMapNodeID> nodeIDs;
-    if (itype != protocol::liBASE)
+    // Cheap structural checks on node IDs; full parsing is deferred to the job
+    // so the IO thread is not burdened with SHAMapNodeID deserialization.
+    if (itype != protocol::liBASE && m->nodeids_size() <= 0)
     {
-        if (m->nodeids_size() <= 0)
-        {
-            badData("Invalid ledger node IDs");
-            return;
-        }
-
-        nodeIDs.reserve(m->nodeids_size());
-        for (auto const& nodeId : m->nodeids())
-        {
-            auto parsed = deserializeSHAMapNodeID(nodeId);
-            if (!parsed)
-            {
-                badData("Invalid SHAMap node ID");
-                return;
-            }
-            nodeIDs.push_back(std::move(*parsed));
-        }
+        badData("Invalid ledger node IDs");
+        return;
     }
 
     // Verify query type
@@ -1536,13 +1522,33 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
-    // Queue a job to process the request
+    // Queue a job to process the request. Full parsing of the node IDs is
+    // performed inside the job so the IO thread is not burdened with
+    // SHAMapNodeID deserialization for every TMGetLedger.
     std::weak_ptr<PeerImp> const weak = shared_from_this();
-    app_.getJobQueue().addJob(
-        JtLedgerReq, "RcvGetLedger", [weak, m, nodeIDs = std::move(nodeIDs)]() mutable {
-            if (auto peer = weak.lock())
-                peer->processLedgerRequest(m, std::move(nodeIDs));
-        });
+    app_.getJobQueue().addJob(JtLedgerReq, "RcvGetLedger", [weak, m, itype]() {
+        auto peer = weak.lock();
+        if (!peer)
+            return;
+
+        std::vector<SHAMapNodeID> nodeIDs;
+        if (itype != protocol::liBASE)
+        {
+            nodeIDs.reserve(m->nodeids_size());
+            for (auto const& nodeId : m->nodeids())
+            {
+                auto parsed = deserializeSHAMapNodeID(nodeId);
+                if (!parsed)
+                {
+                    peer->charge(Resource::kFeeInvalidData, "get_ledger invalid node ID");
+                    return;
+                }
+                nodeIDs.push_back(std::move(*parsed));
+            }
+        }
+
+        peer->processLedgerRequest(m, std::move(nodeIDs));
+    });
 }
 
 void
@@ -1706,12 +1712,44 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
         return;
     }
 
-    // If there is a request cookie, attempt to relay the message
+    // If there is a request cookie, attempt to relay the message.
     if (m->has_requestcookie())
     {
         if (auto peer = overlay_.findPeerByShortID(m->requestcookie()))
         {
             m->clear_requestcookie();
+
+            // If the original requester doesn't support the new depth-based format, rewrite any
+            // nodes that use it back to the legacy nodeid format before relaying. Once all nodes
+            // have upgraded, the old protocol version and this code can be removed.
+            if (!peer->supportsFeature(ProtocolFeature::LedgerNodeDepth))
+            {
+                for (int i = 0; i < m->nodes_size(); ++i)
+                {
+                    auto* ledgerNode = m->mutable_nodes(i);
+                    if (ledgerNode->reference_case() != ledgerNode->REFERENCE_NOT_SET)
+                    {
+                        auto treeNode = getTreeNode(ledgerNode->nodedata());
+                        if (!treeNode)
+                        {
+                            JLOG(pJournal_.warn()) << "Unable to get tree node";
+                            return;
+                        }
+
+                        auto const nodeID = getSHAMapNodeID(*ledgerNode, *treeNode);
+                        if (!nodeID)
+                        {
+                            JLOG(pJournal_.warn()) << "Unable to get node ID";
+                            return;
+                        }
+
+                        ledgerNode->set_nodeid(nodeID->getRawString());
+                        ledgerNode->clear_id();
+                        ledgerNode->clear_depth();
+                    }
+                }
+            }
+
             peer->send(std::make_shared<Message>(*m, protocol::mtLEDGER_DATA));
         }
         else
@@ -3343,6 +3381,7 @@ PeerImp::processLedgerRequest(
         auto const queryDepth{m->has_querydepth() ? m->querydepth() : defaultDepth};
 
         std::vector<SHAMapNodeData> data;
+        data.reserve(Tuning::kSoftMaxReplyNodes);
         auto const useLedgerNodeDepth = supportsFeature(ProtocolFeature::LedgerNodeDepth);
 
         for (auto const& nodeID : nodeIDs)
@@ -3351,7 +3390,6 @@ PeerImp::processLedgerRequest(
                 break;
 
             data.clear();
-            data.reserve(Tuning::kSoftMaxReplyNodes);
 
             try
             {

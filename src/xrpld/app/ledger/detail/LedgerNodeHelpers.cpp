@@ -1,4 +1,4 @@
-#include <xrpld/app/ledger/detail/LedgerNodeHelpers.h>
+#include <xrpld/app/ledger/LedgerNodeHelpers.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/safe_cast.h>
@@ -15,24 +15,6 @@
 #include <string_view>
 
 namespace xrpl {
-
-bool
-validateLedgerNode(protocol::TMLedgerNode const& ledgerNode)
-{
-    if (!ledgerNode.has_nodedata())
-        return false;
-
-    if (ledgerNode.has_nodeid())
-    {
-        return ledgerNode.reference_case() == ledgerNode.REFERENCE_NOT_SET &&
-            deserializeSHAMapNodeID(ledgerNode.nodeid()).has_value();
-    }
-
-    if (ledgerNode.has_id())
-        return deserializeSHAMapNodeID(ledgerNode.id()).has_value();
-
-    return ledgerNode.has_depth() && ledgerNode.depth() <= SHAMap::kLeafDepth;
-}
 
 SHAMapTreeNodePtr
 getTreeNode(std::string_view data)
@@ -53,6 +35,10 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNode const& 
 {
     if (ledgerNode.has_id() || ledgerNode.has_depth())
     {
+        // Reject ambiguous messages that mix the legacy and new reference fields.
+        if (ledgerNode.has_nodeid())
+            return std::nullopt;
+
         if (treeNode.isInner())
         {
             if (!ledgerNode.has_id())
@@ -63,7 +49,7 @@ getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNode const& 
 
         if (treeNode.isLeaf())
         {
-            if (!ledgerNode.has_depth())
+            if (!ledgerNode.has_depth() || ledgerNode.depth() > SHAMap::kLeafDepth)
                 return std::nullopt;
 
             auto const key = safeDowncast<SHAMapLeafNode const*>(&treeNode)->peekItem()->key();

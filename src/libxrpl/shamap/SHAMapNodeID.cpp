@@ -130,8 +130,7 @@ SHAMapNodeID
 SHAMapNodeID::createID(int depth, uint256 const& key)
 {
     XRPL_ASSERT(
-        depth >= 0 && depth <= SHAMap::kLeafDepth,
-        "xrpl::SHAMapNodeID::createID : valid branch input");
+        depth >= 0 && depth <= SHAMap::kLeafDepth, "xrpl::SHAMapNodeID::createID : valid depth");
     return SHAMapNodeID(depth, key & depthMask(depth));
 }
 

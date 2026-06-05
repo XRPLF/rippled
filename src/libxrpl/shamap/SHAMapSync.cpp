@@ -449,17 +449,16 @@ SHAMap::getNodeFat(
     std::stack<std::tuple<SHAMapTreeNode*, SHAMapNodeID, int>> stack;
     stack.emplace(node, nodeID, depth);
 
-    Serializer s(8192);
-
     while (!stack.empty())
     {
         std::tie(node, nodeID, depth) = stack.top();
         stack.pop();
 
-        // Add this node to the reply
-        s.erase();
+        // Use a fresh Serializer per node and move its buffer into `data` rather than copying it
+        // via Serializer::getData(): the move is O(1) whereas the copy was O(node size).
+        Serializer s(256);
         node->serializeForWire(s);
-        data.emplace_back(nodeID, s.getData(), node->isLeaf());
+        data.emplace_back(nodeID, node->isLeaf(), std::move(s.modData()));
 
         if (node->isInner())
         {
@@ -487,9 +486,10 @@ SHAMap::getNodeFat(
                         else if (childNode->isInner() || fatLeaves)
                         {
                             // Just include this node
-                            s.erase();
-                            childNode->serializeForWire(s);
-                            data.emplace_back(childID, s.getData(), childNode->isLeaf());
+                            Serializer cs(256);
+                            childNode->serializeForWire(cs);
+                            data.emplace_back(
+                                childID, childNode->isLeaf(), std::move(cs.modData()));
                         }
                     }
                 }
@@ -518,8 +518,8 @@ SHAMap::addRootNode(
     // we already have a root_ node
     if (root_->getHash().isNonZero())
     {
-        JLOG(journal_.trace()) << "got root node, already have one";
-        XRPL_ASSERT(root_->getHash() == hash, "xrpl::SHAMap::addRootNode : valid hash input");
+        JLOG(journal_.trace()) << "Got root node, already have one";
+        XRPL_ASSERT(root_->getHash() == hash, "xrpl::SHAMap::addRootNode : valid hash");
         return SHAMapAddNode::duplicate();
     }
 
@@ -554,8 +554,15 @@ SHAMap::addKnownNode(
     SHAMapTreeNodePtr treeNode,
     SHAMapSyncFilter const* filter)
 {
-    XRPL_ASSERT(!nodeID.isRoot(), "xrpl::SHAMap::addKnownNode : valid node input");
+    XRPL_ASSERT(!nodeID.isRoot(), "xrpl::SHAMap::addKnownNode : valid node");
     XRPL_ASSERT(treeNode, "xrpl::SHAMap::addKnownNode : non-null tree node");
+    XRPL_ASSERT(
+        !treeNode->isLeaf() ||
+            SHAMapNodeID::createID(
+                nodeID.getDepth(),
+                safeDowncast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key())
+                    .getNodeID() == nodeID.getNodeID(),
+        "xrpl::SHAMap::addKnownNode : leaf position consistent with node ID");
 
     if (!isSynching())
     {
