@@ -631,7 +631,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = ammHolder,
                 .amt = 100,
-                .proof = strHex(gMakeZeroBuffer(kEcClawbackProofLength)),
+                .proof = strHex(gMakeZeroBuffer(kEC_CLAWBACK_PROOF_LENGTH)),
                 .err = tecNO_PERMISSION,
             });
         }
@@ -1897,7 +1897,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
             jv[sfHolder] = bob.human();
             jv[sfMPTAmount.jsonName] = "50";
-            jv[sfZKProof.jsonName] = std::string(kEcClawbackProofLength * 2, '0');
+            jv[sfZKProof.jsonName] = std::string(kEC_CLAWBACK_PROOF_LENGTH * 2, '0');
             env(jv, delegate::As(dave), Ter(temMALFORMED));
         }
 
@@ -1910,7 +1910,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
             jv[sfHolder] = carol.human();
             jv[sfMPTAmount.jsonName] = "100";
-            jv[sfZKProof.jsonName] = std::string(kEcClawbackProofLength * 2, '0');
+            jv[sfZKProof.jsonName] = std::string(kEC_CLAWBACK_PROOF_LENGTH * 2, '0');
             env(jv, delegate::As(dave), Ter(temMALFORMED));
         }
     }

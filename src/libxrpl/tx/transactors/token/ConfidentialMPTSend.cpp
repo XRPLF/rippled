@@ -8,6 +8,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -48,19 +49,19 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     // Check the length of the encrypted amounts
-    if (ctx.tx[sfSenderEncryptedAmount].length() != kEcGamalEncryptedTotalLength ||
-        ctx.tx[sfDestinationEncryptedAmount].length() != kEcGamalEncryptedTotalLength ||
-        ctx.tx[sfIssuerEncryptedAmount].length() != kEcGamalEncryptedTotalLength)
+    if (ctx.tx[sfSenderEncryptedAmount].length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
+        ctx.tx[sfDestinationEncryptedAmount].length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
+        ctx.tx[sfIssuerEncryptedAmount].length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
     {
         return temBAD_CIPHERTEXT;
     }
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
-    if (hasAuditor && ctx.tx[sfAuditorEncryptedAmount].length() != kEcGamalEncryptedTotalLength)
+    if (hasAuditor && ctx.tx[sfAuditorEncryptedAmount].length() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
         return temBAD_CIPHERTEXT;
 
     // Check the length of the ZKProof (fixed size regardless of recipient count)
-    if (ctx.tx[sfZKProof].length() != kEcSendProofLength)
+    if (ctx.tx[sfZKProof].length() != kEC_SEND_PROOF_LENGTH)
         return temMALFORMED;
 
     // Check the Pedersen commitments are valid
@@ -92,9 +93,9 @@ XRPAmount
 ConfidentialMPTSend::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge kConfidentialFeeMultiplier extra base fees so the total is
+    // We charge kCONFIDENTIAL_FEE_MULTIPLIER extra base fees so the total is
     // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kCONFIDENTIAL_FEE_MULTIPLIER;
 }
 
 TER
