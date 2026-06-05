@@ -255,7 +255,12 @@ jobs:
               exit 1
           fi
 
-          IS_PLACEHOLDER=$(jq -e -r '.placeholder == true or (.metrics | length == 0)' "$BASELINE") || {
+          # NOTE: do NOT use `jq -e` here. With -e, jq exits non-zero when the
+          # filter's result is boolean false — which is the normal case for a
+          # populated (non-placeholder) baseline — and that would be
+          # misreported as a parse failure. Plain `jq -r` exits 0 on any valid
+          # JSON, so a real non-zero exit genuinely means malformed JSON.
+          IS_PLACEHOLDER=$(jq -r '.placeholder == true or (.metrics | length == 0)' "$BASELINE") || {
               echo "::error::Failed to parse baseline JSON"
               exit 1
           }
