@@ -21,7 +21,7 @@ struct Handoff
     bool moved = false;
 
     // If response is set, this determines the keep alive
-    bool keepAlive = false;
+    bool keep_alive = false;
 
     // When set, this will be sent back
     std::shared_ptr<Writer> response;

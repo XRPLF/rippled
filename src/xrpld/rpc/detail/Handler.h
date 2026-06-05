@@ -15,7 +15,9 @@ class Object;
 namespace xrpl::RPC {
 
 // Under what condition can we call this RPC?
-enum class Condition {
+// Bitwise flags
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum Condition {
     NoCondition = 0,
     NeedsNetworkConnection = 1,
     NeedsCurrentLedger = 1 << 1,
@@ -32,19 +34,19 @@ struct Handler
     Role role;
     RPC::Condition condition;
 
-    unsigned minApiVer = kApiMinimumSupportedVersion;
-    unsigned maxApiVer = kApiMaximumValidVersion;
+    unsigned minApiVer = kAPI_MINIMUM_SUPPORTED_VERSION;
+    unsigned maxApiVer = kAPI_MAXIMUM_VALID_VERSION;
 };
 
 Handler const*
 getHandler(unsigned int version, bool betaEnabled, std::string const&);
 
-/** Return a json::ValueType::Object with a single entry. */
+/** Return a json::objectValue with a single entry. */
 template <class Value>
 json::Value
 makeObjectValue(Value const& value, json::StaticString const& field = jss::message)
 {
-    json::Value result(json::ValueType::Object);
+    json::Value result(json::ObjectValue);
     result[field] = value;
     return result;
 }
@@ -57,17 +59,17 @@ template <class T>
 ErrorCodeI
 conditionMet(Condition conditionRequired, T& context)
 {
-    if (context.app.getOPs().isAmendmentBlocked() && (conditionRequired != Condition::NoCondition))
+    if (context.app.getOPs().isAmendmentBlocked() && (conditionRequired != NoCondition))
     {
         return RpcAmendmentBlocked;
     }
 
-    if (context.app.getOPs().isUNLBlocked() && (conditionRequired != Condition::NoCondition))
+    if (context.app.getOPs().isUNLBlocked() && (conditionRequired != NoCondition))
     {
         return RpcExpiredValidatorList;
     }
 
-    if ((conditionRequired != Condition::NoCondition) &&
+    if ((conditionRequired != NoCondition) &&
         (context.netOps.getOperatingMode() < OperatingMode::SYNCING))
     {
         JLOG(context.j.info()) << "Insufficient network mode for RPC: "
@@ -78,9 +80,9 @@ conditionMet(Condition conditionRequired, T& context)
         return RpcNotSynced;
     }
 
-    if (!context.app.config().standalone() && conditionRequired != Condition::NoCondition)
+    if (!context.app.config().standalone() && conditionRequired != NoCondition)
     {
-        if (context.ledgerMaster.getValidatedLedgerAge() > Tuning::kMaxValidatedLedgerAge)
+        if (context.ledgerMaster.getValidatedLedgerAge() > Tuning::kMAX_VALIDATED_LEDGER_AGE)
         {
             if (context.apiVersion == 1)
                 return RpcNoCurrent;
@@ -100,7 +102,7 @@ conditionMet(Condition conditionRequired, T& context)
         }
     }
 
-    if ((conditionRequired != Condition::NoCondition) && !context.ledgerMaster.getClosedLedger())
+    if ((conditionRequired != NoCondition) && !context.ledgerMaster.getClosedLedger())
     {
         if (context.apiVersion == 1)
             return RpcNoClosed;

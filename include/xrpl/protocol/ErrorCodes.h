@@ -172,24 +172,24 @@ struct ErrorInfo
 {
     // Default ctor needed to produce an empty std::array during constexpr eval.
     constexpr ErrorInfo()
-        : code(RpcUnknown), token("unknown"), message("An unknown error code."), httpStatus(200)
+        : code(RpcUnknown), token("unknown"), message("An unknown error code."), http_status(200)
     {
     }
 
     constexpr ErrorInfo(ErrorCodeI code, char const* token, char const* message)
-        : code(code), token(token), message(message), httpStatus(200)
+        : code(code), token(token), message(message), http_status(200)
     {
     }
 
     constexpr ErrorInfo(ErrorCodeI code, char const* token, char const* message, int httpStatus)
-        : code(code), token(token), message(message), httpStatus(httpStatus)
+        : code(code), token(token), message(message), http_status(httpStatus)
     {
     }
 
     ErrorCodeI code;
     json::StaticString token;
     json::StaticString message;
-    int httpStatus;
+    int http_status;
 };
 
 /** Returns an ErrorInfo that reflects the error code. */

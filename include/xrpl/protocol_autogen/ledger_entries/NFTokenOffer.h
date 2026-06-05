@@ -33,7 +33,7 @@ public:
      * @brief Construct a NFTokenOffer ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit NFTokenOffer(SLE::const_pointer sle)
+    explicit NFTokenOffer(std::shared_ptr<SLE const> sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -208,7 +208,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    NFTokenOfferBuilder(SLE::const_pointer sle)
+    NFTokenOfferBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltNFTOKEN_OFFER)
         {

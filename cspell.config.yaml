@@ -64,7 +64,6 @@ words:
   - Bougalis
   - Britto
   - Btrfs
-  - Buildx
   - canonicality
   - changespq
   - checkme
@@ -73,7 +72,6 @@ words:
   - citardauq
   - clawback
   - clawbacks
-  - cmaketoolchain
   - coeffs
   - coldwallet
   - compr
@@ -95,23 +93,19 @@ words:
   - dcmake
   - dearmor
   - decryptor
-  - dedented
   - deleteme
   - demultiplexer
   - deserializaton
   - desync
   - desynced
   - determ
-  - disablerepo
   - distro
   - doxyfile
   - dxrpl
   - elgamal
   - enabled
-  - enablerepo
   - endmacro
   - exceptioned
-  - EXPECT_STREQ
   - Falco
   - fcontext
   - finalizers
@@ -124,7 +118,6 @@ words:
   - gcovr
   - ghead
   - Gnutella
-  - godexsoft
   - gpgcheck
   - gpgkey
   - hotwallet
@@ -170,7 +163,6 @@ words:
   - Merkle
   - Metafuncton
   - misprediction
-  - missingok
   - mptbalance
   - MPTDEX
   - mptflags
@@ -202,15 +194,11 @@ words:
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
-  - noreplace
   - noripple
-  - nostdinc
-  - notifempty
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
-  - onlatest
   - ostr
   - pargs
   - partitioner
@@ -227,7 +215,6 @@ words:
   - preauthorize
   - preauthorizes
   - preclaim
-  - preun
   - protobuf
   - protos
   - ptrs
@@ -265,15 +252,12 @@ words:
   - sfields
   - shamap
   - shamapitem
-  - shfmt
-  - shlibs
   - sidechain
   - SIGGOOD
   - sle
   - sles
   - soci
   - socidb
-  - SRPMS
   - sslws
   - statsd
   - STATSDCOLLECTOR
@@ -302,8 +286,8 @@ words:
   - txn
   - txns
   - txs
-  - ubsan
   - UBSAN
+  - ubsan
   - umant
   - unacquired
   - unambiguity
@@ -311,7 +295,6 @@ words:
   - unauthorizing
   - unergonomic
   - unfetched
-  - unfindable
   - unflatten
   - unfund
   - unimpair
@@ -341,6 +324,7 @@ words:
   - xbridge
   - xchain
   - ximinez
+  - EXPECT_STREQ
   - XMACRO
   - xrpkuwait
   - xrpl
@@ -348,4 +332,3 @@ words:
   - xrplf
   - xxhash
   - xxhasher
-  - CGNAT

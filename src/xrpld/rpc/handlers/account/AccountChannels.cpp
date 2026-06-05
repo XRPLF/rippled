@@ -38,7 +38,7 @@ namespace xrpl {
 void
 addChannel(json::Value& jsonLines, SLE const& line)
 {
-    json::Value& jDst(jsonLines.append(json::ValueType::Object));
+    json::Value& jDst(jsonLines.append(json::ObjectValue));
     jDst[jss::channel_id] = to_string(line.key());
     jDst[jss::account] = to_string(line[sfAccount]);
     jDst[jss::destination_account] = to_string(line[sfDestination]);
@@ -108,19 +108,19 @@ doAccountChannels(RPC::JsonContext& context)
         return rpcError(RpcActMalformed);
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kAccountChannels, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_CHANNELS, context))
         return *err;
 
-    json::Value jsonChannels{json::ValueType::Array};
+    json::Value jsonChannels{json::ArrayValue};
     struct VisitData
     {
-        std::vector<SLE::const_pointer> items;
+        std::vector<std::shared_ptr<SLE const>> items;
         AccountID const& accountID;
         std::optional<AccountID> const& raDstAccount;
     };
     VisitData visitData = {.items = {}, .accountID = accountID, .raDstAccount = raDstAccount};
     visitData.items.reserve(limit);
-    uint256 startAfter = beast::kZero;
+    uint256 startAfter = beast::kZERO;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
@@ -170,7 +170,8 @@ doAccountChannels(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&visitData, &accountID, &count, &limit, &marker, &nextHint](SLE::const_ref sleCur) {
+            [&visitData, &accountID, &count, &limit, &marker, &nextHint](
+                std::shared_ptr<SLE const> const& sleCur) {
                 if (!sleCur)
                 {
                     // LCOV_EXCL_START
@@ -213,7 +214,7 @@ doAccountChannels(RPC::JsonContext& context)
     for (auto const& item : visitData.items)
         addChannel(jsonChannels, *item);
 
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
     result[jss::channels] = std::move(jsonChannels);
     return result;
 }

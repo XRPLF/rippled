@@ -69,8 +69,8 @@ getTxFormat(TxType type)
 
 STTx::STTx(STObject&& object) : STObject(std::move(object))
 {
-    txType_ = safeCast<TxType>(getFieldU16(sfTransactionType));
-    applyTemplate(getTxFormat(txType_)->getSOTemplate());  //  may throw
+    tx_type_ = safeCast<TxType>(getFieldU16(sfTransactionType));
+    applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  //  may throw
     tid_ = getHash(HashPrefix::TransactionId);
 }
 
@@ -78,15 +78,15 @@ STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 {
     int const length = sit.getBytesLeft();
 
-    if ((length < kTxMinSizeBytes) || (length > kTxMaxSizeBytes))
+    if ((length < kTX_MIN_SIZE_BYTES) || (length > kTX_MAX_SIZE_BYTES))
         Throw<std::runtime_error>("Transaction length invalid");
 
     if (set(sit))
         Throw<std::runtime_error>("Transaction contains an object terminator");
 
-    txType_ = safeCast<TxType>(getFieldU16(sfTransactionType));
+    tx_type_ = safeCast<TxType>(getFieldU16(sfTransactionType));
 
-    applyTemplate(getTxFormat(txType_)->getSOTemplate());  // May throw
+    applyTemplate(getTxFormat(tx_type_)->getSOTemplate());  // May throw
     tid_ = getHash(HashPrefix::TransactionId);
 }
 
@@ -99,9 +99,9 @@ STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfT
 
     assembler(*this);
 
-    txType_ = safeCast<TxType>(getFieldU16(sfTransactionType));
+    tx_type_ = safeCast<TxType>(getFieldU16(sfTransactionType));
 
-    if (txType_ != type)
+    if (tx_type_ != type)
         logicError("Transaction type was mutated during assembly");
 
     tid_ = getHash(HashPrefix::TransactionId);
@@ -315,8 +315,8 @@ STTx::checkBatchSign(Rules const& rules) const
 json::Value
 STTx::getJson(JsonOptions options) const
 {
-    json::Value ret = STObject::getJson(JsonOptions::Values::None);
-    if (!(options & JsonOptions::Values::DisableApiPriorV2))
+    json::Value ret = STObject::getJson(JsonOptions::KNone);
+    if (!(options & JsonOptions::KDisableApiPriorV2))
         ret[jss::hash] = to_string(getTransactionID());
     return ret;
 }
@@ -324,7 +324,7 @@ STTx::getJson(JsonOptions options) const
 json::Value
 STTx::getJson(JsonOptions options, bool binary) const
 {
-    bool const v1 = !(options & JsonOptions::Values::DisableApiPriorV2);
+    bool const v1 = !(options & JsonOptions::KDisableApiPriorV2);
 
     if (binary)
     {
@@ -333,7 +333,7 @@ STTx::getJson(JsonOptions options, bool binary) const
 
         if (v1)
         {
-            json::Value ret(json::ValueType::Object);
+            json::Value ret(json::ObjectValue);
             ret[jss::tx] = dataBin;
             ret[jss::hash] = to_string(getTransactionID());
             return ret;
@@ -342,7 +342,7 @@ STTx::getJson(JsonOptions options, bool binary) const
         return json::Value{dataBin};
     }
 
-    json::Value ret = STObject::getJson(JsonOptions::Values::None);
+    json::Value ret = STObject::getJson(JsonOptions::KNone);
     if (v1)
         ret[jss::hash] = to_string(getTransactionID());
 
@@ -352,13 +352,13 @@ STTx::getJson(JsonOptions options, bool binary) const
 std::string const&
 STTx::getMetaSQLInsertReplaceHeader()
 {
-    static std::string const kSql =
+    static std::string const kSQL =
         "INSERT OR REPLACE INTO Transactions "
         "(TransID, TransType, FromAcct, FromSeq, LedgerSeq, Status, RawTxn, "
         "TxnMeta)"
         " VALUES ";
 
-    return kSql;
+    return kSQL;
 }
 
 std::string
@@ -377,14 +377,14 @@ STTx::getMetaSQL(
     TxnSql status,
     std::string const& escapedMetaData) const
 {
-    static boost::format const kBfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
+    static boost::format const kBF_TRANS("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
-    auto format = TxFormats::getInstance().findByType(txType_);
+    auto format = TxFormats::getInstance().findByType(tx_type_);
     XRPL_ASSERT(format, "xrpl::STTx::getMetaSQL : non-null type format");
 
     return str(
-        boost::format(kBfTrans) % to_string(getTransactionID()) % format->getName() %
+        boost::format(kBF_TRANS) % to_string(getTransactionID()) % format->getName() %
         toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger %
         safeCast<char>(status) % rTxn % escapedMetaData);
 }
@@ -454,11 +454,11 @@ multiSignHelper(
     STArray const& signers{sigObject.getFieldArray(sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
-    if (signers.size() < STTx::kMinMultiSigners || signers.size() > STTx::kMaxMultiSigners)
+    if (signers.size() < STTx::kMIN_MULTI_SIGNERS || signers.size() > STTx::kMAX_MULTI_SIGNERS)
         return Unexpected("Invalid Signers array size.");
 
     // Signers must be in sorted order by AccountID.
-    AccountID lastAccountID(beast::kZero);
+    AccountID lastAccountID(beast::kZERO);
 
     for (auto const& signer : signers)
     {
@@ -535,10 +535,8 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 {
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
-    // For delegated transactions sfDelegate is the account whose signer list is checked,
-    // the delegate account itself can not be among the signers.
     auto const txnAccountID =
-        &sigObject != this ? std::nullopt : std::optional<AccountID>(getFeePayer());
+        &sigObject != this ? std::nullopt : std::optional<AccountID>(getAccountID(sfAccount));
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
@@ -654,7 +652,7 @@ isMemoOkay(STObject const& st, std::string& reason)
             // The only allowed characters for MemoType and MemoFormat are the
             // characters allowed in URLs per RFC 3986: alphanumerics and the
             // following symbols: -._~:/?#[]@!$&'()*+,;=%
-            static constexpr std::array<char, 256> const kAllowedSymbols = []() {
+            static constexpr std::array<char, 256> const kALLOWED_SYMBOLS = []() {
                 std::array<char, 256> a{};
 
                 std::string_view const symbols(
@@ -670,7 +668,7 @@ isMemoOkay(STObject const& st, std::string& reason)
 
             for (unsigned char const c : *optData)
             {
-                if (kAllowedSymbols[c] == 0)
+                if (kALLOWED_SYMBOLS[c] == 0)
                 {
                     reason =
                         "The MemoType and MemoFormat fields may only "
@@ -733,14 +731,14 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
         return true;
 
     if (st.isFieldPresent(sfBatchSigners) &&
-        st.getFieldArray(sfBatchSigners).size() > kMaxBatchTxCount)
+        st.getFieldArray(sfBatchSigners).size() > kMAX_BATCH_TX_COUNT)
     {
         reason = "Batch Signers array exceeds max entries.";
         return false;
     }
 
     auto const& rawTxns = st.getFieldArray(sfRawTransactions);
-    if (rawTxns.size() > kMaxBatchTxCount)
+    if (rawTxns.size() > kMAX_BATCH_TX_COUNT)
     {
         reason = "Raw Transactions array exceeds max entries.";
         return false;

@@ -168,13 +168,7 @@ def main():
     if not os.environ.get("TIDY"):
         return 0
 
-    repo_root = Path(
-        subprocess.check_output(
-            ["git", "rev-parse", "--show-toplevel"],
-            cwd=Path(__file__).parent,
-            text=True,
-        ).strip()
-    )
+    repo_root = Path(__file__).parent.parent
     files = staged_files(repo_root)
     if not files:
         return 0

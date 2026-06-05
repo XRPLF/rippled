@@ -27,7 +27,7 @@ struct Config
         This includes both inbound and outbound, but does not include
         fixed peers.
     */
-    std::size_t maxPeers{Tuning::kDefaultMaxPeers};
+    std::size_t maxPeers{Tuning::DefaultMaxPeers};
 
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect
@@ -59,9 +59,6 @@ struct Config
     /** Limit how many incoming connections we allow per IP */
     int ipLimit{0};
 
-    /** `true` if we want to verify endpoints in TMEndpoints messages */
-    bool verifyEndpoints = true;
-
     //--------------------------------------------------------------------------
 
     /** Create a configuration with default values. */
@@ -84,8 +81,6 @@ struct Config
      * @param port server's listening port
      * @param validationPublicKey true if validation public key is not empty
      * @param ipLimit limit of incoming connections per IP
-     * @param verifyEndpoints `true` if we want to verify endpoints in
-     * TMEndpoints messages
      * @return PeerFinder::Config
      */
     static Config
@@ -93,11 +88,10 @@ struct Config
         xrpl::Config const& config,
         std::uint16_t port,
         bool validationPublicKey,
-        int ipLimit,
-        bool verifyEndpoints);
+        int ipLimit);
 
     friend bool
-    operator==(Config const& lhs, Config const& rhs) = default;
+    operator==(Config const& lhs, Config const& rhs);
 };
 
 //------------------------------------------------------------------------------

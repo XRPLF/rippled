@@ -33,7 +33,7 @@ public:
      * @brief Construct a MPTokenIssuance ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit MPTokenIssuance(SLE::const_pointer sle)
+    explicit MPTokenIssuance(std::shared_ptr<SLE const> sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -280,30 +280,6 @@ public:
     }
 
     /**
-     * @brief Get sfReferenceHolding (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
-    getReferenceHolding() const
-    {
-        if (hasReferenceHolding())
-            return this->sle_->at(sfReferenceHolding);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfReferenceHolding is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasReferenceHolding() const
-    {
-        return this->sle_->isFieldPresent(sfReferenceHolding);
-    }
-
-    /**
      * @brief Get sfIssuerEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -411,7 +387,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    MPTokenIssuanceBuilder(SLE::const_pointer sle)
+    MPTokenIssuanceBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE)
         {
@@ -562,17 +538,6 @@ public:
     setMutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfMutableFlags] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfReferenceHolding (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    MPTokenIssuanceBuilder&
-    setReferenceHolding(std::decay_t<typename SF_UINT256::type::value_type> const& value)
-    {
-        object_[sfReferenceHolding] = value;
         return *this;
     }
 

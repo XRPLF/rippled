@@ -59,7 +59,7 @@ PathRequest::PathRequest(
     , owner_(owner)
     , wpSubscriber_(subscriber)
     , consumer_(subscriber->getConsumer())
-    , jvStatus_(json::ValueType::Object)
+    , jvStatus_(json::ObjectValue)
     , lastIndex_(0)
     , inProgress_(false)
     , iLevel_(0)
@@ -82,7 +82,7 @@ PathRequest::PathRequest(
     , owner_(owner)
     , fCompletion_(completion)
     , consumer_(consumer)
-    , jvStatus_(json::ValueType::Object)
+    , jvStatus_(json::ObjectValue)
     , lastIndex_(0)
     , inProgress_(false)
     , iLevel_(0)
@@ -101,16 +101,16 @@ PathRequest::~PathRequest()
         return;
 
     std::string fast, full;
-    if (quickReply_ != steady_clock::time_point{})
+    if (quick_reply_ != steady_clock::time_point{})
     {
         fast = " fast:";
-        fast += std::to_string(duration_cast<milliseconds>(quickReply_ - created_).count());
+        fast += std::to_string(duration_cast<milliseconds>(quick_reply_ - created_).count());
         fast += "ms";
     }
-    if (fullReply_ != steady_clock::time_point{})
+    if (full_reply_ != steady_clock::time_point{})
     {
         full = " full:";
-        full += std::to_string(duration_cast<milliseconds>(fullReply_ - created_).count());
+        full += std::to_string(duration_cast<milliseconds>(full_reply_ - created_).count());
         full += "ms";
     }
     stream << iIdentifier_ << " complete:" << fast << full
@@ -180,7 +180,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     if (!raSrcAccount_ || !raDstAccount_)
         return false;
 
-    if (!convertAll_ && (saSendMax_ || saDstAmount_ <= beast::kZero))
+    if (!convert_all_ && (saSendMax_ || saDstAmount_ <= beast::kZERO))
     {
         // If send max specified, dst amt must be -1.
         jvStatus_ = rpcError(RpcDstAmtMalformed);
@@ -198,7 +198,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 
     auto const sleDest = lrLedger->read(keylet::account(*raDstAccount_));
 
-    json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = json::ValueType::Array);
+    json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = json::ArrayValue);
 
     if (!sleDest)
     {
@@ -210,7 +210,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
             return false;
         }
 
-        if (!convertAll_ && saDstAmount_ < STAmount(lrLedger->fees().reserve))
+        if (!convert_all_ && saDstAmount_ < STAmount(lrLedger->fees().reserve))
         {
             // Payment must meet reserve.
             jvStatus_ = rpcError(RpcDstAmtMalformed);
@@ -219,7 +219,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     }
     else
     {
-        bool const disallowXRP(sleDest->isFlag(lsfDisallowXRP));
+        bool const disallowXRP((sleDest->getFlags() & lsfDisallowXRP) != 0u);
 
         auto const destAssets = accountDestAssets(*raDstAccount_, crCache, !disallowXRP);
 
@@ -312,9 +312,9 @@ PathRequest::parseJson(json::Value const& jvParams)
         return PFR_PJ_INVALID;
     }
 
-    convertAll_ = saDstAmount_ == STAmount(saDstAmount_.asset(), 1u, 0, true);
+    convert_all_ = saDstAmount_ == STAmount(saDstAmount_.asset(), 1u, 0, true);
 
-    if (!validAsset(saDstAmount_.asset()) || (!convertAll_ && saDstAmount_ <= beast::kZero))
+    if (!validAsset(saDstAmount_.asset()) || (!convert_all_ && saDstAmount_ <= beast::kZERO))
     {
         jvStatus_ = rpcError(RpcDstAmtMalformed);
         return PFR_PJ_INVALID;
@@ -323,7 +323,7 @@ PathRequest::parseJson(json::Value const& jvParams)
     if (jvParams.isMember(jss::send_max))
     {
         // Send_max requires destination amount to be -1.
-        if (!convertAll_)
+        if (!convert_all_)
         {
             jvStatus_ = rpcError(RpcDstAmtMalformed);
             return PFR_PJ_INVALID;
@@ -332,7 +332,7 @@ PathRequest::parseJson(json::Value const& jvParams)
         saSendMax_.emplace();
         if (!amountFromJsonNoThrow(*saSendMax_, jvParams[jss::send_max]) ||
             !validAsset(saSendMax_->asset()) ||
-            (*saSendMax_ <= beast::kZero &&
+            (*saSendMax_ <= beast::kZERO &&
              *saSendMax_ != STAmount(saSendMax_->asset(), 1u, 0, true)))
         {
             jvStatus_ = rpcError(RpcSendmaxMalformed);
@@ -344,7 +344,7 @@ PathRequest::parseJson(json::Value const& jvParams)
     {
         json::Value const& jvSrcCurrencies = jvParams[jss::source_currencies];
         if (!jvSrcCurrencies.isArray() || jvSrcCurrencies.size() == 0 ||
-            jvSrcCurrencies.size() > RPC::Tuning::kMaxSrcCur)
+            jvSrcCurrencies.size() > RPC::Tuning::kMAX_SRC_CUR)
         {
             jvStatus_ = rpcError(RpcSrcCurMalformed);
             return PFR_PJ_INVALID;
@@ -523,7 +523,7 @@ PathRequest::getPathFinder(
     // NOLINTEND(bugprone-unchecked-optional-access)
     if (pathfinder->findPaths(level, continueCallback))
     {
-        pathfinder->computePathRanks(kMaxPaths, continueCallback);
+        pathfinder->computePathRanks(kMAX_PATHS, continueCallback);
     }
     else
     {
@@ -556,7 +556,7 @@ PathRequest::findPaths(
                     [&]<typename TAsset>(TAsset const& a) {
                         if (!sameAccount || a != saDstAmount_.asset())
                         {
-                            if (sourceAssets.size() >= RPC::Tuning::kMaxAutoSrcCur)
+                            if (sourceAssets.size() >= RPC::Tuning::kMAX_AUTO_SRC_CUR)
                                 return false;
                             if constexpr (std::is_same_v<TAsset, Currency>)
                             {
@@ -577,7 +577,7 @@ PathRequest::findPaths(
         }
     }
 
-    auto const dstAmount = convertAmount(saDstAmount_, convertAll_);
+    auto const dstAmount = convertAmount(saDstAmount_, convert_all_);
     hash_map<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
     for (auto const& asset : sourceAssets)
     {
@@ -596,7 +596,7 @@ PathRequest::findPaths(
 
         STPath fullLiquidityPath;
         auto ps = pathfinder->getBestPaths(
-            kMaxPaths, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
+            kMAX_PATHS, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
         context_[asset] = ps;
 
         auto const& sourceAccount = [&] {
@@ -622,7 +622,7 @@ PathRequest::findPaths(
         JLOG(journal_.debug()) << iIdentifier_ << " Paths found, calling rippleCalc";
 
         path::RippleCalc::Input rcInput;
-        if (convertAll_)
+        if (convert_all_)
             rcInput.partialPaymentAllowed = true;
         auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
         auto rc = path::RippleCalc::rippleCalculate(
@@ -639,7 +639,7 @@ PathRequest::findPaths(
             app_,
             &rcInput);
 
-        if (!convertAll_ && !fullLiquidityPath.empty() &&
+        if (!convert_all_ && !fullLiquidityPath.empty() &&
             (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
         {
             JLOG(journal_.debug()) << iIdentifier_ << " Trying with an extra path element";
@@ -673,22 +673,19 @@ PathRequest::findPaths(
 
         if (rc.result() == tesSUCCESS)
         {
-            json::Value jvEntry(json::ValueType::Object);
+            json::Value jvEntry(json::ObjectValue);
             if (rc.actualAmountIn.holds<Issue>())
                 rc.actualAmountIn.get<Issue>().account = sourceAccount;
-            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::Values::None);
-            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::Values::None);
+            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::KNone);
+            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::KNone);
 
-            if (convertAll_)
-            {
-                jvEntry[jss::destination_amount] =
-                    rc.actualAmountOut.getJson(JsonOptions::Values::None);
-            }
+            if (convert_all_)
+                jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(JsonOptions::KNone);
 
             if (hasCompletion())
             {
                 // Old ripple_path_find API requires this
-                jvEntry[jss::paths_canonical] = json::ValueType::Array;
+                jvEntry[jss::paths_canonical] = json::ArrayValue;
             }
 
             jvArray.append(jvEntry);
@@ -725,12 +722,12 @@ PathRequest::doUpdate(
             return jvStatus_;
     }
 
-    json::Value newStatus = json::ValueType::Object;
+    json::Value newStatus = json::ObjectValue;
 
     if (hasCompletion())
     {
         // Old ripple_path_find API gives destination_currencies
-        auto& destAssets = (newStatus[jss::destination_currencies] = json::ValueType::Array);
+        auto& destAssets = (newStatus[jss::destination_currencies] = json::ArrayValue);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto const assets = accountDestAssets(*raDstAccount_, cache, true);
         for (auto const& asset : assets)
@@ -741,7 +738,7 @@ PathRequest::doUpdate(
     newStatus[jss::source_account] = toBase58(*raSrcAccount_);
     newStatus[jss::destination_account] = toBase58(*raDstAccount_);
     // NOLINTEND(bugprone-unchecked-optional-access)
-    newStatus[jss::destination_amount] = saDstAmount_.getJson(JsonOptions::Values::None);
+    newStatus[jss::destination_amount] = saDstAmount_.getJson(JsonOptions::KNone);
     newStatus[jss::full_reply] = !fast;
 
     if (jvId_)
@@ -754,39 +751,39 @@ PathRequest::doUpdate(
         // first pass
         if (loaded || fast)
         {
-            iLevel_ = app_.config().pathSearchFast;
+            iLevel_ = app_.config().PATH_SEARCH_FAST;
         }
         else
         {
-            iLevel_ = app_.config().pathSearch;
+            iLevel_ = app_.config().PATH_SEARCH;
         }
     }
-    else if ((iLevel_ == app_.config().pathSearchFast) && !fast)
+    else if ((iLevel_ == app_.config().PATH_SEARCH_FAST) && !fast)
     {
         // leaving fast pathfinding
-        iLevel_ = app_.config().pathSearch;
-        if (loaded && (iLevel_ > app_.config().pathSearchFast))
+        iLevel_ = app_.config().PATH_SEARCH;
+        if (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST))
             --iLevel_;
     }
     else if (bLastSuccess_)
     {
         // decrement, if possible
-        if (iLevel_ > app_.config().pathSearch ||
-            (loaded && (iLevel_ > app_.config().pathSearchFast)))
+        if (iLevel_ > app_.config().PATH_SEARCH ||
+            (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST)))
             --iLevel_;
     }
     else
     {
         // adjust as needed
-        if (!loaded && (iLevel_ < app_.config().pathSearchMax))
+        if (!loaded && (iLevel_ < app_.config().PATH_SEARCH_MAX))
             ++iLevel_;
-        if (loaded && (iLevel_ > app_.config().pathSearchFast))
+        if (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST))
             --iLevel_;
     }
 
     JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_;
 
-    json::Value jvArray = json::ValueType::Array;
+    json::Value jvArray = json::ArrayValue;
     if (findPaths(cache, iLevel_, jvArray, continueCallback))
     {
         bLastSuccess_ = jvArray.size() != 0;
@@ -798,15 +795,15 @@ PathRequest::doUpdate(
         newStatus = rpcError(RpcInternal);
     }
 
-    if (fast && quickReply_ == steady_clock::time_point{})
+    if (fast && quick_reply_ == steady_clock::time_point{})
     {
-        quickReply_ = steady_clock::now();
-        owner_.reportFast(duration_cast<milliseconds>(quickReply_ - created_));
+        quick_reply_ = steady_clock::now();
+        owner_.reportFast(duration_cast<milliseconds>(quick_reply_ - created_));
     }
-    else if (!fast && fullReply_ == steady_clock::time_point{})
+    else if (!fast && full_reply_ == steady_clock::time_point{})
     {
-        fullReply_ = steady_clock::now();
-        owner_.reportFull(duration_cast<milliseconds>(fullReply_ - created_));
+        full_reply_ = steady_clock::now();
+        owner_.reportFull(duration_cast<milliseconds>(full_reply_ - created_));
     }
 
     {

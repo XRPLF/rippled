@@ -46,7 +46,7 @@
 
 namespace xrpl {
 
-CreateGenesisT const kCreateGenesis{};
+CreateGenesisT const kCREATE_GENESIS{};
 
 //------------------------------------------------------------------------------
 
@@ -159,8 +159,8 @@ Ledger::Ledger(
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = 1;
-    header_.drops = kInitialXrp;
-    header_.closeTimeResolution = kLedgerGenesisTimeResolution;
+    header_.drops = kINITIAL_XRP;
+    header_.closeTimeResolution = kLEDGER_GENESIS_TIME_RESOLUTION;
 
     static auto const kID =
         calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
@@ -196,7 +196,7 @@ Ledger::Ledger(
                 sle->at(sfReserveBase) = *f;
             if (auto const f = fees.increment.dropsAs<std::uint32_t>())
                 sle->at(sfReserveIncrement) = *f;
-            sle->at(sfReferenceFeeUnits) = kFeeUnitsDeprecated;
+            sle->at(sfReferenceFeeUnits) = kFEE_UNITS_DEPRECATED;
         }
         rawInsert(sle);
     }
@@ -304,7 +304,7 @@ Ledger::Ledger(
 {
     header_.seq = ledgerSeq;
     header_.closeTime = closeTime;
-    header_.closeTimeResolution = kLedgerDefaultTimeResolution;
+    header_.closeTimeResolution = kLEDGER_DEFAULT_TIME_RESOLUTION;
     setup();
 }
 
@@ -315,8 +315,8 @@ Ledger::setImmutable(bool rehash)
     // place the hash transitions to valid
     if (!immutable_ && rehash)
     {
-        header_.txHash = txMap_.getHash().asUInt256();
-        header_.accountHash = stateMap_.getHash().asUInt256();
+        header_.txHash = txMap_.getHash().asUint256();
+        header_.accountHash = stateMap_.getHash().asUint256();
     }
 
     if (rehash)
@@ -339,7 +339,7 @@ Ledger::setAccepted(
 
     header_.closeTime = closeTime;
     header_.closeTimeResolution = closeResolution;
-    header_.closeFlags = correctCloseTime ? 0 : kSLcfNoConsensusTime;
+    header_.closeFlags = correctCloseTime ? 0 : kS_LCF_NO_CONSENSUS_TIME;
     setImmutable();
 }
 
@@ -401,10 +401,10 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
     return item->key();
 }
 
-SLE::const_pointer
+std::shared_ptr<SLE const>
 Ledger::read(Keylet const& k) const
 {
-    if (k.key == beast::kZero)
+    if (k.key == beast::kZERO)
     {
         // LCOV_EXCL_START
         UNREACHABLE("xrpl::Ledger::read : zero key");
@@ -480,13 +480,13 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
     //        from the NodeStore needlessly.
     if (!stateMap_.peekItem(key, digest))
         return std::nullopt;
-    return digest.asUInt256();
+    return digest.asUint256();
 }
 
 //------------------------------------------------------------------------------
 
 void
-Ledger::rawErase(SLE::ref sle)
+Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
     if (!stateMap_.delItem(sle->key()))
         logicError("Ledger::rawErase: key not found");
@@ -500,7 +500,7 @@ Ledger::rawErase(uint256 const& key)
 }
 
 void
-Ledger::rawInsert(SLE::ref sle)
+Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
 {
     Serializer ss;
     sle->add(ss);
@@ -512,7 +512,7 @@ Ledger::rawInsert(SLE::ref sle)
 }
 
 void
-Ledger::rawReplace(SLE::ref sle)
+Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
 {
     Serializer ss;
     sle->add(ss);
@@ -623,7 +623,7 @@ Ledger::setup()
     return ret;
 }
 
-SLE::pointer
+std::shared_ptr<SLE>
 Ledger::peek(Keylet const& k) const
 {
     auto const& value = stateMap_.peekItem(k.key);
@@ -795,9 +795,9 @@ Ledger::isSensible() const
         return false;
     if (header_.accountHash.isZero())
         return false;
-    if (header_.accountHash != stateMap_.getHash().asUInt256())
+    if (header_.accountHash != stateMap_.getHash().asUint256())
         return false;
-    if (header_.txHash != txMap_.getHash().asUInt256())
+    if (header_.txHash != txMap_.getHash().asUint256())
         return false;
     return true;
 }

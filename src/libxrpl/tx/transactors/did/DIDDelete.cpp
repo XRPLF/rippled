@@ -16,6 +16,8 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <memory>
+
 namespace xrpl {
 
 NotTEC
@@ -35,7 +37,11 @@ DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
 }
 
 TER
-DIDDelete::deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, beast::Journal j)
+DIDDelete::deleteSLE(
+    ApplyView& view,
+    std::shared_ptr<SLE> sle,
+    AccountID const owner,
+    beast::Journal j)
 {
     // Remove object from owner directory
     if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
@@ -61,19 +67,20 @@ DIDDelete::deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, b
 TER
 DIDDelete::doApply()
 {
-    return deleteSLE(ctx_, keylet::did(accountID_), accountID_);
+    return deleteSLE(ctx_, keylet::did(account_), account_);
 }
 
 void
-DIDDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+DIDDelete::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
 DIDDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

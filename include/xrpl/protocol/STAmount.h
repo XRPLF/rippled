@@ -3,13 +3,11 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
@@ -44,24 +42,24 @@ private:
 public:
     using value_type = STAmount;
 
-    static constexpr int kMinOffset = -96;
-    static constexpr int kMaxOffset = 80;
+    constexpr static int kMIN_OFFSET = -96;
+    constexpr static int kMAX_OFFSET = 80;
 
     // Maximum native value supported by the code
-    static constexpr std::uint64_t kMinValue = 1'000'000'000'000'000ull;
-    static_assert(isPowerOfTen(kMinValue));
-    static constexpr std::uint64_t kMaxValue = (kMinValue * 10) - 1;
-    static_assert(kMaxValue == 9'999'999'999'999'999ull);
-    static constexpr std::uint64_t kMaxNative = 9'000'000'000'000'000'000ull;
+    constexpr static std::uint64_t kMIN_VALUE = 1'000'000'000'000'000ull;
+    static_assert(isPowerOfTen(kMIN_VALUE));
+    constexpr static std::uint64_t kMAX_VALUE = (kMIN_VALUE * 10) - 1;
+    static_assert(kMAX_VALUE == 9'999'999'999'999'999ull);
+    constexpr static std::uint64_t kMAX_NATIVE = 9'000'000'000'000'000'000ull;
 
     // Max native value on network.
-    static constexpr std::uint64_t kMaxNativeN = 100'000'000'000'000'000ull;
-    static constexpr std::uint64_t kIssuedCurrency = 0x8'000'000'000'000'000ull;
-    static constexpr std::uint64_t kPositive = 0x4'000'000'000'000'000ull;
-    static constexpr std::uint64_t kMpToken = 0x2'000'000'000'000'000ull;
-    static constexpr std::uint64_t kValueMask = ~(kPositive | kMpToken);
+    constexpr static std::uint64_t kMAX_NATIVE_N = 100'000'000'000'000'000ull;
+    constexpr static std::uint64_t kISSUED_CURRENCY = 0x8'000'000'000'000'000ull;
+    constexpr static std::uint64_t kPOSITIVE = 0x4'000'000'000'000'000ull;
+    constexpr static std::uint64_t kMP_TOKEN = 0x2'000'000'000'000'000ull;
+    constexpr static std::uint64_t kVALUE_MASK = ~(kPOSITIVE | kMP_TOKEN);
 
-    static std::uint64_t const kURateOne;
+    static std::uint64_t const kU_RATE_ONE;
 
     //--------------------------------------------------------------------------
     STAmount(SerialIter& sit, SField const& name);
@@ -186,23 +184,6 @@ public:
     [[nodiscard]] STAmount const&
     value() const noexcept;
 
-    /**
-     * Checks if this amount evaluates to zero when constrained to a specific
-     * accounting scale.
-     * For XRP and MPT `roundToScale` is a no-op, returns true only when the amount itself is zero.
-     * The `scale` argument is ignored in that case.
-     * For IOU, the amount is rounded to the given scale using Number::RoundingMode::ToNearest mode
-     * and the result is checked for zero; if `scale <= exponent()`, `roundToScale` short-circuits
-     * and returns the value unchanged, so this returns false for any non-zero amount.
-     *
-     * @param scale The target accounting scale to evaluate against.
-     * @return `true` if this amount rounds to zero at the given scale, `false` otherwise.
-     *
-     * @see roundToScale
-     */
-    [[nodiscard]] bool
-    isZeroAtScale(int scale) const;
-
     //--------------------------------------------------------------------------
     //
     // Operators
@@ -260,7 +241,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::Values::None) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions = JsonOptions::KNone) const override;
 
     void
     add(Serializer& s) const override;
@@ -375,7 +356,7 @@ STAmount::STAmount(A const& asset, int mantissa, int exponent)
 
 // Legacy support for new-style amounts
 inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
-    : asset_(issue), offset_(amount.exponent()), isNegative_(amount < beast::kZero)
+    : asset_(issue), offset_(amount.exponent()), isNegative_(amount < beast::kZERO)
 {
     if (isNegative_)
     {
@@ -390,7 +371,7 @@ inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
 }
 
 inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
-    : asset_(mptIssue), offset_(0), isNegative_(amount < beast::kZero)
+    : asset_(mptIssue), offset_(0), isNegative_(amount < beast::kZERO)
 {
     if (isNegative_)
     {
@@ -517,7 +498,7 @@ STAmount::zeroed() const
 inline STAmount::
 operator bool() const noexcept
 {
-    return *this != beast::kZero;
+    return *this != beast::kZERO;
 }
 
 inline STAmount::
@@ -559,7 +540,7 @@ STAmount::fromNumber(A const& a, Number const& number)
         return STAmount{asset, intValue, 0, negative};
     }
 
-    auto const [mantissa, exponent] = working.normalizeToRange<kMinValue, kMaxValue>();
+    auto const [mantissa, exponent] = working.normalizeToRange(kMIN_VALUE, kMAX_VALUE);
 
     return STAmount{asset, mantissa, exponent, negative};
 }
@@ -567,7 +548,7 @@ STAmount::fromNumber(A const& a, Number const& number)
 inline void
 STAmount::negate()
 {
-    if (*this != beast::kZero)
+    if (*this != beast::kZERO)
         isNegative_ = !isNegative_;
 }
 
@@ -594,24 +575,11 @@ STAmount::value() const noexcept
     return *this;
 }
 
-[[nodiscard]] inline bool
+inline bool
 isLegalNet(STAmount const& value)
 {
-    return !value.native() || (value.mantissa() <= STAmount::kMaxNativeN);
+    return !value.native() || (value.mantissa() <= STAmount::kMAX_NATIVE_N);
 }
-
-[[nodiscard]] inline bool
-isLegalMPT(STAmount const& value)
-{
-    return !value.holds<MPTIssue>() ||
-        (!value.negative() && value.exponent() == 0 && value.mantissa() <= kMaxMpTokenAmount);
-}
-
-/* Check recursively if an object has invalid MPTAmount or XRPAmount in STAmount field.
- * Calls isLegalNet() and isLegalMPT().
- */
-[[nodiscard]] bool
-hasInvalidAmount(STBase const& field, beast::Journal j);
 
 //------------------------------------------------------------------------------
 //

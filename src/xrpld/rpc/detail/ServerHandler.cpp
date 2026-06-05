@@ -139,9 +139,9 @@ ServerHandler::ServerHandler(
     , jobQueue_(jobQueue)
 {
     auto const& group(cm.group("rpc"));
-    rpcRequests_ = group->makeCounter("requests");
-    rpcSize_ = group->makeEvent("size");
-    rpcTime_ = group->makeEvent("time");
+    rpc_requests_ = group->makeCounter("requests");
+    rpc_size_ = group->makeEvent("size");
+    rpc_time_ = group->makeEvent("time");
 }
 
 ServerHandler::~ServerHandler()
@@ -337,9 +337,10 @@ ServerHandler::onWSMessage(
 {
     json::Value jv;
     auto const size = boost::asio::buffer_size(buffers);
-    if (size > RPC::Tuning::kMaxRequestSize || !json::Reader{}.parse(jv, buffers) || !jv.isObject())
+    if (size > RPC::Tuning::kMAX_REQUEST_SIZE || !json::Reader{}.parse(jv, buffers) ||
+        !jv.isObject())
     {
-        json::Value jvResult(json::ValueType::Object);
+        json::Value jvResult(json::ObjectValue);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
         jvResult[jss::value] = buffersToString(buffers);
@@ -425,12 +426,12 @@ ServerHandler::processSession(
     }
 
     // Requests without "command" are invalid.
-    json::Value jr(json::ValueType::Object);
-    Resource::Charge loadType = Resource::kFeeReferenceRpc;
+    json::Value jr(json::ObjectValue);
+    Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
     try
     {
-        auto apiVersion = RPC::getAPIVersionNumber(jv, app_.config().betaRpcApi);
-        if (apiVersion == RPC::kApiInvalidVersion ||
+        auto apiVersion = RPC::getAPIVersionNumber(jv, app_.config().BETA_RPC_API);
+        if (apiVersion == RPC::kAPI_INVALID_VERSION ||
             (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
             (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
             (jv.isMember(jss::method) && !jv[jss::method].isString()) ||
@@ -439,8 +440,8 @@ ServerHandler::processSession(
         {
             jr[jss::type] = jss::response;
             jr[jss::status] = jss::error;
-            jr[jss::error] = apiVersion == RPC::kApiInvalidVersion ? jss::invalid_API_version
-                                                                   : jss::missingCommand;
+            jr[jss::error] = apiVersion == RPC::kAPI_INVALID_VERSION ? jss::invalid_API_version
+                                                                     : jss::missingCommand;
             jr[jss::request] = jv;
             if (jv.isMember(jss::id))
                 jr[jss::id] = jv[jss::id];
@@ -451,13 +452,13 @@ ServerHandler::processSession(
             if (jv.isMember(jss::api_version))
                 jr[jss::api_version] = jv[jss::api_version];
 
-            is->getConsumer().charge(Resource::kFeeMalformedRpc);
+            is->getConsumer().charge(Resource::kFEE_MALFORMED_RPC);
             return jr;
         }
 
         auto required = RPC::roleRequired(
             apiVersion,
-            app_.config().betaRpcApi,
+            app_.config().BETA_RPC_API,
             jv.isMember(jss::command) ? jv[jss::command].asString() : jv[jss::method].asString());
         auto role = requestRole(
             required,
@@ -467,7 +468,7 @@ ServerHandler::processSession(
             is->user());
         if (Role::FORBID == role)
         {
-            loadType = Resource::kFeeMalformedRpc;
+            loadType = Resource::kFEE_MALFORMED_RPC;
             jr[jss::result] = rpcError(RpcForbidden);
         }
         else
@@ -584,18 +585,18 @@ ServerHandler::processSession(
 static json::Value
 makeJsonError(json::Int code, json::Value&& message)
 {
-    json::Value sub{json::ValueType::Object};
+    json::Value sub{json::ObjectValue};
     sub["code"] = code;
     sub["message"] = std::move(message);
-    json::Value r{json::ValueType::Object};
+    json::Value r{json::ObjectValue};
     r["error"] = sub;
     return r;
 }
 
-constexpr json::Int kMethodNotFound = -32601;
-constexpr json::Int kServerOverloaded = -32604;
-constexpr json::Int kForbidden = -32605;
-constexpr json::Int kWrongVersion = -32606;
+json::Int constexpr kMETHOD_NOT_FOUND = -32601;
+json::Int constexpr kSERVER_OVERLOADED = -32604;
+json::Int constexpr kFORBIDDEN = -32605;
+json::Int constexpr kWRONG_VERSION = -32606;
 
 void
 ServerHandler::processRequest(
@@ -612,7 +613,7 @@ ServerHandler::processRequest(
     json::Value jsonOrig;
     {
         json::Reader reader;
-        if ((request.size() > RPC::Tuning::kMaxRequestSize) || !reader.parse(request, jsonOrig) ||
+        if ((request.size() > RPC::Tuning::kMAX_REQUEST_SIZE) || !reader.parse(request, jsonOrig) ||
             !jsonOrig || !jsonOrig.isObject())
         {
             httpReply(
@@ -637,7 +638,7 @@ ServerHandler::processRequest(
         size = jsonOrig[jss::params].size();
     }
 
-    json::Value reply(batch ? json::ValueType::Array : json::ValueType::Object);
+    json::Value reply(batch ? json::ArrayValue : json::ObjectValue);
     auto const start(std::chrono::high_resolution_clock::now());
     for (unsigned i = 0; i < size; ++i)
     {
@@ -645,37 +646,37 @@ ServerHandler::processRequest(
 
         if (!jsonRPC.isObject())
         {
-            json::Value r(json::ValueType::Object);
+            json::Value r(json::ObjectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] = makeJsonError(kMethodNotFound, "Method not found");
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "Method not found");
             reply.append(r);
             continue;
         }
 
-        unsigned apiVersion = RPC::kApiVersionIfUnspecified;
+        unsigned apiVersion = RPC::kAPI_VERSION_IF_UNSPECIFIED;
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 && jsonRPC[jss::params][0u].isObject())
         {
             apiVersion = RPC::getAPIVersionNumber(
-                jsonRPC[jss::params][json::UInt(0)], app_.config().betaRpcApi);
+                jsonRPC[jss::params][json::UInt(0)], app_.config().BETA_RPC_API);
         }
 
-        if (apiVersion == RPC::kApiVersionIfUnspecified && batch)
+        if (apiVersion == RPC::kAPI_VERSION_IF_UNSPECIFIED && batch)
         {
             // for batch request, api_version may be at a different level
-            apiVersion = RPC::getAPIVersionNumber(jsonRPC, app_.config().betaRpcApi);
+            apiVersion = RPC::getAPIVersionNumber(jsonRPC, app_.config().BETA_RPC_API);
         }
 
-        if (apiVersion == RPC::kApiInvalidVersion)
+        if (apiVersion == RPC::kAPI_INVALID_VERSION)
         {
             if (!batch)
             {
                 httpReply(400, jss::invalid_API_version.cStr(), output, rpcJ);
                 return;
             }
-            json::Value r(json::ValueType::Object);
+            json::Value r(json::ObjectValue);
             r[jss::request] = jsonRPC;
-            r[jss::error] = makeJsonError(kWrongVersion, jss::invalid_API_version.cStr());
+            r[jss::error] = makeJsonError(kWRONG_VERSION, jss::invalid_API_version.cStr());
             reply.append(r);
             continue;
         }
@@ -686,7 +687,7 @@ ServerHandler::processRequest(
         if (jsonRPC.isMember(jss::method) && jsonRPC[jss::method].isString())
         {
             required = RPC::roleRequired(
-                apiVersion, app_.config().betaRpcApi, jsonRPC[jss::method].asString());
+                apiVersion, app_.config().BETA_RPC_API, jsonRPC[jss::method].asString());
         }
 
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
@@ -697,7 +698,7 @@ ServerHandler::processRequest(
         }
         else
         {
-            role = requestRole(required, port, json::ValueType::Object, remoteIPAddress, user);
+            role = requestRole(required, port, json::ObjectValue, remoteIPAddress, user);
         }
 
         Resource::Consumer usage;
@@ -717,7 +718,7 @@ ServerHandler::processRequest(
                     return;
                 }
                 json::Value r = jsonRPC;
-                r[jss::error] = makeJsonError(kServerOverloaded, "Server is overloaded");
+                r[jss::error] = makeJsonError(kSERVER_OVERLOADED, "Server is overloaded");
                 reply.append(r);
                 continue;
             }
@@ -725,28 +726,28 @@ ServerHandler::processRequest(
 
         if (role == Role::FORBID)
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(Resource::kFEE_MALFORMED_RPC);
             if (!batch)
             {
                 httpReply(403, "Forbidden", output, rpcJ);
                 return;
             }
             json::Value r = jsonRPC;
-            r[jss::error] = makeJsonError(kForbidden, "Forbidden");
+            r[jss::error] = makeJsonError(kFORBIDDEN, "Forbidden");
             reply.append(r);
             continue;
         }
 
         if (!jsonRPC.isMember(jss::method) || jsonRPC[jss::method].isNull())
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(Resource::kFEE_MALFORMED_RPC);
             if (!batch)
             {
                 httpReply(400, "Null method", output, rpcJ);
                 return;
             }
             json::Value r = jsonRPC;
-            r[jss::error] = makeJsonError(kMethodNotFound, "Null method");
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "Null method");
             reply.append(r);
             continue;
         }
@@ -754,14 +755,14 @@ ServerHandler::processRequest(
         json::Value const& method = jsonRPC[jss::method];
         if (!method.isString())
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(Resource::kFEE_MALFORMED_RPC);
             if (!batch)
             {
                 httpReply(400, "method is not string", output, rpcJ);
                 return;
             }
             json::Value r = jsonRPC;
-            r[jss::error] = makeJsonError(kMethodNotFound, "method is not string");
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "method is not string");
             reply.append(r);
             continue;
         }
@@ -769,14 +770,14 @@ ServerHandler::processRequest(
         std::string const strMethod = method.asString();
         if (strMethod.empty())
         {
-            usage.charge(Resource::kFeeMalformedRpc);
+            usage.charge(Resource::kFEE_MALFORMED_RPC);
             if (!batch)
             {
                 httpReply(400, "method is empty", output, rpcJ);
                 return;
             }
             json::Value r = jsonRPC;
-            r[jss::error] = makeJsonError(kMethodNotFound, "method is empty");
+            r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "method is empty");
             reply.append(r);
             continue;
         }
@@ -793,11 +794,11 @@ ServerHandler::processRequest(
             params = jsonRPC[jss::params];
             if (!params)
             {
-                params = json::Value(json::ValueType::Object);
+                params = json::Value(json::ObjectValue);
             }
             else if (!params.isArray() || params.size() != 1)
             {
-                usage.charge(Resource::kFeeMalformedRpc);
+                usage.charge(Resource::kFEE_MALFORMED_RPC);
                 httpReply(400, "params unparsable", output, rpcJ);
                 return;
             }
@@ -806,7 +807,7 @@ ServerHandler::processRequest(
                 params = std::move(params[0u]);
                 if (!params.isObjectOrNull())
                 {
-                    usage.charge(Resource::kFeeMalformedRpc);
+                    usage.charge(Resource::kFEE_MALFORMED_RPC);
                     httpReply(400, "params unparsable", output, rpcJ);
                     return;
                 }
@@ -822,7 +823,7 @@ ServerHandler::processRequest(
         {
             if (!params[jss::ripplerpc].isString())
             {
-                usage.charge(Resource::kFeeMalformedRpc);
+                usage.charge(Resource::kFEE_MALFORMED_RPC);
                 if (!batch)
                 {
                     httpReply(400, "ripplerpc is not a string", output, rpcJ);
@@ -830,7 +831,7 @@ ServerHandler::processRequest(
                 }
 
                 json::Value r = jsonRPC;
-                r[jss::error] = makeJsonError(kMethodNotFound, "ripplerpc is not a string");
+                r[jss::error] = makeJsonError(kMETHOD_NOT_FOUND, "ripplerpc is not a string");
                 reply.append(r);
                 continue;
             }
@@ -853,7 +854,7 @@ ServerHandler::processRequest(
         params[jss::command] = strMethod;
         JLOG(journal_.trace()) << "doRpcCommand:" << strMethod << ":" << params;
 
-        Resource::Charge loadType = Resource::kFeeReferenceRpc;
+        Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
 
         RPC::JsonContext context{
             {.j = journal_,
@@ -894,7 +895,7 @@ ServerHandler::processRequest(
         if (usage.warn())
             result[jss::warning] = jss::load;
 
-        json::Value r(json::ValueType::Object);
+        json::Value r(json::ObjectValue);
         if (ripplerpc >= "2.0")
         {
             if (result.isMember(jss::error))
@@ -993,24 +994,24 @@ ServerHandler::processRequest(
 
     auto response = to_string(reply);
 
-    rpcTime_.notify(
+    rpc_time_.notify(
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::high_resolution_clock::now() - start));
-    ++rpcRequests_;
-    rpcSize_.notify(beast::insight::Event::value_type{response.size()});
+    ++rpc_requests_;
+    rpc_size_.notify(beast::insight::Event::value_type{response.size()});
 
     response += '\n';
 
     if (auto stream = journal_.debug())
     {
-        static int const kMaxSize = 10000;
-        if (response.size() <= kMaxSize)
+        static int const kMAX_SIZE = 10000;
+        if (response.size() <= kMAX_SIZE)
         {
             stream << "Reply: " << response;
         }
         else
         {
-            stream << "Reply: " << response.substr(0, kMaxSize);
+            stream << "Reply: " << response.substr(0, kMAX_SIZE);
         }
     }
 
@@ -1060,13 +1061,13 @@ ServerHandler::Setup::makeContexts()
     {
         if (p.secure())
         {
-            if (p.sslKey.empty() && p.sslCert.empty() && p.sslChain.empty())
+            if (p.ssl_key.empty() && p.ssl_cert.empty() && p.ssl_chain.empty())
             {
-                p.context = makeSslContext(p.sslCiphers);
+                p.context = makeSslContext(p.ssl_ciphers);
             }
             else
             {
-                p.context = makeSslContextAuthed(p.sslKey, p.sslCert, p.sslChain, p.sslCiphers);
+                p.context = makeSslContextAuthed(p.ssl_key, p.ssl_cert, p.ssl_chain, p.ssl_ciphers);
             }
         }
         else
@@ -1106,19 +1107,19 @@ toPort(ParsedPort const& parsed, std::ostream& log)
 
     p.user = parsed.user;
     p.password = parsed.password;
-    p.adminUser = parsed.adminUser;
-    p.adminPassword = parsed.adminPassword;
-    p.sslKey = parsed.sslKey;
-    p.sslCert = parsed.sslCert;
-    p.sslChain = parsed.sslChain;
-    p.sslCiphers = parsed.sslCiphers;
-    p.pmdOptions = parsed.pmdOptions;
-    p.wsQueueLimit = parsed.wsQueueLimit;
+    p.admin_user = parsed.admin_user;
+    p.admin_password = parsed.admin_password;
+    p.ssl_key = parsed.ssl_key;
+    p.ssl_cert = parsed.ssl_cert;
+    p.ssl_chain = parsed.ssl_chain;
+    p.ssl_ciphers = parsed.ssl_ciphers;
+    p.pmd_options = parsed.pmd_options;
+    p.ws_queue_limit = parsed.ws_queue_limit;
     p.limit = parsed.limit;
-    p.adminNetsV4 = parsed.adminNetsV4;
-    p.adminNetsV6 = parsed.adminNetsV6;
-    p.secureGatewayNetsV4 = parsed.secureGatewayNetsV4;
-    p.secureGatewayNetsV6 = parsed.secureGatewayNetsV6;
+    p.admin_nets_v4 = parsed.admin_nets_v4;
+    p.admin_nets_v6 = parsed.admin_nets_v6;
+    p.secure_gateway_nets_v4 = parsed.secure_gateway_nets_v4;
+    p.secure_gateway_nets_v6 = parsed.secure_gateway_nets_v6;
 
     return p;
 }
@@ -1221,8 +1222,8 @@ setupClient(ServerHandler::Setup& setup)
     setup.client.port = iter->port;
     setup.client.user = iter->user;
     setup.client.password = iter->password;
-    setup.client.adminUser = iter->adminUser;
-    setup.client.adminPassword = iter->adminPassword;
+    setup.client.admin_user = iter->admin_user;
+    setup.client.admin_password = iter->admin_password;
 }
 
 // Fill out the overlay portion of the Setup

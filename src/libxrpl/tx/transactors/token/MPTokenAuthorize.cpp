@@ -15,6 +15,8 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <memory>
+
 namespace xrpl {
 
 std::uint32_t
@@ -46,7 +48,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //       `holderID` is NOT used
     if (!holderID)
     {
-        SLE::const_pointer const sleMpt =
+        std::shared_ptr<SLE const> const sleMpt =
             ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
         // There is an edge case where all holders have zero balance, issuance
@@ -56,7 +58,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         // before fetching the MPTIssuance object.
 
         // if holder wants to delete/unauthorize a mpt
-        if (ctx.tx.isFlag(tfMPTUnauthorize))
+        if ((ctx.tx.getFlags() & tfMPTUnauthorize) != 0u)
         {
             if (!sleMpt)
                 return tecOBJECT_NOT_FOUND;
@@ -129,6 +131,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
+    std::uint32_t const mptIssuanceFlags = sleMptIssuance->getFieldU32(sfFlags);
+
     // If tx is submitted by issuer, they would either try to do the following
     // for allowlisting:
     // 1. authorize an account
@@ -141,7 +145,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     // If tx is submitted by issuer, it only applies for MPT with
     // lsfMPTRequireAuth set
-    if (!sleMptIssuance->isFlag(lsfMPTRequireAuth))
+    if ((mptIssuanceFlags & lsfMPTRequireAuth) == 0u)
         return tecNO_AUTH;
 
     // The holder must create the MPT before the issuer can authorize it.
@@ -150,9 +154,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     // Can't unauthorize the pseudo-accounts because they are implicitly
     // always authorized. No need to amendment gate since Vault and LoanBroker
-    // can only be created if the Vault amendment is enabled; AMM with MPToken asset
-    // can only be created if MPTokensV2 is enabled.
-    if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
+    // can only be created if the Vault amendment is enabled.
+    if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID}))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -166,16 +169,18 @@ MPTokenAuthorize::doApply()
         ctx_.view(),
         preFeeBalance_,
         tx[sfMPTokenIssuanceID],
-        accountID_,
+        account_,
         ctx_.journal,
         tx.getFlags(),
         tx[~sfHolder]);
 }
 
 void
-MPTokenAuthorize::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+MPTokenAuthorize::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -186,7 +191,6 @@ MPTokenAuthorize::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

@@ -28,9 +28,10 @@ findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID
 struct TokenAndPage
 {
     STObject token;
-    SLE::pointer page;
+    std::shared_ptr<SLE> page;
 
-    TokenAndPage(STObject token, SLE::pointer page) : token(std::move(token)), page(std::move(page))
+    TokenAndPage(STObject token, std::shared_ptr<SLE> page)
+        : token(std::move(token)), page(std::move(page))
     {
     }
 };
@@ -46,7 +47,11 @@ TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
 
 TER
-removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, SLE::ref page);
+removeToken(
+    ApplyView& view,
+    AccountID const& owner,
+    uint256 const& nftokenID,
+    std::shared_ptr<SLE> const& page);
 
 /** Deletes the given token offer.
 
@@ -58,7 +63,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
     The offer also consumes one incremental reserve.
  */
 bool
-deleteTokenOffer(ApplyView& view, SLE::ref offer);
+deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer);
 
 /** Repairs the links in an NFTokenPage directory.
 

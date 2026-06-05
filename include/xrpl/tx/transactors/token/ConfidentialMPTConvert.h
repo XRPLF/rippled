@@ -25,7 +25,7 @@ namespace xrpl {
 class ConfidentialMPTConvert : public Transactor
 {
 public:
-    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
 
     explicit ConfidentialMPTConvert(ApplyContext& ctx) : Transactor(ctx)
     {

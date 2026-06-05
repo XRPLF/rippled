@@ -23,7 +23,7 @@ namespace xrpl::test::jtx {
 
 std::unordered_map<std::pair<std::string, KeyType>, Account, beast::Uhash<>> Account::cache;
 
-Account const Account::kMaster(
+Account const Account::kMASTER(
     "master",
     generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")),
     Account::PrivateCtorTag{});

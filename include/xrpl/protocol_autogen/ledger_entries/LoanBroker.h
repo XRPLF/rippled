@@ -33,7 +33,7 @@ public:
      * @brief Construct a LoanBroker ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit LoanBroker(SLE::const_pointer sle)
+    explicit LoanBroker(std::shared_ptr<SLE const> sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -378,7 +378,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    LoanBrokerBuilder(SLE::const_pointer sle)
+    LoanBrokerBuilder(std::shared_ptr<SLE const> sle)
     {
         if (sle->at(sfLedgerEntryType) != ltLOAN_BROKER)
         {

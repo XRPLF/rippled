@@ -12,14 +12,14 @@ namespace beast {
 class NullJournalSink : public Journal::Sink
 {
 public:
-    NullJournalSink() : Sink(Severity::Disabled, false)
+    NullJournalSink() : Sink(severities::KDisabled, false)
     {
     }
 
     ~NullJournalSink() override = default;
 
     [[nodiscard]] bool
-    active(Severity) const override
+    active(severities::Severity) const override
     {
         return false;
     }
@@ -35,24 +35,24 @@ public:
     {
     }
 
-    [[nodiscard]] Severity
+    [[nodiscard]] severities::Severity
     threshold() const override
     {
-        return Severity::Disabled;
+        return severities::KDisabled;
     }
 
     void
-    threshold(Severity) override
+    threshold(severities::Severity) override
     {
     }
 
     void
-    write(Severity, std::string const&) override
+    write(severities::Severity, std::string const&) override
     {
     }
 
     void
-    writeAlways(Severity, std::string const&) override
+    writeAlways(severities::Severity, std::string const&) override
     {
     }
 };
@@ -62,8 +62,8 @@ public:
 Journal::Sink&
 Journal::getNullSink()
 {
-    static NullJournalSink kSink;
-    return kSink;
+    static NullJournalSink kSINK;
+    return kSINK;
 }
 
 //------------------------------------------------------------------------------
@@ -92,7 +92,7 @@ Journal::Sink::console(bool output)
     console_ = output;
 }
 
-Severity
+severities::Severity
 Journal::Sink::threshold() const
 {
     return thresh_;

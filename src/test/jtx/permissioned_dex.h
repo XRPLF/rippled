@@ -20,7 +20,7 @@ public:
     Account alice;
     Account bob;
     Account carol;
-    IOU usd;
+    IOU USD;
     uint256 domainID;
     std::string credType;
 

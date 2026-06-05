@@ -27,6 +27,7 @@
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <tuple>
 
@@ -70,7 +71,9 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (isXRP(asset))
         return temMALFORMED;
 
-    if (ctx.tx.isFlag(tfClawTwoAssets) && asset.getIssuer() != asset2.getIssuer())
+    auto const flags = ctx.tx.getFlags();
+
+    if (((flags & tfClawTwoAssets) != 0u) && asset.getIssuer() != asset2.getIssuer())
     {
         JLOG(ctx.j.trace()) << "AMMClawback: tfClawTwoAssets can only be enabled when two "
                                "assets in the AMM pool are both issued by the issuer";
@@ -91,7 +94,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
     }
 
-    if (clawAmount && *clawAmount <= beast::kZero)
+    if (clawAmount && *clawAmount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -116,11 +119,13 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         return terNO_AMM;
     }
 
+    std::uint32_t const issuerFlagsIn = sleIssuer->getFieldU32(sfFlags);
     if (!ctx.view.rules().enabled(featureMPTokensV2))
     {
         // If AllowTrustLineClawback is not set or NoFreeze is set, return no
         // permission
-        if (!sleIssuer->isFlag(lsfAllowTrustLineClawback) || sleIssuer->isFlag(lsfNoFreeze))
+        if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
+            ((issuerFlagsIn & lsfNoFreeze) != 0u))
         {
             return tecNO_PERMISSION;
         }
@@ -132,8 +137,8 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
                 if (issue.native())
                     return false;  // LCOV_EXCL_LINE
 
-                return sleIssuer->isFlag(lsfAllowTrustLineClawback) &&
-                    !sleIssuer->isFlag(lsfNoFreeze);
+                return ((issuerFlagsIn & lsfAllowTrustLineClawback) != 0u) &&
+                    ((issuerFlagsIn & lsfNoFreeze) == 0u);
             },
             [&](MPTIssue const& issue) {
                 auto const sleIssuance = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
@@ -186,7 +191,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     {
         // retrieve LP token balance inside the amendment gate to avoid inconsistent error behavior
         auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
-        if (lpTokenBalance == beast::kZero)
+        if (lpTokenBalance == beast::kZERO)
             return tecAMM_BALANCE;
 
         if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokenBalance, ammSle, holder);
@@ -215,7 +220,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     // calling a second time on purpose since `verifyAndAdjustLPTokenBalance` rounds and may adjust
     // the balance
     auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
-    if (holdLPtokens == beast::kZero)
+    if (holdLPtokens == beast::kZERO)
         return tecAMM_BALANCE;
 
     if (!clawAmount)
@@ -283,7 +288,8 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!amount2Withdraw)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (ctx_.tx.isFlag(tfClawTwoAssets))
+    auto const flags = ctx_.tx.getFlags();
+    if ((flags & tfClawTwoAssets) != 0u)
         return sendAmount(*amount2Withdraw);
 
     return tesSUCCESS;
@@ -334,7 +340,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         auto tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
 
         // LCOV_EXCL_START
-        if (tokensAdj == beast::kZero)
+        if (tokensAdj == beast::kZERO)
             return {tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, std::nullopt};
         // LCOV_EXCL_STOP
 
@@ -382,15 +388,16 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 }
 
 void
-AMMClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMClawback::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
 AMMClawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

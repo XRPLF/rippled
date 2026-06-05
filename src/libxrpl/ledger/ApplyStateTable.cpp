@@ -80,9 +80,11 @@ ApplyStateTable::size() const
 void
 ApplyStateTable::visit(
     ReadView const& to,
-    std::function<
-        void(uint256 const& key, bool isDelete, SLE::const_ref before, SLE::const_ref after)> const&
-        func) const
+    std::function<void(
+        uint256 const& key,
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after)> const& func) const
 {
     for (auto& item : items_)
     {
@@ -167,7 +169,7 @@ ApplyStateTable::apply(
                 {
                     // go through the original node for
                     // modified  fields saved on modification
-                    if (obj.getFName().shouldMeta(SField::kSmdChangeOrig) &&
+                    if (obj.getFName().shouldMeta(SField::SMdChangeOrig) &&
                         !curNode->hasMatchingEntry(obj))
                         prevs.emplaceBack(obj);
                 }
@@ -179,7 +181,7 @@ ApplyStateTable::apply(
                 for (auto const& obj : *curNode)
                 {
                     // go through the final node for final fields
-                    if (obj.getFName().shouldMeta(SField::kSmdAlways | SField::kSmdDeleteFinal))
+                    if (obj.getFName().shouldMeta(SField::SMdAlways | SField::SMdDeleteFinal))
                         finals.emplaceBack(obj);
                 }
 
@@ -203,7 +205,7 @@ ApplyStateTable::apply(
                 for (auto const& obj : *origNode)
                 {
                     // search the original node for values saved on modify
-                    if (obj.getFName().shouldMeta(SField::kSmdChangeOrig) &&
+                    if (obj.getFName().shouldMeta(SField::SMdChangeOrig) &&
                         !curNode->hasMatchingEntry(obj))
                         prevs.emplaceBack(obj);
                 }
@@ -215,7 +217,7 @@ ApplyStateTable::apply(
                 for (auto const& obj : *curNode)
                 {
                     // search the final node for values saved always
-                    if (obj.getFName().shouldMeta(SField::kSmdAlways | SField::kSmdChangeNew))
+                    if (obj.getFName().shouldMeta(SField::SMdAlways | SField::SMdChangeNew))
                         finals.emplaceBack(obj);
                 }
 
@@ -238,7 +240,7 @@ ApplyStateTable::apply(
                 {
                     // save non-default values
                     if (!obj.isDefault() &&
-                        obj.getFName().shouldMeta(SField::kSmdCreate | SField::kSmdAlways))
+                        obj.getFName().shouldMeta(SField::SMdCreate | SField::SMdAlways))
                         news.emplaceBack(obj);
                 }
 
@@ -267,7 +269,7 @@ ApplyStateTable::apply(
 
         // VFALCO For diagnostics do we want to show
         //        metadata even when the base view is open?
-        JLOG(j.trace()) << "metadata " << meta.getJson(JsonOptions::Values::None);
+        JLOG(j.trace()) << "metadata " << meta.getJson(JsonOptions::KNone);
 
         metadata = meta;
     }
@@ -337,7 +339,7 @@ ApplyStateTable::succ(
     return next;
 }
 
-SLE::const_pointer
+std::shared_ptr<SLE const>
 ApplyStateTable::read(ReadView const& base, Keylet const& k) const
 {
     auto const iter = items_.find(k.key);
@@ -359,7 +361,7 @@ ApplyStateTable::read(ReadView const& base, Keylet const& k) const
     return sle;
 }
 
-SLE::pointer
+std::shared_ptr<SLE>
 ApplyStateTable::peek(ReadView const& base, Keylet const& k)
 {
     auto iter = items_.lower_bound(k.key);
@@ -394,7 +396,7 @@ ApplyStateTable::peek(ReadView const& base, Keylet const& k)
 }
 
 void
-ApplyStateTable::erase(ReadView const& base, SLE::ref sle)
+ApplyStateTable::erase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
@@ -418,7 +420,7 @@ ApplyStateTable::erase(ReadView const& base, SLE::ref sle)
 }
 
 void
-ApplyStateTable::rawErase(ReadView const& base, SLE::ref sle)
+ApplyStateTable::rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     using namespace std;
     auto const result = items_.emplace(
@@ -443,7 +445,7 @@ ApplyStateTable::rawErase(ReadView const& base, SLE::ref sle)
 }
 
 void
-ApplyStateTable::insert(ReadView const& base, SLE::ref sle)
+ApplyStateTable::insert(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     auto const iter = items_.lower_bound(sle->key());
     if (iter == items_.end() || iter->first != sle->key())
@@ -473,7 +475,7 @@ ApplyStateTable::insert(ReadView const& base, SLE::ref sle)
 }
 
 void
-ApplyStateTable::replace(ReadView const& base, SLE::ref sle)
+ApplyStateTable::replace(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     auto const iter = items_.lower_bound(sle->key());
     if (iter == items_.end() || iter->first != sle->key())
@@ -502,7 +504,7 @@ ApplyStateTable::replace(ReadView const& base, SLE::ref sle)
 }
 
 void
-ApplyStateTable::update(ReadView const& base, SLE::ref sle)
+ApplyStateTable::update(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
@@ -534,7 +536,7 @@ ApplyStateTable::destroyXRP(XRPAmount const& fee)
 
 // Insert this transaction to the SLE's threading list
 void
-ApplyStateTable::threadItem(TxMeta& meta, SLE::ref sle)
+ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
     key_type prevTxID;
     LedgerIndex prevLgrID = 0;
@@ -566,7 +568,7 @@ ApplyStateTable::threadItem(TxMeta& meta, SLE::ref sle)
     }
 }
 
-SLE::pointer
+std::shared_ptr<SLE>
 ApplyStateTable::getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j)
 {
     {
@@ -638,7 +640,7 @@ void
 ApplyStateTable::threadOwners(
     ReadView const& base,
     TxMeta& meta,
-    SLE::const_ref sle,
+    std::shared_ptr<SLE const> const& sle,
     Mods& mods,
     beast::Journal j)
 {

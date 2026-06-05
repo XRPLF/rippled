@@ -19,40 +19,40 @@ namespace xrpl {
     @ingroup protocol
 */
 /** Smallest legal byte size of a transaction. */
-constexpr std::size_t kTxMinSizeBytes = 32;
+std::size_t constexpr kTX_MIN_SIZE_BYTES = 32;
 
 /** Largest legal byte size of a transaction. */
-constexpr std::size_t kTxMaxSizeBytes = megabytes(1);
+std::size_t constexpr kTX_MAX_SIZE_BYTES = megabytes(1);
 
 /** The maximum number of unfunded offers to delete at once */
-constexpr std::size_t kUnfundedOfferRemoveLimit = 1000;
+std::size_t constexpr kUNFUNDED_OFFER_REMOVE_LIMIT = 1000;
 
 /** The maximum number of expired offers to delete at once */
-constexpr std::size_t kExpiredOfferRemoveLimit = 256;
+std::size_t constexpr kEXPIRED_OFFER_REMOVE_LIMIT = 256;
 
 /** The maximum number of metadata entries allowed in one transaction */
-constexpr std::size_t kOversizeMetaDataCap = 5200;
+std::size_t constexpr kOVERSIZE_META_DATA_CAP = 5200;
 
 /** The maximum number of entries per directory page */
-constexpr std::size_t kDirNodeMaxEntries = 32;
+std::size_t constexpr kDIR_NODE_MAX_ENTRIES = 32;
 
 /** The maximum number of pages allowed in a directory
 
     Made obsolete by fixDirectoryLimit amendment.
 */
-constexpr std::uint64_t kDirNodeMaxPages = 262144;
+std::uint64_t constexpr kDIR_NODE_MAX_PAGES = 262144;
 
 /** The maximum number of items in an NFT page */
-constexpr std::size_t kDirMaxTokensPerPage = 32;
+std::size_t constexpr kDIR_MAX_TOKENS_PER_PAGE = 32;
 
 /** The maximum number of owner directory entries for account to be deletable */
-constexpr std::size_t kMaxDeletableDirEntries = 1000;
+std::size_t constexpr kMAX_DELETABLE_DIR_ENTRIES = 1000;
 
 /** The maximum number of token offers that can be canceled at once */
-constexpr std::size_t kMaxTokenOfferCancelCount = 500;
+std::size_t constexpr kMAX_TOKEN_OFFER_CANCEL_COUNT = 500;
 
 /** The maximum number of offers in an offer directory for NFT to be burnable */
-constexpr std::size_t kMaxDeletableTokenOfferEntries = 500;
+std::size_t constexpr kMAX_DELETABLE_TOKEN_OFFER_ENTRIES = 500;
 
 /** The maximum token transfer fee allowed.
 
@@ -63,7 +63,7 @@ constexpr std::size_t kMaxDeletableTokenOfferEntries = 500;
     Note that for extremely low transfer fees values, it is possible that the
     calculated fee will be 0.
  */
-constexpr std::uint16_t kMaxTransferFee = 50000;
+std::uint16_t constexpr kMAX_TRANSFER_FEE = 50000;
 
 /** There are 10,000 basis points (bips) in 100%.
  *
@@ -81,32 +81,32 @@ constexpr std::uint16_t kMaxTransferFee = 50000;
  *
  * Example: 50% is 0.50 * bipsPerUnity = 5,000 bps.
  */
-constexpr Bips32 kBipsPerUnity(100 * 100);
-static_assert(kBipsPerUnity == Bips32{10'000});
-constexpr TenthBips32 kTenthBipsPerUnity(kBipsPerUnity.value() * 10);
-static_assert(kTenthBipsPerUnity == TenthBips32(100'000));
+Bips32 constexpr kBIPS_PER_UNITY(100 * 100);
+static_assert(kBIPS_PER_UNITY == Bips32{10'000});
+TenthBips32 constexpr kTENTH_BIPS_PER_UNITY(kBIPS_PER_UNITY.value() * 10);
+static_assert(kTENTH_BIPS_PER_UNITY == TenthBips32(100'000));
 
 constexpr Bips32
 percentageToBips(std::uint32_t percentage)
 {
-    return Bips32(percentage * kBipsPerUnity.value() / 100);
+    return Bips32(percentage * kBIPS_PER_UNITY.value() / 100);
 }
 constexpr TenthBips32
 percentageToTenthBips(std::uint32_t percentage)
 {
-    return TenthBips32(percentage * kTenthBipsPerUnity.value() / 100);
+    return TenthBips32(percentage * kTENTH_BIPS_PER_UNITY.value() / 100);
 }
 template <typename T, class TBips>
 constexpr T
 bipsOfValue(T value, Bips<TBips> bips)
 {
-    return value * bips.value() / kBipsPerUnity.value();
+    return value * bips.value() / kBIPS_PER_UNITY.value();
 }
 template <typename T, class TBips>
 constexpr T
 tenthBipsOfValue(T value, TenthBips<TBips> bips)
 {
-    return value * bips.value() / kTenthBipsPerUnity.value();
+    return value * bips.value() / kTENTH_BIPS_PER_UNITY.value();
 }
 
 namespace Lending {
@@ -114,54 +114,54 @@ namespace Lending {
 
     Valid values are between 0 and 10% inclusive.
 */
-constexpr TenthBips16 kMaxManagementFeeRate(
+TenthBips16 constexpr kMAX_MANAGEMENT_FEE_RATE(
     unsafeCast<std::uint16_t>(percentageToTenthBips(10).value()));
-static_assert(kMaxManagementFeeRate == TenthBips16(std::uint16_t(10'000u)));
+static_assert(kMAX_MANAGEMENT_FEE_RATE == TenthBips16(std::uint16_t(10'000u)));
 
 /** The maximum coverage rate required of a loan broker in 1/10 bips.
 
     Valid values are between 0 and 100% inclusive.
 */
-constexpr TenthBips32 kMaxCoverRate = percentageToTenthBips(100);
-static_assert(kMaxCoverRate == TenthBips32(100'000u));
+TenthBips32 constexpr kMAX_COVER_RATE = percentageToTenthBips(100);
+static_assert(kMAX_COVER_RATE == TenthBips32(100'000u));
 
 /** The maximum overpayment fee on a loan in 1/10 bips.
 *
     Valid values are between 0 and 100% inclusive.
 */
-constexpr TenthBips32 kMaxOverpaymentFee = percentageToTenthBips(100);
-static_assert(kMaxOverpaymentFee == TenthBips32(100'000u));
+TenthBips32 constexpr kMAX_OVERPAYMENT_FEE = percentageToTenthBips(100);
+static_assert(kMAX_OVERPAYMENT_FEE == TenthBips32(100'000u));
 
 /** Annualized interest rate of the Loan in 1/10 bips.
  *
  * Valid values are between 0 and 100% inclusive.
  */
-constexpr TenthBips32 kMaxInterestRate = percentageToTenthBips(100);
-static_assert(kMaxInterestRate == TenthBips32(100'000u));
+TenthBips32 constexpr kMAX_INTEREST_RATE = percentageToTenthBips(100);
+static_assert(kMAX_INTEREST_RATE == TenthBips32(100'000u));
 
 /** The maximum premium added to the interest rate for late payments on a loan
  * in 1/10 bips.
  *
  * Valid values are between 0 and 100% inclusive.
  */
-constexpr TenthBips32 kMaxLateInterestRate = percentageToTenthBips(100);
-static_assert(kMaxLateInterestRate == TenthBips32(100'000u));
+TenthBips32 constexpr kMAX_LATE_INTEREST_RATE = percentageToTenthBips(100);
+static_assert(kMAX_LATE_INTEREST_RATE == TenthBips32(100'000u));
 
 /** The maximum close interest rate charged for repaying a loan early in 1/10
  * bips.
  *
  * Valid values are between 0 and 100% inclusive.
  */
-constexpr TenthBips32 kMaxCloseInterestRate = percentageToTenthBips(100);
-static_assert(kMaxCloseInterestRate == TenthBips32(100'000u));
+TenthBips32 constexpr kMAX_CLOSE_INTEREST_RATE = percentageToTenthBips(100);
+static_assert(kMAX_CLOSE_INTEREST_RATE == TenthBips32(100'000u));
 
 /** The maximum overpayment interest rate charged on loan overpayments in 1/10
  * bips.
  *
  * Valid values are between 0 and 100% inclusive.
  */
-constexpr TenthBips32 kMaxOverpaymentInterestRate = percentageToTenthBips(100);
-static_assert(kMaxOverpaymentInterestRate == TenthBips32(100'000u));
+TenthBips32 constexpr kMAX_OVERPAYMENT_INTEREST_RATE = percentageToTenthBips(100);
+static_assert(kMAX_OVERPAYMENT_INTEREST_RATE == TenthBips32(100'000u));
 
 /** LoanPay transaction cost will be one base fee per X combined payments
  *
@@ -172,7 +172,7 @@ static_assert(kMaxOverpaymentInterestRate == TenthBips32(100'000u));
  * This number was chosen arbitrarily, but should not be changed once released
  * without an amendment
  */
-static constexpr int kLoanPaymentsPerFeeIncrement = 5;
+static constexpr int kLOAN_PAYMENTS_PER_FEE_INCREMENT = 5;
 
 /** Maximum number of combined payments that a LoanPay transaction will process
  *
@@ -196,65 +196,65 @@ static constexpr int kLoanPaymentsPerFeeIncrement = 5;
  * This number was chosen arbitrarily, but should not be changed once released
  * without an amendment
  */
-static constexpr int kLoanMaximumPaymentsPerTransaction = 100;
+static constexpr int kLOAN_MAXIMUM_PAYMENTS_PER_TRANSACTION = 100;
 }  // namespace Lending
 
 /** The maximum length of a URI inside an NFT */
-constexpr std::size_t kMaxTokenUriLength = 256;
+std::size_t constexpr kMAX_TOKEN_URI_LENGTH = 256;
 
 /** The maximum length of a Data element inside a DID */
-constexpr std::size_t kMaxDidDocumentLength = 256;
+std::size_t constexpr kMAX_DID_DOCUMENT_LENGTH = 256;
 
 /** The maximum length of a URI inside a DID */
-constexpr std::size_t kMaxDidUriLength = 256;
+std::size_t constexpr kMAX_DIDURI_LENGTH = 256;
 
 /** The maximum length of an Attestation inside a DID */
-constexpr std::size_t kMaxDidDataLength = 256;
+std::size_t constexpr kMAX_DID_DATA_LENGTH = 256;
 
 /** The maximum length of a domain */
-constexpr std::size_t kMaxDomainLength = 256;
+std::size_t constexpr kMAX_DOMAIN_LENGTH = 256;
 
 /** The maximum length of a URI inside a Credential */
-constexpr std::size_t kMaxCredentialUriLength = 256;
+std::size_t constexpr kMAX_CREDENTIAL_URI_LENGTH = 256;
 
 /** The maximum length of a CredentialType inside a Credential */
-constexpr std::size_t kMaxCredentialTypeLength = 64;
+std::size_t constexpr kMAX_CREDENTIAL_TYPE_LENGTH = 64;
 
 /** The maximum number of credentials can be passed in array */
-constexpr std::size_t kMaxCredentialsArraySize = 8;
+std::size_t constexpr kMAX_CREDENTIALS_ARRAY_SIZE = 8;
 
 /** The maximum number of credentials can be passed in array for permissioned
  * domain */
-constexpr std::size_t kMaxPermissionedDomainCredentialsArraySize = 10;
+std::size_t constexpr kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE = 10;
 
 /** The maximum length of MPTokenMetadata */
-constexpr std::size_t kMaxMpTokenMetadataLength = 1024;
+std::size_t constexpr kMAX_MP_TOKEN_METADATA_LENGTH = 1024;
 
 /** The maximum amount of MPTokenIssuance */
-constexpr std::uint64_t kMaxMpTokenAmount = 0x7FFF'FFFF'FFFF'FFFFull;
-static_assert(Number::kMaxRep >= kMaxMpTokenAmount);
+std::uint64_t constexpr kMAX_MP_TOKEN_AMOUNT = 0x7FFF'FFFF'FFFF'FFFFull;
+static_assert(Number::kMAX_REP >= kMAX_MP_TOKEN_AMOUNT);
 
 /** The maximum length of Data payload */
-constexpr std::size_t kMaxDataPayloadLength = 256;
+std::size_t constexpr kMAX_DATA_PAYLOAD_LENGTH = 256;
 
 /** Vault withdrawal policies */
-constexpr std::uint8_t kVaultStrategyFirstComeFirstServe = 1;
+std::uint8_t constexpr kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE = 1;
 
 /** Default IOU scale factor for a Vault */
-constexpr std::uint8_t kVaultDefaultIouScale = 6;
+std::uint8_t constexpr kVAULT_DEFAULT_IOU_SCALE = 6;
 /** Maximum scale factor for a Vault. The number is chosen to ensure that
 1 IOU can be always converted to shares.
 10^19 > maxMPTokenAmount (2^64-1) > 10^18 */
-constexpr std::uint8_t kVaultMaximumIouScale = 18;
+std::uint8_t constexpr kVAULT_MAXIMUM_IOU_SCALE = 18;
 
 /** Maximum recursion depth for vault shares being put as an asset inside
  * another vault; counted from 0 */
-constexpr std::uint8_t kMaxAssetCheckDepth = 5;
+std::uint8_t constexpr kMAX_ASSET_CHECK_DEPTH = 5;
 
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
 
-constexpr std::uint32_t kFlagLedgerInterval = 256;
+std::uint32_t constexpr kFLAG_LEDGER_INTERVAL = 256;
 
 /** Returns true if the given ledgerIndex is a voting ledgerIndex */
 bool
@@ -273,39 +273,39 @@ using TxID = uint256;
 /** The maximum number of trustlines to delete as part of AMM account
  * deletion cleanup.
  */
-constexpr std::uint16_t kMaxDeletableAmmTrustLines = 512;
+std::uint16_t constexpr kMAX_DELETABLE_AMM_TRUST_LINES = 512;
 
 /** The maximum length of a URI inside an Oracle */
-constexpr std::size_t kMaxOracleUri = 256;
+std::size_t constexpr kMAX_ORACLE_URI = 256;
 
 /** The maximum length of a Provider inside an Oracle */
-constexpr std::size_t kMaxOracleProvider = 256;
+std::size_t constexpr kMAX_ORACLE_PROVIDER = 256;
 
 /** The maximum size of a data series array inside an Oracle */
-constexpr std::size_t kMaxOracleDataSeries = 10;
+std::size_t constexpr kMAX_ORACLE_DATA_SERIES = 10;
 
 /** The maximum length of a SymbolClass inside an Oracle */
-constexpr std::size_t kMaxOracleSymbolClass = 16;
+std::size_t constexpr kMAX_ORACLE_SYMBOL_CLASS = 16;
 
 /** The maximum allowed time difference between lastUpdateTime and the time
     of the last closed ledger
 */
-constexpr std::size_t kMaxLastUpdateTimeDelta = 300;
+std::size_t constexpr kMAX_LAST_UPDATE_TIME_DELTA = 300;
 
 /** The maximum price scaling factor
  */
-constexpr std::size_t kMaxPriceScale = 20;
+std::size_t constexpr kMAX_PRICE_SCALE = 20;
 
 /** The maximum percentage of outliers to trim
  */
-constexpr std::size_t kMaxTrim = 25;
+std::size_t constexpr kMAX_TRIM = 25;
 
 /** The maximum number of delegate permissions an account can grant
  */
-constexpr std::size_t kPermissionMaxSize = 10;
+std::size_t constexpr kPERMISSION_MAX_SIZE = 10;
 
 /** The maximum number of transactions that can be in a batch. */
-constexpr std::size_t kMaxBatchTxCount = 8;
+std::size_t constexpr kMAX_BATCH_TX_COUNT = 8;
 
 /** Length of one component of EC ElGamal ciphertext */
 std::size_t constexpr kEC_GAMAL_ENCRYPTED_LENGTH = 33;

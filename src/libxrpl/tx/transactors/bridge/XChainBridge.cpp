@@ -130,7 +130,7 @@ checkAttestationPublicKey(
         if (accountFromPK == attestationSignerAccount)
         {
             // master key
-            if (sleAttestationSigningAccount->isFlag(lsfDisableMaster))
+            if ((sleAttestationSigningAccount->getFieldU32(sfFlags) & lsfDisableMaster) != 0u)
             {
                 JLOG(j.trace()) << "Attempt to add an attestation with "
                                    "disabled master key.";
@@ -408,7 +408,7 @@ transferHelper(
     {
         // Check dst tag and deposit auth
 
-        if (sleDst->isFlag(lsfRequireDestTag) && !dstTag)
+        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) && !dstTag)
             return tecDST_TAG_NEEDED;
 
         // If the destination is the claim owner, and this is a claim
@@ -417,7 +417,7 @@ transferHelper(
         bool const canBypassDepositAuth =
             dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::DstCanBypass;
 
-        if (!canBypassDepositAuth && sleDst->isFlag(lsfDepositAuth) &&
+        if (!canBypassDepositAuth && ((sleDst->getFlags() & lsfDepositAuth) != 0u) &&
             !psb.exists(keylet::depositPreauth(dst, src)))
         {
             return tecNO_PERMISSION;
@@ -798,21 +798,21 @@ readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
     return tryGet(STXChainBridge::ChainType::Issuing);
 }
 
-SLE::pointer
+std::shared_ptr<SLE>
 peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
 {
     return readOrpeekBridge<SLE>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::pointer {
+        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE> {
             return v.peek(keylet::bridge(b, ct));
         },
         bridgeSpec);
 }
 
-SLE::const_pointer
+std::shared_ptr<SLE const>
 readBridge(ReadView const& v, STXChainBridge const& bridgeSpec)
 {
     return readOrpeekBridge<SLE const>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::const_pointer {
+        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE const> {
             return v.read(keylet::bridge(b, ct));
         },
         bridgeSpec);
@@ -981,7 +981,7 @@ applyCreateAccountAttestations(
     {
         return tecXCHAIN_ACCOUNT_CREATE_PAST;
     }
-    if (attBegin->createCount >= claimCount + kXbridgeMaxAccountCreateClaims)
+    if (attBegin->createCount >= claimCount + kXBRIDGE_MAX_ACCOUNT_CREATE_CLAIMS)
     {
         // Limit the number of claims on the account
         return tecXCHAIN_ACCOUNT_CREATE_TOO_MANY;
@@ -1369,9 +1369,9 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
         // Issuing account must be the root account for XRP (which presumably
         // owns all the XRP). This is done so the issuing account can't "run
         // out" of wrapped tokens.
-        static auto const kRootAccount = calcAccountID(
+        static auto const kROOT_ACCOUNT = calcAccountID(
             generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
-        if (bridgeSpec.issuingChainDoor() != kRootAccount)
+        if (bridgeSpec.issuingChainDoor() != kROOT_ACCOUNT)
         {
             return temXCHAIN_BRIDGE_BAD_ISSUES;
         }
@@ -1425,7 +1425,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
         // Allowing clawing back funds would break the bridge's invariant that
         // wrapped funds are always backed by locked funds
-        if (sleIssuer->isFlag(lsfAllowTrustLineClawback))
+        if ((sleIssuer->getFlags() & lsfAllowTrustLineClawback) != 0u)
             return tecNO_PERMISSION;
     }
 
@@ -1504,7 +1504,7 @@ BridgeModify::preflight(PreflightContext const& ctx)
     auto const reward = ctx.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx.tx[~sfMinAccountCreateAmount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
-    bool const clearAccountCreate = ctx.tx.isFlag(tfClearAccountCreateAmount);
+    bool const clearAccountCreate = (ctx.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
 
     if (!reward && !minAccountCreate && !clearAccountCreate)
     {
@@ -1562,7 +1562,7 @@ BridgeModify::doApply()
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
-    bool const clearAccountCreate = ctx_.tx.isFlag(tfClearAccountCreateAmount);
+    bool const clearAccountCreate = (ctx_.tx.getFlags() & tfClearAccountCreateAmount) != 0u;
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
@@ -1826,7 +1826,7 @@ XChainCommit::makeTxConsequences(PreflightContext const& ctx)
         auto const amount = ctx.tx[sfAmount];
         if (amount.native() && amount.signum() > 0)
             return amount.xrp();
-        return XRPAmount{beast::kZero};
+        return XRPAmount{beast::kZERO};
     }();
 
     return TxConsequences{ctx.tx, maxSpend};
@@ -1920,7 +1920,7 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        .account = accountID_,
+        .account = account_,
         .preFeeBalance = preFeeBalance_,
         .postFeeBalance = (*sleAccount)[sfBalance]};
 
@@ -2197,9 +2197,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        .account = accountID_,
-        .preFeeBalance = preFeeBalance_,
-        .postFeeBalance = (*sle)[sfBalance]};
+        .account = account_, .preFeeBalance = preFeeBalance_, .postFeeBalance = (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,
@@ -2225,9 +2223,11 @@ XChainCreateAccountCommit::doApply()
 }
 
 void
-XChainCreateBridge::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCreateBridge::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2238,14 +2238,15 @@ XChainCreateBridge::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 
 void
-BridgeModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+BridgeModify::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2256,27 +2257,29 @@ BridgeModify::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 
 void
-XChainClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainClaim::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
 XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 
 void
-XChainCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCommit::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2287,14 +2290,15 @@ XChainCommit::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 
 void
-XChainCreateClaimID::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCreateClaimID::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2305,14 +2309,15 @@ XChainCreateClaimID::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 
 void
-XChainAddClaimAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainAddClaimAttestation::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2323,14 +2328,15 @@ XChainAddClaimAttestation::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 
 void
-XChainAddAccountCreateAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainAddAccountCreateAttestation::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2341,14 +2347,15 @@ XChainAddAccountCreateAttestation::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 
 void
-XChainCreateAccountCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+XChainCreateAccountCommit::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -2359,7 +2366,6 @@ XChainCreateAccountCommit::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

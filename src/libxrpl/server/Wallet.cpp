@@ -17,7 +17,7 @@
 #include <xrpl/server/Manifest.h>
 
 #include <boost/format/free_funcs.hpp>
-#include <boost/optional/optional.hpp>  // IWYU pragma: keep
+#include <boost/optional/optional.hpp>
 
 #include <soci/blob.h>
 #include <soci/into.h>
@@ -40,7 +40,7 @@ makeWalletDB(DatabaseCon::Setup const& setup, beast::Journal j)
 {
     // wallet database
     return std::make_unique<DatabaseCon>(
-        setup, kWalletDbName, std::array<std::string, 0>(), kWalletDbInit, j);
+        setup, kWALLET_DB_NAME, std::array<std::string, 0>(), kWALLET_DB_INIT, j);
 }
 
 std::unique_ptr<DatabaseCon>
@@ -48,7 +48,7 @@ makeTestWalletDB(DatabaseCon::Setup const& setup, std::string const& dbname, bea
 {
     // wallet database
     return std::make_unique<DatabaseCon>(
-        setup, dbname.data(), std::array<std::string, 0>(), kWalletDbInit, j);
+        setup, dbname.data(), std::array<std::string, 0>(), kWALLET_DB_INIT, j);
 }
 
 void

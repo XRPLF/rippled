@@ -32,32 +32,7 @@ We will further set additional CMake arguments as follows:
 """
 
 
-def build_config_name(os_entry: dict[str, str], platform: str, build_type: str) -> str:
-    parts = [os_entry["distro_name"]]
-    for key in ("distro_version", "compiler_name", "compiler_version"):
-        if value := os_entry[key]:
-            parts.append(value)
-    parts.append("arm64" if "arm64" in platform else "amd64")
-    parts.append(build_type.lower())
-    return "-".join(parts)
-
-
-def generate_packaging_matrix(config: Config) -> list[dict]:
-    """Emit one entry per os entry with `package: true`. Architecture is
-    hardcoded to linux/amd64 here (and the runner is hardcoded at the
-    workflow level) until arm64 packaging is ready.
-    """
-    return [
-        {
-            "artifact_name": f"xrpld-{build_config_name(os, 'linux/amd64', 'Release')}",
-            "os": os,
-        }
-        for os in config.os
-        if os.get("package", False)
-    ]
-
-
-def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
+def generate_strategy_matrix(all: bool, config: Config) -> list:
     configurations = []
     for architecture, os, build_type, cmake_args in itertools.product(
         config.architecture, config.os, config.build_type, config.cmake_args
@@ -97,7 +72,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
                         skip = False
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
-                        and build_type == "Release"
+                        and build_type == "Debug"
                         and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
@@ -115,9 +90,8 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
                     ):
                         cmake_args = f"-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}"
                         skip = False
-                elif os["distro_version"] == "trixie":
                     if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-22"
+                        f"{os['compiler_name']}-{os['compiler_version']}" == "clang-20"
                         and build_type == "Debug"
                         and architecture["platform"] == "linux/amd64"
                     ):
@@ -126,15 +100,14 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
                     continue
 
             # RHEL:
-            # - 9 using GCC 12: Debug and Release on linux/amd64
-            #   (Release is required for RPM packaging).
+            # - 9 using GCC 12: Debug on linux/amd64.
             # - 10 using Clang: Release on linux/amd64.
             if os["distro_name"] == "rhel":
                 skip = True
                 if os["distro_version"] == "9":
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
-                        and build_type in ["Debug", "Release"]
+                        and build_type == "Debug"
                         and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
@@ -149,8 +122,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
                     continue
 
             # Ubuntu:
-            # - Jammy using GCC 12: Debug on linux/arm64, Release on
-            #   linux/amd64 (Release is required for DEB packaging).
+            # - Jammy using GCC 12: Debug on linux/arm64.
             # - Noble using GCC 14: Release on linux/amd64.
             # - Noble using Clang 18: Debug on linux/amd64.
             # - Noble using Clang 19: Release on linux/arm64.
@@ -161,12 +133,6 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
                         and build_type == "Debug"
                         and architecture["platform"] == "linux/arm64"
-                    ):
-                        skip = False
-                    if (
-                        f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-12"
-                        and build_type == "Release"
-                        and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
                 elif os["distro_version"] == "noble":
@@ -222,9 +188,8 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
 
         # We skip all clang 20+ on arm64 due to Boost build error.
         if (
-            os["compiler_name"] == "clang"
-            and os["compiler_version"].isdigit()
-            and int(os["compiler_version"]) >= 20
+            f"{os['compiler_name']}-{os['compiler_version']}"
+            in ["clang-20", "clang-21"]
             and architecture["platform"] == "linux/arm64"
         ):
             continue
@@ -251,7 +216,17 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
 
         # Generate a unique name for the configuration, e.g. macos-arm64-debug
         # or debian-bookworm-gcc-12-amd64-release.
-        config_name = build_config_name(os, architecture["platform"], build_type)
+        config_name = os["distro_name"]
+        if (n := os["distro_version"]) != "":
+            config_name += f"-{n}"
+        if (n := os["compiler_name"]) != "":
+            config_name += f"-{n}"
+        if (n := os["compiler_version"]) != "":
+            config_name += f"-{n}"
+        config_name += (
+            f"-{architecture['platform'][architecture['platform'].find('/')+1:]}"
+        )
+        config_name += f"-{build_type.lower()}"
         if "-Dcoverage=ON" in cmake_args:
             config_name += "-coverage"
         if "-Dunity=ON" in cmake_args:
@@ -263,14 +238,13 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
         # Add Address and UB sanitizers as separate configurations for specific
         # bookworm distros. Thread sanitizer is currently disabled (see below).
         # GCC-Asan xrpld-embedded tests are failing because of https://github.com/google/sanitizers/issues/856
-        if (
-            os["distro_version"] == "bookworm"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
-        ) or (
-            os["distro_version"] == "trixie"
-            and f"{os['compiler_name']}-{os['compiler_version']}" == "clang-22"
-        ):
-            # Add ASAN and UBSAN configurations for both gcc-15 and clang-22
+        if os[
+            "distro_version"
+        ] == "bookworm" and f"{os['compiler_name']}-{os['compiler_version']}" in [
+            "gcc-15",
+            "clang-20",
+        ]:
+            # Add ASAN configuration.
             configurations.append(
                 {
                     "config_name": config_name + "-asan",
@@ -283,6 +257,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list[dict]:
                     "sanitizers": "address",
                 }
             )
+            # Add UBSAN configuration.
             configurations.append(
                 {
                     "config_name": config_name + "-ubsan",
@@ -355,19 +330,10 @@ if __name__ == "__main__":
         required=False,
         type=Path,
     )
-    parser.add_argument(
-        "-p",
-        "--packaging",
-        help="Emit the packaging matrix (derived from the 'package' field on os entries) instead of the build/test matrix.",
-        action="store_true",
-    )
     args = parser.parse_args()
 
     matrix = []
-    if args.packaging:
-        config_path = args.config if args.config else THIS_DIR / "linux.json"
-        matrix += generate_packaging_matrix(read_config(config_path))
-    elif args.config is None or args.config == "":
+    if args.config is None or args.config == "":
         matrix += generate_strategy_matrix(
             args.all, read_config(THIS_DIR / "linux.json")
         )

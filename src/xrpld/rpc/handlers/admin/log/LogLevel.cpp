@@ -19,13 +19,13 @@ json::Value
 doLogLevel(RPC::JsonContext& context)
 {
     // log_level
-    if (not context.params.isMember(jss::severity))
+    if (!context.params.isMember(jss::severity))
     {
         // get log severities
-        json::Value ret(json::ValueType::Object);
-        json::Value lev(json::ValueType::Object);
+        json::Value ret(json::ObjectValue);
+        json::Value lev(json::ObjectValue);
 
-        lev[jss::base] = Logs::toString(context.app.getLogs().threshold());
+        lev[jss::base] = Logs::toString(Logs::fromSeverity(context.app.getLogs().threshold()));
         std::vector<std::pair<std::string, std::string>> const logTable(
             context.app.getLogs().partitionSeverities());
         for (auto const& [k, v] : logTable)
@@ -35,17 +35,18 @@ doLogLevel(RPC::JsonContext& context)
         return ret;
     }
 
-    auto const severity = Logs::fromString(context.params[jss::severity].asString());
+    LogSeverity const sv(Logs::fromString(context.params[jss::severity].asString()));
 
-    if (not severity.has_value())
+    if (sv == LSInvalid)
         return rpcError(RpcInvalidParams);
 
+    auto severity = Logs::toSeverity(sv);
     // log_level severity
-    if (not context.params.isMember(jss::partition))
+    if (!context.params.isMember(jss::partition))
     {
         // set base log threshold
-        context.app.getLogs().threshold(*severity);
-        return json::ValueType::Object;
+        context.app.getLogs().threshold(severity);
+        return json::ObjectValue;
     }
 
     // log_level partition severity base?
@@ -56,14 +57,14 @@ doLogLevel(RPC::JsonContext& context)
 
         if (boost::iequals(partition, "base"))
         {
-            context.app.getLogs().threshold(*severity);
+            context.app.getLogs().threshold(severity);
         }
         else
         {
-            context.app.getLogs().get(partition).threshold(*severity);
+            context.app.getLogs().get(partition).threshold(severity);
         }
 
-        return json::ValueType::Object;
+        return json::ObjectValue;
     }
 
     return rpcError(RpcInvalidParams);

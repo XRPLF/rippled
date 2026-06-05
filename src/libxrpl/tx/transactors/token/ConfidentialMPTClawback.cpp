@@ -37,7 +37,7 @@ ConfidentialMPTClawback::preflight(PreflightContext const& ctx)
 
     // Check invalid claw amount
     auto const clawAmount = ctx.tx[sfMPTAmount];
-    if (clawAmount == 0 || clawAmount > kMaxMpTokenAmount)
+    if (clawAmount == 0 || clawAmount > kMAX_MP_TOKEN_AMOUNT)
         return temBAD_AMOUNT;
 
     // Verify proof length

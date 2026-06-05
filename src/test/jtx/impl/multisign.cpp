@@ -74,7 +74,7 @@ Msig::operator()(Env& env, JTx& jt) const
         }
         else if (sigObject.isNull())
         {
-            sigObject = json::Value(json::ValueType::Object);
+            sigObject = json::Value(json::ObjectValue);
         }
         std::optional<STObject> st;
         try

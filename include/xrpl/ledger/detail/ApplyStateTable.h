@@ -8,6 +8,8 @@
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <memory>
+
 namespace xrpl::detail {
 
 // Helper class that buffers modifications
@@ -24,7 +26,7 @@ private:
         Modify,
     };
 
-    using items_t = std::map<key_type, std::pair<Action, SLE::pointer>>;
+    using items_t = std::map<key_type, std::pair<Action, std::shared_ptr<SLE>>>;
 
     items_t items_;
     XRPAmount dropsDestroyed_{0};
@@ -58,10 +60,10 @@ public:
     [[nodiscard]] std::optional<key_type>
     succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
 
-    [[nodiscard]] SLE::const_pointer
+    [[nodiscard]] std::shared_ptr<SLE const>
     read(ReadView const& base, Keylet const& k) const;
 
-    SLE::pointer
+    std::shared_ptr<SLE>
     peek(ReadView const& base, Keylet const& k);
 
     [[nodiscard]] std::size_t
@@ -73,23 +75,23 @@ public:
         std::function<void(
             uint256 const& key,
             bool isDelete,
-            SLE::const_ref before,
-            SLE::const_ref after)> const& func) const;
+            std::shared_ptr<SLE const> const& before,
+            std::shared_ptr<SLE const> const& after)> const& func) const;
 
     void
-    erase(ReadView const& base, SLE::ref sle);
+    erase(ReadView const& base, std::shared_ptr<SLE> const& sle);
 
     void
-    rawErase(ReadView const& base, SLE::ref sle);
+    rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle);
 
     void
-    insert(ReadView const& base, SLE::ref sle);
+    insert(ReadView const& base, std::shared_ptr<SLE> const& sle);
 
     void
-    update(ReadView const& base, SLE::ref sle);
+    update(ReadView const& base, std::shared_ptr<SLE> const& sle);
 
     void
-    replace(ReadView const& base, SLE::ref sle);
+    replace(ReadView const& base, std::shared_ptr<SLE> const& sle);
 
     void
     destroyXRP(XRPAmount const& fee);
@@ -102,12 +104,12 @@ public:
     }
 
 private:
-    using Mods = hash_map<key_type, SLE::pointer>;
+    using Mods = hash_map<key_type, std::shared_ptr<SLE>>;
 
     static void
-    threadItem(TxMeta& meta, SLE::ref to);
+    threadItem(TxMeta& meta, std::shared_ptr<SLE> const& to);
 
-    SLE::pointer
+    std::shared_ptr<SLE>
     getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j);
 
     void
@@ -117,7 +119,7 @@ private:
     threadOwners(
         ReadView const& base,
         TxMeta& meta,
-        SLE::const_ref sle,
+        std::shared_ptr<SLE const> const& sle,
         Mods& mods,
         beast::Journal j);
 };

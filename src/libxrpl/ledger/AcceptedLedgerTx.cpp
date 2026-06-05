@@ -35,17 +35,17 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     met->add(s);
     rawMeta_ = std::move(s.modData());
 
-    json_ = json::ValueType::Object;
-    json_[jss::transaction] = txn_->getJson(JsonOptions::Values::None);
+    json_ = json::ObjectValue;
+    json_[jss::transaction] = txn_->getJson(JsonOptions::KNone);
 
-    json_[jss::meta] = meta_.getJson(JsonOptions::Values::None);
+    json_[jss::meta] = meta_.getJson(JsonOptions::KNone);
     json_[jss::raw_meta] = strHex(rawMeta_);
 
     json_[jss::result] = transHuman(meta_.getResultTER());
 
     if (!affected_.empty())
     {
-        json::Value& affected = (json_[jss::affected] = json::ValueType::Array);
+        json::Value& affected = (json_[jss::affected] = json::ArrayValue);
         for (auto const& account : affected_)
             affected.append(toBase58(account));
     }

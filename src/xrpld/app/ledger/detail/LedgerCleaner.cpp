@@ -257,7 +257,7 @@ private:
             app_.getInboundLedgers().acquire(
                 ledger->header().hash, ledger->header().seq, InboundLedger::Reason::GENERIC);
         }
-        return hash ? *hash : beast::kZero;  // kludge
+        return hash ? *hash : beast::kZERO;  // kludge
     }
 
     /** Process a single ledger
@@ -286,7 +286,7 @@ private:
         }
 
         Rules const rules{app_.config().features};
-        Fees const fees = app_.config().fees.toFees();
+        Fees const fees = app_.config().FEES.toFees();
         auto const dbLedger = loadByIndex(ledgerIndex, rules, fees, app_);
         if (!dbLedger || (dbLedger->header().hash != ledgerHash) ||
             (dbLedger->header().parentHash != nodeLedger->header().parentHash))

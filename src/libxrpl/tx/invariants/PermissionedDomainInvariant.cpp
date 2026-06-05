@@ -15,19 +15,23 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <memory>
 #include <vector>
 
 namespace xrpl {
 
 void
-ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::const_ref after)
+ValidPermissionedDomain::visitEntry(
+    bool isDel,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
 {
     if (before && before->getType() != ltPERMISSIONED_DOMAIN)
         return;
     if (after && after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
-    auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE::const_ref sle) {
+    auto check = [isDel](std::vector<SleStatus>& sleStatus, std::shared_ptr<SLE const> const& sle) {
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
@@ -73,7 +77,7 @@ ValidPermissionedDomain::finalize(
             return false;
         }
 
-        if (sleStatus.credentialsSize > kMaxPermissionedDomainCredentialsArraySize)
+        if (sleStatus.credentialsSize > kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain bad "
                                "credentials size "
@@ -98,7 +102,7 @@ ValidPermissionedDomain::finalize(
         return true;
     };
 
-    if (view.rules().enabled(fixCleanup3_1_3))
+    if (view.rules().enabled(fixPermissionedDomainInvariant))
     {
         // No permissioned domains should be affected if the transaction failed
         if (!isTesSuccess(result))

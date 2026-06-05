@@ -88,7 +88,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 {
     auto const sle = view.read(keylet::account(id));
     if (sle == nullptr)
-        return beast::kZero;
+        return beast::kZERO;
 
     // Return balance minus reserve
     std::uint32_t const ownerCount =
@@ -121,11 +121,15 @@ transferRate(ReadView const& view, AccountID const& issuer)
     if (sle && sle->isFieldPresent(sfTransferRate))
         return Rate{sle->getFieldU32(sfTransferRate)};
 
-    return kParityRate;
+    return kPARITY_RATE;
 }
 
 void
-adjustOwnerCount(ApplyView& view, SLE::ref sle, std::int32_t amount, beast::Journal j)
+adjustOwnerCount(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& sle,
+    std::int32_t amount,
+    beast::Journal j)
 {
     if (!sle)
         return;
@@ -142,17 +146,17 @@ AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
     // This number must not be changed without an amendment
-    static constexpr std::uint16_t kMaxAccountAttempts = 256;
-    for (std::uint16_t i = 0; i < kMaxAccountAttempts; ++i)
+    constexpr std::uint16_t kMAX_ACCOUNT_ATTEMPTS = 256;
+    for (std::uint16_t i = 0; i < kMAX_ACCOUNT_ATTEMPTS; ++i)
     {
         RipeshaHasher rsh;
         auto const hash = sha512Half(i, view.header().parentHash, pseudoOwnerKey);
         rsh(hash.data(), hash.size());
-        AccountID const ret = AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));
+        AccountID const ret{static_cast<RipeshaHasher::result_type>(rsh)};
         if (!view.read(keylet::account(ret)))
             return ret;
     }
-    return beast::kZero;
+    return beast::kZERO;
 }
 
 // Pseudo-account designator fields MUST be maintained by including the
@@ -164,7 +168,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields()
 {
-    static std::vector<SField const*> const kPseudoFields = []() {
+    static std::vector<SField const*> const kPSEUDO_FIELDS = []() {
         auto const ar = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
         if (!ar)
         {
@@ -179,16 +183,18 @@ getPseudoAccountFields()
         std::vector<SField const*> pseudoFields;
         for (auto const& field : soTemplate)
         {
-            if (field.sField().shouldMeta(SField::kSmdPseudoAccount))
+            if (field.sField().shouldMeta(SField::SMdPseudoAccount))
                 pseudoFields.emplace_back(&field.sField());
         }
         return pseudoFields;
     }();
-    return kPseudoFields;
+    return kPSEUDO_FIELDS;
 }
 
 [[nodiscard]] bool
-isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseudoFieldFilter)
+isPseudoAccount(
+    std::shared_ptr<SLE const> sleAcct,
+    std::set<SField const*> const& pseudoFieldFilter)
 {
     auto const& fields = getPseudoAccountFields();
 
@@ -202,7 +208,7 @@ isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseud
             }) > 0;
 }
 
-Expected<SLE::pointer, TER>
+Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField)
 {
     [[maybe_unused]]
@@ -215,7 +221,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
         "xrpl::createPseudoAccount : valid owner field");
 
     auto const accountId = pseudoAccountAddress(view, pseudoOwnerKey);
-    if (accountId == beast::kZero)
+    if (accountId == beast::kZERO)
         return Unexpected(tecDUPLICATE);
 
     // Create pseudo-account.

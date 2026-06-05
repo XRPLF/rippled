@@ -11,7 +11,7 @@ json::Value
 doFee(RPC::JsonContext& context)
 {
     auto result = context.app.getTxQ().doRPC(context.app);
-    if (result.type() == json::ValueType::Object)
+    if (result.type() == json::ObjectValue)
         return result;
 
     // LCOV_EXCL_START

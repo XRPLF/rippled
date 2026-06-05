@@ -42,15 +42,15 @@ private:
     /// The socket has been closed, or will close after the next write
     /// finishes. Do not do any more writes, and don't try to close
     /// again.
-    bool doClose_ = false;
+    bool do_close_ = false;
     boost::beast::websocket::close_reason cr_;
     waitable_timer timer_;
-    bool closeOnTimer_ = false;
-    bool pingActive_ = false;
+    bool close_on_timer_ = false;
+    bool ping_active_ = false;
     boost::beast::websocket::ping_data payload_;
     error_code ec_;
     std::function<void(boost::beast::websocket::frame_type, boost::beast::string_view)>
-        controlCallback_;
+        control_callback_;
 
 public:
     template <class Body, class Headers>
@@ -85,7 +85,7 @@ public:
     [[nodiscard]] boost::asio::ip::tcp::endpoint const&
     remoteEndpoint() const override
     {
-        return this->remoteAddress_;
+        return this->remote_address_;
     }
 
     void
@@ -173,14 +173,14 @@ BaseWSPeer<Handler, Impl>::run()
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&BaseWSPeer::run, impl().shared_from_this()));
-    impl().ws_.set_option(port().pmdOptions);
+    impl().ws_.set_option(port().pmd_options);
     // Must manage the control callback memory outside of the `control_callback`
     // function
-    controlCallback_ =
+    control_callback_ =
         std::bind(&BaseWSPeer::onPingPong, this, std::placeholders::_1, std::placeholders::_2);
-    impl().ws_.control_callback(controlCallback_);
+    impl().ws_.control_callback(control_callback_);
     startTimer();
-    closeOnTimer_ = true;
+    close_on_timer_ = true;
     impl().ws_.set_option(boost::beast::websocket::stream_base::decorator([](auto& res) {
         res.set(boost::beast::http::field::server, BuildInfo::getFullVersionString());
     }));
@@ -198,9 +198,9 @@ BaseWSPeer<Handler, Impl>::send(std::shared_ptr<WSMsg> w)
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&BaseWSPeer::send, impl().shared_from_this(), std::move(w)));
-    if (doClose_)
+    if (do_close_)
         return;
-    if (wq_.size() > port().wsQueueLimit)
+    if (wq_.size() > port().ws_queue_limit)
     {
         cr_.code = safeCast<decltype(cr_.code)>(boost::beast::websocket::close_code::policy_error);
         cr_.reason = "Policy error: client is too slow.";
@@ -227,9 +227,9 @@ BaseWSPeer<Handler, Impl>::close(boost::beast::websocket::close_reason const& re
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, [self = impl().shared_from_this(), reason] { self->close(reason); });
-    if (doClose_)
+    if (do_close_)
         return;
-    doClose_ = true;
+    do_close_ = true;
     if (wq_.empty())
     {
         impl().ws_.async_close(
@@ -260,7 +260,7 @@ BaseWSPeer<Handler, Impl>::onWsHandshake(error_code const& ec)
 {
     if (ec)
         return fail(ec, "on_ws_handshake");
-    closeOnTimer_ = false;
+    close_on_timer_ = false;
     doRead();
 }
 
@@ -313,7 +313,7 @@ BaseWSPeer<Handler, Impl>::onWriteFin(error_code const& ec)
     if (ec)
         return fail(ec, "write_fin");
     wq_.pop_front();
-    if (doClose_)
+    if (do_close_)
     {
         impl().ws_.async_close(
             cr_,
@@ -368,12 +368,12 @@ void
 BaseWSPeer<Handler, Impl>::startTimer()
 {
     // Max seconds without completing a message
-    static constexpr std::chrono::seconds kTimeout{30};
-    static constexpr std::chrono::seconds kTimeoutLocal{3};
+    static constexpr std::chrono::seconds kTIMEOUT{30};
+    static constexpr std::chrono::seconds kTIMEOUT_LOCAL{3};
 
     try
     {
-        timer_.expires_after(remoteEndpoint().address().is_loopback() ? kTimeoutLocal : kTimeout);
+        timer_.expires_after(remoteEndpoint().address().is_loopback() ? kTIMEOUT_LOCAL : kTIMEOUT);
     }
     catch (boost::system::system_error const& e)
     {
@@ -409,7 +409,7 @@ BaseWSPeer<Handler, Impl>::onPing(error_code const& ec)
 {
     if (ec == boost::asio::error::operation_aborted)
         return;
-    pingActive_ = false;
+    ping_active_ = false;
     if (!ec)
         return;
     fail(ec, "on_ping");
@@ -426,7 +426,7 @@ BaseWSPeer<Handler, Impl>::onPingPong(
         boost::beast::string_view const p(payload_.begin());
         if (payload == p)
         {
-            closeOnTimer_ = false;
+            close_on_timer_ = false;
             JLOG(this->j_.trace()) << "got matching pong";
         }
         else
@@ -444,11 +444,11 @@ BaseWSPeer<Handler, Impl>::onTimer(error_code ec)
         return;
     if (!ec)
     {
-        if (!closeOnTimer_ || !pingActive_)
+        if (!close_on_timer_ || !ping_active_)
         {
             startTimer();
-            closeOnTimer_ = true;
-            pingActive_ = true;
+            close_on_timer_ = true;
+            ping_active_ = true;
             // cryptographic is probably overkill..
             beast::rngfill(payload_.begin(), payload_.size(), cryptoPrng());
             impl().ws_.async_ping(

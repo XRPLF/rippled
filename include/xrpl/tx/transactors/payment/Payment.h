@@ -7,13 +7,13 @@ namespace xrpl {
 class Payment : public Transactor
 {
     /* The largest number of paths we allow */
-    static std::size_t const kMaxPathSize = 6;
+    static std::size_t const kMAX_PATH_SIZE = 6;
 
     /* The longest path we allow */
-    static std::size_t const kMaxPathLength = 8;
+    static std::size_t const kMAX_PATH_LENGTH = 8;
 
 public:
-    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
+    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Custom};
 
     explicit Payment(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -41,7 +41,10 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

@@ -77,23 +77,22 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
 class Sequence
 {
 private:
-    static constexpr auto kMinLedger = 1;
-    static constexpr auto kMaxLedger = 1000000;
-    static constexpr auto kMinSize = 250;
-    static constexpr auto kMaxSize = 1250;
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+    enum { MinLedger = 1, MaxLedger = 1000000, MinSize = 250, MaxSize = 1250 };
 
     beast::xor_shift_engine gen_;
     std::uint8_t prefix_;
-    std::discrete_distribution<std::uint32_t> dType_;
-    std::uniform_int_distribution<std::uint32_t> dSize_;
+    std::discrete_distribution<std::uint32_t> d_type_;
+    std::uniform_int_distribution<std::uint32_t> d_size_;
 
 public:
     explicit Sequence(std::uint8_t prefix)
         : prefix_(prefix)
         // uniform distribution over hotLEDGER - hotTRANSACTION_NODE
         // but exclude  hotTRANSACTION = 2 (removed)
-        , dType_({1, 1, 0, 1, 1})
-        , dSize_(kMinSize, kMaxSize)
+        , d_type_({1, 1, 0, 1, 1})
+        , d_size_(MinSize, MaxSize)
     {
     }
 
@@ -116,10 +115,10 @@ public:
         auto const data = static_cast<std::uint8_t*>(&*key.begin());
         *data = prefix_;
         rngcpy(data + 1, key.size() - 1, gen_);
-        Blob value(dSize_(gen_));
+        Blob value(d_size_(gen_));
         rngcpy(&value[0], value.size(), gen_);
         return NodeObject::createObject(
-            safeCast<NodeObjectType>(dType_(gen_)), std::move(value), key);
+            safeCast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
     }
 
     // returns a batch of NodeObjects starting at n
@@ -138,13 +137,18 @@ public:
 class Timing_test : public beast::unit_test::Suite
 {
 public:
-    static constexpr auto kMissingNodePercent = 20;  // percent of fetches for missing nodes
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+    enum {
+        // percent of fetches for missing nodes
+        MissingNodePercent = 20
+    };
 
-    std::size_t const defaultRepeat = 3;
+    std::size_t const default_repeat = 3;
 #ifndef NDEBUG
-    std::size_t const defaultItems = 10000;
+    std::size_t const default_items = 10000;
 #else
-    std::size_t const defaultItems = 100000;  // release
+    std::size_t const default_items = 100000;  // release
 #endif
 
     using clock_type = std::chrono::steady_clock;
@@ -462,7 +466,7 @@ public:
             {
                 try
                 {
-                    if (rand_(gen_) < kMissingNodePercent)
+                    if (rand_(gen_) < MissingNodePercent)
                     {
                         auto const hash = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
@@ -639,7 +643,7 @@ public:
         {
             w = std::max<std::basic_string<char>::size_type>(w, test.first.size());
         }
-        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << defaultItems
+        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << default_items
             << " Objects" << std::endl;
         {
             std::stringstream ss;
@@ -649,15 +653,15 @@ public:
             log << ss.str() << std::endl;
         }
 
-        using beast::Severity;
+        using namespace beast::severities;
         test::SuiteJournal journal("Timing_test", *this);
 
         for (auto const& configString : configStrings)
         {
             Params params{};
-            params.items = defaultItems;
+            params.items = default_items;
             params.threads = threads;
-            for (auto i = defaultRepeat; (i--) != 0u;)
+            for (auto i = default_repeat; (i--) != 0u;)
             {
                 beast::TempDir const tempDir;
                 Section config = parse(configString);

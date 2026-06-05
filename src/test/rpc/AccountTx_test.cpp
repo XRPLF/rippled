@@ -131,7 +131,7 @@ class AccountTx_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->fees.referenceFee = 10;
+            cfg->FEES.reference_fee = 10;
             return cfg;
         }));
         Account const a1{"A1"};
@@ -374,9 +374,9 @@ class AccountTx_test : public beast::unit_test::Suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::ValueType::Null));
-            testInvalidAccountParam(json::Value(json::ValueType::Object));
-            testInvalidAccountParam(json::Value(json::ValueType::Array));
+            testInvalidAccountParam(json::Value(json::NullValue));
+            testInvalidAccountParam(json::Value(json::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ArrayValue));
         }
         // test binary and forward for bool/non bool values
         {
@@ -449,13 +449,13 @@ class AccountTx_test : public beast::unit_test::Suite
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = [] should fail (array instead of integer)
-            p[jss::limit] = json::Value(json::ValueType::Array);
+            p[jss::limit] = json::Value(json::ArrayValue);
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = {} should fail (object instead of integer)
-            p[jss::limit] = json::Value(json::ValueType::Object);
+            p[jss::limit] = json::Value(json::ObjectValue);
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
@@ -467,7 +467,7 @@ class AccountTx_test : public beast::unit_test::Suite
                 RPC::expectedFieldMessage(jss::limit, "unsigned integer"));
 
             // Test case: limit = ["limit"] should fail (array with string)
-            p[jss::limit] = json::Value(json::ValueType::Array);
+            p[jss::limit] = json::Value(json::ArrayValue);
             p[jss::limit].append("limit");
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
@@ -475,7 +475,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
             // Test case: limit = {"limit": 10} should fail (object with
             // property)
-            p[jss::limit] = json::Value(json::ValueType::Object);
+            p[jss::limit] = json::Value(json::ObjectValue);
             p[jss::limit][jss::limit] = 10;
             BEAST_EXPECT(
                 env.rpc("json", "account_tx", to_string(p))[jss::result][jss::error_message] ==
@@ -537,7 +537,7 @@ class AccountTx_test : public beast::unit_test::Suite
                 escrow[jss::TransactionType] = jss::EscrowCreate;
                 escrow[jss::Account] = account.human();
                 escrow[jss::Destination] = to.human();
-                escrow[jss::Amount] = amount.getJson(JsonOptions::Values::None);
+                escrow[jss::Amount] = amount.getJson(JsonOptions::KNone);
                 return escrow;
             };
 
@@ -583,7 +583,7 @@ class AccountTx_test : public beast::unit_test::Suite
             payChanCreate[jss::TransactionType] = jss::PaymentChannelCreate;
             payChanCreate[jss::Account] = alice.human();
             payChanCreate[jss::Destination] = gw.human();
-            payChanCreate[jss::Amount] = XRP(500).value().getJson(JsonOptions::Values::None);
+            payChanCreate[jss::Amount] = XRP(500).value().getJson(JsonOptions::KNone);
             payChanCreate[sfSettleDelay.jsonName] = NetClock::duration{100s}.count();
             payChanCreate[sfPublicKey.jsonName] = strHex(alice.pk().slice());
             env(payChanCreate, Sig(alie));
@@ -596,7 +596,7 @@ class AccountTx_test : public beast::unit_test::Suite
                 payChanFund[jss::TransactionType] = jss::PaymentChannelFund;
                 payChanFund[jss::Account] = alice.human();
                 payChanFund[sfChannel.jsonName] = payChanIndex;
-                payChanFund[jss::Amount] = XRP(200).value().getJson(JsonOptions::Values::None);
+                payChanFund[jss::Amount] = XRP(200).value().getJson(JsonOptions::KNone);
                 env(payChanFund, Sig(alie));
                 env.close();
             }
@@ -651,7 +651,7 @@ class AccountTx_test : public beast::unit_test::Suite
         // clang-format off
         // Do a sanity check on each returned transaction.  They should
         // be returned in the reverse order of application to the ledger.
-        static const NodeSanity kSanity[]{
+        static const NodeSanity kSANITY[]{
             //    txType,                    created,                                                    deleted,                          modified
             {0,  jss::DepositPreauth,         {jss::DepositPreauth},                                      {jss::Ticket},                    {jss::AccountRoot, jss::DirectoryNode}},
             {1,  jss::TicketCreate,           {jss::Ticket},                                              {},                               {jss::AccountRoot, jss::DirectoryNode}},
@@ -678,11 +678,11 @@ class AccountTx_test : public beast::unit_test::Suite
         };
         // clang-format on
 
-        BEAST_EXPECT(std::size(kSanity) == result[jss::result][jss::transactions].size());
+        BEAST_EXPECT(std::size(kSANITY) == result[jss::result][jss::transactions].size());
 
-        for (unsigned int index{0}; index < std::size(kSanity); ++index)
+        for (unsigned int index{0}; index < std::size(kSANITY); ++index)
         {
-            checkSanity(txs[index], kSanity[index]);
+            checkSanity(txs[index], kSANITY[index]);
         }
     }
 
@@ -733,7 +733,7 @@ class AccountTx_test : public beast::unit_test::Suite
         //
         // Note that the first two transactions in sanity have not occurred
         // yet.  We'll see those after becky's account is resurrected.
-        static const NodeSanity kSanity[]
+        static const NodeSanity kSANITY[]
         {
                                     //   txType,                    created,            deleted,            modified
 /* becky pays alice              */ { 0, jss::Payment,              {},                 {},                 {jss::AccountRoot, jss::AccountRoot}},
@@ -759,22 +759,22 @@ class AccountTx_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
             // The first two transactions listed in sanity haven't happened yet.
-            static constexpr unsigned int kBeckyDeletedOffset = 2;
+            constexpr unsigned int kBECKY_DELETED_OFFSET = 2;
             BEAST_EXPECT(
-                std::size(kSanity) ==
-                result[jss::result][jss::transactions].size() + kBeckyDeletedOffset);
+                std::size(kSANITY) ==
+                result[jss::result][jss::transactions].size() + kBECKY_DELETED_OFFSET);
 
             json::Value const& txs{result[jss::result][jss::transactions]};
 
-            for (unsigned int index = kBeckyDeletedOffset; index < std::size(kSanity); ++index)
+            for (unsigned int index = kBECKY_DELETED_OFFSET; index < std::size(kSANITY); ++index)
             {
-                checkSanity(txs[index - kBeckyDeletedOffset], kSanity[index]);
+                checkSanity(txs[index - kBECKY_DELETED_OFFSET], kSANITY[index]);
             }
         }
 
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
-        env(pay(alice, becky, drops(env.current()->fees().accountReserve(0)) - drops(1)),
+        env(pay(alice, becky, drops(env.current()->fees().accountReserve(0)) - XRP(1)),
             Ter(tecNO_DST_INSUF_XRP));
         env.close();
 
@@ -802,13 +802,13 @@ class AccountTx_test : public beast::unit_test::Suite
         BEAST_EXPECT(result[jss::result][jss::status] == "success");
         BEAST_EXPECT(result[jss::result][jss::transactions].isArray());
 
-        BEAST_EXPECT(std::size(kSanity) == result[jss::result][jss::transactions].size());
+        BEAST_EXPECT(std::size(kSANITY) == result[jss::result][jss::transactions].size());
 
         json::Value const& txs{result[jss::result][jss::transactions]};
 
-        for (unsigned int index = 0; index < std::size(kSanity); ++index)
+        for (unsigned int index = 0; index < std::size(kSANITY); ++index)
         {
-            checkSanity(txs[index], kSanity[index]);
+            checkSanity(txs[index], kSANITY[index]);
         }
     }
 
@@ -821,7 +821,7 @@ class AccountTx_test : public beast::unit_test::Suite
         using namespace std::chrono_literals;
 
         auto cfg = makeConfig();
-        cfg->fees.referenceFee = 10;
+        cfg->FEES.reference_fee = 10;
         Env env(*this, std::move(cfg));
 
         Account const alice{"alice"};
@@ -841,8 +841,7 @@ class AccountTx_test : public beast::unit_test::Suite
             auto const& tx0(jv[jss::transactions][0u][jss::tx]);
             BEAST_EXPECT(tx0[jss::TransactionType] == txType);
 
-            std::string const txHash{
-                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
             BEAST_EXPECT(tx0[jss::hash] == txHash);
         };
 

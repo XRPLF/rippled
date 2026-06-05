@@ -17,7 +17,7 @@ associateAsset(SLE& sle, Asset const& asset)
     {
         STBase& entry = sle.getIndex(i);
         SField const& field = entry.getFName();
-        if (field.shouldMeta(SField::kSmdNeedsAsset))
+        if (field.shouldMeta(SField::SMdNeedsAsset))
         {
             auto const type = entry.getSType();
             // If the field is not set or present, skip it.

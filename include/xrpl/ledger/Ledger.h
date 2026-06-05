@@ -24,7 +24,7 @@ struct CreateGenesisT
 {
     explicit CreateGenesisT() = default;
 };
-extern CreateGenesisT const kCreateGenesis;
+extern CreateGenesisT const kCREATE_GENESIS;
 
 /** Holds a ledger.
 
@@ -166,7 +166,7 @@ public:
     std::optional<uint256>
     succ(uint256 const& key, std::optional<uint256> const& last = std::nullopt) const override;
 
-    SLE::const_pointer
+    std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
 
     std::unique_ptr<SlesType::iter_base>
@@ -202,16 +202,16 @@ public:
     //
 
     void
-    rawErase(SLE::ref sle) override;
+    rawErase(std::shared_ptr<SLE> const& sle) override;
 
     void
-    rawInsert(SLE::ref sle) override;
+    rawInsert(std::shared_ptr<SLE> const& sle) override;
 
     void
     rawErase(uint256 const& key);
 
     void
-    rawReplace(SLE::ref sle) override;
+    rawReplace(std::shared_ptr<SLE> const& sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& fee) override
@@ -361,7 +361,7 @@ public:
     bool
     isVotingLedger() const;
 
-    SLE::pointer
+    std::shared_ptr<SLE>
     peek(Keylet const& k) const;
 
 private:

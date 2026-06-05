@@ -26,6 +26,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
+
 namespace xrpl {
 
 bool
@@ -43,7 +45,7 @@ LoanManage::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanManage::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::kZero)
+    if (ctx.tx[sfLoanID] == beast::kZERO)
         return temINVALID;
 
     // Flags are mutually exclusive
@@ -422,7 +424,7 @@ LoanManage::doApply()
 
     // Pre-amendment, associateAsset was only called on the noop (no flags)
     // path. Post-amendment, we call associateAsset on all successful paths.
-    if (view.rules().enabled(fixCleanup3_1_3) && isTesSuccess(result))
+    if (view.rules().enabled(fixSecurity3_1_3) && isTesSuccess(result))
     {
         associateAsset(*loanSle, vaultAsset);
         associateAsset(*brokerSle, vaultAsset);
@@ -433,15 +435,16 @@ LoanManage::doApply()
 }
 
 void
-LoanManage::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanManage::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
 LoanManage::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

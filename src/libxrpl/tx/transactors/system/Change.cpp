@@ -42,7 +42,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);
-    if (account != beast::kZero)
+    if (account != beast::kZERO)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";
         return temBAD_SRC_ACCOUNT;
@@ -50,7 +50,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 
     // No point in going any further if the transaction fee is malformed.
     auto const fee = ctx.tx.getFieldAmount(sfFee);
-    if (!fee.native() || fee != beast::kZero)
+    if (!fee.native() || fee != beast::kZERO)
     {
         JLOG(ctx.j.warn()) << "Change: invalid fee";
         return temBAD_FEE;
@@ -154,7 +154,7 @@ Change::doApply()
 void
 Change::preCompute()
 {
-    XRPL_ASSERT(accountID_ == beast::kZero, "xrpl::Change::preCompute : zero account");
+    XRPL_ASSERT(account_ == beast::kZERO, "xrpl::Change::preCompute : zero account");
 }
 
 TER
@@ -177,8 +177,10 @@ Change::applyAmendment()
     if (std::ranges::find(amendments, amendment) != amendments.end())
         return tefALREADY;
 
-    bool const gotMajority = ctx_.tx.isFlag(tfGotMajority);
-    bool const lostMajority = ctx_.tx.isFlag(tfLostMajority);
+    auto flags = ctx_.tx.getFlags();
+
+    bool const gotMajority = (flags & tfGotMajority) != 0;
+    bool const lostMajority = (flags & tfLostMajority) != 0;
 
     if (gotMajority && lostMajority)
         return temINVALID_FLAG;
@@ -409,15 +411,16 @@ Change::applyUNLModify()
 }
 
 void
-Change::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Change::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
 Change::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 

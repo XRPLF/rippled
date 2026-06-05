@@ -58,7 +58,7 @@ ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last) co
     return items_.succ(*base_, key, last);
 }
 
-SLE::const_pointer
+std::shared_ptr<SLE const>
 ApplyViewBase::read(Keylet const& k) const
 {
     return items_.read(*base_, k);
@@ -114,26 +114,26 @@ ApplyViewBase::flags() const
     return flags_;
 }
 
-SLE::pointer
+std::shared_ptr<SLE>
 ApplyViewBase::peek(Keylet const& k)
 {
     return items_.peek(*base_, k);
 }
 
 void
-ApplyViewBase::erase(SLE::ref sle)
+ApplyViewBase::erase(std::shared_ptr<SLE> const& sle)
 {
     items_.erase(*base_, sle);
 }
 
 void
-ApplyViewBase::insert(SLE::ref sle)
+ApplyViewBase::insert(std::shared_ptr<SLE> const& sle)
 {
     items_.insert(*base_, sle);
 }
 
 void
-ApplyViewBase::update(SLE::ref sle)
+ApplyViewBase::update(std::shared_ptr<SLE> const& sle)
 {
     items_.update(*base_, sle);
 }
@@ -141,19 +141,19 @@ ApplyViewBase::update(SLE::ref sle)
 //---
 
 void
-ApplyViewBase::rawErase(SLE::ref sle)
+ApplyViewBase::rawErase(std::shared_ptr<SLE> const& sle)
 {
     items_.rawErase(*base_, sle);
 }
 
 void
-ApplyViewBase::rawInsert(SLE::ref sle)
+ApplyViewBase::rawInsert(std::shared_ptr<SLE> const& sle)
 {
     items_.insert(*base_, sle);
 }
 
 void
-ApplyViewBase::rawReplace(SLE::ref sle)
+ApplyViewBase::rawReplace(std::shared_ptr<SLE> const& sle)
 {
     items_.replace(*base_, sle);
 }

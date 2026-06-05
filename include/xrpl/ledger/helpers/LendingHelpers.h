@@ -4,43 +4,13 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/st.h>
 
-#include <string_view>
-
 namespace xrpl {
-
-/**
- * Broker cover preclaim precision guard (fixCleanup3_2_0).
- *
- * Prevents a "silent sub-ULP no-op" where a deposit, withdrawal, or clawback
- * amount is so small that it rounds to zero at `sfCoverAvailable`'s scale.
- * Without this guard, both the pseudo trust-line and `sfCoverAvailable` would
- * identically absorb the rounded zero, resulting in a successful transaction
- * (tesSUCCESS) where no funds actually moved.
- *
- * @param view       Read view (rules used for amendment gating).
- * @param sleBroker  The loan broker SLE (read-only).
- * @param vaultAsset The underlying vault asset (the broker's cover asset).
- * @param amount     The effective subtraction/addition amount.
- * @param j          Journal for logging.
- * @param logPrefix  Transactor name for log diagnostics.
- *
- * @return `tecPRECISION_LOSS` if the request rounds to zero at cover scale.
- * `tesSUCCESS` if the amendment is disabled or the request is safely supra-ULP.
- */
-[[nodiscard]] TER
-canApplyToBrokerCover(
-    ReadView const& view,
-    SLE::const_ref sleBroker,
-    Asset const& vaultAsset,
-    STAmount const& amount,
-    beast::Journal j,
-    std::string_view logPrefix);
 
 // Lending protocol has dependencies, so capture them here.
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx);
 
-static constexpr std::uint32_t kSecondsInYear = 365 * 24 * 60 * 60;
+static constexpr std::uint32_t kSECONDS_IN_YEAR = 365 * 24 * 60 * 60;
 
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
@@ -72,14 +42,14 @@ struct LoanPaymentParts
     // The amount of principal paid that reduces the loan balance.
     // This amount is subtracted from sfPrincipalOutstanding in the Loan object
     // and paid to the Vault
-    Number principalPaid = kNumZero;
+    Number principalPaid = kNUM_ZERO;
 
     // The total amount of interest paid to the Vault.
     // This includes:
     // - Tracked interest from the amortization schedule
     // - Untracked interest (e.g., late payment penalty interest)
     // This value is always non-negative.
-    Number interestPaid = kNumZero;
+    Number interestPaid = kNUM_ZERO;
 
     // The change in the loan's total value outstanding.
     // - If valueChange < 0: Loan value decreased
@@ -92,7 +62,7 @@ struct LoanPaymentParts
     // - Late payments add penalty interest to the loan value
     // - Early full payment may increase or decrease the loan value based on
     // terms
-    Number valueChange = kNumZero;
+    Number valueChange = kNUM_ZERO;
 
     /* The total amount of fees paid to the Broker.
      * This includes:
@@ -100,7 +70,7 @@ struct LoanPaymentParts
      * - Untracked fees (e.g., late payment fees, service fees, origination
      * fees) This value is always non-negative.
      */
-    Number feePaid = kNumZero;
+    Number feePaid = kNUM_ZERO;
 
     LoanPaymentParts&
     operator+=(LoanPaymentParts const& other);
@@ -191,7 +161,7 @@ adjustImpreciseNumber(
 {
     value = roundToAsset(asset, value + adjustment, vaultScale);
 
-    if (*value < beast::kZero)
+    if (*value < beast::kZERO)
         value = 0;
 }
 
@@ -199,23 +169,8 @@ inline int
 getAssetsTotalScale(SLE::const_ref vaultSle)
 {
     if (!vaultSle)
-        return Number::kMinExponent - 1;  // LCOV_EXCL_LINE
+        return Number::kMIN_EXPONENT - 1;  // LCOV_EXCL_LINE
     return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
-}
-
-// Compute the minimum required broker cover, rounded consistently.
-// DebtTotal is a broker-level aggregate maintained at vault scale, so the
-// rounding must also use vault scale — never an individual loan's scale.
-inline Number
-minimumBrokerCover(Number const& debtTotal, TenthBips32 coverRateMinimum, SLE::const_ref vaultSle)
-{
-    XRPL_ASSERT(
-        vaultSle && vaultSle->getType() == ltVAULT, "xrpl::minimumBrokerCover : valid Vault sle");
-    NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-    return roundToAsset(
-        vaultSle->at(sfAsset),
-        tenthBipsOfValue(debtTotal, coverRateMinimum),
-        getAssetsTotalScale(vaultSle));
 }
 
 TER
@@ -229,7 +184,6 @@ checkLoanGuards(
 
 LoanState
 computeTheoreticalLoanState(
-    Rules const& rules,
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t const paymentRemaining,
@@ -356,7 +310,7 @@ struct ExtendedPaymentComponents : public PaymentComponents
     // borrower is sufficient to cover all components of the payment.
     Number totalDue;
 
-    ExtendedPaymentComponents(PaymentComponents const& p, Number fee, Number interest = kNumZero)
+    ExtendedPaymentComponents(PaymentComponents const& p, Number fee, Number interest = kNUM_ZERO)
         : PaymentComponents(p)
         , untrackedManagementFee(fee)
         , untrackedInterest(interest)
@@ -399,7 +353,6 @@ struct LoanStateDeltas
 
 Expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
 tryOverpayment(
-    Rules const& rules,
     Asset const& asset,
     std::int32_t loanScale,
     ExtendedPaymentComponents const& overpaymentComponents,
@@ -410,17 +363,11 @@ tryOverpayment(
     TenthBips16 const managementFeeRate,
     beast::Journal j);
 
-[[nodiscard]] Number
-computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining);
+Number
+computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining);
 
-[[nodiscard]] Number
-computePowerMinusOneHybrid(Number const& periodicRate, std::uint32_t paymentsRemaining);
-
-[[nodiscard]] Number
-computePaymentFactor(
-    Rules const& rules,
-    Number const& periodicRate,
-    std::uint32_t paymentsRemaining);
+Number
+computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining);
 
 std::pair<Number, Number>
 computeInterestAndFeeParts(
@@ -431,14 +378,12 @@ computeInterestAndFeeParts(
 
 Number
 loanPeriodicPayment(
-    Rules const& rules,
     Number const& principalOutstanding,
     Number const& periodicRate,
     std::uint32_t paymentsRemaining);
 
 Number
 loanPrincipalFromPeriodicPayment(
-    Rules const& rules,
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t paymentsRemaining);
@@ -461,7 +406,6 @@ loanAccruedInterest(
 
 ExtendedPaymentComponents
 computeOverpaymentComponents(
-    Rules const& rules,
     Asset const& asset,
     int32_t const loanScale,
     Number const& overpayment,
@@ -471,7 +415,6 @@ computeOverpaymentComponents(
 
 PaymentComponents
 computePaymentComponents(
-    Rules const& rules,
     Asset const& asset,
     std::int32_t scale,
     Number const& totalValueOutstanding,
@@ -495,7 +438,6 @@ operator+(LoanState const& lhs, detail::LoanStateDeltas const& rhs);
 
 LoanProperties
 computeLoanProperties(
-    Rules const& rules,
     Asset const& asset,
     Number const& principalOutstanding,
     TenthBips32 interestRate,
@@ -506,7 +448,6 @@ computeLoanProperties(
 
 LoanProperties
 computeLoanProperties(
-    Rules const& rules,
     Asset const& asset,
     Number const& principalOutstanding,
     Number const& periodicRate,

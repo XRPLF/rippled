@@ -59,13 +59,15 @@ struct Results
     // pointers from different memory spaces do not co-mingle
     using run_time = std::pair<static_string, typename clock_type::duration>;
 
-    static constexpr auto kMaxTop = 10;
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+    enum { MaxTop = 10 };
 
     std::size_t suites = 0;
     std::size_t cases = 0;
     std::size_t total = 0;
     std::size_t failed = 0;
-    boost::container::static_vector<run_time, kMaxTop> top;
+    boost::container::static_vector<run_time, MaxTop> top;
     typename clock_type::time_point start = clock_type::now();
 
     void
@@ -87,14 +89,14 @@ class MultiRunnerBase
     // way they communicate is through message queues.
     struct Inner
     {
-        std::atomic<std::size_t> jobIndex{0};
-        std::atomic<std::size_t> testIndex{0};
-        std::atomic<bool> anyFailedFlag{false};
-        // A parent process will periodically increment `keepAlive`. The child
-        // processes will check if `keepAlive` is being incremented. If it is
+        std::atomic<std::size_t> job_index{0};
+        std::atomic<std::size_t> test_index{0};
+        std::atomic<bool> any_failed{false};
+        // A parent process will periodically increment `keep_alive_`. The child
+        // processes will check if `keep_alive_` is being incremented. If it is
         // not incremented for a sufficiently long time, the child will assume
         // the parent process has died.
-        std::atomic<std::size_t> keepAlive{0};
+        std::atomic<std::size_t> keep_alive{0};
 
         mutable boost::interprocess::interprocess_mutex m;
         detail::Results results;
@@ -131,19 +133,19 @@ class MultiRunnerBase
         printResults(S& s);
     };
 
-    static constexpr char const* kSharedMemName = "XrpldUnitTestSharedMem";
+    static constexpr char const* kSHARED_MEM_NAME = "XrpldUnitTestSharedMem";
     // name of the message queue a multi_runner_child will use to communicate
     // with multi_runner_parent
-    static constexpr char const* kMessageQueueName = "XrpldUnitTestMessageQueue";
+    static constexpr char const* kMESSAGE_QUEUE_NAME = "XrpldUnitTestMessageQueue";
 
     // `inner_` will be created in shared memory
     Inner* inner_;
     // shared memory to use for the `inner` member
-    boost::interprocess::shared_memory_object sharedMem_;
+    boost::interprocess::shared_memory_object shared_mem_;
     boost::interprocess::mapped_region region_;
 
 protected:
-    std::unique_ptr<boost::interprocess::message_queue> messageQueue_;
+    std::unique_ptr<boost::interprocess::message_queue> message_queue_;
 
     enum class MessageType : std::uint8_t { TestStart, TestEnd, Log };
     void
@@ -201,10 +203,10 @@ class MultiRunnerParent : private detail::MultiRunnerBase</*IsParent*/ true>
 private:
     // message_queue_ is used to collect log messages from the children
     std::ostream& os_;
-    std::atomic<bool> continueMessageQueue_{true};
-    std::thread messageQueueThread_;
+    std::atomic<bool> continue_message_queue_{true};
+    std::thread message_queue_thread_;
     // track running suites so if a child crashes the culprit can be flagged
-    std::set<std::string> runningSuites_;
+    std::set<std::string> running_suites_;
 
 public:
     MultiRunnerParent(MultiRunnerParent const&) = delete;
@@ -235,16 +237,16 @@ class MultiRunnerChild : public beast::unit_test::Runner,
                          private detail::MultiRunnerBase</*IsParent*/ false>
 {
 private:
-    std::size_t jobIndex_;
+    std::size_t job_index_;
     detail::Results results_;
-    detail::SuiteResults suiteResults_;
-    detail::CaseResults caseResults_;
-    std::size_t numJobs_{0};
+    detail::SuiteResults suite_results_;
+    detail::CaseResults case_results_;
+    std::size_t num_jobs_{0};
     bool quiet_{false};
-    bool printLog_{true};
+    bool print_log_{true};
 
-    std::atomic<bool> continueKeepAlive_{true};
-    std::thread keepAliveThread_;
+    std::atomic<bool> continue_keep_alive_{true};
+    std::thread keep_alive_thread_;
 
 public:
     MultiRunnerChild(MultiRunnerChild const&) = delete;
@@ -318,12 +320,12 @@ MultiRunnerChild::runMulti(Pred pred)
         }
         catch (...)
         {
-            if (numJobs_ <= 1)
+            if (num_jobs_ <= 1)
                 throw;  // a single process can die
 
             // inform the parent
             std::stringstream s;
-            s << jobIndex_ << ">  failed Unhandled exception in test.\n";
+            s << job_index_ << ">  failed Unhandled exception in test.\n";
             messageQueueSend(MessageType::Log, s.str());
             failed = true;
         }

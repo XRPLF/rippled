@@ -74,13 +74,13 @@ public:
                     auto& section = p->section("sqlite");
                     section.set("safety_level", "high");
                 }
-                p->ledgerHistory = 100'000'000;
+                p->LEDGER_HISTORY = 100'000'000;
 
                 return Env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
             }();
 
             BEAST_EXPECT(!found);
@@ -103,13 +103,13 @@ public:
                     auto& section = p->section("sqlite");
                     section.set("safety_level", "low");
                 }
-                p->ledgerHistory = 100'000'000;
+                p->LEDGER_HISTORY = 100'000'000;
 
                 return Env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
             }();
 
             BEAST_EXPECT(found);
@@ -139,7 +139,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
             }();
 
             // No warning, even though higher risk settings were used because
@@ -166,13 +166,13 @@ public:
                     section.set("synchronous", "extra");
                     section.set("temp_store", "default");
                 }
-                p->ledgerHistory = 50'000'000;
+                p->LEDGER_HISTORY = 50'000'000;
 
                 return Env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(integrityWarning, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
             }();
 
             // No warning, even though higher risk settings were used because
@@ -210,7 +210,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -239,7 +239,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -268,7 +268,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -297,7 +297,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -325,7 +325,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -353,7 +353,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -381,7 +381,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -409,7 +409,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -464,7 +464,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -487,7 +487,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -510,7 +510,7 @@ public:
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
-                    beast::Severity::Warning);
+                    beast::severities::KWarning);
                 fail();
             }
             catch (...)
@@ -536,7 +536,7 @@ public:
         srcParams.set("path", nodeDb.path());
 
         // Create a batch
-        auto batch = createPredictableBatch(kNumObjectsToTest, seedValue);
+        auto batch = createPredictableBatch(kNUM_OBJECTS_TO_TEST, seedValue);
 
         // Write to source db
         {
@@ -647,7 +647,7 @@ public:
             {
                 std::unique_ptr<Database> db = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
-                BEAST_EXPECT(db->earliestLedgerSeq() == kXrpLedgerEarliestSeq);
+                BEAST_EXPECT(db->earliestLedgerSeq() == kXRP_LEDGER_EARLIEST_SEQ);
             }
 
             // Set an invalid earliest ledger sequence
@@ -676,7 +676,7 @@ public:
             try
             {
                 // Set to default earliest ledger sequence
-                nodeParams.set("earliest_seq", std::to_string(kXrpLedgerEarliestSeq));
+                nodeParams.set("earliest_seq", std::to_string(kXRP_LEDGER_EARLIEST_SEQ));
                 std::unique_ptr<Database> const db2 = Manager::instance().makeDatabase(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }

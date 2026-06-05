@@ -48,15 +48,15 @@ public:
     class TestThread
     {
     private:
-        boost::asio::io_context ioContext_;
+        boost::asio::io_context io_context_;
         std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
             work_;
         std::thread thread_;
 
     public:
         TestThread()
-            : work_(std::in_place, boost::asio::make_work_guard(ioContext_))
-            , thread_([&]() { this->ioContext_.run(); })
+            : work_(std::in_place, boost::asio::make_work_guard(io_context_))
+            , thread_([&]() { this->io_context_.run(); })
         {
         }
 
@@ -69,7 +69,7 @@ public:
         boost::asio::io_context&
         getIoContext()
         {
-            return ioContext_;
+            return io_context_;
         }
     };
 
@@ -81,12 +81,12 @@ public:
 
     public:
         explicit TestSink(beast::unit_test::Suite& suite)
-            : Sink(beast::Severity::Warning, false), suite_(suite)
+            : Sink(beast::severities::KWarning, false), suite_(suite)
         {
         }
 
         void
-        write(beast::Severity level, std::string const& text) override
+        write(beast::severities::Severity level, std::string const& text) override
         {
             if (level < threshold())
                 return;
@@ -95,7 +95,7 @@ public:
         }
 
         void
-        writeAlways(beast::Severity level, std::string const& text) override
+        writeAlways(beast::severities::Severity level, std::string const& text) override
         {
             suite_.log << text << std::endl;
         }
@@ -295,7 +295,7 @@ public:
         testcase("Basic client/server");
         TestSink sink{*this};
         TestThread thread;
-        sink.threshold(beast::Severity::All);
+        sink.threshold(beast::severities::Severity::KAll);
         beast::Journal const journal{sink};
         TestHandler handler;
         auto s = makeServer(handler, thread.getIoContext(), journal);
@@ -365,7 +365,7 @@ public:
             }
         };
 
-        using beast::Severity;
+        using namespace beast::severities;
         SuiteJournal journal("Server_test", *this);
 
         NullHandler h;

@@ -963,20 +963,20 @@ MPTTester::getConvertBackProof(
     PedersenProofParams const& pcParams) const
 {
     // Expected total proof length: compact sigma proof (128 bytes) + single bulletproof (688 bytes)
-    std::size_t constexpr kExpectedProofLength = kEC_CONVERT_BACK_PROOF_LENGTH;
+    std::size_t constexpr kEXPECTED_PROOF_LENGTH = kEC_CONVERT_BACK_PROOF_LENGTH;
 
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
     if (!sleMptoken || !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
-        return gMakeZeroBuffer(kExpectedProofLength);
+        return gMakeZeroBuffer(kEXPECTED_PROOF_LENGTH);
 
     auto const holderPubKey = getPubKey(holder);
     auto const holderPrivKey = getPrivKey(holder);
 
     if (!holderPubKey || !holderPrivKey)
-        return gMakeZeroBuffer(kExpectedProofLength);
+        return gMakeZeroBuffer(kEXPECTED_PROOF_LENGTH);
 
     auto const pedersenParams = makePedersenParams(pcParams);
-    Buffer proof(kExpectedProofLength);
+    Buffer proof(kEXPECTED_PROOF_LENGTH);
 
     if (mpt_get_convert_back_proof(
             holderPrivKey->data(),
@@ -985,7 +985,7 @@ MPTTester::getConvertBackProof(
             amount,
             &pedersenParams,
             proof.data()) != 0)
-        return gMakeZeroBuffer(kExpectedProofLength);
+        return gMakeZeroBuffer(kEXPECTED_PROOF_LENGTH);
 
     return proof;
 }
@@ -1403,7 +1403,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
 
     if (arg.credentials)
     {
-        auto& arr(jv[sfCredentialIDs.jsonName] = json::ValueType::Array);
+        auto& arr(jv[sfCredentialIDs.jsonName] = json::ArrayValue);
         for (auto const& hash : *arg.credentials)
             arr.append(hash);
     }
@@ -1709,7 +1709,7 @@ MPTTester::sendJV(
 
     if (arg.credentials)
     {
-        auto& arr(jv[sfCredentialIDs.jsonName] = json::ValueType::Array);
+        auto& arr(jv[sfCredentialIDs.jsonName] = json::ArrayValue);
         for (auto const& hash : *arg.credentials)
             arr.append(hash);
     }

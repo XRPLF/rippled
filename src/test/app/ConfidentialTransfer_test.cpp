@@ -132,7 +132,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
         }
 
-        // Edge case: kMaxMpTokenAmount
+        // Edge case: kMAX_MP_TOKEN_AMOUNT
         // Using raw JSON to avoid automatic decryption checks in MPTTester
         // which don't work for very large amounts (brute-force decryption is slow)
         {
@@ -149,7 +149,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.authorize({
                 .account = bob,
             });
-            mptAlice.pay(alice, bob, kMaxMpTokenAmount);
+            mptAlice.pay(alice, bob, kMAX_MP_TOKEN_AMOUNT);
 
             mptAlice.generateKeyPair(alice);
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
@@ -163,18 +163,18 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
 
-            // Second convert with kMaxMpTokenAmount using raw JSON
+            // Second convert with kMAX_MP_TOKEN_AMOUNT using raw JSON
             Buffer const blindingFactor = generateBlindingFactor();
             auto const holderCiphertext =
-                mptAlice.encryptAmount(bob, kMaxMpTokenAmount, blindingFactor);
+                mptAlice.encryptAmount(bob, kMAX_MP_TOKEN_AMOUNT, blindingFactor);
             auto const issuerCiphertext =
-                mptAlice.encryptAmount(alice, kMaxMpTokenAmount, blindingFactor);
+                mptAlice.encryptAmount(alice, kMAX_MP_TOKEN_AMOUNT, blindingFactor);
 
             json::Value jv;
             jv[jss::Account] = bob.human();
             jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
-            jv[sfMPTAmount.jsonName] = std::to_string(kMaxMpTokenAmount);
+            jv[sfMPTAmount.jsonName] = std::to_string(kMAX_MP_TOKEN_AMOUNT);
             jv[sfHolderEncryptedAmount.jsonName] = strHex(holderCiphertext);
             jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext);
             jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
@@ -364,7 +364,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // Amount exceeds maximum allowed MPT amount
             mptAlice.convert({
                 .account = bob,
-                .amt = kMaxMpTokenAmount + 1,
+                .amt = kMAX_MP_TOKEN_AMOUNT + 1,
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .err = temBAD_AMOUNT,
             });
@@ -3207,7 +3207,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
         }
 
-        // Edge case: kMaxMpTokenAmount
+        // Edge case: kMAX_MP_TOKEN_AMOUNT
         // Using raw JSON to avoid automatic decryption checks in MPTTester
         // which don't work for very large amounts (brute-force decryption is slow)
         // TODO: improve this test once there is bounded decryption or optimized decryption for
@@ -3226,19 +3226,19 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.authorize({
                 .account = bob,
             });
-            mptAlice.pay(alice, bob, kMaxMpTokenAmount);
+            mptAlice.pay(alice, bob, kMAX_MP_TOKEN_AMOUNT);
 
             mptAlice.generateKeyPair(alice);
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
             mptAlice.generateKeyPair(bob);
 
-            // Convert kMaxMpTokenAmount to confidential using raw JSON
+            // Convert kMAX_MP_TOKEN_AMOUNT to confidential using raw JSON
             Buffer const convertBlindingFactor = generateBlindingFactor();
             auto const convertHolderCiphertext =
-                mptAlice.encryptAmount(bob, kMaxMpTokenAmount, convertBlindingFactor);
+                mptAlice.encryptAmount(bob, kMAX_MP_TOKEN_AMOUNT, convertBlindingFactor);
             auto const convertIssuerCiphertext =
-                mptAlice.encryptAmount(alice, kMaxMpTokenAmount, convertBlindingFactor);
+                mptAlice.encryptAmount(alice, kMAX_MP_TOKEN_AMOUNT, convertBlindingFactor);
             auto const convertContextHash =
                 getConvertContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob));
             auto const schnorrProof = mptAlice.getSchnorrProof(bob, convertContextHash);
@@ -3249,7 +3249,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 jv[jss::Account] = bob.human();
                 jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
                 jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
-                jv[sfMPTAmount.jsonName] = std::to_string(kMaxMpTokenAmount);
+                jv[sfMPTAmount.jsonName] = std::to_string(kMAX_MP_TOKEN_AMOUNT);
                 jv[sfHolderEncryptionKey.jsonName] = strHex(*mptAlice.getPubKey(bob));
                 jv[sfHolderEncryptedAmount.jsonName] = strHex(convertHolderCiphertext);
                 jv[sfIssuerEncryptedAmount.jsonName] = strHex(convertIssuerCiphertext);
@@ -3269,10 +3269,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 env(jv, Ter(tesSUCCESS));
             }
 
-            // ConvertBack kMaxMpTokenAmount - 1 using raw JSON
-            // After convert + merge, spending balance = kMaxMpTokenAmount
-            // We convert back kMaxMpTokenAmount - 1 to leave remainder of 1
-            std::uint64_t const convertBackAmt = kMaxMpTokenAmount - 1;
+            // ConvertBack kMAX_MP_TOKEN_AMOUNT - 1 using raw JSON
+            // After convert + merge, spending balance = kMAX_MP_TOKEN_AMOUNT
+            // We convert back kMAX_MP_TOKEN_AMOUNT - 1 to leave remainder of 1
+            std::uint64_t const convertBackAmt = kMAX_MP_TOKEN_AMOUNT - 1;
 
             Buffer const convertBackBlindingFactor = generateBlindingFactor();
             auto const convertBackHolderCiphertext =
@@ -3288,7 +3288,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // Generate pedersen commitment for the known spending balance
             Buffer const pcBlindingFactor = generateBlindingFactor();
             Buffer const pedersenCommitment =
-                mptAlice.getPedersenCommitment(kMaxMpTokenAmount, pcBlindingFactor);
+                mptAlice.getPedersenCommitment(kMAX_MP_TOKEN_AMOUNT, pcBlindingFactor);
 
             // Generate the proof using known spending balance value
             auto const version = mptAlice.getMPTokenVersion(bob);
@@ -3301,7 +3301,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 convertBackContextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = kMaxMpTokenAmount,
+                    .amt = kMAX_MP_TOKEN_AMOUNT,
                     .encryptedAmt = *encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
@@ -3404,7 +3404,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.convertBack({
                 .account = bob,
-                .amt = kMaxMpTokenAmount + 1,
+                .amt = kMAX_MP_TOKEN_AMOUNT + 1,
                 .err = temBAD_AMOUNT,
             });
 
@@ -5661,7 +5661,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     /* This test verifies that xrpld correctly rejects attempts to
      * overflow the maximum allowable token amount via homomorphic manipulation.
      * It simulates an attack where an individual takes a valid ciphertext encrypting
-     * the maximum amount (kMaxMpTokenAmount) and homomorphically adds an encryption of
+     * the maximum amount (kMAX_MP_TOKEN_AMOUNT) and homomorphically adds an encryption of
      * 1 to it, producing a ciphertext for MAX+1. The test confirms that the Bulletproof
      * range proof or inner-product constraints detect this overflow and invalidate the
      * transaction, preserving the supply invariant. */
@@ -5681,7 +5681,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto& mptAlice = confEnv.mpt;
 
         // Bob sends 10 to carol.  The send amount (10) and Bob's remaining balance
-        // (90) are both within [0, kMaxMpTokenAmount].  Range proof passes.
+        // (90) are both within [0, kMAX_MP_TOKEN_AMOUNT].  Range proof passes.
         mptAlice.send({.account = bob, .dest = carol, .amt = 10});
 
         // Bob's spending balance is 90 after the baseline send.
@@ -5689,9 +5689,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
         BEAST_EXPECT(bobSpendingBefore == 90);
 
-        // Construct Enc(kMaxMpTokenAmount) with Bob's public key.
+        // Construct Enc(kMAX_MP_TOKEN_AMOUNT) with Bob's public key.
         Buffer const bf1 = generateBlindingFactor();
-        Buffer const encMax = mptAlice.encryptAmount(bob, kMaxMpTokenAmount, bf1);
+        Buffer const encMax = mptAlice.encryptAmount(bob, kMAX_MP_TOKEN_AMOUNT, bf1);
 
         // Construct Enc(1) with a separate blinding factor.
         Buffer const bf2 = generateBlindingFactor();
@@ -5703,13 +5703,13 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Buffer overflowedCt = std::move(*overflowedOpt);
 
         // Submit the send transaction with the tampered ciphertext.
-        // Setting amt = kMaxMpTokenAmount + 1 drives proof generation for the
-        // overflowed value.  The bulletproof range check [0, kMaxMpTokenAmount]
+        // Setting amt = kMAX_MP_TOKEN_AMOUNT + 1 drives proof generation for the
+        // overflowed value.  The bulletproof range check [0, kMAX_MP_TOKEN_AMOUNT]
         // rejects MAX+1; the validator must return tecBAD_PROOF.
         mptAlice.send({
             .account = bob,
             .dest = carol,
-            .amt = kMaxMpTokenAmount + 1,
+            .amt = kMAX_MP_TOKEN_AMOUNT + 1,
             .senderEncryptedAmt = overflowedCt,
             .err = tecBAD_PROOF,
         });
@@ -5724,7 +5724,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
      * simulates a scenario where an attacker takes a ciphertext encrypting zero
      * and subtracts an encryption of 1, resulting in a value of -1.
      * The test asserts that the range proof verification fails because the resulting
-     * value falls outside the valid non-negative range [0, kMaxMpTokenAmount],
+     * value falls outside the valid non-negative range [0, kMAX_MP_TOKEN_AMOUNT],
      * causing the validator to reject the transaction with tecBAD_PROOF. */
     void
     testConvertBackHomomorphicUnderflow(FeatureBitset features)
@@ -5739,7 +5739,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto& mptAlice = confEnv.mpt;
 
         // Converting back 1 from 10 leaves remaining balance = 9 (non-negative).
-        // Range proof [0, kMaxMpTokenAmount] passes.
+        // Range proof [0, kMAX_MP_TOKEN_AMOUNT] passes.
         mptAlice.convertBack({.account = bob, .amt = 1});
 
         // Bob's spending balance is now 9; public balance is 1.
@@ -5758,14 +5758,14 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Buffer const encOne = mptAlice.encryptAmount(bob, 1, bf2);
 
         // Homomorphically subtract to produce CB_S_holder' = Enc(0) − Enc(1)
-        // = Enc(−1), which lies below [0, kMaxMpTokenAmount].
+        // = Enc(−1), which lies below [0, kMAX_MP_TOKEN_AMOUNT].
         auto underflowedOpt = homomorphicSubtract(encZero, encOne);
         BEAST_EXPECT(underflowedOpt.has_value());
         Buffer underflowedCt = std::move(*underflowedOpt);
 
         // The underflowed value as uint64_t: 0 - 1 wraps to 0xFFFFFFFFFFFFFFFF.
         // Generate a real proof using this wrapped value. The validator must still reject it
-        // because 0xFFFFFFFFFFFFFFFE (remaining balance) is outside [0, kMaxMpTokenAmount].
+        // because 0xFFFFFFFFFFFFFFFE (remaining balance) is outside [0, kMAX_MP_TOKEN_AMOUNT].
         constexpr std::uint64_t kUNDERFLOWED_AMT =
             static_cast<std::uint64_t>(0) - static_cast<std::uint64_t>(1);
 

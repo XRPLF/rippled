@@ -19,7 +19,7 @@
 #include <boost/asio/strand.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
-#include <boost/optional/optional.hpp>  // IWYU pragma: keep
+#include <boost/optional/optional.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <cassert>
@@ -62,7 +62,7 @@ private:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using address_type = boost::asio::ip::address;
 
-    io_context_type ioContext_;
+    io_context_type io_context_;
     boost::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     std::thread thread_;
     std::shared_ptr<boost::asio::ssl::context> context_;
@@ -185,10 +185,10 @@ private:
                 , server(server)
                 , test(server.test_)
                 , acceptor(
-                      test.ioContext_,
+                      test.io_context_,
                       endpoint_type(boost::asio::ip::make_address(test::getEnvLocalhostAddr()), 0))
-                , socket(test.ioContext_)
-                , strand(boost::asio::make_strand(test.ioContext_))
+                , socket(test.io_context_)
+                , strand(boost::asio::make_strand(test.io_context_))
             {
                 acceptor.listen();
                 server.endpoint_ = acceptor.local_endpoint();
@@ -261,8 +261,8 @@ private:
                 , test(server.test_)
                 , socket(std::move(inSocket))
                 , stream(socket, *test.context_)
-                , strand(boost::asio::make_strand(test.ioContext_))
-                , timer(test.ioContext_)
+                , strand(boost::asio::make_strand(test.io_context_))
+                , timer(test.io_context_)
             {
             }
 
@@ -450,10 +450,10 @@ private:
                 : Child(client)
                 , client(client)
                 , test(client.test_)
-                , socket(test.ioContext_)
+                , socket(test.io_context_)
                 , stream(socket, *test.context_)
-                , strand(boost::asio::make_strand(test.ioContext_))
-                , timer(test.ioContext_)
+                , strand(boost::asio::make_strand(test.io_context_))
+                , timer(test.io_context_)
                 , ep(ep)
             {
             }
@@ -632,10 +632,10 @@ private:
 
 public:
     short_read_test()
-        : work_(ioContext_.get_executor())
+        : work_(io_context_.get_executor())
         , thread_(std::thread([this]() {
             beast::setCurrentThreadName("io_context");
-            this->ioContext_.run();
+            this->io_context_.run();
         }))
         , context_(makeSslContext(""))
     {

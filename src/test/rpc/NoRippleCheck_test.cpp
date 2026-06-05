@@ -76,9 +76,9 @@ class NoRippleCheck_test : public beast::unit_test::Suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(json::Value(json::ValueType::Null));
-            testInvalidAccountParam(json::Value(json::ValueType::Object));
-            testInvalidAccountParam(json::Value(json::ValueType::Array));
+            testInvalidAccountParam(json::Value(json::NullValue));
+            testInvalidAccountParam(json::Value(json::ObjectValue));
+            testInvalidAccountParam(json::Value(json::ArrayValue));
         }
 
         {  // invalid role field
@@ -153,7 +153,7 @@ class NoRippleCheck_test : public beast::unit_test::Suite
             json::Value params;
             params[jss::account] = Account{"nobody"}.human();
             params[jss::role] = "user";
-            params[jss::ledger] = json::ValueType::Object;
+            params[jss::ledger] = json::ObjectValue;
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(
@@ -241,7 +241,7 @@ class NoRippleCheck_test : public beast::unit_test::Suite
                 result[jss::transactions][txs.size() - 1][jss::TransactionType] == jss::TrustSet);
             BEAST_EXPECT(
                 result[jss::transactions][txs.size() - 1][jss::LimitAmount] ==
-                gw["USD"](100).value().getJson(JsonOptions::Values::None));
+                gw["USD"](100).value().getJson(JsonOptions::KNone));
         }
         else
         {
@@ -293,15 +293,15 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
                 Endpoint::fromString(test::getEnvLocalhostAddr()));
 
             // if we go above the warning threshold, reset
-            if (c.balance() > kWarningThreshold)
+            if (c.balance() > WarningThreshold)
             {
                 using ct = beast::AbstractClock<steady_clock>;
-                c.entry().localBalance =
-                    DecayingSample<kDecayWindowSeconds, ct>{steady_clock::now()};
+                c.entry().local_balance =
+                    DecayingSample<DecayWindowSeconds, ct>{steady_clock::now()};
             }
         };
 
-        for (auto i = 0; i < xrpl::RPC::Tuning::kNoRippleCheck.rmax + 5; ++i)
+        for (auto i = 0; i < xrpl::RPC::Tuning::kNO_RIPPLE_CHECK.rmax + 5; ++i)
         {
             if (!admin)
                 checkBalance();
@@ -311,13 +311,13 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             env.memoize(gw);
             auto const baseFee = env.current()->fees().base;
             env(pay(env.master, gw, XRP(1000)),
-                Seq(kAutofill),
+                Seq(kAUTOFILL),
                 Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
-                Sig(kAutofill));
+                Sig(kAUTOFILL));
             env(fset(gw, asfDefaultRipple),
-                Seq(kAutofill),
+                Seq(kAUTOFILL),
                 Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
-                Sig(kAutofill));
+                Sig(kAUTOFILL));
             env(trust(alice, gw["USD"](10)),
                 Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1));
             env.close();

@@ -16,6 +16,8 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <memory>
+
 namespace xrpl {
 
 using namespace credentials;
@@ -50,7 +52,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     }
 
     auto const credType = ctx.tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
+    if (credType.empty() || (credType.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
@@ -76,16 +78,16 @@ CredentialDelete::preclaim(PreclaimContext const& ctx)
 TER
 CredentialDelete::doApply()
 {
-    auto const subject = ctx_.tx[~sfSubject].value_or(accountID_);
-    auto const issuer = ctx_.tx[~sfIssuer].value_or(accountID_);
+    auto const subject = ctx_.tx[~sfSubject].value_or(account_);
+    auto const issuer = ctx_.tx[~sfIssuer].value_or(account_);
 
     auto const credType(ctx_.tx[sfCredentialType]);
     auto const sleCred = view().peek(keylet::credential(subject, issuer, credType));
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if ((subject != accountID_) && (issuer != accountID_) &&
-        !checkExpired(*sleCred, ctx_.view().header().parentCloseTime))
+    if ((subject != account_) && (issuer != account_) &&
+        !checkExpired(sleCred, ctx_.view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Can't delete non-expired credential.";
         return tecNO_PERMISSION;
@@ -95,9 +97,11 @@ CredentialDelete::doApply()
 }
 
 void
-CredentialDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+CredentialDelete::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
 {
-    // No transaction-specific invariants yet (future work).
 }
 
 bool
@@ -108,7 +112,6 @@ CredentialDelete::finalizeInvariants(
     ReadView const&,
     beast::Journal const&)
 {
-    // No transaction-specific invariants yet (future work).
     return true;
 }
 }  // namespace xrpl

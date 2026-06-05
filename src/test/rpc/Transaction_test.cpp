@@ -47,7 +47,7 @@ class Transaction_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->networkId = networkID;
+            cfg->NETWORK_ID = networkID;
             return cfg;
         });
     }
@@ -697,7 +697,7 @@ class Transaction_test : public beast::unit_test::Suite
 
             json::Value params;
             params[jss::id] = 1;
-            auto const hash = env.tx()->getJson(JsonOptions::Values::None)[jss::hash];
+            auto const hash = env.tx()->getJson(JsonOptions::KNone)[jss::hash];
             params[jss::transaction] = hash;
             auto const jrr = env.rpc("json", "tx", to_string(params))[jss::result];
             BEAST_EXPECT(jrr[jss::hash] == hash);
@@ -749,7 +749,7 @@ class Transaction_test : public beast::unit_test::Suite
         using std::to_string;
 
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.referenceFee = 10;
+                    cfg->FEES.reference_fee = 10;
                     return cfg;
                 })};
         Account const alice{"alice"};
@@ -771,7 +771,7 @@ class Transaction_test : public beast::unit_test::Suite
         std::shared_ptr<STObject const> const meta =
             env.closed()->txRead(env.tx()->getTransactionID()).second;
 
-        json::Value expected = txn->getJson(JsonOptions::Values::None);
+        json::Value expected = txn->getJson(JsonOptions::KNone);
         expected[jss::DeliverMax] = expected[jss::Amount];
         if (apiVersion > 1)
         {
@@ -780,7 +780,7 @@ class Transaction_test : public beast::unit_test::Suite
         }
 
         json::Value const result = {[&env, txn, apiVersion]() {
-            json::Value params{json::ValueType::Object};
+            json::Value params{json::ObjectValue};
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = false;
             params[jss::api_version] = apiVersion;
@@ -827,7 +827,7 @@ class Transaction_test : public beast::unit_test::Suite
         using std::to_string;
 
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.referenceFee = 10;
+                    cfg->FEES.reference_fee = 10;
                     return cfg;
                 })};
         Account const alice{"alice"};
@@ -847,7 +847,7 @@ class Transaction_test : public beast::unit_test::Suite
         std::string const expectedMetaBlob = serializeHex(*meta);
 
         json::Value const result = [&env, txn, apiVersion]() {
-            json::Value params{json::ValueType::Object};
+            json::Value params{json::ObjectValue};
             params[jss::transaction] = to_string(txn->getTransactionID());
             params[jss::binary] = true;
             params[jss::api_version] = apiVersion;

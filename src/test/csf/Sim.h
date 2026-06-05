@@ -22,12 +22,12 @@ class BasicSink : public beast::Journal::Sink
 
 public:
     BasicSink(Scheduler::clock_type const& clock)
-        : Sink(beast::Severity::Disabled, false), clock_{clock}
+        : Sink(beast::severities::KDisabled, false), clock_{clock}
     {
     }
 
     void
-    write(beast::Severity level, std::string const& text) override
+    write(beast::severities::Severity level, std::string const& text) override
     {
         if (level < threshold())
             return;
@@ -36,7 +36,7 @@ public:
     }
 
     void
-    writeAlways(beast::Severity level, std::string const& text) override
+    writeAlways(beast::severities::Severity level, std::string const& text) override
     {
         std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }

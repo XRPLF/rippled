@@ -40,7 +40,7 @@ public:
     [[nodiscard]] std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
-    [[nodiscard]] SLE::const_pointer
+    [[nodiscard]] std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
 
     [[nodiscard]] std::unique_ptr<SlesType::iter_base>
@@ -69,28 +69,28 @@ public:
     [[nodiscard]] ApplyFlags
     flags() const override;
 
-    SLE::pointer
+    std::shared_ptr<SLE>
     peek(Keylet const& k) override;
 
     void
-    erase(SLE::ref sle) override;
+    erase(std::shared_ptr<SLE> const& sle) override;
 
     void
-    insert(SLE::ref sle) override;
+    insert(std::shared_ptr<SLE> const& sle) override;
 
     void
-    update(SLE::ref sle) override;
+    update(std::shared_ptr<SLE> const& sle) override;
 
     // RawView
 
     void
-    rawErase(SLE::ref sle) override;
+    rawErase(std::shared_ptr<SLE> const& sle) override;
 
     void
-    rawInsert(SLE::ref sle) override;
+    rawInsert(std::shared_ptr<SLE> const& sle) override;
 
     void
-    rawReplace(SLE::ref sle) override;
+    rawReplace(std::shared_ptr<SLE> const& sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& feeDrops) override;

@@ -67,25 +67,27 @@ public:
     [[nodiscard]] std::string
     getFormattedErrorMessages() const;
 
-    static constexpr unsigned kNestLimit{25};
+    static constexpr unsigned kNEST_LIMIT{25};
 
 private:
-    enum class TokenType {
-        EndOfStream = 0,
-        ObjectBegin,
-        ObjectEnd,
-        ArrayBegin,
-        ArrayEnd,
-        String,
-        Integer,
-        Double,
-        True,
-        False,
-        Null,
-        ArraySeparator,
-        MemberSeparator,
-        Comment,
-        Error
+    // 53 files, protocol-wide
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+    enum TokenType {
+        TokenEndOfStream = 0,
+        TokenObjectBegin,
+        TokenObjectEnd,
+        TokenArrayBegin,
+        TokenArrayEnd,
+        TokenString,
+        TokenInteger,
+        TokenDouble,
+        TokenTrue,
+        TokenFalse,
+        TokenNull,
+        TokenArraySeparator,
+        TokenMemberSeparator,
+        TokenComment,
+        TokenError
     };
 
     class Token

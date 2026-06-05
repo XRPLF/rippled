@@ -1370,7 +1370,7 @@ private:
             buck_.resize(size() + additional, cont_);
         XRPL_ASSERT(
             loadFactor() <= maxLoadFactor(),
-            "beast::detail::AgedUnorderedContainer::maybeRehash : maximum "
+            "beast::detail::AgedUnorderedContainer::maybe_rehash : maximum "
             "load factor");
     }
 

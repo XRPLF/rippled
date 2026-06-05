@@ -32,7 +32,7 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
 
-    if (ctx.tx[sfMPTAmount] > kMaxMpTokenAmount)
+    if (ctx.tx[sfMPTAmount] > kMAX_MP_TOKEN_AMOUNT)
         return temBAD_AMOUNT;
 
     if (ctx.tx.isFieldPresent(sfHolderEncryptionKey))
@@ -205,7 +205,7 @@ ConfidentialMPTConvert::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, account_));
     if (!sleMptoken)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -222,7 +222,7 @@ ConfidentialMPTConvert::doApply()
     // Converting decreases regular balance and increases confidential outstanding.
     // The confidential outstanding tracks total tokens in confidential form globally.
     auto const currentCOA = (*sleIssuance)[~sfConfidentialOutstandingAmount].valueOr(0);
-    if (amtToConvert > kMaxMpTokenAmount - currentCOA)
+    if (amtToConvert > kMAX_MP_TOKEN_AMOUNT - currentCOA)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     (*sleMptoken)[sfMPTAmount] = amt - amtToConvert;
@@ -287,7 +287,7 @@ ConfidentialMPTConvert::doApply()
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.
         auto zeroBalance = encryptCanonicalZeroAmount(
-            (*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
+            (*sleMptoken)[sfHolderEncryptionKey], account_, mptIssuanceID);
 
         if (!zeroBalance)
             return tecINTERNAL;  // LCOV_EXCL_LINE

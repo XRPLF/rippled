@@ -22,7 +22,9 @@ private:
     using CacheType = KeyCache;
 
 public:
-    static constexpr auto kDefaultCacheTargetSize = 0;
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+    enum { DefaultCacheTargetSize = 0 };
 
     using key_type = uint256;
     using clock_type = typename CacheType::clock_type;
@@ -39,7 +41,7 @@ public:
         clock_type& clock,
         beast::Journal j,
         beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::make(),
-        std::size_t targetSize = kDefaultCacheTargetSize,
+        std::size_t targetSize = DefaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
         : cache_(name, targetSize, expiration, clock, j, collector), gen_(1)
     {

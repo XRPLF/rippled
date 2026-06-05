@@ -627,7 +627,7 @@ run(int argc, char** argv)
                 {
                     throw std::runtime_error("Invalid force_ledger_present_range parameter");
                 }
-                config->forcedLedgerRangePresent.emplace(r[0], r[1]);
+                config->FORCED_LEDGER_RANGE_PRESENT.emplace(r[0], r[1]);
             }
             else
             {
@@ -646,7 +646,7 @@ run(int argc, char** argv)
 
     if (vm.contains("start"))
     {
-        config->startUp = StartUpType::Fresh;
+        config->START_UP = StartUpType::Fresh;
     }
 
     if (vm.contains("import"))
@@ -654,17 +654,17 @@ run(int argc, char** argv)
 
     if (vm.contains("ledger"))
     {
-        config->startLedger = vm["ledger"].as<std::string>();
+        config->START_LEDGER = vm["ledger"].as<std::string>();
         if (vm.contains("replay"))
         {
-            config->startUp = StartUpType::Replay;
+            config->START_UP = StartUpType::Replay;
             if (vm.contains("trap_tx_hash"))
             {
                 uint256 tmp = {};
                 auto hash = vm["trap_tx_hash"].as<std::string>();
                 if (tmp.parseHex(hash))
                 {
-                    config->trapTxHash = tmp;
+                    config->TRAP_TX_HASH = tmp;
                 }
                 else
                 {
@@ -677,17 +677,17 @@ run(int argc, char** argv)
         }
         else
         {
-            config->startUp = StartUpType::Load;
+            config->START_UP = StartUpType::Load;
         }
     }
     else if (vm.contains("ledgerfile"))
     {
-        config->startLedger = vm["ledgerfile"].as<std::string>();
-        config->startUp = StartUpType::LoadFile;
+        config->START_LEDGER = vm["ledgerfile"].as<std::string>();
+        config->START_UP = StartUpType::LoadFile;
     }
-    else if (vm.contains("load") || config->fastLoad)
+    else if (vm.contains("load") || config->FAST_LOAD)
     {
-        config->startUp = StartUpType::Load;
+        config->START_UP = StartUpType::Load;
     }
 
     if (vm.contains("trap_tx_hash") && !vm.contains("replay"))
@@ -696,20 +696,20 @@ run(int argc, char** argv)
         return -1;
     }
 
-    if (vm.contains("net") && !config->fastLoad)
+    if (vm.contains("net") && !config->FAST_LOAD)
     {
-        if ((config->startUp == StartUpType::Load) || (config->startUp == StartUpType::Replay))
+        if ((config->START_UP == StartUpType::Load) || (config->START_UP == StartUpType::Replay))
         {
             std::cerr << "Net and load/replay options are incompatible" << std::endl;
             return -1;
         }
 
-        config->startUp = StartUpType::Network;
+        config->START_UP = StartUpType::Network;
     }
 
     if (vm.contains("valid"))
     {
-        config->startValid = true;
+        config->START_VALID = true;
     }
 
     // Override the RPC destination IP address. This must
@@ -747,15 +747,15 @@ run(int argc, char** argv)
             }
         }
 
-        config->rpcIp = std::move(*endpoint);
+        config->rpc_ip = std::move(*endpoint);
     }
 
     if (vm.contains("quorum"))
     {
         try
         {
-            config->validationQuorum = vm["quorum"].as<std::size_t>();
-            if (config->validationQuorum == std::size_t{})
+            config->VALIDATION_QUORUM = vm["quorum"].as<std::size_t>();
+            if (config->VALIDATION_QUORUM == std::size_t{})
             {
                 throw std::domain_error("0");
             }
@@ -768,16 +768,16 @@ run(int argc, char** argv)
     }
 
     // Construct the logs object at the configured severity
-    using beast::Severity;
-    Severity thresh = Severity::Info;
+    using namespace beast::severities;
+    Severity thresh = KInfo;
 
     if (vm.contains("quiet"))
     {
-        thresh = Severity::Fatal;
+        thresh = KFatal;
     }
     else if (vm.contains("verbose"))
     {
-        thresh = Severity::Trace;
+        thresh = KTrace;
     }
 
     auto logs = std::make_unique<Logs>(thresh);
@@ -802,7 +802,7 @@ run(int argc, char** argv)
             return -1;
 
         if (vm.contains("debug"))
-            setDebugLogSink(logs->makeSink("Debug", beast::Severity::Trace));
+            setDebugLogSink(logs->makeSink("Debug", beast::severities::KTrace));
 
         auto app =
             makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());

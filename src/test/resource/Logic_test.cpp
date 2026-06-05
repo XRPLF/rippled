@@ -86,7 +86,7 @@ public:
 
         TestLogic logic(j);
 
-        Charge const fee(kDropThreshold + 1);
+        Charge const fee(DropThreshold + 1);
         beast::IP::Endpoint const addr(beast::IP::Endpoint::fromString("192.0.2.2"));
 
         std::function<Consumer(beast::IP::Endpoint)> const ep = limited
@@ -179,7 +179,7 @@ public:
             using namespace std::chrono_literals;
             // Give Consumer time to become readmitted.  Should never
             // exceed expiration time.
-            auto n = kSecondsUntilExpiration + 1s;
+            auto n = kSECONDS_UNTIL_EXPIRATION + 1s;
             while (--n > 0s)
             {
                 ++logic.clock();
@@ -278,7 +278,7 @@ public:
     void
     run() override
     {
-        using beast::Severity;
+        using namespace beast::severities;
         test::SuiteJournal journal("ResourceManager_test", *this);
 
         testDrop(journal, true);

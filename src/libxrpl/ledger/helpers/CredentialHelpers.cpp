@@ -1,6 +1,5 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -10,7 +9,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -25,6 +23,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -34,16 +33,15 @@ namespace xrpl {
 namespace credentials {
 
 bool
-checkExpired(SLE const& sleCredential, NetClock::time_point const& closed)
+checkExpired(std::shared_ptr<SLE const> const& sleCredential, NetClock::time_point const& closed)
 {
     std::uint32_t const exp =
-        sleCredential[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
+        (*sleCredential)[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
     std::uint32_t const now = closed.time_since_epoch().count();
     return now > exp;
 }
 
-[[nodiscard]]
-static Expected<bool, TER>
+bool
 removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
     auto const closeTime = view.header().parentCloseTime;
@@ -55,13 +53,11 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
         auto const k = keylet::credential(h);
         auto const sleCred = view.peek(k);
 
-        if (sleCred && checkExpired(*sleCred, closeTime))
+        if (sleCred && checkExpired(sleCred, closeTime))
         {
             JLOG(j.trace()) << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
-            auto const err = deleteSLE(view, sleCred, j);
-            if (view.rules().enabled(fixCleanup3_1_3) && !isTesSuccess(err))
-                return Unexpected(err);
+            deleteSLE(view, sleCred, j);
             foundExpired = true;
         }
     }
@@ -70,7 +66,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 }
 
 TER
-deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
+deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Journal j)
 {
     if (!sleCredential)
         return tecNO_ENTRY;
@@ -104,7 +100,7 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
 
     auto const issuer = sleCredential->getAccountID(sfIssuer);
     auto const subject = sleCredential->getAccountID(sfSubject);
-    bool const accepted = sleCredential->isFlag(lsfAccepted);
+    bool const accepted = (sleCredential->getFlags() & lsfAccepted) != 0u;
 
     auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
     if (!isTesSuccess(err))
@@ -130,7 +126,7 @@ checkFields(STTx const& tx, beast::Journal j)
         return tesSUCCESS;
 
     auto const& credentials = tx.getFieldV256(sfCredentialIDs);
-    if (credentials.empty() || (credentials.size() > kMaxCredentialsArraySize))
+    if (credentials.empty() || (credentials.size() > kMAX_CREDENTIALS_ARRAY_SIZE))
     {
         JLOG(j.trace()) << "Malformed transaction: Credentials array size is invalid: "
                         << credentials.size();
@@ -173,7 +169,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
             return tecBAD_CREDENTIALS;
         }
 
-        if (!sleCred->isFlag(lsfAccepted))
+        if ((sleCred->getFlags() & lsfAccepted) == 0u)
         {
             JLOG(j.trace()) << "Credential isn't accepted. Cred: " << h;
             return tecBAD_CREDENTIALS;
@@ -209,12 +205,12 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
         // allows expired credentials to be deleted by any transaction.
         if (sleCredential)
         {
-            if (checkExpired(*sleCredential, closeTime))
+            if (checkExpired(sleCredential, closeTime))
             {
                 foundExpired = true;
                 continue;
             }
-            if (sleCredential->isFlag(lsfAccepted))
+            if ((sleCredential->getFlags() & lsfAccepted) != 0u)
             {
                 return tesSUCCESS;
             }
@@ -230,7 +226,7 @@ TER
 authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, AccountID const& dst)
 {
     std::set<std::pair<AccountID, Slice>> sorted;
-    std::vector<SLE::const_pointer> lifeExtender;
+    std::vector<std::shared_ptr<SLE const>> lifeExtender;
     lifeExtender.reserve(credIDs.size());
     for (auto const& h : credIDs)
     {
@@ -287,7 +283,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         }
 
         auto const ct = credential[sfCredentialType];
-        if (ct.empty() || (ct.size() > kMaxCredentialTypeLength))
+        if (ct.empty() || (ct.size() > kMAX_CREDENTIAL_TYPE_LENGTH))
         {
             JLOG(j.trace()) << "Malformed transaction: "
                                "Invalid credentialType size: "
@@ -328,21 +324,18 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
             credentials.pushBack(keyletCredential.key);
     }
 
-    auto const foundExpired = credentials::removeExpired(view, credentials, j);
-    if (!foundExpired.has_value())
-        return foundExpired.error();
-
+    bool const foundExpired = credentials::removeExpired(view, credentials, j);
     for (auto const& h : credentials)
     {
         auto sleCredential = view.read(keylet::credential(h));
         if (!sleCredential)
             continue;  // expired, i.e. deleted in credentials::removeExpired
 
-        if (sleCredential->isFlag(lsfAccepted))
+        if ((sleCredential->getFlags() & lsfAccepted) != 0u)
             return tesSUCCESS;
     }
 
-    return *foundExpired ? tecEXPIRED : tecNO_PERMISSION;
+    return foundExpired ? tecEXPIRED : tecNO_PERMISSION;
 }
 
 TER
@@ -351,7 +344,7 @@ checkDepositPreauth(
     ReadView const& view,
     AccountID const& src,
     AccountID const& dst,
-    SLE::const_ref sleDst,
+    std::shared_ptr<SLE const> const& sleDst,
     beast::Journal j)
 {
     // If depositPreauth is enabled, then an account that requires
@@ -360,17 +353,16 @@ checkDepositPreauth(
     //  2. If src is deposit preauthorized by dst (either by account or by
     //  credentials).
 
-    bool const credentialsPresent = tx.isFieldPresent(sfCredentialIDs);
-
-    if (sleDst && sleDst->isFlag(lsfDepositAuth))
+    if (sleDst && ((sleDst->getFlags() & lsfDepositAuth) != 0u))
     {
         if (src != dst)
         {
             if (!view.exists(keylet::depositPreauth(dst, src)))
             {
-                return !credentialsPresent ? tecNO_PERMISSION
-                                           : credentials::authorizedDepositPreauth(
-                                                 view, tx.getFieldV256(sfCredentialIDs), dst);
+                return !tx.isFieldPresent(sfCredentialIDs)
+                    ? tecNO_PERMISSION
+                    : credentials::authorizedDepositPreauth(
+                          view, tx.getFieldV256(sfCredentialIDs), dst);
             }
         }
     }
@@ -381,14 +373,8 @@ checkDepositPreauth(
 TER
 cleanupExpiredCredentials(STTx const& tx, ApplyView& view, beast::Journal j)
 {
-    if (!tx.isFieldPresent(sfCredentialIDs))
-        return tesSUCCESS;
-
-    auto const foundExpired = credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j);
-    if (!foundExpired.has_value())
-        return foundExpired.error();
-
-    if (*foundExpired)
+    if (tx.isFieldPresent(sfCredentialIDs) &&
+        credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
         return tecEXPIRED;
 
     return tesSUCCESS;
@@ -400,7 +386,7 @@ verifyDepositPreauth(
     ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    SLE::const_ref sleDst,
+    std::shared_ptr<SLE const> const& sleDst,
     beast::Journal j)
 {
     if (auto const err = cleanupExpiredCredentials(tx, view, j); !isTesSuccess(err))

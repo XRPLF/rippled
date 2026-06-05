@@ -174,13 +174,6 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
             env(tx, Fee(linkFixFee), Ter(temINVALID));
         }
         {
-            // NFTokenPageLink fixes require sfOwner and reject fields that
-            // belong to other LedgerStateFix types.
-            json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
-            tx[sfBookDirectory.jsonName] = to_string(uint256{1});
-            env(tx, Fee(linkFixFee), Ter(temINVALID));
-        }
-        {
             // Invalid LedgerFixType codes.
             json::Value tx = ledgerStateFix::nftPageLinks(alice, alice);
             tx[sfLedgerFixType.jsonName] = 0;

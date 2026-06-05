@@ -55,7 +55,7 @@ class Ticket_test : public beast::unit_test::Suite
     {
         using namespace std::string_literals;
 
-        json::Value const& tx{env.tx()->getJson(JsonOptions::Values::None)};
+        json::Value const& tx{env.tx()->getJson(JsonOptions::KNone)};
         {
             std::string const txType = tx[sfTransactionType.jsonName].asString();
 
@@ -71,7 +71,7 @@ class Ticket_test : public beast::unit_test::Suite
         std::uint32_t const txSeq = {tx[sfSequence.jsonName].asUInt()};
         std::string const account = tx[sfAccount.jsonName].asString();
 
-        json::Value const& metadata = env.meta()->getJson(JsonOptions::Values::None);
+        json::Value const& metadata = env.meta()->getJson(JsonOptions::KNone);
         if (!BEAST_EXPECTS(
                 metadata.isMember(sfTransactionResult.jsonName) &&
                     metadata[sfTransactionResult.jsonName].asString() == "tesSUCCESS",
@@ -241,7 +241,7 @@ class Ticket_test : public beast::unit_test::Suite
     void
     checkTicketConsumeMeta(test::jtx::Env& env)
     {
-        json::Value const& tx{env.tx()->getJson(JsonOptions::Values::None)};
+        json::Value const& tx{env.tx()->getJson(JsonOptions::KNone)};
 
         // Verify that the transaction includes a TicketSequence.
 
@@ -274,7 +274,7 @@ class Ticket_test : public beast::unit_test::Suite
 
         std::uint32_t const ticketSeq{tx[sfTicketSequence.jsonName].asUInt()};
 
-        json::Value const& metadata{env.meta()->getJson(JsonOptions::Values::None)};
+        json::Value const& metadata{env.meta()->getJson(JsonOptions::KNone)};
         if (!BEAST_EXPECTS(
                 metadata.isMember(sfTransactionResult.jsonName),
                 "Metadata is missing TransactionResult."))
@@ -673,12 +673,12 @@ class Ticket_test : public beast::unit_test::Suite
 
         // Successfully create several tickets (using a sequence).
         std::uint32_t ticketSeq{env.seq(alice)};
-        static constexpr std::uint32_t kTicketCount{10};
-        env(ticket::create(alice, kTicketCount));
+        static constexpr std::uint32_t kTICKET_COUNT{10};
+        env(ticket::create(alice, kTICKET_COUNT));
         uint256 const txHash1{getTxID()};
 
         // Just for grins use the tickets in reverse from largest to smallest.
-        ticketSeq += kTicketCount;
+        ticketSeq += kTICKET_COUNT;
         env(noop(alice), ticket::Use(--ticketSeq));
         uint256 const txHash2{getTxID()};
 
@@ -757,7 +757,7 @@ class Ticket_test : public beast::unit_test::Suite
     testSignWithTicketSequence()
     {
         // The sign and the submit RPC commands automatically fill in the
-        // Sequence field of a transaction if kNone is provided.  If a
+        // Sequence field of a transaction if kNONE is provided.  If a
         // TicketSequence is provided in the transaction, then the
         // auto-filled Sequence should be zero.
         testcase("Sign with TicketSequence");
@@ -779,11 +779,11 @@ class Ticket_test : public beast::unit_test::Suite
 
         {
             // Test that the "sign" RPC command fills in a "Sequence": 0 field
-            // if kNone is provided.
+            // if kNONE is provided.
 
             // Create a noop transaction using a TicketSequence but don't fill
             // in the Sequence field.
-            json::Value tx = json::ValueType::Object;
+            json::Value tx = json::ObjectValue;
             tx[jss::tx_json] = noop(alice);
             tx[jss::tx_json][sfTicketSequence.jsonName] = ticketSeq;
             tx[jss::secret] = toBase58(generateSeed("alice"));
@@ -812,11 +812,11 @@ class Ticket_test : public beast::unit_test::Suite
         }
         {
             // Test that the "submit" RPC command fills in a "Sequence": 0
-            // field if kNone is provided.
+            // field if kNONE is provided.
 
             // Create a noop transaction using a TicketSequence but don't fill
             // in the Sequence field.
-            json::Value tx = json::ValueType::Object;
+            json::Value tx = json::ObjectValue;
             tx[jss::tx_json] = noop(alice);
             tx[jss::tx_json][sfTicketSequence.jsonName] = ticketSeq + 1;
             tx[jss::secret] = toBase58(generateSeed("alice"));

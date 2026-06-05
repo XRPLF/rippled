@@ -5,6 +5,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
+#include <memory>
+
 namespace xrpl {
 
 /** Delete an offer.
@@ -21,6 +23,6 @@ namespace xrpl {
 */
 // [[nodiscard]] // nodiscard commented out so Flow, BookTip and others compile.
 TER
-offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j);
+offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j);
 
 }  // namespace xrpl

@@ -115,15 +115,15 @@ makeResponse(
 // value: \S+
 
 // compression feature
-static constexpr char kFeatureCompr[] = "compr";
+static constexpr char kFEATURE_COMPR[] = "compr";
 // validation/proposal reduce-relay base squelch feature
-static constexpr char kFeatureVprr[] = "vprr";
+static constexpr char kFEATURE_VPRR[] = "vprr";
 // transaction reduce-relay feature
-static constexpr char kFeatureTxrr[] = "txrr";
+static constexpr char kFEATURE_TXRR[] = "txrr";
 // ledger replay
-static constexpr char kFeatureLedgerReplay[] = "ledgerreplay";
-static constexpr char kDelimFeature[] = ";";
-static constexpr char kDelimValue[] = ",";
+static constexpr char kFEATURE_LEDGER_REPLAY[] = "ledgerreplay";
+static constexpr char kDELIM_FEATURE[] = ";";
+static constexpr char kDELIM_VALUE[] = ",";
 
 /** Get feature's header value
    @param headers request/response header

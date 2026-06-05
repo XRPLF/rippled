@@ -102,7 +102,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test bad_type (not a string/int/uint)
         {
             json::Value j;
-            j[sfCloseResolution] = json::Value(json::ValueType::Array);
+            j[sfCloseResolution] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -110,7 +110,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test bad_type (not a string/int/uint)
         {
             json::Value j;
-            j[sfCloseResolution] = json::Value(json::ValueType::Object);
+            j[sfCloseResolution] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -193,7 +193,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test bad_type (not a string/int/uint)
         {
             json::Value j;
-            j[sfLedgerEntryType] = json::Value(json::ValueType::Array);
+            j[sfLedgerEntryType] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -201,7 +201,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test bad_type (not a string/int/uint)
         {
             json::Value j;
-            j[sfLedgerEntryType] = json::Value(json::ValueType::Object);
+            j[sfLedgerEntryType] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -271,7 +271,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test bad_type (arrayValue)
         {
             json::Value j;
-            j[sfNetworkID] = json::Value(json::ValueType::Array);
+            j[sfNetworkID] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -279,7 +279,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test bad_type (objectValue)
         {
             json::Value j;
-            j[sfNetworkID] = json::Value(json::ValueType::Object);
+            j[sfNetworkID] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -348,7 +348,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // test arrayValue
         {
             json::Value j;
-            j[sfIndexNext] = json::Value(json::ValueType::Array);
+            j[sfIndexNext] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -356,7 +356,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // test objectValue
         {
             json::Value j;
-            j[sfIndexNext] = json::Value(json::ValueType::Object);
+            j[sfIndexNext] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -393,7 +393,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 0xCD,
                 0xEF};
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128::fromRaw(expected));
+            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128{expected});
         }
 
         // Valid lowercase hex string for UInt128
@@ -458,7 +458,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Array value for UInt128 (should fail)
         {
             json::Value j;
-            j[sfEmailHash] = json::Value(json::ValueType::Array);
+            j[sfEmailHash] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -466,7 +466,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Object value for UInt128 (should fail)
         {
             json::Value j;
-            j[sfEmailHash] = json::Value(json::ValueType::Object);
+            j[sfEmailHash] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -488,9 +488,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
             std::array<uint8_t, 20> const expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
                                                       0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
                                                       0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
-            BEAST_EXPECT(
-                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                obj.object->getFieldH160(sfTakerPaysCurrency) == uint160::fromRaw(expected));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency) == uint160{expected});
         }
         // Valid lowercase hex string for UInt160
         {
@@ -546,7 +545,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Array value for UInt160 (should fail)
         {
             json::Value j;
-            j[sfTakerPaysCurrency] = json::Value(json::ValueType::Array);
+            j[sfTakerPaysCurrency] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -554,7 +553,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Object value for UInt160 (should fail)
         {
             json::Value j;
-            j[sfTakerPaysCurrency] = json::Value(json::ValueType::Object);
+            j[sfTakerPaysCurrency] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -576,9 +575,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
             std::array<uint8_t, 24> const expected = {
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-            BEAST_EXPECT(
-                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192::fromRaw(expected));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192{expected});
         }
 
         // Valid lowercase hex string for UInt192
@@ -643,7 +641,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Array value for UInt192 (should fail)
         {
             json::Value j;
-            j[sfMPTokenIssuanceID] = json::Value(json::ValueType::Array);
+            j[sfMPTokenIssuanceID] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -651,7 +649,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Object value for UInt192 (should fail)
         {
             json::Value j;
-            j[sfMPTokenIssuanceID] = json::Value(json::ValueType::Object);
+            j[sfMPTokenIssuanceID] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -678,7 +676,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
                 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256::fromRaw(expected));
+            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256{expected});
         }
         // Valid lowercase hex string for UInt256
         {
@@ -748,7 +746,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Array value for UInt256 (should fail)
         {
             json::Value j;
-            j[sfLedgerHash] = json::Value(json::ValueType::Array);
+            j[sfLedgerHash] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -756,7 +754,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Object value for UInt256 (should fail)
         {
             json::Value j;
-            j[sfLedgerHash] = json::Value(json::ValueType::Object);
+            j[sfLedgerHash] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -867,7 +865,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test bad_type (arrayValue)
         {
             json::Value j;
-            j[sfLoanScale] = json::Value(json::ValueType::Array);
+            j[sfLoanScale] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -875,7 +873,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test bad_type (objectValue)
         {
             json::Value j;
-            j[sfLoanScale] = json::Value(json::ValueType::Object);
+            j[sfLoanScale] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -943,7 +941,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test array value for blob (should fail)
         {
             json::Value j;
-            j[sfPublicKey] = json::Value(json::ValueType::Array);
+            j[sfPublicKey] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -951,7 +949,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test object value for blob (should fail)
         {
             json::Value j;
-            j[sfPublicKey] = json::Value(json::ValueType::Object);
+            j[sfPublicKey] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -964,7 +962,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with valid array of hex strings for Vector256
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
+            json::Value arr(json::ArrayValue);
             arr.append(
                 "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
                 "EF");
@@ -985,7 +983,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test empty array for Vector256 (should be valid, size 0)
         {
             json::Value j;
-            json::Value const arr(json::ValueType::Array);
+            json::Value const arr(json::ArrayValue);
             j[sfHashes] = arr;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
@@ -999,7 +997,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test array with invalid hex string (should fail)
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
+            json::Value arr(json::ArrayValue);
             arr.append("nothexstring");
             j[sfHashes] = arr;
             STParsedJSONObject const obj("Test", j);
@@ -1009,7 +1007,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test array with string of wrong length (should fail)
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
+            json::Value arr(json::ArrayValue);
             arr.append("0123456789ABCDEF");  // too short for uint256
             j[sfHashes] = arr;
             STParsedJSONObject const obj("Test", j);
@@ -1019,7 +1017,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test array with non-string element (should fail)
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
+            json::Value arr(json::ArrayValue);
             arr.append(12345);
             j[sfHashes] = arr;
             STParsedJSONObject const obj("Test", j);
@@ -1037,8 +1035,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test array with object element (should fail)
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
-            json::Value objElem(json::ValueType::Object);
+            json::Value arr(json::ArrayValue);
+            json::Value objElem(json::ObjectValue);
             objElem["foo"] = "bar";
             arr.append(objElem);
             j[sfHashes] = arr;
@@ -1121,7 +1119,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Array value for AccountID (should fail)
         {
             json::Value j;
-            j[sfAccount] = json::Value(json::ValueType::Array);
+            j[sfAccount] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -1129,7 +1127,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Object value for AccountID (should fail)
         {
             json::Value j;
-            j[sfAccount] = json::Value(json::ValueType::Object);
+            j[sfAccount] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -1231,7 +1229,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Array value for currency (should fail)
         {
             json::Value j;
-            j[sfBaseAsset] = json::Value(json::ValueType::Array);
+            j[sfBaseAsset] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -1239,7 +1237,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Object value for currency (should fail)
         {
             json::Value j;
-            j[sfBaseAsset] = json::Value(json::ValueType::Object);
+            j[sfBaseAsset] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -1300,7 +1298,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with object value for Amount (should fail)
         {
             json::Value j;
-            j[sfAmount] = json::Value(json::ValueType::Object);
+            j[sfAmount] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -1313,13 +1311,13 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Valid test: single path with single element
         {
             json::Value j;
-            json::Value path(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value path(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             elem["currency"] = "USD";
             elem["issuer"] = "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe";
             path.append(elem);
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject obj("Test", j);
@@ -1345,13 +1343,13 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Valid test: non-standard currency code
         {
             json::Value j;
-            json::Value path(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value path(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             elem["currency"] = "0123456789ABCDEF01230123456789ABCDEF0123";
             elem["issuer"] = "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe";
             path.append(elem);
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject obj("Test", j);
@@ -1374,7 +1372,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with array containing non-array element (should fail)
         {
             json::Value j;
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append("notanarray");
             j[sfPaths] = pathset;
             STParsedJSONObject const obj("Test", j);
@@ -1385,9 +1383,9 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // fail)
         {
             json::Value j;
-            json::Value path(json::ValueType::Array);
+            json::Value path(json::ArrayValue);
             path.append("notanobject");
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject const obj("Test", j);
@@ -1398,11 +1396,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // (should fail)
         {
             json::Value j;
-            json::Value path(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value path(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem["foo"] = "bar";  // not a valid path element key
             path.append(elem);
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject const obj("Test", j);
@@ -1413,11 +1411,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // value (should fail)
         {
             json::Value j;
-            json::Value path(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value path(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem["account"] = "notAValidBase58Account";
             path.append(elem);
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject const obj("Test", j);
@@ -1427,11 +1425,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with account not string (should fail)
         {
             json::Value j;
-            json::Value path(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value path(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem["account"] = 12345;
             path.append(elem);
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject const obj("Test", j);
@@ -1441,11 +1439,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with currency not string (should fail)
         {
             json::Value j;
-            json::Value path(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value path(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem["currency"] = 12345;
             path.append(elem);
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject const obj("Test", j);
@@ -1455,11 +1453,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with non-standard currency not hex (should fail)
         {
             json::Value j;
-            json::Value path(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value path(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem["currency"] = "notAValidCurrency";
             path.append(elem);
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject const obj("Test", j);
@@ -1469,11 +1467,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with issuer not string (should fail)
         {
             json::Value j;
-            json::Value path(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value path(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem["issuer"] = 12345;
             path.append(elem);
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject const obj("Test", j);
@@ -1483,11 +1481,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with issuer not base58 (should fail)
         {
             json::Value j;
-            json::Value path(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value path(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem["issuer"] = "notAValidBase58Account";
             path.append(elem);
-            json::Value pathset(json::ValueType::Array);
+            json::Value pathset(json::ArrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject const obj("Test", j);
@@ -1502,7 +1500,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Valid Issue: currency and issuer as base58
         {
             json::Value j;
-            json::Value issueJson(json::ValueType::Object);
+            json::Value issueJson(json::ObjectValue);
             issueJson["currency"] = "USD";
             issueJson["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfAsset] = issueJson;
@@ -1525,7 +1523,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Valid Issue: currency as hex
         {
             json::Value j;
-            json::Value issueJson(json::ValueType::Object);
+            json::Value issueJson(json::ObjectValue);
             issueJson["currency"] = "0123456789ABCDEF01230123456789ABCDEF0123";
             issueJson["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfAsset] = issueJson;
@@ -1543,7 +1541,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Valid Issue: MPTID
         {
             json::Value j;
-            json::Value issueJson(json::ValueType::Object);
+            json::Value issueJson(json::ObjectValue);
             issueJson["mpt_issuance_id"] = "0000000000000000000000004D5054494431323334234234";
             j[sfAsset] = issueJson;
             STParsedJSONObject obj("Test", j);
@@ -1559,7 +1557,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid Issue: missing currency
         {
             json::Value j;
-            json::Value issue(json::ValueType::Object);
+            json::Value issue(json::ObjectValue);
             issue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfAsset] = issue;
             STParsedJSONObject const obj("Test", j);
@@ -1569,7 +1567,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid Issue: missing issuer
         {
             json::Value j;
-            json::Value issue(json::ValueType::Object);
+            json::Value issue(json::ObjectValue);
             issue["currency"] = "USD";
             j[sfAsset] = issue;
             STParsedJSONObject const obj("Test", j);
@@ -1579,7 +1577,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid Issue: currency too long
         {
             json::Value j;
-            json::Value issue(json::ValueType::Object);
+            json::Value issue(json::ObjectValue);
             issue["currency"] = "USDD";
             issue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfAsset] = issue;
@@ -1590,7 +1588,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid Issue: issuer not base58 or hex
         {
             json::Value j;
-            json::Value issue(json::ValueType::Object);
+            json::Value issue(json::ObjectValue);
             issue["currency"] = "USD";
             issue["issuer"] = "notAValidIssuer";
             j[sfAsset] = issue;
@@ -1601,8 +1599,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid Issue: currency not string
         {
             json::Value j;
-            json::Value issue(json::ValueType::Object);
-            issue["currency"] = json::Value(json::ValueType::Array);
+            json::Value issue(json::ObjectValue);
+            issue["currency"] = json::Value(json::ArrayValue);
             issue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfAsset] = issue;
             STParsedJSONObject const obj("Test", j);
@@ -1612,9 +1610,9 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid Issue: issuer not string
         {
             json::Value j;
-            json::Value issue(json::ValueType::Object);
+            json::Value issue(json::ObjectValue);
             issue["currency"] = "USD";
-            issue["issuer"] = json::Value(json::ValueType::Object);
+            issue["issuer"] = json::Value(json::ObjectValue);
             j[sfAsset] = issue;
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
@@ -1636,11 +1634,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Valid XChainBridge
         {
             json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value issuingChainIssue(json::ValueType::Object);
+            json::Value bridge(json::ObjectValue);
+            json::Value issuingChainIssue(json::ObjectValue);
             issuingChainIssue["currency"] = "USD";
             issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            json::Value lockingChainIssue(json::ValueType::Object);
+            json::Value lockingChainIssue(json::ObjectValue);
             lockingChainIssue["currency"] = "EUR";
             lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["LockingChainIssue"] = lockingChainIssue;
@@ -1661,11 +1659,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Valid XChainBridge: issues as hex currency
         {
             json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value issuingChainIssue(json::ValueType::Object);
+            json::Value bridge(json::ObjectValue);
+            json::Value issuingChainIssue(json::ObjectValue);
             issuingChainIssue["currency"] = "0123456789ABCDEF01230123456789ABCDEF0123";
             issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            json::Value lockingChainIssue(json::ValueType::Object);
+            json::Value lockingChainIssue(json::ObjectValue);
             lockingChainIssue["currency"] = "0123456789ABCDEF01230123456789ABCDEF0123";
             lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["LockingChainIssue"] = lockingChainIssue;
@@ -1686,8 +1684,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid XChainBridge: missing LockingChainIssue
         {
             json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value issuingChainIssue(json::ValueType::Object);
+            json::Value bridge(json::ObjectValue);
+            json::Value issuingChainIssue(json::ObjectValue);
             issuingChainIssue["currency"] = "USD";
             issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["IssuingChainIssue"] = issuingChainIssue;
@@ -1701,8 +1699,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid XChainBridge: missing IssuingChainIssue
         {
             json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value lockingChainIssue(json::ValueType::Object);
+            json::Value bridge(json::ObjectValue);
+            json::Value lockingChainIssue(json::ObjectValue);
             lockingChainIssue["currency"] = "EUR";
             lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["LockingChainIssue"] = lockingChainIssue;
@@ -1716,12 +1714,12 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid XChainBridge: missing LockingChainDoor
         {
             json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value issuingChainIssue(json::ValueType::Object);
+            json::Value bridge(json::ObjectValue);
+            json::Value issuingChainIssue(json::ObjectValue);
             issuingChainIssue["currency"] = "USD";
             issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["IssuingChainIssue"] = issuingChainIssue;
-            json::Value lockingChainIssue(json::ValueType::Object);
+            json::Value lockingChainIssue(json::ObjectValue);
             lockingChainIssue["currency"] = "EUR";
             lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["LockingChainIssue"] = lockingChainIssue;
@@ -1734,12 +1732,12 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid XChainBridge: missing IssuingChainDoor
         {
             json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value issuingChainIssue(json::ValueType::Object);
+            json::Value bridge(json::ObjectValue);
+            json::Value issuingChainIssue(json::ObjectValue);
             issuingChainIssue["currency"] = "USD";
             issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["IssuingChainIssue"] = issuingChainIssue;
-            json::Value lockingChainIssue(json::ValueType::Object);
+            json::Value lockingChainIssue(json::ObjectValue);
             lockingChainIssue["currency"] = "EUR";
             lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["LockingChainIssue"] = lockingChainIssue;
@@ -1752,7 +1750,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid XChainBridge: IssuingChainIssue not an object
         {
             json::Value j;
-            json::Value bridge(json::ValueType::Object);
+            json::Value bridge(json::ObjectValue);
             bridge["LockingChainIssue"] = "notanobject";
             bridge["IssuingChainIssue"] = "notanobject";
             j[sfXChainBridge] = bridge;
@@ -1763,10 +1761,10 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid XChainBridge: IssuingChainIssue missing currency
         {
             json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value asset(json::ValueType::Object);
+            json::Value bridge(json::ObjectValue);
+            json::Value asset(json::ObjectValue);
             asset["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            json::Value lockingChainIssue(json::ValueType::Object);
+            json::Value lockingChainIssue(json::ObjectValue);
             lockingChainIssue["currency"] = "EUR";
             lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["LockingChainIssue"] = lockingChainIssue;
@@ -1779,10 +1777,10 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid XChainBridge: asset missing issuer
         {
             json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value asset(json::ValueType::Object);
+            json::Value bridge(json::ObjectValue);
+            json::Value asset(json::ObjectValue);
             asset["currency"] = "USD";
-            json::Value lockingChainIssue(json::ValueType::Object);
+            json::Value lockingChainIssue(json::ObjectValue);
             lockingChainIssue["currency"] = "EUR";
             lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["LockingChainIssue"] = lockingChainIssue;
@@ -1795,11 +1793,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid XChainBridge: asset issuer not base58
         {
             json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value asset(json::ValueType::Object);
+            json::Value bridge(json::ObjectValue);
+            json::Value asset(json::ObjectValue);
             asset["currency"] = "USD";
             asset["issuer"] = "notAValidBase58Account";
-            json::Value lockingChainIssue(json::ValueType::Object);
+            json::Value lockingChainIssue(json::ObjectValue);
             lockingChainIssue["currency"] = "EUR";
             lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["LockingChainIssue"] = lockingChainIssue;
@@ -1905,7 +1903,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid array value for STNumber
         {
             json::Value j;
-            j[sfNumber] = json::Value(json::ValueType::Array);
+            j[sfNumber] = json::Value(json::ArrayValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -1913,7 +1911,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Invalid object value for STNumber
         {
             json::Value j;
-            j[sfNumber] = json::Value(json::ValueType::Object);
+            j[sfNumber] = json::Value(json::ObjectValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -1934,7 +1932,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with valid object for Object
         {
             json::Value j;
-            json::Value objVal(json::ValueType::Object);
+            json::Value objVal(json::ObjectValue);
             objVal[sfTransactionResult] = 1;
             j[sfTransactionMetaData] = objVal;
             STParsedJSONObject obj("Test", j);
@@ -1957,7 +1955,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with array value for Object (should fail)
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
+            json::Value arr(json::ArrayValue);
             arr.append(1);
             j[sfTransactionMetaData] = arr;
             STParsedJSONObject const obj("Test", j);
@@ -1967,7 +1965,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with null value for Object (should fail)
         {
             json::Value j;
-            j[sfTransactionMetaData] = json::Value(json::ValueType::Null);
+            j[sfTransactionMetaData] = json::Value(json::NullValue);
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -1976,11 +1974,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // max depth is 64
         {
             json::Value j;
-            json::Value obj(json::ValueType::Object);
+            json::Value obj(json::ObjectValue);
             json::Value* current = &obj;
             for (int i = 0; i < 63; ++i)
             {
-                json::Value const next(json::ValueType::Object);
+                json::Value const next(json::ObjectValue);
                 (*current)[sfTransactionMetaData] = next;
                 current = &((*current)[sfTransactionMetaData]);
             }
@@ -1995,11 +1993,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with depth exceeding maxDepth (should fail)
         {
             json::Value j;
-            json::Value obj(json::ValueType::Object);
+            json::Value obj(json::ObjectValue);
             json::Value* current = &obj;
             for (int i = 0; i < 64; ++i)
             {
-                json::Value const next(json::ValueType::Object);
+                json::Value const next(json::ObjectValue);
                 (*current)[sfTransactionMetaData] = next;
                 current = &((*current)[sfTransactionMetaData]);
             }
@@ -2017,10 +2015,10 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with valid array for Array
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value arr(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem[sfTransactionResult] = 2;
-            json::Value elem2(json::ValueType::Object);
+            json::Value elem2(json::ObjectValue);
             elem2[sfTransactionMetaData] = elem;
             arr.append(elem2);
             j[sfSignerEntries] = arr;
@@ -2040,7 +2038,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with array containing non-object element (should fail)
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
+            json::Value arr(json::ArrayValue);
             arr.append("notanobject");
             j[sfSignerEntries] = arr;
             STParsedJSONObject const obj("Test", j);
@@ -2050,8 +2048,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with array containing object with invalid field (should fail)
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value arr(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem["invalidField"] = 1;
             arr.append(elem);
             j[sfSignerEntries] = arr;
@@ -2062,8 +2060,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with array containing object with multiple keys (should fail)
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value arr(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem[sfTransactionResult] = 2;
             elem[sfNetworkID] = 3;
             arr.append(elem);
@@ -2084,8 +2082,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // (should fail)
         {
             json::Value j;
-            json::Value arr(json::ValueType::Array);
-            json::Value elem(json::ValueType::Object);
+            json::Value arr(json::ArrayValue);
+            json::Value elem(json::ObjectValue);
             elem[sfTransactionResult] = "notanint";
             arr.append(elem);
             j[sfSignerEntries] = arr;
@@ -2096,7 +2094,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with empty array for Array (should be valid)
         {
             json::Value j;
-            json::Value const arr(json::ValueType::Array);
+            json::Value const arr(json::ArrayValue);
             j[sfSignerEntries] = arr;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
@@ -2107,8 +2105,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
         // Test with object provided but not object SField
         {
             json::Value j;
-            json::Value obj(json::ValueType::Array);
-            obj.append(json::Value(json::ValueType::Object));
+            json::Value obj(json::ArrayValue);
+            obj.append(json::Value(json::ObjectValue));
             obj[0u][sfTransactionResult] = 1;
             j[sfSignerEntries] = obj;
             STParsedJSONObject const parsed("Test", j);
@@ -2175,7 +2173,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 {
                     std::string const& serialized(
                         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                        to_string(parsed.object->getJson(JsonOptions::Values::None)));
+                        to_string(parsed.object->getJson(JsonOptions::KNone)));
                     BEAST_EXPECT(serialized == goodJson);
                 }
             }
@@ -2200,7 +2198,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 {
                     std::string const& serialized(
                         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                        to_string(parsed.object->getJson(JsonOptions::Values::None)));
+                        to_string(parsed.object->getJson(JsonOptions::KNone)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
@@ -2225,7 +2223,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 {
                     std::string const& serialized(
                         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                        to_string(parsed.object->getJson(JsonOptions::Values::None)));
+                        to_string(parsed.object->getJson(JsonOptions::KNone)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }
@@ -2334,7 +2332,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 {
                     std::string const& serialized(
                         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                        to_string(parsed.object->getJson(JsonOptions::Values::None)));
+                        to_string(parsed.object->getJson(JsonOptions::KNone)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
             }

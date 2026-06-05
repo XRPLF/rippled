@@ -31,7 +31,7 @@ doPeerReservationsDel(RPC::JsonContext& context)
 
     auto const previous = context.app.getPeerReservations().erase(nodeId);
 
-    json::Value result{json::ValueType::Object};
+    json::Value result{json::ObjectValue};
     if (previous)
     {
         result[jss::previous] = previous->toJson();

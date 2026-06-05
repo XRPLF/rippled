@@ -7,11 +7,12 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 
+#include <memory>
 #include <unordered_set>
 
 namespace xrpl {
 NotTEC
-checkTxPermission(SLE::const_ref delegate, STTx const& tx)
+checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
 {
     if (!delegate)
         return terNO_DELEGATE_PERMISSION;
@@ -31,7 +32,7 @@ checkTxPermission(SLE::const_ref delegate, STTx const& tx)
 
 void
 loadGranularPermission(
-    SLE::const_ref delegate,
+    std::shared_ptr<SLE const> const& delegate,
     TxType const& txType,
     std::unordered_set<GranularPermissionType>& granularPermissions)
 {

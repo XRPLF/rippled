@@ -299,8 +299,8 @@ private:
     static Suite**
     pThisSuite()
     {
-        static Suite* kPTs = nullptr;  // NOLINT TODO
-        return &kPTs;
+        static Suite* kP_TS = nullptr;  // NOLINT TODO
+        return &kP_TS;
     }
 
     /** Runs the suite. */

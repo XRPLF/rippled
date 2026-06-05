@@ -2,25 +2,29 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
-#include <cstdint>
 #include <sstream>
 
 namespace beast {
 
+/** A namespace for easy access to logging severity values. */
+namespace severities {
 /** Severity level / threshold of a Journal message. */
-enum class Severity : std::uint8_t {
-    All = 0,
+// Hundreds of usages via logging macros
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum Severity {
+    KAll = 0,
 
-    Trace = All,
-    Debug = 1,
-    Info = 2,
-    Warning = 3,
-    Error = 4,
-    Fatal = 5,
+    KTrace = KAll,
+    KDebug = 1,
+    KInfo = 2,
+    KWarning = 3,
+    KError = 4,
+    KFatal = 5,
 
-    Disabled = 6,
-    None = Disabled
+    KDisabled = 6,
+    KNone = KDisabled
 };
+}  // namespace severities
 
 /** A generic endpoint for log messages.
 
@@ -40,6 +44,9 @@ public:
     class Sink;
 
 private:
+    // Severity level / threshold of a Journal message.
+    using Severity = severities::Severity;
+
     // Invariant: sink_ always points to a valid Sink
     Sink* sink_;
 
@@ -176,7 +183,7 @@ public:
     {
     public:
         /** Create a stream which produces no output. */
-        explicit Stream() : sink_(getNullSink()), level_(Severity::Disabled)
+        explicit Stream() : sink_(getNullSink()), level_(severities::KDisabled)
         {
         }
 
@@ -187,7 +194,7 @@ public:
         Stream(Sink& sink, Severity level) : sink_(sink), level_(level)
         {
             XRPL_ASSERT(
-                level_ < Severity::Disabled, "beast::Journal::Stream::Stream : maximum level");
+                level_ < severities::KDisabled, "beast::Journal::Stream::Stream : maximum level");
         }
 
         /** Construct or copy another Stream. */
@@ -290,37 +297,37 @@ public:
     [[nodiscard]] Stream
     trace() const
     {
-        return {*sink_, Severity::Trace};
+        return {*sink_, severities::KTrace};
     }
 
     [[nodiscard]] Stream
     debug() const
     {
-        return {*sink_, Severity::Debug};
+        return {*sink_, severities::KDebug};
     }
 
     [[nodiscard]] Stream
     info() const
     {
-        return {*sink_, Severity::Info};
+        return {*sink_, severities::KInfo};
     }
 
     [[nodiscard]] Stream
     warn() const
     {
-        return {*sink_, Severity::Warning};
+        return {*sink_, severities::KWarning};
     }
 
     [[nodiscard]] Stream
     error() const
     {
-        return {*sink_, Severity::Error};
+        return {*sink_, severities::KError};
     }
 
     [[nodiscard]] Stream
     fatal() const
     {
-        return {*sink_, Severity::Fatal};
+        return {*sink_, severities::KFatal};
     }
     /** @} */
 };

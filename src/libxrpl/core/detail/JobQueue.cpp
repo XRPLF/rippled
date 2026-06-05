@@ -36,7 +36,7 @@ JobQueue::JobQueue(
     JLOG(journal_.info()) << "Using " << threadCount << "  threads";
 
     hook_ = collector_->makeHook(std::bind(&JobQueue::collect, this));
-    jobCount_ = collector_->makeGauge("job_count");
+    job_count_ = collector_->makeGauge("job_count");
 
     {
         std::scoped_lock const lock(mutex_);
@@ -66,7 +66,7 @@ void
 JobQueue::collect()
 {
     std::scoped_lock const lock(mutex_);
-    jobCount_ = jobSet_.size();
+    job_count_ = jobSet_.size();
 }
 
 bool
@@ -186,11 +186,11 @@ json::Value
 JobQueue::getJson(int c)
 {
     using namespace std::chrono_literals;
-    json::Value ret(json::ValueType::Object);
+    json::Value ret(json::ObjectValue);
 
     ret["threads"] = workers_.getNumberOfThreads();
 
-    json::Value priorities = json::ValueType::Array;
+    json::Value priorities = json::ArrayValue;
 
     std::scoped_lock const lock(mutex_);
 
@@ -210,7 +210,7 @@ JobQueue::getJson(int c)
 
         if ((stats.count != 0) || (waiting != 0) || (stats.latencyPeak != 0ms) || (running != 0))
         {
-            json::Value& pri = priorities.append(json::ValueType::Object);
+            json::Value& pri = priorities.append(json::ObjectValue);
 
             pri["job_type"] = data.name();
 

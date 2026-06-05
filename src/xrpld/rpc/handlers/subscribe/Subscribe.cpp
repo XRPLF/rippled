@@ -30,7 +30,7 @@ json::Value
 doSubscribe(RPC::JsonContext& context)
 {
     InfoSub::pointer ispSub;
-    json::Value jvResult(json::ValueType::Object);
+    json::Value jvResult(json::ObjectValue);
 
     if (!context.infoSub && !context.params.isMember(jss::url))
     {
@@ -197,7 +197,7 @@ doSubscribe(RPC::JsonContext& context)
         if (!context.app.config().useTxTables())
             return rpcError(RpcNotEnabled);
 
-        context.loadType = Resource::kFeeMediumBurdenRpc;
+        context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
         auto const& req = context.params[jss::account_history_tx_stream];
         if (!req.isMember(jss::account) || !req[jss::account].isString())
             return rpcError(RpcInvalidParams);
@@ -285,13 +285,13 @@ doSubscribe(RPC::JsonContext& context)
             if ((j.isMember(jss::snapshot) && j[jss::snapshot].asBool()) ||
                 (j.isMember(jss::state_now) && j[jss::state_now].asBool()))
             {
-                context.loadType = Resource::kFeeMediumBurdenRpc;
+                context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
                 std::shared_ptr<ReadView const> lpLedger =
                     context.app.getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
                 {
-                    json::Value const jvMarker = json::Value(json::ValueType::Null);
-                    json::Value jvOffers(json::ValueType::Object);
+                    json::Value const jvMarker = json::Value(json::NullValue);
+                    json::Value jvOffers(json::ObjectValue);
 
                     auto add = [&](json::StaticString field) {
                         context.netOps.getBookPage(
@@ -299,7 +299,7 @@ doSubscribe(RPC::JsonContext& context)
                             field == jss::asks ? reversed(book) : book,
                             takerID ? *takerID : noAccount(),
                             false,
-                            RPC::Tuning::kBookOffers.rDefault,
+                            RPC::Tuning::kBOOK_OFFERS.rDefault,
                             jvMarker,
                             jvOffers);
 

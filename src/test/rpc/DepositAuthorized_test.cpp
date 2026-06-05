@@ -32,7 +32,7 @@ public:
         std::string const& ledger = "",
         std::vector<std::string> const& credentials = {})
     {
-        json::Value args{json::ValueType::Object};
+        json::Value args{json::ObjectValue};
         args[jss::source_account] = source.human();
         args[jss::destination_account] = dest.human();
         if (!ledger.empty())
@@ -40,7 +40,7 @@ public:
 
         if (!credentials.empty())
         {
-            auto& arr(args[jss::credentials] = json::ValueType::Array);
+            auto& arr(args[jss::credentials] = json::ArrayValue);
             for (auto const& s : credentials)
                 arr.append(s);
         }
@@ -331,7 +331,7 @@ public:
             testcase("deposit_authorized with credentials failure: empty array.");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = json::ValueType::Array;
+            args[jss::credentials] = json::ArrayValue;
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
             checkCredentialsResponse(jv[jss::result], alice, becky, false, {}, "invalidParams");
@@ -343,7 +343,7 @@ public:
                 "credentials");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = json::ValueType::Array;
+            args[jss::credentials] = json::ArrayValue;
             args[jss::credentials].append(1);
             args[jss::credentials].append(3);
 
@@ -357,7 +357,7 @@ public:
                 "credentials");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = json::ValueType::Array;
+            args[jss::credentials] = json::ArrayValue;
             args[jss::credentials].append("hello world");
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
@@ -415,7 +415,7 @@ public:
         }
 
         {
-            static std::vector<std::string> const kCredIds = {
+            static std::vector<std::string> const kCRED_IDS = {
                 "18004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "28004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "38004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
@@ -426,15 +426,15 @@ public:
                 "88004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
                 "98004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4",
             };
-            assert(kCredIds.size() > kMaxCredentialsArraySize);
+            assert(kCRED_IDS.size() > kMAX_CREDENTIALS_ARRAY_SIZE);
 
             testcase("deposit_authorized too long credentials");
             auto const jv = env.rpc(
                 "json",
                 "deposit_authorized",
-                depositAuthArgs(alice, becky, "validated", kCredIds).toStyledString());
+                depositAuthArgs(alice, becky, "validated", kCRED_IDS).toStyledString());
             checkCredentialsResponse(
-                jv[jss::result], alice, becky, false, kCredIds, "invalidParams");
+                jv[jss::result], alice, becky, false, kCRED_IDS, "invalidParams");
         }
 
         {

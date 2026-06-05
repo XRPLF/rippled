@@ -16,7 +16,7 @@ namespace xrpl::NodeStore {
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
     : callback_(callback), scheduler_(scheduler)
 {
-    writeSet_.reserve(kBatchWritePreallocationSize);
+    writeSet_.reserve(BatchWritePreallocationSize);
 }
 
 BatchWriter::~BatchWriter()
@@ -31,7 +31,7 @@ BatchWriter::store(std::shared_ptr<NodeObject> const& object)
 
     // If the batch has reached its limit, we wait
     // until the batch writer is finished
-    while (writeSet_.size() >= kBatchWritePreallocationSize)
+    while (writeSet_.size() >= BatchWriteLimitSize)
         writeCondition_.wait(sl);
 
     writeSet_.push_back(object);
@@ -65,7 +65,7 @@ BatchWriter::writeBatch()
     {
         std::vector<std::shared_ptr<NodeObject>> set;
 
-        set.reserve(kBatchWritePreallocationSize);
+        set.reserve(BatchWritePreallocationSize);
 
         {
             std::scoped_lock const sl(writeMutex_);

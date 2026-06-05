@@ -242,25 +242,25 @@ doBookOffers(RPC::JsonContext& context)
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::kBookOffers, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kBOOK_OFFERS, context))
         return *err;
 
     bool const bProof(context.params.isMember(jss::proof));
 
     json::Value const jvMarker(
         context.params.isMember(jss::marker) ? context.params[jss::marker]
-                                             : json::Value(json::ValueType::Null));
+                                             : json::Value(json::NullValue));
 
     context.netOps.getBookPage(
         lpLedger,
         {book.in, book.out, domain},
-        takerID ? *takerID : beast::kZero,
+        takerID ? *takerID : beast::kZERO,
         bProof,
         limit,
         jvMarker,
         jvResult);
 
-    context.loadType = Resource::kFeeMediumBurdenRpc;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
     return jvResult;
 }

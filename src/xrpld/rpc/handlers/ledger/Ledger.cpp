@@ -80,13 +80,10 @@ LedgerHandler::check()
     if (!queue.has_value())
         return queue.error();
 
-    options_ = (*full ? static_cast<int>(LedgerFill::Options::Full) : 0) |
-        (*expand ? static_cast<int>(LedgerFill::Options::Expand) : 0) |
-        (*transactions ? static_cast<int>(LedgerFill::Options::DumpTxrp) : 0) |
-        (*accounts ? static_cast<int>(LedgerFill::Options::DumpState) : 0) |
-        (*binary ? static_cast<int>(LedgerFill::Options::Binary) : 0) |
-        (*ownerFunds ? static_cast<int>(LedgerFill::Options::OwnerFunds) : 0) |
-        (*queue ? static_cast<int>(LedgerFill::Options::DumpQueue) : 0);
+    options_ = (*full ? LedgerFill::Full : 0) | (*expand ? LedgerFill::Expand : 0) |
+        (*transactions ? LedgerFill::DumpTxrp : 0) | (*accounts ? LedgerFill::DumpState : 0) |
+        (*binary ? LedgerFill::Binary : 0) | (*ownerFunds ? LedgerFill::OwnerFunds : 0) |
+        (*queue ? LedgerFill::DumpQueue : 0);
 
     bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
         params.isMember(jss::ledger_index);
@@ -106,7 +103,8 @@ LedgerHandler::check()
         {
             return RpcTooBusy;
         }
-        context_.loadType = binary ? Resource::kFeeMediumBurdenRpc : Resource::kFeeHeavyBurdenRpc;
+        context_.loadType =
+            binary ? Resource::kFEE_MEDIUM_BURDEN_RPC : Resource::kFEE_HEAVY_BURDEN_RPC;
     }
 
     if (*queue)
@@ -136,19 +134,19 @@ LedgerHandler::writeResult(json::Value& value)
     {
         auto& master = context_.app.getLedgerMaster();
         {
-            auto& closed = value[jss::closed] = json::ValueType::Object;
+            auto& closed = value[jss::closed] = json::ObjectValue;
             addJson(closed, {*master.getClosedLedger(), &context_, 0});
         }
         {
-            auto& open = value[jss::open] = json::ValueType::Object;
+            auto& open = value[jss::open] = json::ObjectValue;
             addJson(open, {*master.getCurrentLedger(), &context_, 0});
         }
     }
 
-    json::Value warnings{json::ValueType::Array};
+    json::Value warnings{json::ArrayValue};
     if (context_.params.isMember(jss::type))
     {
-        json::Value& w = warnings.append(json::ValueType::Object);
+        json::Value& w = warnings.append(json::ObjectValue);
         w[jss::id] = WarnRpcFieldsDeprecated;
         w[jss::message] =
             "Some fields from your request are deprecated. Please check the "

@@ -42,18 +42,18 @@ public:
             return true;
 
         if (s.inbound())
-            return inActive_ < inMax_;
+            return in_active_ < in_max_;
 
-        return outActive_ < outMax_;
+        return out_active_ < out_max_;
     }
 
     /** Returns the number of attempts needed to bring us to the max. */
     [[nodiscard]] std::size_t
     attemptsNeeded() const
     {
-        if (attempts_ >= Tuning::kMaxConnectAttempts)
+        if (attempts_ >= Tuning::MaxConnectAttempts)
             return 0;
-        return Tuning::kMaxConnectAttempts - attempts_;
+        return Tuning::MaxConnectAttempts - attempts_;
     }
 
     /** Returns the number of outbound connection attempts. */
@@ -67,7 +67,7 @@ public:
     [[nodiscard]] int
     outMax() const
     {
-        return outMax_;
+        return out_max_;
     }
 
     /** Returns the number of outbound peers assigned an open slot.
@@ -76,7 +76,7 @@ public:
     [[nodiscard]] int
     outActive() const
     {
-        return outActive_;
+        return out_active_;
     }
 
     /** Returns the number of fixed connections. */
@@ -90,7 +90,7 @@ public:
     [[nodiscard]] std::size_t
     fixedActive() const
     {
-        return fixedActive_;
+        return fixed_active_;
     }
 
     //--------------------------------------------------------------------------
@@ -99,9 +99,9 @@ public:
     void
     onConfig(Config const& config)
     {
-        outMax_ = config.outPeers;
+        out_max_ = config.outPeers;
         if (config.wantIncoming)
-            inMax_ = config.inPeers;
+            in_max_ = config.inPeers;
     }
 
     /** Returns the number of accepted connections that haven't handshaked. */
@@ -129,21 +129,21 @@ public:
     [[nodiscard]] int
     inMax() const
     {
-        return inMax_;
+        return in_max_;
     }
 
     /** Returns the number of inbound peers assigned an open slot. */
     [[nodiscard]] int
     inboundActive() const
     {
-        return inActive_;
+        return in_active_;
     }
 
     /** Returns the total number of active peers excluding fixed peers. */
     [[nodiscard]] int
     totalActive() const
     {
-        return inActive_ + outActive_;
+        return in_active_ + out_active_;
     }
 
     /** Returns the number of unused inbound slots.
@@ -152,8 +152,8 @@ public:
     [[nodiscard]] int
     inboundSlotsFree() const
     {
-        if (inActive_ < inMax_)
-            return inMax_ - inActive_;
+        if (in_active_ < in_max_)
+            return in_max_ - in_active_;
         return 0;
     }
 
@@ -163,8 +163,8 @@ public:
     [[nodiscard]] int
     outboundSlotsFree() const
     {
-        if (outActive_ < outMax_)
-            return outMax_ - outActive_;
+        if (out_active_ < out_max_)
+            return out_max_ - out_active_;
         return 0;
     }
 
@@ -181,7 +181,7 @@ public:
         //
         // Fixed peers do not count towards the active outgoing total.
 
-        return outMax_ <= 0;
+        return out_max_ <= 0;
     }
 
     /** Output statistics. */
@@ -191,9 +191,9 @@ public:
         map["accept"] = acceptCount();
         map["connect"] = connectCount();
         map["close"] = closingCount();
-        map["in"] << inActive_ << "/" << inMax_;
-        map["out"] << outActive_ << "/" << outMax_;
-        map["fixed"] = fixedActive_;
+        map["in"] << in_active_ << "/" << in_max_;
+        map["out"] << out_active_ << "/" << out_max_;
+        map["fixed"] = fixed_active_;
         map["reserved"] = reserved_;
         map["total"] = active_;
     }
@@ -203,7 +203,7 @@ public:
     stateString() const
     {
         std::stringstream ss;
-        ss << outActive_ << "/" << outMax_ << " out, " << inActive_ << "/" << inMax_ << " in, "
+        ss << out_active_ << "/" << out_max_ << " out, " << in_active_ << "/" << in_max_ << " in, "
            << connectCount() << " connecting, " << closingCount() << " closing";
         return ss.str();
     }
@@ -262,16 +262,16 @@ private:
 
             case Slot::State::Active:
                 if (s.fixed())
-                    adjustCounter(fixedActive_, dir);
+                    adjustCounter(fixed_active_, dir);
                 if (!s.fixed() && !s.reserved())
                 {
                     if (s.inbound())
                     {
-                        adjustCounter(inActive_, dir);
+                        adjustCounter(in_active_, dir);
                     }
                     else
                     {
-                        adjustCounter(outActive_, dir);
+                        adjustCounter(out_active_, dir);
                     }
                 }
                 adjustCounter(active_, dir);
@@ -297,22 +297,22 @@ private:
     std::size_t active_{0};
 
     /** Total number of inbound slots. */
-    std::size_t inMax_{0};
+    std::size_t in_max_{0};
 
     /** Number of inbound slots assigned to active peers. */
-    std::size_t inActive_{0};
+    std::size_t in_active_{0};
 
     /** Maximum desired outbound slots. */
-    std::size_t outMax_{0};
+    std::size_t out_max_{0};
 
     /** Active outbound slots. */
-    std::size_t outActive_{0};
+    std::size_t out_active_{0};
 
     /** Fixed connections. */
     std::size_t fixed_{0};
 
     /** Active fixed connections. */
-    std::size_t fixedActive_{0};
+    std::size_t fixed_active_{0};
 
     /** Reserved connections. */
     std::size_t reserved_{0};

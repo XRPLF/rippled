@@ -42,6 +42,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl::NodeStore {
 
@@ -52,7 +53,7 @@ public:
     // NuDB database. We used it to identify shard databases before that code
     // was removed. For now, its only use is a sanity check that the database
     // was created by xrpld.
-    static constexpr std::uint64_t kAppNum = 1;
+    static constexpr std::uint64_t kAPPNUM = 1;
 
     beast::Journal const j;
     size_t const keyBytes;
@@ -160,7 +161,7 @@ public:
         if (ec)
             Throw<nudb::system_error>(ec);
 
-        if (db.appnum() != kAppNum)
+        if (db.appnum() != kAPPNUM)
             Throw<std::runtime_error>("nodestore: unknown appnum");
         db.set_burst(burstSize);
     }
@@ -174,7 +175,7 @@ public:
     void
     open(bool createIfMissing) override
     {
-        open(createIfMissing, kAppNum, nudb::make_uid(), nudb::make_salt());
+        open(createIfMissing, kAPPNUM, nudb::make_uid(), nudb::make_salt());
     }
 
     void
@@ -229,6 +230,28 @@ public:
         if (ec)
             Throw<nudb::system_error>(ec);
         return status;
+    }
+
+    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
+    fetchBatch(std::vector<uint256> const& hashes) override
+    {
+        std::vector<std::shared_ptr<NodeObject>> results;
+        results.reserve(hashes.size());
+        for (auto const& h : hashes)
+        {
+            std::shared_ptr<NodeObject> nObj;
+            Status const status = fetch(h, &nObj);
+            if (status != Status::Ok)
+            {
+                results.push_back({});
+            }
+            else
+            {
+                results.push_back(nObj);
+            }
+        }
+
+        return {results, Status::Ok};
     }
 
     void
@@ -437,7 +460,7 @@ public:
 void
 registerNuDBFactory(Manager& manager)
 {
-    static NuDBFactory const kInstance{manager};
+    static NuDBFactory const kINSTANCE{manager};
 }
 
 }  // namespace xrpl::NodeStore

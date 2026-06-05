@@ -30,7 +30,7 @@ STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
     value_.reserve(cnt);
 
     for (std::size_t i = 0; i != cnt; ++i)
-        value_.push_back(uint256::fromRaw(slice.substr(i * uint256::size(), uint256::size())));
+        value_.emplace_back(slice.substr(i * uint256::size(), uint256::size()));
 }
 
 STBase*
@@ -75,7 +75,7 @@ STVector256::isEquivalent(STBase const& t) const
 json::Value
 STVector256::getJson(JsonOptions) const
 {
-    json::Value ret(json::ValueType::Array);
+    json::Value ret(json::ArrayValue);
 
     for (auto const& vEntry : value_)
         ret.append(to_string(vEntry));

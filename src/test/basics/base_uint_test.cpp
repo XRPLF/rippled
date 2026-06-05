@@ -26,30 +26,30 @@ namespace xrpl::test {
 template <std::size_t Bits>
 struct Nonhash
 {
-    static constexpr auto kEndian = boost::endian::order::big;
-    static constexpr std::size_t kWidth = Bits / 8;
+    static constexpr auto const kENDIAN = boost::endian::order::big;
+    static constexpr std::size_t kWIDTH = Bits / 8;
 
-    std::array<std::uint8_t, kWidth> data;
+    std::array<std::uint8_t, kWIDTH> data;
 
     Nonhash() = default;
 
     void
     operator()(void const* key, std::size_t len) noexcept
     {
-        assert(len == kWidth);
+        assert(len == kWIDTH);
         memcpy(data.data(), key, len);
     }
 
     explicit
     operator std::size_t() noexcept
     {
-        return kWidth;
+        return kWIDTH;
     }
 };
 
 struct base_uint_test : beast::unit_test::Suite
 {
-    using test96 = BaseUInt<96>;
+    using test96 = BaseUint<96>;
     static_assert(std::is_copy_constructible_v<test96>);
     static_assert(std::is_copy_assignable_v<test96>);
 
@@ -57,17 +57,18 @@ struct base_uint_test : beast::unit_test::Suite
     testComparisons()
     {
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> kTestArgs{
-                {{"0000000000000000", "0000000000000001"},
-                 {"0000000000000000", "ffffffffffffffff"},
-                 {"1234567812345678", "2345678923456789"},
-                 {"8000000000000000", "8000000000000001"},
-                 {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
-                 {"fffffffffffffffe", "ffffffffffffffff"}}};
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6>
+                kTEST_ARGS{
+                    {{"0000000000000000", "0000000000000001"},
+                     {"0000000000000000", "ffffffffffffffff"},
+                     {"1234567812345678", "2345678923456789"},
+                     {"8000000000000000", "8000000000000001"},
+                     {"aaaaaaaaaaaaaaa9", "aaaaaaaaaaaaaaaa"},
+                     {"fffffffffffffffe", "ffffffffffffffff"}}};
 
-            for (auto const& arg : kTestArgs)
+            for (auto const& arg : kTEST_ARGS)
             {
-                xrpl::BaseUInt<64> const u{arg.first}, v{arg.second};
+                xrpl::BaseUint<64> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -86,8 +87,8 @@ struct base_uint_test : beast::unit_test::Suite
         }
 
         {
-            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6> kTestArgs{
-                {
+            static constexpr std::array<std::pair<std::string_view, std::string_view>, 6>
+                kTEST_ARGS{{
                     {"000000000000000000000000", "000000000000000000000001"},
                     {"000000000000000000000000", "ffffffffffffffffffffffff"},
                     {"0123456789ab0123456789ab", "123456789abc123456789abc"},
@@ -96,9 +97,9 @@ struct base_uint_test : beast::unit_test::Suite
                     {"fffffffffffffffffffffffe", "ffffffffffffffffffffffff"},
                 }};
 
-            for (auto const& arg : kTestArgs)
+            for (auto const& arg : kTEST_ARGS)
             {
-                xrpl::BaseUInt<96> const u{arg.first}, v{arg.second};
+                xrpl::BaseUint<96> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -131,9 +132,9 @@ struct base_uint_test : beast::unit_test::Suite
         std::unordered_set<test96, HardenedHash<>> uset;
 
         Blob const raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-        BEAST_EXPECT(test96::kBytes == raw.size());
+        BEAST_EXPECT(test96::kBYTES == raw.size());
 
-        test96 u = test96::fromRaw(raw);
+        test96 u{raw};
         uset.insert(u);
         BEAST_EXPECT(raw.size() == u.size());
         BEAST_EXPECT(to_string(u) == "0102030405060708090A0B0C");
@@ -154,7 +155,7 @@ struct base_uint_test : beast::unit_test::Suite
         // back into another base_uint (w) for comparison with the original
         Nonhash<96> h{};
         hash_append(h, u);
-        test96 const w = test96::fromRaw(std::vector<std::uint8_t>(h.data.begin(), h.data.end()));
+        test96 const w{std::vector<std::uint8_t>(h.data.begin(), h.data.end())};
         BEAST_EXPECT(w == u);
 
         test96 v{~u};
@@ -178,7 +179,7 @@ struct base_uint_test : beast::unit_test::Suite
         v = u;
         BEAST_EXPECT(v == u);
 
-        test96 z{beast::kZero};
+        test96 z{beast::kZERO};
         uset.insert(z);
         BEAST_EXPECT(to_string(z) == "000000000000000000000000");
         BEAST_EXPECT(toShortString(z) == "00000000...");
@@ -198,12 +199,12 @@ struct base_uint_test : beast::unit_test::Suite
         n++;
         BEAST_EXPECT(n == test96(1));
         n--;
-        BEAST_EXPECT(n == beast::kZero);
+        BEAST_EXPECT(n == beast::kZERO);
         BEAST_EXPECT(n == z);
         n--;
         BEAST_EXPECT(to_string(n) == "FFFFFFFFFFFFFFFFFFFFFFFF");
         BEAST_EXPECT(toShortString(n) == "FFFFFFFF...");
-        n = beast::kZero;
+        n = beast::kZERO;
         BEAST_EXPECT(n == z);
 
         test96 zp1{z};
@@ -326,16 +327,16 @@ struct base_uint_test : beast::unit_test::Suite
 
             // Verify that constexpr base_uints interpret a string the same
             // way parseHex() does.
-            struct StrBaseUInt
+            struct StrBaseUint
             {
                 char const* const str;
                 test96 tst;
 
-                constexpr StrBaseUInt(char const* s) : str(s), tst(s)
+                constexpr StrBaseUint(char const* s) : str(s), tst(s)
                 {
                 }
             };
-            static constexpr StrBaseUInt kTestCases[] = {
+            constexpr StrBaseUint kTEST_CASES[] = {
                 "000000000000000000000000",
                 "000000000000000000000001",
                 "fedcba9876543210ABCDEF91",
@@ -343,7 +344,7 @@ struct base_uint_test : beast::unit_test::Suite
                 "800000000000000000000000",
                 "fFfFfFfFfFfFfFfFfFfFfFfF"};
 
-            for (StrBaseUInt const& t : kTestCases)
+            for (StrBaseUint const& t : kTEST_CASES)
             {
                 test96 t96;
                 BEAST_EXPECT(t96.parseHex(t.str));

@@ -25,7 +25,7 @@ namespace xrpl {
           it may not contain any duplicates!)
 */
 
-constexpr ProtocolVersion const kSupportedProtocolList[]{
+constexpr ProtocolVersion const kSUPPORTED_PROTOCOL_LIST[]{
     {2, 1},
     {2, 2},
 };
@@ -36,7 +36,7 @@ constexpr ProtocolVersion const kSupportedProtocolList[]{
 static_assert(
     []() constexpr -> bool {
         auto const len =
-            std::distance(std::begin(kSupportedProtocolList), std::end(kSupportedProtocolList));
+            std::distance(std::begin(kSUPPORTED_PROTOCOL_LIST), std::end(kSUPPORTED_PROTOCOL_LIST));
 
         // There should be at least one protocol we're willing to speak.
         if (len == 0)
@@ -48,7 +48,7 @@ static_assert(
         {
             for (auto i = 0; i != len - 1; ++i)
             {
-                if (kSupportedProtocolList[i] >= kSupportedProtocolList[i + 1])
+                if (kSUPPORTED_PROTOCOL_LIST[i] >= kSUPPORTED_PROTOCOL_LIST[i + 1])
                     return false;
             }
         }
@@ -125,7 +125,7 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
         [&result](ProtocolVersion const& v) { result = v; };
 
     std::ranges::set_intersection(
-        versions, kSupportedProtocolList, boost::make_function_output_iterator(pickVersion));
+        versions, kSUPPORTED_PROTOCOL_LIST, boost::make_function_output_iterator(pickVersion));
 
     return result;
 }
@@ -141,9 +141,9 @@ negotiateProtocolVersion(boost::beast::string_view const& versions)
 std::string const&
 supportedProtocolVersions()
 {
-    static std::string const kSupported = []() {
+    static std::string const kSUPPORTED = []() {
         std::string ret;
-        for (auto const& v : kSupportedProtocolList)
+        for (auto const& v : kSUPPORTED_PROTOCOL_LIST)
         {
             if (!ret.empty())
                 ret += ", ";
@@ -153,13 +153,13 @@ supportedProtocolVersions()
         return ret;
     }();
 
-    return kSupported;
+    return kSUPPORTED;
 }
 
 bool
 isProtocolSupported(ProtocolVersion const& v)
 {
-    return std::end(kSupportedProtocolList) != std::ranges::find(kSupportedProtocolList, v);
+    return std::end(kSUPPORTED_PROTOCOL_LIST) != std::ranges::find(kSUPPORTED_PROTOCOL_LIST, v);
 }
 
 }  // namespace xrpl

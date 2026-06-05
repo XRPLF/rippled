@@ -58,7 +58,7 @@ STNumber::associateAsset(Asset const& a)
     STTakesAsset::associateAsset(a);
 
     XRPL_ASSERT_PARTS(
-        getFName().shouldMeta(SField::kSmdNeedsAsset),
+        getFName().shouldMeta(SField::SMdNeedsAsset),
         "STNumber::associateAsset",
         "field needs asset");
 
@@ -76,7 +76,7 @@ STNumber::add(Serializer& s) const
     auto const exponent = value.exponent();
 
     SField const& field = getFName();
-    if (field.shouldMeta(SField::kSmdNeedsAsset))
+    if (field.shouldMeta(SField::SMdNeedsAsset))
     {
         // asset is defined in the STTakesAsset base class
         if (asset_)
@@ -96,8 +96,7 @@ STNumber::add(Serializer& s) const
             // Json. Regardless, the only time we should be serializing an
             // STNumber is when the scale is large.
             XRPL_ASSERT_PARTS(
-                Number::getMantissaScale() == MantissaRange::MantissaScale::LargeLegacy ||
-                    Number::getMantissaScale() == MantissaRange::MantissaScale::Large,
+                Number::getMantissaScale() == MantissaRange::MantissaScale::Large,
                 "xrpl::STNumber::add",
                 "STNumber only used with large mantissa scale");
 #endif
@@ -161,7 +160,7 @@ operator<<(std::ostream& out, STNumber const& rhs)
 NumberParts
 partsFromString(std::string const& number)
 {
-    static boost::regex const kReNumber(
+    static boost::regex const kRE_NUMBER(
         "^"                       // the beginning of the string
         "([-+]?)"                 // (optional) + or - character
         "(0|[1-9][0-9]*)"         // a number (no leading zeroes, unless 0)
@@ -172,7 +171,7 @@ partsFromString(std::string const& number)
 
     boost::smatch match;
 
-    if (!boost::regex_match(number, match, kReNumber))
+    if (!boost::regex_match(number, match, kRE_NUMBER))
         Throw<std::runtime_error>("'" + number + "' is not a number");
 
     // Match fields:

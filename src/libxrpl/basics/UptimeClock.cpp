@@ -7,15 +7,15 @@
 
 namespace xrpl {
 
-std::atomic<UptimeClock::rep> UptimeClock::kNow{0};  // seconds since start
-std::atomic<bool> UptimeClock::kStop{false};         // stop update thread
+std::atomic<UptimeClock::rep> UptimeClock::kNOW{0};  // seconds since start
+std::atomic<bool> UptimeClock::kSTOP{false};         // stop update thread
 
 // On xrpld shutdown, cancel and wait for the update thread
 UptimeClock::UpdateThread::~UpdateThread()
 {
     if (joinable())
     {
-        kStop = true;
+        kSTOP = true;
         // This join() may take up to a 1s, but happens only
         // once at xrpld shutdown.
         join();
@@ -30,13 +30,13 @@ UptimeClock::startClock()
         using namespace std;
         using namespace std::chrono;
 
-        // Wake up every second and update kNow
+        // Wake up every second and update kNOW
         auto next = system_clock::now() + 1s;
-        while (!kStop)
+        while (!kSTOP)
         {
             this_thread::sleep_until(next);
             next += 1s;
-            ++kNow;
+            ++kNOW;
         }
     }};
 }
@@ -49,10 +49,10 @@ UptimeClock::time_point
 UptimeClock::now()
 {
     // start the update thread on first use
-    static auto const kInit = startClock();
+    static auto const kINIT = startClock();
 
     // Return the number of seconds since xrpld start
-    return time_point{duration{kNow}};
+    return time_point{duration{kNOW}};
 }
 
 }  // namespace xrpl
