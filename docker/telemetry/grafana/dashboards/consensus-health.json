@@ -430,7 +430,7 @@
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time_self) by (resource.service.instance.id)",
-          "legendFormat": "{{service.instance.id}}",
+          "legendFormat": "{{resource.service.instance.id}}",
           "refId": "A"
         }
       ]
@@ -475,7 +475,7 @@
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time) by (resource.service.instance.id)",
-          "legendFormat": "{{service.instance.id}}",
+          "legendFormat": "{{resource.service.instance.id}}",
           "refId": "A"
         }
       ]
