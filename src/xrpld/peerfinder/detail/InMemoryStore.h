@@ -2,7 +2,6 @@
 
 #include <xrpld/peerfinder/detail/Store.h>
 
-
 namespace xrpl::PeerFinder {
 
 class InMemoryStore : public Store
@@ -27,5 +26,4 @@ public:
     }
 };
 
-} // namespace xrpl::PeerFinder
-
+}  // namespace xrpl::PeerFinder

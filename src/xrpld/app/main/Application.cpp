@@ -259,7 +259,7 @@ public:
     boost::asio::steady_timer sweepTimer_;
     boost::asio::steady_timer entropyTimer_;
 
-    std::optional<SQLiteDatabase> relationalDatabase_;
+    std::unique_ptr<RelationalDatabase> relationalDatabase_;
     std::unique_ptr<DatabaseCon> walletDB_;
     std::unique_ptr<Overlay> overlay_;
     std::optional<uint256> trapTxID_;
@@ -807,7 +807,7 @@ public:
         XRPL_ASSERT(
             relationalDatabase_,
             "xrpl::ApplicationImp::getRelationalDatabase : non-null relational database");
-        return *relationalDatabase_;  // NOLINT(bugprone-unchecked-optional-access) assert above
+        return *relationalDatabase_;
     }
 
     DatabaseCon&
@@ -835,7 +835,7 @@ public:
 
         try
         {
-            relationalDatabase_.emplace(setupRelationalDatabase(*this, *config_, *jobQueue_));
+            relationalDatabase_ = setupRelationalDatabase(*this, *config_, *jobQueue_);
 
             // wallet database
             auto setup = setupDatabaseCon(*config_, journal_);

@@ -154,11 +154,14 @@ public:
             while (txIt != ledgerTxMap.end() && txIt->first < ledgerSeq)
                 txIt = ledgerTxMap.erase(txIt);
 
-            if (ledgerTxMap.empty()) {
+            if (ledgerTxMap.empty())
+            {
                 accountIt = accountTxMap_.erase(accountIt);
-            } else {
+            }
+            else
+            {
                 ++accountIt;
-}
+            }
         }
     }
 
@@ -198,11 +201,14 @@ public:
                 txIt = accountData.ledgerTxMap.erase(txIt);
             }
 
-            if (accountData.ledgerTxMap.empty()) {
+            if (accountData.ledgerTxMap.empty())
+            {
                 accountIt = accountTxMap_.erase(accountIt);
-            } else {
+            }
+            else
+            {
                 ++accountIt;
-}
+            }
         }
     }
 
@@ -239,8 +245,11 @@ public:
     {
         std::shared_lock<std::shared_mutex> const lock(mutex_);
         if (ledgers_.empty())
-            return {.numberOfRows=0, .minLedgerSequence=0, .maxLedgerSequence=0};
-        return {.numberOfRows=ledgers_.size(), .minLedgerSequence=ledgers_.begin()->first, .maxLedgerSequence=ledgers_.rbegin()->first};
+            return {.numberOfRows = 0, .minLedgerSequence = 0, .maxLedgerSequence = 0};
+        return {
+            .numberOfRows = ledgers_.size(),
+            .minLedgerSequence = ledgers_.begin()->first,
+            .maxLedgerSequence = ledgers_.rbegin()->first};
     }
 
     bool
@@ -260,7 +269,7 @@ public:
             UNREACHABLE("RWDBDatabase::saveValidatedLedger : account hash is zero");
         }
 
-        if (ledger->header().accountHash != ledger->stateMap().getHash().asUint256())
+        if (ledger->header().accountHash != ledger->stateMap().getHash().asUInt256())
         {
             JLOG(j.fatal()) << "sAL: " << ledger->header().accountHash
                             << " != " << ledger->stateMap().getHash();
@@ -277,7 +286,7 @@ public:
             s.add32(HashPrefix::LedgerMaster);
             addRaw(ledger->header(), s);
             app_.getNodeStore().store(
-                HotLedger, std::move(s.modData()), ledger->header().hash, seq);
+                NodeObjectType::Ledger, std::move(s.modData()), ledger->header().hash, seq);
         }
 
         std::shared_ptr<AcceptedLedger> aLedger;
@@ -287,7 +296,7 @@ public:
             if (!aLedger)
             {
                 aLedger = std::make_shared<AcceptedLedger>(ledger);
-                app_.getAcceptedLedgerCache().canonicalize_replace_client(
+                app_.getAcceptedLedgerCache().canonicalizeReplaceClient(
                     ledger->header().hash, aLedger);
             }
         }
@@ -325,15 +334,16 @@ public:
 
                 // Initialize once at insert time to avoid mutating shared
                 // Transaction instances from concurrent read paths.
-                accTx.first->setStatus(COMMITTED);
+                accTx.first->setStatus(TransStatus::COMMITTED);
                 accTx.first->setLedger(seq);
 
                 txInserts.push_back(
                     TxInsert{
-                        .id=id,
-                        .accTx=accTx,
-                        .affected=std::vector<AccountID>(affectedAccounts.begin(), affectedAccounts.end()),
-                        .txnSeq=acceptedLedgerTx->getTxnSeq()});
+                        .id = id,
+                        .accTx = accTx,
+                        .affected = std::vector<AccountID>(
+                            affectedAccounts.begin(), affectedAccounts.end()),
+                        .txnSeq = acceptedLedgerTx->getTxnSeq()});
             }
 
             {
@@ -360,7 +370,7 @@ public:
             for (auto const& insert : txInserts)
             {
                 app_.getMasterTransaction().inLedger(
-                    insert.id, seq, insert.txnSeq, app_.config().NETWORK_ID);
+                    insert.id, seq, insert.txnSeq, app_.config().networkId);
             }
             return true;
         }
@@ -439,7 +449,8 @@ public:
         auto it = ledgers_.find(ledgerIndex);
         if (it != ledgers_.end())
         {
-            return LedgerHashPair{.ledgerHash=it->second.info.hash, .parentHash=it->second.info.parentHash};
+            return LedgerHashPair{
+                .ledgerHash = it->second.info.hash, .parentHash = it->second.info.parentHash};
         }
         return std::nullopt;
     }
@@ -453,7 +464,8 @@ public:
         auto end = ledgers_.upper_bound(maxSeq);
         for (; it != end; ++it)
         {
-            result[it->first] = LedgerHashPair{.ledgerHash=it->second.info.hash, .parentHash=it->second.info.parentHash};
+            result[it->first] = LedgerHashPair{
+                .ledgerHash = it->second.info.hash, .parentHash = it->second.info.parentHash};
         }
         return result;
     }
@@ -508,8 +520,7 @@ private:
                 (sizeof(uint256) + sizeof(AccountTx) + mapNodeOverhead);
         }
 
-        size +=
-            ledgerHashToSeq_.size() * (sizeof(uint256) + sizeof(LedgerIndex) + mapNodeOverhead);
+        size += ledgerHashToSeq_.size() * (sizeof(uint256) + sizeof(LedgerIndex) + mapNodeOverhead);
 
         return size;
     }
@@ -555,6 +566,13 @@ public:
             sizeof(*this) + getBytesUsedLedgerUnlocked() + getBytesUsedTransactionUnlocked();
 
         return static_cast<std::uint32_t>(size / 1024);
+    }
+
+    bool
+    transactionDbHasSpace(Config const&) override
+    {
+        // In-memory database - always has space
+        return true;
     }
 
     std::uint32_t
@@ -807,11 +825,14 @@ public:
         std::uint32_t numberOfResults = 0;
 
         if (options.limit == 0 || options.limit == UINT32_MAX ||
-            (options.limit > pageLength && !options.bAdmin)) {
+            (options.limit > pageLength && !options.bAdmin))
+        {
             numberOfResults = pageLength;
-        } else {
+        }
+        else
+        {
             numberOfResults = options.limit;
-}
+        }
 
         if (numberOfResults < limitUsed)
             return {options.marker, -1};
@@ -857,7 +878,9 @@ public:
                     }
                     else if (numberOfResults == 0)
                     {
-                        newmarker = {.ledgerSeq=rangeCheckedCast<std::uint32_t>(ledgerSeq), .txnSeq=txnSeq};
+                        newmarker = {
+                            .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
+                            .txnSeq = txnSeq};
                         return {newmarker, total};
                     }
 
@@ -912,7 +935,9 @@ public:
                     }
                     else if (numberOfResults == 0)
                     {
-                        newmarker = {.ledgerSeq=rangeCheckedCast<std::uint32_t>(ledgerSeq), .txnSeq=txnSeq};
+                        newmarker = {
+                            .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq),
+                            .txnSeq = txnSeq};
                         return {newmarker, total};
                     }
 

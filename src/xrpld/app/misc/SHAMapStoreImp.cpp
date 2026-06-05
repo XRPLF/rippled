@@ -383,62 +383,61 @@ SHAMapStoreImp::run()
             }
             else
             {
+                JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
+                std::uint64_t nodeCount = 0;
 
-            JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
-            std::uint64_t nodeCount = 0;
+                try
+                {
+                    validatedLedger->stateMap().snapShot(false)->visitNodes(
+                        std::bind(
+                            &SHAMapStoreImp::copyNode,
+                            this,
+                            std::ref(nodeCount),
+                            std::placeholders::_1));
+                }
+                catch (SHAMapMissingNode const& e)
+                {
+                    JLOG(journal_.error())
+                        << "Missing node while copying ledger before rotate: " << e.what();
+                    continue;
+                }
 
-            try
-            {
-                validatedLedger->stateMap().snapShot(false)->visitNodes(
-                    std::bind(
-                        &SHAMapStoreImp::copyNode,
-                        this,
-                        std::ref(nodeCount),
-                        std::placeholders::_1));
-            }
-            catch (SHAMapMissingNode const& e)
-            {
-                JLOG(journal_.error())
-                    << "Missing node while copying ledger before rotate: " << e.what();
-                continue;
-            }
+                if (healthWait() == HealthResult::Stopping)
+                    return;
+                // Only log if we completed without a "health" abort
+                JLOG(journal_.debug())
+                    << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
 
-            if (healthWait() == HealthResult::Stopping)
-                return;
-            // Only log if we completed without a "health" abort
-            JLOG(journal_.debug())
-                << "copied ledger " << validatedSeq << " nodecount " << nodeCount;
+                JLOG(journal_.debug()) << "freshening caches";
+                freshenCaches();
+                if (healthWait() == HealthResult::Stopping)
+                    return;
+                // Only log if we completed without a "health" abort
+                JLOG(journal_.debug()) << validatedSeq << " freshened caches";
 
-            JLOG(journal_.debug()) << "freshening caches";
-            freshenCaches();
-            if (healthWait() == HealthResult::Stopping)
-                return;
-            // Only log if we completed without a "health" abort
-            JLOG(journal_.debug()) << validatedSeq << " freshened caches";
+                JLOG(journal_.trace()) << "Making a new backend";
+                auto newBackend = makeBackendRotating();
+                JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
 
-            JLOG(journal_.trace()) << "Making a new backend";
-            auto newBackend = makeBackendRotating();
-            JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
+                clearCaches(validatedSeq);
+                if (healthWait() == HealthResult::Stopping)
+                    return;
 
-            clearCaches(validatedSeq);
-            if (healthWait() == HealthResult::Stopping)
-                return;
+                lastRotated = validatedSeq;
 
-            lastRotated = validatedSeq;
+                dbRotating_->rotate(
+                    std::move(newBackend),
+                    [&](std::string const& writableName, std::string const& archiveName) {
+                        SavedState savedState;
+                        savedState.writableDb = writableName;
+                        savedState.archiveDb = archiveName;
+                        savedState.lastRotated = lastRotated;
+                        stateDb_.setState(savedState);
 
-            dbRotating_->rotate(
-                std::move(newBackend),
-                [&](std::string const& writableName, std::string const& archiveName) {
-                    SavedState savedState;
-                    savedState.writableDb = writableName;
-                    savedState.archiveDb = archiveName;
-                    savedState.lastRotated = lastRotated;
-                    stateDb_.setState(savedState);
+                        clearCaches(validatedSeq);
+                    });
 
-                    clearCaches(validatedSeq);
-                });
-
-            } // end !isNullBackend_
+            }  // end !isNullBackend_
 
             JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
         }

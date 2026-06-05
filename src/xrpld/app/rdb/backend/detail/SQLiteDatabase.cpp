@@ -2,8 +2,10 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
+#include <xrpld/app/rdb/backend/RWDBDatabase.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
@@ -648,10 +650,18 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     }
 }
 
-SQLiteDatabase
+std::unique_ptr<RelationalDatabase>
 setupRelationalDatabase(ServiceRegistry& registry, Config const& config, JobQueue& jobQueue)
 {
-    return {registry, config, jobQueue};
+    auto const& rdbSection = config.section(SECTION_RELATIONAL_DB);
+    auto const backend = rdbSection.valueOr("backend", std::string{"sqlite"});
+
+    if (boost::iequals(backend, "rwdb"))
+    {
+        return std::make_unique<RWDBDatabase>(registry, config, jobQueue);
+    }
+
+    return std::make_unique<SQLiteDatabase>(registry, config, jobQueue);
 }
 
 }  // namespace xrpl

@@ -1129,7 +1129,7 @@ NetworkOPsImp::processHeartbeatTimer()
         else
         {
             JLOG(journal_.debug()) << "Heartbeat: masterMutex contended, skipping "
-                                       "peer/mode checks";
+                                      "peer/mode checks";
             CLOG(clog.ss()) << "masterMutex contended, skipping peer/mode checks. ";
         }
     }

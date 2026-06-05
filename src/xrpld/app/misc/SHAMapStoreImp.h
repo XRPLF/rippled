@@ -104,6 +104,14 @@ private:
 public:
     SHAMapStoreImp(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
 
+    ~SHAMapStoreImp()
+    {
+        // Clean up environment variable set in constructor to avoid polluting
+        // subsequent tests when run in the same process
+        if (isNullBackend_)
+            ::unsetenv("XRPL_RWDB_NULL");
+    }
+
     std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const override
     {

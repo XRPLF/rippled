@@ -2,6 +2,7 @@
 
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
+#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 #include <xrpld/overlay/detail/Handshake.h>
@@ -9,7 +10,6 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/make_Manager.h>

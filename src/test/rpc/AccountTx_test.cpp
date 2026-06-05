@@ -56,9 +56,8 @@ class AccountTx_test : public beast::unit_test::Suite
     static std::unique_ptr<Config>
     enableRWDB(std::unique_ptr<Config> cfg)
     {
-        auto& nodeDb = cfg->section(ConfigSection::nodeDatabase());
-        nodeDb.set("type", "rwdb");
-        nodeDb.set("online_delete", "256");
+        // Use RWDB for the relational database backend only.
+        // The node database stays as "memory" (the test default).
         cfg->section(SECTION_RELATIONAL_DB).set("backend", "rwdb");
         return cfg;
     }

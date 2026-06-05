@@ -57,7 +57,9 @@ class Transaction_test : public beast::unit_test::Suite
     static std::unique_ptr<Config>
     enableRWDB(std::unique_ptr<Config> cfg)
     {
-        cfg->section(ConfigSection::nodeDatabase()).set("type", "rwdb");
+        // Use RWDB for the relational database backend only.
+        // The node database stays as "memory" (the test default) to avoid
+        // excessive memory usage from dual storage in the in-memory backends.
         cfg->section(SECTION_RELATIONAL_DB).set("backend", "rwdb");
         return cfg;
     }
