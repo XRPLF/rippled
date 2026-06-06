@@ -31,6 +31,7 @@ class AmendmentBlocked_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
                     cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                    cfg->pathSearch = true;
                     return cfg;
                 })};
         auto const gw = Account{"gateway"};

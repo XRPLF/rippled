@@ -27,6 +27,7 @@
 #include <xrpld/rpc/detail/PathRequest.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/PayGraph.h>
+#include <xrpld/rpc/detail/PayGraphDelta.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -47,6 +48,7 @@
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Charge.h>
@@ -2919,6 +2921,13 @@ public:
         pathRequestManagerGetAssetCacheJumpForward();
         pathRequestManagerUpdateAllPathSearchDisabled();
         pathRequestManagerMakeLegacyPathRequestTooBusy();
+
+        // OrderBookDB domain-specific coverage
+        orderBookDBAllTakerPaysAssetsDomain();
+
+        // PayGraphDelta unit tests for coverage
+        payGraphDeltaExtractChangedBooks();
+        payGraphDeltaMergeBooks();
     }
 
     void
@@ -3821,6 +3830,177 @@ public:
         auto res = prm.makeLegacyPathRequest(req, [] {}, c, ledger, jv);
         BEAST_EXPECT(!res.isMember(jss::error));
         BEAST_EXPECT(req != nullptr);
+    }
+
+    //------------------------------------------------------------------------------
+    // OrderBookDB domain-specific getAllTakerPaysAssets test
+
+    void
+    orderBookDBAllTakerPaysAssetsDomain()
+    {
+        testcase("OrderBookDB::getAllTakerPaysAssets with domain");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env.trust(eur(1000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, bob, eur(500)));
+        env.close();
+
+        // Create domain and set it up for all accounts
+        std::optional<uint256> domainID = setupDomain(env, {alice, bob, gw});
+
+        // Create domain-specific offers
+        // Domain: XRP -> USD (takerPays = XRP within domain)
+        env(offer(alice, XRP(500), usd(100)), Domain(*domainID));
+        // Domain: EUR -> XRP (takerPays = EUR within domain)
+        env(offer(bob, eur(100), XRP(500)), Domain(*domainID));
+        env.close();
+
+        // Also create a non-domain offer for comparison
+        // Non-domain: USD -> XRP (takerPays = USD, no domain)
+        env(offer(alice, usd(100), XRP(500)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+
+        // Query with domain - should only return assets from domain books
+        auto domainAssets = obdb.getAllTakerPaysAssets(*domainID);
+
+        // Domain has XRP -> USD and EUR -> XRP, so takerPays are XRP and EUR
+        BEAST_EXPECT(domainAssets.size() == 2);
+
+        bool foundXRP = false, foundEUR = false, foundUSD = false;
+        for (auto const& asset : domainAssets)
+        {
+            if (isXRP(asset))
+                foundXRP = true;
+            else if (asset == eur.asset())
+                foundEUR = true;
+            else if (asset == usd.asset())
+                foundUSD = true;
+        }
+        BEAST_EXPECT(foundXRP);   // XRP is takerPays in domain XRP->USD book
+        BEAST_EXPECT(foundEUR);   // EUR is takerPays in domain EUR->XRP book
+        BEAST_EXPECT(!foundUSD);  // USD->XRP book is non-domain, should not appear
+
+        // Query without domain - should include all books (domain + non-domain)
+        auto allAssets = obdb.getAllTakerPaysAssets();
+        // Should have XRP, EUR from domain books AND USD from non-domain book
+        bool foundAllUSD = false;
+        for (auto const& asset : allAssets)
+        {
+            if (asset == usd.asset())
+                foundAllUSD = true;
+        }
+        BEAST_EXPECT(foundAllUSD);  // Non-domain USD book appears in global query
+    }
+
+    //------------------------------------------------------------------------------
+    // PayGraphDelta unit tests for coverage
+
+    void
+    payGraphDeltaExtractChangedBooks()
+    {
+        testcase("PayGraphDelta::extractChangedBooks from TxMeta");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(usd(1000), alice);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env.close();
+
+        // Create an offer: XRP -> USD
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+
+        // Get transaction metadata
+        auto const& meta = env.meta();
+        BEAST_EXPECT(meta != nullptr);
+
+        // Extract changed books from the offer creation metadata
+        TxMeta txMeta(
+            env.tx()->getTransactionID(), env.closed()->seq(), *const_cast<STObject*>(meta.get()));
+
+        auto books = extractChangedBooks(txMeta, std::nullopt);
+
+        // An OfferCreate should produce one changed book (XRP -> USD)
+        BEAST_EXPECT(books.size() == 1);
+        BEAST_EXPECT(isXRP(books[0].in));
+        BEAST_EXPECT(books[0].out == usd.asset());
+
+        // Test with empty nodes array (no offers changed)
+        STArray emptyNodes;
+        auto emptyBooks = extractChangedBooks(emptyNodes, std::nullopt);
+        BEAST_EXPECT(emptyBooks.empty());
+
+        // Test the STArray overload directly via getNodes()
+        auto booksFromNodes = extractChangedBooks(txMeta.getNodes(), std::nullopt);
+        BEAST_EXPECT(booksFromNodes.size() == 1);
+    }
+
+    void
+    payGraphDeltaMergeBooks()
+    {
+        testcase("PayGraphDelta::mergeBooks deduplication");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        Asset const xrp = XRP;
+        Asset const usdAsset = usd.asset();
+        Asset const eurAsset = eur.asset();
+
+        // dest has XRP->USD book
+        std::vector<Book> dest{{xrp, usdAsset, std::nullopt}};
+
+        // src has XRP->USD (duplicate) and XRP->EUR (new)
+        std::vector<Book> src{{xrp, usdAsset, std::nullopt}, {xrp, eurAsset, std::nullopt}};
+
+        mergeBooks(dest, src);
+
+        // Should have 2 unique books after merge
+        BEAST_EXPECT(dest.size() == 2);
+
+        // cspell:ignore hasXRPUSD hasXRPEUR
+        bool hasXRPUSD = false, hasXRPEUR = false;
+        for (auto const& book : dest)
+        {
+            if (book.in == xrp && book.out == usdAsset)
+                hasXRPUSD = true;
+            if (book.in == xrp && book.out == eurAsset)
+                hasXRPEUR = true;
+        }
+        BEAST_EXPECT(hasXRPUSD);
+        BEAST_EXPECT(hasXRPEUR);
+
+        // Test merging into empty dest
+        std::vector<Book> emptyDest;
+        mergeBooks(emptyDest, src);
+        BEAST_EXPECT(emptyDest.size() == 2);
+
+        // Test merging empty src (no change to dest)
+        std::vector<Book> beforeMerge = dest;
+        std::vector<Book> emptySrc;
+        mergeBooks(dest, emptySrc);
+        BEAST_EXPECT(dest.size() == beforeMerge.size());
     }
 };
 

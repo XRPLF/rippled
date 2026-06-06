@@ -6,6 +6,7 @@
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/jtx_json.h>
@@ -4323,7 +4324,13 @@ public:
         testcase("RippleConnect Smoketest payment flow");
         using namespace jtx;
 
-        Env env{*this, features};
+        Env env(
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->pathSearch = true;
+                return cfg;
+            }),
+            features);
 
         // This test mimics a payment flow. The players:
         //   A USD gateway with hot and cold wallets

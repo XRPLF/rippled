@@ -75,7 +75,13 @@ public:
         auto const bob = Account("bob");
         auto const carol = Account("carol");
 
-        Env env(*this, features);
+        Env env(
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->pathSearch = true;
+                return cfg;
+            }),
+            features);
 
         env.fund(XRP(10000), gw, alice, bob, carol);
         env.close();
