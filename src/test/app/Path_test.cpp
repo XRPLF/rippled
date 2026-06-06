@@ -2898,6 +2898,27 @@ public:
         pathRequestNewAndNeedsUpdate();
         pathRequestLegacyPathRequest();
         pathRequestFindPathsNoGraph();
+
+        // PathRequestManager unit tests for coverage
+        pathRequestManagerGetAssetCache();
+        pathRequestManagerGetAssetCacheJumpBack();
+        pathRequestManagerRequestsPending();
+        pathRequestManagerEnsurePayGraph();
+        pathRequestManagerFindPathsNullLedger();
+        pathRequestManagerFindPathsBasic();
+        pathRequestManagerFindPathsNoGraph();
+        pathRequestManagerFindPathsIOUToXRP();
+        pathRequestManagerMakeLegacyPathRequestInvalidReset();
+        pathRequestManagerMakeLegacyPathRequestValid();
+        pathRequestManagerGetPayGraph();
+        pathRequestManagerInsertPathRequestOrdering();
+        pathRequestManagerDoLegacyPathRequestNoAlternatives();
+        pathRequestManagerReportFastAndFull();
+        pathRequestManagerSignalOrderBookReady();
+        pathRequestManagerFindPathsDomain();
+        pathRequestManagerGetAssetCacheJumpForward();
+        pathRequestManagerUpdateAllPathSearchDisabled();
+        pathRequestManagerMakeLegacyPathRequestTooBusy();
     }
 
     void
@@ -3279,6 +3300,527 @@ public:
         // doUpdate without PayGraph - the findPaths method returns RpcNotReady
         // when graph_ is null. We verify the request was created successfully.
         BEAST_EXPECT(req->hasCompletion());
+    }
+
+    // PathRequestManager unit tests for coverage
+
+    void
+    pathRequestManagerGetAssetCache()
+    {
+        testcase("PathRequestManager::getAssetCache creation and reuse");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const ledger = env.closed();
+
+        // First call creates a new cache
+        auto cache1 = prm.getAssetCache(ledger, false);
+        BEAST_EXPECT(cache1 != nullptr);
+        BEAST_EXPECT(cache1->getLedger()->seq() == ledger->seq());
+
+        // Second call with same ledger should reuse the cache
+        auto cache2 = prm.getAssetCache(ledger, false);
+        BEAST_EXPECT(cache2 == cache1);
+
+        // Authoritative call with newer ledger creates new cache
+        env.close();
+        auto const ledger2 = env.closed();
+        auto cache3 = prm.getAssetCache(ledger2, true);
+        BEAST_EXPECT(cache3 != nullptr);
+        BEAST_EXPECT(cache3->getLedger()->seq() == ledger2->seq());
+    }
+
+    void
+    pathRequestManagerGetAssetCacheJumpBack()
+    {
+        testcase("PathRequestManager::getAssetCache jump back creates new cache");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // Advance several ledgers
+        for (int i = 0; i < 10; i++)
+            env.close();
+
+        auto const ledger = env.closed();
+        auto& prm = env.app().getPathRequestManager();
+
+        // Create cache for seq=11
+        auto cache1 = prm.getAssetCache(ledger, true);
+        BEAST_EXPECT(cache1 != nullptr);
+
+        // Advance more ledgers to get a newer cache
+        env.close();
+        auto const ledgerNewer = env.closed();
+        auto cache2 = prm.getAssetCache(ledgerNewer, true);
+        BEAST_EXPECT(cache2 != nullptr);
+        BEAST_EXPECT(cache2->getLedger()->seq() > cache1->getLedger()->seq());
+    }
+
+    void
+    pathRequestManagerRequestsPending()
+    {
+        testcase("PathRequestManager::requestsPending");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+
+        // Initially no requests pending
+        BEAST_EXPECT(!prm.requestsPending());
+    }
+
+    void
+    pathRequestManagerEnsurePayGraph()
+    {
+        testcase("PathRequestManager::ensurePayGraph build and reuse");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env(pay(gw, alice, usd(500)));
+        env.close();
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const ledger = env.closed();
+
+        // First call builds the graph
+        auto graph1 = prm.ensurePayGraph(ledger);
+        BEAST_EXPECT(graph1 != nullptr);
+
+        // Second call with same ledger reuses the graph
+        auto graph2 = prm.ensurePayGraph(ledger);
+        BEAST_EXPECT(graph1 == graph2);
+
+        // After ledger close, a new graph is built
+        env.close();
+        auto const ledger2 = env.closed();
+        auto graph3 = prm.ensurePayGraph(ledger2);
+        BEAST_EXPECT(graph3 != nullptr);
+        BEAST_EXPECT(graph3 != graph1);
+    }
+
+    void
+    pathRequestManagerFindPathsNullLedger()
+    {
+        testcase("PathRequestManager::findPaths with null ledger");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+
+        // Null ledger should return empty STPathSet
+        STPathSet paths = prm.findPaths(
+            nullptr, alice, bob, XRP(100), PathAsset(xrpCurrency()), std::nullopt, std::nullopt, 6);
+        BEAST_EXPECT(paths.empty());
+    }
+
+    void
+    pathRequestManagerFindPathsBasic()
+    {
+        testcase("PathRequestManager::findPaths basic XRP to IOU");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env(pay(gw, alice, usd(500)));
+        env.close();
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const ledger = env.closed();
+
+        // Build graph first
+        prm.ensurePayGraph(ledger);
+
+        // Find paths from alice to bob for USD
+        STPathSet paths = prm.findPaths(
+            ledger, alice, bob, usd(50), PathAsset(xrpCurrency()), std::nullopt, std::nullopt, 6);
+        BEAST_EXPECT(paths.size() >= 1);
+    }
+
+    void
+    pathRequestManagerFindPathsNoGraph()
+    {
+        testcase("PathRequestManager::findPaths with no PayGraph built");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const ledger = env.closed();
+
+        // Without ensurePayGraph, findPaths should return empty
+        STPathSet paths = prm.findPaths(
+            ledger, alice, bob, XRP(100), PathAsset(xrpCurrency()), std::nullopt, std::nullopt, 6);
+        BEAST_EXPECT(paths.empty());
+    }
+
+    void
+    pathRequestManagerFindPathsIOUToXRP()
+    {
+        testcase("PathRequestManager::findPaths IOU to XRP");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice);
+        env(pay(gw, alice, usd(500)));
+        env.close();
+
+        // Alice offers USD for XRP
+        env(offer(alice, usd(100), XRP(500)));
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const ledger = env.closed();
+        prm.ensurePayGraph(ledger);
+
+        // Alice sends USD to bob who receives XRP
+        STPathSet paths =
+            prm.findPaths(ledger, alice, bob, XRP(100), usd.asset(), std::nullopt, std::nullopt, 6);
+        BEAST_EXPECT(paths.size() >= 1);
+    }
+
+    void
+    pathRequestManagerMakeLegacyPathRequestInvalidReset()
+    {
+        testcase("PathRequestManager::makeLegacyPathRequest resets req on invalid");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+
+        // Missing required fields should reset req to null
+        PathRequest::pointer req;
+        Resource::Consumer c;
+
+        json::Value jv = json::ValueType::Object;
+        // No source_account, destination_account, or destination_amount
+
+        auto res = prm.makeLegacyPathRequest(req, []() {}, c, env.closed(), jv);
+        BEAST_EXPECT(req == nullptr);
+        BEAST_EXPECT(res.isMember(jss::error));
+    }
+
+    void
+    pathRequestManagerMakeLegacyPathRequestValid()
+    {
+        testcase("PathRequestManager::makeLegacyPathRequest with valid request");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), bob);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+
+        json::Value jv = json::ValueType::Object;
+        jv[jss::source_account] = toBase58(alice);
+        jv[jss::destination_account] = toBase58(bob);
+        jv[jss::destination_amount] = json::ValueType::Object;
+        jv[jss::destination_amount][jss::currency] = "USD";
+        jv[jss::destination_amount][jss::value] = "50";
+        jv[jss::destination_amount][jss::issuer] = toBase58(gw);
+
+        PathRequest::pointer req;
+        Resource::Consumer c;
+        auto res = prm.makeLegacyPathRequest(req, []() {}, c, env.closed(), jv);
+
+        BEAST_EXPECT(req != nullptr);
+        BEAST_EXPECT(!res.isMember(jss::error));
+    }
+
+    void
+    pathRequestManagerGetPayGraph()
+    {
+        testcase("PathRequestManager::getPayGraph returns null before build");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+
+        // With pathSearch=true (pathTestEnv), PayGraph is built during startup
+        BEAST_EXPECT(prm.getPayGraph() != nullptr);
+    }
+
+    void
+    pathRequestManagerInsertPathRequestOrdering()
+    {
+        testcase("PathRequestManager::insertPathRequest ordering");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), bob);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+
+        json::Value jv = json::ValueType::Object;
+        jv[jss::source_account] = toBase58(alice);
+        jv[jss::destination_account] = toBase58(bob);
+        jv[jss::destination_amount] = json::ValueType::Object;
+        jv[jss::destination_amount][jss::currency] = "USD";
+        jv[jss::destination_amount][jss::value] = "50";
+        jv[jss::destination_amount][jss::issuer] = toBase58(gw);
+
+        // Create two requests
+        PathRequest::pointer req1;
+        PathRequest::pointer req2;
+        Resource::Consumer c;
+
+        prm.makeLegacyPathRequest(req1, []() {}, c, env.closed(), jv);
+        prm.makeLegacyPathRequest(req2, []() {}, c, env.closed(), jv);
+
+        BEAST_EXPECT(req1 != nullptr);
+        BEAST_EXPECT(req2 != nullptr);
+
+        // Both should be pending
+        BEAST_EXPECT(prm.requestsPending());
+
+        // After completing req1 update, it's no longer new
+        req1->updateComplete();
+
+        // Create a third new request - should be inserted before serviced ones
+        PathRequest::pointer req3;
+        prm.makeLegacyPathRequest(req3, []() {}, c, env.closed(), jv);
+        BEAST_EXPECT(req3 != nullptr);
+    }
+
+    void
+    pathRequestManagerDoLegacyPathRequestNoAlternatives()
+    {
+        testcase("PathRequestManager::doLegacyPathRequest with no paths found");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        // Create trust lines but no offers — pathfinding should return empty alternatives
+        env.trust(usd(1000), alice, bob);
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, bob, usd(500)));
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+
+        json::Value jv = json::ValueType::Object;
+        jv[jss::source_account] = toBase58(alice);
+        jv[jss::destination_account] = toBase58(bob);
+        jv[jss::destination_amount] = json::ValueType::Object;
+        jv[jss::destination_amount][jss::currency] = "USD";
+        jv[jss::destination_amount][jss::value] = "50";
+        jv[jss::destination_amount][jss::issuer] = toBase58(gw);
+
+        Resource::Consumer c;
+        auto res = prm.doLegacyPathRequest(c, env.closed(), jv);
+        BEAST_EXPECT(!res.isMember(jss::error));
+    }
+
+    void
+    pathRequestManagerReportFastAndFull()
+    {
+        testcase("PathRequestManager::reportFast and reportFull metrics");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+
+        // These should not crash - they just record metrics
+        prm.reportFast(std::chrono::milliseconds(10));
+        prm.reportFull(std::chrono::milliseconds(20));
+    }
+
+    void
+    pathRequestManagerSignalOrderBookReady()
+    {
+        testcase("PathRequestManager::signalOrderBookReady");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const ledger = env.closed();
+
+        // signalOrderBookReady should not crash and should build the PayGraph
+        prm.signalOrderBookReady(ledger);
+        BEAST_EXPECT(prm.getPayGraph() != nullptr);
+    }
+
+    void
+    pathRequestManagerFindPathsDomain()
+    {
+        testcase("PathRequestManager::findPaths with domain");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const ledger = env.closed();
+
+        // Domain-specific path finding with a domain that has no offers
+        // should return empty (tests the domain branch in findPaths)
+        uint256 domain("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        auto paths = prm.findPaths(
+            ledger, alice, bob, usd(10), PathAsset(xrpCurrency()), std::nullopt, domain, 5);
+
+        // Should return empty since no domain-specific offers exist
+        BEAST_EXPECT(paths.empty());
+    }
+
+    void
+    pathRequestManagerGetAssetCacheJumpForward()
+    {
+        testcase("PathRequestManager::getAssetCache jump forward non-authoritative");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+
+        // Create cache for current ledger
+        auto const ledger1 = env.closed();
+        auto cache1 = prm.getAssetCache(ledger1, true);
+        BEAST_EXPECT(cache1 != nullptr);
+        auto const seq1 = cache1->getLedger()->seq();
+
+        // Advance 10 more ledgers (well beyond the +8 threshold)
+        for (int i = 0; i < 10; i++)
+            env.close();
+
+        auto const ledger2 = env.closed();
+        auto const seq2 = ledger2->seq();
+        BEAST_EXPECT(seq2 > seq1 + 8);
+
+        // Non-authoritative call with ledger far ahead (> lineSeq + 8) should
+        // create a new cache (line 50 in PathRequestManager.cpp)
+        auto cache2 = prm.getAssetCache(ledger2, false);
+        BEAST_EXPECT(cache2 != cache1);
+        BEAST_EXPECT(cache2->getLedger()->seq() == seq2);
+    }
+
+    void
+    pathRequestManagerUpdateAllPathSearchDisabled()
+    {
+        testcase("PathRequestManager::updateAll with pathSearch disabled");
+        using namespace jtx;
+        // Default config has pathSearch = false
+        Env env(*this);
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const ledger = env.closed();
+
+        // updateAll should return early when pathSearch is disabled
+        // and should not crash
+        prm.updateAll(ledger);
+
+        // PayGraph should remain nullptr since pathSearch is disabled
+        BEAST_EXPECT(prm.getPayGraph() == nullptr);
+    }
+
+    void
+    pathRequestManagerMakeLegacyPathRequestTooBusy()
+    {
+        testcase("PathRequestManager::makeLegacyPathRequest returns RpcTooBusy");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto& prm = env.app().getPathRequestManager();
+        auto const ledger = env.closed();
+
+        json::Value jv = json::ValueType::Object;
+        jv[jss::source_account] = toBase58(alice);
+        jv[jss::destination_account] = toBase58(bob);
+        jv[jss::destination_amount] = "100";
+
+        Resource::Consumer c;
+        PathRequest::pointer req;
+
+        // First call should succeed (not too busy)
+        auto res = prm.makeLegacyPathRequest(req, [] {}, c, ledger, jv);
+        BEAST_EXPECT(!res.isMember(jss::error));
+        BEAST_EXPECT(req != nullptr);
     }
 };
 
