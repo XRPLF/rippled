@@ -27,7 +27,7 @@ public:
     {
     }
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const override
     {
         return intr_ptr::makeShared<SHAMapTxPlusMetaLeafNode>(item_, cowid, hash_);
@@ -50,7 +50,7 @@ public:
     {
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
-        s.add8(kWIRE_TYPE_TRANSACTION_WITH_META);
+        s.add8(kWireTypeTransactionWithMeta);
     }
 
     void

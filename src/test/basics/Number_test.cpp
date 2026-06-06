@@ -6,8 +6,14 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+// NOLINTNEXTLINE(misc-include-cleaner)
+#include <boost/multiprecision/cpp_dec_float.hpp>
+#include <boost/multiprecision/number.hpp>
+
 #include <array>
+#include <cctype>
 #include <cstdint>
+#include <iomanip>
 #include <limits>
 #include <map>
 #include <sstream>
@@ -19,6 +25,58 @@ namespace xrpl {
 
 class Number_test : public beast::unit_test::Suite
 {
+    using BigInt = boost::multiprecision::cpp_int;
+
+    static std::string
+    fmt(BigInt const& value)
+    {
+        auto s = to_string(value);
+        std::string out;
+        int count = 0;
+        for (auto it = s.rbegin(); it != s.rend(); ++it)
+        {
+            if (count != 0 && count % 3 == 0 && (isdigit(*it) != 0))
+                out.insert(out.begin(), '_');
+            out.insert(out.begin(), *it);
+            ++count;
+        }
+        return out;
+    }
+
+    using dec = boost::multiprecision::cpp_dec_float_50;
+
+    template <class T = dec>
+    static T
+    pow10(int n)
+    {
+        if (n == 0)
+            return 1;
+        if (n == 1)
+            return 10;
+
+        if (n > 1)
+        {
+            auto r = pow10<T>(n / 2);
+            r *= r;
+            if (n % 2 != 0)
+                r *= 10;
+            return r;
+        }
+
+        // n < 0
+        T p = 1;
+        p /= pow10<T>(-n);
+        return p;
+    }
+
+    static std::string
+    fmt(dec const& v)
+    {
+        std::ostringstream os;
+        os << std::setprecision(40) << v;
+        return os.str();
+    }
+
 public:
     void
     testZero()
@@ -178,8 +236,7 @@ public:
                 {Number{true, 9'999'999'999'999'999'999ULL, -37, Number::Normalized{}},
                  Number{1'000'000'000'000'000'000, -18},
                  Number{false, 9'999'999'999'999'999'990ULL, -19, Number::Normalized{}}},
-                {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP / 10, 1}},
-                {Number{Number::kMAX_REP - 1}, Number{1, 0}, Number{Number::kMAX_REP}},
+                {Number{Number::kMaxRep - 1}, Number{1, 0}, Number{Number::kMaxRep}},
                 // Test extremes
                 {
                     // Each Number operand rounds up, so the actual mantissa is
@@ -189,16 +246,22 @@ public:
                     Number{2, 19},
                 },
                 {
-                    // Does not round. Mantissas are going to be > maxRep, so if
+                    // Does not round. Mantissas are going to be > kMaxRep, so if
                     // added together as uint64_t's, the result will overflow.
                     // With addition using uint128_t, there's no problem. After
                     // normalizing, the resulting mantissa ends up less than
-                    // maxRep.
+                    // kMaxRep.
                     Number{false, 9'999'999'999'999'999'990ULL, 0, Number::Normalized{}},
                     Number{false, 9'999'999'999'999'999'990ULL, 0, Number::Normalized{}},
                     Number{false, 1'999'999'999'999'999'998ULL, 1, Number::Normalized{}},
                 },
             });
+        auto const cLargeLegacy = std::to_array<Case>({
+            {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep / 10, 1}},
+        });
+        auto const cLargeCorrected = std::to_array<Case>({
+            {Number{Number::kMaxRep}, Number{6, -1}, Number{(Number::kMaxRep / 10) + 1, 1}},
+        });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
@@ -215,6 +278,14 @@ public:
         else
         {
             test(cLarge);
+            if (scale == MantissaRange::MantissaScale::LargeLegacy)
+            {
+                test(cLargeLegacy);
+            }
+            else
+            {
+                test(cLargeCorrected);
+            }
         }
         {
             bool caught = false;
@@ -286,14 +357,14 @@ public:
                 {Number{1'000'000'000'000'000'001, -18},
                  Number{1'000'000'000'000'000'000, -18},
                  Number{1'000'000'000'000'000'000, -36}},
-                {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP - 1}},
-                {Number{false, Number::kMAX_REP + 1, 0, Number::Normalized{}},
+                {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep - 1}},
+                {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
                  Number{1, 0},
-                 Number{(Number::kMAX_REP / 10) + 1, 1}},
-                {Number{false, Number::kMAX_REP + 1, 0, Number::Normalized{}},
+                 Number{(Number::kMaxRep / 10) + 1, 1}},
+                {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
                  Number{3, 0},
-                 Number{Number::kMAX_REP}},
-                {power(2, 63), Number{3, 0}, Number{Number::kMAX_REP}},
+                 Number{Number::kMaxRep}},
+                {power(2, 63), Number{3, 0}, Number{Number::kMaxRep}},
             });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
@@ -402,8 +473,8 @@ public:
                  Number{false, maxMantissa, 0, Number::Normalized{}},
                  Number{1, 38}},
                 // Maximum int64 range
-                {Number{Number::kMAX_REP, 0},
-                 Number{Number::kMAX_REP, 0},
+                {Number{Number::kMaxRep, 0},
+                 Number{Number::kMaxRep, 0},
                  Number{85'070'591'730'234'615'85, 19}},
             });
             tests(cSmall, cLarge);
@@ -469,8 +540,8 @@ public:
                      Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kMAX_REP, 0},
-                     Number{Number::kMAX_REP, 0},
+                    {Number{Number::kMaxRep, 0},
+                     Number{Number::kMaxRep, 0},
                      Number{85'070'591'730'234'615'84, 19}},
                 });
             tests(cSmall, cLarge);
@@ -536,8 +607,8 @@ public:
                      Number{false, (maxMantissa / 10) - 1, 20, Number::Normalized{}}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kMAX_REP, 0},
-                     Number{Number::kMAX_REP, 0},
+                    {Number{Number::kMaxRep, 0},
+                     Number{Number::kMaxRep, 0},
                      Number{85'070'591'730'234'615'84, 19}},
                 });
             tests(cSmall, cLarge);
@@ -603,8 +674,8 @@ public:
                      Number{1, 38}},
                     // Maximum int64 range
                     // 85'070'591'730'234'615'847'396'907'784'232'501'249
-                    {Number{Number::kMAX_REP, 0},
-                     Number{Number::kMAX_REP, 0},
+                    {Number{Number::kMaxRep, 0},
+                     Number{Number::kMaxRep, 0},
                      Number{85'070'591'730'234'615'85, 19}},
                 });
             tests(cSmall, cLarge);
@@ -835,7 +906,7 @@ public:
         /*
         auto tests = [&](auto const& cSmall, auto const& cLarge) {
             test(cSmall);
-            if (scale != MantissaRange::mantissa_scale::small)
+            if (scale != MantissaRange::MantissaScale::Small)
                 test(cLarge);
         };
         */
@@ -857,10 +928,10 @@ public:
             {Number{false, Number::maxMantissa() - 9, 0, Number::Normalized{}},
              2,
              Number{false, 3'162'277'660'168'379'330, -9, Number::Normalized{}}},
-            {Number{Number::kMAX_REP},
+            {Number{Number::kMaxRep},
              2,
              Number{false, 3'037'000'499'976049692, -9, Number::Normalized{}}},
-            {Number{Number::kMAX_REP},
+            {Number{Number::kMaxRep},
              4,
              Number{false, 55'108'98747006743627, -14, Number::Normalized{}}},
         });
@@ -918,7 +989,7 @@ public:
             Number{5, -1},
             Number{0},
             Number{5625, -4},
-            Number{Number::kMAX_REP},
+            Number{Number::kMaxRep},
         });
         test(cSmall);
         bool caught = false;
@@ -1266,6 +1337,7 @@ public:
                         "9223372036854775e3");
                 }
                 break;
+            case MantissaRange::MantissaScale::LargeLegacy:
             case MantissaRange::MantissaScale::Large:
                 // Test the edges
                 // ((exponent < -(28)) || (exponent > -(8)))))
@@ -1511,12 +1583,12 @@ public:
 
         if (scale == MantissaRange::MantissaScale::Small)
         {
-            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kINITIAL_XRP.drops());
-            BEAST_EXPECT(Number::maxMantissa() < kINITIAL_XRP.drops());
-            Number const initalXrp{kINITIAL_XRP};
+            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kInitialXrp.drops());
+            BEAST_EXPECT(Number::maxMantissa() < kInitialXrp.drops());
+            Number const initalXrp{kInitialXrp};
             BEAST_EXPECT(initalXrp.exponent() > 0);
 
-            Number const maxInt64{Number::kMAX_REP};
+            Number const maxInt64{Number::kMaxRep};
             BEAST_EXPECT(maxInt64.exponent() > 0);
             // 85'070'591'730'234'615'865'843'651'857'942'052'864 - 38 digits
             BEAST_EXPECT((power(maxInt64, 2) == Number{85'070'591'730'234'62, 22}));
@@ -1528,12 +1600,12 @@ public:
         }
         else
         {
-            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kINITIAL_XRP.drops());
-            BEAST_EXPECT(Number::maxMantissa() > kINITIAL_XRP.drops());
-            Number const initalXrp{kINITIAL_XRP};
+            BEAST_EXPECT(std::numeric_limits<std::int64_t>::max() > kInitialXrp.drops());
+            BEAST_EXPECT(Number::maxMantissa() > kInitialXrp.drops());
+            Number const initalXrp{kInitialXrp};
             BEAST_EXPECT(initalXrp.exponent() <= 0);
 
-            Number const maxInt64{Number::kMAX_REP};
+            Number const maxInt64{Number::kMaxRep};
             BEAST_EXPECT(maxInt64.exponent() <= 0);
             // 85'070'591'730'234'615'847'396'907'784'232'501'249 - 38 digits
             BEAST_EXPECT((power(maxInt64, 2) == Number{85'070'591'730'234'615'85, 19}));
@@ -1552,10 +1624,257 @@ public:
     }
 
     void
+    testUpwardRoundsDown()
+    {
+        auto const scale = Number::getMantissaScale();
+        {
+            testcase << "upward rounding produces a value below exact at kMaxRep cusp "
+                     << to_string(scale);
+
+            NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
+
+            constexpr std::int64_t kAValue = 1'000'000'000'000'049'863LL;
+            constexpr std::int64_t kBValue = 9'223'372'036'854'315'903LL;
+
+            Number const a = kAValue;
+            Number const b = kBValue;
+            Number const product = a * b;
+
+            // Exact reference in BigInt.
+            BigInt const exactProduct = BigInt(kAValue) * BigInt(kBValue);
+
+            // What Number actually stored.
+            BigInt storedValue = BigInt(product.mantissa());
+            for (int i = 0; i < product.exponent(); ++i)
+                storedValue *= 10;
+
+            BigInt const signedDifference = storedValue - exactProduct;
+
+            log << "\n"
+                << "  a              = " << fmt(BigInt(kAValue)) << "\n"
+                << "  b              = " << fmt(BigInt(kBValue)) << "\n"
+                << "  exact a*b      = " << fmt(exactProduct) << "\n"
+                << "  stored         = " << fmt(storedValue) << "\n"
+                << "  stored - exact = " << fmt(signedDifference) << "\n"
+                << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n"
+                << " stored.mantissa = " << product.mantissa() << "\n"
+                << " stored.exponent = " << product.exponent() << "\n";
+            log.flush();
+
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(signedDifference >= 0);
+                    BEAST_EXPECT(signedDifference < pow10<BigInt>(product.exponent()));
+                    BEAST_EXPECT(
+                        product.mantissa() == (std::numeric_limits<std::int64_t>::max() / 10) + 1);
+                    BEAST_EXPECT(product.exponent() == 19);
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(signedDifference < 0);
+                    BEAST_EXPECT(
+                        product.mantissa() ==
+                        (std::numeric_limits<std::int64_t>::max() / 100) * 100);
+                    BEAST_EXPECT(product.exponent() == 18);
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // The seemingly weird rounding here is because
+                    // a & b are both normalized, and both round up when
+                    // being converted to Number, so you're really
+                    // getting 1_000_000_000_000_050 * 9_223_372_036_854_316
+                    BEAST_EXPECT(signedDifference >= 0);
+                    BEAST_EXPECT(
+                        product.mantissa() ==
+                        (std::numeric_limits<std::int64_t>::max() / 1000) + 3);
+                    BEAST_EXPECT(product.exponent() == 21);
+                    break;
+            }
+        }
+
+        {
+            /* Companion regression for the kMaxRep cusp behavior, but for
+             * `operator/=` on the cusp-fix-ENABLED `Large` scale.
+             *
+             * Before the dropped-remainder fix, `operator/=` with Upward
+             * rounding could return a value STRICTLY LESS than the exact quotient,
+             * violating Upward's directional invariant.
+             *
+             * Mechanism (fix-enabled path):
+             *   1. `operator/=` computes `numerator = nm * 10^17` and
+             *      `zm = numerator / dm` (integer division, truncates remainder).
+             *   2. If `remainder != 0`, the correction block runs:
+             *        zm *= 100000
+             *        correction = (remainder * 100000) / dm  // also truncates
+             *        zm += correction
+             *        ze -= 5
+             *      The truncation in `correction` discards a sub-1/100000 residual.
+             *   3. `normalize`'s shift loop reduces zm to fit, but the discarded
+             *      residual is BELOW the Guard's visibility, so the Guard sees fraction = 0.
+             *   4. Under Upward + positive, `round()` returns -1 (no round-up), and
+             *      the algorithm returns the truncated zm
+             */
+            testcase << "operator/= Upward on Large returns value < truth " << to_string(scale);
+
+            NumberRoundModeGuard const roundGuard{Number::RoundingMode::Upward};
+
+            constexpr std::int64_t aValue = 2LL;
+            constexpr std::int64_t bValue = 1'000'000'000'000'000'007LL;
+            // bValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+            Number const a{aValue, 0};
+            Number const b{bValue, 0};
+            Number const quotient = a / b;
+
+            dec const exact = dec(aValue) / dec(bValue);
+            dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
+            dec const diff = stored - exact;
+
+            log << "\n"
+                << "  a                 = " << aValue << "\n"
+                << "  b                 = " << bValue << "\n"
+                << "  exact a/b         = " << fmt(exact) << "\n"
+                << "  stored a/b        = " << fmt(stored) << "\n"
+                << "  stored - exact    = " << fmt(diff)
+                << "    (negative => Upward gave value BELOW truth)\n"
+                << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+                << "  quotient.exponent = " << quotient.exponent() << "\n";
+            log.flush();
+
+            // Upward invariant: stored >= exact. Bug: stored < exact.
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(stored >= exact);
+                    BEAST_EXPECT(diff < pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(stored < exact);
+                    BEAST_EXPECT(diff >= -pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // Small mantissa doesn't have the correction for
+                    // dropped remainders
+                    BEAST_EXPECT(stored < exact);
+                    break;
+            }
+        }
+        {
+            /* Companion test case for Upward positive operator/=: Downward negative
+             */
+            testcase << "operator/= Downward on Large returns value < truth " << to_string(scale);
+
+            NumberRoundModeGuard const roundGuard{Number::RoundingMode::Downward};
+
+            constexpr std::int64_t aValue = -2LL;
+            constexpr std::int64_t bValue = 1'000'000'000'000'000'007LL;
+            // bValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+            Number const a{aValue, 0};
+            Number const b{bValue, 0};
+            Number const quotient = a / b;
+
+            dec const exact = dec(aValue) / dec(bValue);
+            dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
+            dec const diff = stored - exact;
+
+            log << "\n"
+                << "  a                 = " << aValue << "\n"
+                << "  b                 = " << bValue << "\n"
+                << "  exact a/b         = " << fmt(exact) << "\n"
+                << "  stored a/b        = " << fmt(stored) << "\n"
+                << "  stored - exact    = " << fmt(diff)
+                << "    (positive => Downward gave value ABOVE truth)\n"
+                << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+                << "  quotient.exponent = " << quotient.exponent() << "\n";
+            log.flush();
+
+            // invariant: stored <= exact. Bug: stored > exact.
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(stored <= exact);
+                    BEAST_EXPECT(diff > -pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(stored > exact);
+                    BEAST_EXPECT(diff <= pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // Small mantissa doesn't have the correction for
+                    // dropped remainders
+                    BEAST_EXPECT(stored < exact);
+                    break;
+            }
+        }
+        {
+            /* Companion test case for Upward positive operator/=: ToNearest
+             *
+             * With ToNearest, if the dropped digits are exactly "5", then the mantissa will be
+             * rounded to even. The numbers below result in a value where the unrounded mantissa
+             * ends in an even digit, and "infinite precision" would drop
+             * "500000000000000000145...", but doNormalize only sees "5". Without the rounding fix,
+             * doNormalize rounds down to the even value. With the rounding fix, doNormalize knows
+             * there are more digits beyond "5", and so rounds _up_ to the odd value.
+             */
+            testcase << "operator/= ToNearest on Large returns value < truth " << to_string(scale);
+
+            NumberRoundModeGuard const roundGuard{Number::RoundingMode::ToNearest};
+
+            constexpr std::int64_t aValue = 1'269'917'268'816'087'809LL;
+            constexpr std::int64_t bValue = 3'458'525'013'821'685'511LL;
+            // bValue = 10^18 + 7 (prime, in [minMantissa, kMaxRep]).
+
+            Number const a{aValue, 0};
+            Number const b{bValue, 0};
+            Number const quotient = a / b;
+
+            dec const exact = dec(aValue) / dec(bValue);
+            dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
+            dec const diff = stored - exact;
+
+            log << "\n"
+                << "  a                 = " << aValue << "\n"
+                << "  b                 = " << bValue << "\n"
+                << "  exact a/b         = " << fmt(exact) << "\n"
+                << "  stored a/b        = " << fmt(stored) << "\n"
+                << "  stored - exact    = " << fmt(diff)
+                << "    (negative => ToNearest gave value BELOW truth)\n"
+                << "  quotient.mantissa = " << quotient.mantissa() << "\n"
+                << "  quotient.exponent = " << quotient.exponent() << "\n";
+            log.flush();
+
+            // invariant: stored >= exact. Bug: stored < exact.
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Large:
+                    BEAST_EXPECT(stored >= exact);
+                    BEAST_EXPECT(diff < pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                    BEAST_EXPECT(stored < exact);
+                    BEAST_EXPECT(diff >= -pow10(quotient.exponent()));
+                    break;
+
+                case MantissaRange::MantissaScale::Small:
+                    // Small mantissa doesn't have the correction for
+                    // dropped remainders
+                    BEAST_EXPECT(stored < exact);
+                    break;
+            }
+        }
+    }
+
+    void
     run() override
     {
-        for (auto const scale :
-             {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+        for (auto const scale : MantissaRange::getAllScales())
         {
             NumberMantissaScaleGuard const sg(scale);
             testZero();
@@ -1579,6 +1898,8 @@ public:
             testTruncate();
             testRounding();
             testInt64();
+
+            testUpwardRoundsDown();
         }
     }
 };

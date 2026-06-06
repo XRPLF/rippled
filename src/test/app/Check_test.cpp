@@ -43,7 +43,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -58,11 +57,11 @@ class Check_test : public beast::unit_test::Suite
     }
 
     // Helper function that returns the Checks on an account.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     checksOnAccount(test::jtx::Env& env, test::jtx::Account account)
     {
-        std::vector<std::shared_ptr<SLE const>> result;
-        forEachItem(*env.current(), account, [&result](std::shared_ptr<SLE const> const& sle) {
+        std::vector<SLE::const_pointer> result;
+        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
             if (sle && sle->getType() == ltCHECK)
                 result.push_back(sle);
         });
@@ -77,7 +76,8 @@ class Check_test : public beast::unit_test::Suite
     verifyDeliveredAmount(test::jtx::Env& env, STAmount const& amount)
     {
         // Get the hash for the most recent transaction.
-        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         env.close();
@@ -89,8 +89,8 @@ class Check_test : public beast::unit_test::Suite
 
         // DeliveredAmount and delivered_amount should both be present and
         // equal amount.
-        BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == amount.getJson(JsonOptions::KNone));
-        BEAST_EXPECT(meta[jss::delivered_amount] == amount.getJson(JsonOptions::KNone));
+        BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == amount.getJson(JsonOptions::Values::None));
+        BEAST_EXPECT(meta[jss::delivered_amount] == amount.getJson(JsonOptions::Values::None));
     }
 
     void
@@ -1326,7 +1326,7 @@ class Check_test : public beast::unit_test::Suite
             // Both Amount and DeliverMin present.
             {
                 json::Value tx{check::cash(bob, chkId, amount)};
-                tx[sfDeliverMin.jsonName] = amount.getJson(JsonOptions::KNone);
+                tx[sfDeliverMin.jsonName] = amount.getJson(JsonOptions::Values::None);
                 env(tx, Ter(temMALFORMED));
                 env.close();
             }
@@ -1727,7 +1727,8 @@ class Check_test : public beast::unit_test::Suite
         env(check::cash(bob, chkId, check::DeliverMin(XRP(100))));
 
         // Get the hash for the most recent transaction.
-        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
 
         env.close();
         json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];

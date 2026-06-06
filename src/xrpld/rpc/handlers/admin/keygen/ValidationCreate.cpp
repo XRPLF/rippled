@@ -32,7 +32,7 @@ validationSeed(json::Value const& params)
 json::Value
 doValidationCreate(RPC::JsonContext& context)
 {
-    json::Value obj(json::ObjectValue);
+    json::Value obj(json::ValueType::Object);
 
     auto seed = validationSeed(context.params);
 

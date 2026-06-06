@@ -33,13 +33,13 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
 {
     if (auto err = credentials::checkArray(
             ctx.tx.getFieldArray(sfAcceptedCredentials),
-            kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE,
+            kMaxPermissionedDomainCredentialsArraySize,
             ctx.j);
         !isTesSuccess(err))
         return err;
 
     auto const domain = ctx.tx.at(~sfDomainID);
-    if (domain && *domain == beast::kZERO)
+    if (domain && *domain == beast::kZero)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -77,7 +77,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainSet::doApply()
 {
-    auto const ownerSle = view().peek(keylet::account(account_));
+    auto const ownerSle = view().peek(keylet::account(accountID_));
     if (!ownerSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -110,15 +110,16 @@ PermissionedDomainSet::doApply()
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
-        Keylet const pdKeylet =
-            keylet::permissionedDomain(account_, ctx_.tx.getFieldU32(sfSequence));
+        bool const fixEnabled = view().rules().enabled(fixCleanup3_1_3);
+        auto const seq = fixEnabled ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);
+        Keylet const pdKeylet = keylet::permissionedDomain(accountID_, seq);
         auto slePd = std::make_shared<SLE>(pdKeylet);
 
-        slePd->setAccountID(sfOwner, account_);
-        slePd->setFieldU32(sfSequence, ctx_.tx.getFieldU32(sfSequence));
+        slePd->setAccountID(sfOwner, accountID_);
+        slePd->setFieldU32(sfSequence, seq);
         slePd->peekFieldArray(sfAcceptedCredentials) = std::move(sortedLE);
         auto const page =
-            view().dirInsert(keylet::ownerDir(account_), pdKeylet, describeOwnerDir(account_));
+            view().dirInsert(keylet::ownerDir(accountID_), pdKeylet, describeOwnerDir(accountID_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 
@@ -132,10 +133,7 @@ PermissionedDomainSet::doApply()
 }
 
 void
-PermissionedDomainSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+PermissionedDomainSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

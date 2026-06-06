@@ -16,16 +16,12 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
-#include <memory>
 #include <utility>
 
 namespace xrpl {
 
 void
-TransfersNotFrozen::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+TransfersNotFrozen::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     /*
      * A trust line freeze state alone doesn't determine if a transfer is
@@ -107,9 +103,7 @@ TransfersNotFrozen::finalize(
 }
 
 bool
-TransfersNotFrozen::isValidEntry(
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+TransfersNotFrozen::isValidEntry(SLE::const_ref before, SLE::const_ref after)
 {
     // `after` can never be null, even if the trust line is deleted.
     XRPL_ASSERT(after, "xrpl::TransfersNotFrozen::isValidEntry : valid after.");
@@ -135,8 +129,8 @@ TransfersNotFrozen::isValidEntry(
 
 STAmount
 TransfersNotFrozen::calculateBalanceChange(
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after,
+    SLE::const_ref before,
+    SLE::const_ref after,
     bool isDelete)
 {
     auto const getBalance = [](auto const& line, auto const& other, bool zero) {
@@ -180,9 +174,7 @@ TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 }
 
 void
-TransfersNotFrozen::recordBalanceChanges(
-    std::shared_ptr<SLE const> const& after,
-    STAmount const& balanceChange)
+TransfersNotFrozen::recordBalanceChanges(SLE::const_ref after, STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after->at(sfBalance).get<Issue>().currency;
@@ -198,7 +190,7 @@ TransfersNotFrozen::recordBalanceChanges(
         {.line = after, .balanceChangeSign = -balanceChangeSign});
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
     if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
@@ -211,7 +203,7 @@ TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 
 bool
 TransfersNotFrozen::validateIssuerChanges(
-    std::shared_ptr<SLE const> const& issuer,
+    SLE::const_ref issuer,
     IssuerChanges const& changes,
     STTx const& tx,
     beast::Journal const& j,

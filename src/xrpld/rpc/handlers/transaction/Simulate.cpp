@@ -61,7 +61,7 @@ getAutofillSequence(json::Value const& txJson, RPC::JsonContext& context)
         return Unexpected(
             RPC::makeError(RpcSrcActMalformed, RPC::invalidFieldMessage("tx.Account")));
     }
-    std::shared_ptr<SLE const> const sle =
+    SLE::const_pointer const sle =
         context.app.getOpenLedger().current()->read(keylet::account(*srcAddressID));
     if (!hasTicketSeq && !sle)
     {
@@ -194,7 +194,7 @@ getTxJsonFromParams(json::Value const& params)
         try
         {
             SerialIter sitTrans(makeSlice(*unHexed));
-            txJson = STObject(std::ref(sitTrans), kSF_GENERIC).getJson(JsonOptions::KNone);
+            txJson = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::Values::None);
         }
         catch (std::runtime_error const&)
         {
@@ -276,7 +276,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
         }
         else
         {
-            jvResult[jss::meta] = result.metadata->getJson(JsonOptions::KNone);
+            jvResult[jss::meta] = result.metadata->getJson(JsonOptions::Values::None);
             RPC::insertDeliveredAmount(
                 jvResult[jss::meta], view, transaction->getSTransaction(), *result.metadata);
             RPC::insertNFTSyntheticInJson(
@@ -293,7 +293,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
     }
     else
     {
-        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::KNone);
+        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::Values::None);
     }
 
     return jvResult;
@@ -306,7 +306,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 json::Value
 doSimulate(RPC::JsonContext& context)
 {
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
 
     json::Value txJson;  // the tx as a JSON
 
@@ -344,7 +344,7 @@ doSimulate(RPC::JsonContext& context)
     }
     catch (std::exception& e)
     {
-        json::Value jvResult = json::ObjectValue;
+        json::Value jvResult = json::ValueType::Object;
         jvResult[jss::error] = "invalidTransaction";
         jvResult[jss::error_exception] = e.what();
         return jvResult;
@@ -365,7 +365,7 @@ doSimulate(RPC::JsonContext& context)
     // LCOV_EXCL_START this is just in case, so xrpld doesn't crash
     catch (std::exception const& e)
     {
-        json::Value jvResult = json::ObjectValue;
+        json::Value jvResult = json::ValueType::Object;
         jvResult[jss::error] = "internalSimulate";
         jvResult[jss::error_exception] = e.what();
         return jvResult;

@@ -10,8 +10,6 @@
 #include <xrpl/protocol/SField.h>
 
 #include <cstdint>
-#include <memory>
-
 namespace xrpl {
 namespace detail {
 
@@ -19,7 +17,7 @@ std::uint32_t
 ownedCountOf(ReadView const& view, AccountID const& id, LedgerEntryType type)
 {
     std::uint32_t count = 0;
-    forEachItem(view, id, [&count, type](std::shared_ptr<SLE const> const& sle) {
+    forEachItem(view, id, [&count, type](SLE::const_ref sle) {
         if (sle->getType() == type)
             ++count;
     });

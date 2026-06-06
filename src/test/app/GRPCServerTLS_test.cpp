@@ -27,7 +27,7 @@
 
 namespace {
 
-constexpr std::string_view kCA_CERT_CONTENT =
+constexpr std::string_view kCaCertContent =
     "-----BEGIN CERTIFICATE-----\n"
     "MIIFhjCCA26gAwIBAgIJAL9P70zX30oiMA0GCSqGSIb3DQEBCwUAMFcxCzAJBgNV\n"
     "BAYTAlVTMQ0wCwYDVQQIDARUZXN0MQ0wCwYDVQQHDARUZXN0MRgwFgYDVQQKDA9S\n"
@@ -61,7 +61,7 @@ constexpr std::string_view kCA_CERT_CONTENT =
     "fAbAYqu0rfMFHUYjzIVnu8WRCC56qYHO5tU=\n"
     "-----END CERTIFICATE-----\n";
 
-constexpr std::string_view kSERVER_CERT_CONTENT =
+constexpr std::string_view kServerCertContent =
     "-----BEGIN CERTIFICATE-----\n"
     "MIIFizCCA3OgAwIBAgIJAIErcpMflkrRMA0GCSqGSIb3DQEBCwUAMFcxCzAJBgNV\n"
     "BAYTAlVTMQ0wCwYDVQQIDARUZXN0MQ0wCwYDVQQHDARUZXN0MRgwFgYDVQQKDA9S\n"
@@ -95,7 +95,7 @@ constexpr std::string_view kSERVER_CERT_CONTENT =
     "YSyd81wvumIpP+I7BDkQLgTb+NzMmoBIjRg3aVvXSg==\n"
     "-----END CERTIFICATE-----\n";
 
-constexpr std::string_view kSERVER_KEY_CONTENT =
+constexpr std::string_view kServerKeyContent =
     "-----BEGIN PRIVATE KEY-----\n"
     "MIIJQgIBADANBgkqhkiG9w0BAQEFAASCCSwwggkoAgEAAoICAQCv+Lj9LJfPuSOE\n"
     "yZqTn2gmG5tJt02ywnuIQet7N5tduxnNs50yXQ00Jeb40dth0HwI5I+AsEVNPIG3\n"
@@ -149,7 +149,7 @@ constexpr std::string_view kSERVER_KEY_CONTENT =
     "S/RYUSUkZ4VvqFUfo7wT8x18urb87w==\n"
     "-----END PRIVATE KEY-----\n";
 
-constexpr std::string_view kCLIENT_CERT_CONTENT =
+constexpr std::string_view kClientCertContent =
     "-----BEGIN CERTIFICATE-----\n"
     "MIIFeDCCA2CgAwIBAgIJAIErcpMflkrSMA0GCSqGSIb3DQEBCwUAMFcxCzAJBgNV\n"
     "BAYTAlVTMQ0wCwYDVQQIDARUZXN0MQ0wCwYDVQQHDARUZXN0MRgwFgYDVQQKDA9S\n"
@@ -183,7 +183,7 @@ constexpr std::string_view kCLIENT_CERT_CONTENT =
     "cTe8jkzRqYdUfAoV\n"
     "-----END CERTIFICATE-----\n";
 
-constexpr std::string_view kCLIENT_KEY_CONTENT =
+constexpr std::string_view kClientKeyContent =
     "-----BEGIN PRIVATE KEY-----\n"
     "MIIJQwIBADANBgkqhkiG9w0BAQEFAASCCS0wggkpAgEAAoICAQDPQHttw3TLjOqY\n"
     "S3VkLF3KMRaP2ZtO6A1mXfTbqbKvD41Fazf/cM/v9lPMAlRd2SEY3MeE8KVddKJw\n"
@@ -246,26 +246,26 @@ constexpr std::string_view kCLIENT_KEY_CONTENT =
 class TemporaryTLSCertificates
 {
 public:
-    static constexpr std::string_view kCA_CERT_FILENAME = "ca.pem";
-    static constexpr std::string_view kSERVER_CERT_FILENAME = "server_cert.pem";
-    static constexpr std::string_view kSERVER_KEY_FILENAME = "server_key.pem";
-    static constexpr std::string_view kCLIENT_CERT_FILENAME = "client_cert.pem";
-    static constexpr std::string_view kCLIENT_KEY_FILENAME = "client_key.pem";
-    static constexpr std::string_view kCERTS_DIR_PREFIX = "grpc_tls_test_";
+    static constexpr std::string_view kCaCertFilename = "ca.pem";
+    static constexpr std::string_view kServerCertFilename = "server_cert.pem";
+    static constexpr std::string_view kServerKeyFilename = "server_key.pem";
+    static constexpr std::string_view kClientCertFilename = "client_cert.pem";
+    static constexpr std::string_view kClientKeyFilename = "client_key.pem";
+    static constexpr std::string_view kCertsDirPrefix = "grpc_tls_test_";
 
     TemporaryTLSCertificates()
     {
         auto tmpDir = std::filesystem::temp_directory_path();
         auto uniqueDirName =
-            boost::filesystem::unique_path(std::string(kCERTS_DIR_PREFIX) + "%%%%%%%%");
+            boost::filesystem::unique_path(std::string(kCertsDirPrefix) + "%%%%%%%%");
         tempDir_ = tmpDir / uniqueDirName.string();
         std::filesystem::create_directories(tempDir_);
 
-        writeFile(tempDir_ / kCA_CERT_FILENAME, kCA_CERT_CONTENT);
-        writeFile(tempDir_ / kSERVER_CERT_FILENAME, kSERVER_CERT_CONTENT);
-        writeFile(tempDir_ / kSERVER_KEY_FILENAME, kSERVER_KEY_CONTENT);
-        writeFile(tempDir_ / kCLIENT_CERT_FILENAME, kCLIENT_CERT_CONTENT);
-        writeFile(tempDir_ / kCLIENT_KEY_FILENAME, kCLIENT_KEY_CONTENT);
+        writeFile(tempDir_ / kCaCertFilename, kCaCertContent);
+        writeFile(tempDir_ / kServerCertFilename, kServerCertContent);
+        writeFile(tempDir_ / kServerKeyFilename, kServerKeyContent);
+        writeFile(tempDir_ / kClientCertFilename, kClientCertContent);
+        writeFile(tempDir_ / kClientKeyFilename, kClientKeyContent);
     }
 
     virtual ~TemporaryTLSCertificates()
@@ -284,31 +284,31 @@ public:
     [[nodiscard]] std::filesystem::path
     getCACertPath() const
     {
-        return tempDir_ / kCA_CERT_FILENAME;
+        return tempDir_ / kCaCertFilename;
     }
 
     [[nodiscard]] std::filesystem::path
     getServerCertPath() const
     {
-        return tempDir_ / kSERVER_CERT_FILENAME;
+        return tempDir_ / kServerCertFilename;
     }
 
     [[nodiscard]] std::filesystem::path
     getServerKeyPath() const
     {
-        return tempDir_ / kSERVER_KEY_FILENAME;
+        return tempDir_ / kServerKeyFilename;
     }
 
     [[nodiscard]] std::filesystem::path
     getClientCertPath() const
     {
-        return tempDir_ / kCLIENT_CERT_FILENAME;
+        return tempDir_ / kClientCertFilename;
     }
 
     [[nodiscard]] std::filesystem::path
     getClientKeyPath() const
     {
-        return tempDir_ / kCLIENT_KEY_FILENAME;
+        return tempDir_ / kClientKeyFilename;
     }
 
     [[nodiscard]] std::filesystem::path
@@ -409,7 +409,7 @@ public:
 
         // Test 2: TLS client with server CA should succeed
         grpc::SslCredentialsOptions sslOpts;
-        sslOpts.pem_root_certs = std::string(kCA_CERT_CONTENT);
+        sslOpts.pem_root_certs = std::string(kCaCertContent);
         auto tlsStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOpts)));
         BEAST_EXPECT(makeTestGRPCCall(tlsStub));
@@ -441,16 +441,16 @@ public:
 
         // Test 1: TLS client WITHOUT client certificate should FAIL (mTLS requires client cert)
         grpc::SslCredentialsOptions sslOptsNoClient;
-        sslOptsNoClient.pem_root_certs = std::string(kCA_CERT_CONTENT);
+        sslOptsNoClient.pem_root_certs = std::string(kCaCertContent);
         auto tlsStubNoClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsNoClient)));
         BEAST_EXPECT(!makeTestGRPCCall(tlsStubNoClient));
 
         // Test 2: TLS client WITH client certificate should succeed
         grpc::SslCredentialsOptions sslOptsWithClient;
-        sslOptsWithClient.pem_root_certs = std::string(kCA_CERT_CONTENT);
-        sslOptsWithClient.pem_cert_chain = std::string(kCLIENT_CERT_CONTENT);
-        sslOptsWithClient.pem_private_key = std::string(kCLIENT_KEY_CONTENT);
+        sslOptsWithClient.pem_root_certs = std::string(kCaCertContent);
+        sslOptsWithClient.pem_cert_chain = std::string(kClientCertContent);
+        sslOptsWithClient.pem_private_key = std::string(kClientKeyContent);
         auto tlsStubWithClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsWithClient)));
         BEAST_EXPECT(makeTestGRPCCall(tlsStubWithClient));
@@ -665,7 +665,7 @@ public:
 
         // Test: TLS client should be able to connect (no client cert required)
         grpc::SslCredentialsOptions sslOpts;
-        sslOpts.pem_root_certs = std::string(kCA_CERT_CONTENT);
+        sslOpts.pem_root_certs = std::string(kCaCertContent);
         auto tlsStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOpts)));
         BEAST_EXPECT(makeTestGRPCCall(tlsStub));
@@ -819,16 +819,16 @@ public:
 
         // Test 1: TLS client WITHOUT client certificate should FAIL (mTLS requires client cert)
         grpc::SslCredentialsOptions sslOptsNoClient;
-        sslOptsNoClient.pem_root_certs = std::string(kCA_CERT_CONTENT);
+        sslOptsNoClient.pem_root_certs = std::string(kCaCertContent);
         auto tlsStubNoClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsNoClient)));
         BEAST_EXPECT(!makeTestGRPCCall(tlsStubNoClient));
 
         // Test 2: TLS client WITH client certificate should succeed
         grpc::SslCredentialsOptions sslOptsWithClient;
-        sslOptsWithClient.pem_root_certs = std::string(kCA_CERT_CONTENT);
-        sslOptsWithClient.pem_cert_chain = std::string(kCLIENT_CERT_CONTENT);
-        sslOptsWithClient.pem_private_key = std::string(kCLIENT_KEY_CONTENT);
+        sslOptsWithClient.pem_root_certs = std::string(kCaCertContent);
+        sslOptsWithClient.pem_cert_chain = std::string(kClientCertContent);
+        sslOptsWithClient.pem_private_key = std::string(kClientKeyContent);
         auto tlsStubWithClient = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::SslCredentials(sslOptsWithClient)));
         BEAST_EXPECT(makeTestGRPCCall(tlsStubWithClient));

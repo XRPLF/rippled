@@ -12,6 +12,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -31,7 +32,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <set>
 
@@ -57,19 +57,45 @@ isVaultPseudoAccountFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptShare,
-    int depth)
+    std::uint8_t depth)
 {
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
 
-    if (depth >= kMAX_ASSET_CHECK_DEPTH)
-        return true;  // LCOV_EXCL_LINE
+    if (depth >= kMaxAssetCheckDepth)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::View::isVaultPseudoAccountFrozen : reached asset check depth");
+        return true;
+        // LCOV_EXCL_STOP
+    }
 
     auto const mptIssuance = view.read(keylet::mptIssuance(mptShare.getMptID()));
     if (mptIssuance == nullptr)
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
     auto const issuer = mptIssuance->getAccountID(sfIssuer);
+
+    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
+    // to the vault pseudo's MPToken or RippleState for the underlying.
+    // Read it to derive the underlying asset and recurse, skipping the
+    // issuer-account-then-vault chain. Pre-amendment shares (no field)
+    // fall back to the chain lookup below.
+    if (mptIssuance->isFieldPresent(sfReferenceHolding))
+    {
+        auto const sleHolding =
+            view.read(keylet::unchecked(mptIssuance->getFieldH256(sfReferenceHolding)));
+        if (!sleHolding)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::isVaultPseudoAccountFrozen : dangling sfReferenceHolding");
+            return false;
+            // LCOV_EXCL_STOP
+        }
+        return isAnyFrozen(
+            view, {issuer, account}, assetOfHolding(*mptIssuance, *sleHolding), depth + 1);
+    }
+
     auto const mptIssuer = view.read(keylet::account(issuer));
     if (mptIssuer == nullptr)
     {
@@ -305,11 +331,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 TER
-dirLink(
-    ApplyView& view,
-    AccountID const& owner,
-    std::shared_ptr<SLE>& object,
-    SF_UINT64 const& node)
+dirLink(ApplyView& view, AccountID const& owner, SLE::pointer& object, SF_UINT64 const& node)
 {
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
@@ -350,7 +372,7 @@ withdrawToDestExceedsLimit(
         [&](Issue const& issue) -> TER {
             auto const& currency = issue.currency;
             auto const owed = creditBalance(view, to, issuer, currency);
-            if (owed <= beast::kZERO)
+            if (owed <= beast::kZero)
             {
                 auto const limit = creditLimit(view, to, issuer, currency);
                 if (-owed >= limit || amount > (limit + owed))
@@ -461,9 +483,9 @@ cleanupOnAccountDelete(
     std::optional<uint16_t> maxNodesToDelete)
 {
     // Delete all the entries in the account directory.
-    std::shared_ptr<SLE> sleDirNode{};
+    SLE::pointer sleDirNode{};
     unsigned int uDirEntry{0};
-    uint256 dirEntry{beast::kZERO};
+    uint256 dirEntry{beast::kZero};
     std::uint32_t deleted = 0;
 
     if (view.exists(ownerDirKeylet) &&

@@ -308,12 +308,12 @@ struct ExistingElementPool
         currencyNames.clear();
         currencyNames.reserve(numCur);
 
-        constexpr size_t kBUF_SIZE = 32;
-        char buf[kBUF_SIZE];
+        static constexpr size_t kBufSize = 32;
+        char buf[kBufSize];
 
         for (size_t id = 0; id < numAct; ++id)
         {
-            snprintf(buf, kBUF_SIZE, "A%zu", id);
+            snprintf(buf, kBufSize, "A%zu", id);
             accounts.emplace_back(buf);
         }
 
@@ -321,15 +321,15 @@ struct ExistingElementPool
         {
             if (id < 10)
             {
-                snprintf(buf, kBUF_SIZE, "CC%zu", id);
+                snprintf(buf, kBufSize, "CC%zu", id);
             }
             else if (id < 100)
             {
-                snprintf(buf, kBUF_SIZE, "C%zu", id);
+                snprintf(buf, kBufSize, "C%zu", id);
             }
             else
             {
-                snprintf(buf, kBUF_SIZE, "%zu", id);
+                snprintf(buf, kBufSize, "%zu", id);
             }
             currencies.emplace_back(toCurrency(buf));
             currencyNames.emplace_back(buf);
@@ -632,7 +632,13 @@ struct PayStrand_test : public beast::unit_test::Suite
 
             // Insert implied account
             test(
-                env, usd, std::nullopt, STPath(), tesSUCCESS, D{alice, gw, usdC}, D{gw, bob, usdC});
+                env,
+                usd,
+                std::nullopt,
+                STPath(),
+                tesSUCCESS,
+                D{.src = alice, .dst = gw, .currency = usdC},
+                D{.src = gw, .dst = bob, .currency = usdC});
             env.trust(eur(1000), alice, bob);
 
             // Insert implied offer
@@ -642,9 +648,9 @@ struct PayStrand_test : public beast::unit_test::Suite
                 usd,
                 STPath(),
                 tesSUCCESS,
-                D{alice, gw, usdC},
+                D{.src = alice, .dst = gw, .currency = usdC},
                 B{usd, eur, std::nullopt},
-                D{gw, bob, eurC});
+                D{.src = gw, .dst = bob, .currency = eurC});
 
             // Path with explicit offer
             test(
@@ -653,9 +659,9 @@ struct PayStrand_test : public beast::unit_test::Suite
                 usd,
                 STPath({ipe(eur)}),
                 tesSUCCESS,
-                D{alice, gw, usdC},
+                D{.src = alice, .dst = gw, .currency = usdC},
                 B{usd, eur, std::nullopt},
-                D{gw, bob, eurC});
+                D{.src = gw, .dst = bob, .currency = eurC});
 
             // Path with offer that changes issuer only
             env.trust(carol["USD"](1000), bob);
@@ -665,9 +671,9 @@ struct PayStrand_test : public beast::unit_test::Suite
                 usd,
                 STPath({iape(carol)}),
                 tesSUCCESS,
-                D{alice, gw, usdC},
+                D{.src = alice, .dst = gw, .currency = usdC},
                 B{usd, carol["USD"], std::nullopt},
-                D{carol, bob, usdC});
+                D{.src = carol, .dst = bob, .currency = usdC});
 
             // Path with XRP src currency
             test(
@@ -678,7 +684,7 @@ struct PayStrand_test : public beast::unit_test::Suite
                 tesSUCCESS,
                 XRPS{alice},
                 B{XRP, usd, std::nullopt},
-                D{gw, bob, usdC});
+                D{.src = gw, .dst = bob, .currency = usdC});
 
             // Path with XRP dst currency.
             test(
@@ -688,7 +694,7 @@ struct PayStrand_test : public beast::unit_test::Suite
                 STPath({STPathElement{
                     STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()}}),
                 tesSUCCESS,
-                D{alice, gw, usdC},
+                D{.src = alice, .dst = gw, .currency = usdC},
                 B{usd, XRP, std::nullopt},
                 XRPS{bob});
 
@@ -699,10 +705,10 @@ struct PayStrand_test : public beast::unit_test::Suite
                 usd,
                 STPath({cpe(xrpCurrency())}),
                 tesSUCCESS,
-                D{alice, gw, usdC},
+                D{.src = alice, .dst = gw, .currency = usdC},
                 B{usd, XRP, std::nullopt},
                 B{XRP, eur, std::nullopt},
-                D{gw, bob, eurC});
+                D{.src = gw, .dst = bob, .currency = eurC});
 
             // XRP -> XRP transaction can't include a path
             test(env, XRP, std::nullopt, STPath({ape(carol)}), temBAD_PATH);

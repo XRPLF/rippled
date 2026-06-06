@@ -33,7 +33,7 @@ public:
      * @brief Construct a Delegate ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Delegate(std::shared_ptr<SLE const> sle)
+    explicit Delegate(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -172,7 +172,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    DelegateBuilder(std::shared_ptr<SLE const> sle)
+    DelegateBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltDELEGATE)
         {

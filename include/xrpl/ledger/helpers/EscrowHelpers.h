@@ -18,7 +18,7 @@ TER
 escrowUnlockApplyHelper(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -32,7 +32,7 @@ inline TER
 escrowUnlockApplyHelper<Issue>(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -70,21 +70,21 @@ escrowUnlockApplyHelper<Issue>(
         initialBalance.get<Issue>().account = noAccount();
 
         if (TER const ter = trustCreate(
-                view,                                           // payment sandbox
-                recvLow,                                        // is dest low?
-                issuer,                                         // source
-                receiver,                                       // destination
-                trustLineKey.key,                               // ledger index
-                sleDest,                                        // Account to add to
-                false,                                          // authorize account
-                (sleDest->getFlags() & lsfDefaultRipple) == 0,  //
-                false,                                          // freeze trust line
-                false,                                          // deep freeze trust line
-                initialBalance,                                 // zero initial balance
-                Issue(currency, receiver),                      // limit of zero
-                0,                                              // quality in
-                0,                                              // quality out
-                journal);                                       // journal
+                view,                                // payment sandbox
+                recvLow,                             // is dest low?
+                issuer,                              // source
+                receiver,                            // destination
+                trustLineKey.key,                    // ledger index
+                sleDest,                             // Account to add to
+                false,                               // authorize account
+                !sleDest->isFlag(lsfDefaultRipple),  //
+                false,                               // freeze trust line
+                false,                               // deep freeze trust line
+                initialBalance,                      // zero initial balance
+                Issue(currency, receiver),           // limit of zero
+                0,                                   // quality in
+                0,                                   // quality out
+                journal);                            // journal
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
@@ -111,7 +111,7 @@ escrowUnlockApplyHelper<Issue>(
     // whereas in a normal payment, the transfer fee is taken on top of the
     // sending amount.
     auto finalAmt = amount;
-    if ((!senderIssuer && !receiverIssuer) && lockedRate != kPARITY_RATE)
+    if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
         // compute transfer fee, if any
         auto const xferFee =
@@ -162,7 +162,7 @@ inline TER
 escrowUnlockApplyHelper<MPTIssue>(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -211,7 +211,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     // whereas in a normal payment, the transfer fee is taken on top of the
     // sending amount.
     auto finalAmt = amount;
-    if ((!senderIssuer && !receiverIssuer) && lockedRate != kPARITY_RATE)
+    if ((!senderIssuer && !receiverIssuer) && lockedRate != kParityRate)
     {
         // compute transfer fee, if any
         auto const xferFee = amount.value() - divideRound(amount, lockedRate, amount.asset(), true);
