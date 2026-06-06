@@ -438,6 +438,7 @@ PathRequest::parseJson(json::Value const& jvParams)
                             {
                                 sciSourceAssets_.insert(Issue{currency, saSendMax_->getIssuer()});
                             }
+                            else
                             {
                                 sciSourceAssets_.insert(Issue{currency, *raSrcAccount_});
                             }
