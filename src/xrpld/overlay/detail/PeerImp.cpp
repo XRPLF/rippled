@@ -1535,8 +1535,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
                 if (nodeIDs.size() >= Tuning::kSoftMaxReplyNodes)
                 {
                     // Charge the peer for sending too many node IDs, but continue processing the
-                    // received node IDs. If the request is legitimate then at least they will get
-                    // a response and won't have to resend the request.
+                    // received node IDs up to the limit. If the request is legitimate then at least
+                    // they will get a response and won't have to resend these nodes in their next
+                    // request.
                     peer->charge(
                         Resource::kFeeModerateBurdenPeer, "TMGetLedger: too many node IDs");
                     break;
