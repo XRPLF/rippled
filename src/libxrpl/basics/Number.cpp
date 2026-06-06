@@ -208,7 +208,7 @@ public:
     unsigned
     pop() noexcept;
 
-    // if true, there are no more digits to recover with pop()
+    // if true, there are no digits in the guard, including dropped digits (xbit_)
     bool
     empty() const noexcept;
 
@@ -225,15 +225,14 @@ public:
     doDropDigit(T& mantissa, int& exponent) noexcept;
 
     enum class Round {
-        // The result is exact. No rounding is needed.
+        // The result is exact. No rounding is needed. Only used if cuspRoundingFix is enabled.
         Exact = -2,
         // Round down. Since we use integer math, that usually means no change is needed.
         // Exceptions are for when the result is between kMaxRap and kMaxRepUp (round to kMaxRep),
         // or after subtraction where _any_ remainder will modify the result. The latter is what
         // distinguishes Exact from Down.
         Down = -1,
-        // The result was exactly half-way between two integers. This will round to whichever of
-        // the two is even.
+        // The result was exactly half-way between two integers. This will round to even.
         Even = 0,
         // Round up. Always adds 1 (or subtracts 1 in some cases if cuspRoundingFix is not enabled)
         Up = 1,
@@ -315,7 +314,6 @@ Number::Guard::pop() noexcept
     return d;
 }
 
-// if true, there are no more digits to recover with pop()
 inline bool
 Number::Guard::empty() const noexcept
 {
@@ -473,14 +471,8 @@ Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent)
     auto r = round();
     if (cuspRoundingFix_ != MantissaRange::CuspRoundingFix::Disabled)
     {
-        // If there was any remainder, subtract 1 from the result, and pad with 9s.
-        // Example with 4 digit mantissas:
-        // 1000 - 0.0000000001 = 999.9999999999
-        // In operator+=, the result will be: 1000, with Guard holding (0, xbit=true)
-        // * Rounding away from zero, the result should be 1000
-        // * Rounding towards zero, the result should be 999.9
-        // * Rounding to nearest, the result should be 999.9
-        // The most accurate result is always 999.9
+        // If there was any remainder, subtract 1 from the result. This is sufficient to get the
+        // best rounding.
         if (r != Round::Exact)
         {
             --mantissa;
@@ -763,8 +755,9 @@ Number::operator+=(Number const& y)
     auto const cuspRoundingFix = g.cuspRoundingFix_;
 
     // Bring the exponents of both values into agreement, so the mantissas are on the same scale
-    //   and can be added directly together
-    // Then shrink the mantissa and bring the exponent up of the value with the lower exponent
+    //   and can be added directly together.
+    // Shrink the mantissa and bring the exponent up of the value with the lower exponent. Store any
+    // dropped digits in the Guard.
     if (xe < ye)
     {
         if (xn)
@@ -787,19 +780,9 @@ Number::operator+=(Number const& y)
     if (xn == yn)
     {
         xm += ym;
-        if (cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled)
+        if (xm > maxMantissa || xm > kMaxRep)
         {
-            while (xm > maxMantissa || xm > kMaxRep)
-            {
-                g.doDropDigit(xm, xe);
-            }
-        }
-        else
-        {
-            if (xm > maxMantissa || xm > kMaxRep)
-            {
-                g.doDropDigit(xm, xe);
-            }
+            g.doDropDigit(xm, xe);
         }
         g.doRoundUp(xn, xm, xe, "Number::addition overflow");
     }
@@ -817,11 +800,13 @@ Number::operator+=(Number const& y)
         }
         if (cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled)
         {
-            // Grow xm/xe and pull digits out of the Guard until it's just past the range, so that
-            // normalize will have enough information to make an accurate rounding decision, but
-            // stop if the Guard empties out. Note that if the xbit is set, the Guard will never be
-            // empty.
-            while (xm <= maxMantissa && !g.empty())
+            // Grow xm/xe and pull digits out of the Guard until it's a little bit larger than
+            // maxMantissa, so that normalize will have enough information to make an accurate
+            // rounding decision, but stop if the Guard empties out, because no rounding will be
+            // necessary. (Normalize will pad it back into range.) Note that if any digits were lost
+            // (xbit), the Guard will never be empty, so xm will get big.
+            auto const upperLimit = static_cast<uint128_t>(minMantissa) * 1000;
+            while (xm < upperLimit && !g.empty())
             {
                 xm *= 10;
                 xm -= g.pop();
