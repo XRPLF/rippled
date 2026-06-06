@@ -13,10 +13,26 @@
 #include <mutex>
 #include <thread>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 namespace xrpl {
+
+namespace detail {
+
+// Replace-policy tags used by TaggedCache::canonicalizeReplaceCache /
+// canonicalizeReplaceClient when calling canonicalize. With ReplaceCached the
+// cached value is always replaced with `data`, so `data` is never written back
+// and may be const. With ReplaceClient the cached value is kept and written
+// back into `data` (the client's pointer), which must therefore be writable.
+struct ReplaceCached
+{
+};
+
+struct ReplaceClient
+{
+};
+
+}  // namespace detail
 
 /** Map/cache combination.
     This class implements a cache and a map. The cache keeps objects alive
@@ -97,6 +113,16 @@ public:
     bool
     del(key_type const& key, bool valid);
 
+private:
+    // Selects the `data` parameter type of canonicalize from the replace
+    // policy: const for detail::ReplaceCached (never written back), otherwise
+    // writable.
+    template <typename R>
+    using CanonicalizeClientPointerType = std::conditional_t<
+        std::is_same_v<detail::ReplaceCached, R>,
+        SharedPointerType const&,
+        SharedPointerType&>;
+
 public:
     /** Replace aliased objects with originals.
 
@@ -105,21 +131,27 @@ public:
         This routine eliminates the duplicate and performs a replacement
         on the callers shared pointer if needed.
 
+        `replacePolicy` is a callable taking the existing strong pointer and
+        returning whether to replace the cached value with `data` (true) or to
+        keep the cached value and write it back into `data` (false). Because the
+        write-back case mutates `data`, `data` must be writable.
+
+        (canonicalizeReplaceCache / canonicalizeReplaceClient call this with
+        internal replace-policy tags in place of a callable.)
+
         @param key The key corresponding to the object
         @param data A shared pointer to the data corresponding to the object.
-        @param replace Function that decides if cache should be replaced
+        @param replacePolicy A callable (existing strong pointer -> bool).
 
         @return `true` If the key already existed.
     */
     template <class R>
     bool
-    canonicalize(key_type const& key, SharedPointerType& data, R&& replaceCallback);
+    canonicalize(key_type const& key, CanonicalizeClientPointerType<R> data, R&& replacePolicy);
 
-    /** Replace the cache entry with the caller's data. */
     bool
     canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data);
 
-    /** Replace the caller's pointer with the cached data. */
     bool
     canonicalizeReplaceClient(key_type const& key, SharedPointerType& data);
 
@@ -260,14 +292,6 @@ private:
     using KeyValueCacheType = hardened_partitioned_hash_map<key_type, ValueEntry, Hash, KeyEqual>;
 
     using cache_type = hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
-
-    /** Look up key; if missing, emplace a new entry.
-        If found, touch the existing entry.
-        Caller must hold m_mutex.
-        @return {iterator, true} if newly inserted, {iterator, false} if found.
-    */
-    std::pair<typename cache_type::Iterator, bool>
-    touchOrInsert(key_type const& key, SharedPointerType const& data);
 
     [[nodiscard]] std::thread
     sweepHelper(

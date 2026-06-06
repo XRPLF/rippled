@@ -300,69 +300,68 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-inline std::pair<
-    typename TaggedCache<
-        Key,
-        T,
-        IsKeyCache,
-        SharedWeakUnionPointer,
-        SharedPointerType,
-        Hash,
-        KeyEqual,
-        Mutex>::cache_type::Iterator,
-    bool>
-TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    touchOrInsert(key_type const& key, SharedPointerType const& data)
-{
-    auto cit = cache_.find(key);
-    bool inserted = false;
-
-    if (cit == cache_.end())
-    {
-        inserted = true;
-        auto emplaceResult = cache_.emplace(
-            std::piecewise_construct,
-            std::forward_as_tuple(key),
-            std::forward_as_tuple(clock_.now(), data));
-
-        ++cacheCount_;
-        cit = emplaceResult.first;
-        return {cit, inserted};
-    }
-
-    cit->second.touch(clock_.now());
-
-    return {cit, inserted};
-}
-
-template <
-    class Key,
-    class T,
-    bool IsKeyCache,
-    class SharedWeakUnionPointer,
-    class SharedPointerType,
-    class Hash,
-    class KeyEqual,
-    class Mutex>
 template <class R>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalize(key_type const& key, SharedPointerType& data, R&& replaceCallback)
+    canonicalize(
+        key_type const& key,
+        CanonicalizeClientPointerType<R> data,
+        [[maybe_unused]] R&& replacePolicy)
 {
-    std::lock_guard lock(mutex_);
-    auto [it, inserted] = touchOrInsert(key, data);
-    if (inserted)
-        return false;
+    // Return canonical value, store if needed, refresh in cache
+    // Return values: true=we had the data already
 
-    Entry& entry = it->second;
+    // `replacePolicy` is one of:
+    //   - detail::ReplaceCached: always replace the cached value with `data`;
+    //     `data` is never written back and may be const.
+    //   - detail::ReplaceClient: keep the cached value and write it back into
+    //     `data` (the client's pointer), which must therefore be writable.
+    //   - a callable(strong pointer) -> bool: decide at run time; `data` must
+    //     be writable.
+    // For the latter two the write-back below requires a mutable `data`, so
+    // passing a const argument is a compile error.
+    using C = std::remove_cvref_t<R>;
+    constexpr bool replaceCached = std::is_same_v<C, detail::ReplaceCached>;
+
+    std::scoped_lock const lock(mutex_);
+
+    auto cit = cache_.find(key);
+
+    if (cit == cache_.end())
+    {
+        cache_.emplace(
+            std::piecewise_construct,
+            std::forward_as_tuple(key),
+            std::forward_as_tuple(clock_.now(), data));
+        ++cacheCount_;
+        return false;
+    }
+
+    Entry& entry = cit->second;
+    entry.touch(clock_.now());
+
+    auto shouldReplaceCached = [&] {
+        if constexpr (replaceCached)
+        {
+            return true;
+        }
+        else if constexpr (std::is_same_v<C, detail::ReplaceClient>)
+        {
+            return false;
+        }
+        else
+        {
+            return replacePolicy(entry.ptr.getStrong());
+        }
+    };
 
     if (entry.isCached())
     {
-        if (replaceCallback(entry.ptr.getStrong()))
+        if (shouldReplaceCached())
         {
             entry.ptr = data;
         }
-        else
+        else if constexpr (!replaceCached)
         {
             data = entry.ptr.getStrong();
         }
@@ -370,13 +369,15 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         return true;
     }
 
-    if (auto cachedData = entry.lock())
+    auto cachedData = entry.lock();
+
+    if (cachedData)
     {
-        if (replaceCallback(entry.ptr.getStrong()))
+        if (shouldReplaceCached())
         {
             entry.ptr = data;
         }
-        else
+        else if constexpr (!replaceCached)
         {
             entry.ptr.convertToStrong();
             data = cachedData;
@@ -388,6 +389,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     entry.ptr = data;
     ++cacheCount_;
+
     return false;
 }
 
@@ -404,30 +406,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data)
 {
-    std::lock_guard lock(mutex_);
-
-    auto [it, inserted] = touchOrInsert(key, data);
-    if (inserted)
-        return false;
-
-    Entry& entry = it->second;
-
-    if (entry.isCached())
-    {
-        entry.ptr = data;
-        return true;
-    }
-
-    if (auto cachedData = entry.lock())
-    {
-        entry.ptr = data;
-        ++cacheCount_;
-        return true;
-    }
-
-    entry.ptr = data;
-    ++cacheCount_;
-    return false;
+    return canonicalize(key, data, detail::ReplaceCached{});
 }
 
 template <
@@ -443,31 +422,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalizeReplaceClient(key_type const& key, SharedPointerType& data)
 {
-    std::lock_guard lock(mutex_);
-
-    auto [it, inserted] = touchOrInsert(key, data);
-    if (inserted)
-        return false;
-
-    Entry& entry = it->second;
-
-    if (entry.isCached())
-    {
-        data = entry.ptr.getStrong();
-        return true;
-    }
-
-    if (auto cachedData = entry.lock())
-    {
-        entry.ptr.convertToStrong();
-        data = cachedData;
-        ++cacheCount_;
-        return true;
-    }
-
-    entry.ptr = data;
-    ++cacheCount_;
-    return false;
+    return canonicalize(key, data, detail::ReplaceClient{});
 }
 
 template <
