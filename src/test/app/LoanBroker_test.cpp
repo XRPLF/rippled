@@ -2254,7 +2254,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         std::string const credType = "LoanCredential";
 
         Env env{*this};
-        Vault vault{env};
+        Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, credIssuer);
         env.close();
@@ -2281,7 +2281,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         {
             Env envNoFix{*this};
             envNoFix.disableFeature(fixCleanup3_2_0);
-            Vault vault2{envNoFix};
+            Vault const vault2{envNoFix};
 
             envNoFix.fund(XRP(100'000), issuer, alice);
             envNoFix.close();
@@ -2354,7 +2354,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         std::string const credType = "LoanCredential";
 
         Env env{*this};
-        Vault vault{env};
+        Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, credIssuer);
         env.close();
@@ -2503,7 +2503,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         std::string const credType = "LoanCredential";
 
         Env env{*this};
-        Vault vault{env};
+        Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, bob, credIssuer);
         env.close();
@@ -2628,7 +2628,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         std::string const credType = "LoanCredential";
 
         Env env{*this};
-        Vault vault{env};
+        Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, bob, carol, credIssuer);
         env.close();

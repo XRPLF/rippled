@@ -8717,7 +8717,7 @@ protected:
         std::string const credType = "LoanCredential";
 
         Env env{*this};
-        Vault vault{env};
+        Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, bob, carol, credIssuer);
         env.close();
@@ -8884,7 +8884,7 @@ protected:
         std::string const credType = "LoanCredential";
 
         Env env{*this};
-        Vault vault{env};
+        Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, bob, credIssuer);
         env.close();
