@@ -456,7 +456,7 @@ SHAMap::getNodeFat(
 
         // Use a fresh Serializer per node and move its buffer into `data` rather than copying it
         // via Serializer::getData(): the move is O(1) whereas the copy was O(node size).
-        Serializer s(256);
+        Serializer s;
         node->serializeForWire(s);
         data.emplace_back(nodeID, std::move(s.modData()));
 
@@ -486,7 +486,7 @@ SHAMap::getNodeFat(
                         else if (childNode->isInner() || fatLeaves)
                         {
                             // Just include this node
-                            Serializer cs(256);
+                            Serializer cs;
                             childNode->serializeForWire(cs);
                             data.emplace_back(childID, std::move(cs.modData()));
                         }
