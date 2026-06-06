@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
+#include <iterator>
 #include <string_view>
 #include <vector>
 
@@ -27,14 +28,14 @@ bool
 passwordUnrequiredOrSentCorrect(Port const& port, json::Value const& params)
 {
     XRPL_ASSERT(
-        !(port.admin_nets_v4.empty() && port.admin_nets_v6.empty()),
+        !(port.adminNetsV4.empty() && port.adminNetsV6.empty()),
         "xrpl::passwordUnrequiredOrSentCorrect : non-empty admin nets");
-    bool const passwordRequired = (!port.admin_user.empty() || !port.admin_password.empty());
+    bool const passwordRequired = (!port.adminUser.empty() || !port.adminPassword.empty());
 
     return !passwordRequired ||
         ((params["admin_password"].isString() &&
-          params["admin_password"].asString() == port.admin_password) &&
-         (params["admin_user"].isString() && params["admin_user"].asString() == port.admin_user));
+          params["admin_password"].asString() == port.adminPassword) &&
+         (params["admin_user"].isString() && params["admin_user"].asString() == port.adminUser));
 }
 
 bool
@@ -79,7 +80,7 @@ ipAllowed(
 bool
 isAdmin(Port const& port, json::Value const& params, beast::IP::Address const& remoteIp)
 {
-    return ipAllowed(remoteIp, port.admin_nets_v4, port.admin_nets_v6) &&
+    return ipAllowed(remoteIp, port.adminNetsV4, port.adminNetsV6) &&
         passwordUnrequiredOrSentCorrect(port, params);
 }
 
@@ -97,7 +98,7 @@ requestRole(
     if (required == Role::ADMIN)
         return Role::FORBID;
 
-    if (ipAllowed(remoteIp.address(), port.secure_gateway_nets_v4, port.secure_gateway_nets_v6))
+    if (ipAllowed(remoteIp.address(), port.secureGatewayNetsV4, port.secureGatewayNetsV6))
     {
         if (!user.empty())
             return Role::IDENTIFIED;
@@ -252,32 +253,46 @@ forwardedFor(http_request_type const& request)
     // Look for the Forwarded field in the request.
     if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())
     {
-        auto asciiTolower = [](char c) -> char {
+        auto asciiToLower = [](char c) -> char {
             return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
         };
 
-        // Look for the first (case insensitive) "for="
-        static std::string const kFOR_STR{"for="};
-        char const* found = std::search(
-            it->value().begin(),
-            it->value().end(),
-            kFOR_STR.begin(),
-            kFOR_STR.end(),
-            [&asciiTolower](char c1, char c2) { return asciiTolower(c1) == asciiTolower(c2); });
+        // Look for the first (case insensitive) "for=" at a directive
+        // boundary (start of value, or preceded by , ; or OWS).
+        static constexpr std::string_view kForStr{"for="};
+        auto const atFieldBoundary = [begin = it->value().begin()](auto p) {
+            return p == begin || p[-1] == ';' || p[-1] == ',' || p[-1] == ' ' || p[-1] == '\t';
+        };
+        auto found = it->value().begin();
+        while (true)
+        {
+            found = std::search(
+                found,
+                it->value().end(),
+                kForStr.begin(),
+                kForStr.end(),
+                [&asciiToLower](char c1, char c2) { return asciiToLower(c1) == asciiToLower(c2); });
 
-        if (found == it->value().end())
-            return {};
+            if (found == it->value().end())
+                return {};
 
-        found += kFOR_STR.size();
+            if (atFieldBoundary(found))
+                break;
+
+            ++found;
+        }
+
+        std::advance(found, kForStr.size());
 
         // We found a "for=".  Scan for the end of the IP address.
-        std::size_t const pos = [&found, &it]() {
-            auto const remaining = static_cast<std::size_t>(it->value().end() - found);
-            if (std::size_t const pos = std::string_view(found, remaining).find_first_of(",;");
-                pos != std::string_view::npos)
+        auto const end = it->value().end();
+        std::size_t const pos = [&found, &end]() {
+            std::size_t const pos =
+                std::string_view(found, std::distance(found, end)).find_first_of(",;");
+            if (pos != std::string_view::npos)
                 return pos;
 
-            return remaining;
+            return static_cast<std::size_t>(std::distance(found, end));
         }();
 
         return extractIpAddrFromField({found, pos});

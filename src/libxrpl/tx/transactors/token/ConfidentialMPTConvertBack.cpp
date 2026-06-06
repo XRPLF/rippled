@@ -31,7 +31,7 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
 
-    if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > kMAX_MP_TOKEN_AMOUNT)
+    if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > kMaxMpTokenAmount)
         return temBAD_AMOUNT;
 
     if (!isValidCompressedECPoint(ctx.tx[sfBalanceCommitment]))
@@ -43,7 +43,7 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
         return res;
 
     // ConvertBack proof = compact sigma proof (128 bytes) + single bulletproof (688 bytes)
-    if (ctx.tx[sfZKProof].size() != kEC_CONVERT_BACK_PROOF_LENGTH)
+    if (ctx.tx[sfZKProof].size() != kEcConvertBackProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -53,9 +53,9 @@ XRPAmount
 ConfidentialMPTConvertBack::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge kCONFIDENTIAL_FEE_MULTIPLIER extra base fees so the total is
+    // We charge kConfidentialFeeMultiplier extra base fees so the total is
     // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kCONFIDENTIAL_FEE_MULTIPLIER;
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
 }
 
 /**
@@ -213,7 +213,7 @@ ConfidentialMPTConvertBack::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, account_));
+    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -226,7 +226,7 @@ ConfidentialMPTConvertBack::doApply()
 
     // Converting back increases regular balance and decreases confidential
     // outstanding. This is the inverse of Convert.
-    if (amt > kMAX_MP_TOKEN_AMOUNT - amtToConvertBack)
+    if (amt > kMaxMpTokenAmount - amtToConvertBack)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleMptoken)[sfMPTAmount] = amt + amtToConvertBack;
 

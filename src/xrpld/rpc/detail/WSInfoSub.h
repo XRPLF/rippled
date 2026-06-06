@@ -24,8 +24,8 @@ public:
         auto const& h = ws->request();
         if (ipAllowed(
                 beast::IPAddressConversion::fromAsio(ws->remoteEndpoint()).address(),
-                ws->port().secure_gateway_nets_v4,
-                ws->port().secure_gateway_nets_v6))
+                ws->port().secureGatewayNetsV4,
+                ws->port().secureGatewayNetsV6))
         {
             auto it = h.find("X-User");
             if (it != h.end())

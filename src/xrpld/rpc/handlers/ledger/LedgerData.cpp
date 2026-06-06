@@ -82,8 +82,8 @@ doLedgerData(RPC::JsonContext& context)
     if (!isMarker)
     {
         // Return base ledger data on first query
-        jvResult[jss::ledger] =
-            getJson(LedgerFill(*lpLedger, &context, isBinary ? LedgerFill::Options::Binary : 0));
+        jvResult[jss::ledger] = getJson(LedgerFill(
+            *lpLedger, &context, isBinary ? static_cast<int>(LedgerFill::Options::Binary) : 0));
     }
 
     auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
@@ -94,9 +94,9 @@ doLedgerData(RPC::JsonContext& context)
         return jvResult;
     }
     json::Value& nodes = jvResult[jss::state];
-    if (nodes.type() == json::NullValue)
+    if (nodes.type() == json::ValueType::Null)
     {
-        nodes = json::Value(json::ArrayValue);
+        nodes = json::Value(json::ValueType::Array);
     }
 
     auto e = lpLedger->sles.end();
@@ -115,13 +115,13 @@ doLedgerData(RPC::JsonContext& context)
         {
             if (isBinary)
             {
-                json::Value& entry = nodes.append(json::ObjectValue);
+                json::Value& entry = nodes.append(json::ValueType::Object);
                 entry[jss::data] = serializeHex(*sle);
                 entry[jss::index] = to_string(sle->key());
             }
             else
             {
-                json::Value& entry = nodes.append(sle->getJson(JsonOptions::KNone));
+                json::Value& entry = nodes.append(sle->getJson(JsonOptions::Values::None));
                 entry[jss::index] = to_string(sle->key());
             }
         }

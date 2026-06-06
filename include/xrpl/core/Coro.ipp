@@ -6,7 +6,7 @@ namespace xrpl {
 
 /// Coroutine stack size (1.5 MB). Increased from 1 MB because
 /// ASAN-instrumented deep call stacks exceeded the original limit.
-constexpr std::size_t kCORO_STACK_SIZE = 1536 * 1024;
+constexpr std::size_t kCoroStackSize = 1536 * 1024;
 
 template <class F>
 JobQueue::Coro::Coro(CoroCreateT, JobQueue& jq, JobType type, std::string name, F&& f)
@@ -14,7 +14,7 @@ JobQueue::Coro::Coro(CoroCreateT, JobQueue& jq, JobType type, std::string name, 
     , type_(type)
     , name_(std::move(name))
     , coro_(
-          boost::context::protected_fixedsize_stack(kCORO_STACK_SIZE),
+          boost::context::protected_fixedsize_stack(kCoroStackSize),
           [this, fn = std::forward<F>(f)](boost::coroutines2::coroutine<void>::push_type& doYield) {
               yield_ = &doYield;
               yield();
@@ -47,7 +47,7 @@ inline bool
 JobQueue::Coro::post()
 {
     {
-        std::scoped_lock const lk(mutex_run_);
+        std::scoped_lock const lk(mutexRun_);
         running_ = true;
     }
 
@@ -58,7 +58,7 @@ JobQueue::Coro::post()
     }
 
     // The coroutine will not run.  Clean up running_.
-    std::scoped_lock const lk(mutex_run_);
+    std::scoped_lock const lk(mutexRun_);
     running_ = false;
     cv_.notify_all();
     return false;
@@ -68,7 +68,7 @@ inline void
 JobQueue::Coro::resume()
 {
     {
-        std::scoped_lock const lk(mutex_run_);
+        std::scoped_lock const lk(mutexRun_);
         running_ = true;
     }
     {
@@ -92,7 +92,7 @@ JobQueue::Coro::resume()
     }
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
-    std::scoped_lock const lk(mutex_run_);
+    std::scoped_lock const lk(mutexRun_);
     running_ = false;
     cv_.notify_all();
 }
@@ -127,7 +127,7 @@ JobQueue::Coro::expectEarlyExit()
 inline void
 JobQueue::Coro::join()
 {
-    std::unique_lock<std::mutex> lk(mutex_run_);
+    std::unique_lock<std::mutex> lk(mutexRun_);
     cv_.wait(lk, [this]() { return !running_; });
 }
 

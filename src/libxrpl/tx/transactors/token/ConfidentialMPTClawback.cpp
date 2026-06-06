@@ -37,11 +37,11 @@ ConfidentialMPTClawback::preflight(PreflightContext const& ctx)
 
     // Check invalid claw amount
     auto const clawAmount = ctx.tx[sfMPTAmount];
-    if (clawAmount == 0 || clawAmount > kMAX_MP_TOKEN_AMOUNT)
+    if (clawAmount == 0 || clawAmount > kMaxMpTokenAmount)
         return temBAD_AMOUNT;
 
     // Verify proof length
-    if (ctx.tx[sfZKProof].length() != kEC_CLAWBACK_PROOF_LENGTH)
+    if (ctx.tx[sfZKProof].length() != kEcClawbackProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -51,9 +51,9 @@ XRPAmount
 ConfidentialMPTClawback::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge kCONFIDENTIAL_FEE_MULTIPLIER extra base fees so the total is
+    // We charge kConfidentialFeeMultiplier extra base fees so the total is
     // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kCONFIDENTIAL_FEE_MULTIPLIER;
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
 }
 
 TER

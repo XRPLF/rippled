@@ -36,6 +36,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
+    auto const referenceHoldingValue = canonical_UINT256();
 
     MPTokenIssuanceBuilder builder{
         issuerValue,
@@ -56,6 +57,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
     builder.setAuditorEncryptionKey(auditorEncryptionKeyValue);
     builder.setConfidentialOutstandingAmount(confidentialOutstandingAmountValue);
+    builder.setReferenceHolding(referenceHoldingValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -181,6 +183,14 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
         expectEqualField(expected, *actualOpt, "sfConfidentialOutstandingAmount");
         EXPECT_TRUE(entry.hasConfidentialOutstandingAmount());
     }
+    
+    {
+        auto const& expected = referenceHoldingValue;
+        auto const actualOpt = entry.getReferenceHolding();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfReferenceHolding");
+        EXPECT_TRUE(entry.hasReferenceHolding());
+    }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
@@ -211,6 +221,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const issuerEncryptionKeyValue = canonical_VL();
     auto const auditorEncryptionKeyValue = canonical_VL();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
+    auto const referenceHoldingValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(MPTokenIssuance::entryType, index);
 
@@ -230,6 +241,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfIssuerEncryptionKey) = issuerEncryptionKeyValue;
     sle->at(sfAuditorEncryptionKey) = auditorEncryptionKeyValue;
     sle->at(sfConfidentialOutstandingAmount) = confidentialOutstandingAmountValue;
+    sle->at(sfReferenceHolding) = referenceHoldingValue;
 
     MPTokenIssuanceBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -430,6 +442,19 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfConfidentialOutstandingAmount");
     }
 
+    {
+        auto const& expected = referenceHoldingValue;
+
+        auto const fromSleOpt = entryFromSle.getReferenceHolding();
+        auto const fromBuilderOpt = entryFromBuilder.getReferenceHolding();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfReferenceHolding");
+        expectEqualField(expected, *fromBuilderOpt, "sfReferenceHolding");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -514,5 +539,7 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAuditorEncryptionKey().has_value());
     EXPECT_FALSE(entry.hasConfidentialOutstandingAmount());
     EXPECT_FALSE(entry.getConfidentialOutstandingAmount().has_value());
+    EXPECT_FALSE(entry.hasReferenceHolding());
+    EXPECT_FALSE(entry.getReferenceHolding().has_value());
 }
 }

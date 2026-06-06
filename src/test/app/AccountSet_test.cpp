@@ -536,7 +536,7 @@ public:
         env(fset(alice, asfRequireAuth), Ter(tecOWNERS));
 
         // Remove the signer list.  After that asfRequireAuth should succeed.
-        env(signers(alice, test::jtx::kNONE));
+        env(signers(alice, test::jtx::kNone));
         env.close();
         BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 

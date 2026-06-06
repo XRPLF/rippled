@@ -1,0 +1,56 @@
+name: Build Nix Docker images
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - ".github/workflows/build-nix-images.yml"
+      - ".github/workflows/reusable-build-docker-image.yml"
+      - ".github/workflows/reusable-build-merge-docker-images.yml"
+      - "flake.nix"
+      - "flake.lock"
+      - "nix/**"
+  pull_request:
+    paths:
+      - ".github/workflows/build-nix-images.yml"
+      - ".github/workflows/reusable-build-docker-image.yml"
+      - ".github/workflows/reusable-build-merge-docker-images.yml"
+      - "flake.nix"
+      - "flake.lock"
+      - "nix/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-merge:
+    name: Build and push nix-${{ matrix.distro.name }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # The base images are the oldest supported version of each distro
+        # that we want to build images for.
+        distro:
+          - name: nixos
+            base_image: nixos/nix:latest
+          - name: ubuntu
+            base_image: ubuntu:20.04
+          - name: debian
+            base_image: debian:bookworm
+          - name: rhel
+            base_image: registry.access.redhat.com/ubi9/ubi:latest
+    uses: ./.github/workflows/reusable-build-merge-docker-images.yml
+    with:
+      image_name: ghcr.io/xrplf/xrpld/nix-${{ matrix.distro.name }}
+      dockerfile: nix/docker/Dockerfile
+      base_image: ${{ matrix.distro.base_image }}

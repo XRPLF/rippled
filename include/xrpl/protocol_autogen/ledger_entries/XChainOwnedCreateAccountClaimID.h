@@ -33,7 +33,7 @@ public:
      * @brief Construct a XChainOwnedCreateAccountClaimID ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit XChainOwnedCreateAccountClaimID(std::shared_ptr<SLE const> sle)
+    explicit XChainOwnedCreateAccountClaimID(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -161,7 +161,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    XChainOwnedCreateAccountClaimIDBuilder(std::shared_ptr<SLE const> sle)
+    XChainOwnedCreateAccountClaimIDBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID)
         {

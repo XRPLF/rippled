@@ -460,7 +460,7 @@ public:
     [[nodiscard]] bool
     isZero(EitherAmount const& out) const override
     {
-        return get<TOut>(out) == beast::kZERO;
+        return get<TOut>(out) == beast::kZero;
     }
 
     [[nodiscard]] bool

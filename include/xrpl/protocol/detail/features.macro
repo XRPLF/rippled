@@ -14,13 +14,11 @@
 
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
-
 XRPL_FEATURE(ConfidentialTransfer,        Supported::No, VoteBehavior::DefaultNo)
-XRPL_FIX    (Cleanup3_2_0,                Supported::No, VoteBehavior::DefaultNo)
-XRPL_FEATURE(MPTokensV2,                  Supported::No, VoteBehavior::DefaultNo)
-XRPL_FIX    (Security3_1_3,               Supported::No, VoteBehavior::DefaultNo)
-XRPL_FIX    (PermissionedDomainInvariant, Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (BatchInnerSigs,              Supported::No, VoteBehavior::DefaultNo)
+XRPL_FIX    (Cleanup3_2_0,                Supported::Yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(MPTokensV2,                  Supported::No,  VoteBehavior::DefaultNo)
+XRPL_FIX    (Cleanup3_1_3,                Supported::Yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (BatchInnerSigs,              Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(LendingProtocol,             Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionDelegationV1_1,    Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,              Supported::Yes, VoteBehavior::DefaultNo)
@@ -35,7 +33,7 @@ XRPL_FIX    (EnforceNFTokenTrustlineV2,   Supported::Yes, VoteBehavior::DefaultN
 XRPL_FIX    (AMMv1_3,                     Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionedDEX,             Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Batch,                       Supported::No,  VoteBehavior::DefaultNo)
-XRPL_FEATURE(SingleAssetVault,            Supported::Yes,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(SingleAssetVault,            Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,          Supported::Yes, VoteBehavior::DefaultNo)
 // Check flags in Credential transactions
 XRPL_FIX    (InvalidTxFlags,             Supported::Yes, VoteBehavior::DefaultNo)
@@ -47,9 +45,6 @@ XRPL_FEATURE(Credentials,                Supported::Yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(AMMClawback,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMv1_2,                    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(MPTokensV1,                 Supported::Yes, VoteBehavior::DefaultNo)
-// InvariantsV1_1 will be changes to Supported::yes when all the
-// invariants expected to be included under it are complete.
-XRPL_FEATURE(InvariantsV1_1,             Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FIX    (NFTokenPageLinks,           Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (InnerObjTemplate2,          Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EnforceNFTokenTrustline,    Supported::Yes, VoteBehavior::DefaultNo)

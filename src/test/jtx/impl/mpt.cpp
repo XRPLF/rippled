@@ -827,14 +827,14 @@ MPTTester::getClawbackProof(
         return std::nullopt;
 
     auto const ciphertextBlob = sleHolder->getFieldVL(sfIssuerEncryptedBalance);
-    if (ciphertextBlob.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
+    if (ciphertextBlob.size() != kEcGamalEncryptedTotalLength)
         return std::nullopt;
 
     auto const pubKeyBlob = sleIssuance->getFieldVL(sfIssuerEncryptionKey);
-    if (pubKeyBlob.size() != kEC_PUB_KEY_LENGTH)
+    if (pubKeyBlob.size() != kEcPubKeyLength)
         return std::nullopt;
 
-    Buffer proof(kEC_CLAWBACK_PROOF_LENGTH);
+    Buffer proof(kEcClawbackProofLength);
 
     if (mpt_get_clawback_proof(
             privateKey.data(),
@@ -854,14 +854,14 @@ std::optional<Buffer>
 MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
 {
     auto const pubKey = getPubKey(account);
-    if (!pubKey || pubKey->size() != kEC_PUB_KEY_LENGTH)
+    if (!pubKey || pubKey->size() != kEcPubKeyLength)
         return std::nullopt;
 
     auto const privKey = getPrivKey(account);
-    if (privKey->size() != kEC_PRIV_KEY_LENGTH)
+    if (privKey->size() != kEcPrivKeyLength)
         return std::nullopt;
 
-    Buffer proof(kEC_SCHNORR_PROOF_LENGTH);
+    Buffer proof(kEcSchnorrProofLength);
 
     if (mpt_get_convert_proof(pubKey->data(), privKey->data(), ctxHash.data(), proof.data()) != 0)
         return std::nullopt;
@@ -881,7 +881,7 @@ MPTTester::getConfidentialSendProof(
 {
     auto const pedersenBalanceParams = makePedersenParams(balanceParams);
 
-    if (blindingFactor.size() != kEC_BLINDING_FACTOR_LENGTH)
+    if (blindingFactor.size() != kEcBlindingFactorLength)
         return std::nullopt;
 
     auto const senderPrivKey = getPrivKey(sender);
@@ -889,10 +889,10 @@ MPTTester::getConfidentialSendProof(
         return std::nullopt;
 
     auto const senderPubKey = getPubKey(sender);
-    if (!senderPubKey || senderPubKey->size() != kEC_PUB_KEY_LENGTH)
+    if (!senderPubKey || senderPubKey->size() != kEcPubKeyLength)
         return std::nullopt;
 
-    if (amountParams.pedersenCommitment.size() != kEC_PEDERSEN_COMMITMENT_LENGTH)
+    if (amountParams.pedersenCommitment.size() != kEcPedersenCommitmentLength)
         return std::nullopt;
 
     // Build mpt_confidential_participant array
@@ -900,8 +900,8 @@ MPTTester::getConfidentialSendProof(
     for (size_t i = 0; i < recipients.size(); ++i)
     {
         auto const& r = recipients[i];
-        if (r.encryptedAmount.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH ||
-            r.publicKey.size() != kEC_PUB_KEY_LENGTH)
+        if (r.encryptedAmount.size() != kEcGamalEncryptedTotalLength ||
+            r.publicKey.size() != kEcPubKeyLength)
         {
             return std::nullopt;
         }
@@ -909,7 +909,7 @@ MPTTester::getConfidentialSendProof(
         std::memcpy(participants[i].ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
     }
 
-    size_t proofLen = kEC_SEND_PROOF_LENGTH;
+    size_t proofLen = kEcSendProofLength;
     Buffer proof(proofLen);
 
     if (mpt_get_confidential_send_proof(
@@ -933,21 +933,21 @@ Buffer
 MPTTester::getPedersenCommitment(std::uint64_t const amount, Buffer const& pedersenBlindingFactor)
 {
     // Blinding factor (rho) must be a 32-byte scalar
-    if (pedersenBlindingFactor.size() != kEC_BLINDING_FACTOR_LENGTH)
+    if (pedersenBlindingFactor.size() != kEcBlindingFactorLength)
         Throw<std::runtime_error>("Invalid blinding factor size");
 
     // secp256k1_mpt_pedersen_commit doesn't handle amount 0, return a trivial
     // valid commitment for test purposes
     if (amount == 0)
     {
-        Buffer buf(kEC_PEDERSEN_COMMITMENT_LENGTH);
-        std::memset(buf.data(), 0, kEC_PEDERSEN_COMMITMENT_LENGTH);
-        buf.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
-        buf.data()[kEC_PEDERSEN_COMMITMENT_LENGTH - 1] = 0x01;
+        Buffer buf(kEcPedersenCommitmentLength);
+        std::memset(buf.data(), 0, kEcPedersenCommitmentLength);
+        buf.data()[0] = kEcCompressedPrefixEvenY;
+        buf.data()[kEcPedersenCommitmentLength - 1] = 0x01;
         return buf;
     }
 
-    Buffer buf(kEC_PEDERSEN_COMMITMENT_LENGTH);
+    Buffer buf(kEcPedersenCommitmentLength);
 
     if (mpt_get_pedersen_commitment(amount, pedersenBlindingFactor.data(), buf.data()) != 0)
         Throw<std::runtime_error>("Pedersen commitment generation failed");
@@ -963,20 +963,20 @@ MPTTester::getConvertBackProof(
     PedersenProofParams const& pcParams) const
 {
     // Expected total proof length: compact sigma proof (128 bytes) + single bulletproof (688 bytes)
-    std::size_t constexpr kEXPECTED_PROOF_LENGTH = kEC_CONVERT_BACK_PROOF_LENGTH;
+    std::size_t constexpr kExpectedProofLength = kEcConvertBackProofLength;
 
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
     if (!sleMptoken || !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
-        return gMakeZeroBuffer(kEXPECTED_PROOF_LENGTH);
+        return gMakeZeroBuffer(kExpectedProofLength);
 
     auto const holderPubKey = getPubKey(holder);
     auto const holderPrivKey = getPrivKey(holder);
 
     if (!holderPubKey || !holderPrivKey)
-        return gMakeZeroBuffer(kEXPECTED_PROOF_LENGTH);
+        return gMakeZeroBuffer(kExpectedProofLength);
 
     auto const pedersenParams = makePedersenParams(pcParams);
-    Buffer proof(kEXPECTED_PROOF_LENGTH);
+    Buffer proof(kExpectedProofLength);
 
     if (mpt_get_convert_back_proof(
             holderPrivKey->data(),
@@ -985,7 +985,7 @@ MPTTester::getConvertBackProof(
             amount,
             &pedersenParams,
             proof.data()) != 0)
-        return gMakeZeroBuffer(kEXPECTED_PROOF_LENGTH);
+        return gMakeZeroBuffer(kExpectedProofLength);
 
     return proof;
 }
@@ -1161,7 +1161,7 @@ MPTTester::convert(MPTConvert const& arg)
         }
         else
         {
-            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEC_SCHNORR_PROOF_LENGTH));
+            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEcSchnorrProofLength));
         }
     }
 
@@ -1327,7 +1327,7 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
         }
         else
         {
-            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEC_SCHNORR_PROOF_LENGTH));
+            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEcSchnorrProofLength));
         }
     }
 
@@ -1403,7 +1403,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
 
     if (arg.credentials)
     {
-        auto& arr(jv[sfCredentialIDs.jsonName] = json::ArrayValue);
+        auto& arr(jv[sfCredentialIDs.jsonName] = json::ValueType::Array);
         for (auto const& hash : *arg.credentials)
             arr.append(hash);
     }
@@ -1544,7 +1544,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
         }
         else
         {
-            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEC_SEND_PROOF_LENGTH));
+            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEcSendProofLength));
         }
     }
 
@@ -1709,7 +1709,7 @@ MPTTester::sendJV(
 
     if (arg.credentials)
     {
-        auto& arr(jv[sfCredentialIDs.jsonName] = json::ArrayValue);
+        auto& arr(jv[sfCredentialIDs.jsonName] = json::ValueType::Array);
         for (auto const& hash : *arg.credentials)
             arr.append(hash);
     }
@@ -1821,7 +1821,7 @@ MPTTester::sendJV(
         }
         else
         {
-            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEC_SEND_PROOF_LENGTH));
+            jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEcSendProofLength));
         }
     }
 
@@ -1921,7 +1921,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         auto const contextHash = getClawbackContextHash(account.id(), *id_, seq, arg.holder->id());
 
         auto const privKey = getPrivKey(account);
-        if (!privKey || privKey->size() != kEC_PRIV_KEY_LENGTH)
+        if (!privKey || privKey->size() != kEcPrivKeyLength)
             Throw<std::runtime_error>("Failed to get clawback private key");
 
         auto const proof = getClawbackProof(*arg.holder, *arg.amt, *privKey, contextHash);
@@ -1932,7 +1932,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         }
         else
         {
-            jv[sfZKProof] = strHex(gMakeZeroBuffer(kEC_CLAWBACK_PROOF_LENGTH));
+            jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcClawbackProofLength));
         }
     }
 
@@ -1978,23 +1978,23 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
 void
 MPTTester::generateKeyPair(Account const& account)
 {
-    unsigned char privKey[kEC_PRIV_KEY_LENGTH];
+    unsigned char privKey[kEcPrivKeyLength];
     secp256k1_pubkey pubKey;
     if (secp256k1_elgamal_generate_keypair(secp256k1Context(), privKey, &pubKey) == 0)
         Throw<std::runtime_error>("failed to generate key pair");
 
     // Serialize public key to compressed format (33 bytes)
-    unsigned char compressedPubKey[kEC_PUB_KEY_LENGTH];
-    size_t outLen = kEC_PUB_KEY_LENGTH;
+    unsigned char compressedPubKey[kEcPubKeyLength];
+    size_t outLen = kEcPubKeyLength;
     if (secp256k1_ec_pubkey_serialize(
             secp256k1Context(), compressedPubKey, &outLen, &pubKey, SECP256K1_EC_COMPRESSED) != 1 ||
-        outLen != kEC_PUB_KEY_LENGTH)
+        outLen != kEcPubKeyLength)
     {
         Throw<std::runtime_error>("failed to serialize public key");
     }
 
-    pubKeys_.insert({account.id(), Buffer{compressedPubKey, kEC_PUB_KEY_LENGTH}});
-    privKeys_.insert({account.id(), Buffer{privKey, kEC_PRIV_KEY_LENGTH}});
+    pubKeys_.insert({account.id(), Buffer{compressedPubKey, kEcPubKeyLength}});
+    privKeys_.insert({account.id(), Buffer{privKey, kEcPrivKeyLength}});
 }
 
 std::optional<Buffer>
@@ -2027,13 +2027,13 @@ MPTTester::encryptAmount(Account const& account, uint64_t const amt, Buffer cons
 
     // Return a dummy buffer on failure to allow testing of
     // failures that occur prior to encryption.
-    return gMakeZeroBuffer(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+    return gMakeZeroBuffer(kEcGamalEncryptedTotalLength);
 }
 
 std::optional<uint64_t>
 MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
 {
-    if (amt.size() != kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH)
+    if (amt.size() != kEcGamalEncryptedTotalLength)
         return std::nullopt;
 
     auto const pair = makeEcPair(amt);
@@ -2041,7 +2041,7 @@ MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
         return std::nullopt;
 
     auto const privKey = getPrivKey(account);
-    if (!privKey || privKey->size() != kEC_PRIV_KEY_LENGTH)
+    if (!privKey || privKey->size() != kEcPrivKeyLength)
         return std::nullopt;
 
     uint64_t decryptedAmt = 0;
@@ -2277,7 +2277,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         // preflight/preclaim are checked
         if (!prevEncryptedSpendingBalance)
         {
-            proof = gMakeZeroBuffer(kEC_CONVERT_BACK_PROOF_LENGTH);
+            proof = gMakeZeroBuffer(kEcConvertBackProofLength);
         }
         else
         {
@@ -2427,7 +2427,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
         Buffer proof;
         if (!prevEncSpending)
         {
-            proof = gMakeZeroBuffer(kEC_CONVERT_BACK_PROOF_LENGTH);
+            proof = gMakeZeroBuffer(kEcConvertBackProofLength);
         }
         else
         {

@@ -77,12 +77,12 @@ doTxHelp(RPC::Context& context, TxArgs args)
 
     if (args.ledgerRange)
     {
-        constexpr uint16_t kMAX_RANGE = 1000;
+        static constexpr uint16_t kMaxRange = 1000;
 
         if (args.ledgerRange->second < args.ledgerRange->first)
             return {result, RpcInvalidLgrRange};
 
-        if (args.ledgerRange->second - args.ledgerRange->first > kMAX_RANGE)
+        if (args.ledgerRange->second - args.ledgerRange->first > kMaxRange)
             return {result, RpcExcessiveLgrRange};
 
         range = ClosedInterval<uint32_t>(args.ledgerRange->first, args.ledgerRange->second);
@@ -190,7 +190,7 @@ populateJsonResponse(
     {
         if (error.toErrorCode() == RpcTxnNotFound && result.searchedAll != TxSearched::Unknown)
         {
-            response = json::Value(json::ObjectValue);
+            response = json::Value(json::ValueType::Object);
             response[jss::searched_all] = (result.searchedAll == TxSearched::All);
             error.inject(response);
         }
@@ -205,15 +205,16 @@ populateJsonResponse(
         auto const& sttx = result.txn->getSTransaction();
         if (context.apiVersion > 1)
         {
-            constexpr auto kOPTIONS_JSON =
-                JsonOptions::KIncludeDate | JsonOptions::KDisableApiPriorV2;
+            static constexpr auto kOptionsJson =
+                static_cast<JsonOptions::underlying_t>(JsonOptions::Values::IncludeDate) |
+                static_cast<JsonOptions::underlying_t>(JsonOptions::Values::DisableApiPriorV2);
             if (args.binary)
             {
-                response[jss::tx_blob] = result.txn->getJson(kOPTIONS_JSON, true);
+                response[jss::tx_blob] = result.txn->getJson(kOptionsJson, true);
             }
             else
             {
-                response[jss::tx_json] = result.txn->getJson(kOPTIONS_JSON);
+                response[jss::tx_json] = result.txn->getJson(kOptionsJson);
                 RPC::insertDeliverMax(
                     response[jss::tx_json], sttx->getTxnType(), context.apiVersion);
             }
@@ -233,7 +234,7 @@ populateJsonResponse(
         }
         else
         {
-            response = result.txn->getJson(JsonOptions::KIncludeDate, args.binary);
+            response = result.txn->getJson(JsonOptions::Values::IncludeDate, args.binary);
             if (!args.binary)
                 RPC::insertDeliverMax(response, sttx->getTxnType(), context.apiVersion);
         }
@@ -251,7 +252,7 @@ populateJsonResponse(
             auto& meta = *m;
             if (meta)
             {
-                response[jss::meta] = meta->getJson(JsonOptions::KNone);
+                response[jss::meta] = meta->getJson(JsonOptions::Values::None);
                 insertDeliveredAmount(response[jss::meta], context, result.txn, *meta);
                 RPC::insertNFTSyntheticInJson(response, sttx, *meta);
                 RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);

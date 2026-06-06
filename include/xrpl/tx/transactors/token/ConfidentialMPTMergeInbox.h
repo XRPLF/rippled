@@ -27,7 +27,8 @@ namespace xrpl {
 class ConfidentialMPTMergeInbox : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType kCONSEQUENCES_FACTORY{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+    ;
 
     explicit ConfidentialMPTMergeInbox(ApplyContext& ctx) : Transactor(ctx)
     {

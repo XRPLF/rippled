@@ -89,9 +89,9 @@ sliceToHex(Slice const& slice)
     }
     for (int i = 0; i < slice.size(); ++i)
     {
-        constexpr char kHEX[] = "0123456789ABCDEF";
-        s += kHEX[((slice[i] & 0xf0) >> 4)];
-        s += kHEX[((slice[i] & 0x0f) >> 0)];
+        static constexpr char kHex[] = "0123456789ABCDEF";
+        s += kHex[((slice[i] & 0xf0) >> 4)];
+        s += kHex[((slice[i] & 0x0f) >> 0)];
     }
     return s;
 }
@@ -174,7 +174,7 @@ ed25519Canonical(Slice const& sig)
 
 PublicKey::PublicKey(Slice const& slice)
 {
-    if (slice.size() < kSIZE)
+    if (slice.size() < kSize)
     {
         logicError(
             "PublicKey::PublicKey - Input slice cannot be an undersized "
@@ -183,12 +183,12 @@ PublicKey::PublicKey(Slice const& slice)
 
     if (!publicKeyType(slice))
         logicError("PublicKey::PublicKey invalid type");
-    std::memcpy(buf_, slice.data(), kSIZE);
+    std::memcpy(buf_, slice.data(), kSize);
 }
 
 PublicKey::PublicKey(PublicKey const& other)
 {
-    std::memcpy(buf_, other.buf_, kSIZE);
+    std::memcpy(buf_, other.buf_, kSize);
 }
 
 PublicKey&
@@ -196,7 +196,7 @@ PublicKey::operator=(PublicKey const& other)
 {
     if (this != &other)
     {
-        std::memcpy(buf_, other.buf_, kSIZE);
+        std::memcpy(buf_, other.buf_, kSize);
     }
 
     return *this;
@@ -212,7 +212,7 @@ publicKeyType(Slice const& slice)
         if (slice[0] == 0xED)
             return KeyType::Ed25519;
 
-        if (slice[0] == kEC_COMPRESSED_PREFIX_EVEN_Y || slice[0] == kEC_COMPRESSED_PREFIX_ODD_Y)
+        if (slice[0] == kEcCompressedPrefixEvenY || slice[0] == kEcCompressedPrefixOddY)
             return KeyType::Secp256k1;
     }
 
@@ -294,11 +294,11 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 NodeID
 calcNodeID(PublicKey const& pk)
 {
-    static_assert(NodeID::kBYTES == sizeof(RipeshaHasher::result_type));
+    static_assert(NodeID::kBytes == sizeof(RipeshaHasher::result_type));
 
     RipeshaHasher h;
     h(pk.data(), pk.size());
-    return NodeID{static_cast<RipeshaHasher::result_type>(h)};
+    return NodeID::fromRaw(static_cast<RipeshaHasher::result_type>(h));
 }
 
 }  // namespace xrpl

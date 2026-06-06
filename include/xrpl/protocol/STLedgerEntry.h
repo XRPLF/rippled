@@ -38,7 +38,7 @@ public:
     getText() const override;
 
     [[nodiscard]] json::Value
-    getJson(JsonOptions options = JsonOptions::KNone) const override;
+    getJson(JsonOptions options = JsonOptions::Values::None) const override;
 
     /** Returns the 'key' (or 'index') of this item.
         The key identifies this entry's position in

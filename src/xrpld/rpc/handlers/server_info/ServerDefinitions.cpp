@@ -78,7 +78,7 @@ ServerDefinitions::translate(std::string const& inp)
         return replace("UINT", "UInt");
     }
 
-    static std::unordered_map<std::string_view, std::string_view> const kREPLACEMENTS{
+    static std::unordered_map<std::string_view, std::string_view> const kReplacements{
         {"OBJECT", "STObject"},
         {"ARRAY", "STArray"},
         {"ACCOUNT", "AccountID"},
@@ -89,7 +89,7 @@ ServerDefinitions::translate(std::string const& inp)
         {"XCHAIN_BRIDGE", "XChainBridge"},
     };
 
-    if (auto const& it = kREPLACEMENTS.find(inp); it != kREPLACEMENTS.end())
+    if (auto const& it = kReplacements.find(inp); it != kReplacements.end())
     {
         return std::string(it->second);
     }
@@ -122,14 +122,14 @@ ServerDefinitions::translate(std::string const& inp)
     return out;
 };
 
-ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
+ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
 {
     // populate SerializedTypeID names and values
-    defs_[jss::TYPES] = json::ObjectValue;
+    defs_[jss::TYPES] = json::ValueType::Object;
 
     defs_[jss::TYPES]["Done"] = -1;
     std::map<int32_t, std::string> typeMap{{-1, "Done"}};
-    for (auto const& [rawName, typeValue] : kS_TYPE_MAP)
+    for (auto const& [rawName, typeValue] : kSTypeMap)
     {
         std::string const typeName = translate(std::string(rawName).substr(4) /* remove STI_ */);
         defs_[jss::TYPES][typeName] = typeValue;
@@ -137,7 +137,7 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     // populate LedgerEntryType names and values
-    defs_[jss::LEDGER_ENTRY_TYPES] = json::ObjectValue;
+    defs_[jss::LEDGER_ENTRY_TYPES] = json::ValueType::Object;
     defs_[jss::LEDGER_ENTRY_TYPES][jss::Invalid] = -1;
 
     for (auto const& f : LedgerFormats::getInstance())
@@ -146,26 +146,14 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     // populate SField serialization data
-    defs_[jss::FIELDS] = json::ArrayValue;
+    defs_[jss::FIELDS] = json::ValueType::Array;
 
     uint32_t i = 0;
-    {
-        json::Value a = json::ArrayValue;
-        a[0U] = "Generic";
-        json::Value v = json::ObjectValue;
-        v[jss::nth] = 0;
-        v[jss::isVLEncoded] = false;
-        v[jss::isSerialized] = false;
-        v[jss::isSigningField] = false;
-        v[jss::type] = "Unknown";
-        a[1U] = v;
-        defs_[jss::FIELDS][i++] = a;
-    }
 
     {
-        json::Value a = json::ArrayValue;
+        json::Value a = json::ValueType::Array;
         a[0U] = "Invalid";
-        json::Value v = json::ObjectValue;
+        json::Value v = json::ValueType::Object;
         v[jss::nth] = -1;
         v[jss::isVLEncoded] = false;
         v[jss::isSerialized] = false;
@@ -176,9 +164,9 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     {
-        json::Value a = json::ArrayValue;
+        json::Value a = json::ValueType::Array;
         a[0U] = "ObjectEndMarker";
-        json::Value v = json::ObjectValue;
+        json::Value v = json::ValueType::Object;
         v[jss::nth] = 1;
         v[jss::isVLEncoded] = false;
         v[jss::isSerialized] = true;
@@ -189,9 +177,9 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     {
-        json::Value a = json::ArrayValue;
+        json::Value a = json::ValueType::Array;
         a[0U] = "ArrayEndMarker";
-        json::Value v = json::ObjectValue;
+        json::Value v = json::ValueType::Object;
         v[jss::nth] = 1;
         v[jss::isVLEncoded] = false;
         v[jss::isSerialized] = true;
@@ -202,9 +190,9 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     {
-        json::Value a = json::ArrayValue;
+        json::Value a = json::ValueType::Array;
         a[0U] = "taker_gets_funded";
-        json::Value v = json::ObjectValue;
+        json::Value v = json::ValueType::Object;
         v[jss::nth] = 258;
         v[jss::isVLEncoded] = false;
         v[jss::isSerialized] = false;
@@ -215,9 +203,9 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     {
-        json::Value a = json::ArrayValue;
+        json::Value a = json::ValueType::Array;
         a[0U] = "taker_pays_funded";
-        json::Value v = json::ObjectValue;
+        json::Value v = json::ValueType::Object;
         v[jss::nth] = 259;
         v[jss::isVLEncoded] = false;
         v[jss::isSerialized] = false;
@@ -227,21 +215,28 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
         defs_[jss::FIELDS][i++] = a;
     }
 
-    for (auto const& [code, field] : xrpl::SField::getKnownCodeToField())
+    // copy into a sorted map to ensure deterministic output order (sorted by fieldCode)
+    static std::map<int, SField const*> const kSortedFields(
+        xrpl::SField::getKnownCodeToField().begin(), xrpl::SField::getKnownCodeToField().end());
+
+    for (auto const& [code, field] : kSortedFields)
     {
         if (field->fieldName.empty())
             continue;
 
-        json::Value innerObj = json::ObjectValue;
+        json::Value innerObj = json::ValueType::Object;
 
-        uint32_t type = field->fieldType;
+        int32_t const type = field->fieldType;
 
         innerObj[jss::nth] = field->fieldValue;
 
         // whether the field is variable-length encoded this means that the length is included
         // before the content
         innerObj[jss::isVLEncoded] =
-            (type == 7U /* Blob */ || type == 8U /* AccountID */ || type == 19U /* Vector256 */);
+            (type == STI_VL || type == STI_ACCOUNT || type == STI_VECTOR256);
+        static_assert(
+            STI_VL == 7U && STI_ACCOUNT == 8U && STI_VECTOR256 == 19U,
+            "STI_VL, STI_ACCOUNT, STI_VECTOR256 must be 7, 8, 19 respectively");
 
         // whether the field is included in serialization
         innerObj[jss::isSerialized] =
@@ -254,7 +249,7 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
 
         innerObj[jss::type] = typeMap[type];
 
-        json::Value innerArray = json::ArrayValue;
+        json::Value innerArray = json::ValueType::Array;
         innerArray[0U] = field->fieldName;
         innerArray[1U] = innerObj;
 
@@ -262,7 +257,7 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     // populate TER code names and values
-    defs_[jss::TRANSACTION_RESULTS] = json::ObjectValue;
+    defs_[jss::TRANSACTION_RESULTS] = json::ValueType::Object;
 
     for (auto const& [code, terInfo] : transResults())
     {
@@ -270,7 +265,7 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     // populate TxType names and values
-    defs_[jss::TRANSACTION_TYPES] = json::ObjectValue;
+    defs_[jss::TRANSACTION_TYPES] = json::ValueType::Object;
     defs_[jss::TRANSACTION_TYPES][jss::Invalid] = -1;
     for (auto const& f : TxFormats::getInstance())
     {
@@ -278,13 +273,13 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     // populate TxFormats
-    defs_[jss::TRANSACTION_FORMATS] = json::ObjectValue;
+    defs_[jss::TRANSACTION_FORMATS] = json::ValueType::Object;
 
-    defs_[jss::TRANSACTION_FORMATS][jss::common] = json::ArrayValue;
+    defs_[jss::TRANSACTION_FORMATS][jss::common] = json::ValueType::Array;
     auto txCommonFields = std::set<std::string>();
     for (auto const& element : TxFormats::getCommonFields())
     {
-        json::Value elementObj = json::ObjectValue;
+        json::Value elementObj = json::ValueType::Object;
         elementObj[jss::name] = element.sField().getName();
         elementObj[jss::optionality] = element.style();
         defs_[jss::TRANSACTION_FORMATS][jss::common].append(elementObj);
@@ -294,12 +289,12 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     for (auto const& format : TxFormats::getInstance())
     {
         auto const& soTemplate = format.getSOTemplate();
-        json::Value templateArray = json::ArrayValue;
+        json::Value templateArray = json::ValueType::Array;
         for (auto const& element : soTemplate)
         {
             if (txCommonFields.contains(element.sField().getName()))
                 continue;  // skip common fields, already added
-            json::Value elementObj = json::ObjectValue;
+            json::Value elementObj = json::ValueType::Object;
             elementObj[jss::name] = element.sField().getName();
             elementObj[jss::optionality] = element.style();
             templateArray.append(elementObj);
@@ -308,12 +303,12 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     }
 
     // populate LedgerFormats
-    defs_[jss::LEDGER_ENTRY_FORMATS] = json::ObjectValue;
-    defs_[jss::LEDGER_ENTRY_FORMATS][jss::common] = json::ArrayValue;
+    defs_[jss::LEDGER_ENTRY_FORMATS] = json::ValueType::Object;
+    defs_[jss::LEDGER_ENTRY_FORMATS][jss::common] = json::ValueType::Array;
     auto ledgerCommonFields = std::set<std::string>();
     for (auto const& element : LedgerFormats::getCommonFields())
     {
-        json::Value elementObj = json::ObjectValue;
+        json::Value elementObj = json::ValueType::Object;
         elementObj[jss::name] = element.sField().getName();
         elementObj[jss::optionality] = element.style();
         defs_[jss::LEDGER_ENTRY_FORMATS][jss::common].append(elementObj);
@@ -322,12 +317,12 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
     for (auto const& format : LedgerFormats::getInstance())
     {
         auto const& soTemplate = format.getSOTemplate();
-        json::Value templateArray = json::ArrayValue;
+        json::Value templateArray = json::ValueType::Array;
         for (auto const& element : soTemplate)
         {
             if (ledgerCommonFields.contains(element.sField().getName()))
                 continue;  // skip common fields, already added
-            json::Value elementObj = json::ObjectValue;
+            json::Value elementObj = json::ValueType::Object;
             elementObj[jss::name] = element.sField().getName();
             elementObj[jss::optionality] = element.style();
             templateArray.append(elementObj);
@@ -335,10 +330,10 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
         defs_[jss::LEDGER_ENTRY_FORMATS][format.getName()] = templateArray;
     }
 
-    defs_[jss::TRANSACTION_FLAGS] = json::ObjectValue;
+    defs_[jss::TRANSACTION_FLAGS] = json::ValueType::Object;
     for (auto const& [name, value] : getAllTxFlags())
     {
-        json::Value txObj = json::ObjectValue;
+        json::Value txObj = json::ValueType::Object;
         for (auto const& [flagName, flagValue] : value)
         {
             txObj[flagName] = flagValue;
@@ -346,10 +341,10 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
         defs_[jss::TRANSACTION_FLAGS][name] = txObj;
     }
 
-    defs_[jss::LEDGER_ENTRY_FLAGS] = json::ObjectValue;
+    defs_[jss::LEDGER_ENTRY_FLAGS] = json::ValueType::Object;
     for (auto const& [name, value] : getAllLedgerFlags())
     {
-        json::Value ledgerObj = json::ObjectValue;
+        json::Value ledgerObj = json::ValueType::Object;
         for (auto const& [flagName, flagValue] : value)
         {
             ledgerObj[flagName] = flagValue;
@@ -357,7 +352,7 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
         defs_[jss::LEDGER_ENTRY_FLAGS][name] = ledgerObj;
     }
 
-    defs_[jss::ACCOUNT_SET_FLAGS] = json::ObjectValue;
+    defs_[jss::ACCOUNT_SET_FLAGS] = json::ValueType::Object;
     for (auto const& [name, value] : getAsfFlagMap())
     {
         defs_[jss::ACCOUNT_SET_FLAGS][name] = value;
@@ -374,8 +369,8 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ObjectValue}
 ServerDefinitions const&
 getDefinitions()
 {
-    static ServerDefinitions const kDEFS{};
-    return kDEFS;
+    static ServerDefinitions const kDefs{};
+    return kDefs;
 }
 
 }  // namespace detail
@@ -401,7 +396,7 @@ doServerDefinitions(RPC::JsonContext& context)
     auto const& defs = detail::getDefinitions();
     if (defs.hashMatches(hash))
     {
-        json::Value jv = json::ObjectValue;
+        json::Value jv = json::ValueType::Object;
         jv[jss::hash] = to_string(hash);
         return jv;
     }
