@@ -392,8 +392,14 @@ PeerImp::removeTxQueue(uint256 const& hash)
 void
 PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 {
+    if (!strand_.running_in_this_thread())
+    {
+        post(strand_, [self = shared_from_this(), fee, context]() { self->charge(fee, context); });
+        return;
+    }
+
     if ((usage_.charge(fee, context) == Resource::Disposition::Drop) &&
-        usage_.disconnect(pJournal_) && strand_.running_in_this_thread())
+        usage_.disconnect(pJournal_))
     {
         // Sever the connection
         overlay_.incPeerDisconnectCharges();
