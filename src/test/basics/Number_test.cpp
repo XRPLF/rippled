@@ -1981,14 +1981,19 @@ public:
                 case MantissaRange::MantissaScale::Small:
                 case MantissaRange::MantissaScale::LargeLegacy: {
                     // Without the fix, all the results but one round up
-                    for (auto const& [r, sum] : sums) {
-                        if (r == Number::RoundingMode::Downward) {
-                            // Downward works because the Guard sign is negative, and Downward returns Up
-                            // instead of Down if negative and there's a remainder, whereas TowardsZero
-                            // always returns Down.
-                            BEAST_EXPECTS(sums.at(Number::RoundingMode::Downward).first < exact, to_string(r));
+                    for (auto const& [r, sum] : sums)
+                    {
+                        if (r == Number::RoundingMode::Downward)
+                        {
+                            // Downward works because the Guard sign is negative, and Downward
+                            // returns Up instead of Down if negative and there's a remainder,
+                            // whereas TowardsZero always returns Down.
+                            BEAST_EXPECTS(
+                                sums.at(Number::RoundingMode::Downward).first < exact,
+                                to_string(r));
                         }
-                        else {
+                        else
+                        {
                             BEAST_EXPECTS(sums.at(r).first > exact, to_string(r));
                         }
                     }
@@ -2058,14 +2063,19 @@ public:
             {
                 case MantissaRange::MantissaScale::Small:
                 case MantissaRange::MantissaScale::LargeLegacy: {
-                    for (auto const& [r, sum] : sums) {
-                        if (r == Number::RoundingMode::Downward) {
-                            // Downward works because the Guard sign is negative, and Downward returns Up
-                            // instead of Down if negative and there's a remainder, whereas TowardsZero
-                            // always returns Down.
-                            BEAST_EXPECTS(sums.at(Number::RoundingMode::Downward).first < exact, to_string(r));
+                    for (auto const& [r, sum] : sums)
+                    {
+                        if (r == Number::RoundingMode::Downward)
+                        {
+                            // Downward works because the Guard sign is negative, and Downward
+                            // returns Up instead of Down if negative and there's a remainder,
+                            // whereas TowardsZero always returns Down.
+                            BEAST_EXPECTS(
+                                sums.at(Number::RoundingMode::Downward).first < exact,
+                                to_string(r));
                         }
-                        else {
+                        else
+                        {
                             BEAST_EXPECTS(sums.at(r).first > exact, to_string(r));
                         }
                     }
