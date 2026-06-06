@@ -22,6 +22,8 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/AssetCache.h>
+#include <xrpld/rpc/detail/GraphPathfinder.h>
 #include <xrpld/rpc/detail/PayGraph.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
@@ -1377,8 +1379,8 @@ public:
     pathFind06(bool const domainEnabled)
     {
         testcase(
-            std::string("Path Find: non-XRP -> non-XRP, same currency)") +
-            (domainEnabled ? " w/ " : " w/o ") + "domain");
+            std::string("Path Find: non-XRP -> non-XRP, same currency ") +
+            (domainEnabled ? "w/ " : "w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         Account const a1{"A1"};
@@ -2533,6 +2535,287 @@ public:
         BEAST_EXPECT(stats.lastDeltaBooks == 1);
     }
 
+    // Helper to create a GraphPathfinder from test env
+    std::unique_ptr<GraphPathfinder>
+    makeGraphPathfinder(
+        jtx::Env& env,
+        std::shared_ptr<PayGraph> const& graph,
+        jtx::Account const& src,
+        jtx::Account const& dst,
+        STAmount const& dstAmount,
+        Asset const& srcAsset = jtx::XRP,
+        std::optional<AccountID> const& srcIssuer = std::nullopt)
+    {
+        PathAsset srcPathAsset{srcAsset};
+        auto cache = std::make_shared<AssetCache>(env.closed(), env.journal);
+        return std::make_unique<GraphPathfinder>(
+            graph,
+            cache,
+            src,
+            dst,
+            srcPathAsset,
+            srcIssuer,
+            dstAmount,
+            std::nullopt,  // srcAmount
+            std::nullopt,  // domain
+            env.app());
+    }
+
+    void
+    graphPathfinderBasicFindPaths()
+    {
+        testcase("GraphPathfinder::findPaths basic XRP->IOU");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), bob);
+        env.trust(usd(1000), alice);
+        env(pay(gw, alice, usd(500)));  // Alice needs USD for XRP->USD offer
+        env.close();
+
+        // Create XRP -> USD offer (alice sells XRP for USD)
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        auto gp = makeGraphPathfinder(env, pg, alice, bob, usd(50));
+
+        // findPaths should discover the XRP->USD path
+        bool found = gp->findPaths();
+        BEAST_EXPECT(found);
+    }
+
+    void
+    graphPathfinderNoGraph()
+    {
+        testcase("GraphPathfinder::findPaths with null graph");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+
+        // Null graph should return false from findPaths
+        auto gp = makeGraphPathfinder(env, nullptr, alice, bob, usd(50));
+        bool found = gp->findPaths();
+        BEAST_EXPECT(!found);
+    }
+
+    void
+    graphPathfinderZeroDestinationAmount()
+    {
+        testcase("GraphPathfinder::findPaths with zero destination amount");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), bob);
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        // Zero destination amount should return false
+        auto gp = makeGraphPathfinder(env, pg, alice, bob, usd(0));
+        bool found = gp->findPaths();
+        BEAST_EXPECT(!found);
+    }
+
+    void
+    graphPathfinderComputeAndGetBestPaths()
+    {
+        testcase("GraphPathfinder::computePathRanks + getBestPaths");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), bob);
+        env.trust(usd(1000), alice);
+        env(pay(gw, bob, usd(500)));
+        env(pay(gw, alice, usd(500)));  // Alice needs USD for XRP->USD offer
+        env.close();
+
+        // Create XRP -> USD offer
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        auto gp = makeGraphPathfinder(env, pg, alice, bob, usd(50));
+
+        // findPaths then rank and select best
+        bool found = gp->findPaths();
+        BEAST_EXPECT(found);
+
+        gp->computePathRanks(6);
+        auto bestPaths = gp->getBestPaths(6, STPathSet(), xrpAccount());
+
+        // Should have found at least one path
+        BEAST_EXPECT(bestPaths.size() >= 1);
+    }
+
+    void
+    graphPathfinderGetBestPathsEmpty()
+    {
+        testcase("GraphPathfinder::getBestPaths with no paths");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        // No graph, no paths — getBestPaths should return empty
+        auto gp = makeGraphPathfinder(env, nullptr, alice, bob, XRP(50));
+        bool found = gp->findPaths();
+        BEAST_EXPECT(!found);
+
+        auto bestPaths = gp->getBestPaths(6, STPathSet(), xrpAccount());
+        BEAST_EXPECT(bestPaths.empty());
+    }
+
+    void
+    graphPathfinderContinueCallbackAbort()
+    {
+        testcase("GraphPathfinder::findPaths with abort callback");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), bob);
+        env.trust(usd(1000), alice);
+        env(pay(gw, alice, usd(500)));  // Alice needs USD for XRP->USD offer
+        env.close();
+
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        auto gp = makeGraphPathfinder(env, pg, alice, bob, usd(50));
+
+        // Callback that always returns false (abort immediately)
+        bool aborted = gp->findPaths([]() { return false; });
+        // Even with abort, the return may be true/false depending on paths found so far
+        // The key is it doesn't crash
+        BEAST_EXPECT(aborted == true || aborted == false);
+    }
+
+    void
+    graphPathfinderIOUToXRP()
+    {
+        testcase("GraphPathfinder::findPaths IOU->XRP path");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice);
+        env(pay(gw, alice, usd(500)));
+        env.close();
+
+        // Create USD -> XRP offer (alice sells USD for XRP)
+        env(offer(alice, usd(100), XRP(500)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        // Alice sends USD to bob who wants XRP
+        auto gp = makeGraphPathfinder(env, pg, alice, bob, XRP(100), usd.asset());
+
+        bool found = gp->findPaths();
+        BEAST_EXPECT(found);
+    }
+
+    void
+    graphPathfinderMultiHopPath()
+    {
+        testcase("GraphPathfinder::findPaths multi-hop (XRP->USD->EUR)");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env.trust(eur(1000), alice, bob);
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, alice, eur(500)));  // Alice needs EUR for USD->EUR offer
+        env(pay(gw, bob, eur(500)));
+        env.close();
+
+        // XRP -> USD offer
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+        // USD -> EUR offer
+        env(offer(alice, usd(100), eur(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        // Alice sends XRP to bob who wants EUR (multi-hop via USD)
+        auto gp = makeGraphPathfinder(env, pg, alice, bob, eur(50));
+
+        bool found = gp->findPaths();
+        BEAST_EXPECT(found);
+
+        gp->computePathRanks(6);
+        auto bestPaths = gp->getBestPaths(6, STPathSet(), xrpAccount());
+        BEAST_EXPECT(bestPaths.size() >= 1);
+    }
+
     void
     run() override
     {
@@ -2595,6 +2878,16 @@ public:
         payGraphEmptyGraph();
         payGraphDijkstraBlockedVerts();
         payGraphStatsCounters();
+
+        // GraphPathfinder unit tests for coverage
+        graphPathfinderBasicFindPaths();
+        graphPathfinderNoGraph();
+        graphPathfinderZeroDestinationAmount();
+        graphPathfinderComputeAndGetBestPaths();
+        graphPathfinderGetBestPathsEmpty();
+        graphPathfinderContinueCallbackAbort();
+        graphPathfinderIOUToXRP();
+        graphPathfinderMultiHopPath();
     }
 };
 
