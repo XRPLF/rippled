@@ -1,13 +1,19 @@
 #include <test/jtx/Env.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/View.h>
 
-namespace xrpl {
-namespace test {
+#include <iterator>
+#include <memory>
+#include <vector>
 
-class SkipList_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class SkipList_test : public beast::unit_test::Suite
 {
     void
     testSkipList()
@@ -17,9 +23,9 @@ class SkipList_test : public beast::unit_test::suite
         {
             Config const config;
             auto prev = std::make_shared<Ledger>(
-                create_genesis,
+                kCreateGenesis,
                 Rules{config.features},
-                config.FEES.toFees(),
+                config.fees.toFees(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
             history.push_back(prev);
@@ -74,5 +80,4 @@ class SkipList_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(SkipList, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

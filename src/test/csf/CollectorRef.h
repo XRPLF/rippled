@@ -3,9 +3,7 @@
 #include <test/csf/SimTime.h>
 #include <test/csf/events.h>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Holds a type-erased reference to an arbitrary collector.
 
@@ -139,31 +137,31 @@ class CollectorRef
         Any&
         operator=(Any&&) = default;
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Tx> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Proposal> const& e) override
         {
             t_.on(node, when, e);
@@ -175,25 +173,25 @@ class CollectorRef
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<Proposal> const& e) override
         {
             t_.on(node, when, e);
@@ -205,61 +203,61 @@ class CollectorRef
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<Proposal> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, SubmitTx const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, StartRound const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, CloseLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, AcceptLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, WrongPrevLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, FullyValidateLedger const& e) override
         {
             t_.on(node, when, e);
@@ -324,6 +322,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

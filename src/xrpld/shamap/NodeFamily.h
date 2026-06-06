@@ -1,5 +1,8 @@
 #pragma once
 
+#include <xrpld/app/main/CollectorManager.h>
+
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/shamap/Family.h>
 
 namespace xrpl {
@@ -27,7 +30,7 @@ public:
         return db_;
     }
 
-    NodeStore::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return db_;

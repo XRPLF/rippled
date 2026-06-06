@@ -1,10 +1,13 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
 
+#include <memory>
 #include <utility>
 
 namespace xrpl {
@@ -19,14 +22,14 @@ then canonicalize a new object with the same key, make sure you get the
 original object.
 */
 
-class TaggedCache_test : public beast::unit_test::suite
+class TaggedCache_test : public beast::unit_test::Suite
 {
 public:
     void
     run() override
     {
         using namespace std::chrono_literals;
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("TaggedCache_test", *this);
 
         TestStopwatch clock;
@@ -88,7 +91,7 @@ public:
             {
                 auto const p1 = c.fetch(3);
                 auto p2 = std::make_shared<Value>("three");
-                c.canonicalize_replace_client(3, p2);
+                c.canonicalizeReplaceClient(3, p2);
                 BEAST_EXPECT(p1.get() == p2.get());
             }
             ++clock;
@@ -119,7 +122,7 @@ public:
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Canonicalize a new object with the same key
                 auto p2 = std::make_shared<std::string>("four");
-                BEAST_EXPECT(c.canonicalize_replace_client(4, p2));
+                BEAST_EXPECT(c.canonicalizeReplaceClient(4, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Make sure we get the original object
@@ -149,7 +152,7 @@ public:
                 BEAST_EXPECT(c.size() == 1);
 
                 auto p2 = std::make_shared<std::string>("five_2");
-                BEAST_EXPECT(c.canonicalize_replace_cache(5, p2));
+                BEAST_EXPECT(c.canonicalizeReplaceCache(5, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.size() == 1);
                 // Make sure the caller's original pointer is unchanged
@@ -173,37 +176,37 @@ public:
 
             struct MyRefCountObject : IntrusiveRefCounts
             {
-                std::string _data;
+                std::string data;
 
                 // Needed to support weak intrusive pointers
                 virtual void
                 partialDestructor() {};
 
                 MyRefCountObject() = default;
-                explicit MyRefCountObject(std::string data) : _data(std::move(data))
+                explicit MyRefCountObject(std::string data) : data(std::move(data))
                 {
                 }
-                explicit MyRefCountObject(char const* data) : _data(data)
+                explicit MyRefCountObject(char const* data) : data(data)
                 {
                 }
 
                 MyRefCountObject&
                 operator=(MyRefCountObject const& other)
                 {
-                    _data = other._data;
+                    data = other.data;
                     return *this;
                 }
 
                 bool
                 operator==(MyRefCountObject const& other) const
                 {
-                    return _data == other._data;
+                    return data == other.data;
                 }
 
                 bool
                 operator==(std::string const& other) const
                 {
-                    return _data == other;
+                    return data == data;
                 }
             };
 
@@ -216,15 +219,14 @@ public:
 
             IntrPtrCache intrPtrCache("IntrPtrTest", 1, 1s, clock, journal);
 
-            intrPtrCache.canonicalize_replace_cache(
-                1, intr_ptr::make_shared<MyRefCountObject>("one"));
+            intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<MyRefCountObject>("one"));
             BEAST_EXPECT(intrPtrCache.getCacheSize() == 1);
             BEAST_EXPECT(intrPtrCache.size() == 1);
 
             {
                 {
-                    intrPtrCache.canonicalize_replace_cache(
-                        1, intr_ptr::make_shared<MyRefCountObject>("one_replaced"));
+                    intrPtrCache.canonicalizeReplaceCache(
+                        1, intr_ptr::makeShared<MyRefCountObject>("one_replaced"));
 
                     auto p = intrPtrCache.fetch(1);
                     BEAST_EXPECT(*p == "one_replaced");
@@ -235,8 +237,8 @@ public:
                     BEAST_EXPECT(intrPtrCache.getCacheSize() == 0);
                     BEAST_EXPECT(intrPtrCache.size() == 1);
 
-                    intrPtrCache.canonicalize_replace_cache(
-                        1, intr_ptr::make_shared<MyRefCountObject>("one_replaced_2"));
+                    intrPtrCache.canonicalizeReplaceCache(
+                        1, intr_ptr::makeShared<MyRefCountObject>("one_replaced_2"));
 
                     auto p2 = intrPtrCache.fetch(1);
                     BEAST_EXPECT(*p2 == "one_replaced_2");
@@ -244,8 +246,8 @@ public:
                     intrPtrCache.del(1, true);
                 }
 
-                intrPtrCache.canonicalize_replace_cache(
-                    1, intr_ptr::make_shared<MyRefCountObject>("one_replaced_3"));
+                intrPtrCache.canonicalizeReplaceCache(
+                    1, intr_ptr::makeShared<MyRefCountObject>("one_replaced_3"));
                 auto p3 = intrPtrCache.fetch(1);
                 BEAST_EXPECT(*p3 == "one_replaced_3");
             }

@@ -1,13 +1,19 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/protocol/jss.h>
+#include <test/jtx/permissioned_dex.h>
 
-#include <exception>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <xrpl/basics/base_uint.h>
+
+#include <string>
+#include <vector>
+
+namespace xrpl::test::jtx {
 
 uint256
 setupDomain(
@@ -20,7 +26,7 @@ setupDomain(
     env.fund(XRP(100000), domainOwner);
     env.close();
 
-    pdomain::Credentials const credentials{{domainOwner, credType}};
+    pdomain::Credentials const credentials{{.issuer = domainOwner, .credType = credType}};
     env(pdomain::setTx(domainOwner, credentials));
 
     auto const objects = pdomain::getObjects(domainOwner, env);
@@ -42,7 +48,7 @@ PermissionedDEX::PermissionedDEX(Env& env)
     , alice("permdex-alice")
     , bob("permdex-bob")
     , carol("permdex-carol")
-    , USD(gw["USD"])
+    , usd(gw["USD"])
     , credType("permdex-abcde")
 {
     // Fund accounts
@@ -53,14 +59,12 @@ PermissionedDEX::PermissionedDEX(Env& env)
 
     for (auto const& account : {alice, bob, carol, domainOwner})
     {
-        env.trust(USD(1000), account);
+        env.trust(usd(1000), account);
         env.close();
 
-        env(pay(gw, account, USD(100)));
+        env(pay(gw, account, usd(100)));
         env.close();
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

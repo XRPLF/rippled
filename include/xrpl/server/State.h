@@ -12,7 +12,7 @@ struct SavedState
 {
     std::string writableDb;
     std::string archiveDb;
-    LedgerIndex lastRotated;
+    LedgerIndex lastRotated{};
 };
 
 /**

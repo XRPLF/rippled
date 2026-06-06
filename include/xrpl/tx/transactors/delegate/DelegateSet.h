@@ -7,7 +7,7 @@ namespace xrpl {
 class DelegateSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit DelegateSet(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -22,13 +22,20 @@ public:
     TER
     doApply() override;
 
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
+
     // Interface used by AccountDelete
     static TER
-    deleteDelegate(
-        ApplyView& view,
-        std::shared_ptr<SLE> const& sle,
-        AccountID const& account,
-        beast::Journal j);
+    deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j);
 };
 
 }  // namespace xrpl
