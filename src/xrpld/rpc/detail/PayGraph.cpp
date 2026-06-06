@@ -99,11 +99,13 @@ qualityToFixed(uint64_t rawQuality)
     static constexpr uint64_t kQualityMax = 0xFFFF'FFFF'FFFF'FFFFull;
 
     // Avoid divide-by-zero; rawQuality == 0 already handled above.
-    uint64_t fixed = kPar * (kQualityMax / rawQuality);
+    // Use 128-bit arithmetic to avoid overflow when rawQuality is small.
+    __uint128_t fixed128 = static_cast<__uint128_t>(kPar) * (kQualityMax / rawQuality);
+    uint64_t fixed = (fixed128 > static_cast<__uint128_t>(PayGraph::kNoLiquidity - 1))
+        ? static_cast<uint64_t>(PayGraph::kNoLiquidity - 1)
+        : static_cast<uint64_t>(fixed128);
     if (fixed == 0)
         fixed = 1;
-    if (fixed >= PayGraph::kNoLiquidity)
-        fixed = PayGraph::kNoLiquidity - 1;
     return static_cast<uint32_t>(fixed);
 }
 
