@@ -12,7 +12,6 @@
 #include <cstdint>
 #include <functional>
 #include <map>
-#include <memory>
 #include <optional>
 #include <set>
 #include <utility>
@@ -135,7 +134,7 @@ areCompatible(
 dirLink(
     ApplyView& view,
     AccountID const& owner,
-    std::shared_ptr<SLE>& object,
+    SLE::pointer& object,
     SF_UINT64 const& node = sfOwnerNode);
 
 /** Checks that can withdraw funds from an object to itself or a destination.
@@ -215,8 +214,8 @@ doWithdraw(
  * (if should not be skipped) and if the entry should be skipped. The status
  * is always tesSUCCESS if the entry should be skipped.
  */
-using EntryDeleter = std::function<
-    std::pair<TER, SkipEntry>(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>;
+using EntryDeleter =
+    std::function<std::pair<TER, SkipEntry>(LedgerEntryType, uint256 const&, SLE::pointer&)>;
 /** Cleanup owner directory entries on account delete.
  * Used for a regular and AMM accounts deletion. The caller
  * has to provide the deleter function, which handles details of
