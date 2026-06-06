@@ -22,14 +22,17 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/PayGraph.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1899,6 +1902,638 @@ public:
     }
 
     void
+    orderBookDBAllTakerPaysAssets()
+    {
+        testcase("OrderBookDB::getAllTakerPaysAssets");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        auto const gbp = gw["GBP"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env.trust(eur(1000), alice, bob);
+        env.trust(gbp(1000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, bob, eur(500)));
+        env(pay(gw, alice, gbp(500)));
+        env.close();
+
+        // Create offers to populate order books
+        // XRP -> USD book (takerPays = XRP)
+        env(offer(alice, XRP(500), usd(100)));
+        // XRP -> EUR book (takerPays = XRP, same as above so no new takerPays)
+        env(offer(bob, XRP(500), eur(100)));
+        // USD -> XRP book (takerPays = USD)
+        env(offer(alice, usd(100), XRP(500)));
+        // EUR -> XRP book (takerPays = EUR)
+        env(offer(bob, eur(100), XRP(500)));
+        // GBP -> XRP book (takerPays = GBP)
+        env(offer(alice, gbp(100), XRP(500)));
+        env.close();
+
+        // Trigger OrderBookDB setup so books are populated
+        auto& obdb = env.app().getOrderBookDB();
+
+        // getAllTakerPaysAssets should return XRP, USD, EUR, GBP
+        auto assets = obdb.getAllTakerPaysAssets();
+
+        // We expect at least 4 distinct takerPays assets: XRP, USD, EUR, GBP
+        BEAST_EXPECT(assets.size() >= 4);
+
+        // Verify each expected asset is present
+        bool foundXRP = false, foundUSD = false, foundEUR = false, foundGBP = false;
+        for (auto const& asset : assets)
+        {
+            if (isXRP(asset))
+                foundXRP = true;
+            else if (asset == usd.asset())
+                foundUSD = true;
+            else if (asset == eur.asset())
+                foundEUR = true;
+            else if (asset == gbp.asset())
+                foundGBP = true;
+        }
+        BEAST_EXPECT(foundXRP);
+        BEAST_EXPECT(foundUSD);
+        BEAST_EXPECT(foundEUR);
+        BEAST_EXPECT(foundGBP);
+    }
+
+    void
+    orderBookDBIsBookToXRP()
+    {
+        testcase("OrderBookDB::isBookToXRP");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(usd(1000), alice);
+        env.trust(eur(1000), alice);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, alice, eur(500)));
+        env.close();
+
+        // Create USD -> XRP book (takerPays = USD, takerGets = XRP)
+        env(offer(alice, usd(100), XRP(500)));
+        // Create EUR -> XRP book (takerPays = EUR, takerGets = XRP)
+        env(offer(alice, eur(100), XRP(500)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+
+        // USD has a book to XRP
+        BEAST_EXPECT(obdb.isBookToXRP(usd.asset()));
+        // EUR has a book to XRP
+        BEAST_EXPECT(obdb.isBookToXRP(eur.asset()));
+        // GBP has no book to XRP (never created)
+        auto const gbp = gw["GBP"];
+        BEAST_EXPECT(!obdb.isBookToXRP(gbp.asset()));
+    }
+
+    void
+    orderBookDBGetBookSize()
+    {
+        testcase("OrderBookDB::getBookSize");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env.trust(eur(1000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, bob, eur(500)));
+        env.close();
+
+        // Create multiple books with XRP as takerPays:
+        // XRP -> USD and XRP -> EUR (2 different takerGets for same takerPays)
+        env(offer(alice, XRP(500), usd(100)));
+        env(offer(bob, XRP(500), eur(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+
+        // XRP as takerPays should have 2 books (USD and EUR as takerGets)
+        BEAST_EXPECT(obdb.getBookSize(XRP) == 2);
+
+        // USD as takerPays has no books yet
+        BEAST_EXPECT(obdb.getBookSize(usd.asset()) == 0);
+
+        // Add a USD -> XRP book
+        env(offer(alice, usd(100), XRP(500)));
+        env.close();
+
+        // Now USD as takerPays should have 1 book
+        BEAST_EXPECT(obdb.getBookSize(usd.asset()) == 1);
+    }
+
+    void
+    orderBookDBGetBooksByTakerPays()
+    {
+        testcase("OrderBookDB::getBooksByTakerPays");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env.trust(eur(1000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, bob, eur(500)));
+        env.close();
+
+        // Create books with XRP as takerPays
+        env(offer(alice, XRP(500), usd(100)));
+        env(offer(bob, XRP(600), eur(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+
+        // Get books by XRP takerPays
+        auto books = obdb.getBooksByTakerPays(XRP);
+        BEAST_EXPECT(books.size() == 2);
+
+        // Verify the books contain expected takerGets
+        bool hasUSD = false, hasEUR = false;
+        for (auto const& book : books)
+        {
+            if (book.out == usd.asset())
+                hasUSD = true;
+            if (book.out == eur.asset())
+                hasEUR = true;
+        }
+        BEAST_EXPECT(hasUSD);
+        BEAST_EXPECT(hasEUR);
+
+        // Query for asset with no books
+        auto const gbp = gw["GBP"];
+        books = obdb.getBooksByTakerPays(gbp.asset());
+        BEAST_EXPECT(books.empty());
+    }
+
+    void
+    orderBookDBEmptyState()
+    {
+        testcase("OrderBookDB empty state");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+
+        // With no offers, all queries should return empty/false/zero
+        BEAST_EXPECT(obdb.getAllTakerPaysAssets().empty());
+        BEAST_EXPECT(obdb.getBookSize(XRP) == 0);
+        BEAST_EXPECT(obdb.getBooksByTakerPays(XRP).empty());
+        BEAST_EXPECT(!obdb.isBookToXRP(XRP));
+    }
+
+    //------------------------------------------------------------------------------
+    // PayGraph unit tests for coverage
+
+    void
+    payGraphBuildAndSnapshot()
+    {
+        testcase("PayGraph::build + snapshot");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env.trust(eur(1000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, bob, eur(500)));
+        env.close();
+
+        // Create order books: XRP->USD, XRP->EUR, USD->XRP, EUR->XRP
+        env(offer(alice, XRP(500), usd(100)));
+        env(offer(bob, XRP(500), eur(100)));
+        env(offer(alice, usd(100), XRP(500)));
+        env(offer(bob, eur(100), XRP(500)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+
+        // Build PayGraph from OrderBookDB + ledger
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        // Snapshot should be non-null
+        auto snap = pg->snapshot();
+        BEAST_EXPECT(snap != nullptr);
+
+        // Stats should reflect the books we created
+        auto stats = pg->currentStats();
+        BEAST_EXPECT(stats.vertices >= 3);  // At least XRP, USD, EUR
+        BEAST_EXPECT(stats.edges >= 4);     // XRP->USD, XRP->EUR, USD->XRP, EUR->XRP
+        BEAST_EXPECT(stats.orderBooks >= 4);
+    }
+
+    void
+    payGraphVertexAndAssetHelpers()
+    {
+        testcase("PayGraph::vertexOf + assetOf");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(usd(1000), alice);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env.close();
+
+        // XRP -> USD book
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        // vertexOf should return valid VIDs for assets in the graph
+        auto xrpVid = pg->vertexOf(XRP);
+        auto usdVid = pg->vertexOf(usd.asset());
+        BEAST_EXPECT(xrpVid != PayGraph::kNull);
+        BEAST_EXPECT(usdVid != PayGraph::kNull);
+        BEAST_EXPECT(xrpVid != usdVid);
+
+        // assetOf should return the correct asset for a VID
+        auto xrpAsset = pg->assetOf(xrpVid);
+        auto usdAsset = pg->assetOf(usdVid);
+        BEAST_EXPECT(isXRP(xrpAsset));
+        BEAST_EXPECT(usdAsset == usd.asset());
+
+        // vertexOf for unknown asset returns kNull
+        auto const gbp = gw["GBP"];
+        auto gbpVid = pg->vertexOf(gbp.asset());
+        BEAST_EXPECT(gbpVid == PayGraph::kNull);
+    }
+
+    void
+    payGraphDijkstraShortestPath()
+    {
+        testcase("PayGraph::dijkstra + reconstructPath (via kShortestPaths)");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env.trust(eur(1000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, bob, eur(500)));
+        env.close();
+
+        // Create chain: XRP -> USD -> EUR (so EUR is reachable from XRP via USD)
+        env(offer(alice, XRP(500), usd(100)));
+        env(offer(bob, usd(100), eur(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        auto snap = pg->snapshot();
+        BEAST_EXPECT(snap != nullptr);
+
+        // Get VIDs
+        auto xrpVid = pg->vertexOf(XRP);
+        auto eurVid = pg->vertexOf(eur.asset());
+        BEAST_EXPECT(xrpVid != PayGraph::kNull);
+        BEAST_EXPECT(eurVid != PayGraph::kNull);
+
+        // kShortestPaths exercises dijkstra + reconstructPath internally
+        auto paths = PayGraph::kShortestPaths(*snap, xrpVid, eurVid, 1);
+        BEAST_EXPECT(!paths.empty());
+
+        // Path should go from XRP to EUR (via USD bridge)
+        auto const& path = paths.front();
+        BEAST_EXPECT(path.vids.front() == xrpVid);
+        BEAST_EXPECT(path.vids.back() == eurVid);
+        BEAST_EXPECT(path.vids.size() >= 2);  // At least src and dst
+        BEAST_EXPECT(path.cumQuality < std::numeric_limits<uint64_t>::max());
+    }
+
+    void
+    payGraphKShortestPaths()
+    {
+        testcase("PayGraph::kShortestPaths + findPaths");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env.trust(eur(1000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, bob, eur(500)));
+        env(pay(gw, alice, eur(500)));  // Alice needs EUR for USD->EUR offer
+        env(pay(gw, bob, usd(500)));    // Bob needs USD for XRP->USD offer
+        env.close();
+
+        // Create multiple paths from XRP to EUR:
+        // Path 1: XRP -> EUR (direct)
+        // Path 2: XRP -> USD -> EUR (via USD bridge)
+        env(offer(alice, XRP(500), eur(100)));
+        env.close();
+        env(offer(bob, XRP(500), usd(100)));
+        env.close();
+        env(offer(alice, usd(100), eur(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        // findPaths convenience wrapper
+        auto paths = pg->findPaths(XRP, eur.asset(), 6);
+        BEAST_EXPECT(!paths.empty());
+        BEAST_EXPECT(paths.size() <= 6);
+
+        // Paths should be ordered by quality (best first)
+        for (std::size_t i = 1; i < paths.size(); ++i)
+        {
+            BEAST_EXPECT(paths[i].cumQuality >= paths[i - 1].cumQuality);
+        }
+
+        // Each path should start with XRP and end with EUR
+        for (auto const& p : paths)
+        {
+            auto srcAsset = pg->assetOf(p.vids.front());
+            auto dstAsset = pg->assetOf(p.vids.back());
+            BEAST_EXPECT(isXRP(srcAsset));
+            BEAST_EXPECT(dstAsset == eur.asset());
+        }
+
+        // kShortestPaths with no path returns empty
+        auto const gbp = gw["GBP"];
+        paths = pg->findPaths(XRP, gbp.asset(), 6);
+        BEAST_EXPECT(paths.empty());
+    }
+
+    void
+    payGraphApplyLedgerDelta()
+    {
+        testcase("PayGraph::applyLedgerDelta");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(usd(1000), alice);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env.close();
+
+        // Create initial book: XRP -> USD
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        // Initial stats
+        auto statsBefore = pg->currentStats();
+        BEAST_EXPECT(statsBefore.totalDeltasCalled == 0);
+
+        // Create a new offer to change the book quality
+        auto const bob = Account("bob");
+        env.fund(XRP(10000), bob);
+        env.trust(usd(1000), bob);
+        env(pay(gw, bob, usd(500)));  // Fund bob with USD for offer
+        env.close();
+        env(offer(bob, XRP(400), usd(100)));  // Better quality offer
+        env.close();
+
+        auto const newLedger = env.closed();
+
+        // Apply delta with the changed book
+        std::vector<Book> changedBooks{{XRP, usd.asset(), std::nullopt}};
+        pg->applyLedgerDelta(obdb, *newLedger, changedBooks);
+
+        // Stats should reflect the delta
+        auto statsAfter = pg->currentStats();
+        BEAST_EXPECT(statsAfter.totalDeltasCalled == 1);
+        BEAST_EXPECT(statsAfter.lastDeltaBooks == 1);
+
+        // Snapshot should still be valid
+        auto snap = pg->snapshot();
+        BEAST_EXPECT(snap != nullptr);
+    }
+
+    void
+    payGraphRebuild()
+    {
+        testcase("PayGraph::rebuild");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(usd(1000), alice);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env.close();
+
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        // Rebuild with same ledger (should preserve structure)
+        pg->rebuild(obdb, *ledger, std::nullopt);
+
+        auto snap = pg->snapshot();
+        BEAST_EXPECT(snap != nullptr);
+
+        auto stats = pg->currentStats();
+        BEAST_EXPECT(stats.vertices >= 2);  // XRP + USD
+        BEAST_EXPECT(stats.orderBooks >= 1);
+    }
+
+    void
+    payGraphEmptyGraph()
+    {
+        testcase("PayGraph empty graph (no offers)");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+
+        // Build with no offers - should still have XRP vertex
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        auto snap = pg->snapshot();
+        BEAST_EXPECT(snap != nullptr);
+
+        auto stats = pg->currentStats();
+        BEAST_EXPECT(stats.vertices >= 1);  // At least XRP
+        BEAST_EXPECT(stats.edges == 0);
+
+        // findPaths should return empty when no edges exist
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto paths = pg->findPaths(XRP, usd.asset(), 6);
+        BEAST_EXPECT(paths.empty());
+    }
+
+    void
+    payGraphDijkstraBlockedVerts()
+    {
+        testcase("PayGraph::dijkstra with blocked vertices (via kShortestPaths)");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env.trust(eur(1000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env(pay(gw, bob, eur(500)));
+        env.close();
+
+        // Create: XRP -> USD -> EUR chain (only path to EUR)
+        env(offer(alice, XRP(500), usd(100)));
+        env(offer(bob, usd(100), eur(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        auto snap = pg->snapshot();
+        auto xrpVid = pg->vertexOf(XRP);
+        auto eurVid = pg->vertexOf(eur.asset());
+
+        // kShortestPaths with k=1 should find the single path (exercises dijkstra internally)
+        auto paths = PayGraph::kShortestPaths(*snap, xrpVid, eurVid, 1);
+        BEAST_EXPECT(!paths.empty());
+        BEAST_EXPECT(paths.front().vids.front() == xrpVid);
+        BEAST_EXPECT(paths.front().vids.back() == eurVid);
+
+        // kShortestPaths with k > 1 should return fewer paths since there's only one route
+        auto allPaths = PayGraph::kShortestPaths(*snap, xrpVid, eurVid, 6);
+        BEAST_EXPECT(allPaths.size() <= 1);  // Only one simple path exists
+    }
+
+    void
+    payGraphStatsCounters()
+    {
+        testcase("PayGraph stats counters");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+        env.trust(usd(1000), alice);
+        env.close();
+        env(pay(gw, alice, usd(500)));
+        env.close();
+
+        env(offer(alice, XRP(500), usd(100)));
+        env.close();
+
+        auto& obdb = env.app().getOrderBookDB();
+        auto const ledger = env.closed();
+        beast::Journal const journal{env.app().getJournal("PayGraph")};
+        auto pg = PayGraph::build(obdb, *ledger, std::nullopt, journal);
+
+        // Initial state: no deltas applied yet
+        auto stats = pg->currentStats();
+        BEAST_EXPECT(stats.totalDeltasCalled == 0);
+        BEAST_EXPECT(stats.lastDeltaBooks == 0);
+        BEAST_EXPECT(stats.ammPools == 0);
+
+        // After delta, counters increment
+        std::vector<Book> changedBooks{{XRP, usd.asset(), std::nullopt}};
+        pg->applyLedgerDelta(obdb, *ledger, changedBooks);
+
+        stats = pg->currentStats();
+        BEAST_EXPECT(stats.totalDeltasCalled == 1);
+        BEAST_EXPECT(stats.lastDeltaBooks == 1);
+    }
+
+    void
     run() override
     {
         sourceCurrenciesLimit();
@@ -1942,6 +2577,24 @@ public:
         hybridOfferPath();
         ammDomainPath();
         selfSubscriptionIouToXrp();
+
+        // OrderBookDBImpl unit tests for coverage
+        orderBookDBAllTakerPaysAssets();
+        orderBookDBIsBookToXRP();
+        orderBookDBGetBookSize();
+        orderBookDBGetBooksByTakerPays();
+        orderBookDBEmptyState();
+
+        // PayGraph unit tests for coverage
+        payGraphBuildAndSnapshot();
+        payGraphVertexAndAssetHelpers();
+        payGraphDijkstraShortestPath();
+        payGraphKShortestPaths();
+        payGraphApplyLedgerDelta();
+        payGraphRebuild();
+        payGraphEmptyGraph();
+        payGraphDijkstraBlockedVerts();
+        payGraphStatsCounters();
     }
 };
 
