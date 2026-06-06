@@ -3410,7 +3410,7 @@ PeerImp::processLedgerRequest(
             }
         }
 
-        JLOG(pJournal_.info()) << "processLedgerRequest: Got request for " << m->nodeids_size()
+        JLOG(pJournal_.info()) << "processLedgerRequest: Got request for " << nodeIDs.size()
                                << " nodes at depth " << queryDepth << ", return "
                                << ledgerData.nodes_size() << " nodes";
     }
