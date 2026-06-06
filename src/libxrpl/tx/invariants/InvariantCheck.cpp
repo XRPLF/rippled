@@ -757,7 +757,7 @@ ValidNewAccountRoot::finalize(
 
 static std::optional<STAmount>
 clawbackTrustLineBalanceInHolderTerms(
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_pointer const& sle,
     AccountID const& holder,
     AccountID const& issuer,
     Currency const& currency)
@@ -784,20 +784,20 @@ ValidClawback::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref a
     if (before && before->getType() == ltRIPPLE_STATE)
     {
         trustlinesChanged_++;
-        tokenBefore_ = before;
+        iou_.before = before;
     }
 
     if (!isDelete && after && after->getType() == ltRIPPLE_STATE)
-        tokenAfter_ = after;
+        iou_.after = after;
 
     if (before && before->getType() == ltMPTOKEN)
     {
         mptokensChanged_++;
-        tokenBefore_ = before;
+        mpt_.before = before;
     }
 
     if (!isDelete && after && after->getType() == ltMPTOKEN)
-        tokenAfter_ = after;
+        mpt_.after = after;
 }
 
 bool
@@ -833,13 +833,6 @@ ValidClawback::finalize(
                 return false;
         }
 
-        if (tokenBefore_ && tokenAfter_ && tokenBefore_->getType() != tokenAfter_->getType())
-        {
-            JLOG(j.fatal()) << "Invariant failed: token entry type changed.";
-            if (mptV2Enabled)
-                return false;
-        }
-
         if (trustlinesChanged_ == 1 || (mptV2Enabled && mptokensChanged_ == 1))
         {
             STAmount const& amount = tx.getFieldAmount(sfAmount);
@@ -857,10 +850,17 @@ ValidClawback::finalize(
                         return false;
                     }
 
+                    if (!iou_.before)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: trustline clawback changed the wrong line";
+                        return !mptV2Enabled;
+                    }
+
                     auto const beforeBalance = clawbackTrustLineBalanceInHolderTerms(
-                        tokenBefore_, holder, issuer, issue.currency);
+                        iou_.before, holder, issuer, issue.currency);
                     auto const afterBalance = clawbackTrustLineBalanceInHolderTerms(
-                        tokenAfter_, holder, issuer, issue.currency);
+                        iou_.after, holder, issuer, issue.currency);
                     if (!beforeBalance || !afterBalance)
                     {
                         JLOG(j.fatal())
@@ -894,30 +894,29 @@ ValidClawback::finalize(
                         return !mptV2Enabled;
                     }
 
-                    if (!tokenBefore_ || !tokenAfter_)
+                    if (!mpt_.before || !mpt_.after)
                     {
                         JLOG(j.fatal()) << "Invariant failed: MPT clawback token is missing";
                         return !mptV2Enabled;
                     }
 
-                    if (tokenBefore_->getAccountID(sfAccount) != *holder ||
-                        tokenAfter_->getAccountID(sfAccount) != *holder ||
-                        (*tokenBefore_)[sfMPTokenIssuanceID] != issue.getMptID() ||
-                        (*tokenAfter_)[sfMPTokenIssuanceID] != issue.getMptID())
+                    if (mpt_.before->getAccountID(sfAccount) != *holder ||
+                        mpt_.after->getAccountID(sfAccount) != *holder ||
+                        (*mpt_.before)[sfMPTokenIssuanceID] != issue.getMptID() ||
+                        (*mpt_.after)[sfMPTokenIssuanceID] != issue.getMptID())
                     {
                         JLOG(j.fatal()) << "Invariant failed: MPT clawback changed the wrong token";
                         return !mptV2Enabled;
                     }
 
-                    auto const before = tokenBefore_->getFieldU64(sfMPTAmount);
-                    auto const after = tokenAfter_->getFieldU64(sfMPTAmount);
-                    auto const clawValue = amount.mpt().value();
-                    if (clawValue <= 0)
+                    auto const before = mpt_.before->getFieldU64(sfMPTAmount);
+                    auto const after = mpt_.after->getFieldU64(sfMPTAmount);
+                    if (amount.negative() || amount.mantissa() == 0)
                     {
                         JLOG(j.fatal()) << "Invariant failed: MPT clawback amount is invalid";
                         return !mptV2Enabled;
                     }
-                    auto const clawAmount = static_cast<std::uint64_t>(clawValue);
+                    auto const clawAmount = amount.mantissa();
 
                     // MPT balances are unsigned, so validate the raw holder
                     // debit instead of routing through accountHolds().

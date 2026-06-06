@@ -320,10 +320,16 @@ public:
  */
 class ValidClawback
 {
+    struct EntryChange
+    {
+        SLE::const_pointer before;
+        SLE::const_pointer after;
+    };
+
     std::uint32_t trustlinesChanged_ = 0;
     std::uint32_t mptokensChanged_ = 0;
-    std::shared_ptr<SLE const> tokenBefore_;
-    std::shared_ptr<SLE const> tokenAfter_;
+    EntryChange iou_;
+    EntryChange mpt_;
 
 public:
     void
