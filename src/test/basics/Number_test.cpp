@@ -2072,45 +2072,43 @@ public:
             }
             log.flush();
 
-            switch (scale)
+            for (auto const& [r, sum] : sums)
             {
-                case MantissaRange::MantissaScale::Small:
-                case MantissaRange::MantissaScale::LargeLegacy: {
-                    // Without the fix, all the results but one round up
-                    for (auto const& [r, sum] : sums)
-                    {
+                auto const epsilon = pow10<BigInt>(sum.second.exponent());
+                auto diff = sum.first - exact;
+                auto const rLabel = to_string(r);
+                switch (scale)
+                {
+                    case MantissaRange::MantissaScale::Small:
+                    case MantissaRange::MantissaScale::LargeLegacy: {
+                        // Without the fix, all the results but one round up
                         if (r == Number::RoundingMode::Downward)
                         {
                             // Downward works because the Guard sign is negative, and Downward
                             // returns Up instead of Down if negative and there's a remainder,
                             // whereas TowardsZero always returns Down.
-                            BEAST_EXPECTS(
-                                sums.at(Number::RoundingMode::Downward).first < exact,
-                                to_string(r));
+                            BEAST_EXPECTS(sum.first < exact, rLabel);
+                            BEAST_EXPECTS(diff == -(epsilon - 1), rLabel);
                         }
                         else
                         {
-                            BEAST_EXPECTS(sums.at(r).first > exact, to_string(r));
+                            BEAST_EXPECTS(sum.first > exact, rLabel);
+                            BEAST_EXPECTS(diff == 1, rLabel);
                         }
+                        break;
                     }
-                    break;
-                }
-                default: {
-                    for (auto const& [r, sum] : sums)
-                    {
-                        auto const epsilon = pow10<BigInt>(sum.second.exponent());
+                    default: {
                         BEAST_EXPECT(epsilon == 100);
-                        auto diff = sum.first - exact;
                         switch (r)
                         {
                             case Number::RoundingMode::Upward:
                             case Number::RoundingMode::ToNearest:
-                                BEAST_EXPECTS(sum.first > exact, to_string(r));
-                                BEAST_EXPECTS(diff < epsilon, to_string(r));
+                                BEAST_EXPECTS(sum.first > exact, rLabel);
+                                BEAST_EXPECTS(diff == 1, rLabel);
                                 break;
                             default:
-                                BEAST_EXPECTS(sum.first < exact, to_string(r));
-                                BEAST_EXPECTS(-diff < epsilon, to_string(r));
+                                BEAST_EXPECTS(sum.first < exact, rLabel);
+                                BEAST_EXPECTS(diff == -(epsilon - 1), rLabel);
                         }
                     }
                 }
