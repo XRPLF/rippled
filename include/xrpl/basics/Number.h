@@ -54,11 +54,11 @@ namespace detail {
 constexpr std::size_t kUint64Digits = 20;
 constexpr std::size_t kUint128Digits = 39;
 
-template <typename T, std::size_t digits>
-consteval std::array<T, digits>
+template <typename T, std::size_t Digits>
+consteval std::array<T, Digits>
 buildPowersOfTen()
 {
-    std::array<T, digits> result{};
+    std::array<T, Digits> result{};
 
     T power = 1;
     std::size_t exponent = 0;
@@ -78,8 +78,8 @@ buildPowersOfTen()
 
 }  // namespace detail
 
-template <typename T = std::uint64_t, std::size_t digits = detail::kUint64Digits>
-constexpr std::array<T, digits> kPowerOfTenImpl = detail::buildPowersOfTen<T, digits>();
+template <typename T = std::uint64_t, std::size_t Digits = detail::kUint64Digits>
+constexpr std::array<T, Digits> kPowerOfTenImpl = detail::buildPowersOfTen<T, Digits>();
 
 constexpr auto kPowerOfTen = kPowerOfTenImpl<std::uint64_t, detail::kUint64Digits>;
 
@@ -551,8 +551,14 @@ private:
     // changing the values inside the range.
     static thread_local std::reference_wrapper<MantissaRange const> kRange;
 
+    class Guard;
+
     void
     normalize(MantissaRange const& range);
+
+    // Guard has the fields that we need, as well as MantissaRange, so if we have a guard, use that
+    void
+    normalize(Guard const& guard);
 
     /** Normalize Number components to an arbitrary range.
      *
@@ -596,8 +602,6 @@ private:
     // UB, and can vary across compilers.
     static internalrep
     externalToInternal(rep mantissa);
-
-    class Guard;
 };
 
 constexpr Number::Number(bool negative, internalrep mantissa, int exponent, Unchecked) noexcept
@@ -872,6 +876,26 @@ to_string(MantissaRange::MantissaScale const& scale)
             return "large";
         default:
             throw std::runtime_error("Bad scale");
+    }
+}
+
+inline std::string
+to_string(Number::RoundingMode const& round)
+{
+    switch (round)
+    {
+        enum class RoundingMode { ToNearest, TowardsZero, Downward, Upward };
+
+        case Number::RoundingMode::ToNearest:
+            return "ToNearest";
+        case Number::RoundingMode::TowardsZero:
+            return "TowardsZero";
+        case Number::RoundingMode::Downward:
+            return "Downward";
+        case Number::RoundingMode::Upward:
+            return "Upward";
+        default:
+            throw std::runtime_error("Bad rounding mode");
     }
 }
 
