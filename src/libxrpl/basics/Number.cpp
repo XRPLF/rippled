@@ -473,6 +473,9 @@ Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent)
     {
         // If there was any remainder, subtract 1 from the result. This is sufficient to get the
         // best rounding.
+        XRPL_ASSERT(
+            empty() || mantissa > maxMantissa_,
+            "xrpl::Number::Guard::doRoundDown : mantissa is expected size");
         if (r != Round::Exact)
         {
             --mantissa;
