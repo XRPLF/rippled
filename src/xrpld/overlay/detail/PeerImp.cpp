@@ -1536,7 +1536,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
                 auto parsed = deserializeSHAMapNodeID(nodeId);
                 if (!parsed)
                 {
-                    peer->charge(Resource::kFeeInvalidData, "get_ledger invalid node ID");
+                    JLOG(peer->pJournal_.warn()) << "TMGetLedger: Invalid node ID";
+                    post(peer->strand_, [peer]() {
+                        peer->charge(Resource::kFeeInvalidData, "TMGetLedger: Invalid node ID");
+                    });
                     return;
                 }
                 nodeIDs.push_back(std::move(*parsed));
