@@ -140,7 +140,7 @@ ValidLoanBroker::finalize(
 
         auto const& before = broker.brokerBefore;
 
-        if (view.rules().enabled(fixCleanup3_2_0))
+        if (view.rules().enabled(featureLendingPermissionedDomain))
         {
             if (after->at(~sfDomainID) && !after->isFlag(lsfLoanBrokerPrivate))
             {

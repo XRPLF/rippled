@@ -53,7 +53,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     if (!validNumericRange(tx[~sfDebtMaximum], Number(kMaxMpTokenAmount), Number(0)))
         return temINVALID;
 
-    if (!ctx.rules.enabled(fixCleanup3_2_0))
+    if (!ctx.rules.enabled(featureLendingPermissionedDomain))
     {
         if (tx.isFlag(tfLoanBrokerPrivate) || tx.isFieldPresent(sfDomainID))
         {
@@ -73,7 +73,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
         if (tx[sfLoanBrokerID] == beast::kZero)
             return temINVALID;
 
-        if (ctx.rules.enabled(fixCleanup3_2_0))
+        if (ctx.rules.enabled(featureLendingPermissionedDomain))
         {
             // Cannot change private flag on existing broker
             if (tx.isFlag(tfLoanBrokerPrivate))
@@ -85,7 +85,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     else
     {
         // We're creating a new LoanBroker.
-        if (ctx.rules.enabled(fixCleanup3_2_0))
+        if (ctx.rules.enabled(featureLendingPermissionedDomain))
         {
             auto const domainID = tx.at(~sfDomainID);
             if (domainID)
@@ -163,7 +163,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    if (ctx.view.rules().enabled(fixCleanup3_2_0))
+    if (ctx.view.rules().enabled(featureLendingPermissionedDomain))
     {
         auto const domainID = tx[~sfDomainID];
         if (domainID && *domainID != beast::kZero)
@@ -209,7 +209,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
             }
         }
 
-        if (ctx.view.rules().enabled(fixCleanup3_2_0))
+        if (ctx.view.rules().enabled(featureLendingPermissionedDomain))
         {
             auto const domainID = tx[~sfDomainID];
             if (!sleBroker->isFlag(lsfLoanBrokerPrivate) && domainID)
@@ -273,7 +273,8 @@ LoanBrokerSet::doApply()
         if (auto const debtMax = tx[~sfDebtMaximum])
             broker->at(sfDebtMaximum) = *debtMax;
 
-        if (ctx_.view().rules().enabled(fixCleanup3_2_0) && broker->isFlag(lsfLoanBrokerPrivate))
+        if (ctx_.view().rules().enabled(featureLendingPermissionedDomain) &&
+            broker->isFlag(lsfLoanBrokerPrivate))
         {
             if (auto const domainID = tx[~sfDomainID])
             {
@@ -359,7 +360,7 @@ LoanBrokerSet::doApply()
         if (auto const coverLiq = tx[~sfCoverRateLiquidation])
             broker->at(sfCoverRateLiquidation) = *coverLiq;
 
-        if (ctx_.view().rules().enabled(fixCleanup3_2_0))
+        if (ctx_.view().rules().enabled(featureLendingPermissionedDomain))
         {
             if (tx.isFlag(tfLoanBrokerPrivate))
             {

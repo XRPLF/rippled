@@ -363,7 +363,8 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return ret;
     }
 
-    if (ctx.view.rules().enabled(fixCleanup3_2_0) && brokerSle->isFlag(lsfLoanBrokerPrivate))
+    if (ctx.view.rules().enabled(featureLendingPermissionedDomain) &&
+        brokerSle->isFlag(lsfLoanBrokerPrivate))
     {
         auto const domainID = brokerSle->at(~sfDomainID);
         if (!domainID)
@@ -424,7 +425,8 @@ LoanSet::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
-    if (ctx_.view().rules().enabled(fixCleanup3_2_0) && brokerSle->isFlag(lsfLoanBrokerPrivate))
+    if (ctx_.view().rules().enabled(featureLendingPermissionedDomain) &&
+        brokerSle->isFlag(lsfLoanBrokerPrivate))
     {
         auto const domainID = brokerSle->at(~sfDomainID);
         if (!domainID)
