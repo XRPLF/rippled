@@ -15,6 +15,7 @@
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
+#include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>

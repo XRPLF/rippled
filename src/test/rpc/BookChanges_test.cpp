@@ -1,3 +1,4 @@
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
@@ -11,16 +12,26 @@
 #include <xrpld/rpc/BookChanges.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
+#include <memory>
+#include <stdexcept>
 #include <unordered_set>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -132,21 +143,21 @@ public:
         Account const gw{"gw"};
         Account const iouGw{"iouGw"};
 
-        auto const BIG = MPT{gw.id(), 1};
-        auto const USD = iouGw["USD"];
+        auto const big = MPT{gw.id(), 1};
+        auto const usd = iouGw["USD"];
 
         // This metadata represents a partial MPT/IOU offer fill whose deltas
         // make divide(deltaGets, deltaPays) overflow before MPTokensV2 skips
         // the unrepresentable book-change rate.
         STObject finalFields = STObject::makeInnerObject(sfFinalFields);
         finalFields.setFieldU32(sfSequence, 1);
-        finalFields.setFieldAmount(sfTakerGets, BIG(1'800'000'000'000'000'000ull));
-        finalFields.setFieldAmount(sfTakerPays, USD(9));
+        finalFields.setFieldAmount(sfTakerGets, big(1'800'000'000'000'000'000ull));
+        finalFields.setFieldAmount(sfTakerPays, usd(9));
 
         STObject previousFields = STObject::makeInnerObject(sfPreviousFields);
         previousFields.setFieldU32(sfSequence, 1);
-        previousFields.setFieldAmount(sfTakerGets, BIG(3'600'000'000'000'000'000ull));
-        previousFields.setFieldAmount(sfTakerPays, USD(18));
+        previousFields.setFieldAmount(sfTakerGets, big(3'600'000'000'000'000'000ull));
+        previousFields.setFieldAmount(sfTakerPays, usd(18));
 
         STObject modifiedOffer{sfModifiedNode};
         modifiedOffer.setFieldU16(sfLedgerEntryType, ltOFFER);

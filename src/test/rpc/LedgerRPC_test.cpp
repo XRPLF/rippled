@@ -20,6 +20,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
