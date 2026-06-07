@@ -492,7 +492,7 @@ public:
     void
     run() override;
     void
-    signalStop(std::string msg) override;
+    signalStop(std::string const& msg) override;
     bool
     checkSigs() const override;
     void
@@ -1602,7 +1602,7 @@ ApplicationImp::run()
 }
 
 void
-ApplicationImp::signalStop(std::string msg)
+ApplicationImp::signalStop(std::string const& msg)
 {
     if (!isTimeToStop.test_and_set(std::memory_order_acquire))
     {
