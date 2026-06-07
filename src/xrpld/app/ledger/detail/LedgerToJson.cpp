@@ -208,6 +208,7 @@ fillJsonTx(
                 account,
                 amount,
                 FreezeHandling::IgnoreFreeze,
+                AuthHandling::IgnoreAuth,
                 beast::Journal{beast::Journal::getNullSink()});
             txJson[jss::owner_funds] = ownerFunds.getText();
         }
