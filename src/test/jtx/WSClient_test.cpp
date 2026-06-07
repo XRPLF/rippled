@@ -1,12 +1,15 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 
-namespace xrpl {
-namespace test {
+#include <chrono>
 
-class WSClient_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+class WSClient_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -16,8 +19,8 @@ public:
         Env env(*this);
         auto wsc = makeWSClient(env.app().config());
         {
-            Json::Value jv;
-            jv["streams"] = Json::arrayValue;
+            json::Value jv;
+            jv["streams"] = json::ValueType::Array;
             jv["streams"].append("ledger");
         }
         env.fund(XRP(10000), "alice");
@@ -29,5 +32,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(WSClient, jtx, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

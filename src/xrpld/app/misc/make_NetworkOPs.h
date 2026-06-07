@@ -16,16 +16,16 @@ class LedgerMaster;
 class ValidatorKeys;
 
 std::unique_ptr<NetworkOPs>
-make_NetworkOPs(
+makeNetworkOPs(
     ServiceRegistry& registry,
     NetworkOPs::clock_type& clock,
     bool standalone,
     std::size_t minPeerCount,
-    bool start_valid,
-    JobQueue& job_queue,
+    bool startValid,
+    JobQueue& jobQueue,
     LedgerMaster& ledgerMaster,
     ValidatorKeys const& validatorKeys,
-    boost::asio::io_context& io_svc,
+    boost::asio::io_context& ioSvc,
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector);
 

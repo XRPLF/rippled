@@ -21,7 +21,7 @@ TEST(TransactionsVaultDeleteTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultDelete"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultDelete"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -30,7 +30,6 @@ TEST(TransactionsVaultDeleteTests, BuilderSettersRoundTrip)
 
     // Transaction-specific field values
     auto const vaultIDValue = canonical_UINT256();
-    auto const memoDataValue = canonical_VL();
 
     VaultDeleteBuilder builder{
         accountValue,
@@ -40,7 +39,6 @@ TEST(TransactionsVaultDeleteTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
-    builder.setMemoData(memoDataValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -64,14 +62,6 @@ TEST(TransactionsVaultDeleteTests, BuilderSettersRoundTrip)
     }
 
     // Verify optional fields
-    {
-        auto const& expected = memoDataValue;
-        auto const actualOpt = tx.getMemoData();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMemoData should be present";
-        expectEqualField(expected, *actualOpt, "sfMemoData");
-        EXPECT_TRUE(tx.hasMemoData());
-    }
-
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -80,7 +70,7 @@ TEST(TransactionsVaultDeleteTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultDeleteFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultDeleteFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -89,7 +79,6 @@ TEST(TransactionsVaultDeleteTests, BuilderFromStTxRoundTrip)
 
     // Transaction-specific field values
     auto const vaultIDValue = canonical_UINT256();
-    auto const memoDataValue = canonical_VL();
 
     // Build an initial transaction
     VaultDeleteBuilder initialBuilder{
@@ -99,7 +88,6 @@ TEST(TransactionsVaultDeleteTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
-    initialBuilder.setMemoData(memoDataValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -124,13 +112,6 @@ TEST(TransactionsVaultDeleteTests, BuilderFromStTxRoundTrip)
     }
 
     // Verify optional fields
-    {
-        auto const& expected = memoDataValue;
-        auto const actualOpt = rebuiltTx.getMemoData();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMemoData should be present";
-        expectEqualField(expected, *actualOpt, "sfMemoData");
-    }
-
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -138,7 +119,7 @@ TEST(TransactionsVaultDeleteTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -152,7 +133,7 @@ TEST(TransactionsVaultDeleteTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -161,35 +142,5 @@ TEST(TransactionsVaultDeleteTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(VaultDeleteBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
-// 5) Build with only required fields and verify optional fields return nullopt.
-TEST(TransactionsVaultDeleteTests, OptionalFieldsReturnNullopt)
-{
-    // Generate a deterministic keypair for signing
-    auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testVaultDeleteNullopt"));
-
-    // Common transaction fields
-    auto const accountValue = calcAccountID(publicKey);
-    std::uint32_t const sequenceValue = 3;
-    auto const feeValue = canonical_AMOUNT();
-
-    // Transaction-specific required field values
-    auto const vaultIDValue = canonical_UINT256();
-
-    VaultDeleteBuilder builder{
-        accountValue,
-        vaultIDValue,
-        sequenceValue,
-        feeValue
-    };
-
-    // Do NOT set optional fields
-
-    auto tx = builder.build(publicKey, secretKey);
-
-    // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasMemoData());
-    EXPECT_FALSE(tx.getMemoData().has_value());
-}
 
 }

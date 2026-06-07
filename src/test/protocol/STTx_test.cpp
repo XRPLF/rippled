@@ -1,15 +1,34 @@
 #include <xrpl/basics/Slice.h>
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/messages.h>
 
+#include <xrpl.pb.h>
+
+#include <cstring>
+#include <exception>
+#include <memory>
+#include <ostream>
 #include <regex>
+#include <stdexcept>
+#include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
@@ -24,7 +43,7 @@ matches(char const* string, char const* regex)
     return std::regex_search(string, std::basic_regex<char>(regex, std::regex_constants::icase));
 }
 
-class STTx_test : public beast::unit_test::suite
+class STTx_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -33,10 +52,10 @@ public:
         testMalformedSerializedForm();
 
         testcase("secp256k1 signatures");
-        testSTTx(KeyType::secp256k1);
+        testSTTx(KeyType::Secp256k1);
 
         testcase("ed25519 signatures");
-        testSTTx(KeyType::ed25519);
+        testSTTx(KeyType::Ed25519);
 
         testcase("STObject constructor errors");
         testObjectCtorErrors();
@@ -47,12 +66,12 @@ public:
     {
         testcase("Malformed serialized form");
 
-        constexpr unsigned char payload1[] = {
+        static constexpr unsigned char kPayload1[] = {
             0x0a, 0xff, 0xff, 0xff, 0xff, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63,
             0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x29, 0x1b, 0x1b, 0x1b,
             0x1b, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef, 0xef};
 
-        constexpr unsigned char payload2[] = {
+        static constexpr unsigned char kPayload2[] = {
             0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xef, 0xff,
             0xef, 0xef, 0xff, 0xef, 0xff, 0xef, 0xef, 0xff, 0xef, 0xff, 0xef, 0xef, 0xff, 0xef,
             0xff, 0xef, 0xff, 0xef, 0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0xef, 0xff, 0xef,
@@ -1044,7 +1063,7 @@ public:
             0xef, 0xff, 0xef, 0xff, 0xef, 0xff, 0xef, 0x3b, 0x3b, 0x43, 0x3b, 0x3b, 0xff, 0x3b,
             0x12, 0xf1, 0x12, 0x12, 0x12, 0xff};
 
-        constexpr unsigned char payload3[] = {
+        static constexpr unsigned char kPayload3[] = {
             0x12, 0x00, 0x65, 0x24, 0x00, 0x00, 0x00, 0x00, 0x20, 0x1e, 0x00, 0x4f, 0x00, 0x00,
             0x20, 0x1f, 0x03, 0xf6, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x35, 0x00,
             0x59, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1064,7 +1083,7 @@ public:
             0x02, 0x00, 0x73, 0x00, 0x81, 0x14, 0x00, 0x10, 0x00, 0x73, 0x00, 0x81, 0x14, 0x00,
             0x10, 0x00, 0x00, 0x00, 0x00, 0x26, 0x00, 0x00, 0x00, 0x00, 0xe5, 0xfe};
 
-        constexpr unsigned char payload4[] = {
+        static constexpr unsigned char kPayload4[] = {
             0x12, 0x00, 0x65, 0x24, 0x00, 0x00, 0x00, 0x00, 0x20, 0x1e, 0x00, 0x4f, 0x00, 0x00,
             0x20, 0x1f, 0x03, 0xf6, 0x00, 0x00, 0x20, 0x20, 0x00, 0x00, 0x00, 0x00, 0x35, 0x00,
             0x59, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x68, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1090,8 +1109,8 @@ public:
             // Construct an SOTemplate to get the ball rolling on building
             // an STObject that can contain another STObject.
             SOTemplate const recurse{
-                {sfTransactionMetaData, soeOPTIONAL},
-                {sfTransactionHash, soeOPTIONAL},
+                {sfTransactionMetaData, SoeOptional},
+                {sfTransactionHash, SoeOptional},
             };
 
             // Make an STObject that nests objects ten levels deep.  There's
@@ -1149,10 +1168,10 @@ public:
 
             // Construct an SOTemplate to get the ball rolling on building
             // an STObject that can contain an STArray.
-            SOTemplate recurse{
-                {sfTransactionMetaData, soeOPTIONAL},
-                {sfTransactionHash, soeOPTIONAL},
-                {sfTemplate, soeOPTIONAL},
+            SOTemplate const recurse{
+                {sfTransactionMetaData, SoeOptional},
+                {sfTransactionHash, SoeOptional},
+                {sfTemplate, SoeOptional},
             };
 
             // Make an STObject that nests ten levels deep alternating objects
@@ -1167,7 +1186,7 @@ public:
                 STObject outer{recurse, sfTransactionMetaData};
                 outer.setFieldH256(sfTransactionHash, hash);
                 STArray& array{outer.peekFieldArray(sfTemplate)};
-                array.push_back(std::move(inner));
+                array.pushBack(std::move(inner));
                 inner = std::move(outer);
             }
             {
@@ -1191,7 +1210,7 @@ public:
             STObject outer{recurse, sfTransactionMetaData};
             outer.setFieldH256(sfTransactionHash, hash);
             STArray& array{outer.peekFieldArray(sfTemplate)};
-            array.push_back(std::move(inner));
+            array.pushBack(std::move(inner));
 
             Serializer const tooDeep{outer.getSerializer()};
             SerialIter tooDeepSit{tooDeep.slice()};
@@ -1210,8 +1229,8 @@ public:
         {
             // Make an otherwise legit STTx with a duplicate field.  Should
             // generate an exception when we deserialize.
-            auto const keypair = randomKeyPair(KeyType::secp256k1);
-            STTx acctSet(ttACCOUNT_SET, [&keypair](auto& obj) {
+            auto const keypair = randomKeyPair(KeyType::Secp256k1);
+            STTx const acctSet(ttACCOUNT_SET, [&keypair](auto& obj) {
                 obj.setAccountID(sfAccount, calcAccountID(keypair.first));
                 obj.setFieldU32(sfSequence, 7);
                 obj.setFieldAmount(sfFee, STAmount(2557891634ull));
@@ -1260,7 +1279,7 @@ public:
             // from earlier versions results in "Unknown field". Either way,
             // we expect an exception from STTx, but the specific message will
             // vary.
-            BEAST_EXPECT(!tx2.ParseFromArray(payload1, sizeof(payload1)));
+            BEAST_EXPECT(!tx2.ParseFromArray(kPayload1, sizeof(kPayload1)));
 
             xrpl::SerialIter sit(xrpl::makeSlice(tx2.rawtransaction()));
 
@@ -1274,7 +1293,7 @@ public:
 
         try
         {
-            xrpl::SerialIter sit{payload2};
+            xrpl::SerialIter sit{kPayload2};
             auto stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
@@ -1285,7 +1304,7 @@ public:
 
         try
         {
-            xrpl::SerialIter sit{payload3};
+            xrpl::SerialIter sit{kPayload3};
             auto stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
@@ -1296,7 +1315,7 @@ public:
 
         try
         {
-            xrpl::SerialIter sit{payload4};
+            xrpl::SerialIter sit{kPayload4};
             auto stx = std::make_shared<xrpl::STTx const>(sit);
             fail("An exception should have been thrown");
         }
@@ -1320,7 +1339,7 @@ public:
 
         // Rules store a reference to the presets. Create a local to guarantee
         // proper lifetime.
-        std::unordered_set<uint256, beast::uhash<>> const presets;
+        std::unordered_set<uint256, beast::Uhash<>> const presets;
         Rules const defaultRules{presets};
         BEAST_EXPECT(!defaultRules.enabled(featureAMM));
 
@@ -1329,12 +1348,12 @@ public:
         Serializer rawTxn;
         j.add(rawTxn);
         SerialIter sit(rawTxn.slice());
-        STTx copy(sit);
+        STTx const copy(sit);
 
         if (copy != j)
         {
-            log << "j=" << j.getJson(JsonOptions::none) << '\n'
-                << "copy=" << copy.getJson(JsonOptions::none) << std::endl;
+            log << "j=" << j.getJson(JsonOptions::Values::None) << '\n'
+                << "copy=" << copy.getJson(JsonOptions::Values::None) << std::endl;
             fail("Transaction fails serialize/deserialize test");
         }
         else
@@ -1342,15 +1361,15 @@ public:
             pass();
         }
 
-        STParsedJSONObject parsed("test", j.getJson(JsonOptions::none));
+        STParsedJSONObject parsed("test", j.getJson(JsonOptions::Values::None));
         if (!parsed.object.has_value())
         {
             fail("Unable to build object from json");
         }
         else if (STObject(j) != parsed.object)
         {
-            log << "ORIG: " << j.getJson(JsonOptions::none) << '\n'
-                << "BUILT " << parsed.object->getJson(JsonOptions::none) << std::endl;
+            log << "ORIG: " << j.getJson(JsonOptions::Values::None) << '\n'
+                << "BUILT " << parsed.object->getJson(JsonOptions::Values::None) << std::endl;
             fail("Built a different transaction");
         }
         else
@@ -1362,10 +1381,10 @@ public:
     void
     testObjectCtorErrors()
     {
-        auto const kp1 = randomKeyPair(KeyType::secp256k1);
+        auto const kp1 = randomKeyPair(KeyType::Secp256k1);
         auto const id1 = calcAccountID(kp1.first);
 
-        auto const kp2 = randomKeyPair(KeyType::secp256k1);
+        auto const kp2 = randomKeyPair(KeyType::Secp256k1);
         auto const id2 = calcAccountID(kp2.first);
 
         // Lambda that returns a Payment STObject.
@@ -1445,13 +1464,13 @@ public:
     }
 };
 
-class InnerObjectFormatsSerializer_test : public beast::unit_test::suite
+class InnerObjectFormatsSerializer_test : public beast::unit_test::Suite
 {
 public:
     void
     run() override
     {
-        auto const kp1 = randomKeyPair(KeyType::secp256k1);
+        auto const kp1 = randomKeyPair(KeyType::Secp256k1);
         auto const id1 = calcAccountID(kp1.first);
 
         STTx txn(ttACCOUNT_SET, [&id1, &kp1](auto& obj) {
@@ -1462,11 +1481,11 @@ public:
         });
 
         // Create fields for a SigningAccount
-        auto const kp2 = randomKeyPair(KeyType::secp256k1);
+        auto const kp2 = randomKeyPair(KeyType::Secp256k1);
         auto const id2 = calcAccountID(kp2.first);
 
         // Get the stream of the transaction for use in multi-signing.
-        Serializer s = buildMultiSigningData(txn, id2);
+        Serializer const s = buildMultiSigningData(txn, id2);
 
         auto const saMultiSignature = sign(kp2.first, kp2.second, s.slice());
 
@@ -1485,7 +1504,7 @@ public:
         auto testMalformedSigningAccount = [this, &txn](STObject const& signer, bool expectPass) {
             // Create SigningAccounts array.
             STArray signers(sfSigners, 1);
-            signers.push_back(signer);
+            signers.pushBack(signer);
 
             // Insert signers into transaction.
             STTx tempTxn(txn);
@@ -1497,7 +1516,7 @@ public:
             bool serialized = false;
             try
             {
-                STTx copy(sit);
+                STTx const copy(sit);
                 serialized = true;
             }
             catch (std::exception const&)

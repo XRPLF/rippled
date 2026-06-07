@@ -1,11 +1,26 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/last_ledger_sequence.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/protocol/TER.h>
 
-namespace xrpl {
-namespace test {
+#include <memory>
+#include <vector>
 
-struct Transaction_ordering_test : public beast::unit_test::suite
+namespace xrpl::test {
+
+struct Transaction_ordering_test : public beast::unit_test::Suite
 {
     void
     testCorrectOrder()
@@ -19,8 +34,8 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         auto const aliceSequence = env.seq(alice);
 
-        auto const tx1 = env.jt(noop(alice), seq(aliceSequence));
-        auto const tx2 = env.jt(noop(alice), seq(aliceSequence + 1), last_ledger_seq(7));
+        auto const tx1 = env.jt(noop(alice), Seq(aliceSequence));
+        auto const tx2 = env.jt(noop(alice), Seq(aliceSequence + 1), LastLedgerSeq(7));
 
         env(tx1);
         env.close();
@@ -49,7 +64,7 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         testcase("Incorrect order");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = false;
+            cfg->forceMultiThread = false;
             return cfg;
         }));
 
@@ -58,10 +73,10 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         auto const aliceSequence = env.seq(alice);
 
-        auto const tx1 = env.jt(noop(alice), seq(aliceSequence));
-        auto const tx2 = env.jt(noop(alice), seq(aliceSequence + 1), last_ledger_seq(7));
+        auto const tx1 = env.jt(noop(alice), Seq(aliceSequence));
+        auto const tx2 = env.jt(noop(alice), Seq(aliceSequence + 1), LastLedgerSeq(7));
 
-        env(tx2, ter(terPRE_SEQ));
+        env(tx2, Ter(terPRE_SEQ));
         BEAST_EXPECT(env.seq(alice) == aliceSequence);
         env(tx1);
         env.app().getJobQueue().rendezvous();
@@ -87,7 +102,7 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         testcase("Incorrect order multiple intermediaries");
 
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FORCE_MULTI_THREAD = true;
+            cfg->forceMultiThread = true;
             return cfg;
         }));
 
@@ -95,26 +110,28 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         env.fund(XRP(1000), noripple(alice));
 
         auto const aliceSequence = env.seq(alice);
+        static constexpr auto kSize = 5;
 
         std::vector<JTx> tx;
-        for (auto i = 0; i < 5; ++i)
+        tx.reserve(kSize);
+        for (auto i = 0; i < kSize; ++i)
         {
-            tx.emplace_back(env.jt(noop(alice), seq(aliceSequence + i), last_ledger_seq(7)));
+            tx.emplace_back(env.jt(noop(alice), Seq(aliceSequence + i), LastLedgerSeq(7)));
         }
 
-        for (auto i = 1; i < 5; ++i)
+        for (auto i = 1; i < kSize; ++i)
         {
-            env(tx[i], ter(terPRE_SEQ));
+            env(tx[i], Ter(terPRE_SEQ));
             BEAST_EXPECT(env.seq(alice) == aliceSequence);
         }
 
         env(tx[0]);
         env.app().getJobQueue().rendezvous();
-        BEAST_EXPECT(env.seq(alice) == aliceSequence + 5);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + kSize);
 
         env.close();
 
-        for (auto i = 0; i < 5; ++i)
+        for (auto i = 0; i < kSize; ++i)
         {
             auto const result = env.rpc("tx", to_string(tx[i].stx->getTransactionID()));
             BEAST_EXPECT(result["result"]["meta"]["TransactionResult"] == "tesSUCCESS");
@@ -132,5 +149,4 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Transaction_ordering, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
