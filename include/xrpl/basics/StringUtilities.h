@@ -95,13 +95,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 }
 
 inline std::optional<Blob>
-strUnHex(std::string const& strSrc)
-{
-    return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
-}
-
-inline std::optional<Blob>
-strViewUnHex(std::string_view strSrc)
+strUnHex(std::string_view strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }

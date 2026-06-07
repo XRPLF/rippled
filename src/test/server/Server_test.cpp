@@ -133,7 +133,7 @@ public:
         static void
         onRequest(Session& session)
         {
-            session.write(std::string("Hello, world!\n"));
+            session.write(std::string_view("Hello, world!\n"));
             if (beast::rfc2616::isKeepAlive(session.request()))
             {
                 session.complete();

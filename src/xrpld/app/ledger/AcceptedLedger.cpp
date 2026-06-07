@@ -8,7 +8,7 @@
 
 namespace xrpl {
 
-AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> const& ledger) : ledger_(ledger)
+AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> ledger) : ledger_(std::move(ledger))
 {
     transactions_.reserve(256);
 
@@ -16,12 +16,12 @@ AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> const& ledger) : 
         for (auto const& item : txns)
         {
             transactions_.emplace_back(
-                std::make_unique<AcceptedLedgerTx>(ledger, item.first, item.second));
+                std::make_unique<AcceptedLedgerTx>(ledger_, item.first, item.second));
         }
     };
 
     transactions_.reserve(256);
-    insertAll(ledger->txs);
+    insertAll(ledger_->txs);
 
     std::ranges::sort(transactions_, [](auto const& a, auto const& b) {
         return a->getTxnSeq() < b->getTxnSeq();

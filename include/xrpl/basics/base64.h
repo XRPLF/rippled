@@ -43,7 +43,7 @@ std::string
 base64Encode(std::uint8_t const* data, std::size_t len);
 
 inline std::string
-base64Encode(std::string const& s)
+base64Encode(std::string_view s)
 {
     return base64Encode(reinterpret_cast<std::uint8_t const*>(s.data()), s.size());
 }

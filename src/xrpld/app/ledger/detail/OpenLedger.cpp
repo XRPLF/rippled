@@ -82,7 +82,7 @@ OpenLedger::accept(
     bool retriesFirst,
     OrderedTxs& retries,
     ApplyFlags flags,
-    std::string const& suffix,
+    std::string_view suffix,
     modify_type const& f)
 {
     JLOG(j_.trace()) << "accept ledger " << ledger->seq() << " " << suffix;

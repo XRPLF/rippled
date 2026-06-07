@@ -31,7 +31,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Event(std::shared_ptr<EventImpl> const& impl) : impl_(impl)
+    explicit Event(std::shared_ptr<EventImpl> impl) : impl_(std::move(impl))
     {
     }
 

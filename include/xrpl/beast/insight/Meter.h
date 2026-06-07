@@ -28,7 +28,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Meter(std::shared_ptr<MeterImpl> const& impl) : impl_(impl)
+    explicit Meter(std::shared_ptr<MeterImpl> impl) : impl_(std::move(impl))
     {
     }
 

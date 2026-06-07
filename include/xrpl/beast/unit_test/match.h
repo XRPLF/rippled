@@ -41,7 +41,7 @@ private:
 
 public:
     template <class = void>
-    explicit Selector(ModeT mode, std::string const& pattern = "");
+    explicit Selector(ModeT mode, std::string pattern = "");
 
     template <class = void>
     bool
@@ -51,7 +51,7 @@ public:
 //------------------------------------------------------------------------------
 
 template <class>
-Selector::Selector(ModeT mode, std::string const& pattern) : mode_(mode), pat_(pattern)
+Selector::Selector(ModeT mode, std::string pattern) : mode_(mode), pat_(std::move(pattern))
 {
     if (mode_ == ModeT::Automatch && pattern.empty())
         mode_ = ModeT::All;

@@ -42,7 +42,8 @@ public:
     {
     }
 
-    Status(ErrorCodeI e, std::string const& s) : type_(Type::ErrorCodeI), code_(e), messages_({s})
+    Status(ErrorCodeI e, std::string s)
+        : type_(Type::ErrorCodeI), code_(e), messages_({std::move(s)})
     {
     }
 

@@ -31,7 +31,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Gauge(std::shared_ptr<GaugeImpl> const& impl) : impl_(impl)
+    explicit Gauge(std::shared_ptr<GaugeImpl> impl) : impl_(std::move(impl))
     {
     }
 
