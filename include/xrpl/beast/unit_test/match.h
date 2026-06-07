@@ -53,7 +53,7 @@ public:
 template <class>
 Selector::Selector(ModeT mode, std::string pattern) : mode_(mode), pat_(std::move(pattern))
 {
-    if (mode_ == ModeT::Automatch && pattern.empty())
+    if (mode_ == ModeT::Automatch && pat_.empty())
         mode_ = ModeT::All;
 }
 

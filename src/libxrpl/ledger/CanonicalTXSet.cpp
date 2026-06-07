@@ -42,9 +42,8 @@ CanonicalTXSet::accountKey(AccountID const& account)
 void
 CanonicalTXSet::insert(std::shared_ptr<STTx const> txn)
 {
-    Key const key(
-        accountKey(txn->getAccountID(sfAccount)), txn->getSeqProxy(), txn->getTransactionID());
-    map_.insert(std::make_pair(key, std::move(txn)));
+    Key key(accountKey(txn->getAccountID(sfAccount)), txn->getSeqProxy(), txn->getTransactionID());
+    map_.insert(std::make_pair(std::move(key), std::move(txn)));
 }
 
 std::shared_ptr<STTx const>
