@@ -3,6 +3,7 @@
 #include <xrpl/beast/insight/CounterImpl.h>
 
 #include <memory>
+#include <utility>
 
 namespace beast::insight {
 

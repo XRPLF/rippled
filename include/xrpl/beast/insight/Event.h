@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <memory>
+#include <utility>
 
 namespace beast::insight {
 

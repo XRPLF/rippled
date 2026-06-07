@@ -3,6 +3,7 @@
 #include <xrpl/beast/insight/GaugeImpl.h>
 
 #include <memory>
+#include <utility>
 
 namespace beast::insight {
 
