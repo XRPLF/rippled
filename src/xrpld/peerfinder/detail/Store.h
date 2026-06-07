@@ -1,5 +1,10 @@
 #pragma once
 
+#include <xrpl/beast/net/IPEndpoint.h>
+
+#include <functional>
+#include <vector>
+
 namespace xrpl::PeerFinder {
 
 /** Abstract persistence for PeerFinder data. */
