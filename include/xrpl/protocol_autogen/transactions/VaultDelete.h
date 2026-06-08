@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfMemoData (soeOPTIONAL)
+     * @brief Get sfMemoData (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -139,7 +139,7 @@ public:
     }
 
     /**
-     * @brief Set sfMemoData (soeOPTIONAL)
+     * @brief Set sfMemoData (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     VaultDeleteBuilder&
