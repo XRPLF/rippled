@@ -26,8 +26,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
-
 namespace xrpl {
 
 bool
@@ -45,7 +43,7 @@ LoanManage::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanManage::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::zero)
+    if (ctx.tx[sfLoanID] == beast::kZero)
         return temINVALID;
 
     // Flags are mutually exclusive
@@ -167,7 +165,7 @@ LoanManage::defaultLoan(
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
     auto const defaultCovered = [&]() {
         // Always round the minimum required up.
-        NumberRoundModeGuard const mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
         auto const covered = roundToAsset(
@@ -206,8 +204,8 @@ LoanManage::defaultLoan(
             // LCOV_EXCL_STOP
         }
 
-        auto const vaultDefaultRounded =
-            roundToAsset(vaultAsset, vaultDefaultAmount, vaultScale, Number::downward);
+        auto const vaultDefaultRounded = roundToAsset(
+            vaultAsset, vaultDefaultAmount, vaultScale, Number::RoundingMode::Downward);
         vaultTotalProxy -= vaultDefaultRounded;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:
@@ -418,13 +416,13 @@ LoanManage::doApply()
             return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
         if (tx.isFlag(tfLoanUnimpair))
             return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-        // Noop, as described above.
+        // NoOp, as described above.
         return tesSUCCESS;
     }();
 
     // Pre-amendment, associateAsset was only called on the noop (no flags)
     // path. Post-amendment, we call associateAsset on all successful paths.
-    if (view.rules().enabled(fixSecurity3_1_3) && isTesSuccess(result))
+    if (view.rules().enabled(fixCleanup3_1_3) && isTesSuccess(result))
     {
         associateAsset(*loanSle, vaultAsset);
         associateAsset(*brokerSle, vaultAsset);
@@ -435,16 +433,15 @@ LoanManage::doApply()
 }
 
 void
-LoanManage::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+LoanManage::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 LoanManage::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

@@ -27,7 +27,7 @@ public:
 
     /** Converts this charge into a human readable string. */
     [[nodiscard]] std::string
-    to_string() const;
+    toString() const;
 
     bool
     operator==(Charge const&) const;
@@ -39,8 +39,8 @@ public:
     operator*(value_type m) const;
 
 private:
-    value_type m_cost;
-    std::string m_label;
+    value_type cost_;
+    std::string label_;
 };
 
 std::ostream&

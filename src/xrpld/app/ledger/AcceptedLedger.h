@@ -30,7 +30,7 @@ public:
     [[nodiscard]] std::shared_ptr<ReadView const> const&
     getLedger() const
     {
-        return mLedger;
+        return ledger_;
     }
 
     [[nodiscard]] std::size_t
@@ -52,7 +52,7 @@ public:
     }
 
 private:
-    std::shared_ptr<ReadView const> mLedger;
+    std::shared_ptr<ReadView const> ledger_;
     std::vector<std::unique_ptr<AcceptedLedgerTx>> transactions_;
 };
 

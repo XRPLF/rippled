@@ -22,23 +22,23 @@ class Dir
 private:
     ReadView const* view_ = nullptr;
     Keylet root_;
-    std::shared_ptr<SLE const> sle_;
+    SLE::const_pointer sle_;
     STVector256 const* indexes_ = nullptr;
 
 public:
-    class const_iterator;
-    using value_type = std::shared_ptr<SLE const>;
+    class ConstIterator;
+    using value_type = SLE::const_pointer;
 
     Dir(ReadView const&, Keylet const&);
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const;
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const;
 };
 
-class Dir::const_iterator
+class Dir::ConstIterator
 {
 public:
     using value_type = Dir::value_type;
@@ -48,10 +48,10 @@ public:
     using iterator_category = std::forward_iterator_tag;
 
     bool
-    operator==(const_iterator const& other) const;
+    operator==(ConstIterator const& other) const;
 
     bool
-    operator!=(const_iterator const& other) const
+    operator!=(ConstIterator const& other) const
     {
         return !(*this == other);
     }
@@ -65,17 +65,17 @@ public:
         return &**this;
     }
 
-    const_iterator&
+    ConstIterator&
     operator++();
 
-    const_iterator
+    ConstIterator
     operator++(int);
 
-    const_iterator&
-    next_page();
+    ConstIterator&
+    nextPage();
 
     std::size_t
-    page_size();
+    pageSize();
 
     Keylet const&
     page() const
@@ -92,7 +92,7 @@ public:
 private:
     friend class Dir;
 
-    const_iterator(ReadView const& view, Keylet const& root, Keylet const& page)
+    ConstIterator(ReadView const& view, Keylet const& root, Keylet const& page)
         : view_(&view), root_(root), page_(page)
     {
     }
@@ -102,7 +102,7 @@ private:
     Keylet page_;
     uint256 index_;
     std::optional<value_type> mutable cache_;
-    std::shared_ptr<SLE const> sle_;
+    SLE::const_pointer sle_;
     STVector256 const* indexes_ = nullptr;
     std::vector<uint256>::const_iterator it_;
 };

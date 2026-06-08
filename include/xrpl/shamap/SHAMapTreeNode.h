@@ -7,24 +7,31 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
 namespace xrpl {
 
+class SHAMapTreeNode;
+using SHAMapTreeNodePtr = intr_ptr::SharedPtr<SHAMapTreeNode>;
+
 // These are wire-protocol identifiers used during serialization to encode the
 // type of a node. They should not be arbitrarily be changed.
-static constexpr unsigned char const wireTypeTransaction = 0;
-static constexpr unsigned char const wireTypeAccountState = 1;
-static constexpr unsigned char const wireTypeInner = 2;
-static constexpr unsigned char const wireTypeCompressedInner = 3;
-static constexpr unsigned char const wireTypeTransactionWithMeta = 4;
+static constexpr unsigned char const kWireTypeTransaction = 0;
+static constexpr unsigned char const kWireTypeAccountState = 1;
+static constexpr unsigned char const kWireTypeInner = 2;
+static constexpr unsigned char const kWireTypeCompressedInner = 3;
+static constexpr unsigned char const kWireTypeTransactionWithMeta = 4;
+
+// Lower bound on SHAMap leaf item payload size, in bytes.
+inline constexpr std::size_t kMinShaMapItemBytes = 12;
 
 enum class SHAMapNodeType {
-    tnINNER = 1,
-    tnTRANSACTION_NM = 2,  // transaction, no metadata
-    tnTRANSACTION_MD = 3,  // transaction, with metadata
-    tnACCOUNT_STATE = 4
+    TnInner = 1,
+    TnTransactionNm = 2,  // transaction, no metadata
+    TnTransactionMd = 3,  // transaction, with metadata
+    TnAccountState = 4
 };
 
 class SHAMapTreeNode : public IntrusiveRefCounts
@@ -108,7 +115,7 @@ public:
     }
 
     /** Make a copy of this node, setting the owner. */
-    virtual intr_ptr::SharedPtr<SHAMapTreeNode>
+    virtual SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const = 0;
     /** @} */
 
@@ -147,22 +154,22 @@ public:
     getString(SHAMapNodeID const&) const;
 
     virtual void
-    invariants(bool is_root = false) const = 0;
+    invariants(bool isRoot = false) const = 0;
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeFromWire(Slice rawNode);
 
 private:
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeAccountState(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid);
 };
 

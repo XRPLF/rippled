@@ -27,7 +27,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -138,10 +137,10 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     // Consider removing the offer if:
     //  o `TakerPays` is XRP (because of XRP drops granularity) or
     //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
-    constexpr bool const inIsXRP = std::is_same_v<TTakerPays, XRPAmount>;
-    constexpr bool const outIsXRP = std::is_same_v<TTakerGets, XRPAmount>;
+    static constexpr bool kInIsXrp = std::is_same_v<TTakerPays, XRPAmount>;
+    static constexpr bool kOutIsXrp = std::is_same_v<TTakerGets, XRPAmount>;
 
-    if constexpr (outIsXRP)
+    if constexpr (kOutIsXrp)
     {
         // If `TakerGets` is XRP, the worst this offer's quality can change is
         // to about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
@@ -156,7 +155,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
 
-    if constexpr (!inIsXRP && !outIsXRP)
+    if constexpr (!kInIsXrp && !kOutIsXrp)
     {
         if (Number(ofrAmts.in) >= Number(ofrAmts.out))
             return false;
@@ -171,7 +170,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
             //
             // It turns out we can prevent order book blocking by rounding down
             // the ceil_out() result.
-            return offer_.quality().ceil_out_strict(ofrAmts, ownerFunds, /* roundUp */ false);
+            return offer_.quality().ceilOutStrict(ofrAmts, ownerFunds, /* roundUp */ false);
         }
         return ofrAmts;
     }();
@@ -205,7 +204,7 @@ TOfferStreamBase<TIn, TOut>::step()
         if (!tip_.step(j_))
             return false;
 
-        std::shared_ptr<SLE> const entry = tip_.entry();
+        SLE::pointer const entry = tip_.entry();
 
         // If we exceed the maximum number of allowed steps, we're done.
         if (!counter_.step())
@@ -266,26 +265,26 @@ TOfferStreamBase<TIn, TOut>::step()
             offer_.owner(),
             amount.out,
             offer_.assetOut(),
-            fhZERO_IF_FROZEN,
-            ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             j_);
 
         // Check for unfunded offer
-        if (*ownerFunds_ <= beast::zero)
+        if (*ownerFunds_ <= beast::kZero)
         {
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
             // offer is "found unfunded" versus "became unfunded"
-            auto const original_funds = accountFundsHelper(
+            auto const originalFunds = accountFundsHelper(
                 cancelView_,
                 offer_.owner(),
                 amount.out,
                 offer_.assetOut(),
-                fhZERO_IF_FROZEN,
-                ahZERO_IF_UNAUTHORIZED,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
                 j_);
 
-            if (original_funds == *ownerFunds_)
+            if (originalFunds == *ownerFunds_)
             {
                 permRmOffer(entry->key());
                 JLOG(j_.trace()) << "Removing unfunded offer " << entry->key();
@@ -301,16 +300,16 @@ TOfferStreamBase<TIn, TOut>::step()
 
         if (shouldRmSmallIncreasedQOffer<TIn, TOut>())
         {
-            auto const original_funds = accountFundsHelper(
+            auto const originalFunds = accountFundsHelper(
                 cancelView_,
                 offer_.owner(),
                 amount.out,
                 offer_.assetOut(),
-                fhZERO_IF_FROZEN,
-                ahZERO_IF_UNAUTHORIZED,
+                FreezeHandling::ZeroIfFrozen,
+                AuthHandling::ZeroIfUnauthorized,
                 j_);
 
-            if (original_funds == *ownerFunds_)
+            if (originalFunds == *ownerFunds_)
             {
                 permRmOffer(entry->key());
                 JLOG(j_.trace()) << "Removing tiny offer due to reduced quality " << entry->key();

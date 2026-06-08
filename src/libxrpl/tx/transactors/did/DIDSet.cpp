@@ -55,15 +55,15 @@ DIDSet::preflight(PreflightContext const& ctx)
         return false;
     };
 
-    if (isTooLong(sfURI, maxDIDURILength) || isTooLong(sfDIDDocument, maxDIDDocumentLength) ||
-        isTooLong(sfData, maxDIDDataLength))
+    if (isTooLong(sfURI, kMaxDidUriLength) || isTooLong(sfDIDDocument, kMaxDidDocumentLength) ||
+        isTooLong(sfData, kMaxDidDataLength))
         return temMALFORMED;
 
     return tesSUCCESS;
 }
 
 static TER
-addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owner)
+addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
 {
     auto const sleAccount = ctx.view().peek(keylet::account(owner));
     if (!sleAccount)
@@ -99,7 +99,7 @@ TER
 DIDSet::doApply()
 {
     // Edit ledger object if it already exists
-    Keylet const didKeylet = keylet::did(account_);
+    Keylet const didKeylet = keylet::did(accountID_);
     if (auto const sleDID = ctx_.view().peek(didKeylet))
     {
         auto update = [&](auto const& sField) {
@@ -130,7 +130,7 @@ DIDSet::doApply()
 
     // Create new ledger object otherwise
     auto const sleDID = std::make_shared<SLE>(didKeylet);
-    (*sleDID)[sfAccount] = account_;
+    (*sleDID)[sfAccount] = accountID_;
 
     auto set = [&](auto const& sField) {
         if (auto const field = ctx_.tx[~sField]; field && !field->empty())
@@ -146,20 +146,19 @@ DIDSet::doApply()
         return tecEMPTY_DID;
     }
 
-    return addSLE(ctx_, sleDID, account_);
+    return addSLE(ctx_, sleDID, accountID_);
 }
 
 void
-DIDSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+DIDSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 DIDSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

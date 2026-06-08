@@ -73,7 +73,7 @@ public:
     /** If this is a strong pointer, return the strong count. Otherwise return 0
      */
     [[nodiscard]] std::size_t
-    use_count() const;
+    useCount() const;
 
     /** Return true if there is a non-zero strong count. */
     [[nodiscard]] bool
