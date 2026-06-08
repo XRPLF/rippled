@@ -14,6 +14,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
+
 namespace xrpl::test {
 
 class STIssue_test : public beast::unit_test::Suite
