@@ -18,6 +18,22 @@
 
 namespace xrpl {
 
+namespace detail {
+
+// Replace-policy tags selecting how TaggedCache::canonicalizeImpl resolves a
+// collision when the key already exists (defined in TaggedCache.ipp):
+//   - ReplaceCached: always replace the cached value with `data`. `data` is
+//     never written back and may be const.
+//   - ReplaceClient: keep the cached value and write it back into `data` (the
+//     client's pointer), which must therefore be writable.
+//   - ReplaceDynamically: call the supplied callback to decide per call; `data`
+//     is written back when the cached value is kept, so it must be writable.
+struct ReplaceCached;
+struct ReplaceClient;
+struct ReplaceDynamically;
+
+}  // namespace detail
+
 /** Map/cache combination.
     This class implements a cache and a map. The cache keeps objects alive
     in the map. The map allows multiple code paths that reference objects
@@ -100,9 +116,12 @@ public:
 private:
     // Selects the `data` parameter type of canonicalizeImpl from the replace
     // policy: const for detail::ReplaceCached (never written back), otherwise
-    // writable. Defined in TaggedCache.ipp.
+    // writable.
     template <typename Policy>
-    struct CanonicalizeClientPointerType;
+    using CanonicalizeClientPointerType = std::conditional_t<
+        std::is_same_v<detail::ReplaceCached, Policy>,
+        SharedPointerType const&,
+        SharedPointerType&>;
 
     /** Shared implementation of the canonicalize family.
 
@@ -116,7 +135,7 @@ private:
     bool
     canonicalizeImpl(
         key_type const& key,
-        typename CanonicalizeClientPointerType<Policy>::Type data,
+        CanonicalizeClientPointerType<Policy> data,
         Policy policy,
         Callback&& replaceCallback = nullptr);
 

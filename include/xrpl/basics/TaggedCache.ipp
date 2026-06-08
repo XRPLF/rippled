@@ -38,32 +38,6 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-template <typename Policy>
-struct TaggedCache<
-    Key,
-    T,
-    IsKeyCache,
-    SharedWeakUnionPointer,
-    SharedPointerType,
-    Hash,
-    KeyEqual,
-    Mutex>::CanonicalizeClientPointerType
-{
-    using Type = std::conditional_t<
-        std::is_same_v<detail::ReplaceCached, Policy>,
-        SharedPointerType const&,
-        SharedPointerType&>;
-};
-
-template <
-    class Key,
-    class T,
-    bool IsKeyCache,
-    class SharedWeakUnionPointer,
-    class SharedPointerType,
-    class Hash,
-    class KeyEqual,
-    class Mutex>
 inline TaggedCache<
     Key,
     T,
@@ -355,7 +329,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalizeImpl(
         key_type const& key,
-        typename CanonicalizeClientPointerType<Policy>::Type data,
+        CanonicalizeClientPointerType<Policy> data,
         [[maybe_unused]] Policy policy,
         [[maybe_unused]] Callback&& replaceCallback)
 {
