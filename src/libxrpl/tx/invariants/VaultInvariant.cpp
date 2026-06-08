@@ -23,7 +23,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <variant>
 #include <vector>
@@ -63,10 +62,7 @@ ValidVault::Shares::make(SLE const& from)
 }
 
 void
-ValidVault::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     // If `before` is empty, this means an object is being created, in which
     // case `isDelete` must be false. Otherwise `before` and `after` are set and

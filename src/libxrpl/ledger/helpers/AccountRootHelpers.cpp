@@ -202,7 +202,7 @@ AccountRoot<ViewT>::isPseudoAccount(std::set<SField const*> const& pseudoFieldFi
             }) > 0;
 }
 
-Expected<std::shared_ptr<SLE>, TER>
+Expected<SLE::pointer, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField)
 {
     [[maybe_unused]]

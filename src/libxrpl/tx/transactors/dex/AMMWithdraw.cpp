@@ -33,7 +33,6 @@
 #include <bit>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -759,7 +758,7 @@ AMMWithdraw::equalWithdrawTokens(
 std::pair<TER, bool>
 AMMWithdraw::deleteAMMAccountIfEmpty(
     Sandbox& sb,
-    std::shared_ptr<SLE> const ammSle,
+    SLE::pointer const ammSle,
     STAmount const& lpTokenBalance,
     Asset const& asset1,
     Asset const& asset2,
@@ -1138,10 +1137,7 @@ AMMWithdraw::isWithdrawAll(STTx const& tx)
     return WithdrawAll::No;
 }
 void
-AMMWithdraw::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

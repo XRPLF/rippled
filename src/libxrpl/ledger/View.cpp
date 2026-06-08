@@ -32,7 +32,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <set>
 
@@ -332,11 +331,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 TER
-dirLink(
-    ApplyView& view,
-    AccountID const& owner,
-    std::shared_ptr<SLE>& object,
-    SF_UINT64 const& node)
+dirLink(ApplyView& view, AccountID const& owner, SLE::pointer& object, SF_UINT64 const& node)
 {
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
@@ -488,7 +483,7 @@ cleanupOnAccountDelete(
     std::optional<uint16_t> maxNodesToDelete)
 {
     // Delete all the entries in the account directory.
-    std::shared_ptr<SLE> sleDirNode{};
+    SLE::pointer sleDirNode{};
     unsigned int uDirEntry{0};
     uint256 dirEntry{beast::kZero};
     std::uint32_t deleted = 0;

@@ -264,7 +264,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
     [[nodiscard]] TER
-    check(StrandContext const& ctx, AccountRoot<ReadView> const& srcRoot) const;
+    check(StrandContext const& ctx, RAccountRoot const& srcRoot) const;
 
     [[nodiscard]] std::string
     logString() const override
@@ -312,7 +312,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
     static TER
-    check(StrandContext const& ctx, AccountRoot<ReadView> const& srcRoot);
+    check(StrandContext const& ctx, RAccountRoot const& srcRoot);
 
     [[nodiscard]] std::string
     logString() const override
@@ -328,7 +328,7 @@ public:
 //------------------------------------------------------------------------------
 
 TER
-MPTEndpointPaymentStep::check(StrandContext const& ctx, AccountRoot<ReadView> const& srcRoot) const
+MPTEndpointPaymentStep::check(StrandContext const& ctx, RAccountRoot const& srcRoot) const
 {
     // Since this is a payment, MPToken must be present.  Perform all
     // MPToken related checks.
@@ -392,7 +392,7 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, AccountRoot<ReadView> co
 }
 
 TER
-MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, AccountRoot<ReadView> const&)
+MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, RAccountRoot const&)
 {
     // The standard checks are all we can do because any remaining checks
     // require the existence of a MPToken.  Offer crossing does not

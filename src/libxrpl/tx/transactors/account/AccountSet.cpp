@@ -27,7 +27,6 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <cstdint>
-#include <memory>
 #include <unordered_set>
 
 namespace xrpl {
@@ -644,10 +643,7 @@ AccountSet::doApply()
 }
 
 void
-AccountSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AccountSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

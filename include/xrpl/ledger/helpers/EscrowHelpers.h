@@ -20,6 +20,7 @@ TER
 escrowUnlockApplyHelper(
     ApplyView& view,
     Rate lockedRate,
+    // TODO: can be simplified to WAccountRoot when fixCleanup3_2_0 is retired
     std::variant<std::shared_ptr<SLE>, WAccountRoot> dest,
     STAmount const& xrpBalance,
     STAmount const& amount,
@@ -34,6 +35,7 @@ inline TER
 escrowUnlockApplyHelper<Issue>(
     ApplyView& view,
     Rate lockedRate,
+    // TODO: can be simplified to WAccountRoot when fixCleanup3_2_0 is retired
     std::variant<std::shared_ptr<SLE>, WAccountRoot> dest,
     STAmount const& xrpBalance,
     STAmount const& amount,

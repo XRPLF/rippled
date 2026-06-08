@@ -23,7 +23,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -200,10 +199,7 @@ PaymentChannelClaim::doApply()
 }
 
 void
-PaymentChannelClaim::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+PaymentChannelClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

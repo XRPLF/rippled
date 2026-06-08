@@ -11,7 +11,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
-#include <memory>
 #include <set>
 #include <vector>
 
@@ -191,7 +190,7 @@ getPseudoAccountFields();
  * before using a field. The amendment check is **not** performed in
  * createPseudoAccount.
  */
-[[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
+[[nodiscard]] Expected<SLE::pointer, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField);
 
 }  // namespace xrpl
