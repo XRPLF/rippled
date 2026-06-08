@@ -72,7 +72,7 @@ Cluster::update(
 }
 
 void
-Cluster::for_each(std::function<void(ClusterNode const&)> func) const
+Cluster::forEach(std::function<void(ClusterNode const&)> func) const
 {
     std::scoped_lock const lock(mutex_);
     for (auto const& ni : nodes_)
@@ -82,7 +82,7 @@ Cluster::for_each(std::function<void(ClusterNode const&)> func) const
 bool
 Cluster::load(Section const& nodes)
 {
-    static boost::regex const re(
+    static boost::regex const kRE(
         "[[:space:]]*"       // skip leading whitespace
         "([[:alnum:]]+)"     // node identity
         "(?:"                // begin optional comment block
@@ -98,7 +98,7 @@ Cluster::load(Section const& nodes)
     {
         boost::smatch match;
 
-        if (!boost::regex_match(n, match, re))
+        if (!boost::regex_match(n, match, kRE))
         {
             JLOG(j_.error()) << "Malformed entry: '" << n << "'";
             return false;
@@ -118,7 +118,7 @@ Cluster::load(Section const& nodes)
             continue;
         }
 
-        update(*id, trim_whitespace(match[2]));
+        update(*id, trimWhitespace(match[2]));
     }
 
     return true;

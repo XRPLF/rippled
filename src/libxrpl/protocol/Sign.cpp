@@ -81,7 +81,7 @@ Serializer
 startMultiSigningData(STObject const& obj)
 {
     Serializer s;
-    s.add32(HashPrefix::txMultiSign);
+    s.add32(HashPrefix::TxMultiSign);
     obj.addWithoutSigningFields(s);
     return s;
 }

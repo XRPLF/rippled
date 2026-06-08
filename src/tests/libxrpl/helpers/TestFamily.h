@@ -7,8 +7,7 @@
 
 #include <memory>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /** Test implementation of Family for unit tests.
 
@@ -40,7 +39,7 @@ public:
         Section config;
         config.set("type", "memory");
         config.set("path", "TestFamily");
-        db_ = NodeStore::Manager::instance().make_Database(megabytes(4), scheduler_, 1, config, j);
+        db_ = NodeStore::Manager::instance().makeDatabase(megabytes(4), scheduler_, 1, config, j);
     }
 
     NodeStore::Database&
@@ -49,7 +48,7 @@ public:
         return *db_;
     }
 
-    NodeStore::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return *db_;
@@ -95,8 +94,8 @@ public:
     void
     reset() override
     {
-        fbCache_->reset();
-        tnCache_->reset();
+        (*fbCache_).reset();
+        (*tnCache_).reset();
     }
 
     /** Access the test clock for time manipulation in tests. */
@@ -107,5 +106,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

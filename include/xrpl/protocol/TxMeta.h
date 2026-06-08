@@ -55,7 +55,7 @@ public:
     [[nodiscard]] boost::container::flat_set<AccountID>
     getAffectedAccounts() const;
 
-    [[nodiscard]] Json::Value
+    [[nodiscard]] json::Value
     getJson(JsonOptions p) const
     {
         return getAsObject().getJson(p);

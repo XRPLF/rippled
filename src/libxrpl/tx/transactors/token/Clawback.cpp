@@ -23,8 +23,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <cstdint>
-#include <memory>
 #include <variant>
 
 namespace xrpl {
@@ -46,7 +44,7 @@ preflightHelper<Issue>(PreflightContext const& ctx)
     // The issuer field is used for the token holder instead
     AccountID const& holder = clawAmount.getIssuer();
 
-    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::zero)
+    if (issuer == holder || isXRP(clawAmount) || clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -69,7 +67,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == *mptHolder)
         return temMALFORMED;
 
-    if (clawAmount.mpt() > MPTAmount{maxMPTokenAmount} || clawAmount <= beast::zero)
+    if (clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount} || clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -105,12 +103,9 @@ preclaimHelper<Issue>(
     AccountID const& holder,
     STAmount const& clawAmount)
 {
-    std::uint32_t const issuerFlagsIn = sleIssuer.getFieldU32(sfFlags);
-
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
-        ((issuerFlagsIn & lsfNoFreeze) != 0u))
+    if (!sleIssuer.isFlag(lsfAllowTrustLineClawback) || sleIssuer.isFlag(lsfNoFreeze))
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
@@ -121,11 +116,11 @@ preclaimHelper<Issue>(
     STAmount const balance = (*sleRippleState)[sfBalance];
 
     // If balance is positive, issuer must have higher address than holder
-    if (balance > beast::zero && issuer < holder)
+    if (balance > beast::kZero && issuer < holder)
         return tecNO_PERMISSION;
 
     // If balance is negative, issuer must have lower address than holder
-    if (balance < beast::zero && issuer > holder)
+    if (balance < beast::kZero && issuer > holder)
         return tecNO_PERMISSION;
 
     // At this point, we know that issuer and holder accounts
@@ -142,8 +137,8 @@ preclaimHelper<Issue>(
             holder,
             clawAmount.get<Issue>().currency,
             issuer,
-            FreezeHandling::fhIGNORE_FREEZE,
-            ctx.j) <= beast::zero)
+            FreezeHandling::IgnoreFreeze,
+            ctx.j) <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -163,7 +158,7 @@ preclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (((*sleIssuance)[sfFlags] & lsfMPTCanClawback) == 0u)
+    if (!sleIssuance->isFlag(lsfMPTCanClawback))
         return tecNO_PERMISSION;
 
     if (sleIssuance->getAccountID(sfIssuer) != issuer)
@@ -176,9 +171,9 @@ preclaimHelper<MPTIssue>(
             ctx.view,
             holder,
             clawAmount.get<MPTIssue>(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            ctx.j) <= beast::zero)
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            ctx.j) <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -237,7 +232,7 @@ applyHelper<Issue>(ApplyContext& ctx)
         holder,
         clawAmount.get<Issue>().currency,
         clawAmount.getIssuer(),
-        FreezeHandling::fhIGNORE_FREEZE,
+        FreezeHandling::IgnoreFreeze,
         ctx.journal);
 
     return directSendNoFee(
@@ -257,8 +252,8 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ctx.view(),
         holder,
         clawAmount.get<MPTIssue>(),
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
         ctx.journal);
 
     return directSendNoFee(
@@ -279,16 +274,15 @@ Clawback::doApply()
 }
 
 void
-Clawback::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+Clawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

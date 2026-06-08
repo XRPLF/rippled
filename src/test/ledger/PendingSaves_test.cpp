@@ -3,7 +3,7 @@
 
 namespace xrpl::test {
 
-struct PendingSaves_test : public beast::unit_test::suite
+struct PendingSaves_test : public beast::unit_test::Suite
 {
     void
     testSaves()

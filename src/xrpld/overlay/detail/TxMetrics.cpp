@@ -77,13 +77,13 @@ SingleMetrics::addMetrics(std::uint32_t val)
 {
     using namespace std::chrono_literals;
     accum += val;
-    N++;
+    n++;
     auto const timeElapsed = clock_type::now() - intervalStart;
     auto const timeElapsedInSecs = std::chrono::duration_cast<std::chrono::seconds>(timeElapsed);
 
     if (timeElapsedInSecs >= 1s)
     {
-        auto const avg = accum / (perTimeUnit ? timeElapsedInSecs.count() : N);
+        auto const avg = accum / (perTimeUnit ? timeElapsedInSecs.count() : n);
         rollingAvgAggregate.push_back(avg);
 
         auto const total =
@@ -92,16 +92,16 @@ SingleMetrics::addMetrics(std::uint32_t val)
 
         intervalStart = clock_type::now();
         accum = 0;
-        N = 0;
+        n = 0;
     }
 }
 
-Json::Value
+json::Value
 TxMetrics::json() const
 {
     std::scoped_lock const l(mutex);
 
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ValueType::Object);
 
     ret[jss::txr_tx_cnt] = std::to_string(tx.m1.rollingAvg);
     ret[jss::txr_tx_sz] = std::to_string(tx.m2.rollingAvg);

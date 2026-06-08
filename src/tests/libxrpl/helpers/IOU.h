@@ -39,7 +39,7 @@ public:
      * @param issuer The account that issues this currency.
      */
     IOU(std::string_view currencyCode, Account const& issuer)
-        : currency_(to_currency(std::string(currencyCode))), issuer_(issuer.id())
+        : currency_(toCurrency(std::string(currencyCode))), issuer_(issuer.id())
     {
         XRPL_ASSERT(!isXRP(currency_), "IOU: currency code must not resolve to XRP");
     }
@@ -49,8 +49,7 @@ public:
      * @param currency The Currency object.
      * @param issuer The account that issues this currency.
      */
-    IOU(Currency currency, Account const& issuer)
-        : currency_(std::move(currency)), issuer_(issuer.id())
+    IOU(Currency currency, Account const& issuer) : currency_(currency), issuer_(issuer.id())
     {
         XRPL_ASSERT(!isXRP(currency_), "IOU: currency code must not resolve to XRP");
     }

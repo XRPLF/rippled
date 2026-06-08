@@ -15,42 +15,38 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <memory>
 #include <vector>
 
 namespace xrpl {
 
 void
-ValidPermissionedDomain::visitEntry(
-    bool isDel,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::const_ref after)
 {
     if (before && before->getType() != ltPERMISSIONED_DOMAIN)
         return;
     if (after && after->getType() != ltPERMISSIONED_DOMAIN)
         return;
 
-    auto check = [isDel](std::vector<SleStatus>& sleStatus, std::shared_ptr<SLE const> const& sle) {
+    auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE::const_ref sle) {
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
         SleStatus ss{
-            .credentialsSize_ = credentials.size(),
-            .isSorted_ = false,
-            .isUnique_ = !sorted.empty(),
-            .isDelete_ = isDel};
+            .credentialsSize = credentials.size(),
+            .isSorted = false,
+            .isUnique = !sorted.empty(),
+            .isDelete = isDel};
 
         // If array have duplicates then all the other checks are invalid
-        if (ss.isUnique_)
+        if (ss.isUnique)
         {
             unsigned i = 0;
             for (auto const& cred : sorted)
             {
                 auto const& credTx = credentials[i++];
-                ss.isSorted_ =
+                ss.isSorted =
                     (cred.first == credTx[sfIssuer]) && (cred.second == credTx[sfCredentialType]);
-                if (!ss.isSorted_)
+                if (!ss.isSorted)
                     break;
             }
         }
@@ -70,29 +66,29 @@ ValidPermissionedDomain::finalize(
     beast::Journal const& j)
 {
     auto check = [](SleStatus const& sleStatus, beast::Journal const& j) {
-        if (!sleStatus.credentialsSize_)
+        if (!sleStatus.credentialsSize)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain with "
                                "no rules.";
             return false;
         }
 
-        if (sleStatus.credentialsSize_ > maxPermissionedDomainCredentialsArraySize)
+        if (sleStatus.credentialsSize > kMaxPermissionedDomainCredentialsArraySize)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain bad "
                                "credentials size "
-                            << sleStatus.credentialsSize_;
+                            << sleStatus.credentialsSize;
             return false;
         }
 
-        if (!sleStatus.isUnique_)
+        if (!sleStatus.isUnique)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
                                "aren't unique";
             return false;
         }
 
-        if (!sleStatus.isSorted_)
+        if (!sleStatus.isSorted)
         {
             JLOG(j.fatal()) << "Invariant failed: permissioned domain credentials "
                                "aren't sorted";
@@ -102,7 +98,7 @@ ValidPermissionedDomain::finalize(
         return true;
     };
 
-    if (view.rules().enabled(fixPermissionedDomainInvariant))
+    if (view.rules().enabled(fixCleanup3_1_3))
     {
         // No permissioned domains should be affected if the transaction failed
         if (!isTesSuccess(result))
@@ -129,7 +125,7 @@ ValidPermissionedDomain::finalize(
                 }
 
                 auto const& sleStatus = sleStatus_[0];
-                if (sleStatus.isDelete_)
+                if (sleStatus.isDelete)
                 {
                     JLOG(j.fatal()) << "Invariant failed: domain object "
                                        "deleted by PermissionedDomainSet";
@@ -145,7 +141,7 @@ ValidPermissionedDomain::finalize(
                     return false;
                 }
 
-                if (!sleStatus_[0].isDelete_)
+                if (!sleStatus_[0].isDelete)
                 {
                     JLOG(j.fatal()) << "Invariant failed: domain object "
                                        "modified, but not deleted by "
