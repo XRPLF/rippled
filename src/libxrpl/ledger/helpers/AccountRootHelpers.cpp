@@ -24,7 +24,6 @@
 #include <cstdint>
 #include <limits>
 #include <memory>
-#include <optional>
 #include <set>
 #include <stdexcept>
 #include <vector>
@@ -40,18 +39,12 @@ AccountRoot<ViewT>::isGlobalFrozen() const
     return this->sle_->isFlag(lsfGlobalFreeze);
 }
 
-// An owner count cannot be negative. If adjustment would cause a negative
-// owner count, clamp the owner count at 0. Similarly for overflow. This
-// adjustment allows the ownerCount to be adjusted up or down in multiple steps.
-// If id != std::nullopt, then do error reporting.
-//
-// Returns adjusted owner count.
-static std::uint32_t
-confineOwnerCount(
+std::uint32_t
+detail::confineOwnerCount(
     std::uint32_t current,
     std::int32_t adjustment,
-    std::optional<AccountID> const& id = std::nullopt,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+    std::optional<AccountID> const& id,
+    beast::Journal j)
 {
     std::uint32_t adjusted{current + adjustment};
     if (adjustment > 0)
@@ -76,7 +69,7 @@ confineOwnerCount(
                 JLOG(j.fatal()) << "Account " << *id << " owner count set below 0!";
             }
             adjusted = 0;
-            XRPL_ASSERT(!id, "xrpl::confineOwnerCount : id is not set");
+            XRPL_ASSERT(!id, "xrpl::detail::confineOwnerCount : id is not set");
         }
     }
     return adjusted;
@@ -90,7 +83,7 @@ AccountRoot<ViewT>::xrpLiquid(std::int32_t ownerCountAdj) const
         return beast::kZero;
 
     // Return balance minus reserve
-    std::uint32_t const ownerCount = confineOwnerCount(
+    std::uint32_t const ownerCount = detail::confineOwnerCount(
         this->readView().ownerCountHook(id_, this->sle_->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
     // Pseudo-accounts have no reserve requirement
@@ -131,7 +124,7 @@ AccountRoot<ViewT>::adjustOwnerCount(std::int32_t amount)
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
     std::uint32_t const current{this->sle_->getFieldU32(sfOwnerCount)};
     AccountID const id = (*this->sle_)[sfAccount];
-    std::uint32_t const adjusted = confineOwnerCount(current, amount, id, this->j_);
+    std::uint32_t const adjusted = detail::confineOwnerCount(current, amount, id, this->j_);
     this->applyView().adjustOwnerCountHook(id_, current, adjusted);
     this->sle_->at(sfOwnerCount) = adjusted;
     this->update();

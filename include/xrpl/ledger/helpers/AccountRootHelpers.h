@@ -11,6 +11,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstdint>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -164,6 +166,25 @@ using WAccountRoot = AccountRoot<ApplyView>;
 // Explicit instantiation declarations (definitions in .cpp)
 extern template class AccountRoot<ReadView>;
 extern template class AccountRoot<ApplyView>;
+
+namespace detail {
+
+/** Confine an owner count adjustment to the valid range.
+
+    If adjustment would underflow or overflow the owner count, clamp it to the
+    nearest valid value. If id is supplied, log fatal diagnostics for invalid
+    adjustments.
+
+    @return The adjusted owner count.
+*/
+[[nodiscard]] std::uint32_t
+confineOwnerCount(
+    std::uint32_t current,
+    std::int32_t adjustment,
+    std::optional<AccountID> const& id = std::nullopt,
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+
+}  // namespace detail
 
 /** Generate a pseudo-account address from a pseudo owner key.
     @param pseudoOwnerKey The key to generate the address from
