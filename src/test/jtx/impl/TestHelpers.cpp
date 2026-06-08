@@ -402,7 +402,7 @@ expectOffers(
 {
     std::uint16_t cnt = 0;
     std::uint16_t matched = 0;
-    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
+    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
         if (!sle)
             return false;
         if (sle->getType() == ltOFFER)

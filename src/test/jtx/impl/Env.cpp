@@ -280,13 +280,13 @@ Env::seq(Account const& account) const
     return sle->getFieldU32(sfSequence);
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Env::le(Account const& account) const
 {
     return le(keylet::account(account.id()));
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Env::le(Keylet const& k) const
 {
     return current()->read(k);

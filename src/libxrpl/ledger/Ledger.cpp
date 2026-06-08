@@ -401,7 +401,7 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
     return item->key();
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Ledger::read(Keylet const& k) const
 {
     if (k.key == beast::kZero)
@@ -486,7 +486,7 @@ Ledger::digest(key_type const& key) const -> std::optional<digest_type>
 //------------------------------------------------------------------------------
 
 void
-Ledger::rawErase(std::shared_ptr<SLE> const& sle)
+Ledger::rawErase(SLE::ref sle)
 {
     if (!stateMap_.delItem(sle->key()))
         logicError("Ledger::rawErase: key not found");
@@ -500,7 +500,7 @@ Ledger::rawErase(uint256 const& key)
 }
 
 void
-Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
+Ledger::rawInsert(SLE::ref sle)
 {
     Serializer ss;
     sle->add(ss);
@@ -512,7 +512,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
 }
 
 void
-Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
+Ledger::rawReplace(SLE::ref sle)
 {
     Serializer ss;
     sle->add(ss);
@@ -623,7 +623,7 @@ Ledger::setup()
     return ret;
 }
 
-std::shared_ptr<SLE>
+SLE::pointer
 Ledger::peek(Keylet const& k) const
 {
     auto const& value = stateMap_.peekItem(k.key);

@@ -35,7 +35,6 @@
 #include <chrono>
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -636,7 +635,7 @@ deleteAMMTrustLines(
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             uint256 const&,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM and MPToken
             if (nodeType == ltAMM || nodeType == ltMPTOKEN)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -672,7 +671,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             uint256 const&,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM
             if (nodeType == ltAMM)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -768,7 +767,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
 void
 initializeFeeAuctionVote(
     ApplyView& view,
-    std::shared_ptr<SLE>& ammSle,
+    SLE::pointer& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee)
@@ -926,7 +925,7 @@ Expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    std::shared_ptr<SLE>& ammSle,
+    SLE::pointer& ammSle,
     AccountID const& account)
 {
     auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);

@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -16,15 +17,19 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
-    if (auto const& ids = ctx.tx[sfNFTokenOffers];
-        ids.empty() || (ids.size() > kMaxTokenOfferCancelCount))
+    auto const& offerIds = ctx.tx[sfNFTokenOffers];
+
+    if (offerIds.empty() || (offerIds.size() > kMaxTokenOfferCancelCount))
+        return temMALFORMED;
+
+    // Zero offer IDs cannot be passed as ledger entry keys.
+    if (ctx.rules.enabled(fixCleanup3_2_0) &&
+        std::ranges::any_of(offerIds, [](uint256 const& id) { return id.isZero(); }))
         return temMALFORMED;
 
     // In order to prevent unnecessarily overlarge transactions, we
@@ -98,10 +103,7 @@ NFTokenCancelOffer::doApply()
 }
 
 void
-NFTokenCancelOffer::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenCancelOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -7,6 +7,8 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/State.h>
+#include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/TreeNodeCache.h>
 
 #include <atomic>
 #include <chrono>
@@ -93,6 +95,8 @@ private:
     // as of run() or before
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
+    FullBelowCache* fullBelowCache_ = nullptr;
+    TreeNodeCache* treeNodeCache_ = nullptr;
 
     static constexpr auto kNodeStoreName = "NodeStore";
 

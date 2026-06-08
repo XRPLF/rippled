@@ -26,7 +26,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -61,7 +60,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
 
 [[nodiscard]] STAmount
 clawbackAmount(
-    std::shared_ptr<SLE const> const& vault,
+    SLE::const_ref vault,
     std::optional<STAmount> const& maybeAmount,
     AccountID const& account)
 {
@@ -221,8 +220,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
 Expected<std::pair<STAmount, STAmount>, TER>
 VaultClawback::assetsToClawback(
-    std::shared_ptr<SLE> const& vault,
-    std::shared_ptr<SLE const> const& sleShareIssuance,
+    SLE::ref vault,
+    SLE::const_ref sleShareIssuance,
     AccountID const& holder,
     STAmount const& clawbackAmount)
 {
@@ -452,10 +451,7 @@ VaultClawback::doApply()
 }
 
 void
-VaultClawback::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+VaultClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

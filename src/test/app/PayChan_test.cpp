@@ -45,7 +45,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
-#include <memory>
 #include <optional>
 #include <set>
 #include <string>
@@ -57,7 +56,7 @@ using namespace jtx::paychan;
 
 struct PayChan_test : public beast::unit_test::Suite
 {
-    static std::pair<uint256, std::shared_ptr<SLE const>>
+    static std::pair<uint256, SLE::const_pointer>
     channelKeyAndSle(ReadView const& view, jtx::Account const& account, jtx::Account const& dst)
     {
         auto const sle = view.read(keylet::account(account));
@@ -869,7 +868,7 @@ struct PayChan_test : public beast::unit_test::Suite
             env.close();
 
             // Setup deposit authorization
-            env(deposit::authCredentials(bob, {{carol, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = carol, .credType = credType}}));
             env.close();
 
             // Fail, credentials doesn’t belong to root account
@@ -1665,9 +1664,8 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const settleDelay = 100s;
         auto const pk = alice.pk();
 
-        auto inOwnerDir = [](ReadView const& view,
-                             Account const& acc,
-                             std::shared_ptr<SLE const> const& chan) -> bool {
+        auto inOwnerDir =
+            [](ReadView const& view, Account const& acc, SLE::const_ref chan) -> bool {
             xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
             // NOLINTNEXTLINE(modernize-use-ranges)
             return std::find(ownerDir.begin(), ownerDir.end(), chan) != ownerDir.end();

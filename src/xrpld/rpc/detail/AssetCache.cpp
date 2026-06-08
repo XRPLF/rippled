@@ -124,7 +124,7 @@ AssetCache::getMPTs(xrpl::AccountID const& account)
 
     std::vector<PathFindMPT> mpts;
     // Get issued/authorized tokens
-    forEachItem(*ledger_, account, [&](std::shared_ptr<SLE const> const& sle) {
+    forEachItem(*ledger_, account, [&](SLE::const_ref sle) {
         if (sle->getType() == ltMPTOKEN_ISSUANCE)
         {
             auto const mptID = makeMptID(sle->getFieldU32(sfSequence), account);
