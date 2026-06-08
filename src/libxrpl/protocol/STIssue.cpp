@@ -11,6 +11,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <boost/endian/conversion.hpp>
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -45,6 +47,9 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
         {
             MPTID mptID;
             std::uint32_t sequence = sit.get32();
+            // Preserve the existing LE memcpy result on every host endian.
+            // Wire 04 03 02 01 becomes MPTID bytes 01 02 03 04 on both.
+            sequence = boost::endian::native_to_little(sequence);
             static_assert(MPTID::size() == sizeof(sequence) + sizeof(currencyOrAccount));
             memcpy(mptID.data(), &sequence, sizeof(sequence));
             memcpy(
@@ -100,6 +105,9 @@ STIssue::add(Serializer& s) const
             s.addBitString(noAccount());
             std::uint32_t sequence = 0;
             memcpy(&sequence, issue.getMptID().data(), sizeof(sequence));
+            // Preserve the existing LE ledger bytes on every host endian.
+            // MPTID bytes 01 02 03 04 become wire bytes 04 03 02 01 on both.
+            sequence = boost::endian::native_to_little(sequence);
             s.add32(sequence);
         });
 }

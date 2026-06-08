@@ -3,9 +3,12 @@
 #include <test/jtx/amount.h>  // IWYU pragma: keep
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/Serializer.h>
@@ -138,11 +141,63 @@ public:
     }
 
     void
+    testMPTSerialization()
+    {
+        testcase("MPT serialization");
+        using namespace jtx;
+        Account const alice{"alice"};
+
+        struct Vector
+        {
+            std::uint32_t sequence;
+            std::uint32_t legacySequence;
+        };
+
+        // 0x01020304 pins canonical MPTID bytes 01 02 03 04 and
+        // preserved STIssue wire bytes 04 03 02 01 on BE and LE.
+        Vector const vectors[] = {
+            {.sequence = 0x00000001, .legacySequence = 0x01000000},
+            {.sequence = 0x01020304, .legacySequence = 0x04030201},
+            {.sequence = 0xa1b2c3d4, .legacySequence = 0xd4c3b2a1},
+        };
+
+        for (auto const& vector : vectors)
+        {
+            MPTID const mptID = makeMptID(vector.sequence, alice);
+            MPTIssue const issue{mptID};
+            STIssue const stIssue(sfAsset, Asset{issue});
+
+            Serializer actual;
+            stIssue.add(actual);
+
+            // STIssue preserves the existing little-endian validator ledger bytes.
+            Serializer expected;
+            expected.addBitString(alice.id());
+            expected.addBitString(noAccount());
+            expected.add32(vector.legacySequence);
+
+            BEAST_EXPECTS(strHex(actual) == strHex(expected), strHex(actual));
+
+            // Decoding the preserved wire format must recover the canonical MPTID.
+            SerialIter iter(expected.slice());
+            STIssue const decoded(iter, sfAsset);
+            BEAST_EXPECT(decoded.holds<MPTIssue>());
+            BEAST_EXPECT(decoded.value().get<MPTIssue>().getMptID() == mptID);
+
+            // A decoded ledger value must serialize back to the same bytes.
+            Serializer roundTrip;
+            decoded.add(roundTrip);
+            BEAST_EXPECTS(strHex(roundTrip) == strHex(expected), strHex(roundTrip));
+        }
+    }
+
+    void
     run() override
     {
         // compliments other unit tests to ensure complete coverage
         testConstructor();
         testCompare();
+        testMPTSerialization();
     }
 };
 
