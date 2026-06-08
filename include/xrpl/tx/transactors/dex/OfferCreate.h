@@ -41,10 +41,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -81,7 +78,7 @@ private:
     TER
     applyHybrid(
         Sandbox& sb,
-        std::shared_ptr<STLedgerEntry> sleOffer,
+        STLedgerEntry::pointer sleOffer,
         Keylet const& offerIndex,
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,

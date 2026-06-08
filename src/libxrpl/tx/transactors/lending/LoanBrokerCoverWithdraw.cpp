@@ -20,8 +20,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 bool
@@ -142,6 +140,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
     auto const minimumCover = [&]() {
+        if (ctx.view.rules().enabled(fixCleanup3_2_0))
+        {
+            return minimumBrokerCover(
+                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
+        }
+
         // Always round the minimum required up.
         // Applies to `tenthBipsOfValue` as well as `roundToAsset`.
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
@@ -198,10 +202,7 @@ LoanBrokerCoverWithdraw::doApply()
 }
 
 void
-LoanBrokerCoverWithdraw::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+LoanBrokerCoverWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

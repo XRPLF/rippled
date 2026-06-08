@@ -1277,7 +1277,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static std::shared_ptr<SLE>
+    static SLE::pointer
     createPermissionedDomain(
         ApplyContext& ac,
         test::jtx::Account const& a1,
@@ -2136,6 +2136,70 @@ class Invariants_test : public beast::unit_test::Suite
             beast::Journal const jlog{sink};
             BEAST_EXPECT(
                 invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+        }
+
+        // A bad root is rejected when added, ignored when a legacy bad root is
+        // modified without changing sfRootIndex or deleted, and checked when a
+        // modified directory changes sfRootIndex.
+        {
+            Env env{*this, defaultAmendments()};
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1);
+            env.close();
+
+            OpenView view{*env.current()};
+            auto const directoryQuality = STAmount::kURateOne;
+            auto const rootDir = getBookRootKey(a1, directoryQuality);
+            auto const missingRootDir = getBookRootKey(a1, directoryQuality + 1);
+            auto const badRoot = makeRootPage(rootDir, directoryQuality + 1);
+            view.rawInsert(badRoot);
+
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+
+            {
+                // add
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, nullptr, badRoot);
+
+                BEAST_EXPECT(
+                    !invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                // modify (without changing the sfRootIndex)
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, badRoot, badRoot);
+
+                BEAST_EXPECT(
+                    invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
+            {
+                // modify (changing sfRootIndex to a missing root)
+                auto const childBefore = makeChildPage(rootDir);
+                auto const childAfter = std::make_shared<SLE>(*childBefore, childBefore->key());
+                childAfter->setFieldH256(sfRootIndex, missingRootDir.key);
+
+                ValidBookDirectory invariant;
+                invariant.visitEntry(false, childBefore, childAfter);
+
+                test::StreamSink missingRootSink{beast::Severity::Warning};
+                beast::Journal const missingRootJlog{missingRootSink};
+                BEAST_EXPECT(!invariant.finalize(
+                    makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, missingRootJlog));
+                BEAST_EXPECT(
+                    missingRootSink.messages().str().find("book directory root missing") !=
+                    std::string::npos);
+            }
+            {
+                // delete
+                view.rawErase(badRoot);
+                BEAST_EXPECT(!view.exists(rootDir));
+
+                ValidBookDirectory invariant;
+                invariant.visitEntry(true, badRoot, badRoot);
+                BEAST_EXPECT(
+                    invariant.finalize(makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, jlog));
+            }
         }
     }
 
@@ -4065,6 +4129,63 @@ class Invariants_test : public beast::unit_test::Suite
         using namespace test::jtx;
         testcase << "MPT";
 
+        MPTIssue const nonCanonicalMPTIssue{makeMptID(1, AccountID(0x4985601))};
+        auto const nonCanonicalMPTAmount = [&](SField const& field) {
+            return STAmount{
+                field,
+                nonCanonicalMPTIssue,
+                kMaxMpTokenAmount + std::uint64_t{1},
+                0,
+                false,
+                STAmount::Unchecked{}};
+        };
+        auto const negativeMPTAmount = [&](SField const& field) {
+            return STAmount{field, nonCanonicalMPTIssue, 2, 0, true, STAmount::Unchecked{}};
+        };
+        auto const nonCanonicalMPTPayment = [&]() {
+            return STTx{ttPAYMENT, [&](STObject& tx) {
+                            tx.setFieldAmount(sfAmount, nonCanonicalMPTAmount(sfAmount));
+                        }};
+        };
+
+        doInvariantCheck(
+            Env{*this, defaultAmendments() - fixCleanup3_2_0},
+            {},
+            [](Account const&, Account const&, ApplyContext&) { return true; },
+            XRPAmount{},
+            nonCanonicalMPTPayment(),
+            {tesSUCCESS, tesSUCCESS});
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, nonCanonicalMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"ledger entry contains non-canonical MPT or XRP amount"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
+                if (!sle)
+                    return false;
+
+                auto sleNew = std::make_shared<SLE>(keylet::check(a1.id(), (*sle)[sfSequence]));
+                sleNew->setAccountID(sfAccount, a1.id());
+                sleNew->setAccountID(sfDestination, a2.id());
+                sleNew->setFieldAmount(sfSendMax, negativeMPTAmount(sfSendMax));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
         // MPT OutstandingAmount > MaximumAmount
         doInvariantCheck(
             {{"OutstandingAmount overflow"}},
@@ -4646,109 +4767,119 @@ class Invariants_test : public beast::unit_test::Suite
             std::vector<ValidVault::DeltaInfo> values;
         };
 
-        NumberMantissaScaleGuard const g{MantissaRange::MantissaScale::Large};
-
-        auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
-            return {.delta = n, .scale = scale(n, vaultAsset.raw())};
-        };
-
-        auto const testCases = std::vector<TestCase>{
-            {
-                .name = "No values",
-                .expectedMinScale = 0,
-                .values = {},
-            },
-            {
-                .name = "Mixed integer and Number values",
-                .expectedMinScale = -15,
-                .values = {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
-            },
-            {
-                .name = "Mixed scales",
-                .expectedMinScale = -17,
-                .values =
-                    {makeDelta(Number{1, -2}), makeDelta(Number{5, -3}), makeDelta(Number{3, -2})},
-            },
-            {
-                .name = "Equal scales",
-                .expectedMinScale = -16,
-                .values =
-                    {makeDelta(Number{1, -1}), makeDelta(Number{5, -1}), makeDelta(Number{1, -1})},
-            },
-            {
-                .name = "Mixed mantissa sizes",
-                .expectedMinScale = -12,
-                .values =
-                    {makeDelta(Number{1}),
-                     makeDelta(Number{1234, -3}),
-                     makeDelta(Number{12345, -6}),
-                     makeDelta(Number{123, 1})},
-            },
-        };
-
-        for (auto const& tc : testCases)
+        for (auto const mantissaScale : {
+                 MantissaRange::MantissaScale::LargeLegacy,
+                 MantissaRange::MantissaScale::Large,
+             })
         {
-            testcase("vault computeCoarsestScale: " + tc.name);
+            NumberMantissaScaleGuard const g{mantissaScale};
 
-            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+            auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
+                return {.delta = n, .scale = scale(n, vaultAsset.raw())};
+            };
 
-            BEAST_EXPECTS(
-                actualScale == tc.expectedMinScale,
-                "expected: " + std::to_string(tc.expectedMinScale) +
-                    ", actual: " + std::to_string(actualScale));
-            for (auto const& num : tc.values)
-            {
-                // None of these scales are far enough apart that rounding the
-                // values would lose information, so check that the rounded
-                // value matches the original.
-                auto const actualRounded = roundToAsset(vaultAsset, num.delta, actualScale);
-                BEAST_EXPECTS(
-                    actualRounded == num.delta,
-                    "number " + to_string(num.delta) + " rounded to scale " +
-                        std::to_string(actualScale) + " is " + to_string(actualRounded));
-            }
-        }
-
-        auto const testCases2 = std::vector<TestCase>{
-            {
-                .name = "False equivalence",
-                .expectedMinScale = -15,
-                .values =
-                    {
-                        makeDelta(Number{1234567890123456789, -18}),
-                        makeDelta(Number{12345, -4}),
-                        makeDelta(Number{1}),
-                    },
-            },
-        };
-
-        // Unlike the first set of test cases, the values in these test could
-        // look equivalent if using the wrong scale.
-        for (auto const& tc : testCases2)
-        {
-            testcase("vault computeCoarsestScale: " + tc.name);
-
-            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
-
-            BEAST_EXPECTS(
-                actualScale == tc.expectedMinScale,
-                "expected: " + std::to_string(tc.expectedMinScale) +
-                    ", actual: " + std::to_string(actualScale));
-            std::optional<Number> first;
-            Number firstRounded;
-            for (auto const& num : tc.values)
-            {
-                if (!first)
+            auto const testCases = std::vector<TestCase>{
                 {
-                    first = num.delta;
-                    firstRounded = roundToAsset(vaultAsset, num.delta, actualScale);
-                    continue;
-                }
-                auto const numRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    .name = "No values",
+                    .expectedMinScale = 0,
+                    .values = {},
+                },
+                {
+                    .name = "Mixed integer and Number values",
+                    .expectedMinScale = -15,
+                    .values = {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
+                },
+                {
+                    .name = "Mixed scales",
+                    .expectedMinScale = -17,
+                    .values =
+                        {makeDelta(Number{1, -2}),
+                         makeDelta(Number{5, -3}),
+                         makeDelta(Number{3, -2})},
+                },
+                {
+                    .name = "Equal scales",
+                    .expectedMinScale = -16,
+                    .values =
+                        {makeDelta(Number{1, -1}),
+                         makeDelta(Number{5, -1}),
+                         makeDelta(Number{1, -1})},
+                },
+                {
+                    .name = "Mixed mantissa sizes",
+                    .expectedMinScale = -12,
+                    .values =
+                        {makeDelta(Number{1}),
+                         makeDelta(Number{1234, -3}),
+                         makeDelta(Number{12345, -6}),
+                         makeDelta(Number{123, 1})},
+                },
+            };
+
+            for (auto const& tc : testCases)
+            {
+                testcase("vault computeCoarsestScale: " + tc.name);
+
+                auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
                 BEAST_EXPECTS(
-                    numRounded != firstRounded,
-                    "at a scale of " + std::to_string(actualScale) + " " + to_string(num.delta) +
-                        " == " + to_string(*first));
+                    actualScale == tc.expectedMinScale,
+                    "expected: " + std::to_string(tc.expectedMinScale) +
+                        ", actual: " + std::to_string(actualScale));
+                for (auto const& num : tc.values)
+                {
+                    // None of these scales are far enough apart that rounding the
+                    // values would lose information, so check that the rounded
+                    // value matches the original.
+                    auto const actualRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    BEAST_EXPECTS(
+                        actualRounded == num.delta,
+                        "number " + to_string(num.delta) + " rounded to scale " +
+                            std::to_string(actualScale) + " is " + to_string(actualRounded));
+                }
+            }
+
+            auto const testCases2 = std::vector<TestCase>{
+                {
+                    .name = "False equivalence",
+                    .expectedMinScale = -15,
+                    .values =
+                        {
+                            makeDelta(Number{1234567890123456789, -18}),
+                            makeDelta(Number{12345, -4}),
+                            makeDelta(Number{1}),
+                        },
+                },
+            };
+
+            // Unlike the first set of test cases, the values in these test could
+            // look equivalent if using the wrong scale.
+            for (auto const& tc : testCases2)
+            {
+                testcase("vault computeCoarsestScale: " + tc.name);
+
+                auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
+                BEAST_EXPECTS(
+                    actualScale == tc.expectedMinScale,
+                    "expected: " + std::to_string(tc.expectedMinScale) +
+                        ", actual: " + std::to_string(actualScale));
+                std::optional<Number> first;
+                Number firstRounded;
+                for (auto const& num : tc.values)
+                {
+                    if (!first)
+                    {
+                        first = num.delta;
+                        firstRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                        continue;
+                    }
+                    auto const numRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    BEAST_EXPECTS(
+                        numRounded != firstRounded,
+                        "at a scale of " + std::to_string(actualScale) + " " +
+                            to_string(num.delta) + " == " + to_string(*first));
+                }
             }
         }
     }

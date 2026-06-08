@@ -22,6 +22,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -234,7 +235,7 @@ MPTokenIssuanceSet::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const holderID = ctx_.tx[~sfHolder];
     auto const domainID = ctx_.tx[~sfDomainID];
-    std::shared_ptr<SLE> sle;
+    SLE::pointer sle;
 
     if (holderID)
     {
@@ -337,10 +338,7 @@ MPTokenIssuanceSet::doApply()
 }
 
 void
-MPTokenIssuanceSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+MPTokenIssuanceSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

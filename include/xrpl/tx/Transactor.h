@@ -318,10 +318,7 @@ protected:
      *                   to detect deletions.
      */
     virtual void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) = 0;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
 
     /** Check transaction-specific post-conditions after all entries have
      *  been visited.
@@ -429,7 +426,7 @@ private:
         ReadView const& view,
         AccountID const& idSigner,
         AccountID const& idAccount,
-        std::shared_ptr<SLE const> sleAccount,
+        SLE::const_pointer sleAccount,
         beast::Journal const j);
     static NotTEC
     checkMultiSign(
@@ -458,6 +455,15 @@ private:
     */
     static NotTEC
     preflight2(PreflightContext const& ctx);
+
+    /** Universal validations
+       - Valid MPTAmount and XRPAmount
+
+        Do not try to call preflightUniversal from preflight() in derived classes. See
+        the description of invokePreflight for details.
+    */
+    static NotTEC
+    preflightUniversal(PreflightContext const& ctx);
 
     /** Check transaction-specific invariants only.
      *
@@ -522,6 +528,9 @@ Transactor::invokePreflight(PreflightContext const& ctx)
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx, T::getFlagsMask(ctx)))
+        return ret;
+
+    if (auto const ret = preflightUniversal(ctx))
         return ret;
 
     if (auto const ret = T::preflight(ctx))

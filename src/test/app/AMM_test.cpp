@@ -2625,10 +2625,6 @@ private:
         using namespace jtx;
         using namespace std::chrono;
 
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas
-        features = features - featureSingleAssetVault - featureLendingProtocol;
-
         // Auction slot initially is owned by AMM creator, who pays 0 price.
 
         // Bid 110 tokens. Pay bidMin.
@@ -3336,11 +3332,6 @@ private:
     {
         testcase("Basic Payment");
         using namespace jtx;
-
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas
-        features =
-            features - featureSingleAssetVault - featureLendingProtocol - featureLendingProtocol;
 
         // Payment 100USD for 100XRP.
         // Force one path with tfNoRippleDirect.
