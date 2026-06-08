@@ -20,7 +20,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Read `on-trigger.yml` for the rationale behind this concurrency group name.
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' && github.sha || github.ref }}
   cancel-in-progress: true
 
 defaults:
