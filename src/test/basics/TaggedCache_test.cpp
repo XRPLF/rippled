@@ -206,7 +206,7 @@ public:
                 bool
                 operator==(std::string const& other) const
                 {
-                    return data == other.data;
+                    return data == other;
                 }
             };
 

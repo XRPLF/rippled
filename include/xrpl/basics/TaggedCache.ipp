@@ -5,6 +5,56 @@
 
 namespace xrpl {
 
+namespace detail {
+
+// Replace-policy tags selecting how TaggedCache::canonicalizeImpl resolves a
+// collision when the key already exists:
+//   - ReplaceCached: always replace the cached value with `data`. `data` is
+//     never written back and may be const.
+//   - ReplaceClient: keep the cached value and write it back into `data` (the
+//     client's pointer), which must therefore be writable.
+//   - ReplaceDynamically: call the supplied callback to decide per call; `data`
+//     is written back when the cached value is kept, so it must be writable.
+struct ReplaceCached
+{
+};
+
+struct ReplaceClient
+{
+};
+
+struct ReplaceDynamically
+{
+};
+
+}  // namespace detail
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+template <typename Policy>
+struct TaggedCache<
+    Key,
+    T,
+    IsKeyCache,
+    SharedWeakUnionPointer,
+    SharedPointerType,
+    Hash,
+    KeyEqual,
+    Mutex>::CanonicalizeClientPointerType
+{
+    using Type = std::conditional_t<
+        std::is_same_v<detail::ReplaceCached, Policy>,
+        SharedPointerType const&,
+        SharedPointerType&>;
+};
+
 template <
     class Key,
     class T,
@@ -300,28 +350,28 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-template <class R>
+template <class Policy, class Callback>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalize(
+    canonicalizeImpl(
         key_type const& key,
-        CanonicalizeClientPointerType<R> data,
-        [[maybe_unused]] R&& replacePolicy)
+        typename CanonicalizeClientPointerType<Policy>::Type data,
+        [[maybe_unused]] Policy policy,
+        [[maybe_unused]] Callback&& replaceCallback)
 {
     // Return canonical value, store if needed, refresh in cache
     // Return values: true=we had the data already
 
-    // `replacePolicy` is one of:
+    // `Policy` is one of:
     //   - detail::ReplaceCached: always replace the cached value with `data`;
     //     `data` is never written back and may be const.
     //   - detail::ReplaceClient: keep the cached value and write it back into
     //     `data` (the client's pointer), which must therefore be writable.
-    //   - a callable(strong pointer) -> bool: decide at run time; `data` must
-    //     be writable.
+    //   - detail::ReplaceDynamically: call `replaceCallback` to decide at run
+    //     time; `data` must be writable.
     // For the latter two the write-back below requires a mutable `data`, so
     // passing a const argument is a compile error.
-    using C = std::remove_cvref_t<R>;
-    constexpr bool replaceCached = std::is_same_v<C, detail::ReplaceCached>;
+    constexpr bool replaceCached = std::is_same_v<Policy, detail::ReplaceCached>;
 
     std::scoped_lock const lock(mutex_);
 
@@ -345,13 +395,13 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         {
             return true;
         }
-        else if constexpr (std::is_same_v<C, detail::ReplaceClient>)
+        else if constexpr (std::is_same_v<Policy, detail::ReplaceClient>)
         {
             return false;
         }
         else
         {
-            return replacePolicy(entry.ptr.getStrong());
+            return replaceCallback(entry.ptr.getStrong());
         }
     };
 
@@ -402,11 +452,29 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
+template <class Callback>
+inline bool
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    canonicalize(key_type const& key, SharedPointerType& data, Callback&& replaceCallback)
+{
+    return canonicalizeImpl(
+        key, data, detail::ReplaceDynamically{}, std::forward<Callback>(replaceCallback));
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data)
 {
-    return canonicalize(key, data, detail::ReplaceCached{});
+    return canonicalizeImpl(key, data, detail::ReplaceCached{});
 }
 
 template <
@@ -422,7 +490,7 @@ inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     canonicalizeReplaceClient(key_type const& key, SharedPointerType& data)
 {
-    return canonicalize(key, data, detail::ReplaceClient{});
+    return canonicalizeImpl(key, data, detail::ReplaceClient{});
 }
 
 template <
