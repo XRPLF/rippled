@@ -134,7 +134,8 @@ public:
         static void
         onRequest(Session& session)
         {
-            session.write(std::string_view("Hello, world!\n"));
+            using namespace std::string_view_literals;
+            session.write("Hello, world!\n"sv);
             if (beast::rfc2616::isKeepAlive(session.request()))
             {
                 session.complete();
