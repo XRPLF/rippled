@@ -25,7 +25,6 @@
 
 #include <cstdint>
 #include <limits>
-#include <memory>
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -400,7 +399,7 @@ verifyDepositPreauth(
     ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    std::shared_ptr<SLE const> const& sleDst,
+    SLE::const_ref sleDst,
     beast::Journal j)
 {
     if (auto const err = cleanupExpiredCredentials(tx, view, j); !isTesSuccess(err))
