@@ -16,6 +16,7 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpl/proto/xrpl.pb.h>
+#include <xrpl/telemetry/TraceContextValidation.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/trace/context.h>
@@ -39,8 +40,9 @@ extractFromProtobuf(protocol::TraceContext const& proto)
 {
     namespace trace = opentelemetry::trace;
 
-    if (!proto.has_trace_id() || proto.trace_id().size() != 16 || !proto.has_span_id() ||
-        proto.span_id().size() != 8)
+    // Reject malformed or all-zero ids from the peer before trusting
+    // them as a parent. See TraceContextValidation.h.
+    if (!isValidTraceContext(proto))
     {
         return opentelemetry::context::Context{};
     }
