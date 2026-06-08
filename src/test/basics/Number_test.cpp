@@ -1928,172 +1928,121 @@ public:
         }
 
         {
-            testcase << "subtraction rounding " << to_string(scale);
-
             auto const exp = Number::mantissaLog();
-            Number const a{1LL, exp + 2};
-            Number const b{-(Number{1, exp} + 1)};
-
-            if (scale == MantissaRange::MantissaScale::Small)
+            // SubCase is <offset, extraB, aString, bString>
+            //  * offset: offset from exp
+            //  * extraB: whether to include 1e"exp" in "b"
+            //  * aString: expected string value for "a"
+            //  * bString: expected string value for "b"
+            // There aren't too many valid combinations for test cases here. If extraB is true,
+            // offset can really only be 2, because any larger and the mantissa can't be represented
+            // without loss. Offset can't be less than 2, or there's no error.
+            using SubCase = std::tuple<int, bool, std::string, std::string>;
+            auto const c = std::to_array<SubCase>({
+                {2,
+                 true,
+                 scale == MantissaRange::MantissaScale::Small ? "100000000000000000"
+                                                              : "100000000000000000000",
+                 scale == MantissaRange::MantissaScale::Small ? "-1000000000000001"
+                                                              : "-1000000000000000001"},
+                {2,
+                 false,
+                 scale == MantissaRange::MantissaScale::Small ? "100000000000000000"
+                                                              : "100000000000000000000",
+                 "-1"},
+                {30,
+                 false,
+                 scale == MantissaRange::MantissaScale::Small
+                     ? "1000000000000000000000000000000000000000000000"
+                     : "1000000000000000000000000000000000000000000000000",
+                 "-1"},
+            });
+            for (auto const& [offset, extraB, aString, bString] : c)
             {
-                BEAST_EXPECT(toBigInt(a) == BigInt{"100000000000000000"});
-                BEAST_EXPECT(toBigInt(b) == BigInt{"-1000000000000001"});
-            }
-            else
-            {
-                BEAST_EXPECT(toBigInt(a) == BigInt{"100000000000000000000"});
-                BEAST_EXPECT(toBigInt(b) == BigInt{"-1000000000000000001"});
-            }
+                testcase << "subtraction rounding. offset: " << offset
+                         << ", scale: " << to_string(scale);
 
-            auto construct = [&a, &b, this](Number::RoundingMode r) {
-                NumberRoundModeGuard const roundGuard{r};
-                auto const sum = a + b;
-                BigInt const stored = toBigInt(sum);
-                return std::make_pair(r, std::make_pair(stored, sum));
-            };
+                Number const a{1LL, exp + offset};
+                Number const b{-((extraB ? Number{1, exp} : kNumZero) + 1)};
 
-            auto const bigA = toBigInt(a);
-            auto const bigB = toBigInt(b);
-            BigInt const exact = bigA + bigB;
+                auto const bigA = toBigInt(a);
+                auto const bigB = toBigInt(b);
 
-            auto const sums = [&]() {
-                std::map<Number::RoundingMode, std::pair<BigInt, Number>> sums;
-                sums.emplace(construct(Number::RoundingMode::TowardsZero));
-                sums.emplace(construct(Number::RoundingMode::Upward));
-                sums.emplace(construct(Number::RoundingMode::Downward));
-                sums.emplace(construct(Number::RoundingMode::ToNearest));
-                return sums;
-            }();
+                BEAST_EXPECT(bigA == BigInt{aString});
+                BEAST_EXPECT(bigB == BigInt{bString});
 
-            log << "\n              a = " << a << " (" << fmt(bigA) << ")\n              b = " << b
-                << " (" << fmt(bigB) << ")\n    exact a + b = " << fmt(exact) << "\n";
-            for (auto const& [r, sum] : sums)
-            {
-                auto const diff = sum.first - exact;
-                auto const rLabel = to_string(r);
-                log << std::string(15 - rLabel.length(), ' ') << rLabel << " = " << fmt(sum.first)
-                    << "\n     difference = " << fmt(diff) << "\n";
-            }
-            log.flush();
+                auto construct = [&a, &b, this](Number::RoundingMode r) {
+                    NumberRoundModeGuard const roundGuard{r};
+                    auto const sum = a + b;
+                    BigInt const stored = toBigInt(sum);
+                    return std::make_pair(r, std::make_pair(stored, sum));
+                };
 
-            for (auto const& [r, sum] : sums)
-            {
-                auto const epsilon = pow10<BigInt>(sum.second.exponent());
-                auto diff = sum.first - exact;
-                auto const rLabel = to_string(r);
-                switch (scale)
+                BigInt const exact = bigA + bigB;
+
+                auto const sums = [&]() {
+                    std::map<Number::RoundingMode, std::pair<BigInt, Number>> sums;
+                    sums.emplace(construct(Number::RoundingMode::TowardsZero));
+                    sums.emplace(construct(Number::RoundingMode::Upward));
+                    sums.emplace(construct(Number::RoundingMode::Downward));
+                    sums.emplace(construct(Number::RoundingMode::ToNearest));
+                    return sums;
+                }();
+
+                log << "\n              a = " << a << " (" << fmt(bigA)
+                    << ")\n              b = " << b << " (" << fmt(bigB)
+                    << ")\n    exact a + b = " << fmt(exact) << "\n";
+                for (auto const& [r, sum] : sums)
                 {
-                    case MantissaRange::MantissaScale::Small:
-                    case MantissaRange::MantissaScale::LargeLegacy: {
-                        // Without the fix, all the results but one round up
-                        if (r == Number::RoundingMode::Downward)
-                        {
-                            // Downward works because the Guard sign is negative, and Downward
-                            // returns Up instead of Down if negative and there's a remainder,
-                            // whereas TowardsZero always returns Down.
-                            BEAST_EXPECTS(sum.first < exact, rLabel);
-                            BEAST_EXPECTS(diff == -(epsilon - 1), rLabel);
-                        }
-                        else
-                        {
-                            BEAST_EXPECTS(sum.first > exact, rLabel);
-                            BEAST_EXPECTS(diff == 1, rLabel);
-                        }
-                        break;
-                    }
-                    default: {
-                        BEAST_EXPECT(epsilon == 100);
-                        switch (r)
-                        {
-                            case Number::RoundingMode::Upward:
-                            case Number::RoundingMode::ToNearest:
-                                BEAST_EXPECTS(sum.first > exact, rLabel);
-                                BEAST_EXPECTS(diff == 1, rLabel);
-                                break;
-                            default:
+                    auto const diff = sum.first - exact;
+                    auto const rLabel = to_string(r);
+                    log << std::string(15 - rLabel.length(), ' ') << rLabel << " = "
+                        << fmt(sum.first) << "\n     difference = " << fmt(diff) << "\n";
+                }
+                log.flush();
+
+                auto const expectedExponent =
+                    offset - (scale == MantissaRange::MantissaScale::Small && extraB ? 1 : 0);
+                auto const epsilon = pow10<BigInt>(expectedExponent);
+                for (auto const& [r, sum] : sums)
+                {
+                    auto diff = sum.first - exact;
+                    auto const rLabel = to_string(r);
+                    switch (scale)
+                    {
+                        case MantissaRange::MantissaScale::Small:
+                        case MantissaRange::MantissaScale::LargeLegacy: {
+                            // Without the fix, all the results but one round up
+                            if (r == Number::RoundingMode::Downward)
+                            {
+                                // Downward works because the Guard sign is negative, and Downward
+                                // returns Up instead of Down if negative and there's a remainder,
+                                // whereas TowardsZero always returns Down.
                                 BEAST_EXPECTS(sum.first < exact, rLabel);
                                 BEAST_EXPECTS(diff == -(epsilon - 1), rLabel);
+                            }
+                            else
+                            {
+                                BEAST_EXPECTS(sum.first > exact, rLabel);
+                                BEAST_EXPECTS(diff == 1, rLabel);
+                            }
+                            break;
                         }
-                    }
-                }
-            }
-        }
-        {
-            auto const offset = 30;
-            testcase << "subtraction rounding offset of " << offset << " " << to_string(scale);
-
-            auto const exp = Number::mantissaLog();
-            Number const a{1LL, exp + offset};
-            Number const b{-1};
-
-            auto construct = [&a, &b, this](Number::RoundingMode r) {
-                NumberRoundModeGuard const roundGuard{r};
-                auto const sum = a + b;
-                BigInt const stored = toBigInt(sum);
-                return std::make_pair(r, std::make_pair(stored, sum));
-            };
-
-            auto const bigA = toBigInt(a);
-            auto const bigB = toBigInt(b);
-            BigInt const exact = bigA + bigB;
-
-            auto const sums = [&]() {
-                std::map<Number::RoundingMode, std::pair<BigInt, Number>> sums;
-                sums.emplace(construct(Number::RoundingMode::TowardsZero));
-                sums.emplace(construct(Number::RoundingMode::Upward));
-                sums.emplace(construct(Number::RoundingMode::Downward));
-                sums.emplace(construct(Number::RoundingMode::ToNearest));
-                return sums;
-            }();
-
-            log << "\n              a = " << a << " (" << fmt(bigA) << ")\n              b = " << b
-                << " (" << fmt(bigB) << ")\n    exact a + b = " << fmt(exact) << "\n";
-            for (auto const& [r, sum] : sums)
-            {
-                auto const diff = sum.first - exact;
-                auto const rLabel = to_string(r);
-                log << std::string(15 - rLabel.length(), ' ') << rLabel << " = " << fmt(sum.first)
-                    << "\n     difference = " << fmt(diff) << "\n";
-            }
-            log.flush();
-
-            switch (scale)
-            {
-                case MantissaRange::MantissaScale::Small:
-                case MantissaRange::MantissaScale::LargeLegacy: {
-                    for (auto const& [r, sum] : sums)
-                    {
-                        if (r == Number::RoundingMode::Downward)
-                        {
-                            // Downward works because the Guard sign is negative, and Downward
-                            // returns Up instead of Down if negative and there's a remainder,
-                            // whereas TowardsZero always returns Down.
+                        default: {
                             BEAST_EXPECTS(
-                                sums.at(Number::RoundingMode::Downward).first < exact,
-                                to_string(r));
-                        }
-                        else
-                        {
-                            BEAST_EXPECTS(sums.at(r).first > exact, to_string(r));
-                        }
-                    }
-                    break;
-                }
-                default: {
-                    for (auto const& [r, sum] : sums)
-                    {
-                        auto const epsilon = pow10<BigInt>(sum.second.exponent());
-                        auto diff = sum.first - exact;
-                        switch (r)
-                        {
-                            case Number::RoundingMode::Upward:
-                            case Number::RoundingMode::ToNearest:
-                                BEAST_EXPECTS(sum.first > exact, to_string(r));
-                                BEAST_EXPECTS(diff < epsilon, to_string(r));
-                                break;
-                            default:
-                                BEAST_EXPECTS(sum.first < exact, to_string(r));
-                                BEAST_EXPECTS(-diff < epsilon, to_string(r));
+                                sum.second.exponent() <= expectedExponent,
+                                to_string(sum.second.exponent()));
+                            switch (r)
+                            {
+                                case Number::RoundingMode::Upward:
+                                case Number::RoundingMode::ToNearest:
+                                    BEAST_EXPECTS(sum.first > exact, rLabel);
+                                    BEAST_EXPECTS(diff == 1, rLabel);
+                                    break;
+                                default:
+                                    BEAST_EXPECTS(sum.first < exact, rLabel);
+                                    BEAST_EXPECTS(diff == -(epsilon - 1), rLabel);
+                            }
                         }
                     }
                 }
