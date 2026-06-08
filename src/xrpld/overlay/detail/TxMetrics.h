@@ -8,9 +8,7 @@
 #include <chrono>
 #include <mutex>
 
-namespace xrpl {
-
-namespace metrics {
+namespace xrpl::metrics {
 
 /** Run single metrics rolling average. Can be either average of a value
     per second or average of a value's sample per second. For instance,
@@ -31,7 +29,7 @@ struct SingleMetrics
     clock_type::time_point intervalStart{clock_type::now()};
     std::uint64_t accum{0};
     std::uint64_t rollingAvg{0};
-    std::uint32_t N{0};
+    std::uint32_t n{0};
     bool perTimeUnit{true};
     boost::circular_buffer<std::uint64_t> rollingAvgAggregate{30, 0ull};
     /** Add metrics value
@@ -107,10 +105,8 @@ struct TxMetrics
     /** Get json representation of the metrics
        @return json object
      */
-    Json::Value
+    json::Value
     json() const;
 };
 
-}  // namespace metrics
-
-}  // namespace xrpl
+}  // namespace xrpl::metrics

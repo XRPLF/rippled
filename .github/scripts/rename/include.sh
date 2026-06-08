@@ -23,8 +23,8 @@ fi
 find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" \) | while read -r FILE; do
     echo "Processing file: ${FILE}"
     if grep -q "#ifndef XRPL_" "${FILE}"; then
-      echo "Please replace all include guards by #pragma once."
-      exit 1
+        echo "Please replace all include guards by #pragma once."
+        exit 1
     fi
 done
 echo "Checking complete."

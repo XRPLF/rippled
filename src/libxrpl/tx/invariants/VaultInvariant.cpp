@@ -1,3 +1,5 @@
+#include <xrpl/tx/invariants/VaultInvariant.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -18,7 +20,6 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
-#include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
 #include <cstdint>
