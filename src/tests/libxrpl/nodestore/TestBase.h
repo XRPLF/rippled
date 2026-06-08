@@ -21,6 +21,8 @@ namespace xrpl::NodeStore {
 constexpr std::size_t kMinPayloadBytes = 1;
 constexpr std::size_t kMaxPayloadBytes = 2000;
 constexpr int kNumObjectsToTest = 2000;
+constexpr int kNumObjects = 2000;
+constexpr std::uint64_t kSeedValue = 50;
 
 struct LessThan
 {

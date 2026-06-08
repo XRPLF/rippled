@@ -15,7 +15,6 @@
 #include <nodestore/TestBase.h>
 
 #include <algorithm>
-#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -24,9 +23,6 @@
 namespace xrpl::NodeStore {
 
 namespace {
-
-constexpr std::int64_t kSeedValue = 50;
-constexpr int kNumObjects = 2000;
 
 std::vector<std::string>
 allBackends()

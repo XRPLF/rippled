@@ -17,7 +17,6 @@
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 #include <string>
 #include <thread>
@@ -26,9 +25,6 @@
 namespace xrpl::NodeStore {
 
 namespace {
-
-constexpr std::uint64_t kSeedValue = 50;
-constexpr int kNumObjects = 2000;
 
 std::vector<std::string>
 backendTypes()

@@ -6,13 +6,10 @@
 #include <nodestore/TestBase.h>
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 #include <string>
 
 namespace xrpl::NodeStore {
-
-constexpr std::uint64_t kSeedValue = 50;
 
 TEST(NodeStoreBasics, predictable_batches)
 {
