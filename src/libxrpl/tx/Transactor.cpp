@@ -1069,7 +1069,7 @@ removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Jour
     for (auto const& index : mpts)
     {
         if (auto const sleState = view.peek({ltMPTOKEN, index}); sleState &&
-            deleteAMMMPToken(view, sleState, (*sleState)[sfIssuer], viewJ) != tesSUCCESS)
+            deleteAMMMPToken(view, sleState, (*sleState)[sfAccount], viewJ) != tesSUCCESS)
         {
             JLOG(viewJ.error()) << "removeDeletedMPTs: failed to delete AMM MPT";
         }

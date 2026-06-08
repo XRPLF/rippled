@@ -24,7 +24,10 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -7069,6 +7072,54 @@ private:
             // Critical: MPT/MPT pool + tecINCOMPLETE
             amm.ammDelete(alice_, Ter(tecINCOMPLETE));
             BEAST_EXPECT(amm.ammExists());
+
+            amm.ammDelete(alice_);
+            BEAST_EXPECT(!amm.ammExists());
+        }
+
+        // A tecINCOMPLETE AMM deletion can delete some zero-balance MPTokens
+        // before the transaction view is reset. Those deleted MPTokens must be
+        // reapplied after the reset so that repeated AMMDelete calls make
+        // forward progress.
+        {
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->fees.referenceFee = XRPAmount(1);
+                    return cfg;
+                }),
+                all);
+
+            env.fund(XRP(1'000), gw_, alice_);
+            MPT const usd =
+                MPTTester({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
+            MPT const btc =
+                MPTTester({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
+            MPTTester extra({.env = env, .issuer = gw_, .fund = false});
+            extra.create({.flags = tfMPTCanTransfer});
+
+            AMM amm(env, gw_, usd(10'000), btc(10'000));
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                Sandbox sb(&view, TapNone);
+                createMPToken(
+                    sb, extra.issuanceID(), amm.ammAccount(), lsfMPTAMM | lsfMPTAuthorized);
+                sb.apply(view);
+                return true;
+            });
+
+            auto const poolUSD = keylet::mptoken(usd.issuanceID, amm.ammAccount());
+            auto const poolBTC = keylet::mptoken(btc.issuanceID, amm.ammAccount());
+            auto const extraToken = keylet::mptoken(extra.issuanceID(), amm.ammAccount());
+            BEAST_EXPECT(env.le(poolUSD));
+            BEAST_EXPECT(env.le(poolBTC));
+            BEAST_EXPECT(env.le(extraToken));
+
+            amm.withdrawAll(gw_, std::nullopt, Ter(tecINCOMPLETE));
+            BEAST_EXPECT(amm.ammExists());
+
+            int const remainingMPTokens = (env.le(poolUSD) ? 1 : 0) + (env.le(poolBTC) ? 1 : 0) +
+                (env.le(extraToken) ? 1 : 0);
+            BEAST_EXPECT(remainingMPTokens < 3);
 
             amm.ammDelete(alice_);
             BEAST_EXPECT(!amm.ammExists());
