@@ -32,7 +32,8 @@ VaultDelete::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     // The sfMemoData field is an optional field used to record the deletion reason.
-    if (auto const data = ctx.tx[~sfMemoData]; data && !validDataLength(data, maxDataPayloadLength))
+    if (auto const data = ctx.tx[~sfMemoData];
+        data && !validDataLength(data, kMaxDataPayloadLength))
         return temMALFORMED;
 
     return tesSUCCESS;
