@@ -48,11 +48,10 @@ using Prices =
 static void
 iteratePriceData(
     RPC::JsonContext& context,
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     std::function<bool(STObject const&)> const& f)
 {
-    using Meta = std::shared_ptr<STObject const>;
-    constexpr std::uint8_t kMAX_HISTORY = 3;
+    static constexpr std::uint8_t kMaxHistory = 3;
     bool isNew = false;
     std::uint8_t history = 0;
 
@@ -73,7 +72,7 @@ iteratePriceData(
     // for the Oracle is not found in the inner loop
     STObject const* prevChain = nullptr;
 
-    Meta meta = nullptr;
+    std::shared_ptr<STObject const> meta = nullptr;
     while (true)
     {
         if (prevChain == chain)
@@ -82,7 +81,7 @@ iteratePriceData(
         if ((oracle == nullptr) || f(*oracle) || isNew)
             return;
 
-        if (++history > kMAX_HISTORY)
+        if (++history > kMaxHistory)
             return;
 
         uint256 const prevTx = chain->getFieldH256(sfPreviousTxnID);
@@ -93,6 +92,8 @@ iteratePriceData(
             return;  // LCOV_EXCL_LINE
 
         meta = ledger->txRead(prevTx).second;
+        if (!meta)
+            return;
 
         prevChain = chain;
         for (STObject const& node : meta->getFieldArray(sfAffectedNodes))
@@ -152,11 +153,11 @@ doGetAggregatePrice(RPC::JsonContext& context)
     json::Value result;
     auto const& params(context.params);
 
-    constexpr std::uint16_t kMAX_ORACLES = 200;
+    static constexpr std::uint16_t kMaxOracles = 200;
     if (!params.isMember(jss::oracles))
         return RPC::missingFieldError(jss::oracles);
     if (!params[jss::oracles].isArray() || params[jss::oracles].size() == 0 ||
-        params[jss::oracles].size() > kMAX_ORACLES)
+        params[jss::oracles].size() > kMaxOracles)
     {
         RPC::injectError(RpcOracleMalformed, result);
         return result;
@@ -215,7 +216,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
         return result;
     }
     if (params.isMember(jss::trim) &&
-        (std::get<std::uint32_t>(trim) == 0 || std::get<std::uint32_t>(trim) > kMAX_TRIM))
+        (std::get<std::uint32_t>(trim) == 0 || std::get<std::uint32_t>(trim) > kMaxTrim))
     {
         RPC::injectError(RpcInvalidParams, result);
         return result;
@@ -341,11 +342,11 @@ doGetAggregatePrice(RPC::JsonContext& context)
         auto const middle = size / 2;
         if ((size % 2) == 0)
         {
-            static STAmount const kTWO{noIssue(), 2, 0};
+            static STAmount const kTwo{noIssue(), 2, 0};
             auto it = itAdvance(prices.right.begin(), middle - 1);
             auto const& a1 = it->first;
             auto const& a2 = (++it)->first;
-            return divide(a1 + a2, kTWO, noIssue());
+            return divide(a1 + a2, kTwo, noIssue());
         }
         return itAdvance(prices.right.begin(), middle)->first;
     }();

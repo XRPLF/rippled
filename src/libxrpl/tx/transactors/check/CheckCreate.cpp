@@ -86,10 +86,8 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         return tecNO_DST;
     }
 
-    auto const flags = sleDst->getFlags();
-
     // Check if the destination has disallowed incoming checks
-    if ((flags & lsfDisallowIncomingCheck) != 0u)
+    if (sleDst->isFlag(lsfDisallowIncomingCheck))
         return tecNO_PERMISSION;
 
     // Pseudo-accounts cannot cash checks. Note, this is not amendment-gated
@@ -99,7 +97,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     if (isPseudoAccount(sleDst))
         return tecNO_PERMISSION;
 
-    if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx.isFieldPresent(sfDestinationTag))
+    if (sleDst->isFlag(lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         // The tag is basically account-specific information we don't
         // understand, but we can require someone to fill it in.
@@ -113,10 +111,10 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         {
             // The currency may not be globally frozen
             AccountID const& issuerId{sendMax.getIssuer()};
-            if (isGlobalFrozen(ctx.view, sendMax.asset()))
+            if (auto const ter = checkGlobalFrozen(ctx.view, sendMax.asset()); !isTesSuccess(ter))
             {
-                JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
-                return sendMax.asset().holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
+                JLOG(ctx.j.warn()) << "Creating a check for frozen or locked asset";
+                return ter;
             }
             auto const err = sendMax.asset().visit(
                 [&](Issue const& issue) -> std::optional<TER> {
@@ -155,9 +153,21 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                 },
                 [&](MPTIssue const& issue) -> std::optional<TER> {
                     if (srcId != issuerId && isFrozen(ctx.view, srcId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
                         return tecLOCKED;
+                    }
                     if (dstId != issuerId && isFrozen(ctx.view, dstId, issue))
+                    {
+                        JLOG(ctx.j.warn()) << "Creating a check for locked MPT.";
                         return tecLOCKED;
+                    }
+                    if (auto const ter = canTransfer(ctx.view, issue, srcId, dstId);
+                        !isTesSuccess(ter))
+                    {
+                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
+                        return ter;
+                    }
 
                     return std::nullopt;
                 });
@@ -171,13 +181,13 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
     }
 
-    return canTrade(ctx.view, ctx.tx[sfSendMax].asset());
+    return tesSUCCESS;
 }
 
 TER
 CheckCreate::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -194,10 +204,10 @@ CheckCreate::doApply()
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
     std::uint32_t const seq = ctx_.tx.getSeqValue();
-    Keylet const checkKeylet = keylet::check(account_, seq);
+    Keylet const checkKeylet = keylet::check(accountID_, seq);
     auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
-    sleCheck->setAccountID(sfAccount, account_);
+    sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
     sleCheck->setAccountID(sfDestination, dstAccountId);
     sleCheck->setFieldU32(sfSequence, seq);
@@ -216,7 +226,7 @@ CheckCreate::doApply()
     auto viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
     // destination's owner directory.
-    if (dstAccountId != account_)
+    if (dstAccountId != accountID_)
     {
         auto const page = view().dirInsert(
             keylet::ownerDir(dstAccountId), checkKeylet, describeOwnerDir(dstAccountId));
@@ -231,8 +241,8 @@ CheckCreate::doApply()
     }
 
     {
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), checkKeylet, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), checkKeylet, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Adding Check to owner directory " << to_string(checkKeylet.key) << ": "
                          << (page ? "success" : "failure");
@@ -248,10 +258,7 @@ CheckCreate::doApply()
 }
 
 void
-CheckCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+CheckCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

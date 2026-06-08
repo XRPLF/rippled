@@ -12,8 +12,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 
 namespace xrpl::NodeStore {
 
@@ -50,12 +48,6 @@ public:
     fetch(uint256 const&, std::shared_ptr<NodeObject>*) override
     {
         return Status::NotFound;
-    }
-
-    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256> const& hashes) override
-    {
-        return {};
     }
 
     void
@@ -128,7 +120,7 @@ public:
 void
 registerNullFactory(Manager& manager)
 {
-    static NullFactory const kINSTANCE{manager};
+    static NullFactory const kInstance{manager};
 }
 
 }  // namespace xrpl::NodeStore

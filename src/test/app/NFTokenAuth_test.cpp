@@ -582,11 +582,11 @@ public:
     run() override
     {
         using namespace test::jtx;
-        static FeatureBitset const kALL{testableAmendments()};
+        static FeatureBitset const kAll{testableAmendments()};
 
-        static std::array const kFEATURES = {kALL - fixEnforceNFTokenTrustlineV2, kALL};
+        static std::array const kFeatures = {kAll - fixEnforceNFTokenTrustlineV2, kAll};
 
-        for (auto const feature : kFEATURES)
+        for (auto const feature : kFeatures)
         {
             testBuyOfferUnauthorizedSeller(feature);
             testCreateBuyOfferUnauthorizedBuyer(feature);

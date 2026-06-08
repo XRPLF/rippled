@@ -382,7 +382,7 @@ TEST(AccountSet, WalletID)
 
     // Clear the wallet locator by setting to zero
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setWalletLocator(beast::kZERO), alice)
+        env.submit(transactions::AccountSetBuilder{alice}.setWalletLocator(beast::kZero), alice)
             .ter,
         tesSUCCESS);
     env.close();
@@ -414,7 +414,7 @@ TEST(AccountSet, EmailHash)
 
     // Clear the email hash by setting to zero
     EXPECT_EQ(
-        env.submit(transactions::AccountSetBuilder{alice}.setEmailHash(beast::kZERO), alice).ter,
+        env.submit(transactions::AccountSetBuilder{alice}.setEmailHash(beast::kZero), alice).ter,
         tesSUCCESS);
     env.close();
 
@@ -432,13 +432,13 @@ TEST(AccountSet, TransferRate)
 
     // Test data: {rate to set, expected TER, expected stored rate}
     std::vector<TestCase> const testData = {
-        {1.0, tesSUCCESS, 1.0},
-        {1.1, tesSUCCESS, 1.1},
-        {2.0, tesSUCCESS, 2.0},
-        {2.1, temBAD_TRANSFER_RATE, 2.0},  // > 2.0 is invalid
-        {0.0, tesSUCCESS, 1.0},            // 0 clears the rate (default = 1.0)
-        {2.0, tesSUCCESS, 2.0},
-        {0.9, temBAD_TRANSFER_RATE, 2.0},  // < 1.0 is invalid
+        {.set = 1.0, .code = tesSUCCESS, .get = 1.0},
+        {.set = 1.1, .code = tesSUCCESS, .get = 1.1},
+        {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
+        {.set = 2.1, .code = temBAD_TRANSFER_RATE, .get = 2.0},  // > 2.0 is invalid
+        {.set = 0.0, .code = tesSUCCESS, .get = 1.0},            // 0 clears; default rate is 1.0
+        {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
+        {.set = 0.9, .code = temBAD_TRANSFER_RATE, .get = 2.0},  // < 1.0 is invalid
     };
 
     TxTest env;
@@ -619,7 +619,7 @@ TEST(AccountSet, Ticket)
     // Verify alice has 1 owner object (the ticket)
     EXPECT_EQ(env.getAccountRoot(alice.id()).getOwnerCount(), 1u);
     // Verify ticket exists
-    EXPECT_TRUE(env.getClosedLedger().exists(keylet::kTICKET(alice.id(), ticketSeq)));
+    EXPECT_TRUE(env.getClosedLedger().exists(keylet::kTicket(alice.id(), ticketSeq)));
 
     // Try using a ticket that alice doesn't have
     EXPECT_EQ(
@@ -629,7 +629,7 @@ TEST(AccountSet, Ticket)
     env.close();
 
     // Verify ticket still exists
-    EXPECT_TRUE(env.getClosedLedger().exists(keylet::kTICKET(alice.id(), ticketSeq)));
+    EXPECT_TRUE(env.getClosedLedger().exists(keylet::kTicket(alice.id(), ticketSeq)));
 
     // Get alice's sequence before using the ticket
     std::uint32_t const aliceSeq = env.getAccountRoot(alice.id()).getSequence();
@@ -642,7 +642,7 @@ TEST(AccountSet, Ticket)
 
     // Verify ticket is consumed (no owner objects)
     EXPECT_EQ(env.getAccountRoot(alice.id()).getOwnerCount(), 0u);
-    EXPECT_FALSE(env.getClosedLedger().exists(keylet::kTICKET(alice.id(), ticketSeq)));
+    EXPECT_FALSE(env.getClosedLedger().exists(keylet::kTicket(alice.id(), ticketSeq)));
 
     // Verify alice's sequence did NOT advance (ticket use doesn't increment seq)
     EXPECT_EQ(env.getAccountRoot(alice.id()).getSequence(), aliceSeq);

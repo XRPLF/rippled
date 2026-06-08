@@ -112,7 +112,7 @@ class io_latency_probe_test : public beast::unit_test::Suite, public beast::test
 
     struct TestSampler
     {
-        beast::IoLatencyProbe<std::chrono::steady_clock> probe;
+        beast::IOLatencyProbe<std::chrono::steady_clock> probe;
         std::vector<std::chrono::steady_clock::duration> durations;
 
         TestSampler(std::chrono::milliseconds interval, boost::asio::io_context& ios)

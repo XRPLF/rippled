@@ -688,6 +688,7 @@ TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix,
     ({
     {sfLedgerFixType, SoeRequired},
     {sfOwner, SoeOptional},
+    {sfBookDirectory, SoeOptional},
 }))
 
 /** This transaction type creates a MPTokensIssuance instance */
@@ -886,6 +887,7 @@ TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
     MustDeleteAcct | DestroyMptIssuance | MustModifyVault,
     ({
     {sfVaultID, SoeRequired},
+    {sfMemoData, SoeOptional},
 }))
 
 /** This transaction trades assets for shares with a vault. */
