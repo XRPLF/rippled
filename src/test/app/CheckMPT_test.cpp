@@ -42,7 +42,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <memory>
 #include <ostream>
 #include <stdexcept>
 #include <string>
@@ -54,11 +53,11 @@ namespace xrpl {
 class CheckMPT_test : public beast::unit_test::Suite
 {
     // Helper function that returns the Checks on an account.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     checksOnAccount(test::jtx::Env& env, test::jtx::Account account)
     {
-        std::vector<std::shared_ptr<SLE const>> result;
-        forEachItem(*env.current(), account, [&result](std::shared_ptr<SLE const> const& sle) {
+        std::vector<SLE::const_pointer> result;
+        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
             if (sle && sle->getType() == ltCHECK)
                 result.push_back(sle);
         });

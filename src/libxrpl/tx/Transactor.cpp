@@ -46,7 +46,6 @@
 #include <cstdint>
 #include <exception>
 #include <map>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <tuple>
@@ -792,7 +791,7 @@ Transactor::checkSingleSign(
     ReadView const& view,
     AccountID const& idSigner,
     AccountID const& idAccount,
-    std::shared_ptr<SLE const> sleAccount,
+    SLE::const_pointer sleAccount,
     beast::Journal const j)
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
@@ -828,7 +827,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
+    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -1174,34 +1173,32 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
     std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
     if (!typesToCollect.empty())
     {
-        ctx_.visit([&typesToCollect, &deletedObjects](
-                       uint256 const& index,
-                       bool isDelete,
-                       std::shared_ptr<SLE const> const& before,
-                       std::shared_ptr<SLE const> const& after) {
-            if (isDelete)
-            {
-                XRPL_ASSERT(
-                    before && after,
-                    "xrpl::Transactor::processPersistentChanges : non-null "
-                    "SLE inputs");
-                if (before && after)
+        ctx_.visit(
+            [&typesToCollect, &deletedObjects](
+                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+                if (isDelete)
                 {
-                    auto const type = before->getType();
-                    if (typesToCollect.contains(type))
+                    XRPL_ASSERT(
+                        before && after,
+                        "xrpl::Transactor::processPersistentChanges : non-null "
+                        "SLE inputs");
+                    if (before && after)
                     {
-                        // For offers, only collect unfunded removals
-                        // (where TakerPays is unchanged)
-                        if (type == ltOFFER &&
-                            before->getFieldAmount(sfTakerPays) !=
-                                after->getFieldAmount(sfTakerPays))
-                            return;
+                        auto const type = before->getType();
+                        if (typesToCollect.contains(type))
+                        {
+                            // For offers, only collect unfunded removals
+                            // (where TakerPays is unchanged)
+                            if (type == ltOFFER &&
+                                before->getFieldAmount(sfTakerPays) !=
+                                    after->getFieldAmount(sfTakerPays))
+                                return;
 
-                        deletedObjects[type].push_back(index);
+                            deletedObjects[type].push_back(index);
+                        }
                     }
                 }
-            }
-        });
+            });
     }
 
     // Reset the context, potentially adjusting the fee.

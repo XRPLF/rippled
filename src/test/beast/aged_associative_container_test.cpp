@@ -414,11 +414,11 @@ public:
 
     // unordered
     template <class C, class Values>
-    std::enable_if_t<std::remove_reference<C>::type::is_unordered::value>
+    std::enable_if_t<std::remove_reference_t<C>::is_unordered::value>
     checkUnorderedContentsRefRef(C&& c, Values const& v);
 
     template <class C, class Values>
-    std::enable_if_t<!std::remove_reference<C>::type::is_unordered::value>
+    std::enable_if_t<!std::remove_reference_t<C>::is_unordered::value>
     checkUnorderedContentsRefRef(C&&, Values const&)
     {
     }
@@ -641,7 +641,7 @@ AgedAssociativeContainerTestBase::checkMapContents(Container& c, Values const& v
 
 // unordered
 template <class C, class Values>
-std::enable_if_t<std::remove_reference<C>::type::is_unordered::value>
+std::enable_if_t<std::remove_reference_t<C>::is_unordered::value>
 AgedAssociativeContainerTestBase::checkUnorderedContentsRefRef(C&& c, Values const& v)
 {
     using Cont = std::remove_reference_t<C>;

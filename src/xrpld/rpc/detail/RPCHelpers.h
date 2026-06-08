@@ -33,7 +33,7 @@ struct JsonContext;
  * @return A 64-bit unsigned integer representing the start hint for traversal.
  */
 std::uint64_t
-getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
+getStartHint(SLE::const_ref sle, AccountID const& accountID);
 
 /**
  * @brief Tests if a ledger entry (SLE) is owned by the specified account.
@@ -47,10 +47,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
  * @return true if the SLE is owned by the account, false otherwise.
  */
 bool
-isRelatedToAccount(
-    ReadView const& ledger,
-    std::shared_ptr<SLE const> const& sle,
-    AccountID const& accountID);
+isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.
