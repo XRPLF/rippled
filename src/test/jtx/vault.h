@@ -35,7 +35,7 @@ struct Vault
     {
         Account owner;
         uint256 id;
-        std::optional<std::uint32_t> flags{};
+        std::optional<std::uint32_t> flags;
     };
 
     static json::Value

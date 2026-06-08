@@ -12,8 +12,11 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -43,7 +46,7 @@ isValidVaultUpdate(PreflightContext const& ctx)
     // transaction is requesting a meaningful flag change.
     auto const expectedFlags = ~(VaultSet::getFlagsMask(ctx) | tfUniversal);
 
-    return atLeastOneFieldPresent || (ctx.tx.getFlags() & expectedFlags);
+    return atLeastOneFieldPresent || ((ctx.tx.getFlags() & expectedFlags) != 0u);
 }
 
 NotTEC

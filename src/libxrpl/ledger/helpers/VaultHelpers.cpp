@@ -12,6 +12,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 
 namespace xrpl {
