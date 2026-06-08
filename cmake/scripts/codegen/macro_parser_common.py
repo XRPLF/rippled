@@ -9,7 +9,6 @@ and ledger_entries.macro files using pcpp and pyparsing.
 import re
 import shutil
 from pathlib import Path
-
 import pyparsing as pp
 from pcpp import Preprocessor
 

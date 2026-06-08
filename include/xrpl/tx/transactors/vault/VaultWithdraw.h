@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {

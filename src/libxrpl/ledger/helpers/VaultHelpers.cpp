@@ -12,7 +12,6 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -139,9 +138,7 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
 }
 
 [[nodiscard]] bool
-isVaultInsolvent(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& shareIssuance)
+isVaultInsolvent(SLE::const_ref vault, SLE::const_ref shareIssuance)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::isVaultInsolvent : Vault sle");
     XRPL_ASSERT(

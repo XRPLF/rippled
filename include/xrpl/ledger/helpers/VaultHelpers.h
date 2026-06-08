@@ -108,8 +108,6 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
     @return True if the vault is insolvent, false otherwise.
 */
 [[nodiscard]] bool
-isVaultInsolvent(
-    std::shared_ptr<SLE const> const& vault,
-    std::shared_ptr<SLE const> const& shareIssuance);
+isVaultInsolvent(SLE::const_ref vault, SLE::const_ref shareIssuance);
 
 }  // namespace xrpl
