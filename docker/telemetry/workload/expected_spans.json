@@ -84,16 +84,10 @@
       "name": "txq.enqueue",
       "category": "transaction",
       "parent": "tx.process",
-      "required_attributes": [
-        "tx_hash",
-        "tx_type",
-        "txq_status",
-        "fee_level_paid",
-        "required_fee_level"
-      ],
+      "required_attributes": ["tx_hash", "tx_type", "txq_status"],
       "config_flag": "trace_transactions",
       "optional": true,
-      "note": "Only fires when a tx is queued (fee below open-ledger level). Requires fee escalation — driven by the txq-burst workload phase."
+      "note": "Only fires when a tx is queued (fee below open-ledger level). Requires fee escalation — driven by the txq-burst workload phase. tx_hash/tx_type/txq_status are set on every code path; fee_level_paid/required_fee_level are conditional (TxQ.cpp ~895-898, after the rejected and applied_direct early exits), so they are NOT guaranteed on every txq.enqueue span and cannot be required."
     },
     {
       "name": "txq.apply_direct",
