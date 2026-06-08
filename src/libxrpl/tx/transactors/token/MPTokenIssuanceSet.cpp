@@ -21,8 +21,6 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <memory>
-#include <unordered_set>
 
 namespace xrpl {
 

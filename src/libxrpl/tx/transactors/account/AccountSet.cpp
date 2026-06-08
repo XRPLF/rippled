@@ -24,8 +24,6 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <cstdint>
-#include <memory>
-#include <unordered_set>
 
 namespace xrpl {
 
