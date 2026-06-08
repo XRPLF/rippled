@@ -1271,8 +1271,12 @@ hasInvalidAmount(STBase const& field, int depth, beast::Journal j)
         case STI_ARRAY:
             return hasInvalidAmount(safeDowncast<STArray const&>(field), depth + 1, j);
 
-        default:
+        default: {
+            XRPL_ASSERT(
+                dynamic_cast<STObject const*>(&field) == nullptr,
+                "xrpl::hasInvalidAmount : valid object type");
             return false;
+        }
     }
 }
 
