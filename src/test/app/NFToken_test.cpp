@@ -904,7 +904,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
             // List of offer IDs containing zero is invalid.
             // craftedIndex is not a valid offer index but it is not zero.
-            auto const craftedIndex = keylet::nftoffer(gw, env.seq(gw)).key;
+            auto const craftedIndex = keylet::nftokenOffer(gw, env.seq(gw)).key;
             env(token::cancelOffer(buyer, {buyerOfferIndex, uint256{}, craftedIndex}),
                 Ter(temMALFORMED));
             env.close();
