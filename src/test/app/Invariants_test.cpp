@@ -3695,13 +3695,13 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            Env{*this, testable_amendments() - featureLendingProtocolV1_1},
+            Env{*this, testableAmendments() - featureLendingProtocolV1_1},
             {"deposit must change depositor shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                return adjust(ac.view(), keylet, args(A2.id(), 10, [&](Adjustments& sample) {
-                                  sample.accountShares.reset();
-                              }));
+                return kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [&](Adjustments& sample) {
+                                   sample.accountShares.reset();
+                               }));
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
@@ -3800,9 +3800,9 @@ class Invariants_test : public beast::unit_test::Suite
             {"donation must not change depositor shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                return adjust(ac.view(), keylet, args(A2.id(), 10, [&](Adjustments& sample) {
-                                  sample.accountShares->amount = 10;
-                              }));
+                return kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [&](Adjustments& sample) {
+                                   sample.accountShares->amount = 10;
+                               }));
             },
             XRPAmount{},
             STTx{
@@ -3819,10 +3819,10 @@ class Invariants_test : public beast::unit_test::Suite
             {"donation must not change vault shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                return adjust(ac.view(), keylet, args(A2.id(), 10, [&](Adjustments& sample) {
-                                  sample.sharesTotal = 10;
-                                  sample.accountShares = std::nullopt;
-                              }));
+                return kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [&](Adjustments& sample) {
+                                   sample.sharesTotal = 10;
+                                   sample.accountShares = std::nullopt;
+                               }));
             },
             XRPAmount{},
             STTx{
