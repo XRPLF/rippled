@@ -1241,9 +1241,11 @@ root(Number f, unsigned d)
     }
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
-    auto const D = (((6 * di + 11) * di + 6) * di) + 1;  // NOLINT(readability-identifier-naming)
-    auto const a0 = 3 * di * ((2 * di - 3) * di + 1);
-    auto const a1 = 24 * di * (2 * di - 1);
+
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    auto const D = (((((6 * di) + 11) * di) + 6) * di) + 1;
+    auto const a0 = 3 * di * ((((2 * di) - 3) * di) + 1);
+    auto const a1 = 24 * di * ((2 * di) - 1);
     auto const a2 = -30 * (di - 1) * di;
     Number r = ((Number{a2} * f + Number{a1}) * f + Number{a0}) / Number{D};
     if (neg)
