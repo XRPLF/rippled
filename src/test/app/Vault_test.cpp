@@ -8091,7 +8091,7 @@ class Vault_test : public beast::unit_test::Suite
         std::string const prefix = "VaultDeposit donate";
 
         Env env{*this};
-        Vault vault{env};
+        Vault const vault{env};
 
         auto const vaultShareBalance = [&](Keylet const& vaultKeylet) {
             auto const sleVault = env.le(vaultKeylet);
@@ -8118,7 +8118,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const depositAmount = XRP(10);
 
         auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
-        env(tx, ter(tesSUCCESS));
+        env(tx, Ter(tesSUCCESS));
         env.close();
 
         // With featureLendingProtocolV1_1 disabled, donations fail
@@ -8131,7 +8131,7 @@ class Vault_test : public beast::unit_test::Suite
                 .amount = depositAmount,
                 .flags = tfVaultDonate,
             });
-            env(tx, ter{temINVALID_FLAG});
+            env(tx, Ter(temINVALID_FLAG));
             env.enableFeature(featureLendingProtocolV1_1);
             env.close();
         }
@@ -8145,7 +8145,7 @@ class Vault_test : public beast::unit_test::Suite
                 .amount = depositAmount,
                 .flags = tfVaultDonate,
             });
-            env(tx, ter{tecNO_PERMISSION});
+            env(tx, Ter(tecNO_PERMISSION));
             env.close();
         }
 
@@ -8155,7 +8155,7 @@ class Vault_test : public beast::unit_test::Suite
                 .id = keylet.key,
                 .amount = depositAmount,
             }),
-            ter{tesSUCCESS});
+            Ter(tesSUCCESS));
         env.close();
 
         // Donation is not allowed by a non-owner
@@ -8167,7 +8167,7 @@ class Vault_test : public beast::unit_test::Suite
                 .amount = depositAmount,
                 .flags = tfVaultDonate,
             });
-            env(tx, ter{tecNO_PERMISSION});
+            env(tx, Ter(tecNO_PERMISSION));
             env.close();
         }
 
@@ -8179,7 +8179,7 @@ class Vault_test : public beast::unit_test::Suite
                 .id = keylet.key,
             });
             tx[sfAssetsMaximum] = XRP(30).number();
-            env(tx, ter{tesSUCCESS});
+            env(tx, Ter(tesSUCCESS));
 
             tx = vault.deposit({
                 .depositor = owner,
@@ -8188,7 +8188,7 @@ class Vault_test : public beast::unit_test::Suite
                 .flags = tfVaultDonate,
             });
 
-            env(tx, ter{tecLIMIT_EXCEEDED});
+            env(tx, Ter(tecLIMIT_EXCEEDED));
             env.close();
         }
 
@@ -8203,7 +8203,7 @@ class Vault_test : public beast::unit_test::Suite
                 .amount = depositAmount,
                 .flags = tfVaultDonate,
             });
-            env(tx, ter{tesSUCCESS});
+            env(tx, Ter(tesSUCCESS));
             env.close();
 
             auto const shareBalanceAfterDeposit = vaultShareBalance(keylet);
@@ -8219,10 +8219,10 @@ class Vault_test : public beast::unit_test::Suite
                 return;
 
             // The depositor can withdraw their assets and the donated amount
-            Asset shareAsset(sleVault->at(sfShareMPTID));
+            Asset const shareAsset(sleVault->at(sfShareMPTID));
             tx = vault.withdraw(
                 {.depositor = depositor, .id = keylet.key, .amount = shareAsset(shareBalance)});
-            env(tx, ter{tesSUCCESS});
+            env(tx, Ter(tesSUCCESS));
 
             auto const shareBalanceAfterWithdraw = vaultShareBalance(keylet);
             auto const [assetsAvailableAfterWithdraw, assetsTotalAfterWithdraw] =
@@ -8240,7 +8240,7 @@ class Vault_test : public beast::unit_test::Suite
 
             // Create a fresh vault
             auto const [createTx, vk] = vault.create({.owner = owner, .asset = xrpIssue()});
-            env(createTx, ter{tesSUCCESS});
+            env(createTx, Ter(tesSUCCESS));
             env.close();
 
             // Depositor puts in 10 XRP → gets 10 shares at 1:1
@@ -8249,7 +8249,7 @@ class Vault_test : public beast::unit_test::Suite
                     .id = vk.key,
                     .amount = XRP(10),
                 }),
-                ter{tesSUCCESS});
+                Ter(tesSUCCESS));
             env.close();
 
             // Owner donates 7 XRP → ratio becomes 17 assets / 10 shares
@@ -8259,7 +8259,7 @@ class Vault_test : public beast::unit_test::Suite
                     .amount = XRP(7),
                     .flags = tfVaultDonate,
                 }),
-                ter{tesSUCCESS});
+                Ter(tesSUCCESS));
             env.close();
 
             auto const sharesAfterFirstDonate = vaultShareBalance(vk);
@@ -8278,7 +8278,7 @@ class Vault_test : public beast::unit_test::Suite
                     .amount = XRP(3),
                     .flags = tfVaultDonate,
                 }),
-                ter{tesSUCCESS});
+                Ter(tesSUCCESS));
             env.close();
 
             auto const sharesAfterSecondDonate = vaultShareBalance(vk);
@@ -8294,12 +8294,12 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(vk);
             if (!BEAST_EXPECT(sleVault))
                 return;
-            Asset shareAsset(sleVault->at(sfShareMPTID));
+            Asset const shareAsset(sleVault->at(sfShareMPTID));
             env(vault.withdraw(
                     {.depositor = depositor,
                      .id = vk.key,
                      .amount = shareAsset(sharesAfterSecondDonate)}),
-                ter{tesSUCCESS});
+                Ter(tesSUCCESS));
             env.close();
 
             BEAST_EXPECT(vaultShareBalance(vk) == 0);

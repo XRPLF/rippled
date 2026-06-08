@@ -3697,9 +3697,9 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             Env{*this, testableAmendments() - featureLendingProtocolV1_1},
             {"deposit must change depositor shares"},
-            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                return kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [&](Adjustments& sample) {
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.accountShares.reset();
                                }));
             },
@@ -3798,9 +3798,9 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {"donation must not change depositor shares"},
-            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                return kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [&](Adjustments& sample) {
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.accountShares->amount = 10;
                                }));
             },
@@ -3817,9 +3817,9 @@ class Invariants_test : public beast::unit_test::Suite
 
         doInvariantCheck(
             {"donation must not change vault shares"},
-            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                return kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [&](Adjustments& sample) {
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
                                    sample.sharesTotal = 10;
                                    sample.accountShares = std::nullopt;
                                }));
