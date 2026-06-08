@@ -80,7 +80,7 @@ private:
     std::vector<uint8_t> buffer_;
     std::vector<uint8_t> bufferCompressed_;
     std::size_t category_;
-    std::once_flag once_flag_;
+    std::once_flag onceFlag_;
     std::optional<PublicKey> validatorKey_;
 
     /** Set the payload header

@@ -21,8 +21,8 @@ class STPathElement final : public CountedObject<STPathElement>
     PathAsset assetID_;
     AccountID issuerID_;
 
-    bool is_offer_;
-    std::size_t hash_value_;
+    bool isOffer_;
+    std::size_t hashValue_;
 
 public:
     // Bitwise values (typeCurrency | typeMPT)
@@ -235,9 +235,9 @@ private:
 
 // ------------ STPathElement ------------
 
-inline STPathElement::STPathElement() : type_(TypeNone), is_offer_(true)
+inline STPathElement::STPathElement() : type_(TypeNone), isOffer_(true)
 {
-    hash_value_ = getHash(*this);
+    hashValue_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
@@ -248,11 +248,11 @@ inline STPathElement::STPathElement(
 {
     if (!account)
     {
-        is_offer_ = true;
+        isOffer_ = true;
     }
     else
     {
-        is_offer_ = false;
+        isOffer_ = false;
         accountID_ = *account;
         type_ |= TypeAccount;
         XRPL_ASSERT(
@@ -272,7 +272,7 @@ inline STPathElement::STPathElement(
         XRPL_ASSERT(issuerID_ != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
     }
 
-    hash_value_ = getHash(*this);
+    hashValue_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
@@ -284,9 +284,9 @@ inline STPathElement::STPathElement(
     , accountID_(account)
     , assetID_(asset)
     , issuerID_(issuer)
-    , is_offer_(isXRP(accountID_))
+    , isOffer_(isXRP(accountID_))
 {
-    if (!is_offer_)
+    if (!isOffer_)
         type_ |= TypeAccount;
 
     if (forceAsset || !isXRP(assetID_))
@@ -295,7 +295,7 @@ inline STPathElement::STPathElement(
     if (!isXRP(issuer))
         type_ |= TypeIssuer;
 
-    hash_value_ = getHash(*this);
+    hashValue_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
@@ -307,12 +307,12 @@ inline STPathElement::STPathElement(
     , accountID_(account)
     , assetID_(asset)
     , issuerID_(issuer)
-    , is_offer_(isXRP(accountID_))
+    , isOffer_(isXRP(accountID_))
 {
     assetID_.visit(
         [&](Currency const&) { type_ = type_ & (~Type::TypeMpt); },
         [&](MPTID const&) { type_ = type_ & (~Type::TypeCurrency); });
-    hash_value_ = getHash(*this);
+    hashValue_ = getHash(*this);
 }
 
 inline auto
@@ -324,7 +324,7 @@ STPathElement::getNodeType() const
 inline bool
 STPathElement::isOffer() const
 {
-    return is_offer_;
+    return isOffer_;
 }
 
 inline bool
@@ -404,7 +404,7 @@ STPathElement::getIssuerID() const
 inline bool
 STPathElement::operator==(STPathElement const& t) const
 {
-    return (type_ & TypeAccount) == (t.type_ & TypeAccount) && hash_value_ == t.hash_value_ &&
+    return (type_ & TypeAccount) == (t.type_ & TypeAccount) && hashValue_ == t.hashValue_ &&
         accountID_ == t.accountID_ && assetID_ == t.assetID_ && issuerID_ == t.issuerID_;
 }
 

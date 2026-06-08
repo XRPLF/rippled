@@ -81,11 +81,11 @@ class JSONRPCClient : public AbstractClient
     boost::asio::ip::tcp::socket stream_;
     boost::beast::multi_buffer bin_;
     boost::beast::multi_buffer bout_;
-    unsigned rpc_version_;
+    unsigned rpcVersion_;
 
 public:
     explicit JSONRPCClient(Config const& cfg, unsigned rpcVersion)
-        : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpcVersion)
+        : ep_(getEndpoint(cfg)), stream_(ios_), rpcVersion_(rpcVersion)
     {
         stream_.connect(ep_);
     }
@@ -116,7 +116,7 @@ public:
         {
             json::Value jr;
             jr[jss::method] = cmd;
-            if (rpc_version_ == 2)
+            if (rpcVersion_ == 2)
             {
                 jr[jss::jsonrpc] = "2.0";
                 jr[jss::ripplerpc] = "2.0";
@@ -148,7 +148,7 @@ public:
     [[nodiscard]] unsigned
     version() const override
     {
-        return rpc_version_;
+        return rpcVersion_;
     }
 };
 
