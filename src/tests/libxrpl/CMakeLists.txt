@@ -53,4 +53,4 @@ foreach(module IN LISTS test_modules)
     )
 endforeach()
 
-gtest_discover_tests(xrpl_tests)
+gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)
