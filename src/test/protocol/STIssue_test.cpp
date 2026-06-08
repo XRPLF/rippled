@@ -176,7 +176,12 @@ public:
             Serializer expected;
             expected.addBitString(alice.id());
             expected.addBitString(noAccount());
-            expected.add32(vector.legacySequence);
+            {
+                std::array<unsigned char, 4> bytes;
+                auto const seq = boost::endian::native_to_little(vector.sequence);
+                memcpy(bytes.data(), &seq, 4);
+                expected.addRaw(bytes.data(), bytes.size());
+            }
 
             BEAST_EXPECTS(strHex(actual) == strHex(expected), strHex(actual));
 
