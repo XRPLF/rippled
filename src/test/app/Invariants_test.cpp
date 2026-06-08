@@ -2370,7 +2370,9 @@ class Invariants_test : public beast::unit_test::Suite
             Keylet oracleKeylet = keylet::amendments();
             Preclose const createLegacyOracle = [this, &oracleKeylet](
                                                     Account const& a, Account const&, Env& env) {
-                jtx::oracle::Oracle const oracle{env, {.owner = a.id()}};
+                jtx::oracle::Oracle const oracle{
+                    env,
+                    {.owner = a.id(), .fee = static_cast<int>(env.current()->fees().base.drops())}};
                 oracleKeylet = keylet::oracle(a.id(), oracle.documentID());
 
                 auto const sle = env.le(oracleKeylet);
@@ -2398,7 +2400,9 @@ class Invariants_test : public beast::unit_test::Suite
             Keylet oracleKeylet = keylet::amendments();
             Preclose const createOracle = [this, &oracleKeylet](
                                               Account const& a, Account const&, Env& env) {
-                jtx::oracle::Oracle const oracle{env, {.owner = a.id()}};
+                jtx::oracle::Oracle const oracle{
+                    env,
+                    {.owner = a.id(), .fee = static_cast<int>(env.current()->fees().base.drops())}};
                 oracleKeylet = keylet::oracle(a.id(), oracle.documentID());
 
                 auto const sle = env.le(oracleKeylet);
