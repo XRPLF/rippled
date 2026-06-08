@@ -47,8 +47,9 @@ STIssue::STIssue(SerialIter& sit, SField const& name) : STBase{name}
         {
             MPTID mptID;
             std::uint32_t sequence = sit.get32();
-            // Preserve the existing LE memcpy result on every host endian.
-            // Wire 04 03 02 01 becomes MPTID bytes 01 02 03 04 on both.
+            // MPTID stores the sequence in canonical big-endian bytes. STIssue
+            // ledger bytes are the legacy LE-host encoding, so convert the
+            // native get32() value to LE bytes before copying into the MPTID.
             sequence = boost::endian::native_to_little(sequence);
             static_assert(MPTID::size() == sizeof(sequence) + sizeof(currencyOrAccount));
             memcpy(mptID.data(), &sequence, sizeof(sequence));
@@ -105,9 +106,10 @@ STIssue::add(Serializer& s) const
             s.addBitString(noAccount());
             std::uint32_t sequence = 0;
             memcpy(&sequence, issue.getMptID().data(), sizeof(sequence));
-            // Preserve the existing LE ledger bytes on every host endian.
-            // MPTID bytes 01 02 03 04 become wire bytes 04 03 02 01 on both.
-            sequence = boost::endian::native_to_little(sequence);
+            // The MPTID bytes are canonical big-endian. Interpret those bytes
+            // as the legacy LE-host value so add32() writes the preserved
+            // STIssue wire bytes on every host endian.
+            sequence = boost::endian::little_to_native(sequence);
             s.add32(sequence);
         });
 }

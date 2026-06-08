@@ -14,6 +14,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <array>
 #include <cstdint>
 
 namespace xrpl::test {
@@ -149,23 +150,13 @@ public:
         using namespace jtx;
         Account const alice{"alice"};
 
-        struct Vector
-        {
-            std::uint32_t sequence;
-            std::uint32_t legacySequence;
-        };
-
         // 0x01020304 pins canonical MPTID bytes 01 02 03 04 and
         // preserved STIssue wire bytes 04 03 02 01 on BE and LE.
-        Vector const vectors[] = {
-            {.sequence = 0x00000001, .legacySequence = 0x01000000},
-            {.sequence = 0x01020304, .legacySequence = 0x04030201},
-            {.sequence = 0xa1b2c3d4, .legacySequence = 0xd4c3b2a1},
-        };
+        std::array<std::uint32_t, 3> const vectors = {0x00000001, 0x01020304, 0xa1b2c3d4};
 
-        for (auto const& vector : vectors)
+        for (auto const vector : vectors)
         {
-            MPTID const mptID = makeMptID(vector.sequence, alice);
+            MPTID const mptID = makeMptID(vector, alice);
             MPTIssue const issue{mptID};
             STIssue const stIssue(sfAsset, Asset{issue});
 
@@ -177,9 +168,11 @@ public:
             expected.addBitString(alice.id());
             expected.addBitString(noAccount());
             {
-                std::array<unsigned char, 4> bytes;
-                auto const seq = boost::endian::native_to_little(vector.sequence);
-                memcpy(bytes.data(), &seq, 4);
+                std::array<unsigned char, 4> const bytes{
+                    static_cast<unsigned char>(vector),
+                    static_cast<unsigned char>(vector >> 8),
+                    static_cast<unsigned char>(vector >> 16),
+                    static_cast<unsigned char>(vector >> 24)};
                 expected.addRaw(bytes.data(), bytes.size());
             }
 
