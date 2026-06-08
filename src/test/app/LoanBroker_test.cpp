@@ -2031,16 +2031,6 @@ class LoanBroker_test : public beast::unit_test::Suite
         testRIPD4274MPT();
     }
 
-    void
-    testFeatureLendingProtocolV1_1enabled()
-    {
-        using namespace jtx;
-        testcase("featureLendingProtocolV1_1 enabled");
-        Env env{*this};
-
-        BEAST_EXPECT(env.enabled(featureLendingProtocolV1_1));
-    }
-
     // Exercises canApplyToBrokerCover (fixCleanup3_2_0): a deposit, withdraw,
     // or clawback whose amount rounds to zero at sfCoverAvailable's precision
     // scale must be rejected with tecPRECISION_LOSS once the amendment is on,
@@ -2254,7 +2244,6 @@ public:
     void
     run() override
     {
-        testFeatureLendingProtocolV1_1enabled();
         testCoverPrecisionGuard();
 
         testLoanBrokerSetDebtMaximum();

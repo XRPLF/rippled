@@ -8038,7 +8038,7 @@ class Vault_test : public beast::unit_test::Suite
         env.fund(XRP(1'000'000), owner);
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
 
         auto const keylet = keylet::vault(owner.id(), 1);
         auto delTx = vault.del({.owner = owner, .id = keylet.key});
