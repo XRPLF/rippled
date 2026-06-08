@@ -19,9 +19,9 @@ class MPTokenIssuanceSetBuilder;
  * @brief Transaction: MPTokenIssuanceSet
  *
  * Type: ttMPTOKEN_ISSUANCE_SET (56)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureMPTokensV1
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MPTokenIssuanceSetBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfHolder (soeOPTIONAL)
+     * @brief Get sfHolder (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -85,7 +85,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -111,7 +111,7 @@ public:
     }
 
     /**
-     * @brief Get sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Get sfMPTokenMetadata (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -137,7 +137,7 @@ public:
     }
 
     /**
-     * @brief Get sfTransferFee (soeOPTIONAL)
+     * @brief Get sfTransferFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -163,7 +163,7 @@ public:
     }
 
     /**
-     * @brief Get sfMutableFlags (soeOPTIONAL)
+     * @brief Get sfMutableFlags (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -193,7 +193,7 @@ public:
  * @brief Builder for MPTokenIssuanceSet transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class MPTokenIssuanceSetBuilder : public TransactionBuilderBase<MPTokenIssuanceSetBuilder>
@@ -232,7 +232,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -243,7 +243,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolder (soeOPTIONAL)
+     * @brief Set sfHolder (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -254,7 +254,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -265,7 +265,7 @@ public:
     }
 
     /**
-     * @brief Set sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Set sfMPTokenMetadata (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -276,7 +276,7 @@ public:
     }
 
     /**
-     * @brief Set sfTransferFee (soeOPTIONAL)
+     * @brief Set sfTransferFee (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&
@@ -287,7 +287,7 @@ public:
     }
 
     /**
-     * @brief Set sfMutableFlags (soeOPTIONAL)
+     * @brief Set sfMutableFlags (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceSetBuilder&

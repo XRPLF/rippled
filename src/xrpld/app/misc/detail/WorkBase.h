@@ -12,9 +12,9 @@
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
 
-namespace xrpl {
+#include <utility>
 
-namespace detail {
+namespace xrpl::detail {
 
 template <class Impl>
 class WorkBase : public Work
@@ -47,16 +47,18 @@ protected:
     endpoint_type lastEndpoint_;
     bool lastStatus_;
 
-public:
+private:
     WorkBase(
-        std::string const& host,
-        std::string const& path,
-        std::string const& port,
+        std::string host,
+        std::string path,
+        std::string port,
         boost::asio::io_context& ios,
-        endpoint_type const& lastEndpoint,
+        endpoint_type lastEndpoint,
         bool lastStatus,
         callback_type cb);
-    ~WorkBase();
+
+public:
+    ~WorkBase() override;
 
     Impl&
     impl()
@@ -91,28 +93,30 @@ public:
 private:
     void
     close();
+
+    friend Impl;
 };
 
 //------------------------------------------------------------------------------
 
 template <class Impl>
 WorkBase<Impl>::WorkBase(
-    std::string const& host,
-    std::string const& path,
-    std::string const& port,
+    std::string host,
+    std::string path,
+    std::string port,
     boost::asio::io_context& ios,
-    endpoint_type const& lastEndpoint,
+    endpoint_type lastEndpoint,
     bool lastStatus,
     callback_type cb)
-    : host_(host)
-    , path_(path)
-    , port_(port)
+    : host_(std::move(host))
+    , path_(std::move(path))
+    , port_(std::move(port))
     , cb_(std::move(cb))
     , ios_(ios)
     , strand_(boost::asio::make_strand(ios))
     , resolver_(ios)
     , socket_(ios)
-    , lastEndpoint_{lastEndpoint}
+    , lastEndpoint_{std::move(lastEndpoint)}
     , lastStatus_(lastStatus)
 {
 }
@@ -130,10 +134,12 @@ void
 WorkBase<Impl>::run()
 {
     if (!strand_.running_in_this_thread())
+    {
         return boost::asio::post(
             ios_,
             boost::asio::bind_executor(
                 strand_, std::bind(&WorkBase::run, impl().shared_from_this())));
+    }
 
     resolver_.async_resolve(
         host_,
@@ -268,6 +274,4 @@ WorkBase<Impl>::close()
     }
 }
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

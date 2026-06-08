@@ -15,7 +15,7 @@ class SHAMapInnerNode final : public SHAMapTreeNode, public CountedObject<SHAMap
 {
 public:
     /** Each inner node has 16 children (the 'radix tree' part of the map) */
-    static inline constexpr unsigned int branchFactor = 16;
+    static constexpr unsigned int kBranchFactor = 16;
 
 private:
     /** Opaque type that contains the `hashes` array (array of type
@@ -81,19 +81,19 @@ public:
     SHAMapInnerNode(SHAMapInnerNode const&) = delete;
     SHAMapInnerNode&
     operator=(SHAMapInnerNode const&) = delete;
-    ~SHAMapInnerNode();
+    ~SHAMapInnerNode() override;
 
     // Needed to support intrusive weak pointers
     void
     partialDestructor() override;
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const override;
 
     SHAMapNodeType
     getType() const override
     {
-        return SHAMapNodeType::tnINNER;
+        return SHAMapNodeType::TnInner;
     }
 
     bool
@@ -121,19 +121,19 @@ public:
     getChildHash(int m) const;
 
     void
-    setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child);
+    setChild(int m, SHAMapTreeNodePtr child);
 
     void
-    shareChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> const& child);
+    shareChild(int m, SHAMapTreeNodePtr const& child);
 
     SHAMapTreeNode*
     getChildPointer(int branch);
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     getChild(int branch);
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
-    canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNode> node);
+    SHAMapTreeNodePtr
+    canonicalizeChild(int branch, SHAMapTreeNodePtr node);
 
     // sync functions
     bool
@@ -159,12 +159,12 @@ public:
     getString(SHAMapNodeID const&) const override;
 
     void
-    invariants(bool is_root = false) const override;
+    invariants(bool isRoot = false) const override;
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeFullInner(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeCompressedInner(Slice data);
 };
 

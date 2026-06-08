@@ -9,7 +9,7 @@ namespace xrpl {
 class Batch : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit Batch(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -33,7 +33,18 @@ public:
     TER
     doApply() override;
 
-    static constexpr auto disabledTxTypes = std::to_array<TxType>({
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
+
+    static constexpr auto kDisabledTxTypes = std::to_array<TxType>({
         ttVAULT_CREATE,
         ttVAULT_SET,
         ttVAULT_DELETE,

@@ -6,8 +6,7 @@
 #include <memory>
 #include <string>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 /** A container for managing a set of metric groups. */
 class Groups
@@ -30,7 +29,6 @@ public:
 
 /** Create a group container that uses the specified collector. */
 std::unique_ptr<Groups>
-make_Groups(Collector::ptr const& collector);
+makeGroups(Collector::ptr const& collector);
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

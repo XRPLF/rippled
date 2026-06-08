@@ -12,7 +12,6 @@
 #include <cstdint>
 #include <functional>
 #include <map>
-#include <memory>
 #include <optional>
 #include <set>
 #include <utility>
@@ -30,10 +29,10 @@ enum class SkipEntry : bool { No = false, Yes };
 /** Determines whether the given expiration time has passed.
 
     In the XRP Ledger, expiration times are defined as the number of whole
-    seconds after the "Ripple Epoch" which, for historical reasons, is set
+    seconds after the "XRPL epoch" which, for historical reasons, is set
     to January 1, 2000 (00:00 UTC).
 
-    This is like the way the Unix epoch works, except the Ripple Epoch is
+    This is like the way the Unix epoch works, except the XRPL epoch is
     precisely 946,684,800 seconds after the Unix Epoch.
 
     See https://xrpl.org/basic-data-types.html#specifying-time
@@ -57,14 +56,14 @@ isVaultPseudoAccountFrozen(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptShare,
-    int depth);
+    std::uint8_t depth);
 
 [[nodiscard]] bool
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Issue const& asset,
-    Issue const& asset2);
+    Asset const& asset,
+    Asset const& asset2);
 
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>
@@ -135,7 +134,7 @@ areCompatible(
 dirLink(
     ApplyView& view,
     AccountID const& owner,
-    std::shared_ptr<SLE>& object,
+    SLE::pointer& object,
     SF_UINT64 const& node = sfOwnerNode);
 
 /** Checks that can withdraw funds from an object to itself or a destination.
@@ -215,8 +214,8 @@ doWithdraw(
  * (if should not be skipped) and if the entry should be skipped. The status
  * is always tesSUCCESS if the entry should be skipped.
  */
-using EntryDeleter = std::function<
-    std::pair<TER, SkipEntry>(LedgerEntryType, uint256 const&, std::shared_ptr<SLE>&)>;
+using EntryDeleter =
+    std::function<std::pair<TER, SkipEntry>(LedgerEntryType, uint256 const&, SLE::pointer&)>;
 /** Cleanup owner directory entries on account delete.
  * Used for a regular and AMM accounts deletion. The caller
  * has to provide the deleter function, which handles details of

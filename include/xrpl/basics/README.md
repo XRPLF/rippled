@@ -2,9 +2,9 @@
 
 Utility functions and classes.
 
-ripple/basic should contain no dependencies on other modules.
+The module xrpl/basics should contain no dependencies on other modules.
 
-# Choosing a rippled container.
+# Choosing an xrpld container.
 
 - `std::vector`
   - For ordered containers with most insertions or erases at the end.
