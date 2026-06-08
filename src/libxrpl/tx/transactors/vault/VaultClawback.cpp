@@ -67,8 +67,9 @@ clawbackAmount(
     if (maybeAmount)
         return *maybeAmount;
 
+    Asset const share = MPTIssue{vault->at(sfShareMPTID)};
     if (account == vault->at(sfOwner))
-        return STAmount{MPTIssue{vault->at(sfShareMPTID)}};
+        return STAmount{share};
 
     return STAmount{vault->at(sfAsset)};
 }
