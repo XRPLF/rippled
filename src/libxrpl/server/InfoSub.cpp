@@ -51,7 +51,7 @@ InfoSub::~InfoSub()
         source_.unsubAccountInternal(seq_, normalSubscriptions_, false);
 
     if (!mptSubscriptions_.empty())
-        m_source.unsubMPTInternal(mSeq, mptSubscriptions_);
+        source_.unsubMPTInternal(seq_, mptSubscriptions_);
 
     for (auto const& account : accountHistorySubscriptions_)
         source_.unsubAccountHistoryInternal(seq_, account, false);
@@ -152,7 +152,7 @@ InfoSub::getApiVersion() const noexcept
 void
 InfoSub::insertSubMPTInfo(MPTID const& mptID)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     mptSubscriptions_.insert(mptID);
 }
@@ -160,7 +160,7 @@ InfoSub::insertSubMPTInfo(MPTID const& mptID)
 void
 InfoSub::deleteSubMPTInfo(MPTID const& mptID)
 {
-    std::scoped_lock const sl(mLock);
+    std::scoped_lock const sl(lock_);
 
     mptSubscriptions_.erase(mptID);
 }

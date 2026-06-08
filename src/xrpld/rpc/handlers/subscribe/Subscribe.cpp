@@ -332,11 +332,11 @@ doSubscribe(RPC::JsonContext& context)
     if (context.params.isMember(jss::mpt_issuances))
     {
         if (!context.params[jss::mpt_issuances].isArray())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         auto ids = RPC::parseMptIssuanceIds(context.params[jss::mpt_issuances]);
         if (ids.empty())
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
         context.netOps.subMPT(ispSub, ids);
         JLOG(context.j.debug()) << "doSubscribe: mpts: " << ids.size();
     }

@@ -70,7 +70,7 @@ parseAccountIds(json::Value const& jvArray);
  * @return A hash_set containing the parsed MPTID objects.
  */
 hash_set<MPTID>
-parseMptIssuanceIds(Json::Value const& jvArray);
+parseMptIssuanceIds(json::Value const& jvArray);
 
 /**
  * @brief Retrieves the limit value from a JsonContext or sets a default.
