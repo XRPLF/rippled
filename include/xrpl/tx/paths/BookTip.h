@@ -21,7 +21,7 @@ private:
     uint256 end_;
     uint256 dir_;
     uint256 index_;
-    std::shared_ptr<SLE> entry_;
+    SLE::pointer entry_;
     Quality quality_{};
 
 public:

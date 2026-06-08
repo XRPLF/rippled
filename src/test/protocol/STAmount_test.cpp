@@ -37,7 +37,7 @@ public:
         s.add(ser);
 
         SerialIter sit(ser.slice());
-        return STAmount(sit, kSF_GENERIC);
+        return STAmount(sit, sfGeneric);
     }
 
     //--------------------------------------------------------------------------
@@ -54,7 +54,7 @@ public:
         {
             mantissa--;
 
-            if (mantissa < STAmount::kMIN_VALUE)
+            if (mantissa < STAmount::kMinValue)
                 return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
@@ -69,7 +69,7 @@ public:
         {
             mantissa++;
 
-            if (mantissa > STAmount::kMAX_VALUE)
+            if (mantissa > STAmount::kMaxValue)
                 return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
@@ -228,9 +228,9 @@ public:
         unexpected(serializeAndDeserialize(hundred) != hundred, "STAmount fail");
         unexpected(!zeroSt.native(), "STAmount fail");
         unexpected(!hundred.native(), "STAmount fail");
-        unexpected(zeroSt != beast::kZERO, "STAmount fail");
-        unexpected(one == beast::kZERO, "STAmount fail");
-        unexpected(hundred == beast::kZERO, "STAmount fail");
+        unexpected(zeroSt != beast::kZero, "STAmount fail");
+        unexpected(one == beast::kZero, "STAmount fail");
+        unexpected(hundred == beast::kZero, "STAmount fail");
         unexpected((zeroSt < zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt < one), "STAmount fail");
         unexpected(!(zeroSt < hundred), "STAmount fail");
@@ -314,9 +314,9 @@ public:
         unexpected(serializeAndDeserialize(hundred) != hundred, "STAmount fail");
         unexpected(zeroSt.native(), "STAmount fail");
         unexpected(hundred.native(), "STAmount fail");
-        unexpected(zeroSt != beast::kZERO, "STAmount fail");
-        unexpected(one == beast::kZERO, "STAmount fail");
-        unexpected(hundred == beast::kZERO, "STAmount fail");
+        unexpected(zeroSt != beast::kZero, "STAmount fail");
+        unexpected(one == beast::kZero, "STAmount fail");
+        unexpected(hundred == beast::kZero, "STAmount fail");
         unexpected((zeroSt < zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt < one), "STAmount fail");
         unexpected(!(zeroSt < hundred), "STAmount fail");
@@ -494,34 +494,30 @@ public:
     {
         testcase("underflow");
 
-        STAmount const bigNative(STAmount::kMAX_NATIVE / 2);
+        STAmount const bigNative(STAmount::kMaxNative / 2);
         STAmount const bigValue(
-            noIssue(),
-            (STAmount::kMIN_VALUE + STAmount::kMAX_VALUE) / 2,
-            STAmount::kMAX_OFFSET - 1);
+            noIssue(), (STAmount::kMinValue + STAmount::kMaxValue) / 2, STAmount::kMaxOffset - 1);
         STAmount const smallValue(
-            noIssue(),
-            (STAmount::kMIN_VALUE + STAmount::kMAX_VALUE) / 2,
-            STAmount::kMIN_OFFSET + 1);
+            noIssue(), (STAmount::kMinValue + STAmount::kMaxValue) / 2, STAmount::kMinOffset + 1);
         STAmount const zeroSt(noIssue(), 0);
 
         STAmount const smallXSmall = multiply(smallValue, smallValue, noIssue());
 
-        BEAST_EXPECT(smallXSmall == beast::kZERO);
+        BEAST_EXPECT(smallXSmall == beast::kZero);
 
         STAmount bigDsmall = divide(smallValue, bigValue, noIssue());
 
-        BEAST_EXPECT(bigDsmall == beast::kZERO);
+        BEAST_EXPECT(bigDsmall == beast::kZero);
 
-        BEAST_EXPECT(bigDsmall == beast::kZERO);
+        BEAST_EXPECT(bigDsmall == beast::kZero);
 
         bigDsmall = divide(smallValue, bigValue, xrpIssue());
 
-        BEAST_EXPECT(bigDsmall == beast::kZERO);
+        BEAST_EXPECT(bigDsmall == beast::kZero);
 
         bigDsmall = divide(smallValue, bigNative, xrpIssue());
 
-        BEAST_EXPECT(bigDsmall == beast::kZERO);
+        BEAST_EXPECT(bigDsmall == beast::kZero);
 
         // very bad offer
         std::uint64_t r = getRate(smallValue, bigValue);
@@ -618,17 +614,17 @@ public:
             BEAST_EXPECT(amountFromJson(sfNumber, "0") == XRPAmount(0));
             BEAST_EXPECT(amountFromJson(sfNumber, "-0") == XRPAmount(0));
 
-            constexpr auto kIMIN = std::numeric_limits<int>::min();
-            BEAST_EXPECT(amountFromJson(sfNumber, kIMIN) == XRPAmount(kIMIN));
-            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kIMIN)) == XRPAmount(kIMIN));
+            constexpr auto kIMin = std::numeric_limits<int>::min();
+            BEAST_EXPECT(amountFromJson(sfNumber, kIMin) == XRPAmount(kIMin));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kIMin)) == XRPAmount(kIMin));
 
-            constexpr auto kIMAX = std::numeric_limits<int>::max();
-            BEAST_EXPECT(amountFromJson(sfNumber, kIMAX) == XRPAmount(kIMAX));
-            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kIMAX)) == XRPAmount(kIMAX));
+            constexpr auto kIMax = std::numeric_limits<int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, kIMax) == XRPAmount(kIMax));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kIMax)) == XRPAmount(kIMax));
 
-            constexpr auto kUMAX = std::numeric_limits<unsigned int>::max();
-            BEAST_EXPECT(amountFromJson(sfNumber, kUMAX) == XRPAmount(kUMAX));
-            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kUMAX)) == XRPAmount(kUMAX));
+            constexpr auto kUMax = std::numeric_limits<unsigned int>::max();
+            BEAST_EXPECT(amountFromJson(sfNumber, kUMax) == XRPAmount(kUMax));
+            BEAST_EXPECT(amountFromJson(sfNumber, std::to_string(kUMax)) == XRPAmount(kUMax));
 
             // XRP does not handle fractional part
             try
@@ -1207,6 +1203,98 @@ public:
         }
     }
 
+    void
+    testIsZeroAtScale()
+    {
+        testcase("isZeroAtScale");
+
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+
+        // IOU: 10 IOU — mantissa = kMinValue (10^15), exponent = -14.
+        // One ULP at this scale is 10^-14; half-ULP is 5*10^-15.
+        {
+            STAmount const ref{usd, STAmount::kMinValue, -14};
+            int const refScale = ref.exponent();  // -14
+            BEAST_EXPECT(refScale == -14);
+
+            // Zero rounds to zero at any scale.
+            STAmount const iouZero{usd, 0};
+            BEAST_EXPECT(iouZero.isZeroAtScale(refScale));
+
+            // Sub-ULP: 1e-16 IOU (mantissa = kMinValue, exponent = -31).
+            // Far below half-ULP → rounds to zero.
+            STAmount const subUlp{usd, STAmount::kMinValue, -31};
+            BEAST_EXPECT(subUlp.isZeroAtScale(refScale));
+
+            // One ULP: 1e-14 IOU (mantissa = kMinValue, exponent = -29).
+            // Exactly the smallest representable unit at refScale → not zero.
+            STAmount const oneUlp{usd, STAmount::kMinValue, -29};
+            BEAST_EXPECT(!oneUlp.isZeroAtScale(refScale));
+
+            // The reference value itself: exponent == scale → returned
+            // unchanged → not zero.
+            BEAST_EXPECT(!ref.isZeroAtScale(refScale));
+
+            // A much larger value: certainly not zero at this scale.
+            STAmount const large{usd, STAmount::kMinValue, 0};  // 1e15 IOU
+            BEAST_EXPECT(!large.isZeroAtScale(refScale));
+
+            // When scale equals the value's own exponent, roundToScale
+            // short-circuits and returns the value unchanged.
+            BEAST_EXPECT(!subUlp.isZeroAtScale(subUlp.exponent()));
+            BEAST_EXPECT(!oneUlp.isZeroAtScale(oneUlp.exponent()));
+
+            // Half-ULP boundary. roundToScale forms (value + ref) - ref
+            // where ref = 10 IOU has mantissa 1e15 (LSB 0, even).
+            // Number's default rounding is to-nearest-even, so an exact
+            // half-ULP tie rounds toward the even-LSB neighbour — the
+            // reference itself — and the round-trip result is zero.
+            // Just below half-ULP rounds the same way; just above
+            // clears half-ULP and bumps the mantissa to 1e15 + 1.
+            STAmount const justBelowHalf{usd, STAmount::kMinValue * 4, -30};
+            BEAST_EXPECT(justBelowHalf.isZeroAtScale(refScale));
+
+            STAmount const halfUlp{usd, STAmount::kMinValue * 5, -30};
+            BEAST_EXPECT(halfUlp.isZeroAtScale(refScale));
+
+            STAmount const justAboveHalf{usd, STAmount::kMinValue * 6, -30};
+            BEAST_EXPECT(!justAboveHalf.isZeroAtScale(refScale));
+
+            // Large magnitude gap: dust value far below an enormous scale.
+            // 1e-80 with scale +15 — the value vanishes utterly.
+            STAmount const dust{usd, STAmount::kMinValue, -95};
+            BEAST_EXPECT(dust.isZeroAtScale(15));
+
+            // Negative values mirror positive behaviour.
+            STAmount const negSubUlp{usd, STAmount::kMinValue, -31, true};
+            BEAST_EXPECT(negSubUlp.isZeroAtScale(refScale));
+
+            STAmount const negOneUlp{usd, STAmount::kMinValue, -29, true};
+            BEAST_EXPECT(!negOneUlp.isZeroAtScale(refScale));
+        }
+
+        // XRP is integral — roundToScale short-circuits, value is preserved.
+        {
+            STAmount const xrp{XRPAmount{1}};
+            BEAST_EXPECT(!xrp.isZeroAtScale(-14));
+            BEAST_EXPECT(!xrp.isZeroAtScale(0));
+
+            STAmount const xrpZero{XRPAmount{0}};
+            BEAST_EXPECT(xrpZero.isZeroAtScale(-14));
+        }
+
+        // MPT is integral — same short-circuit behaviour as XRP.
+        {
+            MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
+            STAmount const mptAmt{mpt, 1};
+            BEAST_EXPECT(!mptAmt.isZeroAtScale(0));
+            BEAST_EXPECT(!mptAmt.isZeroAtScale(-14));
+
+            STAmount const mptZero{mpt, 0};
+            BEAST_EXPECT(mptZero.isZeroAtScale(0));
+        }
+    }
+
     //--------------------------------------------------------------------------
 
     void
@@ -1227,6 +1315,7 @@ public:
         testCanSubtractXRP();
         testCanSubtractIOU();
         testCanSubtractMPT();
+        testIsZeroAtScale();
     }
 };
 

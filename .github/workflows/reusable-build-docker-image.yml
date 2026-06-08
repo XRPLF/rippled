@@ -1,0 +1,89 @@
+# Build a single-platform Docker image. On push, the image is pushed to
+# GHCR with arch-suffixed tags (e.g. `:latest-amd64`, `:sha-abc-amd64`)
+# so the calling workflow can stitch per-arch builds into a multi-arch
+# manifest without needing to pass digests around.
+name: Reusable build Docker image (single platform)
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: "Full image name without tag (e.g. 'ghcr.io/xrplf/xrpld/nix-ubuntu')"
+        required: true
+        type: string
+      dockerfile:
+        description: "Path to the Dockerfile, relative to the repository root"
+        required: true
+        type: string
+      base_image:
+        description: "Value passed to the Dockerfile as the BASE_IMAGE build arg"
+        required: true
+        type: string
+      platform:
+        description: "Docker platform string, e.g. linux/amd64"
+        required: true
+        type: string
+      runner:
+        description: "GitHub Actions runner label to build on"
+        required: true
+        type: string
+      push:
+        description: "Whether to push the image to GHCR"
+        required: true
+        type: boolean
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Build ${{ inputs.platform }}
+    runs-on: ${{ inputs.runner }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Determine arch
+        id: vars
+        env:
+          PLATFORM: ${{ inputs.platform }}
+        run: |
+          echo "arch=${PLATFORM##*/}" >>$GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+
+      - name: Login to GitHub Container Registry
+        if: inputs.push
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+        with:
+          images: ${{ inputs.image_name }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest
+          flavor: |
+            suffix=-${{ steps.vars.outputs.arch }},onlatest=true
+
+      - name: Build and push
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: .
+          file: ${{ inputs.dockerfile }}
+          platforms: ${{ inputs.platform }}
+          push: ${{ inputs.push }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: BASE_IMAGE=${{ inputs.base_image }}
