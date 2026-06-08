@@ -13,7 +13,7 @@ namespace xrpl {
 // Note: This algorithm is evolved from std::set_intersection.
 template <class InputIter1, class InputIter2, class Action, class Comp>
 void
-generalized_set_intersection(
+generalizedSetIntersection(
     InputIter1 first1,
     InputIter1 last1,
     InputIter2 first2,
@@ -23,8 +23,10 @@ generalized_set_intersection(
 {
     while (first1 != last1 && first2 != last2)
     {
-        if (comp(*first1, *first2))  // if *first1 < *first2
-            ++first1;                //     then reduce first range
+        if (comp(*first1, *first2))
+        {              // if *first1 < *first2
+            ++first1;  //     then reduce first range
+        }
         else
         {
             if (!comp(*first2, *first1))   // if *first1 == *first2
@@ -51,7 +53,7 @@ generalized_set_intersection(
 // std::set_intersection.
 template <class FwdIter1, class InputIter2, class Pred, class Comp>
 FwdIter1
-remove_if_intersect_or_match(
+removeIfIntersectOrMatch(
     FwdIter1 first1,
     FwdIter1 last1,
     InputIter2 first2,

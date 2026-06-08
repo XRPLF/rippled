@@ -42,10 +42,10 @@ public:
         }
 
         // For sorting to look for duplicate accounts
-        friend bool
-        operator<(SignerEntry const& lhs, SignerEntry const& rhs)
+        friend auto
+        operator<=>(SignerEntry const& lhs, SignerEntry const& rhs)
         {
-            return lhs.account < rhs.account;
+            return lhs.account <=> rhs.account;
         }
 
         friend bool
