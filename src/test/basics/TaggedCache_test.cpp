@@ -1,5 +1,7 @@
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
