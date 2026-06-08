@@ -54,7 +54,11 @@ class Xrpl(ConanFile):
         "rocksdb": True,
         "shared": False,
         "static": True,
-        "telemetry": True,
+        # OTel-overhead baseline branch: telemetry compiled OUT so a perf-iac
+        # comparison run (this branch as baseline vs phase-10 as on-demand)
+        # measures the full linked-in + hot-path cost of telemetry. Do not
+        # merge this flip into a feature branch.
+        "telemetry": False,
         "tests": False,
         "unity": False,
         "xrpld": False,
