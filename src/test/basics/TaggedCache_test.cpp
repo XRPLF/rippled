@@ -186,22 +186,6 @@ public:
                 explicit MyRefCountObject(std::string data) : data(std::move(data))
                 {
                 }
-                explicit MyRefCountObject(char const* data) : data(data)
-                {
-                }
-
-                MyRefCountObject&
-                operator=(MyRefCountObject const& other)
-                {
-                    data = other.data;
-                    return *this;
-                }
-
-                bool
-                operator==(MyRefCountObject const& other) const
-                {
-                    return data == other.data;
-                }
 
                 bool
                 operator==(std::string const& other) const
