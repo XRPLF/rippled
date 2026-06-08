@@ -11,10 +11,10 @@ private:
     pay(AccountID const& from, AccountID const& to, STAmount const& amount);
 
     TER
-    acceptOffer(std::shared_ptr<SLE> const& offer);
+    acceptOffer(SLE::ref offer);
 
     TER
-    bridgeOffers(std::shared_ptr<SLE> const& buy, std::shared_ptr<SLE> const& sell);
+    bridgeOffers(SLE::ref buy, SLE::ref sell);
 
     TER
     transferNFToken(AccountID const& buyer, AccountID const& seller, uint256 const& nfTokenID);
@@ -36,10 +36,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
