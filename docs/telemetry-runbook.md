@@ -57,6 +57,8 @@ cmake --build --preset default
 | `max_queue_size`           | `2048`                            | Max spans queued before dropping                          |
 | `use_tls`                  | `0`                               | Use TLS for exporter connection                           |
 | `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                             |
+| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way TLS     |
+| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`                   |
 
 ## Span Reference
 

@@ -86,6 +86,8 @@ enabled=0
 | `endpoint`                 | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint                                                                               |
 | `use_tls`                  | bool   | `false`                           | Enable TLS for exporter connection                                                                         |
 | `tls_ca_cert`              | string | `""`                              | Path to CA certificate file                                                                                |
+| `tls_client_cert`          | string | `""`                              | Path to node's client certificate (PEM) for mutual TLS; empty = one-way TLS                                |
+| `tls_client_key`           | string | `""`                              | Path to private key (PEM) for `tls_client_cert`; required when it is set                                   |
 | `sampling_ratio`           | float  | `1.0`                             | Sampling ratio (0.0-1.0)                                                                                   |
 | `batch_size`               | uint   | `512`                             | Spans per export batch                                                                                     |
 | `batch_delay_ms`           | uint   | `5000`                            | Max delay before sending batch (ms)                                                                        |
@@ -152,6 +154,8 @@ setupTelemetry(
 
     setup.useTls = section.value_or("use_tls", false);
     setup.tlsCertPath = section.value_or("tls_ca_cert", "");
+    setup.tlsClientCertPath = section.value_or("tls_client_cert", "");
+    setup.tlsClientKeyPath = section.value_or("tls_client_key", "");
 
     // Sampling
     setup.samplingRatio = section.value_or("sampling_ratio", 1.0);

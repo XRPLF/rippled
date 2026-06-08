@@ -139,6 +139,8 @@ trace_ledger=1
 | `endpoint`            | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint                       |
 | `use_tls`             | int    | `0`                               | Enable TLS for the exporter connection             |
 | `tls_ca_cert`         | string | (empty)                           | Path to CA certificate for TLS                     |
+| `tls_client_cert`     | string | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way  |
+| `tls_client_key`      | string | (empty)                           | Private key (PEM) for `tls_client_cert`            |
 | `sampling_ratio`      | double | `1.0`                             | Head-based sampling ratio (`0.0` to `1.0`)         |
 | `batch_size`          | uint32 | `512`                             | Maximum spans per export batch                     |
 | `batch_delay_ms`      | uint32 | `5000`                            | Maximum delay (ms) before flushing a batch         |
