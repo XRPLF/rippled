@@ -474,7 +474,7 @@ Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent)
         // If there was any remainder, subtract 1 from the result. This is sufficient to get the
         // best rounding.
         XRPL_ASSERT(
-            empty() || mantissa > maxMantissa_,
+            r == Round::Exact || mantissa > maxMantissa_,
             "xrpl::Number::Guard::doRoundDown : mantissa is expected size");
         if (r != Round::Exact)
         {
@@ -759,7 +759,7 @@ Number::operator+=(Number const& y)
 
     // Bring the exponents of both values into agreement, so the mantissas are on the same scale
     //   and can be added directly together.
-    // Shrink the mantissa and bring the exponent up of the value with the lower exponent. Store any
+    // Shrink the mantissa and raise the exponent of the value with the lower exponent. Store any
     // dropped digits in the Guard.
     if (xe < ye)
     {
@@ -801,13 +801,13 @@ Number::operator+=(Number const& y)
             xe = ye;
             xn = yn;
         }
-        if (cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled)
+        if (cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled)
         {
             // Grow xm/xe and pull digits out of the Guard until it's a little bit larger than
             // maxMantissa, so that normalize will have enough information to make an accurate
             // rounding decision, but stop if the Guard empties out, because no rounding will be
             // necessary. (Normalize will pad it back into range.) Note that if any digits were lost
-            // (xbit), the Guard will never be empty, so xm will get big.
+            // (xbit), the Guard will never be empty, so xm will get larger than upperLimit.
             auto const upperLimit = static_cast<uint128_t>(minMantissa) * 1000;
             while (xm < upperLimit && !g.empty())
             {
@@ -818,7 +818,8 @@ Number::operator+=(Number const& y)
         }
         else
         {
-            // Grow xm/xe and pull digits out of the Guard until it's back in range.
+            // Grow xm/xe and pull digits out of the Guard until it's back in the
+            // minMantissa/maxMantissa range.
             while (xm < minMantissa && xm * 10 <= kMaxRep)
             {
                 xm *= 10;
