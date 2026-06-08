@@ -5,7 +5,6 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/sendmax.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/vault.h>
 
@@ -1716,15 +1715,36 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.mergeInbox({.account = bob});
         }
 
-        // Makes sure if merge inbox version is UINT32_MAX, the next merge will be 0.
+        // Makes sure if merge inbox version is UINT32_MAX, the next merge wraps
+        // the version back to 0.
         {
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
-            ConfidentialEnv confEnv{
-                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
-            auto& mptAlice = confEnv.mpt;
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
 
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+            });
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            // Force the on-ledger version to UINT32_MAX, then apply a merge and
+            // confirm the version wraps around to 0.
             auto const wrappedFrom = std::numeric_limits<std::uint32_t>::max();
             auto const jt = env.jt(mptAlice.mergeInboxJV({.account = bob}));
             BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
