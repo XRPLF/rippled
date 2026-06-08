@@ -186,46 +186,46 @@ ValidAMM::finalizeDelete(bool enforce, bool enforceAMMDelete, TER res, beast::Jo
             return false;
         // LCOV_EXCL_STOP
     }
-    if (!enforceAMMDelete)
-        return true;
-
-    if (isTesSuccess(res))
+    if (enforceAMMDelete)
     {
-        if (!ammDeleted_)
+        if (isTesSuccess(res))
         {
+            if (!ammDeleted_)
+            {
+                // LCOV_EXCL_START
+                JLOG(j.error())
+                    << "Invariant failed: AMMDelete failed, AMM object remained on tesSUCCESS";
+                return false;
+                // LCOV_EXCL_STOP
+            }
+            if (!lptAMMBalanceBeforeDeletion_)
+            {
+                // LCOV_EXCL_START
+                JLOG(j.error())
+                    << "Invariant failed: AMMDelete failed, AMM object deleted without LP balance";
+                return false;
+                // LCOV_EXCL_STOP
+            }
+            if (*lptAMMBalanceBeforeDeletion_ != beast::kZero)
+            {
+                // LCOV_EXCL_START
+                JLOG(j.error())
+                    << "Invariant failed: AMMDelete failed, AMM object deleted with non-zero LP "
+                       "balance: "
+                    << *lptAMMBalanceBeforeDeletion_;
+                return false;
+                // LCOV_EXCL_STOP
+            }
+        }
+        else if (ammDeleted_)
+        {
+            // AMM should not be fully deleted on tecINCOMPLETE
             // LCOV_EXCL_START
             JLOG(j.error())
-                << "Invariant failed: AMMDelete failed, AMM object remained on tesSUCCESS";
+                << "Invariant failed: AMMDelete failed, AMM object deleted on tecINCOMPLETE";
             return false;
             // LCOV_EXCL_STOP
         }
-        if (!lptAMMBalanceBeforeDeletion_)
-        {
-            // LCOV_EXCL_START
-            JLOG(j.error())
-                << "Invariant failed: AMMDelete failed, AMM object deleted without LP balance";
-            return false;
-            // LCOV_EXCL_STOP
-        }
-        if (*lptAMMBalanceBeforeDeletion_ != beast::kZero)
-        {
-            // LCOV_EXCL_START
-            JLOG(j.error())
-                << "Invariant failed: AMMDelete failed, AMM object deleted with non-zero LP "
-                   "balance: "
-                << *lptAMMBalanceBeforeDeletion_;
-            return false;
-            // LCOV_EXCL_STOP
-        }
-    }
-    else if (ammDeleted_)
-    {
-        // AMM should not be fully deleted on tecINCOMPLETE
-        // LCOV_EXCL_START
-        JLOG(j.error())
-            << "Invariant failed: AMMDelete failed, AMM object deleted on tecINCOMPLETE";
-        return false;
-        // LCOV_EXCL_STOP
     }
 
     return true;
