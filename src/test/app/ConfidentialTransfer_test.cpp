@@ -4235,12 +4235,16 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
         };
 
+        // Wrong transaction sequence in the proof context.
         submitBadContext(getClawbackContextHash(
             alice.id(), mptAlice.issuanceID(), env.seq(alice) + 1, bob.id()));
+        // Wrong issuance ID in the proof context.
         submitBadContext(getClawbackContextHash(
             alice.id(), makeMptID(env.seq(alice) + 100, alice), env.seq(alice), bob.id()));
+        // Wrong holder in the proof context.
         submitBadContext(
             getClawbackContextHash(alice.id(), mptAlice.issuanceID(), env.seq(alice), carol.id()));
+        // Wrong account (issuer) in the proof context.
         submitBadContext(
             getClawbackContextHash(carol.id(), mptAlice.issuanceID(), env.seq(alice), bob.id()));
 
@@ -4286,7 +4290,15 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         if (!BEAST_EXPECT(proof.has_value()))
             return;
 
-        // Change Bob's confidential balance version after generating the clawback proof.
+        // Change Bob's confidential balance version after generating the
+        // clawback proof. An empty-inbox merge leaves the balance unchanged but
+        // still bumps sfConfidentialBalanceVersion.
+        auto const versionBefore = mptAlice.getMPTokenVersion(bob);
+        mptAlice.mergeInbox({.account = bob});
+        BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) != versionBefore);
+
+        // The clawback context hash omits the holder version, so the proof
+        // generated against the old version is still accepted.
         mptAlice.confidentialClaw({
             .account = alice,
             .holder = bob,
