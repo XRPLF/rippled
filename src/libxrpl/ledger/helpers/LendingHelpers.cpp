@@ -341,7 +341,7 @@ loanLatePaymentInterest(
     // If the payment is not late by any amount of time, then there's no late
     // interest
     if (now <= nextPaymentDueDate)
-        return 0;
+        return kNumZero;
 
     // Equation (3) from XLS-66 spec, Section A-2 Equation Glossary
     auto const secondsOverdue = now - nextPaymentDueDate;
@@ -866,19 +866,17 @@ doOverpayment(
  *
  * Implements equation (15) from XLS-66 spec, Section A-2 Equation Glossary
  */
-Expected<ExtendedPaymentComponents, TER>
+ExtendedPaymentComponents
 computeLatePayment(
     Asset const& asset,
-    ApplyView const& view,
+    ReadView const& view,
     Number const& principalOutstanding,
     std::int32_t nextDueDate,
     ExtendedPaymentComponents const& periodic,
     TenthBips32 lateInterestRate,
     std::int32_t loanScale,
     Number const& latePaymentFee,
-    STAmount const& amount,
-    TenthBips16 managementFeeRate,
-    beast::Journal j)
+    TenthBips16 managementFeeRate)
 {
     // Calculate the penalty interest based on how long the payment is overdue.
     auto const latePaymentInterest = loanLatePaymentInterest(
@@ -923,16 +921,6 @@ computeLatePayment(
         "xrpl::detail::computeLatePayment",
         "total due is rounded");
 
-    // Check that the borrower provided enough funds to cover the late payment.
-    // The late payment is more expensive than a regular payment due to the
-    // penalties.
-    if (amount < late.totalDue)
-    {
-        JLOG(j.warn()) << "Late loan payment amount is insufficient. Due: " << late.totalDue
-                       << ", paid: " << amount;
-        return Unexpected(tecINSUFFICIENT_PAYMENT);
-    }
-
     return late;
 }
 
@@ -955,10 +943,10 @@ computeLatePayment(
  *
  * Implements equation (26) from XLS-66 spec, Section A-2 Equation Glossary
  */
-Expected<ExtendedPaymentComponents, TER>
+ExtendedPaymentComponents
 computeFullPayment(
     Asset const& asset,
-    ApplyView& view,
+    ReadView const& view,
     Number const& principalOutstanding,
     Number const& managementFeeOutstanding,
     Number const& periodicPayment,
@@ -971,18 +959,8 @@ computeFullPayment(
     Number const& totalInterestOutstanding,
     Number const& periodicRate,
     Number const& closePaymentFee,
-    STAmount const& amount,
-    TenthBips16 managementFeeRate,
-    beast::Journal j)
+    TenthBips16 managementFeeRate)
 {
-    // Full payment must be made before the final scheduled payment.
-    if (paymentRemaining <= 1)
-    {
-        // If this is the last payment, it has to be a regular payment
-        JLOG(j.warn()) << "Last payment cannot be a full payment.";
-        return Unexpected(tecKILLED);
-    }
-
     // Calculate the theoretical principal based on the payment schedule.
     // This theoretical (unrounded) value is used to compute interest and
     // penalties accurately.
@@ -1046,22 +1024,6 @@ computeFullPayment(
         isRounded(asset, full.totalDue, loanScale),
         "xrpl::detail::computeFullPayment",
         "total due is rounded");
-
-    JLOG(j.trace()) << "computeFullPayment result: periodicPayment: " << periodicPayment
-                    << ", periodicRate: " << periodicRate
-                    << ", paymentRemaining: " << paymentRemaining
-                    << ", theoreticalPrincipalOutstanding: " << theoreticalPrincipalOutstanding
-                    << ", fullPaymentInterest: " << fullPaymentInterest
-                    << ", roundedFullInterest: " << roundedFullInterest
-                    << ", roundedFullManagementFee: " << roundedFullManagementFee
-                    << ", untrackedInterest: " << full.untrackedInterest;
-
-    if (amount < full.totalDue)
-    {
-        // If the payment is less than the full payment amount, it's not
-        // sufficient to be a full payment.
-        return Unexpected(tecINSUFFICIENT_PAYMENT);
-    }
 
     return full;
 }
@@ -1866,6 +1828,14 @@ loanMakePayment(
         LoanState const roundedLoanState = constructLoanState(
             totalValueOutstandingProxy, principalOutstandingProxy, managementFeeOutstandingProxy);
 
+        // Full payment must be made before the final scheduled payment.
+        if (paymentRemainingProxy <= 1)
+        {
+            // If this is the last payment, it has to be a regular payment
+            JLOG(j.warn()) << "Last payment cannot be a full payment.";
+            return Unexpected(tecKILLED);
+        }
+
         auto const fullPaymentComponents = detail::computeFullPayment(
             asset,
             view,
@@ -1881,36 +1851,24 @@ loanMakePayment(
             roundedLoanState.interestDue,
             periodicRate,
             closePaymentFee,
-            amount,
-            managementFeeRate,
-            j);
+            managementFeeRate);
 
-        if (fullPaymentComponents.has_value())
+        if (amount < fullPaymentComponents.totalDue)
         {
-            return doPayment(
-                *fullPaymentComponents,
-                totalValueOutstandingProxy,
-                principalOutstandingProxy,
-                managementFeeOutstandingProxy,
-                paymentRemainingProxy,
-                prevPaymentDateProxy,
-                nextDueDateProxy,
-                paymentInterval);
+            // If the payment is less than the full payment amount, it's not
+            // sufficient to be a full payment.
+            return Unexpected(tecINSUFFICIENT_PAYMENT);
         }
 
-        if (fullPaymentComponents.error())
-        {
-            // error() will be the TER returned if a payment is not made. It
-            // will only evaluate to true if it's unsuccessful. Otherwise,
-            // tesSUCCESS means nothing was done, so continue.
-            return Unexpected(fullPaymentComponents.error());
-        }
-
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::loanMakePayment : invalid full payment result");
-        JLOG(j.error()) << "Full payment computation failed unexpectedly.";
-        return Unexpected(tecINTERNAL);
-        // LCOV_EXCL_STOP
+        return doPayment(
+            fullPaymentComponents,
+            totalValueOutstandingProxy,
+            principalOutstandingProxy,
+            managementFeeOutstandingProxy,
+            paymentRemainingProxy,
+            prevPaymentDateProxy,
+            nextDueDateProxy,
+            paymentInterval);
     }
 
     // -------------------------------------------------------------
@@ -1954,35 +1912,27 @@ loanMakePayment(
             lateInterestRate,
             loanScale,
             latePaymentFee,
-            amount,
-            managementFeeRate,
-            j);
+            managementFeeRate);
 
-        if (latePaymentComponents.has_value())
+        // Check that the borrower provided enough funds to cover the late payment.
+        // The late payment is more expensive than a regular payment due to the
+        // penalties.
+        if (amount < latePaymentComponents.totalDue)
         {
-            return doPayment(
-                *latePaymentComponents,
-                totalValueOutstandingProxy,
-                principalOutstandingProxy,
-                managementFeeOutstandingProxy,
-                paymentRemainingProxy,
-                prevPaymentDateProxy,
-                nextDueDateProxy,
-                paymentInterval);
+            JLOG(j.warn()) << "Late loan payment amount is insufficient. Due: "
+                           << latePaymentComponents.totalDue << ", paid: " << amount;
+            return Unexpected(tecINSUFFICIENT_PAYMENT);
         }
 
-        if (latePaymentComponents.error())
-        {
-            // error() will be the TER returned if a payment is not made. It
-            // will only evaluate to true if it's unsuccessful.
-            return Unexpected(latePaymentComponents.error());
-        }
-
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::loanMakePayment : invalid late payment result");
-        JLOG(j.error()) << "Late payment computation failed unexpectedly.";
-        return Unexpected(tecINTERNAL);
-        // LCOV_EXCL_STOP
+        return doPayment(
+            latePaymentComponents,
+            totalValueOutstandingProxy,
+            principalOutstandingProxy,
+            managementFeeOutstandingProxy,
+            paymentRemainingProxy,
+            prevPaymentDateProxy,
+            nextDueDateProxy,
+            paymentInterval);
     }
 
     // -------------------------------------------------------------
@@ -2082,14 +2032,14 @@ loanMakePayment(
         Number const overpaymentRaw =
             std::min(roundedAmount - totalPaid, *totalValueOutstandingProxy);
 
-        bool const fixEnabled = view.rules().enabled(fixCleanup3_2_0);
-        Number const overpayment = fixEnabled
+        bool const fix320Enabled = view.rules().enabled(fixCleanup3_2_0);
+        Number const overpayment = fix320Enabled
             ? roundToAsset(asset, overpaymentRaw, loanScale, Number::RoundingMode::Downward)
             : overpaymentRaw;
 
         // Post-amendment, the rounded overpayment can be zero; pre-amendment
         // it's always positive given the surrounding guards.
-        if (!fixEnabled || overpayment > 0)
+        if (!fix320Enabled || overpayment > 0)
         {
             detail::ExtendedPaymentComponents const overpaymentComponents =
                 detail::computeOverpaymentComponents(
