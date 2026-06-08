@@ -1,17 +1,25 @@
-#include <test/jtx.h>
 
-#include <xrpl/protocol/Feature.h>
 
+#include <test/jtx/Env.h>  // IWYU pragma: keep
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
+
+#include <cstdint>
 #include <functional>
 #include <vector>
 
 namespace xrpl {
 
-class Hooks_test : public beast::unit_test::suite
+class Hooks_test : public beast::unit_test::Suite
 {
     /**
      * This unit test was requested here:
-     * https://github.com/ripple/rippled/pull/4089#issuecomment-1050274539
+     * https://github.com/XRPLF/rippled/pull/4089#issuecomment-1050274539
      * These are tests that exercise facilities that are reserved for when Hooks
      * is merged in the future.
      **/
@@ -23,7 +31,7 @@ class Hooks_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        std::vector<std::reference_wrapper<SField const>> fields_to_test = {
+        std::vector<std::reference_wrapper<SField const>> const fieldsToTest = {
             sfHookResult,
             sfHookStateChangeCount,
             sfHookEmitCount,
@@ -61,7 +69,7 @@ class Hooks_test : public beast::unit_test::suite
             sfHooks,
             sfHookGrants};
 
-        for (auto const& rf : fields_to_test)
+        for (auto const& rf : fieldsToTest)
         {
             SField const& f = rf.get();
 
@@ -116,7 +124,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_UINT256: {
-                    uint256 u = uint256::fromVoid(
+                    uint256 const u = uint256::fromVoid(
                         "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBE"
                         "EFDEADBEEF");
                     dummy.setFieldH256(f, u);
@@ -126,7 +134,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_VL: {
-                    std::vector<uint8_t> v{1, 2, 3};
+                    std::vector<uint8_t> const v{1, 2, 3};
                     dummy.setFieldVL(f, v);
                     BEAST_EXPECT(dummy.getFieldVL(f) == v);
                     BEAST_EXPECT(dummy.isFieldPresent(f));
@@ -134,8 +142,10 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_ACCOUNT: {
-                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                    AccountID id = *parseBase58<AccountID>("rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
+                    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+                    AccountID const id =
+                        *parseBase58<AccountID>("rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
+                    // NOLINTEND(bugprone-unchecked-optional-access)
                     dummy.setAccountID(f, id);
                     BEAST_EXPECT(dummy.getAccountID(f) == id);
                     BEAST_EXPECT(dummy.isFieldPresent(f));
@@ -143,7 +153,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_OBJECT: {
-                    dummy.emplace_back(STObject{f});
+                    dummy.emplaceBack(STObject{f});
                     BEAST_EXPECT(dummy.getField(f).getFName() == f);
                     BEAST_EXPECT(dummy.isFieldPresent(f));
                     break;
@@ -151,8 +161,8 @@ class Hooks_test : public beast::unit_test::suite
 
                 case STI_ARRAY: {
                     STArray dummy2{f, 2};
-                    dummy2.push_back(STObject{sfGeneric});
-                    dummy2.push_back(STObject{sfGeneric});
+                    dummy2.pushBack(STObject{sfGeneric});
+                    dummy2.pushBack(STObject{sfGeneric});
                     dummy.setFieldArray(f, dummy2);
                     BEAST_EXPECT(dummy.getFieldArray(f) == dummy2);
                     BEAST_EXPECT(dummy.isFieldPresent(f));

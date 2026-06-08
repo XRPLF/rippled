@@ -74,7 +74,7 @@ public:
         @note The return type is guaranteed to be a pointer
               to a single byte, to facilitate pointer arithmetic.
     */
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
         return data_;
@@ -110,7 +110,7 @@ public:
 
     /** Shrinks the slice by moving its start forward by n characters. */
     void
-    remove_prefix(std::size_t n)
+    removePrefix(std::size_t n)
     {
         data_ += n;
         size_ -= n;
@@ -118,30 +118,30 @@ public:
 
     /** Shrinks the slice by moving its end backward by n characters. */
     void
-    remove_suffix(std::size_t n)
+    removeSuffix(std::size_t n)
     {
         size_ -= n;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return data_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return data_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return data_ + size_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return data_ + size_;
@@ -158,7 +158,7 @@ public:
         @returns The requested subslice, if the request is valid.
         @throws std::out_of_range if pos > size()
      */
-    Slice
+    [[nodiscard]] Slice
     substr(std::size_t pos, std::size_t count = std::numeric_limits<std::size_t>::max()) const
     {
         if (pos > size())
@@ -183,7 +183,7 @@ operator==(Slice const& lhs, Slice const& rhs) noexcept
     if (lhs.size() != rhs.size())
         return false;
 
-    if (lhs.size() == 0)
+    if (lhs.empty())
         return true;
 
     return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;
@@ -211,14 +211,14 @@ operator<<(Stream& s, Slice const& v)
 }
 
 template <class T, std::size_t N>
-std::enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value, Slice>
+std::enable_if_t<std::is_same_v<T, char> || std::is_same_v<T, unsigned char>, Slice>
 makeSlice(std::array<T, N> const& a)
 {
     return Slice(a.data(), a.size());
 }
 
 template <class T, class Alloc>
-std::enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value, Slice>
+std::enable_if_t<std::is_same_v<T, char> || std::is_same_v<T, unsigned char>, Slice>
 makeSlice(std::vector<T, Alloc> const& v)
 {
     return Slice(v.data(), v.size());

@@ -7,9 +7,7 @@
 
 #include <nudb/store.hpp>
 
-namespace xrpl {
-
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Base class for backend factories. */
 class Factory
@@ -18,7 +16,7 @@ public:
     virtual ~Factory() = default;
 
     /** Retrieve the name of this factory. */
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getName() const = 0;
 
     /** Create an instance of this factory's backend.
@@ -59,5 +57,4 @@ public:
     }
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

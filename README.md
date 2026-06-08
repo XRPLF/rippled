@@ -8,11 +8,11 @@ The [XRP Ledger](https://xrpl.org/) is a decentralized cryptographic ledger powe
 
 [XRP](https://xrpl.org/xrp.html) is a public, counterparty-free crypto-asset native to the XRP Ledger, and is designed as a gas token for network services and to bridge different currencies. XRP is traded on the open-market and is available for anyone to access. The XRP Ledger was created in 2012 with a finite supply of 100 billion units of XRP.
 
-## rippled
+## xrpld
 
-The server software that powers the XRP Ledger is called `rippled` and is available in this repository under the permissive [ISC open-source license](LICENSE.md). The `rippled` server software is written primarily in C++ and runs on a variety of platforms. The `rippled` server software can run in several modes depending on its [configuration](https://xrpl.org/rippled-server-modes.html).
+The server software that powers the XRP Ledger is called `xrpld` and is available in this repository under the permissive [ISC open-source license](LICENSE.md). The `xrpld` server software is written primarily in C++ and runs on a variety of platforms. The `xrpld` server software can run in several modes depending on its [configuration](https://xrpl.org/rippled-server-modes.html).
 
-If you are interested in running an **API Server** (including a **Full History Server**), take a look at [Clio](https://github.com/XRPLF/clio). (rippled Reporting Mode has been replaced by Clio.)
+If you are interested in running an **API Server** (including a **Full History Server**), take a look at [Clio](https://github.com/XRPLF/clio). (xrpld Reporting Mode has been replaced by Clio.)
 
 ### Build from Source
 
@@ -41,19 +41,19 @@ If you are interested in running an **API Server** (including a **Full History S
 
 Here are some good places to start learning the source code:
 
-- Read the markdown files in the source tree: `src/ripple/**/*.md`.
+- Read the markdown files in the source tree: `src/xrpld/**/*.md`.
 - Read [the levelization document](.github/scripts/levelization) to get an idea of the internal dependency graph.
 - In the big picture, the `main` function constructs an `ApplicationImp` object, which implements the `Application` virtual interface. Almost every component in the application takes an `Application&` parameter in its constructor, typically named `app` and stored as a member variable `app_`. This allows most components to depend on any other component.
 
 ### Repository Contents
 
-| Folder     | Contents                                         |
-| :--------- | :----------------------------------------------- |
-| `./bin`    | Scripts and data files for Ripple integrators.   |
-| `./Builds` | Platform-specific guides for building `rippled`. |
-| `./docs`   | Source documentation files and doxygen config.   |
-| `./cfg`    | Example configuration files.                     |
-| `./src`    | Source code.                                     |
+| Folder     | Contents                                       |
+| :--------- | :--------------------------------------------- |
+| `./bin`    | Scripts and data files for XRPL developers.    |
+| `./Builds` | Platform-specific guides for building `xrpld`. |
+| `./docs`   | Source documentation files and doxygen config. |
+| `./cfg`    | Example configuration files.                   |
+| `./src`    | Source code.                                   |
 
 Some of the directories under `src` are external repositories included using
 git-subtree. See those directories' README files for more details.

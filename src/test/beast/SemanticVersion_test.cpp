@@ -1,9 +1,11 @@
 #include <xrpl/beast/core/SemanticVersion.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <string>
 
 namespace beast {
 
-class SemanticVersion_test : public unit_test::suite
+class SemanticVersion_test : public unit_test::Suite
 {
     using identifier_list = SemanticVersion::identifier_list;
 
