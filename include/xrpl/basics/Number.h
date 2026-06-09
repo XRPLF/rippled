@@ -130,13 +130,16 @@ struct MantissaRange final
         Small,
         // LargeLegacy can be removed when fixCleanup3_2_0 is retired
         LargeLegacy,
+        // Large3_2_0 can be removed when fixCleanup3_3_0 is retired
+        Large3_2_0,
         Large,
     };
 
     // This entire enum can be removed when fixCleanup3_2_0 is retired
-    enum class CuspRoundingFix : bool {
-        Disabled = false,
-        Enabled = true,
+    enum class CuspRoundingFix : std::uint8_t {
+        Disabled = 0,
+        Enabled3_2_0 = 1,
+        Enabled = 2,
     };
 
     explicit constexpr MantissaRange(MantissaScale sc) : scale(sc)
@@ -164,6 +167,7 @@ private:
             case MantissaScale::Small:
                 return 15;
             case MantissaScale::LargeLegacy:
+            case MantissaScale::Large3_2_0:
             case MantissaScale::Large:
                 return 18;
             // LCOV_EXCL_START
@@ -193,6 +197,8 @@ private:
             case MantissaScale::Small:
             case MantissaScale::LargeLegacy:
                 return CuspRoundingFix::Disabled;
+            case MantissaScale::Large3_2_0:
+                return CuspRoundingFix::Enabled3_2_0;
             case MantissaScale::Large:
                 return CuspRoundingFix::Enabled;
             default:
@@ -416,33 +422,40 @@ public:
     }
 
     friend constexpr bool
-    operator<(Number const& x, Number const& y) noexcept
+    operator<(Number const& l, Number const& r) noexcept
     {
+        bool const lneg = l.negative_;
+        bool const rneg = r.negative_;
+
         // If the two amounts have different signs (zero is treated as positive)
         // then the comparison is true iff the left is negative.
-        bool const lneg = x.negative_;
-        bool const rneg = y.negative_;
-
         if (lneg != rneg)
             return lneg;
 
-        // Both have same sign and the left is zero: the right must be
-        // greater than 0.
-        if (x.mantissa_ == 0)
-            return y.mantissa_ > 0;
+        // Both have same sign and the left is zero: both must be non-negative.
+        // If the right is greater than 0, then it is larger, so the comparison is true.
+        if (l.mantissa_ == 0)
+            return r.mantissa_ > 0;
 
-        // Both have same sign, the right is zero and the left is non-zero.
-        if (y.mantissa_ == 0)
+        // Both have same sign, the right is zero and the left is non-zero, so the left must be
+        // positive, and thus is larger, so the comparison is false.
+        if (r.mantissa_ == 0)
             return false;
 
         // Both have the same sign, compare by exponents:
-        if (x.exponent_ > y.exponent_)
+        if (l.exponent_ > r.exponent_)
             return lneg;
-        if (x.exponent_ < y.exponent_)
+        if (l.exponent_ < r.exponent_)
             return !lneg;
 
-        // If equal exponents, compare mantissas
-        return x.mantissa_ < y.mantissa_;
+        // If equal signs and exponents, compare mantissas.
+        if (lneg)
+        {
+            // If negative, the operator is reversed.
+            return l.mantissa_ > r.mantissa_;
+        }
+
+        return l.mantissa_ < r.mantissa_;
     }
 
     /** Return the sign of the amount */
@@ -869,11 +882,13 @@ to_string(MantissaRange::MantissaScale const& scale)
     switch (scale)
     {
         case MantissaRange::MantissaScale::Small:
-            return "small";
+            return "Small";
         case MantissaRange::MantissaScale::LargeLegacy:
-            return "largeLegacy";
+            return "LargeLegacy";
+        case MantissaRange::MantissaScale::Large3_2_0:
+            return "Large320";
         case MantissaRange::MantissaScale::Large:
-            return "large";
+            return "Large";
         default:
             throw std::runtime_error("Bad scale");
     }
