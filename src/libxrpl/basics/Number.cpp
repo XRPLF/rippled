@@ -31,7 +31,7 @@ namespace xrpl {
 
 thread_local Number::RoundingMode Number::mode = Number::RoundingMode::ToNearest;
 thread_local std::reference_wrapper<MantissaRange const> Number::kRange =
-    MantissaRange::getMantissaRange(MantissaRange::MantissaScale::Large);
+    MantissaRange::getMantissaRange(MantissaRange::MantissaScale::LargeNew);
 
 std::set<MantissaRange::MantissaScale> const&
 MantissaRange::getAllScales()
@@ -39,7 +39,8 @@ MantissaRange::getAllScales()
     static std::set<MantissaRange::MantissaScale> const kScales = {
         MantissaRange::MantissaScale::Small,
         MantissaRange::MantissaScale::LargeLegacy,
-        MantissaRange::MantissaScale::Large,
+        MantissaRange::MantissaScale::Large3_2_0,
+        MantissaRange::MantissaScale::LargeNew,
     };
     return kScales;
 }
@@ -80,14 +81,25 @@ MantissaRange::getRanges()
         }
         {
             [[maybe_unused]]
-            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large};
+            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large3_2_0};
             static_assert(isPowerOfTen(kRange.min));
             static_assert(kRange.min == 1'000'000'000'000'000'000ULL);
             static_assert(kRange.max == rep(9'999'999'999'999'999'999ULL));
             static_assert(kRange.log == 18);
             static_assert(kRange.min < Number::kMaxRep);
             static_assert(kRange.max > Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled);
+            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled3_2_0);
+        }
+        {
+            [[maybe_unused]]
+            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::LargeNew};
+            static_assert(isPowerOfTen(kRange.min));
+            static_assert(kRange.min == 1'000'000'000'000'000'000ULL);
+            static_assert(kRange.max == rep(9'999'999'999'999'999'999ULL));
+            static_assert(kRange.log == 18);
+            static_assert(kRange.min < Number::kMaxRep);
+            static_assert(kRange.max > Number::kMaxRep);
+            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::EnabledNew);
         }
         return map;
     }();
@@ -225,7 +237,7 @@ public:
     doDropDigit(T& mantissa, int& exponent) noexcept;
 
     enum class Round {
-        // The result is exact. No rounding is needed. Only used if cuspRoundingFix is enabled.
+        // The result is exact. No rounding is needed. Only used if cuspRoundingFix is EnabledNew.
         Exact = -2,
         // Round down. Since we use integer math, that usually means no change is needed.
         // Exceptions are for when the result is between kMaxRap and kMaxRepUp (round to kMaxRep),
@@ -234,7 +246,8 @@ public:
         Down = -1,
         // The result was exactly half-way between two integers. This will round to even.
         Even = 0,
-        // Round up. Always adds 1 (or subtracts 1 in some cases if cuspRoundingFix is not enabled)
+        // Round up. Always adds 1 (or subtracts 1 in some cases if cuspRoundingFix is not
+        // EnabledNew)
         Up = 1,
     };
 
@@ -350,7 +363,7 @@ Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
-    if (cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled && empty())
+    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::EnabledNew && empty())
     {
         // No remainder
         return Round::Exact;
@@ -419,7 +432,7 @@ Number::Guard::doRoundUp(bool& negative, T& mantissa, int& exponent, std::string
         auto const safeToIncrement = [this](auto const& mantissa) {
             return mantissa < maxMantissa && mantissa < kMaxRep;
         };
-        if (cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled)
+        if (cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled)
         {
             // Ensure mantissa after incrementing fits within both the
             // min/maxMantissa range and is a valid "rep".
@@ -469,7 +482,7 @@ void
 Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent)
 {
     auto r = round();
-    if (cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled)
+    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::EnabledNew)
     {
         // If there was any remainder, subtract 1 from the result. This is sufficient to get the
         // best rounding.
@@ -801,7 +814,7 @@ Number::operator+=(Number const& y)
             xe = ye;
             xn = yn;
         }
-        if (cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled)
+        if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::EnabledNew)
         {
             // Grow xm/xe and pull digits out of the Guard until it's a little bit larger than
             // maxMantissa, so that normalize will have enough information to make an accurate
@@ -836,6 +849,7 @@ Number::operator+=(Number const& y)
     negative_ = xn;
     mantissa_ = static_cast<internalrep>(xm);
     exponent_ = xe;
+    XRPL_ASSERT(isnormal(), "xrpl::Number::operator+= : result is normal");
     return *this;
 }
 
@@ -971,7 +985,7 @@ Number::operator/=(Number const& y)
     // This is equivalent to if we had used an initial factor of 10^22,
     // a couple digits more than we actually need.
     //
-    // Stage 3: If there is still a remainder, and the CuspRoundingFix
+    // Stage 3: If there is still a remainder, and the cuspRoundingFix
     // is enabled, pass a flag indicating such to doNormalize. The Guard
     // in doNormalize will treat that flag as if non-zero digits had
     // been dropped from the mantissa when shrinking it into range.
@@ -1055,7 +1069,7 @@ Number::operator/=(Number const& y)
             // rounding fix is enabled, flag if there is still
             // a remainder from stage 2.
             bool const useTrailingRemainder =
-                cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled;
+                cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled;
             if (useTrailingRemainder)
             {
                 dropped = partialNumerator % dm != 0;

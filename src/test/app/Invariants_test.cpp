@@ -4767,11 +4767,10 @@ class Invariants_test : public beast::unit_test::Suite
             std::vector<ValidVault::DeltaInfo> values;
         };
 
-        for (auto const mantissaScale : {
-                 MantissaRange::MantissaScale::LargeLegacy,
-                 MantissaRange::MantissaScale::Large,
-             })
+        for (auto const mantissaScale : MantissaRange::getAllScales())
         {
+            if (mantissaScale == MantissaRange::MantissaScale::Small)
+                continue;
             NumberMantissaScaleGuard const g{mantissaScale};
 
             auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {

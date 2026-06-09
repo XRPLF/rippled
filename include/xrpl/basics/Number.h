@@ -130,13 +130,16 @@ struct MantissaRange final
         Small,
         // LargeLegacy can be removed when fixCleanup3_2_0 is retired
         LargeLegacy,
-        Large,
+        // Large3_2_0 can be removed when fixCleanup3_3_0 is retired
+        Large3_2_0,
+        LargeNew,  // TODO: Convert this back to Large after conversion is done
     };
 
     // This entire enum can be removed when fixCleanup3_2_0 is retired
-    enum class CuspRoundingFix : bool {
-        Disabled = false,
-        Enabled = true,
+    enum class CuspRoundingFix : std::uint8_t {
+        Disabled = 0,
+        Enabled3_2_0 = 1,
+        EnabledNew = 2,  // TODO: Convert this back to Enabled after conversion is done
     };
 
     explicit constexpr MantissaRange(MantissaScale sc) : scale(sc)
@@ -164,7 +167,8 @@ private:
             case MantissaScale::Small:
                 return 15;
             case MantissaScale::LargeLegacy:
-            case MantissaScale::Large:
+            case MantissaScale::Large3_2_0:
+            case MantissaScale::LargeNew:
                 return 18;
             // LCOV_EXCL_START
             default:
@@ -193,8 +197,10 @@ private:
             case MantissaScale::Small:
             case MantissaScale::LargeLegacy:
                 return CuspRoundingFix::Disabled;
-            case MantissaScale::Large:
-                return CuspRoundingFix::Enabled;
+            case MantissaScale::Large3_2_0:
+                return CuspRoundingFix::Enabled3_2_0;
+            case MantissaScale::LargeNew:
+                return CuspRoundingFix::EnabledNew;
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
@@ -867,11 +873,13 @@ to_string(MantissaRange::MantissaScale const& scale)
     switch (scale)
     {
         case MantissaRange::MantissaScale::Small:
-            return "small";
+            return "Small";
         case MantissaRange::MantissaScale::LargeLegacy:
-            return "largeLegacy";
-        case MantissaRange::MantissaScale::Large:
-            return "large";
+            return "LargeLegacy";
+        case MantissaRange::MantissaScale::Large3_2_0:
+            return "Large320";
+        case MantissaRange::MantissaScale::LargeNew:
+            return "Large";
         default:
             throw std::runtime_error("Bad scale");
     }

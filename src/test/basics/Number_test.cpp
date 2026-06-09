@@ -1397,8 +1397,7 @@ public:
                         "9223372036854775e3");
                 }
                 break;
-            case MantissaRange::MantissaScale::LargeLegacy:
-            case MantissaRange::MantissaScale::Large:
+            default:
                 // Test the edges
                 // ((exponent < -(28)) || (exponent > -(8)))))
                 test(Number::min(), "1e-32750");
@@ -1436,9 +1435,6 @@ public:
                 test(
                     -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 1),
                     "-9223372036854775810");
-                break;
-            default:
-                BEAST_EXPECT(false);
         }
     }
 
@@ -1721,7 +1717,8 @@ public:
 
             switch (scale)
             {
-                case MantissaRange::MantissaScale::Large:
+                case MantissaRange::MantissaScale::Large3_2_0:
+                case MantissaRange::MantissaScale::LargeNew:
                     BEAST_EXPECT(signedDifference >= 0);
                     BEAST_EXPECT(signedDifference < pow10<BigInt>(product.exponent()));
                     BEAST_EXPECT(
@@ -1803,7 +1800,8 @@ public:
             // Upward invariant: stored >= exact. Bug: stored < exact.
             switch (scale)
             {
-                case MantissaRange::MantissaScale::Large:
+                case MantissaRange::MantissaScale::Large3_2_0:
+                case MantissaRange::MantissaScale::LargeNew:
                     BEAST_EXPECT(stored >= exact);
                     BEAST_EXPECT(diff < pow10(quotient.exponent()));
                     break;
@@ -1853,7 +1851,8 @@ public:
             // invariant: stored <= exact. Bug: stored > exact.
             switch (scale)
             {
-                case MantissaRange::MantissaScale::Large:
+                case MantissaRange::MantissaScale::Large3_2_0:
+                case MantissaRange::MantissaScale::LargeNew:
                     BEAST_EXPECT(stored <= exact);
                     BEAST_EXPECT(diff > -pow10(quotient.exponent()));
                     break;
@@ -1910,7 +1909,8 @@ public:
             // invariant: stored >= exact. Bug: stored < exact.
             switch (scale)
             {
-                case MantissaRange::MantissaScale::Large:
+                case MantissaRange::MantissaScale::Large3_2_0:
+                case MantissaRange::MantissaScale::LargeNew:
                     BEAST_EXPECT(stored >= exact);
                     BEAST_EXPECT(diff < pow10(quotient.exponent()));
                     break;
@@ -2012,7 +2012,8 @@ public:
                     switch (scale)
                     {
                         case MantissaRange::MantissaScale::Small:
-                        case MantissaRange::MantissaScale::LargeLegacy: {
+                        case MantissaRange::MantissaScale::LargeLegacy:
+                        case MantissaRange::MantissaScale::Large3_2_0: {
                             // Without the fix, all the results but one round up
                             if (r == Number::RoundingMode::Downward)
                             {
