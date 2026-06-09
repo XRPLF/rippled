@@ -269,7 +269,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
     [[nodiscard]] TER
-    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const;
+    check(StrandContext const& ctx, SLE::const_ref sleSrc) const;
 
     [[nodiscard]] std::string
     logString() const override
@@ -327,7 +327,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
     static TER
-    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc);
+    check(StrandContext const& ctx, SLE::const_ref sleSrc);
 
     [[nodiscard]] std::string
     logString() const override
@@ -415,7 +415,7 @@ DirectIOfferCrossingStep::maxFlow(ReadView const& sb, IOUAmount const& desired) 
 }
 
 TER
-DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const
+DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 {
     // Since this is a payment a trust line must be present.  Perform all
     // trust line related checks.
@@ -463,7 +463,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> c
 }
 
 TER
-DirectIOfferCrossingStep::check(StrandContext const&, std::shared_ptr<const SLE> const&)
+DirectIOfferCrossingStep::check(StrandContext const&, SLE::const_ref)
 {
     // The standard checks are all we can do because any remaining checks
     // require the existence of a trust line.  Offer crossing does not

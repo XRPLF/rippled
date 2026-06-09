@@ -69,7 +69,7 @@ public:
         bool traceTransactions = true;
         bool traceConsensus = true;
         bool traceRpc = true;
-        bool tracePeer = false;  // High volume, disabled by default
+        bool tracePeer = true;  // High volume, enabled by default
         bool traceLedger = true;
         bool tracePathfind = true;
         bool traceTxQ = true;
