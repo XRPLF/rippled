@@ -1579,24 +1579,28 @@ private:
         };
 
         // Cover the original 2:1 pool and the same pool scaled down by 1000.
+        // clang-format off
         TestCase const testCases[] = {
-            {2'000'000, 1'000'000, 1, 3},
-            {2'000'000, 1'000'000, 2, 5},
-            {2'000'000, 1'000'000, 10, 21},
-            {2'000'000, 1'000'000, 100, 201},
-            {2'000'000, 1'000'000, 1'000, 2'003},
-            {2'000, 1'000, 1, 3},
-            {2'000, 1'000, 2, 5},
-            {2'000, 1'000, 10, 21},
-            {2'000, 1'000, 100, 223},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 1,     .expectedSourceAmount = 3},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 2,     .expectedSourceAmount = 5},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 10,    .expectedSourceAmount = 21},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 100,   .expectedSourceAmount = 201},
+            {.usdPool = 2'000'000, .eurPool = 1'000'000, .deliverAmount = 1'000, .expectedSourceAmount = 2'003},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 1,     .expectedSourceAmount = 3},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 2,     .expectedSourceAmount = 5},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 10,    .expectedSourceAmount = 21},
+            {.usdPool = 2'000,     .eurPool = 1'000,     .deliverAmount = 100,   .expectedSourceAmount = 223},
         };
+        // clang-format on
 
         for (auto const& testCase : testCases)
+        {
             checkQuote(
                 testCase.usdPool,
                 testCase.eurPool,
                 testCase.deliverAmount,
                 testCase.expectedSourceAmount);
+        }
     }
 
     void
