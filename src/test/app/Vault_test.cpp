@@ -1,6 +1,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
@@ -9,9 +10,12 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/rate.h>
+#include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
@@ -57,6 +61,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -2241,7 +2246,7 @@ class Vault_test : public beast::unit_test::Suite
                      PrettyAsset const& asset,
                      Vault& vault,
                      MPTTester& mptt) {
-            testcase("MPT non-transferable");
+            testcase("MPT non-transferable: block deposit, allow withdraw");
 
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
@@ -2251,28 +2256,341 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
-            // Remove CanTransfer
+            // Issuer governance: clear CanTransfer. New exposure must be
+            // blocked, but recovery paths must remain open so existing
+            // depositors are not trapped.
             mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
             env.close();
 
+            // New deposit is blocked.
             env(tx, Ter{tecNO_AUTH});
             env.close();
 
+            // Existing depositor can always withdraw, even though the asset
+            // is no longer freely transferable.
             tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
-
-            env(tx, Ter{tecNO_AUTH});
-            env.close();
-
-            // Restore CanTransfer
-            mptt.set({.mutableFlags = tmfMPTSetCanTransfer});
-            env.close();
-
             env(tx);
             env.close();
 
             // Delete vault with zero balance
             env(vault.del({.owner = owner, .id = keylet.key}));
         });
+
+        {
+            testcase("MPT non-transferable: pre-fixCleanup3_2_0 withdraw blocked");
+
+            // Regression: before fixCleanup3_2_0 a depositor was trapped if
+            // the issuer cleared lsfMPTCanTransfer. Verify that the legacy
+            // (broken) behavior is preserved when the amendment is disabled.
+            Env env{*this, testableAmendments() - fixCleanup3_2_0};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(10'000), issuer, owner, depositor);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            // Pre-amendment: deposit blocked (matches new behavior).
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}),
+                Ter{tecNO_AUTH});
+            env.close();
+
+            // Pre-amendment: withdraw is also blocked - this is the bug
+            // that fixCleanup3_2_0 fixes.
+            env(vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)}),
+                Ter{tecNO_AUTH});
+            env.close();
+        }
+
+        {
+            testcase("MPT non-transferable: vault shares inherit restriction");
+
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), issuer, owner, alice, bob);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            env(pay(issuer, alice, asset(1'000)));
+            env(pay(issuer, bob, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
+            // Bob also deposits so he has a share MPToken to receive into.
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+
+            // Sanity: while CanTransfer is set on the underlying, peer-to-peer
+            // share transfers are allowed.
+            env(pay(alice, bob, shares(1)));
+            env.close();
+
+            // Issuer governance: clear CanTransfer on the underlying.
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            // Vault shares inherit the restriction: third-party share-to-share
+            // payments are blocked.
+            env(pay(alice, bob, shares(1)), Ter{tecNO_AUTH});
+            env.close();
+
+            // Recovery path: existing share holders can still redeem shares
+            // for the underlying asset via VaultWithdraw.
+            env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = shares(1)}));
+            env.close();
+        }
+
+        {
+            testcase("MPT locked: vault shares inherit underlying lock");
+
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(10'000), issuer, owner, alice, bob, carol);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester asset{
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {owner, alice, bob, carol},
+                 .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock}};
+            env(pay(issuer, alice, asset(1'000)));
+            env(pay(issuer, bob, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
+            // Bob also deposits so he has a share MPToken to receive into.
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+            auto const shareMptID = shares.raw().get<MPTIssue>().getMptID();
+            auto const shareBalance = [&](Account const& account) {
+                auto const sle = env.le(keylet::mptoken(shareMptID, account));
+                return sle ? sle->at(sfMPTAmount) : 0;
+            };
+
+            // Sanity: before the underlying lock, peer-to-peer share
+            // transfers are allowed.
+            env(pay(alice, bob, shares(1)));
+            env.close();
+
+            // Create the offer while shares are spendable, then lock the
+            // underlying to test whether a stale offer can still be crossed.
+            env(offer(alice, XRP(1), shares(1)));
+            env.close();
+
+            // Lock the underlying after the vault and share balances exist.
+            asset.set({.account = issuer, .flags = tfMPTLock});
+            env.close();
+
+            // Direct vault share payment inherits the underlying lock via
+            // sfReferenceHolding.
+            BEAST_EXPECT(shareBalance(alice) == 499);
+            BEAST_EXPECT(shareBalance(bob) == 501);
+            env(pay(alice, bob, shares(1)), Ter{tecLOCKED});
+            env.close();
+            BEAST_EXPECT(shareBalance(alice) == 499);
+            BEAST_EXPECT(shareBalance(bob) == 501);
+
+            // The same inherited lock must also block DEX payment paths that
+            // would consume an offer selling vault shares.
+            env(pay(carol, bob, shares(1)),
+                Sendmax(XRP(1)),
+                Path(BookSpec{shares.raw()}),
+                Ter{tecPATH_PARTIAL});
+            env.close();
+            BEAST_EXPECT(shareBalance(alice) == 499);
+            BEAST_EXPECT(shareBalance(bob) == 501);
+            BEAST_EXPECT(expectOffers(env, alice, 1));
+        }
+
+        {
+            testcase("MPT non-transferable: pre-fixCleanup3_2_0 share transfer succeeds");
+
+            // Regression: before fixCleanup3_2_0 a peer-to-peer share Payment
+            // succeeded even when the underlying asset's lsfMPTCanTransfer
+            // was cleared. Verify that the legacy (non-inheriting) behavior
+            // is preserved when the amendment is disabled.
+            Env env{*this, testableAmendments() - fixCleanup3_2_0};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), issuer, owner, alice, bob);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            env(pay(issuer, alice, asset(1'000)));
+            env(pay(issuer, bob, asset(1'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+
+            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+            env.close();
+
+            // Pre-amendment: share transfer leaks past underlying restriction.
+            env(pay(alice, bob, shares(1)));
+            env.close();
+        }
+
+        {
+            testcase("MPT CanTrade governance: share inherits underlying on DEX and AMM");
+
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(100'000), issuer, owner, alice, bob);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanMutateCanTrade});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = alice});
+            mptt.authorize({.account = bob});
+            env(pay(issuer, alice, asset(10'000)));
+            env(pay(issuer, bob, asset(10'000)));
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            // Seed shares so we can later place them on trading venues.
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(5'000)}));
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(5'000)}));
+            env.close();
+
+            auto const shares = [&]() -> PrettyAsset {
+                auto const sle = env.le(keylet);
+                BEAST_EXPECT(sle != nullptr);
+                return MPTIssue(sle->at(sfShareMPTID));
+            }();
+
+            // Sanity: while CanTrade is set on the underlying, both the asset
+            // and the vault share can be placed on the DEX.
+            env(offer(alice, XRP(1), asset(10)));
+            env(offer(alice, XRP(1), shares(1)));
+            env.close();
+
+            // Issuer governance: clear CanTrade on the underlying.
+            mptt.set({.mutableFlags = tmfMPTClearCanTrade});
+            env.close();
+
+            // Control: clearing CanTrade on the underlying is observable on
+            // the DEX path for that asset.
+            env(offer(alice, XRP(1), asset(10)), Ter{tecNO_PERMISSION});
+            env.close();
+
+            // Control: clearing CanTrade on the underlying is also observable
+            // on the AMM path for that asset.
+            AMM const ammUnderlyingFails(
+                env, alice, XRP(1'000), asset(1'000), Ter{tecNO_PERMISSION});
+
+            // Post-fixCleanup3_2_0: vault shares inherit the underlying's
+            // CanTrade restriction on the DEX path (canTrade reads the
+            // share's sfReferenceHolding and dispatches to the underlying).
+            env(offer(bob, XRP(1), shares(1)), Ter{tecNO_PERMISSION});
+            env.close();
+
+            // checkMPTAllowed mirrors the inheritance for AMM/Offer-
+            // crossing/Check paths, so a share AMM also cannot be created
+            // when the underlying CanTrade is cleared.
+            AMM const ammShares(env, alice, XRP(1'000), shares(100), Ter{tecNO_PERMISSION});
+
+            // Deposit still works (canAddHolding does not consult the field).
+            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            // Peer-to-peer share transfers still work (CanTransfer is set on
+            // both layers).
+            env(pay(alice, bob, shares(1)));
+            env.close();
+
+            // Withdraw still works.
+            env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+        }
 
         {
             testcase("MPT OutstandingAmount > MaximumAmount");
@@ -2744,16 +3062,17 @@ class Vault_test : public beast::unit_test::Suite
                         env(tx);
                         env.close();
                     }
-                    env(pay(owner, charlie, shares(100)));
-                    env.close();
-
-                    // Charlie cannot withdraw
-                    auto tx3 = vault.withdraw(
-                        {.depositor = charlie, .id = keylet.key, .amount = shares(100)});
-                    env(tx3, Ter{terNO_RIPPLE});
-                    env.close();
-
-                    env(pay(charlie, owner, shares(100)));
+                    // Behavioral shift introduced by share inheritance:
+                    // before fixCleanup3_2_0 this share Payment succeeded
+                    // and the underlying IOU's NoRipple restriction surfaced
+                    // only later on Charlie's withdrawal (terNO_RIPPLE).
+                    // Post-amendment, canTransfer reads the share's
+                    // sfReferenceHolding and dispatches to the underlying IOU;
+                    // rippling is disabled between owner and charlie so the
+                    // share payment itself is now blocked. tecPATH_DRY is
+                    // the path-find layer's translation of the underlying
+                    // terNO_RIPPLE under featureMPTokensV2.
+                    env(pay(owner, charlie, shares(100)), Ter{tecPATH_DRY});
                     env.close();
                 }
 
@@ -6273,6 +6592,1496 @@ class Vault_test : public beast::unit_test::Suite
             BEAST_EXPECT(sle && !sle->isFlag(lsfMPTCanTrade));
         }
     }
+
+    // -----------------------------------------------------------------------
+    // Helpers and tests: sole-shareholder / stuck-depositor (XLS-0065 +
+    // fixCleanup3_2_0). The vault-level withdraw behavior is tested here;
+    // the loan-protocol setup is incidental.
+    // -----------------------------------------------------------------------
+
+    FeatureBitset const all_{test::jtx::testableAmendments()};
+    std::string const iouCurrency_{"IOU"};
+
+    // design doc:
+    //     AssetsAvailable ≈ 3,333.50
+    //     AssetsTotal     ≈ 6,666.50  (3,333.50 cash + 3,333 receivable)
+    //     LossUnrealized  =  3,333
+    //     OutstandingShares = sharesLender   (5e9 at IOU scale 1e6)
+    struct StuckDepositorFixture
+    {
+        test::jtx::Account issuer{"issuer"};
+        test::jtx::Account lender{"lender"};
+        test::jtx::Account bob{"bob"};
+        test::jtx::Account borrower{"borrower"};
+        std::optional<PrettyAsset> asset;
+        std::optional<Keylet> vaultKeylet;
+        uint256 brokerID;
+        std::optional<Keylet> loanKeylet;
+        MPTID shareAsset;
+        std::uint64_t sharesLender = 0;
+    };
+
+    static constexpr std::int64_t kStuckFunding = 1'000'000;
+    static constexpr std::int64_t kStuckDepositorIOU = 1'000'000;
+    static constexpr std::int64_t kStuckBorrowerIOU = 100'000;
+    static constexpr std::int64_t kStuckDeposit = 5'000;
+    static constexpr std::int64_t kStuckPrincipal = 3'333;
+    static constexpr std::uint32_t kStuckPayInterval = 600;
+    static constexpr std::uint32_t kStuckPayTotal = 2;
+
+    [[nodiscard]] StuckDepositorFixture
+    setupStuckDepositor(test::jtx::Env& env)
+    {
+        using namespace test::jtx;
+
+        StuckDepositorFixture f;
+        f.asset = f.issuer[iouCurrency_];
+
+        env.fund(XRP(kStuckFunding), f.issuer, f.lender, f.bob, f.borrower);
+        env.close();
+
+        env(trust(f.lender, (*f.asset)(10'000'000)));
+        env(trust(f.bob, (*f.asset)(10'000'000)));
+        env(trust(f.borrower, (*f.asset)(10'000'000)));
+        env.close();
+
+        env(pay(f.issuer, f.lender, (*f.asset)(kStuckDepositorIOU)));
+        env(pay(f.issuer, f.bob, (*f.asset)(kStuckDepositorIOU)));
+        env(pay(f.issuer, f.borrower, (*f.asset)(kStuckBorrowerIOU)));
+        env.close();
+
+        // Vault: Lender creates and seeds it; Bob matches the deposit for a
+        // clean 50/50 split.
+        Vault const v{env};
+        auto [createTx, vaultKeylet] = v.create({.owner = f.lender, .asset = *f.asset});
+        env(createTx);
+        env.close();
+        if (!BEAST_EXPECT(env.le(vaultKeylet)))
+            return f;
+        f.vaultKeylet = vaultKeylet;
+
+        env(v.deposit({
+                .depositor = f.lender,
+                .id = vaultKeylet.key,
+                .amount = (*f.asset)(kStuckDeposit),
+            }),
+            Ter(tesSUCCESS));
+        env(v.deposit({
+                .depositor = f.bob,
+                .id = vaultKeylet.key,
+                .amount = (*f.asset)(kStuckDeposit),
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Loan broker: no cover, no management fee, debt cap 10x principal.
+        f.brokerID = keylet::loanbroker(f.lender.id(), env.seq(f.lender)).key;
+        {
+            using namespace loanBroker;
+            env(set(f.lender, vaultKeylet.key),
+                kDebtMaximum((*f.asset)(kStuckPrincipal * 10).value()));
+            env.close();
+        }
+
+        // Loan: 3,333 USD principal, impaired immediately.
+        auto const sleBroker = env.le(keylet::loanbroker(f.brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return f;
+        f.loanKeylet = keylet::loan(f.brokerID, sleBroker->at(sfLoanSequence));
+
+        {
+            using namespace loan;
+            env(set(f.borrower, f.brokerID, kStuckPrincipal),
+                Sig(sfCounterpartySignature, f.lender),
+                kPaymentTotal(kStuckPayTotal),
+                kPaymentInterval(kStuckPayInterval),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+            env(manage(f.lender, f.loanKeylet->key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+        }
+
+        auto const vaultSle = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return f;
+        BEAST_EXPECT(vaultSle->at(sfLossUnrealized) == (*f.asset)(kStuckPrincipal).value());
+
+        f.shareAsset = vaultSle->at(sfShareMPTID);
+
+        auto const tokenBob = env.le(keylet::mptoken(f.shareAsset, f.bob.id()));
+        if (!BEAST_EXPECT(tokenBob))
+            return f;
+        std::uint64_t const sharesBob = tokenBob->getFieldU64(sfMPTAmount);
+
+        // Bob (non-sole) exits at the discounted rate. Always succeeds.
+        STAmount const bobShareAmt{MPTIssue{f.shareAsset}, Number(sharesBob)};
+        env(v.withdraw({
+                .depositor = f.bob,
+                .id = vaultKeylet.key,
+                .amount = bobShareAmt,
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const tokenLender = env.le(keylet::mptoken(f.shareAsset, f.lender.id()));
+        if (!BEAST_EXPECT(tokenLender))
+            return f;
+        f.sharesLender = tokenLender->getFieldU64(sfMPTAmount);
+
+        auto const sleIssuance = env.le(keylet::mptIssuance(f.shareAsset));
+        if (!BEAST_EXPECT(sleIssuance))
+            return f;
+        BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == f.sharesLender);
+
+        auto const vaultAfterBob = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfterBob))
+            return f;
+        // After Bob's exit: loss is unchanged (3,333 receivable), and the
+        // gap between assetsTotal and assetsAvailable equals exactly that
+        // receivable.
+        BEAST_EXPECT(vaultAfterBob->at(sfLossUnrealized) == (*f.asset)(kStuckPrincipal).value());
+        BEAST_EXPECT(
+            vaultAfterBob->at(sfAssetsTotal) - vaultAfterBob->at(sfAssetsAvailable) ==
+            vaultAfterBob->at(sfLossUnrealized));
+
+        return f;
+    }
+
+    // Reproduces the worked example from the XLS-0065 design doc. The sole
+    // remaining shareholder asks (via fixed-asset input) for the vault's
+    // entire AssetsAvailable. Pre-fix this fails with the zero-sized-vault
+    // invariant violation. Post-fix the full-price exchange rate burns
+    // only a portion of the shares, the depositor receives all of
+    // AssetsAvailable, and the residual shares remain backed by the
+    // impaired-loan receivable.
+    void
+    testWithdrawSoleShareholderFixedAssetExit(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const withFix = features[fixCleanup3_2_0];
+        testcase(
+            std::string{"Vault withdraw: sole shareholder exits via "
+                        "fixed-asset amount with impaired loan"} +
+            (withFix ? " (fixCleanup3_2_0)" : " (pre-fix)"));
+
+        std::string logs;
+        Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
+        auto const f = setupStuckDepositor(env);
+        if (!f.vaultKeylet || !f.asset || f.sharesLender == 0)
+        {
+            BEAST_EXPECT(false);
+            return;
+        }
+        Keylet const& vaultKey = *f.vaultKeylet;
+        PrettyAsset const& asset = *f.asset;
+
+        auto const vaultBefore = env.le(vaultKey);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const totalBefore = vaultBefore->at(sfAssetsTotal);
+        Number const lossBefore = vaultBefore->at(sfLossUnrealized);
+
+        STAmount const lenderBalanceBefore = env.balance(f.lender, asset);
+
+        // The requested amount differs between feature regimes because
+        // the two regimes are testing different behaviors:
+        //
+        // - Pre-fix: request the full AssetsAvailable (3,333.50). Under
+        //   the discounted formula this would burn every outstanding
+        //   share, hitting the zero-sized-vault invariant. The
+        //   transaction is rejected with tecINVARIANT_FAILED — the
+        //   stuck-depositor bug.
+        //
+        // - Post-fix: request a strictly smaller amount (1,000 USD).
+        //   The full-price formula burns only ~30% of the outstanding
+        //   shares; the vault retains the rest, backed by the impaired
+        //   receivable. Requesting *exactly* AssetsAvailable post-fix
+        //   would currently fail with tecINSUFFICIENT_FUNDS due to the
+        //   round-to-nearest used by assetsToSharesWithdraw (the
+        //   recomputed payout can overshoot the request by a few ULPs).
+        //   The "force payout to AssetsAvailable" branch in doApply
+        //   only triggers when every share is burned, which is covered
+        //   by the loan-repayment test.
+        STAmount const requestAssets =
+            withFix ? asset(1000).value() : STAmount{asset.raw(), availableBefore};
+        Vault const v{env};
+        env(v.withdraw({
+                .depositor = f.lender,
+                .id = vaultKey.key,
+                .amount = requestAssets,
+            }),
+            Ter(withFix ? TER{tesSUCCESS} : TER{tecINVARIANT_FAILED}));
+        env.close();
+
+        auto const vaultAfter = env.le(vaultKey);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        if (!BEAST_EXPECT(issuanceAfter))
+            return;
+
+        std::uint64_t const sharesAfter = issuanceAfter->getFieldU64(sfOutstandingAmount);
+        Number const availableAfter = vaultAfter->at(sfAssetsAvailable);
+        Number const totalAfter = vaultAfter->at(sfAssetsTotal);
+        Number const lossAfter = vaultAfter->at(sfLossUnrealized);
+
+        if (!withFix)
+        {
+            // Pre-fix: rejected — vault state unchanged.
+            BEAST_EXPECT(sharesAfter == f.sharesLender);
+            BEAST_EXPECT(availableAfter == availableBefore);
+            BEAST_EXPECT(totalAfter == totalBefore);
+            BEAST_EXPECT(lossAfter == lossBefore);
+            return;
+        }
+
+        // Post-fix exact-value derivation (fixture: sharesLender=5e9,
+        // totalBefore=6666.5, request=1000):
+        //   sharesRedeemed = round(sharesLender * request / totalBefore)
+        //                  = round(750,018,750.469) = 750,018,750
+        //   received       = totalBefore * sharesRedeemed / sharesLender
+        //                  = 999.999999375  (slightly under 1,000 due to
+        //                                    integer-share rounding)
+        constexpr std::uint64_t kExpectedSharesRedeemed = 750'018'750;
+        Number const expectedReceived =
+            totalBefore * Number(kExpectedSharesRedeemed) / Number(f.sharesLender);
+
+        BEAST_EXPECT(sharesAfter == f.sharesLender - kExpectedSharesRedeemed);
+
+        // LossUnrealized is unchanged: the loan-protocol side is untouched.
+        BEAST_EXPECT(lossAfter == lossBefore);
+
+        // The entire (total - available) gap is the impaired receivable,
+        // i.e. equal to lossUnrealized.
+        BEAST_EXPECT(totalAfter - availableAfter == lossAfter);
+
+        STAmount const lenderBalanceAfter = env.balance(f.lender, asset);
+        Number const received{lenderBalanceAfter - lenderBalanceBefore};
+        BEAST_EXPECT(received == expectedReceived);
+
+        // Conservation: assets removed from the vault equal what the
+        // depositor received.
+        BEAST_EXPECT(totalBefore - totalAfter == received);
+        BEAST_EXPECT(availableBefore - availableAfter == received);
+    }
+
+    // Sole shareholder attempts to burn ALL outstanding shares via
+    // fixed-shares input while the vault still holds an impaired
+    // receivable. Pre-fix this fails with the zero-sized-vault invariant
+    // violation. Post-fix the full-price rate causes assetsWithdrawn to
+    // equal assetsTotal, which exceeds assetsAvailable, so the transaction
+    // is rejected with tecINSUFFICIENT_FUNDS.
+    void
+    testWithdrawSoleShareholderFullSharesRejected(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const withFix = features[fixCleanup3_2_0];
+        testcase(
+            std::string{"Vault withdraw: sole shareholder full-shares "
+                        "burn is rejected while loss outstanding"} +
+            (withFix ? " (fixCleanup3_2_0)" : " (pre-fix)"));
+
+        std::string logs;
+        Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
+        auto const f = setupStuckDepositor(env);
+        if (!f.vaultKeylet || f.sharesLender == 0)
+        {
+            BEAST_EXPECT(false);
+            return;
+        }
+        Keylet const& vaultKey = *f.vaultKeylet;
+
+        auto const vaultBefore = env.le(vaultKey);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const totalBefore = vaultBefore->at(sfAssetsTotal);
+        Number const lossBefore = vaultBefore->at(sfLossUnrealized);
+
+        // Fixed-shares input: ask for ALL outstanding shares.
+        STAmount const shareAmt{MPTIssue{f.shareAsset}, Number(f.sharesLender)};
+        Vault const v{env};
+        env(v.withdraw({
+                .depositor = f.lender,
+                .id = vaultKey.key,
+                .amount = shareAmt,
+            }),
+            Ter(withFix ? TER{tecINSUFFICIENT_FUNDS} : TER{tecINVARIANT_FAILED}));
+        env.close();
+
+        // Either way the transaction was rejected; vault state unchanged.
+        auto const vaultAfter = env.le(vaultKey);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        if (!BEAST_EXPECT(issuanceAfter))
+            return;
+        BEAST_EXPECT(issuanceAfter->getFieldU64(sfOutstandingAmount) == f.sharesLender);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == availableBefore);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore);
+        BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+    }
+
+    // Post-fix end-to-end resolution: after the sole-shareholder partial
+    // exit, the loan is repaid in full. With unrealized loss cleared and
+    // all assets back as cash, the depositor can burn all remaining
+    // shares and fully exit the vault. The final withdrawal hits the
+    // "force payout to assetsAvailable" branch in doApply.
+    void
+    testWithdrawSoleShareholderLoanRepaymentExit()
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        testcase(
+            "Vault withdraw: sole shareholder fully exits after impaired "
+            "loan is repaid (fixCleanup3_2_0)");
+
+        Env env(*this, all_ | fixCleanup3_2_0);
+        auto const f = setupStuckDepositor(env);
+        if (!f.vaultKeylet || !f.asset || !f.loanKeylet || f.sharesLender == 0)
+        {
+            BEAST_EXPECT(false);
+            return;
+        }
+        Keylet const& vaultKey = *f.vaultKeylet;
+        Keylet const& loanKey = *f.loanKeylet;
+        PrettyAsset const& asset = *f.asset;
+
+        Vault const v{env};
+
+        // Sole-shareholder partial exit (see comment in
+        // testWithdrawSoleShareholderFixedAssetExit for why we request
+        // less than full AssetsAvailable).
+        {
+            STAmount const requestAssets = asset(1000).value();
+            env(v.withdraw({
+                    .depositor = f.lender,
+                    .id = vaultKey.key,
+                    .amount = requestAssets,
+                }),
+                Ter(tesSUCCESS));
+            env.close();
+        }
+
+        // Confirm the "dormant-but-alive" state from the design doc. The
+        // partial exit burned exactly 750,018,750 shares (see derivation
+        // in testWithdrawSoleShareholderFixedAssetExit).
+        auto const tokenAfterExit = env.le(keylet::mptoken(f.shareAsset, f.lender.id()));
+        if (!BEAST_EXPECT(tokenAfterExit))
+            return;
+        std::uint64_t const retainedShares = tokenAfterExit->getFieldU64(sfMPTAmount);
+        BEAST_EXPECT(retainedShares == f.sharesLender - 750'018'750);
+
+        // Borrower repays the loan in full (pays more than the outstanding
+        // total; the loan transactor caps the receivable).
+        env(pay(f.borrower, loanKey.key, asset(kStuckPrincipal * 2)), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfterRepay = env.le(vaultKey);
+        if (!BEAST_EXPECT(vaultAfterRepay))
+            return;
+        // Repayment converts the 3,333 receivable back to cash; assetsTotal
+        // is unchanged but assetsAvailable jumps by exactly the same amount,
+        // and lossUnrealized clears to zero.
+        BEAST_EXPECT(vaultAfterRepay->at(sfLossUnrealized) == beast::kZero);
+        BEAST_EXPECT(vaultAfterRepay->at(sfAssetsAvailable) == vaultAfterRepay->at(sfAssetsTotal));
+
+        STAmount const lenderBalanceBeforeFinal = env.balance(f.lender, asset);
+        Number const availableBeforeFinal = vaultAfterRepay->at(sfAssetsAvailable);
+
+        // Burn all remaining shares — the clean-state preconditions of
+        // the "final withdrawal" guard are now satisfied.
+        STAmount const allShares{MPTIssue{f.shareAsset}, Number(retainedShares)};
+        env(v.withdraw({
+                .depositor = f.lender,
+                .id = vaultKey.key,
+                .amount = allShares,
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultFinal = env.le(vaultKey);
+        if (!BEAST_EXPECT(vaultFinal))
+            return;
+        auto const issuanceFinal = env.le(keylet::mptIssuance(f.shareAsset));
+        if (!BEAST_EXPECT(issuanceFinal))
+            return;
+
+        // Zero-sized vault invariant satisfied: 0 shares, 0 assets.
+        BEAST_EXPECT(issuanceFinal->getFieldU64(sfOutstandingAmount) == 0);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsTotal) == beast::kZero);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsAvailable) == beast::kZero);
+        BEAST_EXPECT(vaultFinal->at(sfLossUnrealized) == beast::kZero);
+
+        // The final payout equals exactly the AssetsAvailable that
+        // existed before the call (the "force payout" branch).
+        STAmount const lenderBalanceAfter = env.balance(f.lender, asset);
+        Number const finalReceived{lenderBalanceAfter - lenderBalanceBeforeFinal};
+        BEAST_EXPECT(finalReceived == availableBeforeFinal);
+    }
+
+    // Clean-state regression: with no impaired loan, a sole shareholder
+    // burning all their shares fully empties the vault under both the
+    // pre-fix and post-fix code paths. Confirms the new logic doesn't
+    // break the existing happy-path close-out.
+    void
+    testWithdrawSoleShareholderCleanVaultUnaffected(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const withFix = features[fixCleanup3_2_0];
+        testcase(
+            std::string{"Vault withdraw: sole shareholder clean-state "
+                        "close-out unchanged"} +
+            (withFix ? " (fixCleanup3_2_0)" : " (pre-fix)"));
+
+        Env env(*this, features);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+
+        env.fund(XRP(kStuckFunding), issuer, lender);
+        env.close();
+
+        PrettyAsset const asset = issuer[iouCurrency_];
+        env(trust(lender, asset(10'000'000)));
+        env.close();
+        env(pay(issuer, lender, asset(kStuckDepositorIOU)));
+        env.close();
+
+        // Sole shareholder of a clean vault — no loan broker needed.
+        Vault const v{env};
+        auto [createTx, vaultKeylet] = v.create({.owner = lender, .asset = asset});
+        env(createTx);
+        env.close();
+
+        env(v.deposit({
+                .depositor = lender,
+                .id = vaultKeylet.key,
+                .amount = asset(kStuckDeposit),
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultBefore = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        auto const shareAsset = vaultBefore->at(sfShareMPTID);
+        auto const tokenLender = env.le(keylet::mptoken(shareAsset, lender.id()));
+        if (!BEAST_EXPECT(tokenLender))
+            return;
+        std::uint64_t const sharesLender = tokenLender->getFieldU64(sfMPTAmount);
+
+        // Sole shareholder, no loans, no loss. Burn everything.
+        STAmount const allShares{MPTIssue{shareAsset}, Number(sharesLender)};
+        env(v.withdraw({
+                .depositor = lender,
+                .id = vaultKeylet.key,
+                .amount = allShares,
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultFinal = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultFinal))
+            return;
+        auto const issuanceFinal = env.le(keylet::mptIssuance(shareAsset));
+        if (!BEAST_EXPECT(issuanceFinal))
+            return;
+        BEAST_EXPECT(issuanceFinal->getFieldU64(sfOutstandingAmount) == 0);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsTotal) == beast::kZero);
+        BEAST_EXPECT(vaultFinal->at(sfAssetsAvailable) == beast::kZero);
+        BEAST_EXPECT(vaultFinal->at(sfLossUnrealized) == beast::kZero);
+
+        // (Pre-fix path takes the regular code path; post-fix path enters
+        // the new final-withdrawal guard, which forces payout to exactly
+        // assetsAvailable. Either way the result is identical for a clean
+        // vault.)
+        (void)withFix;
+    }
+
+    // Sole shareholder in an impaired vault redeems a *partial* count of
+    // shares via fixed-shares input. Pre-fix the discounted formula is
+    // used; post-fix the full-price formula is used (waiveUnrealizedLoss
+    // = Yes). The relative payout therefore differs, and post-fix the
+    // depositor recovers proportionally more of the residual cash for
+    // the shares burned. In both cases the vault is left in a valid
+    // (non-empty) state.
+    void
+    testWithdrawSoleShareholderPartialFixedSharesUsesFullPrice()
+    {
+        using namespace test::jtx;
+
+        testcase(
+            "Vault withdraw: sole-shareholder partial fixed-shares uses "
+            "full-price rate (fixCleanup3_2_0)");
+
+        Env env(*this, all_ | fixCleanup3_2_0);
+        auto const f = setupStuckDepositor(env);
+        if (!f.vaultKeylet || !f.asset || f.sharesLender == 0)
+        {
+            BEAST_EXPECT(false);
+            return;
+        }
+        Keylet const& vaultKey = *f.vaultKeylet;
+        PrettyAsset const& asset = *f.asset;
+
+        auto const vaultBefore = env.le(vaultKey);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        Number const totalBefore = vaultBefore->at(sfAssetsTotal);
+        Number const availableBefore = vaultBefore->at(sfAssetsAvailable);
+        Number const lossBefore = vaultBefore->at(sfLossUnrealized);
+
+        // Burn exactly half of the outstanding shares.
+        std::uint64_t const halfShares = f.sharesLender / 2;
+        STAmount const halfAmt{MPTIssue{f.shareAsset}, Number(halfShares)};
+
+        STAmount const lenderBalanceBefore = env.balance(f.lender, asset);
+
+        Vault const v{env};
+        env(v.withdraw({
+                .depositor = f.lender,
+                .id = vaultKey.key,
+                .amount = halfAmt,
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Expected payout under the full-price formula:
+        //   assets = totalBefore * halfShares / sharesLender
+        // which (with halfShares == sharesLender/2) is roughly
+        //   totalBefore / 2.
+        STAmount const lenderBalanceAfter = env.balance(f.lender, asset);
+        Number const received{lenderBalanceAfter - lenderBalanceBefore};
+        Number const expected = totalBefore * Number(halfShares) / Number(f.sharesLender);
+        BEAST_EXPECT(received == expected);
+
+        // The full-price payout exceeds the discounted formula by exactly
+        // lossBefore * halfShares / sharesLender — that's the whole point
+        // of the waive.
+        Number const discounted =
+            (totalBefore - lossBefore) * Number(halfShares) / Number(f.sharesLender);
+        Number const expectedDelta = lossBefore * Number(halfShares) / Number(f.sharesLender);
+        BEAST_EXPECT(received - discounted == expectedDelta);
+
+        auto const vaultAfter = env.le(vaultKey);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        if (!BEAST_EXPECT(issuanceAfter))
+            return;
+
+        // Vault remains valid: half the shares remain, lossUnrealized
+        // is untouched, and the entire (total - available) gap is still
+        // the impaired receivable.
+        BEAST_EXPECT(
+            issuanceAfter->getFieldU64(sfOutstandingAmount) == f.sharesLender - halfShares);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == totalBefore - received);
+        BEAST_EXPECT(vaultAfter->at(sfLossUnrealized) == lossBefore);
+        BEAST_EXPECT(
+            vaultAfter->at(sfAssetsTotal) - vaultAfter->at(sfAssetsAvailable) ==
+            vaultAfter->at(sfLossUnrealized));
+
+        // Conservation: vault delta matches the depositor's gain.
+        BEAST_EXPECT(totalBefore - vaultAfter->at(sfAssetsTotal) == received);
+        BEAST_EXPECT(availableBefore - vaultAfter->at(sfAssetsAvailable) == received);
+    }
+
+    // Bug: DeltaInfo::makeDelta uses max(scale(after), scale(before)) for the
+    // sfAssetsTotal and sfAssetsAvailable deltas, and visitEntry applies the
+    // same max() for the vault pseudo-account RippleState.  When
+    // sfAssetsTotal sits exactly at 1e16 (IOU exponent 1, ULP = 10) and a
+    // withdrawal of 5 USD brings it to 9.999...995e15 (IOU exponent 0,
+    // ULP = 1), all three computations pick the anterior coarser scale 1.
+    // roundToAsset(-5, scale=1) collapses to 0, so the invariant check
+    // vaultPseudoDeltaAssets >= kZero fires even though the state change is
+    // valid and fully consistent at IOU precision.
+    //
+    // Fix (fixCleanup3_2_0): finalize compares the vault pseudo-account and
+    // sfAssetsTotal/Available deltas directly in Number space, bypassing
+    // scale-coarsened rounding.
+    void
+    testBugMakeDeltaAnteriorScale()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            // Trust limit of 2e16, fund exactly 1e16 so deposit lands at the
+            // IOU scale-1 boundary (exponent 1, ULP = 10).
+            STAmount const fundAndDeposit{usd.raw(), Number{1, 16}};
+
+            env(trust(alice, STAmount{usd.raw(), 2, 16}));
+            env.close();
+            env(pay(issuer, alice, fundAndDeposit));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            // sfAssetsTotal = sfAssetsAvailable = 1e16 (exponent 1, ULP = 10).
+            env(vault.deposit(
+                {.depositor = alice, .id = vaultKeylet.key, .amount = fundAndDeposit}));
+            env.close();
+
+            // Withdraw 5 USD: -5 is sub-ULP at the anterior scale (ULP = 10)
+            // but exact at the posterior scale (ULP = 1).  The state change is
+            // consistent; only the invariant's scale selection is wrong.
+            env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(5)}),
+                Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultWithdraw across IOU scale boundary fires invariant "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw across IOU scale boundary succeeds "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tesSUCCESS);
+        }
+    }
+
+    // Bug: DeltaInfo::makeDelta uses max(scale(after), scale(before)) for
+    // sfAssetsTotal/Available deltas.  This is symmetric to
+    // testBugMakeDeltaAnteriorScale but in the opposite direction: a deposit
+    // pushes assetsTotal from just below 1e16 (IOU exponent 0, ULP = 1) to just
+    // above it (exponent 1, ULP = 10).  makeDelta picks the coarser *posterior*
+    // scale 1.  The trust line balance rounds from atEdge + 2 = 10,000,000,000,000,001
+    // → 1e16, so the pseudo-account delta is only +1 in IOU space.
+    // roundToAsset(+1, scale=1) = 0 fires "deposit must increase vault balance"
+    // even though the state change is consistent at every precision boundary.
+    //
+    // Fix (fixCleanup3_2_0): computeVaultMinScale uses the posterior Number-space
+    // scale of sfAssetsTotal (which retains the full value 10,000,000,000,000,001,
+    // exponent 0), giving minScale = 0.  roundToAsset(+1, scale=0) = 1 > 0 and
+    // the invariant passes.  However the transactor's own precision guard fires
+    // first (bob pays 2 USD, vault receives only 1 due to IOU rounding), so the
+    // post-amendment result is tecPRECISION_LOSS rather than tesSUCCESS —
+    // the depositor is protected from silently losing 1 USD to rounding.
+    void
+    testBugMakeDeltaPosteriorScale()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            // atEdge is the largest IOU value with exponent 0 (ULP = 1).
+            // A deposit of 2 USD brings assetsTotal to 10,000,000,000,000,001
+            // in Number space, crossing the 1e16 boundary in IOU space.
+            STAmount const atEdge{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, STAmount{usd.raw(), 2, 16}));
+            env(trust(bob, usd(100)));
+            env.close();
+            env(pay(issuer, alice, atEdge));
+            env(pay(issuer, bob, usd(2)));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            // sfAssetsTotal = sfAssetsAvailable = atEdge (exponent 0, ULP = 1)
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = atEdge}));
+            env.close();
+
+            // Deposit 2 USD: +2 is sub-ULP at the posterior IOU scale (ULP = 10)
+            // but exact at the Number scale retained by sfAssetsTotal.
+            env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = usd(2)}),
+                Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultDeposit across IOU scale boundary fires invariant "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit across IOU scale boundary succeeds "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tecPRECISION_LOSS);
+        }
+    }
+
+    // Bug: ValidVault::visitEntry computes destinationDelta.scale as
+    // max(before_exponent, after_exponent) for RippleState entries.  When a
+    // withdrawal credits a destination whose IOU balance sits just below a
+    // power-of-10 boundary (atEdge = 9'999'999'999'999'999), the post-credit
+    // STAmount rounds up one exponent (exponent 0 → 1), making
+    // destinationDelta.scale = 1.  The invariant then calls
+    // roundToAsset(+2 USD, scale=1) = 0 and incorrectly fires
+    // "withdrawal must increase destination balance".
+    //
+    // Fix (fixCleanup3_2_0): finalize compares destination delta directly in
+    // Number space, bypassing scale-coarsened rounding.  The transaction
+    // itself succeeds because the effective IOU credit is non-trivial at
+    // Number precision even though the STAmount exponent shifted.
+    void
+    testVaultWithdrawCanonicalizeToZero()
+    {
+        using namespace test::jtx;
+
+        enum class DestKind : bool { ThirdParty = false, Self = true };
+
+        auto runScenario = [this](FeatureBitset features, DestKind destKind, TER expected) {
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const aliceLimit{usd.raw(), 2, 16};
+            STAmount const bobLimit{usd.raw(), 2, 16};
+            STAmount const atEdge{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(alice, aliceLimit));
+            if (destKind == DestKind::ThirdParty)
+                env(trust(bob, bobLimit));
+            env.close();
+
+            env(pay(issuer, alice, usd(1'000)));
+            if (destKind == DestKind::ThirdParty)
+                env(pay(issuer, bob, atEdge));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(1'000)}));
+            env.close();
+
+            // For the self-destination case, push alice's own trust line to
+            // the IOU edge so the next withdraw inflow crosses the boundary.
+            if (destKind == DestKind::Self)
+            {
+                env(pay(issuer, alice, atEdge));
+                env.close();
+            }
+
+            auto tx = vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(2)});
+            if (destKind == DestKind::ThirdParty)
+                tx[sfDestination] = bob.human();
+            env(tx, Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultWithdraw to third-party at IOU edge fires invariant "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(
+                testableAmendments() - fixCleanup3_2_0, DestKind::ThirdParty, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw to third-party at IOU edge succeeds "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), DestKind::ThirdParty, tesSUCCESS);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw to self at IOU edge fires invariant "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(
+                testableAmendments() - fixCleanup3_2_0, DestKind::Self, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw to self at IOU edge succeeds "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), DestKind::Self, tesSUCCESS);
+        }
+    }
+
+    // Bug: the equality check (vault outflow == destination inflow) was
+    // skipped whenever the destination delta rounded to zero at localMinScale,
+    // including cases where the vault outflow rounded to a non-zero value and
+    // a representable amount of value was genuinely destroyed.
+    //
+    // Scenario: Bob's IOU balance sits 5 units below the 10^16 STAmount
+    // precision boundary (atEdge2 = 9,999,999,999,999,995).  A withdrawal of
+    // 6 USD shifts his balance across that boundary: the exponent increments
+    // (0 → 1), so his effective inflow in Number space is only +5 — 1 USD is
+    // consumed by the precision-boundary rounding and cannot be credited.
+    //
+    // The destroyed amount (1 USD) is sub-ULP at destinationScale=1 (step=10),
+    // so the check treats it as an unavoidable IOU-precision artefact and
+    // lets the transaction succeed.
+    //
+    // Contrast: if 15 USD were destroyed at the same scale (destroyed ≥ step),
+    // floor(15/10)=1 ≠ 0 and the invariant would fire — that discrepancy IS
+    // representable and indicates a real accounting bug.
+    //
+    // Pre-fixCleanup3_2_0: the "must increase destination balance" check fires
+    // because roundedDestinationDelta = 0 ≤ 0.
+    void
+    testVaultWithdrawEqualityEnforced()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const aliceLimit{usd.raw(), 2, 16};
+            STAmount const bobLimit{usd.raw(), 2, 16};
+            // Bob's balance sits 5 units below the 10^16 STAmount precision
+            // boundary.  Receiving 6 USD shifts his exponent 0 → 1; the
+            // STAmount records +5, not +6 (1 USD is lost to rounding).
+            STAmount const atEdge2{usd.raw(), Number{9'999'999'999'999'995LL}};
+
+            env(trust(alice, aliceLimit));
+            env(trust(bob, bobLimit));
+            env.close();
+
+            env(pay(issuer, alice, usd(1'000)));
+            env(pay(issuer, bob, atEdge2));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(1'000)}));
+            env.close();
+
+            // Withdraw 6 USD to Bob: vault loses 6, Bob gains only 5.
+            // Destroyed amount = 1 USD, which is sub-ULP at destinationScale=1.
+            auto tx = vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = usd(6)});
+            tx[sfDestination] = bob.human();
+            env(tx, Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultWithdraw to destination at IOU precision boundary fires "
+                "invariant (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultWithdraw to destination at IOU precision boundary succeeds "
+                "when destroyed amount is sub-ULP (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tesSUCCESS);
+        }
+    }
+
+    // Bug: when a depositor's IOU trustline balance is very large (e.g.
+    // ~1e17), adding a small deposit (e.g. 1 USD) leaves sfAssetsTotal
+    // unchanged at IOU precision because the increment is sub-ULP at the
+    // vault's current asset scale.  The vault records the deposit, mints
+    // shares, and decrements the depositor's trustline, but sfAssetsTotal
+    // does not change — the conservation invariant fires because the rail
+    // delta is zero.
+    //
+    // Two sub-cases are exercised:
+    //   1. First-ever deposit into an empty vault: the depositor's own
+    //      trustline has a large balance so 1 USD canonicalizes to zero
+    //      when written back through the IOU rail.
+    //   2. Subsequent deposit after the vault already holds a large
+    //      sfAssetsTotal: a different depositor (bob, with a small balance)
+    //      sends 1 USD, which again rounds to zero at the vault's coarse
+    //      asset scale.
+    //
+    // Fix (fixCleanup3_2_0): the deposit transactor checks whether
+    // roundToAsset(amount, vault_scale) == 0 and rejects early with
+    // tecPRECISION_LOSS before any state is modified.
+    void
+    testVaultDepositCanonicalizeToZero()
+    {
+        using namespace test::jtx;
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
+
+            Account const issuer{"issuer"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+
+            STAmount const trustLimit{usd.raw(), Number{99'999'999'999'999'999LL}};
+            STAmount const aliceFund{usd.raw(), Number{99'999'999'999'999'999LL}};
+
+            env(trust(alice, trustLimit));
+            env(trust(bob, trustLimit));
+            env.close();
+
+            env(pay(issuer, alice, aliceFund));
+            env(pay(issuer, bob, usd(1000)));
+            env.close();
+
+            Vault const vault{env};
+
+            // Scale=0 so sfAssetsTotal stores whole USD
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+
+            // Alice's deposit canonicalizes to zero at her own trustline scale
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = usd(1)}),
+                Ter(expected));
+
+            // Increase vault-scale
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+            env.close();
+
+            env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = usd(1)}),
+                Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultDeposit below Vault precision canonicalized to zero "
+                "(pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit below Vault precision canonicalized to zero "
+                "(post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tecPRECISION_LOSS);
+        }
+    }
+
+    // VaultDeposit by issuer with the vault parked at the IOU 16-digit
+    // edge (9.999e15). Issuer mints 2 more USD; the vault trust line
+    // goes 9.999e15 → 10^16, gaining 1 unit instead of 2 (canonicalization).
+    //
+    // Pre-fixCleanup3_2_0: the proactive check is absent; the deposit
+    // applies, then VaultInvariant's "deposit must increase vault
+    // balance" assertion fires at finalize time on the rounded vault
+    // delta of zero, returning tecINVARIANT_FAILED.
+    // Post-amendment: reject deposit that is not representable at Vault scale.
+    void
+    testBugIssuerVaultDepositAtEdge()
+    {
+        using namespace test::jtx;
+
+        auto runScenario = [this](FeatureBitset features, TER expected) {
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
+
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+
+            env.fund(XRP(100'000), issuer, owner);
+            env.close();
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const usd{issuer["USD"]};
+            STAmount const trustLimit{usd.raw(), 2, 16};
+            STAmount const ownerFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+            env(trust(owner, trustLimit));
+            env.close();
+            env(pay(issuer, owner, ownerFund));
+            env.close();
+
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = usd});
+            vaultTx[sfScale] = 0;
+            env(vaultTx);
+            env.close();
+            env(vault.deposit({.depositor = owner, .id = vaultKeylet.key, .amount = ownerFund}));
+            env.close();
+
+            // Vault pseudo-account is now at 9.999e15. Issuer mints 2
+            // more USD. Pre: tecINVARIANT_FAILED at finalize. Post:
+            // tecPRECISION_LOSS proactively. Either way, no value moves.
+            env(vault.deposit({.depositor = issuer, .id = vaultKeylet.key, .amount = usd(2)}),
+                Ter(expected));
+            env.close();
+        };
+
+        {
+            testcase(
+                "bug: VaultDeposit by issuer at IOU edge fires "
+                "tecINVARIANT_FAILED at finalize (pre-fixCleanup3_2_0)");
+            runScenario(testableAmendments() - fixCleanup3_2_0, tecINVARIANT_FAILED);
+        }
+        {
+            testcase(
+                "bug: VaultDeposit by issuer at IOU edge rejects with "
+                "tecPRECISION_LOSS proactively (post-fixCleanup3_2_0)");
+            runScenario(testableAmendments(), tecPRECISION_LOSS);
+        }
+    }
+
+    void
+    testReferenceHolding()
+    {
+        using namespace test::jtx;
+
+        auto readReferenceHolding = [&](Env const& env,
+                                        Keylet const& vaultKeylet) -> std::optional<uint256> {
+            auto const sleVault = env.le(vaultKeylet);
+            if (!sleVault)
+                return std::nullopt;
+            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
+                return std::nullopt;
+            return sleIssuance->getFieldH256(sfReferenceHolding);
+        };
+
+        // Post-fixCleanup3_2_0: vault share carries sfReferenceHolding
+        // pointing to the vault pseudo's MPToken (for MPT-backed vaults)
+        // or RippleState (for IOU-backed vaults).
+        {
+            testcase("sfReferenceHolding: MPT-backed vault, post-amendment");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault != nullptr);
+            auto const pseudoId = sleVault->at(sfAccount);
+            auto const expected = keylet::mptoken(mptt.issuanceID(), pseudoId).key;
+
+            auto const stored = readReferenceHolding(env, keylet);
+            BEAST_EXPECT(stored.has_value());
+            BEAST_EXPECT(stored && *stored == expected);
+            // The pointed-to MPToken must actually exist.
+            BEAST_EXPECT(env.le(keylet::mptoken(mptt.issuanceID(), pseudoId)) != nullptr);
+        }
+
+        {
+            testcase("sfReferenceHolding: IOU-backed vault, post-amendment");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault != nullptr);
+            auto const pseudoId = sleVault->at(sfAccount);
+            auto const expected = keylet::line(pseudoId, asset.raw().get<Issue>()).key;
+
+            auto const stored = readReferenceHolding(env, keylet);
+            BEAST_EXPECT(stored.has_value());
+            BEAST_EXPECT(stored && *stored == expected);
+            // The pointed-to RippleState must actually exist.
+            BEAST_EXPECT(env.le(keylet::line(pseudoId, asset.raw().get<Issue>())) != nullptr);
+        }
+
+        // XRP-backed vaults leave the field absent: XRP has no separate
+        // holding ledger entry and no transferability concept to inherit.
+        {
+            testcase("sfReferenceHolding: XRP-backed vault, field absent");
+            Env env{*this, testableAmendments()};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), owner);
+            env.close();
+
+            PrettyAsset const asset{xrpIssue(), 1'000'000};
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(!readReferenceHolding(env, keylet).has_value());
+        }
+
+        // Pre-fixCleanup3_2_0: vault share has the field absent regardless
+        // of underlying type.
+        {
+            testcase("sfReferenceHolding: vault share, pre-amendment");
+            Env env{*this, testableAmendments() - fixCleanup3_2_0};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(!readReferenceHolding(env, keylet).has_value());
+        }
+
+        // Plain MPTokenIssuanceCreate (not a vault share) must never
+        // populate the field. Only the post-amendment case is
+        // interesting; pre-amendment nothing writes the field at all.
+        {
+            testcase("sfReferenceHolding: plain MPT issuance never set");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            env.fund(XRP(10'000), issuer);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            env.close();
+
+            auto const sleIssuance = env.le(keylet::mptIssuance(mptt.issuanceID()));
+            if (BEAST_EXPECT(sleIssuance))
+                BEAST_EXPECT(!sleIssuance->isFieldPresent(sfReferenceHolding));
+        }
+    }
+
+    // Probe every transactor surface that might delete the vault pseudo-
+    // account's underlying holding (the MPToken or RippleState pointed to
+    // by sfReferenceHolding). Each scenario asserts either that the
+    // existing pseudo-account guards stop the deletion at preclaim, or
+    // that the ledger leaves the holding intact afterwards. This is a
+    // regression guard: if any of these guards regresses, the share's
+    // sfReferenceHolding pointer would dangle and the new ValidMPTIssuance
+    // invariant would catch it - but we want to fail much earlier, at
+    // the transactor's preclaim / doApply, not at invariant time.
+    void
+    testHoldingDeletionBlocked()
+    {
+        using namespace test::jtx;
+
+        // Helper: read the share's referenced holding and confirm the
+        // pointed-to SLE still exists after the probe.
+        auto referencedHoldingExists = [&](Env const& env, Keylet const& vaultKeylet) -> bool {
+            auto const sleVault = env.le(vaultKeylet);
+            if (!sleVault)
+                return false;
+            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
+                return false;
+            auto const holdingKey = sleIssuance->getFieldH256(sfReferenceHolding);
+            return env.le(keylet::unchecked(holdingKey)) != nullptr;
+        };
+
+        // ---- MPT-backed vault ----------------------------------------
+        {
+            testcase("vault pseudo MPToken: Clawback blocked by tecPSEUDO_ACCOUNT");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(10'000), issuer, owner, depositor);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            Account const pseudoAccount{"vault-pseudo", env.le(keylet)->at(sfAccount)};
+            // Issuer attempts to claw back the FULL underlying balance
+            // (500) directly from the vault pseudo-account. With the
+            // full amount, the doApply path would drain the pseudo's
+            // MPToken to zero and removeEmptyHolding would erase it -
+            // if doApply ever ran. SAV's pseudo-account guard at
+            // Clawback.cpp:201 refuses at preclaim with
+            // tecPSEUDO_ACCOUNT before any state change.
+            env(claw(issuer, asset(500), pseudoAccount), Ter{tecPSEUDO_ACCOUNT});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+            // Sanity: pseudo's full balance is intact.
+            BEAST_EXPECT(env.balance(pseudoAccount, asset).number() == 500);
+        }
+
+        {
+            testcase("vault pseudo MPToken: Issuer cannot Unauthorize pseudo");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = issuer, .holder = owner});
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            auto const pseudoId = env.le(keylet)->at(sfAccount);
+            // Issuer attempts MPTokenAuthorize against the pseudo with
+            // tfMPTUnauthorize. MPTokenAuthorize.cpp blocks pseudo
+            // accounts via isPseudoAccount; the pseudo's MPToken is
+            // preserved. Construct the tx manually since the pseudo
+            // lacks a signing key, and the issuer-driven flavour is
+            // expressed via sfHolder.
+            json::Value jv;
+            jv[sfAccount] = issuer.human();
+            jv[sfHolder] = toBase58(pseudoId);
+            jv[sfMPTokenIssuanceID] = to_string(mptt.issuanceID());
+            jv[sfFlags] = tfMPTUnauthorize;
+            jv[sfTransactionType] = jss::MPTokenAuthorize;
+            env(jv, Ter{tecNO_PERMISSION});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+        }
+
+        {
+            testcase("vault pseudo MPToken: MPTokenIssuanceDestroy blocked while vault holds");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
+            env.fund(XRP(10'000), issuer, owner, depositor);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = depositor});
+            env(pay(issuer, depositor, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            // While the vault holds outstanding underlying, the issuer
+            // cannot destroy the issuance. tecHAS_OBLIGATIONS confirms
+            // the protection - and as a side effect, the share's
+            // sfReferenceHolding pointer cannot be left pointing at a
+            // ghost issuance.
+            mptt.destroy({.id = mptt.issuanceID(), .err = tecHAS_OBLIGATIONS});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+        }
+
+        // ---- IOU-backed vault ----------------------------------------
+        {
+            testcase("vault pseudo trust line: Clawback blocked by tecPSEUDO_ACCOUNT");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000'000), owner);
+            env(pay(issuer, owner, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            Account const pseudoAccount{"vault-pseudo", env.le(keylet)->at(sfAccount)};
+            // Issuer attempts to claw back the FULL IOU balance (500)
+            // directly from the vault pseudo. With the full amount, the
+            // doApply path would drain the trust line to zero and (if
+            // both reserve flags clear) trustDelete would erase it - if
+            // doApply ever ran. The same SAV pseudo-account guard
+            // refuses at preclaim with tecPSEUDO_ACCOUNT. The amount's
+            // STAmount issuer field is the holder, per IOU clawback
+            // convention.
+            env(claw(issuer, pseudoAccount["IOU"](500)), Ter{tecPSEUDO_ACCOUNT});
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+            // Sanity: pseudo's full balance is intact.
+            BEAST_EXPECT(env.balance(pseudoAccount, asset).number() == 500);
+        }
+
+        {
+            testcase("vault pseudo trust line: TrustSet limit=0 from issuer preserves line");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const asset = issuer["IOU"];
+            env.trust(asset(1'000'000), owner);
+            env(pay(issuer, owner, asset(1'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(500)}));
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+
+            // Issuer submits TrustSet with limit=0 against the vault
+            // pseudo. The pseudo's side of the line still has the
+            // original (non-zero) limit and a non-zero balance, so the
+            // line is preserved - even though the issuer cleared its
+            // own side. trustDelete only fires when both limits clear
+            // and the balance is zero.
+            Account const pseudoAccount{"vault-pseudo", env.le(keylet)->at(sfAccount)};
+            env(trust(issuer, pseudoAccount["IOU"](0)));
+            env.close();
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+        }
+
+        // ---- Positive control: VaultDelete is the only legitimate path
+        {
+            testcase("vault pseudo holding: VaultDelete is the legitimate cleanup path");
+            Env env{*this, testableAmendments()};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), issuer, owner);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(referencedHoldingExists(env, keylet));
+            auto const pseudoId = env.le(keylet)->at(sfAccount);
+            auto const sharedMptId = env.le(keylet)->at(sfShareMPTID);
+            auto const holdingKeylet = keylet::mptoken(mptt.issuanceID(), pseudoId);
+
+            // VaultDelete tears down the vault pseudo's holding, the
+            // share issuance, and the pseudo-account itself. Invariant
+            // permits this because the tx is ttVAULT_DELETE.
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet) == nullptr);
+            BEAST_EXPECT(env.le(holdingKeylet) == nullptr);
+            BEAST_EXPECT(env.le(keylet::mptIssuance(sharedMptId)) == nullptr);
+        }
+    }
+
     // VaultDeposit::preclaim uses accountHolds(..., SpendableHandling::
     // shFULL_BALANCE), which for an IOU asset adds the counterparty's
     // LowLimit/HighLimit to the depositor's raw balance (TokenHelpers.cpp:
@@ -6356,6 +8165,12 @@ public:
     void
     run() override
     {
+        testVaultWithdrawEqualityEnforced();
+        testBugIssuerVaultDepositAtEdge();
+        testBugMakeDeltaPosteriorScale();
+        testBugMakeDeltaAnteriorScale();
+        testVaultDepositCanonicalizeToZero();
+        testVaultWithdrawCanonicalizeToZero();
         testVaultDepositNegativeBalanceFromOppositeLimit();
         testSequences();
         testPreflight();
@@ -6377,6 +8192,18 @@ public:
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
         testMutateCanTransferAfterDeposit();
+
+        testWithdrawSoleShareholderFixedAssetExit(all_ - fixCleanup3_2_0);
+        testWithdrawSoleShareholderFixedAssetExit(all_);
+        testWithdrawSoleShareholderFullSharesRejected(all_ - fixCleanup3_2_0);
+        testWithdrawSoleShareholderFullSharesRejected(all_);
+        testWithdrawSoleShareholderCleanVaultUnaffected(all_ - fixCleanup3_2_0);
+        testWithdrawSoleShareholderCleanVaultUnaffected(all_);
+        testWithdrawSoleShareholderPartialFixedSharesUsesFullPrice();
+        testWithdrawSoleShareholderLoanRepaymentExit();
+
+        testReferenceHolding();
+        testHoldingDeletionBlocked();
     }
 };
 

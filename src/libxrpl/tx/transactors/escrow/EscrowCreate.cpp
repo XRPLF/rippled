@@ -81,6 +81,16 @@ EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::kZero};
 }
 
+bool
+EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
+{
+    // Only require featureMPTokensV1 when the escrow amount is an MPT and
+    // fixCleanup3_2_0 is active; XRP/IOU escrows are unaffected by this gate.
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfAmount].holds<MPTIssue>())
+        return ctx.rules.enabled(featureMPTokensV1);
+    return true;
+}
+
 template <ValidIssueType T>
 static NotTEC
 escrowCreatePreflightHelper(PreflightContext const& ctx);
@@ -103,7 +113,7 @@ template <>
 NotTEC
 escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
+    if (!ctx.rules.enabled(fixCleanup3_2_0) && !ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
     auto const amount = ctx.tx[sfAmount];
@@ -531,10 +541,7 @@ EscrowCreate::doApply()
 }
 
 void
-EscrowCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+EscrowCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
