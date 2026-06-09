@@ -204,9 +204,9 @@ public:
         /** Enable tracing for RPC request handling. */
         bool traceRpc = true;
 
-        /** Enable tracing for peer-to-peer messages (disabled by default
-            due to high volume). */
-        bool tracePeer = false;
+        /** Enable tracing for peer-to-peer messages (enabled by default;
+            high volume). */
+        bool tracePeer = true;
 
         /** Enable tracing for ledger close/accept. */
         bool traceLedger = true;
