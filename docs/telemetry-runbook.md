@@ -4,6 +4,10 @@
 
 xrpld supports OpenTelemetry distributed tracing to provide visibility into RPC requests, transaction processing, and consensus rounds.
 
+This runbook covers operating a running node and querying its traces. For
+building xrpld with telemetry support and the internal architecture, see
+[build/telemetry.md](build/telemetry.md).
+
 ## Quick Start
 
 ### 1. Start the observability stack
@@ -14,10 +18,9 @@ docker compose -f docker/telemetry/docker-compose.yml up -d
 
 This starts:
 
-- **OTel Collector** on ports 4317 (gRPC) and 4318 (HTTP)
-- **Jaeger** UI on http://localhost:16686
-- **Prometheus** on http://localhost:9090
-- **Grafana** on http://localhost:3000
+- **OTel Collector** on ports 4317 (gRPC), 4318 (HTTP), and 13133 (health)
+- **Tempo** trace storage on http://localhost:3200
+- **Grafana** on http://localhost:3000 (Tempo pre-configured as datasource)
 
 ### 2. Enable telemetry in xrpld
 

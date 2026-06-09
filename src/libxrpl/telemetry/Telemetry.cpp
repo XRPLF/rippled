@@ -31,6 +31,7 @@
 #include <opentelemetry/sdk/trace/batch_span_processor_options.h>
 #include <opentelemetry/sdk/trace/processor.h>
 #include <opentelemetry/sdk/trace/sampler.h>
+#include <opentelemetry/sdk/trace/samplers/parent_factory.h>
 #include <opentelemetry/sdk/trace/samplers/trace_id_ratio.h>
 #include <opentelemetry/sdk/trace/tracer_provider.h>
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
@@ -313,8 +314,15 @@ public:
             {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
         });
 
-        // Configure sampler
-        auto sampler = std::make_unique<trace_sdk::TraceIdRatioBasedSampler>(setup_.samplingRatio);
+        // Configure sampler. Head sampling is fixed at 1.0 (sample everything);
+        // setup_.samplingRatio is not config-driven. Wrap the ratio sampler in a
+        // ParentBasedSampler so spans with a remote parent honor the upstream
+        // sampled flag — this keeps keep/drop decisions coherent for a single
+        // distributed trace spanning multiple nodes. Volume reduction is left to
+        // the collector's tail sampling.
+        auto rootSampler =
+            std::make_shared<trace_sdk::TraceIdRatioBasedSampler>(setup_.samplingRatio);
+        auto sampler = trace_sdk::ParentBasedSamplerFactory::Create(std::move(rootSampler));
 
         // Create TracerProvider
         sdkProvider_ = trace_sdk::TracerProviderFactory::Create(
