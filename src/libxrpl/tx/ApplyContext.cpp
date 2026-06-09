@@ -24,6 +24,133 @@
 
 namespace xrpl {
 
+namespace {
+
+template <class... Checkers>
+void
+visitInvariantChecks(
+    InvariantChecks& checkers,
+    bool isDelete,
+    SLE::const_ref before,
+    SLE::const_ref after)
+{
+    (..., std::get<Checkers>(checkers).visitEntry(isDelete, before, after));
+}
+
+[[nodiscard]] std::optional<LedgerEntryType>
+entryTypeForSpecificInvariants(SLE::const_ref before, SLE::const_ref after)
+{
+    if (before && after && before->getType() != after->getType())
+    {
+        // LedgerEntryTypesMatch runs as a broad invariant and reports this.
+        return std::nullopt;
+    }
+
+    if (after)
+        return after->getType();
+    if (before)
+        return before->getType();
+    return std::nullopt;
+}
+
+void
+visitTypeSpecificInvariantChecks(
+    InvariantChecks& checkers,
+    LedgerEntryType type,
+    bool isDelete,
+    SLE::const_ref before,
+    SLE::const_ref after)
+{
+    switch (type)
+    {
+        case ltACCOUNT_ROOT:
+            visitInvariantChecks<
+                AccountRootsNotDeleted,
+                AccountRootsDeletedClean,
+                XRPBalanceChecks,
+                TransfersNotFrozen,
+                ValidNewAccountRoot,
+                NFTokenCountTracking,
+                ValidAMM,
+                ValidPseudoAccounts,
+                ValidLoanBroker,
+                ValidVault>(checkers, isDelete, before, after);
+            break;
+        case ltRIPPLE_STATE:
+            visitInvariantChecks<
+                NoXRPTrustLines,
+                NoDeepFreezeTrustLinesWithoutFreeze,
+                TransfersNotFrozen,
+                ValidMPTIssuance,
+                ValidAMM,
+                ValidLoanBroker,
+                ValidVault>(checkers, isDelete, before, after);
+            break;
+        case ltOFFER:
+            visitInvariantChecks<NoBadOffers, ValidPermissionedDEX>(
+                checkers, isDelete, before, after);
+            break;
+        case ltESCROW:
+            visitInvariantChecks<NoZeroEscrow>(checkers, isDelete, before, after);
+            break;
+        case ltNFTOKEN_PAGE:
+            visitInvariantChecks<ValidNFTokenPage>(checkers, isDelete, before, after);
+            break;
+        case ltMPTOKEN_ISSUANCE:
+            visitInvariantChecks<NoZeroEscrow, ValidMPTIssuance, ValidVault, ValidMPTPayment>(
+                checkers, isDelete, before, after);
+            break;
+        case ltMPTOKEN:
+            visitInvariantChecks<
+                NoZeroEscrow,
+                ValidClawback,
+                ValidMPTIssuance,
+                ValidAMM,
+                ValidLoanBroker,
+                ValidVault,
+                ValidMPTPayment,
+                ValidMPTTransfer>(checkers, isDelete, before, after);
+            break;
+        case ltPERMISSIONED_DOMAIN:
+            visitInvariantChecks<ValidPermissionedDomain>(checkers, isDelete, before, after);
+            break;
+        case ltDIR_NODE:
+            visitInvariantChecks<ValidPermissionedDEX, ValidBookDirectory>(
+                checkers, isDelete, before, after);
+            break;
+        case ltAMM:
+            visitInvariantChecks<ValidAMM>(checkers, isDelete, before, after);
+            break;
+        case ltLOAN_BROKER:
+            visitInvariantChecks<ValidLoanBroker>(checkers, isDelete, before, after);
+            break;
+        case ltLOAN:
+            visitInvariantChecks<ValidLoan>(checkers, isDelete, before, after);
+            break;
+        case ltVAULT:
+            visitInvariantChecks<ValidVault>(checkers, isDelete, before, after);
+            break;
+        default:
+            break;
+    }
+}
+
+void
+visitBroadInvariantChecks(
+    InvariantChecks& checkers,
+    bool isDelete,
+    SLE::const_ref before,
+    SLE::const_ref after)
+{
+    visitInvariantChecks<
+        LedgerEntryTypesMatch,
+        XRPNotCreated,
+        NoModifiedUnmodifiableFields,
+        ValidAmounts>(checkers, isDelete, before, after);
+}
+
+}  // namespace
+
 ApplyContext::ApplyContext(
     ServiceRegistry& registry,
     OpenView& base,
@@ -99,11 +226,13 @@ ApplyContext::checkInvariantsHelper(
         auto checkers = getInvariantChecks();
 
         // call each check's per-entry method
-        visit(
-            [&checkers](
-                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
-                (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
-            });
+        visit([&checkers](
+                  uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+            visitBroadInvariantChecks(checkers, isDelete, before, after);
+
+            if (auto const type = entryTypeForSpecificInvariants(before, after))
+                visitTypeSpecificInvariantChecks(checkers, *type, isDelete, before, after);
+        });
 
         // Note: do not replace this logic with a `...&&` fold expression.
         // The fold expression will only run until the first check fails (it
