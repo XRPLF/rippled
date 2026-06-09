@@ -67,10 +67,15 @@ public:
     [[nodiscard]] std::optional<Shares>
     findShares(uint192 const& mptID) const;
 
+    /** Find deleted shares in beforeMPTs_ whose mptID matches. */
+    [[nodiscard]] std::optional<Shares>
+    findDeletedShares(uint192 const& mptID) const;
+
 private:
     std::vector<Vault> afterVault_;
     std::vector<Vault> beforeVault_;
     std::vector<Shares> afterMPTs_;
+    std::vector<Shares> beforeMPTs_;
 };
 
 }  // namespace xrpl

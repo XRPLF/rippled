@@ -1,12 +1,16 @@
 #include <xrpl/tx/transactors/vault/VaultDelete.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
@@ -211,15 +215,76 @@ VaultDelete::doApply()
 }
 
 void
-VaultDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultDelete::visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // No transaction-specific invariants yet (future work).
+    data_.visitEntry(isDelete, before, after);
 }
 
 bool
-VaultDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+VaultDelete::finalizeInvariants(
+    STTx const&,
+    TER result,
+    XRPAmount,
+    ReadView const& view,
+    beast::Journal const& j)
 {
-    // No transaction-specific invariants yet (future work).
+    bool const enforce = view.rules().enabled(featureSingleAssetVault);
+
+    if (!isTesSuccess(result))
+        return true;
+
+    static constexpr Number kZero{};
+
+    // VaultDelete must have deleted the vault; if it still exists, something
+    // went wrong.
+    if (!data_.afterVaults().empty())
+    {
+        JLOG(j.fatal()) << "Invariant failed: vault not deleted by VaultDelete";
+        XRPL_ASSERT(enforce, "xrpl::VaultDelete::finalizeInvariants : vault not deleted invariant");
+        return !enforce;
+    }
+
+    // Nothing to check if the vault was never in the before-set (e.g. a
+    // test that omits the vault entry entirely).
+    if (data_.beforeVaults().empty())
+        return true;
+
+    auto const& beforeVault = data_.beforeVaults()[0];
+
+    auto const deletedShares = data_.findDeletedShares(beforeVault.shareMPTID);
+    if (!deletedShares)
+    {
+        JLOG(j.fatal()) << "Invariant failed: deleted vault must also delete shares";
+        XRPL_ASSERT(enforce, "xrpl::VaultDelete::finalizeInvariants : shares deletion invariant");
+        return !enforce;
+    }
+
+    bool result2 = true;
+
+    if (deletedShares->sharesTotal != 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: deleted vault must have no shares outstanding";
+        result2 = false;
+    }
+
+    if (beforeVault.assetsTotal != kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: deleted vault must have no assets outstanding";
+        result2 = false;
+    }
+
+    if (beforeVault.assetsAvailable != kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: deleted vault must have no assets available";
+        result2 = false;
+    }
+
+    if (!result2)
+    {
+        XRPL_ASSERT(enforce, "xrpl::VaultDelete::finalizeInvariants : vault delete invariants");
+        return !enforce;
+    }
+
     return true;
 }
 

@@ -5,7 +5,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -339,51 +338,8 @@ ValidVault::finalize(
             return !enforce;  // That's all we can do here
         }
 
-        // Note, if afterVault_ is empty then we know that beforeVault_ is not
-        // empty, as enforced at the top of this function
-        auto const& beforeVault = beforeVault_[0];
-
-        // At this moment we only know a vault is being deleted and there
-        // might be some MPTokenIssuance objects which are deleted in the
-        // same transaction. Find the one matching this vault.
-        auto const deletedShares = [&]() -> std::optional<Shares> {
-            for (auto const& e : beforeMPTs_)
-            {
-                if (e.share.getMptID() == beforeVault.shareMPTID)
-                    return e;
-            }
-            return std::nullopt;
-        }();
-
-        if (!deletedShares)
-        {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
-                               "delete shares";
-            XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : shares deletion invariant");
-            return !enforce;  // That's all we can do here
-        }
-
-        bool result = true;
-        if (deletedShares->sharesTotal != 0)
-        {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
-                               "shares outstanding";
-            result = false;
-        }
-        if (beforeVault.assetsTotal != kZero)
-        {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
-                               "assets outstanding";
-            result = false;
-        }
-        if (beforeVault.assetsAvailable != kZero)
-        {
-            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
-                               "assets available";
-            result = false;
-        }
-
-        return result;
+        // Delete-specific checks now live in VaultDelete::finalizeInvariants.
+        return true;
     }
     if (txnType == ttVAULT_DELETE)
     {

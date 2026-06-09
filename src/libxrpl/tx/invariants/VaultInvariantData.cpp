@@ -5,7 +5,10 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+
+#include <optional>
 
 namespace xrpl {
 
@@ -51,6 +54,9 @@ VaultInvariantData::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_
     if (before && before->getType() == ltVAULT)
         beforeVault_.push_back(Vault::make(*before));
 
+    if (before && before->getType() == ltMPTOKEN_ISSUANCE)
+        beforeMPTs_.push_back(Shares::make(*before));
+
     if (!isDelete && after)
     {
         switch (after->getType())
@@ -70,6 +76,17 @@ std::optional<VaultInvariantData::Shares>
 VaultInvariantData::findShares(uint192 const& mptID) const
 {
     for (auto const& s : afterMPTs_)
+    {
+        if (s.share.getMptID() == mptID)
+            return s;
+    }
+    return std::nullopt;
+}
+
+std::optional<VaultInvariantData::Shares>
+VaultInvariantData::findDeletedShares(uint192 const& mptID) const
+{
+    for (auto const& s : beforeMPTs_)
     {
         if (s.share.getMptID() == mptID)
             return s;
