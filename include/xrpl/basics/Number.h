@@ -557,7 +557,7 @@ public:
      * @param mantissa      Raw signed mantissa (sign is extracted internally).
      * @param exponent      Raw exponent.
      * @return  The normalized (mantissa, exponent) pair in the target range.
-     *          A zero mantissa is returned unchanged.
+     *          A zero mantissa is returned as {mantissa=0, exponent=0, negative=false}.
      * @note  The result is bit-identical to the two-pass path: an intermediate
      *        pass to a strictly wider range cannot change the final
      *        narrower-range result.
