@@ -161,7 +161,7 @@ public:
     setLedgerSeq(std::uint32_t lseq);
 
     bool
-    fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter);
+    fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter const* filter);
 
     // normal hash access functions
 
@@ -248,7 +248,7 @@ public:
         @param return The nodes known to be missing
     */
     std::vector<std::pair<SHAMapNodeID, uint256>>
-    getMissingNodes(int maxNodes, SHAMapSyncFilter* filter);
+    getMissingNodes(int maxNodes, SHAMapSyncFilter const* filter);
 
     bool
     getNodeFat(
@@ -281,9 +281,9 @@ public:
     serializeRoot(Serializer& s) const;
 
     SHAMapAddNode
-    addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter* filter);
+    addRootNode(SHAMapHash const& hash, Slice const& rootNode, SHAMapSyncFilter const* filter);
     SHAMapAddNode
-    addKnownNode(SHAMapNodeID const& nodeID, Slice const& rawNode, SHAMapSyncFilter* filter);
+    addKnownNode(SHAMapNodeID const& nodeID, Slice const& rawNode, SHAMapSyncFilter const* filter);
 
     // status functions
     void
@@ -343,11 +343,11 @@ private:
     SHAMapTreeNodePtr
     fetchNodeNT(SHAMapHash const& hash) const;
     SHAMapTreeNodePtr
-    fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter* filter) const;
+    fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter const* filter) const;
     SHAMapTreeNodePtr
     fetchNode(SHAMapHash const& hash) const;
     SHAMapTreeNodePtr
-    checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const;
+    checkFilter(SHAMapHash const& hash, SHAMapSyncFilter const* filter) const;
 
     /** Update hashes up to the root */
     void
@@ -411,7 +411,7 @@ private:
     descendAsync(
         SHAMapInnerNode* parent,
         int branch,
-        SHAMapSyncFilter* filter,
+        SHAMapSyncFilter const* filter,
         bool& pending,
         descendCallback&&) const;
 
@@ -420,7 +420,7 @@ private:
         SHAMapInnerNode* parent,
         SHAMapNodeID const& parentID,
         int branch,
-        SHAMapSyncFilter* filter) const;
+        SHAMapSyncFilter const* filter) const;
 
     // Non-storing
     // Does not hook the returned node to its parent
@@ -461,7 +461,7 @@ private:
 
         // basic parameters
         int max;
-        SHAMapSyncFilter* filter;
+        SHAMapSyncFilter const* filter;
         int const maxDefer;
         std::uint32_t generation;
 
@@ -500,7 +500,11 @@ private:
         // reads
         std::map<SHAMapInnerNode*, SHAMapNodeID> resumes;
 
-        MissingNodes(int max, SHAMapSyncFilter* filter, int maxDefer, std::uint32_t generation)
+        MissingNodes(
+            int max,
+            SHAMapSyncFilter const* filter,
+            int maxDefer,
+            std::uint32_t generation)
             : max(max), filter(filter), maxDefer(maxDefer), generation(generation), deferred(0)
         {
             missingNodes.reserve(max);
