@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       - name: Check definitions
         run: .github/scripts/rename/definitions.sh .
       - name: Check copyright notices
@@ -48,9 +48,9 @@ jobs:
         run: |
           DIFF=$(git status --porcelain)
           if [ -n "${DIFF}" ]; then
-            # Print the differences to give the contributor a hint about what to
-            # expect when running the renaming scripts on their own machine.
-            git diff
-            echo "${MESSAGE}"
-            exit 1
+              # Print the differences to give the contributor a hint about what to
+              # expect when running the renaming scripts on their own machine.
+              git diff
+              echo "${MESSAGE}"
+              exit 1
           fi

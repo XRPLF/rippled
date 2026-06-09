@@ -50,6 +50,7 @@ words:
   - AMMXRP
   - amt
   - amts
+  - archs
   - asnode
   - asynchrony
   - attestation
@@ -93,6 +94,7 @@ words:
   - daria
   - dcmake
   - dearmor
+  - dedented
   - deleteme
   - demultiplexer
   - deserializaton
@@ -133,6 +135,7 @@ words:
   - iou
   - ious
   - isrdc
+  - isystem
   - itype
   - jemalloc
   - jlog
@@ -199,11 +202,13 @@ words:
   - nonxrp
   - noreplace
   - noripple
+  - nostdinc
   - notifempty
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
+  - onlatest
   - ostr
   - pargs
   - partitioner
@@ -254,6 +259,7 @@ words:
   - sfields
   - shamap
   - shamapitem
+  - shfmt
   - shlibs
   - sidechain
   - SIGGOOD
@@ -298,6 +304,7 @@ words:
   - unauthorizing
   - unergonomic
   - unfetched
+  - unfindable
   - unflatten
   - unfund
   - unimpair

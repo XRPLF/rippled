@@ -1,12 +1,13 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/Types.h>
@@ -29,10 +30,10 @@ private:
     createSection(std::string const& path, std::string const& blockSize = "")
     {
         Section params;
-        params.set("type", "nudb");
-        params.set("path", path);
+        params.set(Keys::kType, "nudb");
+        params.set(Keys::kPath, path);
         if (!blockSize.empty())
-            params.set("nudb_block_size", blockSize);
+            params.set(Keys::kNudbBlockSize, blockSize);
         return params;
     }
 

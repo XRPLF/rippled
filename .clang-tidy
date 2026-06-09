@@ -154,7 +154,7 @@ Checks: "-*,
   "
 # ---
 # readability-inconsistent-declaration-parameter-name, # in this codebase this check will break a lot of arg names
-# readability-static-accessed-through-instance,        # this check is probably unnecessary. it makes the code less readable
+# readability-static-accessed-through-instance,        # this check is probably unnecessary. It makes the code less readable
 # ---
 
 CheckOptions:
@@ -199,6 +199,6 @@ CheckOptions:
   readability-identifier-naming.PublicMemberSuffix: ""
   readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
 
-HeaderFilterRegex: '^.*/(test|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
+HeaderFilterRegex: '^.*/(tests?|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
 ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'
 WarningsAsErrors: "*"
