@@ -10,22 +10,11 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
       - [Install dependencies](#install-dependencies)
       - [Call CMake](#call-cmake)
       - [Build](#build)
-    - [Building without telemetry](#building-without-telemetry)
-  - [Runtime Configuration](#runtime-configuration)
-    - [Configuration options](#configuration-options)
-  - [Observability Stack](#observability-stack)
-    - [Start the stack](#start-the-stack)
-    - [Verify the stack](#verify-the-stack)
-    - [View traces in Grafana Explore](#view-traces-in-grafana-explore)
-  - [Running Tests](#running-tests)
+  - [Building without telemetry](#building-without-telemetry)
   - [Troubleshooting](#troubleshooting)
-    - [No traces appear in Grafana](#no-traces-appear-in-grafana)
     - [Conan lockfile error](#conan-lockfile-error)
     - [CMake target not found](#cmake-target-not-found)
-  - [Architecture](#architecture)
-    - [Key files](#key-files)
-    - [Span discard mechanism](#span-discard-mechanism)
-    - [Conditional compilation](#conditional-compilation)
+  - [Conditional compilation](#conditional-compilation)
 
 ## Overview
 
@@ -106,7 +95,7 @@ You should see in the CMake output:
 cmake --build . --parallel $(nproc)
 ```
 
-### Building without telemetry
+## Building without telemetry
 
 Omit the `-o telemetry=True` option (or pass `-o telemetry=False`).
 The `opentelemetry-cpp` dependency will not be downloaded,
@@ -114,126 +103,7 @@ the `XRPL_ENABLE_TELEMETRY` preprocessor define will not be set,
 and all tracing macros will compile to no-ops.
 The resulting binary is identical to one built before telemetry support was added.
 
-## Runtime Configuration
-
-Add a `[telemetry]` section to your `xrpld.cfg` file:
-
-```ini
-[telemetry]
-enabled=1
-endpoint=http://localhost:4318/v1/traces
-sampling_ratio=1.0
-trace_rpc=1
-trace_transactions=1
-trace_consensus=1
-trace_peer=1
-trace_ledger=1
-```
-
-### Configuration options
-
-| Option                | Type   | Default                           | Description                                        |
-| --------------------- | ------ | --------------------------------- | -------------------------------------------------- |
-| `enabled`             | int    | `0`                               | Enable (`1`) or disable (`0`) telemetry at runtime |
-| `service_name`        | string | `xrpld`                           | Service name reported in traces                    |
-| `service_instance_id` | string | node public key                   | Unique instance identifier                         |
-| `endpoint`            | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint                       |
-| `use_tls`             | int    | `0`                               | Enable TLS for the exporter connection             |
-| `tls_ca_cert`         | string | (empty)                           | Path to CA certificate for TLS                     |
-| `sampling_ratio`      | double | `1.0`                             | Head-based sampling ratio (`0.0` to `1.0`)         |
-| `batch_size`          | uint32 | `512`                             | Maximum spans per export batch                     |
-| `batch_delay_ms`      | uint32 | `5000`                            | Maximum delay (ms) before flushing a batch         |
-| `max_queue_size`      | uint32 | `2048`                            | Maximum spans queued in memory                     |
-| `trace_rpc`           | int    | `1`                               | Enable RPC request tracing                         |
-| `trace_transactions`  | int    | `1`                               | Enable transaction lifecycle tracing               |
-| `trace_consensus`     | int    | `1`                               | Enable consensus round tracing                     |
-| `trace_peer`          | int    | `1`                               | Enable peer message tracing (high volume)          |
-| `trace_ledger`        | int    | `1`                               | Enable ledger close tracing                        |
-
-## Observability Stack
-
-A Docker Compose stack is provided in `docker/telemetry/` with three services:
-
-| Service            | Port                                           | Purpose                                             |
-| ------------------ | ---------------------------------------------- | --------------------------------------------------- |
-| **OTel Collector** | `4317` (gRPC), `4318` (HTTP), `13133` (health) | Receives OTLP spans, batches, and forwards to Tempo |
-| **Tempo**          | `3200` (HTTP API)                              | Trace storage backend                               |
-| **Grafana**        | `3000`                                         | Dashboards (Tempo pre-configured as datasource)     |
-
-### Start the stack
-
-```bash
-docker compose -f docker/telemetry/docker-compose.yml up -d
-```
-
-### Verify the stack
-
-```bash
-# Collector health
-curl http://localhost:13133
-
-# Grafana (Explore -> Tempo for traces)
-open http://localhost:3000
-```
-
-### View traces in Grafana Explore
-
-1. Open `http://localhost:3000` in a browser.
-2. Navigate to **Explore** and select the **Tempo** datasource.
-3. Use **Search** or **TraceQL** to find traces by service name (e.g. `xrpld`).
-4. Click into any trace to see the span tree and attributes.
-
-Traced RPC operations produce a span hierarchy like:
-
-```
-rpc.request
-  └── rpc.command.server_info  (command=server_info, rpc_status=success)
-```
-
-Each span includes attributes:
-
-- `command` — the RPC method name
-- `version` — API version
-- `rpc_role` — `admin` or `user`
-- `rpc_status` — `success` or `error`
-
-## Running Tests
-
-Unit tests run with the telemetry-enabled build regardless of whether the
-observability stack is running. When no collector is available, the exporter
-silently drops spans with no impact on test results.
-
-```bash
-# Run all RPC tests
-./xrpld --unittest=RPCCall,ServerInfo,AccountTx,LedgerRPC,Transaction --unittest-jobs $(nproc)
-
-# Run the full test suite
-./xrpld --unittest --unittest-jobs $(nproc)
-```
-
-To generate traces during manual testing, start xrpld in standalone mode:
-
-```bash
-./xrpld --conf /path/to/xrpld.cfg --standalone --start
-```
-
-Then send RPC requests:
-
-```bash
-curl -s -X POST http://127.0.0.1:5005/ \
-    -H "Content-Type: application/json" \
-    -d '{"method":"server_info","params":[{}]}'
-```
-
 ## Troubleshooting
-
-### No traces appear in Grafana
-
-1. Confirm the OTel Collector is running: `docker compose -f docker/telemetry/docker-compose.yml ps`
-2. Check collector logs for errors: `docker compose -f docker/telemetry/docker-compose.yml logs otel-collector`
-3. Confirm `[telemetry] enabled=1` is set in the xrpld config.
-4. Confirm `endpoint` points to the correct collector address (`http://localhost:4318/v1/traces`).
-5. Wait for the batch delay to elapse (default `5000` ms) before checking Grafana Explore.
 
 ### Conan lockfile error
 
@@ -249,48 +119,7 @@ Conan-generated toolchain file is being used.
 The Conan package provides a single umbrella target
 `opentelemetry-cpp::opentelemetry-cpp` (not individual component targets).
 
-## Architecture
-
-### Key files
-
-| File                                          | Purpose                                                      |
-| --------------------------------------------- | ------------------------------------------------------------ |
-| `include/xrpl/telemetry/Telemetry.h`          | Abstract telemetry interface and `Setup` struct              |
-| `include/xrpl/telemetry/SpanGuard.h`          | RAII span guard with `discard()` for dropping unwanted spans |
-| `include/xrpl/telemetry/DiscardFlag.h`        | Thread-local discard flag (zero-dependency header)           |
-| `src/libxrpl/telemetry/Telemetry.cpp`         | OTel SDK setup, `FilteringSpanProcessor`, provider lifecycle |
-| `src/libxrpl/telemetry/TelemetryConfig.cpp`   | Config parser (`setup_Telemetry()`)                          |
-| `src/libxrpl/telemetry/NullTelemetry.cpp`     | No-op implementation (used when disabled)                    |
-| `src/libxrpl/telemetry/SpanGuard.cpp`         | Pimpl implementation for SpanGuard (all OTel types confined) |
-| `src/xrpld/rpc/detail/ServerHandler.cpp`      | RPC entry point instrumentation                              |
-| `src/xrpld/rpc/detail/RPCHandler.cpp`         | Per-command instrumentation                                  |
-| `docker/telemetry/docker-compose.yml`         | Observability stack (Collector + Tempo + Grafana)            |
-| `docker/telemetry/otel-collector-config.yaml` | OTel Collector pipeline configuration                        |
-
-### Span discard mechanism
-
-`SpanGuard::discard()` allows callers to silently drop spans that turn out to be
-uninteresting (e.g., failed preflight transactions). This saves both network bandwidth
-and storage by preventing the span from being exported.
-
-The mechanism uses a thread-local flag (`tl_discardCurrentSpan` in `DiscardFlag.h`) as a
-side-channel to the `FilteringSpanProcessor` (in `Telemetry.cpp`):
-
-1. `SpanGuard::discard()` sets the thread-local flag and calls `Span::End()`
-2. The OTel SDK calls `FilteringSpanProcessor::OnEnd()` synchronously on the same thread
-3. The processor checks the flag, clears it, and drops the span before it enters the batch queue
-
-```cpp
-SpanGuard guard(telemetry.startSpan("tx.process"));
-auto result = preflight(tx);
-if (result != tesSUCCESS)
-{
-    guard.discard();  // span is dropped, never exported
-    return result;
-}
-```
-
-### Conditional compilation
+## Conditional compilation
 
 All OpenTelemetry SDK types are hidden behind the pimpl idiom in `SpanGuard.cpp`.
 When `XRPL_ENABLE_TELEMETRY` is not defined, `SpanGuard.h` provides an all-inline
