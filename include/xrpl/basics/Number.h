@@ -130,15 +130,15 @@ struct MantissaRange final
         Small,
         // LargeLegacy can be removed when fixCleanup3_2_0 is retired
         LargeLegacy,
-        // Large3_2_0 can be removed when fixCleanup3_3_0 is retired
-        Large3_2_0,
+        // Large320 can be removed when fixCleanup3_3_0 is retired
+        Large320,
         Large,
     };
 
     // This entire enum can be removed when fixCleanup3_2_0 is retired
     enum class CuspRoundingFix : std::uint8_t {
         Disabled = 0,
-        Enabled3_2_0 = 1,
+        Enabled320 = 1,
         Enabled = 2,
     };
 
@@ -167,7 +167,7 @@ private:
             case MantissaScale::Small:
                 return 15;
             case MantissaScale::LargeLegacy:
-            case MantissaScale::Large3_2_0:
+            case MantissaScale::Large320:
             case MantissaScale::Large:
                 return 18;
             // LCOV_EXCL_START
@@ -197,8 +197,8 @@ private:
             case MantissaScale::Small:
             case MantissaScale::LargeLegacy:
                 return CuspRoundingFix::Disabled;
-            case MantissaScale::Large3_2_0:
-                return CuspRoundingFix::Enabled3_2_0;
+            case MantissaScale::Large320:
+                return CuspRoundingFix::Enabled320;
             case MantissaScale::Large:
                 return CuspRoundingFix::Enabled;
             default:
@@ -883,7 +883,7 @@ to_string(MantissaRange::MantissaScale const& scale)
             return "Small";
         case MantissaRange::MantissaScale::LargeLegacy:
             return "LargeLegacy";
-        case MantissaRange::MantissaScale::Large3_2_0:
+        case MantissaRange::MantissaScale::Large320:
             return "Large320";
         case MantissaRange::MantissaScale::Large:
             return "Large";
