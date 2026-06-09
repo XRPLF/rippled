@@ -206,7 +206,7 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& o
 
 // See if a sync filter has a node
 SHAMapTreeNodePtr
-SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
+SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter const* filter) const
 {
     if (auto nodeData = filter->getNode(hash))
     {
@@ -232,7 +232,7 @@ SHAMap::checkFilter(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
 // Get a node without throwing
 // Used on maps where missing nodes are expected
 SHAMapTreeNodePtr
-SHAMap::fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter* filter) const
+SHAMap::fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter const* filter) const
 {
     auto node = cacheLookup(hash);
     if (node)
@@ -345,7 +345,7 @@ SHAMap::descend(
     SHAMapInnerNode* parent,
     SHAMapNodeID const& parentID,
     int branch,
-    SHAMapSyncFilter* filter) const
+    SHAMapSyncFilter const* filter) const
 {
     XRPL_ASSERT(parent->isInner(), "xrpl::SHAMap::descend : valid parent input");
     XRPL_ASSERT(
@@ -374,7 +374,7 @@ SHAMapTreeNode*
 SHAMap::descendAsync(
     SHAMapInnerNode* parent,
     int branch,
-    SHAMapSyncFilter* filter,
+    SHAMapSyncFilter const* filter,
     bool& pending,
     descendCallback&& callback) const
 {
@@ -885,7 +885,7 @@ SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem cons
 }
 
 bool
-SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter)
+SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter const* filter)
 {
     if (hash == root_->getHash())
         return true;
