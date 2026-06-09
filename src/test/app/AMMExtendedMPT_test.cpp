@@ -1514,6 +1514,92 @@ private:
     }
 
     void
+    pathFindMPTAMMExecutableSourceAmount()
+    {
+        testcase("Path Find: MPT AMM source amount is executable");
+        using namespace jtx;
+
+        auto const checkQuote = [&](std::int64_t usdPool,
+                                    std::int64_t eurPool,
+                                    std::int64_t deliverAmount,
+                                    std::int64_t expectedSourceAmount) {
+            Env env = pathTestEnv();
+            env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
+            env.close();
+
+            MPTTester const usd(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = usdPool,
+                 .flags = kMptDexFlags});
+
+            MPTTester const eur(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = eurPool,
+                 .flags = kMptDexFlags});
+
+            AMM const ammCarol(env, carol_, usd(usdPool), eur(eurPool));
+            env.close();
+
+            STPathSet st;
+            STAmount sa, da;
+            auto const deliver = eur(deliverAmount);
+            std::tie(st, sa, da) = findPaths(
+                env,
+                alice_,
+                bob_,
+                deliver,
+                std::nullopt,
+                usd.issuanceID(),
+                std::nullopt,
+                std::nullopt);
+
+            // Each quote must execute when used as an exact-output SendMax.
+            BEAST_EXPECT(equal(da, deliver));
+            BEAST_EXPECT(equal(sa, usd(expectedSourceAmount)));
+            BEAST_EXPECT(!st.empty());
+
+            auto const before = eur.getBalance(bob_);
+            env(pay(alice_, bob_, deliver),
+                Json(jss::Paths, st.getJson(JsonOptions::Values::None)),
+                Sendmax(sa),
+                Txflags(tfNoRippleDirect));
+            BEAST_EXPECT(eur.getBalance(bob_) == before + deliverAmount);
+        };
+
+        struct TestCase
+        {
+            std::int64_t usdPool;
+            std::int64_t eurPool;
+            std::int64_t deliverAmount;
+            std::int64_t expectedSourceAmount;
+        };
+
+        // Cover the original 2:1 pool and the same pool scaled down by 1000.
+        TestCase const testCases[] = {
+            {2'000'000, 1'000'000, 1, 3},
+            {2'000'000, 1'000'000, 2, 5},
+            {2'000'000, 1'000'000, 10, 21},
+            {2'000'000, 1'000'000, 100, 201},
+            {2'000'000, 1'000'000, 1'000, 2'003},
+            {2'000, 1'000, 1, 3},
+            {2'000, 1'000, 2, 5},
+            {2'000, 1'000, 10, 21},
+            {2'000, 1'000, 100, 223},
+        };
+
+        for (auto const& testCase : testCases)
+            checkQuote(
+                testCase.usdPool,
+                testCase.eurPool,
+                testCase.deliverAmount,
+                testCase.expectedSourceAmount);
+    }
+
+    void
     testFalseDry(FeatureBitset features)
     {
         testcase("falseDryChanges");
@@ -3589,6 +3675,7 @@ private:
         pathFind01();
         pathFind02();
         pathFind06();
+        pathFindMPTAMMExecutableSourceAmount();
     }
 
     void
