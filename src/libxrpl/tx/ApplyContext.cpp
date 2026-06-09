@@ -20,11 +20,68 @@
 #include <functional>
 #include <optional>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 namespace xrpl {
 
 namespace {
+
+template <class... Checkers>
+struct InvariantCheckTypes
+{
+};
+
+using RoutedInvariantCheckTypes = InvariantCheckTypes<
+    TransactionFeeCheck,
+    AccountRootsNotDeleted,
+    AccountRootsDeletedClean,
+    LedgerEntryTypesMatch,
+    XRPBalanceChecks,
+    XRPNotCreated,
+    NoXRPTrustLines,
+    NoDeepFreezeTrustLinesWithoutFreeze,
+    TransfersNotFrozen,
+    NoBadOffers,
+    NoZeroEscrow,
+    ValidNewAccountRoot,
+    ValidNFTokenPage,
+    NFTokenCountTracking,
+    ValidClawback,
+    ValidMPTIssuance,
+    ValidPermissionedDomain,
+    ValidPermissionedDEX,
+    ValidBookDirectory,
+    ValidAMM,
+    NoModifiedUnmodifiableFields,
+    ValidPseudoAccounts,
+    ValidLoanBroker,
+    ValidLoan,
+    ValidVault,
+    ValidMPTPayment,
+    ValidAmounts,
+    ValidMPTTransfer>;
+
+template <class Checker, class... Checkers>
+consteval std::size_t
+countInvariantCheck(InvariantCheckTypes<Checkers...>)
+{
+    return (std::size_t{0} + ... + (std::is_same_v<Checker, Checkers> ? 1 : 0));
+}
+
+template <std::size_t... Is>
+consteval bool
+allInvariantChecksAreRouted(std::index_sequence<Is...>)
+{
+    return (
+        (countInvariantCheck<std::tuple_element_t<Is, InvariantChecks>>(
+             RoutedInvariantCheckTypes{}) == 1) &&
+        ...);
+}
+
+static_assert(
+    allInvariantChecksAreRouted(std::make_index_sequence<std::tuple_size_v<InvariantChecks>>{}),
+    "Every invariant check must be routed exactly once.");
 
 template <class... Checkers>
 void
