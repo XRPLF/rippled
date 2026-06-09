@@ -142,6 +142,10 @@ public:
     virtual bool
     isInner() const = 0;
 
+    /** Returns the exact number of bytes that serializeForWire will emit. */
+    virtual std::size_t
+    sizeForWire() const = 0;
+
     /** Serialize the node in a format appropriate for sending over the wire */
     virtual void
     serializeForWire(Serializer&) const = 0;

@@ -45,6 +45,12 @@ public:
         hash_ = SHAMapHash{sha512Half(HashPrefix::TxNode, item_->slice(), item_->key())};
     }
 
+    std::size_t
+    sizeForWire() const final
+    {
+        return item_->size() + uint256::kBytes + sizeof(std::uint8_t);
+    }
+
     void
     serializeForWire(Serializer& s) const final
     {

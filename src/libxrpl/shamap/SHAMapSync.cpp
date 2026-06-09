@@ -454,9 +454,7 @@ SHAMap::getNodeFat(
         std::tie(node, nodeID, depth) = stack.top();
         stack.pop();
 
-        // Use a fresh Serializer per node and move its buffer into `data` rather than copying it
-        // via Serializer::getData(): the move is O(1) whereas the copy was O(node size).
-        Serializer s;
+        Serializer s(node->sizeForWire());
         node->serializeForWire(s);
         data.emplace_back(nodeID, std::move(s.modData()));
 
@@ -486,7 +484,7 @@ SHAMap::getNodeFat(
                         else if (childNode->isInner() || fatLeaves)
                         {
                             // Just include this node
-                            Serializer cs;
+                            Serializer cs(childNode->sizeForWire());
                             childNode->serializeForWire(cs);
                             data.emplace_back(childID, std::move(cs.modData()));
                         }
@@ -793,7 +791,7 @@ SHAMap::getProofPath(uint256 const& key) const
     path.reserve(stack.size());
     while (!stack.empty())
     {
-        Serializer s;
+        Serializer s(stack.top().first->sizeForWire());
         stack.top().first->serializeForWire(s);
         path.emplace_back(std::move(s.modData()));
         stack.pop();

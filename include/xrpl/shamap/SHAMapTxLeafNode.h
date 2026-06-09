@@ -44,6 +44,12 @@ public:
         hash_ = SHAMapHash{sha512Half(HashPrefix::TransactionId, item_->slice())};
     }
 
+    std::size_t
+    sizeForWire() const final
+    {
+        return item_->size() + sizeof(std::uint8_t);
+    }
+
     void
     serializeForWire(Serializer& s) const final
     {

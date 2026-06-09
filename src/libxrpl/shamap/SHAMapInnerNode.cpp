@@ -219,13 +219,22 @@ SHAMapInnerNode::updateHashDeep()
     updateHash();
 }
 
+std::size_t
+SHAMapInnerNode::sizeForWire() const
+{
+    auto const n = getBranchCount();
+    if (n < kCompressedThreshold)
+        return n * (uint256::kBytes + sizeof(std::uint8_t)) + sizeof(std::uint8_t);
+    return kBranchFactor * uint256::kBytes + sizeof(std::uint8_t);
+}
+
 void
 SHAMapInnerNode::serializeForWire(Serializer& s) const
 {
     XRPL_ASSERT(!isEmpty(), "xrpl::SHAMapInnerNode::serializeForWire : is non-empty");
 
     // If the node is sparse, then only send non-empty branches:
-    if (getBranchCount() < 12)
+    if (getBranchCount() < kCompressedThreshold)
     {
         // compressed node
         auto hashes = hashesAndChildren_.getHashes();

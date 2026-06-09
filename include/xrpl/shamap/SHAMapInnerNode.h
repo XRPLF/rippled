@@ -17,6 +17,12 @@ public:
     /** Each inner node has 16 children (the 'radix tree' part of the map) */
     static constexpr unsigned int kBranchFactor = 16;
 
+    /** Branch count below which compressed wire format is used instead of full.
+        Compressed format encodes only populated branches, costing 33 bytes each
+        plus a 1-byte type tag.  Full format always emits all 16 hashes (513
+        bytes). At this threshold, compressed is still smaller than full. */
+    static constexpr unsigned int kCompressedThreshold = 12;
+
 private:
     /** Opaque type that contains the `hashes` array (array of type
        `SHAMapHash`) and the `children` array (array of type
@@ -148,6 +154,9 @@ public:
     /** Recalculate the hash of all children and this node. */
     void
     updateHashDeep();
+
+    std::size_t
+    sizeForWire() const override;
 
     void
     serializeForWire(Serializer&) const override;

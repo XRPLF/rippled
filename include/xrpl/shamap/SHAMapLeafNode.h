@@ -36,6 +36,9 @@ public:
         return false;
     }
 
+    std::size_t
+    sizeForWire() const override = 0;
+
     void
     invariants(bool isRoot = false) const final;
 
