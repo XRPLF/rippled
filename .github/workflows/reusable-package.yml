@@ -27,7 +27,7 @@ jobs:
       matrix: ${{ steps.generate.outputs.matrix }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -45,7 +45,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           sparse-checkout: |
             .github/actions/generate-version
@@ -68,33 +68,8 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      # Packaging runs in a vanilla distro image, so the tooling has to come
-      # from the distro's archive: debhelper for deb, rpm-build (and the
-      # systemd / find-debuginfo macros it depends on) for rpm. Run this
-      # before actions/checkout so the latter can use git (real history) for
-      # build_pkg.sh's SOURCE_DATE_EPOCH; otherwise it falls back to a tarball
-      # download and the timestamp comes from wall-clock time.
-      - name: Install packaging tooling (deb)
-        if: ${{ matrix.distro == 'debian' }}
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update
-          apt-get install -y --no-install-recommends \
-              ca-certificates \
-              debhelper \
-              git
-
-      - name: Install packaging tooling (rpm)
-        if: ${{ matrix.distro == 'rhel' }}
-        run: |
-          dnf install -y --setopt=install_weak_deps=False \
-              git \
-              rpm-build \
-              redhat-rpm-config \
-              systemd-rpm-macros
-
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Download pre-built binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
