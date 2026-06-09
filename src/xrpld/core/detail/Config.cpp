@@ -1,8 +1,5 @@
 #include <xrpld/core/Config.h>
 
-#include <xrpld/core/ConfigSections.h>
-
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -11,6 +8,8 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
@@ -385,7 +384,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     load();
     {
         // load() may have set a new value for the dataDir
-        std::string const dbPath(legacy("database_path"));
+        std::string const dbPath(legacy(Sections::kDatabasePath));
         if (!dbPath.empty())
         {
             dataDir = boost::filesystem::path(dbPath);
@@ -404,7 +403,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         if (ec)
             Throw<std::runtime_error>(boost::str(boost::format("Can not create %s") % dataDir));
 
-        legacy("database_path", boost::filesystem::absolute(dataDir).string());
+        legacy(Sections::kDatabasePath, boost::filesystem::absolute(dataDir).string());
     }
 
     HTTPClient::initializeSSLContext(this->sslVerifyDir, this->sslVerifyFile, this->sslVerify, j_);
@@ -412,11 +411,11 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     if (runStandalone_)
         ledgerHistory = 0;
 
-    Section const ledgerTxTablesSection = section("ledger_tx_tables");
-    getIfExists(ledgerTxTablesSection, "use_tx_tables", useTxTables_);
+    Section const ledgerTxTablesSection = section(Sections::kLedgerTxTables);
+    getIfExists(ledgerTxTablesSection, Keys::kUseTxTables, useTxTables_);
 
-    Section const& nodeDbSection{section(ConfigSection::nodeDatabase())};
-    getIfExists(nodeDbSection, "fast_load", fastLoad);
+    Section const& nodeDbSection{section(Sections::kNodeDatabase)};
+    getIfExists(nodeDbSection, Keys::kFastLoad, fastLoad);
 }
 
 // 0 ports are allowed for unit tests, but still not allowed to be present in
@@ -424,16 +423,16 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
 static void
 checkZeroPorts(Config const& config)
 {
-    if (!config.exists("server"))
+    if (!config.exists(Sections::kServer))
         return;
 
-    for (auto const& name : config.section("server").values())
+    for (auto const& name : config.section(Sections::kServer).values())
     {
         if (!config.exists(name))
             return;
 
         auto const& section = config[name];
-        auto const optResult = section.get("port");
+        auto const optResult = section.get(Keys::kPort);
         if (optResult)
         {
             auto const port = beast::lexicalCast<std::uint16_t>(*optResult);
@@ -477,10 +476,10 @@ Config::loadFromString(std::string const& fileContents)
 
     build(secConfig);
 
-    if (auto s = getIniFileSection(secConfig, SECTION_IPS))
+    if (auto s = getIniFileSection(secConfig, Sections::kIps))
         ips = *s;
 
-    if (auto s = getIniFileSection(secConfig, SECTION_IPS_FIXED))
+    if (auto s = getIniFileSection(secConfig, Sections::kIpsFixed))
         ipsFixed = *s;
 
     // if the user has specified ip:port then replace : with a space.
@@ -507,16 +506,16 @@ Config::loadFromString(std::string const& fileContents)
 
     {
         std::string dbPath;
-        if (getSingleSection(secConfig, "database_path", dbPath, j_))
+        if (getSingleSection(secConfig, Sections::kDatabasePath, dbPath, j_))
         {
             boost::filesystem::path const p(dbPath);
-            legacy("database_path", boost::filesystem::absolute(p).string());
+            legacy(Sections::kDatabasePath, boost::filesystem::absolute(p).string());
         }
     }
 
     std::string strTemp;
 
-    if (getSingleSection(secConfig, SECTION_NETWORK_ID, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kNetworkId, strTemp, j_))
     {
         if (strTemp == "main")
         {
@@ -536,43 +535,45 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_PEER_PRIVATE, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPeerPrivate, strTemp, j_))
         peerPrivate = beast::lexicalCastThrow<bool>(strTemp);
 
-    if (getSingleSection(secConfig, SECTION_PEERS_MAX, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPeersMax, strTemp, j_))
     {
         peersMax = beast::lexicalCastThrow<std::size_t>(strTemp);
     }
     else
     {
         std::optional<std::size_t> peersInMaxOpt{};
-        if (getSingleSection(secConfig, SECTION_PEERS_IN_MAX, strTemp, j_))
+        if (getSingleSection(secConfig, Sections::kPeersInMax, strTemp, j_))
         {
             peersInMaxOpt = beast::lexicalCastThrow<std::size_t>(strTemp);
             if (*peersInMaxOpt > 1000)
             {
-                Throw<std::runtime_error>("Invalid value specified in [" SECTION_PEERS_IN_MAX
-                                          "] section; the value must be less or equal than 1000");
+                Throw<std::runtime_error>(
+                    std::string("Invalid value specified in [") + Sections::kPeersInMax +
+                    "] section; the value must be less or equal than 1000");
             }
         }
 
         std::optional<std::size_t> peersOutMaxOpt{};
-        if (getSingleSection(secConfig, SECTION_PEERS_OUT_MAX, strTemp, j_))
+        if (getSingleSection(secConfig, Sections::kPeersOutMax, strTemp, j_))
         {
             peersOutMaxOpt = beast::lexicalCastThrow<std::size_t>(strTemp);
             if (*peersOutMaxOpt < 10 || *peersOutMaxOpt > 1000)
             {
-                Throw<std::runtime_error>("Invalid value specified in [" SECTION_PEERS_OUT_MAX
-                                          "] section; the value must be in range 10-1000");
+                Throw<std::runtime_error>(
+                    std::string("Invalid value specified in [") + Sections::kPeersOutMax +
+                    "] section; the value must be in range 10-1000");
             }
         }
 
         // if one section is configured then the other must be configured too
         if ((peersInMaxOpt && !peersOutMaxOpt) || (peersOutMaxOpt && !peersInMaxOpt))
         {
-            Throw<std::runtime_error>("Both sections [" SECTION_PEERS_IN_MAX
-                                      "]"
-                                      "and [" SECTION_PEERS_OUT_MAX "] must be configured");
+            Throw<std::runtime_error>(
+                std::string("Both sections [") + Sections::kPeersInMax + "]" + " and [" +
+                Sections::kPeersOutMax + "] must be configured");
         }
 
         if (peersInMaxOpt && peersOutMaxOpt)
@@ -582,7 +583,7 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_NODE_SIZE, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kNodeSize, strTemp, j_))
     {
         if (boost::iequals(strTemp, "tiny"))
         {
@@ -610,19 +611,19 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_SIGNING_SUPPORT, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kSigningSupport, strTemp, j_))
         signingEnabled_ = beast::lexicalCastThrow<bool>(strTemp);
 
-    if (getSingleSection(secConfig, SECTION_ELB_SUPPORT, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kElbSupport, strTemp, j_))
         elbSupport = beast::lexicalCastThrow<bool>(strTemp);
 
-    getSingleSection(secConfig, SECTION_SSL_VERIFY_FILE, sslVerifyFile, j_);
-    getSingleSection(secConfig, SECTION_SSL_VERIFY_DIR, sslVerifyDir, j_);
+    getSingleSection(secConfig, Sections::kSslVerifyFile, sslVerifyFile, j_);
+    getSingleSection(secConfig, Sections::kSslVerifyDir, sslVerifyDir, j_);
 
-    if (getSingleSection(secConfig, SECTION_SSL_VERIFY, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kSslVerify, strTemp, j_))
         sslVerify = beast::lexicalCastThrow<bool>(strTemp);
 
-    if (getSingleSection(secConfig, SECTION_RELAY_VALIDATIONS, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kRelayValidations, strTemp, j_))
     {
         if (boost::iequals(strTemp, "all"))
         {
@@ -638,12 +639,13 @@ Config::loadFromString(std::string const& fileContents)
         }
         else
         {
-            Throw<std::runtime_error>("Invalid value specified in [" SECTION_RELAY_VALIDATIONS
-                                      "] section");
+            Throw<std::runtime_error>(
+                std::string("Invalid value specified in [") + Sections::kRelayValidations +
+                "] section");
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_RELAY_PROPOSALS, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kRelayProposals, strTemp, j_))
     {
         if (boost::iequals(strTemp, "all"))
         {
@@ -659,28 +661,30 @@ Config::loadFromString(std::string const& fileContents)
         }
         else
         {
-            Throw<std::runtime_error>("Invalid value specified in [" SECTION_RELAY_PROPOSALS
-                                      "] section");
+            Throw<std::runtime_error>(
+                std::string("Invalid value specified in [") + Sections::kRelayProposals +
+                "] section");
         }
     }
 
-    if (exists(SECTION_VALIDATION_SEED) && exists(SECTION_VALIDATOR_TOKEN))
+    if (exists(Sections::kValidationSeed) && exists(Sections::kValidatorToken))
     {
-        Throw<std::runtime_error>("Cannot have both [" SECTION_VALIDATION_SEED
-                                  "] and [" SECTION_VALIDATOR_TOKEN "] config sections");
+        Throw<std::runtime_error>(
+            std::string("Cannot have both [") + Sections::kValidationSeed + "] and [" +
+            Sections::kValidatorToken + "] config sections");
     }
 
-    if (getSingleSection(secConfig, SECTION_NETWORK_QUORUM, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kNetworkQuorum, strTemp, j_))
         networkQuorum = beast::lexicalCastThrow<std::size_t>(strTemp);
 
-    fees = setupFeeVote(section("voting"));
+    fees = setupFeeVote(section(Sections::kVoting));
     /* [fee_default] is documented in the example config files as useful for
      * things like offline transaction signing. Until that's completely
      * deprecated, allow it to override the [voting] section. */
-    if (getSingleSection(secConfig, SECTION_FEE_DEFAULT, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kFeeDefault, strTemp, j_))
         fees.referenceFee = beast::lexicalCastThrow<std::uint64_t>(strTemp);
 
-    if (getSingleSection(secConfig, SECTION_LEDGER_HISTORY, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kLedgerHistory, strTemp, j_))
     {
         if (boost::iequals(strTemp, "full"))
         {
@@ -696,7 +700,7 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_FETCH_DEPTH, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kFetchDepth, strTemp, j_))
     {
         if (boost::iequals(strTemp, "none"))
         {
@@ -716,74 +720,78 @@ Config::loadFromString(std::string const& fileContents)
 
     // By default, validators don't have pathfinding enabled, unless it is
     // explicitly requested by the server's admin.
-    if (exists(SECTION_VALIDATION_SEED) || exists(SECTION_VALIDATOR_TOKEN))
+    if (exists(Sections::kValidationSeed) || exists(Sections::kValidatorToken))
         pathSearchMax = 0;
 
-    if (getSingleSection(secConfig, SECTION_PATH_SEARCH_OLD, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPathSearchOld, strTemp, j_))
         pathSearchOld = beast::lexicalCastThrow<int>(strTemp);
-    if (getSingleSection(secConfig, SECTION_PATH_SEARCH, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPathSearch, strTemp, j_))
         pathSearch = beast::lexicalCastThrow<int>(strTemp);
-    if (getSingleSection(secConfig, SECTION_PATH_SEARCH_FAST, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPathSearchFast, strTemp, j_))
         pathSearchFast = beast::lexicalCastThrow<int>(strTemp);
-    if (getSingleSection(secConfig, SECTION_PATH_SEARCH_MAX, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPathSearchMax, strTemp, j_))
         pathSearchMax = beast::lexicalCastThrow<int>(strTemp);
 
-    if (getSingleSection(secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kDebugLogfile, strTemp, j_))
         debugLogfile_ = strTemp;
 
-    if (getSingleSection(secConfig, SECTION_SWEEP_INTERVAL, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kSweepInterval, strTemp, j_))
     {
         sweepInterval = beast::lexicalCastThrow<std::size_t>(strTemp);
 
         if (sweepInterval < 10 || sweepInterval > 600)
         {
-            Throw<std::runtime_error>("Invalid " SECTION_SWEEP_INTERVAL
-                                      ": must be between 10 and 600 inclusive");
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kSweepInterval +
+                ": must be between 10 and 600 inclusive");
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_WORKERS, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kWorkers, strTemp, j_))
     {
         workers = beast::lexicalCastThrow<int>(strTemp);
 
         if (workers < 1 || workers > 1024)
         {
-            Throw<std::runtime_error>("Invalid " SECTION_WORKERS
-                                      ": must be between 1 and 1024 inclusive.");
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kWorkers +
+                ": must be between 1 and 1024 inclusive.");
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_IO_WORKERS, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kIoWorkers, strTemp, j_))
     {
         ioWorkers = beast::lexicalCastThrow<int>(strTemp);
 
         if (ioWorkers < 1 || ioWorkers > 1024)
         {
-            Throw<std::runtime_error>("Invalid " SECTION_IO_WORKERS
-                                      ": must be between 1 and 1024 inclusive.");
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kIoWorkers +
+                ": must be between 1 and 1024 inclusive.");
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_PREFETCH_WORKERS, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPrefetchWorkers, strTemp, j_))
     {
         prefetchWorkers = beast::lexicalCastThrow<int>(strTemp);
 
         if (prefetchWorkers < 1 || prefetchWorkers > 1024)
         {
-            Throw<std::runtime_error>("Invalid " SECTION_PREFETCH_WORKERS
-                                      ": must be between 1 and 1024 inclusive.");
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kPrefetchWorkers +
+                ": must be between 1 and 1024 inclusive.");
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_COMPRESSION, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kCompression, strTemp, j_))
         compression = beast::lexicalCastThrow<bool>(strTemp);
 
-    if (getSingleSection(secConfig, SECTION_LEDGER_REPLAY, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kLedgerReplay, strTemp, j_))
         ledgerReplay = beast::lexicalCastThrow<bool>(strTemp);
 
-    if (exists(SECTION_REDUCE_RELAY))
+    if (exists(Sections::kReduceRelay))
     {
-        auto sec = section(SECTION_REDUCE_RELAY);
+        auto sec = section(Sections::kReduceRelay);
 
         /////////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
         // vp_enable config option is deprecated by vp_base_squelch_enable    //
@@ -791,22 +799,23 @@ Config::loadFromString(std::string const& fileContents)
         // is the default algorithm, it must be replaced with:                //
         //  VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =                             //
         //  sec.value_or("vp_base_squelch_enable", true);                     //
-        if (sec.exists("vp_base_squelch_enable") && sec.exists("vp_enable"))
+        if (sec.exists(Keys::kVpBaseSquelchEnable) && sec.exists(Keys::kVpEnable))
         {
-            Throw<std::runtime_error>("Invalid " SECTION_REDUCE_RELAY
-                                      " cannot specify both vp_base_squelch_enable and vp_enable "
-                                      "options. "
-                                      "vp_enable was deprecated and replaced by "
-                                      "vp_base_squelch_enable");
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kReduceRelay +
+                " cannot specify both vp_base_squelch_enable and vp_enable "
+                "options. "
+                "vp_enable was deprecated and replaced by "
+                "vp_base_squelch_enable");
         }
 
-        if (sec.exists("vp_base_squelch_enable"))
+        if (sec.exists(Keys::kVpBaseSquelchEnable))
         {
-            vpReduceRelayBaseSquelchEnable = sec.valueOr("vp_base_squelch_enable", false);
+            vpReduceRelayBaseSquelchEnable = sec.valueOr(Keys::kVpBaseSquelchEnable, false);
         }
-        else if (sec.exists("vp_enable"))
+        else if (sec.exists(Keys::kVpEnable))
         {
-            vpReduceRelayBaseSquelchEnable = sec.valueOr("vp_enable", false);
+            vpReduceRelayBaseSquelchEnable = sec.valueOr(Keys::kVpEnable, false);
         }
         else
         {
@@ -818,97 +827,103 @@ Config::loadFromString(std::string const& fileContents)
         // Temporary squelching config for the peers selected as a source of //
         // validator messages. The config must be removed once squelching is //
         // made the default routing algorithm.                               //
-        vpReduceRelaySquelchMaxSelectedPeers = sec.valueOr("vp_base_squelch_max_selected_peers", 5);
+        vpReduceRelaySquelchMaxSelectedPeers = sec.valueOr(Keys::kVpBaseSquelchMaxSelectedPeers, 5);
         if (vpReduceRelaySquelchMaxSelectedPeers < 3)
         {
-            Throw<std::runtime_error>("Invalid " SECTION_REDUCE_RELAY
-                                      " vp_base_squelch_max_selected_peers must be "
-                                      "greater than or equal to 3");
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kReduceRelay +
+                " vp_base_squelch_max_selected_peers must be "
+                "greater than or equal to 3");
         }
         /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
 
-        txReduceRelayEnable = sec.valueOr("tx_enable", false);
-        txReduceRelayMetrics = sec.valueOr("tx_metrics", false);
-        txReduceRelayMinPeers = sec.valueOr("tx_min_peers", 20);
-        txRelayPercentage = sec.valueOr("tx_relay_percentage", 25);
+        txReduceRelayEnable = sec.valueOr(Keys::kTxEnable, false);
+        txReduceRelayMetrics = sec.valueOr(Keys::kTxMetrics, false);
+        txReduceRelayMinPeers = sec.valueOr(Keys::kTxMinPeers, 20);
+        txRelayPercentage = sec.valueOr(Keys::kTxRelayPercentage, 25);
         if (txRelayPercentage < 10 || txRelayPercentage > 100 || txReduceRelayMinPeers < 10)
         {
-            Throw<std::runtime_error>("Invalid " SECTION_REDUCE_RELAY
-                                      ", tx_min_peers must be greater than or equal to 10"
-                                      ", tx_relay_percentage must be greater than or equal to 10 "
-                                      "and less than or equal to 100");
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kReduceRelay +
+                ", tx_min_peers must be greater than or equal to 10"
+                ", tx_relay_percentage must be greater than or equal to 10 "
+                "and less than or equal to 100");
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kMaxTransactions, strTemp, j_))
     {
         maxTransactions =
             std::clamp(beast::lexicalCastThrow<int>(strTemp), kMinJobQueueTx, kMaxJobQueueTx);
     }
 
-    if (getSingleSection(secConfig, SECTION_SERVER_DOMAIN, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kServerDomain, strTemp, j_))
     {
         if (!isProperlyFormedTomlDomain(strTemp))
         {
             Throw<std::runtime_error>(
-                "Invalid " SECTION_SERVER_DOMAIN
+                std::string("Invalid ") + Sections::kServerDomain +
                 ": the domain name does not appear to meet the requirements.");
         }
 
         serverDomain = strTemp;
     }
 
-    if (exists(SECTION_OVERLAY))
+    if (exists(Sections::kOverlay))
     {
-        auto const sec = section(SECTION_OVERLAY);
+        auto const sec = section(Sections::kOverlay);
 
         using namespace std::chrono;
 
         try
         {
-            if (auto val = sec.get("max_unknown_time"))
+            if (auto val = sec.get(Keys::kMaxUnknownTime))
                 maxUnknownTime = seconds{beast::lexicalCastThrow<std::uint32_t>(*val)};
         }
         catch (...)
         {
-            Throw<std::runtime_error>("Invalid value 'max_unknown_time' in " SECTION_OVERLAY
-                                      ": must be of the form '<number>' representing seconds.");
+            Throw<std::runtime_error>(
+                std::string("Invalid value 'max_unknown_time' in ") + Sections::kOverlay +
+                ": must be of the form '<number>' representing seconds.");
         }
 
         if (maxUnknownTime < seconds{300} || maxUnknownTime > seconds{1800})
         {
             Throw<std::runtime_error>(
-                "Invalid value 'max_unknown_time' in " SECTION_OVERLAY
+                std::string("Invalid value 'max_unknown_time' in ") + Sections::kOverlay +
                 ": the time must be between 300 and 1800 seconds, inclusive.");
         }
 
         try
         {
-            if (auto val = sec.get("max_diverged_time"))
+            if (auto val = sec.get(Keys::kMaxDivergedTime))
                 maxDivergedTime = seconds{beast::lexicalCastThrow<std::uint32_t>(*val)};
         }
         catch (...)
         {
-            Throw<std::runtime_error>("Invalid value 'max_diverged_time' in " SECTION_OVERLAY
-                                      ": must be of the form '<number>' representing seconds.");
+            Throw<std::runtime_error>(
+                std::string("Invalid value 'max_diverged_time' in ") + Sections::kOverlay +
+                ": must be of the form '<number>' representing seconds.");
         }
 
         if (maxDivergedTime < seconds{60} || maxDivergedTime > seconds{900})
         {
-            Throw<std::runtime_error>("Invalid value 'max_diverged_time' in " SECTION_OVERLAY
-                                      ": the time must be between 60 and 900 seconds, inclusive.");
+            Throw<std::runtime_error>(
+                std::string("Invalid value 'max_diverged_time' in ") + Sections::kOverlay +
+                ": the time must be between 60 and 900 seconds, inclusive.");
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_AMENDMENT_MAJORITY_TIME, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kAmendmentMajorityTime, strTemp, j_))
     {
         using namespace std::chrono;
         boost::regex const re("^\\s*(\\d+)\\s*(minutes|hours|days|weeks)\\s*(\\s+.*)?$");
         boost::smatch match;
         if (!boost::regex_match(strTemp, match, re))
         {
-            Throw<std::runtime_error>("Invalid " SECTION_AMENDMENT_MAJORITY_TIME
-                                      ", must be: [0-9]+ [minutes|hours|days|weeks]");
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kAmendmentMajorityTime +
+                ", must be: [0-9]+ [minutes|hours|days|weeks]");
         }
 
         std::uint32_t const duration = beast::lexicalCastThrow<std::uint32_t>(match[1].str());
@@ -932,13 +947,14 @@ Config::loadFromString(std::string const& fileContents)
 
         if (amendmentMajorityTime < minutes(15))
         {
-            Throw<std::runtime_error>("Invalid " SECTION_AMENDMENT_MAJORITY_TIME
-                                      ", the minimum amount of time an amendment must hold a "
-                                      "majority is 15 minutes");
+            Throw<std::runtime_error>(
+                std::string("Invalid ") + Sections::kAmendmentMajorityTime +
+                ", the minimum amount of time an amendment must hold a "
+                "majority is 15 minutes");
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_BETA_RPC_API, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kBetaRpcApi, strTemp, j_))
         betaRpcApi = beast::lexicalCastThrow<bool>(strTemp);
 
     // Do not load trusted validator configuration for standalone mode
@@ -954,14 +970,14 @@ Config::loadFromString(std::string const& fileContents)
         // if we can't find it.
         boost::filesystem::path validatorsFile;
 
-        if (getSingleSection(secConfig, SECTION_VALIDATORS_FILE, strTemp, j_))
+        if (getSingleSection(secConfig, Sections::kValidatorsFile, strTemp, j_))
         {
             validatorsFile = strTemp;
 
             if (validatorsFile.empty())
             {
-                Throw<std::runtime_error>("Invalid path specified in [" SECTION_VALIDATORS_FILE
-                                          "]");
+                Throw<std::runtime_error>(
+                    std::string("Invalid path specified in [") + Sections::kValidatorsFile + "]");
             }
 
             if (!validatorsFile.is_absolute() && !configDir.empty())
@@ -970,7 +986,7 @@ Config::loadFromString(std::string const& fileContents)
             if (!boost::filesystem::exists(validatorsFile))
             {
                 Throw<std::runtime_error>(
-                    "The file specified in [" SECTION_VALIDATORS_FILE
+                    std::string("The file specified in [") + Sections::kValidatorsFile +
                     "] "
                     "does not exist: " +
                     validatorsFile.string());
@@ -980,8 +996,8 @@ Config::loadFromString(std::string const& fileContents)
                 !boost::filesystem::is_symlink(validatorsFile))
             {
                 Throw<std::runtime_error>(
-                    "Invalid file specified in [" SECTION_VALIDATORS_FILE "]: " +
-                    validatorsFile.string());
+                    std::string("Invalid file specified in [") + Sections::kValidatorsFile +
+                    "]: " + validatorsFile.string());
             }
         }
         else if (!configDir.empty())
@@ -1018,41 +1034,44 @@ Config::loadFromString(std::string const& fileContents)
 
             auto iniFile = parseIniFile(data, true);
 
-            auto entries = getIniFileSection(iniFile, SECTION_VALIDATORS);
+            auto entries = getIniFileSection(iniFile, Sections::kValidators);
 
             if (entries != nullptr)
-                section(SECTION_VALIDATORS).append(*entries);
+                section(Sections::kValidators).append(*entries);
 
-            auto valKeyEntries = getIniFileSection(iniFile, SECTION_VALIDATOR_KEYS);
+            auto valKeyEntries = getIniFileSection(iniFile, Sections::kValidatorKeys);
 
             if (valKeyEntries != nullptr)
-                section(SECTION_VALIDATOR_KEYS).append(*valKeyEntries);
+                section(Sections::kValidatorKeys).append(*valKeyEntries);
 
-            auto valSiteEntries = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_SITES);
+            auto valSiteEntries = getIniFileSection(iniFile, Sections::kValidatorListSites);
 
             if (valSiteEntries != nullptr)
-                section(SECTION_VALIDATOR_LIST_SITES).append(*valSiteEntries);
+                section(Sections::kValidatorListSites).append(*valSiteEntries);
 
-            auto valListKeys = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_KEYS);
+            auto valListKeys = getIniFileSection(iniFile, Sections::kValidatorListKeys);
 
             if (valListKeys != nullptr)
-                section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
+                section(Sections::kValidatorListKeys).append(*valListKeys);
 
-            auto valListThreshold = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
+            auto valListThreshold = getIniFileSection(iniFile, Sections::kValidatorListThreshold);
 
             if (valListThreshold != nullptr)
-                section(SECTION_VALIDATOR_LIST_THRESHOLD).append(*valListThreshold);
+                section(Sections::kValidatorListThreshold).append(*valListThreshold);
 
             if ((entries == nullptr) && (valKeyEntries == nullptr) && (valListKeys == nullptr))
             {
                 Throw<std::runtime_error>(
-                    "The file specified in [" SECTION_VALIDATORS_FILE
+                    std::string("The file specified in [") + Sections::kValidatorsFile +
                     "] "
-                    "does not contain a [" SECTION_VALIDATORS
+                    "does not contain a [" +
+                    Sections::kValidators +
                     "], "
-                    "[" SECTION_VALIDATOR_KEYS
+                    "[" +
+                    Sections::kValidatorKeys +
                     "] or "
-                    "[" SECTION_VALIDATOR_LIST_KEYS
+                    "[" +
+                    Sections::kValidatorListKeys +
                     "]"
                     " section: " +
                     validatorsFile.string());
@@ -1060,7 +1079,7 @@ Config::loadFromString(std::string const& fileContents)
         }
 
         validatorListThreshold = [&]() -> std::optional<std::size_t> {
-            auto const& listThreshold = section(SECTION_VALIDATOR_LIST_THRESHOLD);
+            auto const& listThreshold = section(Sections::kValidatorListThreshold);
             if (listThreshold.lines().empty())
             {
                 return std::nullopt;
@@ -1073,34 +1092,38 @@ Config::loadFromString(std::string const& fileContents)
                 {
                     return std::nullopt;  // NOTE: Explicitly ask for computed
                 }
-                if (listThreshold > section(SECTION_VALIDATOR_LIST_KEYS).values().size())
+                if (listThreshold > section(Sections::kValidatorListKeys).values().size())
                 {
                     Throw<std::runtime_error>(
-                        "Value in config section "
-                        "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                        std::string(
+                            "Value in config section "
+                            "[") +
+                        Sections::kValidatorListThreshold +
                         "] exceeds the number of configured list keys");
                 }
                 return listThreshold;
             }
 
             Throw<std::runtime_error>(
-                "Config section "
-                "[" SECTION_VALIDATOR_LIST_THRESHOLD "] should contain single value only");
+                std::string(
+                    "Config section "
+                    "[") +
+                Sections::kValidatorListThreshold + "] should contain single value only");
         }();
 
         // Consolidate [validator_keys] and [validators]
-        section(SECTION_VALIDATORS).append(section(SECTION_VALIDATOR_KEYS).lines());
+        section(Sections::kValidators).append(section(Sections::kValidatorKeys).lines());
 
-        if (!section(SECTION_VALIDATOR_LIST_SITES).lines().empty() &&
-            section(SECTION_VALIDATOR_LIST_KEYS).lines().empty())
+        if (!section(Sections::kValidatorListSites).lines().empty() &&
+            section(Sections::kValidatorListKeys).lines().empty())
         {
             Throw<std::runtime_error>(
-                "[" + std::string(SECTION_VALIDATOR_LIST_KEYS) + "] config section is missing");
+                "[" + std::string(Sections::kValidatorListKeys) + "] config section is missing");
         }
     }
 
     {
-        auto const part = section("features");
+        auto const part = section(Sections::kFeatures);
         for (auto const& s : part.values())
         {
             if (auto const f = getRegisteredFeature(s))
@@ -1182,15 +1205,15 @@ setupFeeVote(Section const& section)
     FeeSetup setup;
     {
         std::uint64_t temp = 0;
-        if (set(temp, "reference_fee", section) &&
+        if (set(temp, Keys::kReferenceFee, section) &&
             temp <= std::numeric_limits<XRPAmount::value_type>::max())
             setup.referenceFee = temp;
     }
     {
         std::uint32_t temp = 0;
-        if (set(temp, "account_reserve", section))
+        if (set(temp, Keys::kAccountReserve, section))
             setup.accountReserve = temp;
-        if (set(temp, "owner_reserve", section))
+        if (set(temp, Keys::kOwnerReserve, section))
             setup.ownerReserve = temp;
     }
     return setup;
@@ -1203,7 +1226,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
 
     setup.startUp = c.startUp;
     setup.standAlone = c.standalone();
-    setup.dataDir = c.legacy("database_path");
+    setup.dataDir = c.legacy(Sections::kDatabasePath);
     if (!setup.standAlone && setup.dataDir.empty())
     {
         Throw<std::runtime_error>("database_path must be set.");
@@ -1211,7 +1234,7 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
 
     if (!setup.globalPragma)
     {
-        auto const& sqlite = c.section("sqlite");
+        auto const& sqlite = c.section(Sections::kSqlite);
         auto result = std::make_unique<std::vector<std::string>>();
         result->reserve(3);
 
@@ -1328,11 +1351,11 @@ setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
     // TX Pragma
     int64_t pageSize = 4096;
     int64_t journalSizeLimit = 1582080;
-    if (c.exists("sqlite"))
+    if (c.exists(Sections::kSqlite))
     {
-        auto& s = c.section("sqlite");
-        set(journalSizeLimit, "journal_size_limit", s);
-        set(pageSize, "page_size", s);
+        auto& s = c.section(Sections::kSqlite);
+        set(journalSizeLimit, Keys::kJournalSizeLimit, s);
+        set(pageSize, Keys::kPageSize, s);
         if (pageSize < 512 || pageSize > 65536)
             Throw<std::runtime_error>("Invalid page_size. Must be between 512 and 65536.");
 
