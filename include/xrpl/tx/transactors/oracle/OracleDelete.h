@@ -32,10 +32,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -46,11 +43,7 @@ public:
         beast::Journal const& j) override;
 
     static TER
-    deleteOracle(
-        ApplyView& view,
-        std::shared_ptr<SLE> const& sle,
-        AccountID const& account,
-        beast::Journal j);
+    deleteOracle(ApplyView& view, SLE::ref sle, AccountID const& account, beast::Journal j);
 };
 
 }  // namespace xrpl
