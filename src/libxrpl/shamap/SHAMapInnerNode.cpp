@@ -224,8 +224,8 @@ SHAMapInnerNode::sizeForWire() const
 {
     auto const n = getBranchCount();
     if (n < kCompressedThreshold)
-        return n * (uint256::kBytes + sizeof(std::uint8_t)) + sizeof(std::uint8_t);
-    return kBranchFactor * uint256::kBytes + sizeof(std::uint8_t);
+        return (n * (uint256::kBytes + sizeof(std::uint8_t))) + sizeof(std::uint8_t);
+    return (kBranchFactor * uint256::kBytes) + sizeof(std::uint8_t);
 }
 
 void
