@@ -42,9 +42,8 @@ public:
     {
     }
 
-    Status(ErrorCodeI e, std::string s) : type_(Type::ErrorCodeI), code_(e)
+    Status(ErrorCodeI e, std::string s) : type_(Type::ErrorCodeI), code_(e), messages_{std::move(s)}
     {
-        messages_.push_back(std::move(s));
     }
 
     /* Returns a representation of the integer status Code as a string.
