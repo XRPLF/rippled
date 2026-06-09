@@ -53,7 +53,7 @@ Add to `cfg/xrpld-example.cfg`:
 # trace_transactions=1     # Transaction relay and processing
 # trace_consensus=1        # Consensus rounds and proposals
 # trace_rpc=1              # RPC request handling
-# trace_peer=0             # Peer messages (high volume, disabled by default)
+# trace_peer=1             # Peer messages (high volume, enabled by default)
 # trace_ledger=1           # Ledger acquisition and building
 #
 # # Planned (not yet parsed by TelemetryConfig.cpp):
@@ -86,6 +86,8 @@ enabled=0
 | `endpoint`                 | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint                                                                               |
 | `use_tls`                  | bool   | `false`                           | Enable TLS for exporter connection                                                                         |
 | `tls_ca_cert`              | string | `""`                              | Path to CA certificate file                                                                                |
+| `tls_client_cert`          | string | `""`                              | Path to node's client certificate (PEM) for mutual TLS; empty = one-way TLS                                |
+| `tls_client_key`           | string | `""`                              | Path to private key (PEM) for `tls_client_cert`; required when it is set                                   |
 | `sampling_ratio`           | float  | `1.0`                             | Sampling ratio (0.0-1.0)                                                                                   |
 | `batch_size`               | uint   | `512`                             | Spans per export batch                                                                                     |
 | `batch_delay_ms`           | uint   | `5000`                            | Max delay before sending batch (ms)                                                                        |
@@ -93,7 +95,7 @@ enabled=0
 | `trace_transactions`       | bool   | `true`                            | Enable transaction tracing                                                                                 |
 | `trace_consensus`          | bool   | `true`                            | Enable consensus tracing                                                                                   |
 | `trace_rpc`                | bool   | `true`                            | Enable RPC tracing                                                                                         |
-| `trace_peer`               | bool   | `false`                           | Enable peer message tracing (high volume)                                                                  |
+| `trace_peer`               | bool   | `true`                            | Enable peer message tracing (high volume)                                                                  |
 | `trace_ledger`             | bool   | `true`                            | Enable ledger tracing                                                                                      |
 | `tx_trace_strategy`        | string | `"deterministic"`                 | TX trace ID strategy: `"deterministic"` (trace_id = txHash[0:16]) or `"attribute"` (random)                |
 | `consensus_trace_strategy` | string | `"deterministic"`                 | Consensus trace ID strategy: `"deterministic"` (trace_id = prevLedgerHash[0:16]) or `"attribute"` (random) |
@@ -152,6 +154,8 @@ setupTelemetry(
 
     setup.useTls = section.value_or("use_tls", false);
     setup.tlsCertPath = section.value_or("tls_ca_cert", "");
+    setup.tlsClientCertPath = section.value_or("tls_client_cert", "");
+    setup.tlsClientKeyPath = section.value_or("tls_client_key", "");
 
     // Sampling
     setup.samplingRatio = section.value_or("sampling_ratio", 1.0);
@@ -171,7 +175,7 @@ setupTelemetry(
     setup.traceTransactions = section.value_or("trace_transactions", true);
     setup.traceConsensus = section.value_or("trace_consensus", true);
     setup.traceRpc = section.value_or("trace_rpc", true);
-    setup.tracePeer = section.value_or("trace_peer", false);
+    setup.tracePeer = section.value_or("trace_peer", true);
     setup.traceLedger = section.value_or("trace_ledger", true);
     setup.tracePathfind = section.value_or("trace_pathfind", true);
     setup.traceTxQ = section.value_or("trace_txq", true);
