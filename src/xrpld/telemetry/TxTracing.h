@@ -15,6 +15,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/TraceContextValidation.h>
 
 namespace xrpl::telemetry {
 
@@ -30,7 +31,9 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
     if (msg.has_trace_context())
     {
         auto const& tc = msg.trace_context();
-        if (tc.has_span_id() && tc.span_id().size() == 8)
+        // Only the span_id is taken from the peer here; the trace_id is
+        // derived locally from txID, so validate the span_id alone.
+        if (tc.has_span_id() && isValidSpanId(tc.span_id()))
         {
             return SpanGuard::hashSpan(
                 TraceCategory::Transactions,

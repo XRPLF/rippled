@@ -59,6 +59,8 @@ setupTelemetry(
 
     setup.useTls = section.valueOr<int>("use_tls", 0) != 0;
     setup.tlsCertPath = section.valueOr<std::string>("tls_ca_cert", "");
+    setup.tlsClientCertPath = section.valueOr<std::string>("tls_client_cert", "");
+    setup.tlsClientKeyPath = section.valueOr<std::string>("tls_client_key", "");
 
     setup.samplingRatio = section.valueOr<double>("sampling_ratio", 1.0);
     setup.samplingRatio = std::clamp(setup.samplingRatio, 0.0, 1.0);
@@ -74,7 +76,7 @@ setupTelemetry(
     setup.traceTransactions = section.valueOr<int>("trace_transactions", 1) != 0;
     setup.traceConsensus = section.valueOr<int>("trace_consensus", 1) != 0;
     setup.traceRpc = section.valueOr<int>("trace_rpc", 1) != 0;
-    setup.tracePeer = section.valueOr<int>("trace_peer", 0) != 0;
+    setup.tracePeer = section.valueOr<int>("trace_peer", 1) != 0;
     setup.traceLedger = section.valueOr<int>("trace_ledger", 1) != 0;
 
     setup.consensusTraceStrategy =

@@ -24,6 +24,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
     - [CMake target not found](#cmake-target-not-found)
   - [Architecture](#architecture)
     - [Key files](#key-files)
+    - [Span discard mechanism](#span-discard-mechanism)
     - [Conditional compilation](#conditional-compilation)
 
 ## Overview
@@ -125,7 +126,7 @@ sampling_ratio=1.0
 trace_rpc=1
 trace_transactions=1
 trace_consensus=1
-trace_peer=0
+trace_peer=1
 trace_ledger=1
 ```
 
@@ -139,6 +140,8 @@ trace_ledger=1
 | `endpoint`            | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint                       |
 | `use_tls`             | int    | `0`                               | Enable TLS for the exporter connection             |
 | `tls_ca_cert`         | string | (empty)                           | Path to CA certificate for TLS                     |
+| `tls_client_cert`     | string | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way  |
+| `tls_client_key`      | string | (empty)                           | Private key (PEM) for `tls_client_cert`            |
 | `sampling_ratio`      | double | `1.0`                             | Head-based sampling ratio (`0.0` to `1.0`)         |
 | `batch_size`          | uint32 | `512`                             | Maximum spans per export batch                     |
 | `batch_delay_ms`      | uint32 | `5000`                            | Maximum delay (ms) before flushing a batch         |
@@ -146,7 +149,7 @@ trace_ledger=1
 | `trace_rpc`           | int    | `1`                               | Enable RPC request tracing                         |
 | `trace_transactions`  | int    | `1`                               | Enable transaction lifecycle tracing               |
 | `trace_consensus`     | int    | `1`                               | Enable consensus round tracing                     |
-| `trace_peer`          | int    | `0`                               | Enable peer message tracing (high volume)          |
+| `trace_peer`          | int    | `1`                               | Enable peer message tracing (high volume)          |
 | `trace_ledger`        | int    | `1`                               | Enable ledger close tracing                        |
 
 ## Observability Stack

@@ -163,6 +163,15 @@ public:
         /** Path to a CA certificate bundle for TLS verification. */
         std::string tlsCertPath;
 
+        /** Path to this node's client certificate (PEM), presented to the
+            collector for mutual TLS. Empty disables client-side auth, in
+            which case only server (one-way) TLS is used. */
+        std::string tlsClientCertPath;
+
+        /** Path to the private key (PEM) for tlsClientCertPath. Required
+            whenever tlsClientCertPath is set. */
+        std::string tlsClientKeyPath;
+
         /** Head-based sampling ratio in [0.0, 1.0]. 1.0 = trace everything.
             This is a head-based (pre-decision) sampler using
             TraceIdRatioBasedSampler — the decision to record or drop a
@@ -195,9 +204,9 @@ public:
         /** Enable tracing for RPC request handling. */
         bool traceRpc = true;
 
-        /** Enable tracing for peer-to-peer messages (disabled by default
-            due to high volume). */
-        bool tracePeer = false;
+        /** Enable tracing for peer-to-peer messages (enabled by default;
+            high volume). */
+        bool tracePeer = true;
 
         /** Enable tracing for ledger close/accept. */
         bool traceLedger = true;

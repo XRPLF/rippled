@@ -33,7 +33,7 @@ public:
      * @brief Construct a LedgerHashes ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit LedgerHashes(std::shared_ptr<SLE const> sle)
+    explicit LedgerHashes(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -130,7 +130,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    LedgerHashesBuilder(std::shared_ptr<SLE const> sle)
+    LedgerHashesBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltLEDGER_HASHES)
         {

@@ -33,7 +33,7 @@ public:
      * @brief Construct a Ticket ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Ticket(std::shared_ptr<SLE const> sle)
+    explicit Ticket(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -134,7 +134,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    TicketBuilder(std::shared_ptr<SLE const> sle)
+    TicketBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltTICKET)
         {
