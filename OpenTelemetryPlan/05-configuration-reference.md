@@ -37,12 +37,11 @@ Add to `cfg/xrpld-example.cfg`:
 # # Path to CA certificate for TLS (optional)
 # # tls_ca_cert=/path/to/ca.crt
 #
-# # Sampling ratio: 0.0-1.0 (default: 1.0 = 100% sampling)
-# # Use lower values in production to reduce overhead
-# # Default: 1.0 (all traces). For production deployments with high
-# # throughput, 0.1 (10%) is recommended to reduce overhead.
-# # See Section 7.4.2 for sampling strategy details.
-# sampling_ratio=0.1
+# # Head sampling is intentionally fixed at 1.0 (sample everything) and is
+# # NOT configurable. A per-node head-sampling ratio would let nodes make
+# # divergent keep/drop decisions for the same distributed trace, producing
+# # broken/partial traces across the network. Volume reduction is delegated
+# # to the collector's tail sampling instead. See Section 7.4.2.
 #
 # # Batch processor settings
 # batch_size=512           # Spans per batch (default: 512)
@@ -78,7 +77,6 @@ enabled=0
 | `endpoint`            | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint              |
 | `use_tls`             | bool   | `false`                           | Enable TLS for exporter connection        |
 | `tls_ca_cert`         | string | `""`                              | Path to CA certificate file               |
-| `sampling_ratio`      | float  | `1.0`                             | Sampling ratio (0.0-1.0)                  |
 | `batch_size`          | uint   | `512`                             | Spans per export batch                    |
 | `batch_delay_ms`      | uint   | `5000`                            | Max delay before sending batch (ms)       |
 | `max_queue_size`      | uint   | `2048`                            | Maximum queued spans                      |
@@ -143,13 +141,8 @@ setupTelemetry(
     setup.useTls = section.value_or("use_tls", false);
     setup.tlsCertPath = section.value_or("tls_ca_cert", "");
 
-    // Sampling
-    setup.samplingRatio = section.value_or("sampling_ratio", 1.0);
-    if (setup.samplingRatio < 0.0 || setup.samplingRatio > 1.0)
-    {
-        Throw<std::runtime_error>(
-            "telemetry.sampling_ratio must be between 0.0 and 1.0");
-    }
+    // Head sampling is fixed at 1.0 (sample everything) and is not read from
+    // config — see Section 7.4.2. setup.samplingRatio stays at its 1.0 default.
 
     // Batch processor
     setup.batchSize = section.value_or("batch_size", 512u);
