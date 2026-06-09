@@ -299,7 +299,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         {
             // To detect a peer that does not read from their
             // side of the connection, we expect a peer to have
-            // a small senq periodically
+            // a small sendq periodically
             largeSendq_ = 0;
         }
         else if (auto sink = journal_.debug(); sink && (sendqSize % Tuning::kSendQueueLogFreq) == 0)
@@ -319,10 +319,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
             bind_executor(
                 strand_,
                 std::bind(
-                    &PeerImp::onWriteMessage,
-                    shared_from_this(),
-                    std::placeholders::_1,
-                    std::placeholders::_2)));
+                    &PeerImp::onWriteMessage, self, std::placeholders::_1, std::placeholders::_2)));
     });
 }
 
@@ -588,6 +585,7 @@ PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 void
 PeerImp::close()
 {
+    XRPL_ASSERT(strand_.running_in_this_thread(), "xrpl::PeerImp::close : strand in this thread");
     if (!socket_.is_open())
         return;
 
@@ -617,6 +615,7 @@ PeerImp::fail(std::string const& reason)
 void
 PeerImp::fail(std::string const& name, error_code ec)
 {
+    XRPL_ASSERT(strand_.running_in_this_thread(), "xrpl::PeerImp::fail : strand in this thread");
     if (!socket_.is_open())
         return;
 
@@ -628,6 +627,8 @@ PeerImp::fail(std::string const& name, error_code ec)
 void
 PeerImp::gracefulClose()
 {
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(), "xrpl::PeerImp::gracefulClose : strand in this thread");
     XRPL_ASSERT(socket_.is_open(), "xrpl::PeerImp::gracefulClose : socket is open");
     XRPL_ASSERT(!gracefulClose_, "xrpl::PeerImp::gracefulClose : socket is not closing");
     gracefulClose_ = true;
