@@ -42,7 +42,7 @@ public:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) override;
+        beast::Journal const& j) const override;
 
     static constexpr auto kDisabledTxTypes = std::to_array<TxType>({
         ttVAULT_CREATE,

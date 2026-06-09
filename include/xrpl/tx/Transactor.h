@@ -299,7 +299,7 @@ protected:
         TER result,
         XRPAmount fee,
         ReadView const& view,
-        beast::Journal const& j) = 0;
+        beast::Journal const& j) const = 0;
 
     /** Compute the minimum fee required to process a transaction
         with a given baseFee based on the current server load.
