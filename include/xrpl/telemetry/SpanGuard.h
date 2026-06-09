@@ -45,11 +45,16 @@
 
     Usage examples:
 
+    Span names and attribute keys come from per-module `*SpanNames.h`
+    headers (e.g. RpcSpanNames.h, TxSpanNames.h) as typed compile-time
+    constants — never raw string literals — so the naming spec is
+    enforced at the call site and dashboards stay in sync.
+
     1. Basic RPC tracing (factory method with category):
     @code
         #include <xrpld/rpc/detail/RpcSpanNames.h>
+        using namespace xrpl::telemetry;
 
-        // At the call site (constants from RpcSpanNames.h):
         auto span = SpanGuard::span(
             TraceCategory::Rpc, rpc_span::prefix::command, "submit");
         span.setAttribute(rpc_span::attr::command, "submit");
@@ -71,19 +76,22 @@
 
     3. Cross-thread context propagation:
     @code
+        #include <xrpld/consensus/ConsensusSpanNames.h>
+        using namespace xrpl::telemetry;
+
         // Thread A: create span and capture context
         auto span = SpanGuard::span(
-            TraceCategory::Consensus, seg::consensus, "round");
+            TraceCategory::Consensus, seg::consensus, consensus::span::op::round);
         auto ctx = span.captureContext();
 
         // Thread B: create child with captured context
-        auto child = SpanGuard::childSpan("consensus.accept", ctx);
+        auto child = SpanGuard::childSpan(consensus::span::accept, ctx);
     @endcode
 
     4. Conditional check (rarely needed — methods are no-ops on null):
     @code
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::rpc, "request");
+            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
         if (span) {
             // expensive attribute computation only when active
             span.setAttribute(rpc_span::attr::requestPayloadSize, computeSize());
@@ -93,7 +101,7 @@
     5. Tail-based filtering via discard():
     @code
         auto span = SpanGuard::span(
-            TraceCategory::Transactions, seg::tx, "process");
+            TraceCategory::Transactions, tx_span::prefix::tx, tx_span::op::process);
         auto result = preflight(tx);
         if (result != tesSUCCESS) {
             span.discard();  // drop span, never exported
