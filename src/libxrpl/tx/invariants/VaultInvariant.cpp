@@ -5,7 +5,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -545,63 +544,14 @@ ValidVault::finalize(
         switch (txnType)
         {
             case ttVAULT_CREATE:
+            case ttVAULT_SET:
             case ttLOAN_SET:
             case ttLOAN_MANAGE:
             case ttLOAN_PAY:
                 // Create-specific checks live in VaultCreate::finalizeInvariants.
+                // Set-specific checks live in VaultSet::finalizeInvariants.
                 // Loan checks are TBD.
                 return true;
-            case ttVAULT_SET: {
-                bool result = true;
-
-                XRPL_ASSERT(
-                    !beforeVault_.empty(), "xrpl::ValidVault::finalize : set updated a vault");
-                auto const& beforeVault = beforeVault_[0];
-
-                auto const vaultDeltaAssets = deltaAssets(afterVault.pseudoId);
-                if (vaultDeltaAssets)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: set must not change vault balance";
-                    result = false;
-                }
-
-                if (beforeVault.assetsTotal != afterVault.assetsTotal)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: set must not change assets "
-                        "outstanding";
-                    result = false;
-                }
-
-                if (afterVault.assetsMaximum > kZero &&
-                    afterVault.assetsTotal > afterVault.assetsMaximum)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: set assets outstanding must not "
-                        "exceed assets maximum";
-                    result = false;
-                }
-
-                if (beforeVault.assetsAvailable != afterVault.assetsAvailable)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: set must not change assets "
-                        "available";
-                    result = false;
-                }
-
-                if (beforeShares && updatedShares &&
-                    beforeShares->sharesTotal != updatedShares->sharesTotal)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: set must not change shares "
-                        "outstanding";
-                    result = false;
-                }
-
-                return result;
-            }
             case ttVAULT_DEPOSIT: {
                 bool result = true;
 

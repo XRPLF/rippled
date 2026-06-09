@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/vault/VaultSet.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -14,6 +15,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/invariants/VaultInvariantData.h>
 
 namespace xrpl {
 
@@ -178,15 +180,99 @@ VaultSet::doApply()
 }
 
 void
-VaultSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultSet::visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // No transaction-specific invariants yet (future work).
+    data_.visitEntry(isDelete, before, after);
 }
 
 bool
-VaultSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+VaultSet::finalizeInvariants(
+    STTx const&,
+    TER result,
+    XRPAmount,
+    ReadView const& view,
+    beast::Journal const& j)
 {
-    // No transaction-specific invariants yet (future work).
+    bool const enforce = view.rules().enabled(featureSingleAssetVault);
+
+    if (!isTesSuccess(result))
+        return true;
+
+    auto const& afterVaults = data_.afterVaults();
+    if (afterVaults.empty())
+        return true;  // Let ValidVault catch missing vault
+
+    auto const& afterVault = afterVaults[0];
+    auto const& beforeVaults = data_.beforeVaults();
+    // VaultSet always modifies an existing vault; beforeVaults must be non-empty
+    if (beforeVaults.empty())
+        return true;  // Let ValidVault catch this
+
+    auto const& beforeVault = beforeVaults[0];
+
+    // The MPTokenIssuance may not be in the modified set (e.g. only the vault
+    // was touched), so fall back to a view read if needed.
+    auto const updatedShares = [&]() -> std::optional<VaultInvariantData::Shares> {
+        if (auto found = data_.findShares(afterVault.shareMPTID))
+            return found;
+        auto const sleShares = view.read(keylet::mptIssuance(afterVault.shareMPTID));
+        return sleShares ? std::optional<VaultInvariantData::Shares>(
+                               VaultInvariantData::Shares::make(*sleShares))
+                         : std::nullopt;
+    }();
+
+    auto const beforeShares = data_.findDeletedShares(afterVault.shareMPTID);
+
+    static constexpr Number kZero{};
+    bool checkResult = true;
+
+    // 1. VaultSet must not change the vault's asset balance
+    auto const vaultDeltaAssets = data_.deltaAssets(afterVault.asset, afterVault.pseudoId);
+    if (vaultDeltaAssets)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: set must not change vault balance";
+        checkResult = false;
+    }
+
+    // 2. VaultSet must not change assets outstanding
+    if (beforeVault.assetsTotal != afterVault.assetsTotal)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: set must not change assets outstanding";
+        checkResult = false;
+    }
+
+    // 3. After set, assets outstanding must not exceed the new maximum
+    if (afterVault.assetsMaximum > kZero && afterVault.assetsTotal > afterVault.assetsMaximum)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: set assets outstanding must not exceed assets maximum";
+        checkResult = false;
+    }
+
+    // 4. VaultSet must not change assets available
+    if (beforeVault.assetsAvailable != afterVault.assetsAvailable)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: set must not change assets available";
+        checkResult = false;
+    }
+
+    // 5. VaultSet must not change shares outstanding
+    if (beforeShares && updatedShares && beforeShares->sharesTotal != updatedShares->sharesTotal)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: set must not change shares outstanding";
+        checkResult = false;
+    }
+
+    if (!checkResult)
+    {
+        XRPL_ASSERT(enforce, "xrpl::VaultSet::finalizeInvariants : vault set invariants");
+        return !enforce;
+    }
+
     return true;
 }
 
