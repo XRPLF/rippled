@@ -236,12 +236,12 @@ public:
 
     // Modify the result to the correctly rounded value
     void
-    doRound(rep& drops, MantissaRange::CuspRoundingFix cuspRoundingFix, std::string location);
+    doRound(rep& drops, std::string location);
 
 private:
     template <class T>
     void
-    pushOverflow(T const& mantissa, MantissaRange::CuspRoundingFix cuspRoundingFix);
+    pushOverflow(T const& mantissa);
 
     enum class Round {
         // The result is exact. No rounding is needed. Only used if cuspRoundingFix is enabled.
@@ -347,7 +347,7 @@ Number::Guard::doDropDigit<uint128_t>(uint128_t& mantissa, int& exponent) noexce
 
 template <class T>
 void
-Number::Guard::pushOverflow(T const& mantissa, MantissaRange::CuspRoundingFix cuspRoundingFix)
+Number::Guard::pushOverflow(T const& mantissa)
 {
     XRPL_ASSERT(mantissa <= kMaxRepUp, "xrpl::Number::Guard::doRoundUp : valid mantissa");
     if (cuspRoundingFix != MantissaRange::CuspRoundingFix::Disabled && mantissa > kMaxRep &&
@@ -359,18 +359,23 @@ Number::Guard::pushOverflow(T const& mantissa, MantissaRange::CuspRoundingFix cu
         // case the number of mantissa bits ever changes. Effects:
         // * For round to nearest
         //      * if the mantissa is below the midpoint, it'll round "down" to kMaxRepUp
-        //      * if above the midpoint, it'll round "down" to kMaxRep
+        //      * if above the midpoint, it'll round "up" to kMaxRepUp
         //      * if can never be exactly at the midpoint, because kMaxRepUp is always even, and
         //        kMaxRep is always odd, so don't worry about it.
-        // * For round upward, will round up to kMaxRepUp for positive values, down for negative.
+        // * For round upward, will round up to kMaxRepUp for positive values, down to kMaxRep for
+        // negative.
         // * For round downward, does the opposite of upward.
-        // * For round toward zero, always rounds down.
+        // * For round toward zero, always rounds down to kMaxRep.
         auto constexpr spread = kMaxRepUp - kMaxRep;
-        static_assert(spread < 10 && spread >= 0);
+        static_assert(spread < 10 && spread > 0);
+        // This should absolutely be impossible
+        if constexpr (spread == 0)
+            return;  // LCOV_EXCL_LINE
 
         auto const diff = mantissa - kMaxRep;
         auto const digit = (diff * 10) / spread;
-        XRPL_ASSERT(digit > 0 && digit < 10, "xrpld::Number::Guard::xxxx : valid overflow digit");
+        XRPL_ASSERT(
+            digit > 0 && digit < 10, "xrpld::Number::Guard::pushOverflow : valid overflow digit");
 
         // Don't remove the digit from the mantissa, but add it to the guard as if it was.
         push(digit);
@@ -378,9 +383,10 @@ Number::Guard::pushOverflow(T const& mantissa, MantissaRange::CuspRoundingFix cu
 }
 
 // Returns:
-//     Down if Guard is less than half
-//     Even if Guard is exactly half
-//     Up   if Guard is greater than half
+//     Exact if Guard is _zero_, and appropriate amendments are enabled
+//     Down  if Guard is less than half
+//     Even  if Guard is exactly half
+//     Up    if Guard is greater than half
 Number::Guard::Round
 Number::Guard::round() const noexcept
 {
@@ -451,7 +457,7 @@ template <UnsignedMantissa T>
 void
 Number::Guard::doRoundUp(bool& negative, T& mantissa, int& exponent, std::string location)
 {
-    pushOverflow(mantissa, cuspRoundingFix);
+    pushOverflow(mantissa);
 
     auto const r = round();
     if (r == Round::Up || (r == Round::Even && (mantissa & 1) == 1))
@@ -553,12 +559,9 @@ Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent)
 
 // Modify the result to the correctly rounded value
 void
-Number::Guard::doRound(
-    rep& drops,
-    MantissaRange::CuspRoundingFix cuspRoundingFix,
-    std::string location)
+Number::Guard::doRound(rep& drops, std::string location)
 {
-    pushOverflow(drops, cuspRoundingFix);
+    pushOverflow(drops);
 
     auto r = round();
     if (r == Round::Up || (r == Round::Even && (drops & 1) == 1))
@@ -1150,8 +1153,6 @@ Number::operator/=(Number const& y)
 Number::
 operator rep() const
 {
-    auto const& range = kRange.get();
-
     rep drops = mantissa();
     int offset = exponent();
     Guard g(kRange);
@@ -1172,7 +1173,7 @@ operator rep() const
                 throw std::overflow_error("Number::operator rep() overflow");
             drops *= 10;
         }
-        g.doRound(drops, range.cuspRoundingFix, "Number::operator rep() rounding overflow");
+        g.doRound(drops, "Number::operator rep() rounding overflow");
     }
     return drops;
 }

@@ -2082,7 +2082,7 @@ public:
                 case MantissaRange::MantissaScale::Small:
                     // With the small mantissa, everything rounds up
 
-                    // Upward round UP
+                    // Upward rounds UP
                     BEAST_EXPECT(upward > above);
 
                     // ToNearest rounds UP when the DOWN neighbor is strictly closer
@@ -2118,14 +2118,14 @@ public:
                     // Upward round UP
                     BEAST_EXPECT(upward == above);
 
-                    // ToNearest rounds UP when the DOWN neighbor is strictly closer
+                    // ToNearest rounds to the strictly closer DOWN neighbor
                     BEAST_EXPECT(toNearest != above);
                     BEAST_EXPECT(toNearest == below);
 
-                    // Downward undershoots: it returns a value below `below`
+                    // Downward also rounds to `below`
                     BEAST_EXPECT(downward == below);
 
-                    // Both should have given the same answer, but they differ
+                    // ToNearest rounds to downward
                     BEAST_EXPECT(toNearest == downward);
                     break;
             }
