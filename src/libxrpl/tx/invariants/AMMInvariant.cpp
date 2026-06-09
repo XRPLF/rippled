@@ -224,17 +224,9 @@ ValidAMM::generalInvariant(
     auto const poolProductMean = root2(amount * amount2);
     bool const nonNegativeBalances =
         validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed);
-    bool const strongInvariantCheck = poolProductMean >= *lptAMMBalanceAfter_;
-    // Allow for a small relative error if strongInvariantCheck fails.
-    // With fixCleanup3_2_0, the "both fail" case is caught earlier in the
-    // transaction layer (tecPRECISION_LOSS), so this invariant is only
-    // reached when the strong check passes or the weak check saves it.
-    auto weakInvariantCheck = [&]() {
-        return *lptAMMBalanceAfter_ != beast::kZero &&
-            withinRelativeDistance(
-                poolProductMean, Number{*lptAMMBalanceAfter_}, kAMMInvariantRelativeTolerance);
-    };
-    if (!nonNegativeBalances || (!strongInvariantCheck && !weakInvariantCheck()))
+    auto const precisionLoss = checkAMMPrecisionLoss(
+        view, *ammAccount_, tx[sfAsset], tx[sfAsset2], *lptAMMBalanceAfter_, j);
+    if (!nonNegativeBalances || !isTesSuccess(precisionLoss))
     {
         JLOG(j.error()) << "AMM " << tx.getTxnType()
                         << " invariant failed: " << tx.getHash(HashPrefix::TransactionId) << " "
