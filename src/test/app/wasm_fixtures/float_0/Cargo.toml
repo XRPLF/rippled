@@ -1,0 +1,21 @@
+[package]
+name = "float_0"
+version = "0.0.1"
+edition = "2024"
+
+# This empty workspace definition keeps this project independent of the parent workspace
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+lto = true
+opt-level = 's'
+panic = "abort"
+
+[dependencies]
+xrpl-std = { git = "https://github.com/ripple/xrpl-wasm-stdlib.git", package = "xrpl-wasm-stdlib", rev = "1e5d096f46742ef7fcf1cb6f28a2526a72ed59d8" }
+
+[profile.dev]
+panic = "abort"
