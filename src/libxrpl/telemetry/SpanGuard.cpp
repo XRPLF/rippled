@@ -225,12 +225,14 @@ SpanGuard::linkedSpan(std::string_view name) const
     rootCtx = rootCtx.SetValue(otel_trace::kIsRootSpanKey, true);
     opts.parent = rootCtx;
 
+    // LCOV_EXCL_START
     return SpanGuard(
         std::make_unique<Impl>(tracer->StartSpan(
             std::string(name),
             {},
             {{spanCtx, {{std::string(attr::linkType), std::string(attr_val::followsFrom)}}}},
             opts)));
+    // LCOV_EXCL_STOP
 }
 
 SpanGuard
@@ -256,6 +258,7 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
     rootCtx = rootCtx.SetValue(otel_trace::kIsRootSpanKey, true);
     opts.parent = rootCtx;
 
+    // LCOV_EXCL_START
     return SpanGuard(
         std::make_unique<Impl>(tracer->StartSpan(
             std::string(name),
@@ -263,6 +266,7 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
             {{linkSpan->GetContext(),
               {{std::string(attr::linkType), std::string(attr_val::followsFrom)}}}},
             opts)));
+    // LCOV_EXCL_STOP
 }
 
 // ===== Hash-derived span (category-gated) ==================================

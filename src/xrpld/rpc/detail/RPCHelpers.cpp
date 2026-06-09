@@ -38,7 +38,6 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -46,7 +45,7 @@
 namespace xrpl::RPC {
 
 std::uint64_t
-getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
+getStartHint(SLE::const_ref sle, AccountID const& accountID)
 {
     if (sle->getType() == ltRIPPLE_STATE)
     {
@@ -67,10 +66,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
 }
 
 bool
-isRelatedToAccount(
-    ReadView const& ledger,
-    std::shared_ptr<SLE const> const& sle,
-    AccountID const& accountID)
+isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID)
 {
     if (sle->getType() == ltRIPPLE_STATE)
     {

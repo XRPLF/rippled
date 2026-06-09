@@ -11,13 +11,13 @@ private:
     uint256 const root_;
     uint256 const nextQuality_;
     uint256 const key_;
-    std::shared_ptr<SLE const> sle_ = nullptr;
+    SLE::const_pointer sle_ = nullptr;
     unsigned int entry_ = 0;
     uint256 index_;
 
 public:
     class const_iterator;  // NOLINT(readability-identifier-naming)
-    using value_type = std::shared_ptr<SLE const>;
+    using value_type = SLE::const_pointer;
 
     BookDirs(ReadView const&, Book const&);
 
@@ -76,7 +76,7 @@ private:
     uint256 nextQuality_;
     uint256 key_;
     uint256 curKey_;
-    std::shared_ptr<SLE const> sle_;
+    SLE::const_pointer sle_;
     unsigned int entry_ = 0;
     uint256 index_;
     std::optional<value_type> mutable cache_;

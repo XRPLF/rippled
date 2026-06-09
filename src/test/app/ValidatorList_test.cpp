@@ -632,7 +632,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{expiredblob, expiredSig, {}}, {blob2, sig2, {}}}, siteUri),
+                manifest1,
+                version,
+                {{.blob = expiredblob, .signature = expiredSig, .manifest = {}},
+                 {.blob = blob2, .signature = sig2, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Expired,
             ListDisposition::Accepted);
@@ -665,7 +669,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version2, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
+                manifest1,
+                version2,
+                {{.blob = blob7, .signature = sig7, .manifest = {}},
+                 {.blob = blob8, .signature = sig8, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Pending,
             ListDisposition::Pending);
@@ -697,7 +705,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob6a, sig6a, {}}, {blob6, sig6, {}}}, siteUri),
+                manifest1,
+                version,
+                {{.blob = blob6a, .signature = sig6a, .manifest = {}},
+                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Pending,
             ListDisposition::Pending);
@@ -709,7 +721,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
+                manifest1,
+                version,
+                {{.blob = blob7, .signature = sig7, .manifest = {}},
+                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::KnownSequence,
             ListDisposition::KnownSequence);
@@ -720,7 +736,12 @@ private:
 
         // try empty or mangled manifest
         checkResult(
-            trustedKeys->applyLists("", version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
+            trustedKeys->applyLists(
+                "",
+                version,
+                {{.blob = blob7, .signature = sig7, .manifest = {}},
+                 {.blob = blob6, .signature = sig6, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::Invalid);
@@ -729,7 +750,8 @@ private:
             trustedKeys->applyLists(
                 base64Encode("not a manifest"),
                 version,
-                {{blob7, sig7, {}}, {blob6, sig6, {}}},
+                {{.blob = blob7, .signature = sig7, .manifest = {}},
+                 {.blob = blob6, .signature = sig6, .manifest = {}}},
                 siteUri),
             publisherPublic,
             ListDisposition::Invalid,
@@ -740,7 +762,11 @@ private:
             randomMasterKey(), publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
         checkResult(
-            trustedKeys->applyLists(untrustedManifest, version, {{blob2, sig2, {}}}, siteUri),
+            trustedKeys->applyLists(
+                untrustedManifest,
+                version,
+                {{.blob = blob2, .signature = sig2, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Untrusted,
             ListDisposition::Untrusted);
@@ -748,7 +774,11 @@ private:
         // do not use list with unhandled version
         auto const badVersion = 666;
         checkResult(
-            trustedKeys->applyLists(manifest1, badVersion, {{blob2, sig2, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1,
+                badVersion,
+                {{.blob = blob2, .signature = sig2, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::UnsupportedVersion,
             ListDisposition::UnsupportedVersion);
@@ -759,7 +789,8 @@ private:
         auto const sig3 = signList(blob3, pubSigningKeys1);
 
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{blob3, sig3, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1, version, {{.blob = blob3, .signature = sig3, .manifest = {}}}, siteUri),
             publisherPublic,
             ListDisposition::Accepted,
             ListDisposition::Accepted);
@@ -780,7 +811,11 @@ private:
         // do not re-apply lists with past or current sequence numbers
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob2, sig2, {}}, {blob3, sig3, {}}}, siteUri),
+                manifest1,
+                version,
+                {{.blob = blob2, .signature = sig2, .manifest = {}},
+                 {.blob = blob3, .signature = sig3, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Stale,
             ListDisposition::SameSequence);
@@ -799,7 +834,9 @@ private:
             trustedKeys->applyLists(
                 manifest2,
                 version,
-                {{blob2, sig2, manifest1}, {blob3, sig3, manifest1}, {blob4, sig4, {}}},
+                {{.blob = blob2, .signature = sig2, .manifest = manifest1},
+                 {.blob = blob3, .signature = sig3, .manifest = manifest1},
+                 {.blob = blob4, .signature = sig4, .manifest = {}}},
                 siteUri),
             publisherPublic,
             ListDisposition::Stale,
@@ -820,7 +857,11 @@ private:
         auto const blob5 = makeList(lists.at(5), sequence5, validUntil.time_since_epoch().count());
         auto const badSig = signList(blob5, pubSigningKeys1);
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{blob5, badSig, {}}}, siteUri),
+            trustedKeys->applyLists(
+                manifest1,
+                version,
+                {{.blob = blob5, .signature = badSig, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::Invalid);
@@ -833,7 +874,11 @@ private:
         // Reprocess the pending list, but the signature is no longer valid
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
+                manifest1,
+                version,
+                {{.blob = blob7, .signature = sig7, .manifest = {}},
+                 {.blob = blob8, .signature = sig8, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::Invalid);
@@ -884,7 +929,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest2, version, {{blob8, sig8, manifest1}, {blob8, sig82, {}}}, siteUri),
+                manifest2,
+                version,
+                {{.blob = blob8, .signature = sig8, .manifest = manifest1},
+                 {.blob = blob8, .signature = sig82, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::SameSequence);
@@ -903,7 +952,11 @@ private:
         auto const sig9 = signList(blob9, signingKeysMax);
 
         checkResult(
-            trustedKeys->applyLists(maxManifest, version, {{blob9, sig9, {}}}, siteUri),
+            trustedKeys->applyLists(
+                maxManifest,
+                version,
+                {{.blob = blob9, .signature = sig9, .manifest = {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Untrusted,
             ListDisposition::Untrusted);
@@ -1900,7 +1953,9 @@ private:
                 return PreparedList{
                     .publisherPublic = publisherPublic,
                     .manifest = manifest,
-                    .blobs = {{blob1, sig1, {}}, {blob2, sig2, {}}},
+                    .blobs =
+                        {{.blob = blob1, .signature = sig1, .manifest = {}},
+                         {.blob = blob2, .signature = sig2, .manifest = {}}},
                     .version = version,
                     .expirations = {expiration1, expiration2}};
             };
