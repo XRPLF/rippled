@@ -8,7 +8,6 @@
 */
 
 #include <xrpl/basics/BasicConfig.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <chrono>
@@ -43,8 +42,15 @@ constexpr char const* tracePeer = "trace_peer";
 constexpr char const* traceLedger = "trace_ledger";
 }  // namespace key
 
-/** Default values applied when a key is absent from the config. */
+/** Default values applied when a key is absent from the config.
+
+    @note serviceName mirrors SystemParameters' systemName() ("xrpld") but
+    is duplicated here as a literal: the telemetry module deliberately does
+    not link xrpl.libxrpl.protocol, so including SystemParameters.h would
+    introduce an undeclared cross-module dependency.
+*/
 namespace dflt {
+constexpr char const* serviceName = "xrpld";
 constexpr char const* endpoint = "http://localhost:4318/v1/traces";
 constexpr std::uint32_t batchSize = 512u;
 constexpr std::uint32_t batchDelayMs = 5000u;
@@ -83,7 +89,7 @@ setupTelemetry(
     Telemetry::Setup setup;
 
     setup.enabled = section.valueOr<int>(key::enabled, 0) != 0;
-    setup.serviceName = section.valueOr<std::string>(key::serviceName, systemName());
+    setup.serviceName = section.valueOr<std::string>(key::serviceName, dflt::serviceName);
     setup.serviceVersion = version;
     setup.serviceInstanceId = section.valueOr<std::string>(key::serviceInstanceId, nodePublicKey);
 
