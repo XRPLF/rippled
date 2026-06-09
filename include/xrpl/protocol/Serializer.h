@@ -24,7 +24,7 @@ private:
     Blob data_;
 
 public:
-    explicit Serializer(int n = 256)
+    explicit Serializer(std::size_t n = 256)
     {
         data_.reserve(n);
     }
