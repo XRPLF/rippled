@@ -7847,8 +7847,8 @@ class Vault_test : public beast::unit_test::Suite
             env.disableFeature(featureLendingProtocolV1_1);
             delTx[sfMemoData] = strHex(std::string(kMaxDataPayloadLength, 'A'));
             env(delTx, Ter(temDISABLED));
-            env.close();
             env.enableFeature(featureLendingProtocolV1_1);
+            env.close();
         }
 
         // Transaction fails if the data field is too large
