@@ -53,8 +53,10 @@ public:
         bool useTls = false;
         std::string tlsCertPath;
 
-        // Sampling configuration
-        double samplingRatio = 1.0;  // 1.0 = 100% sampling
+        // Head sampling: fixed at 1.0 (sample everything), not config-driven.
+        // Keeps trace keep/drop decisions coherent across nodes; volume
+        // reduction is delegated to the collector's tail sampling.
+        double samplingRatio = 1.0;
 
         // Batch processor settings
         std::uint32_t batchSize = 512;
