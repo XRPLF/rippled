@@ -514,11 +514,18 @@ Not every trace needs to be recorded. **Sampling** reduces overhead:
 ### Head Sampling (at trace start)
 
 ```
-Request arrives → Random 10% chance → Record or skip entire trace
+Request arrives → Random N% chance → Record or skip entire trace
 ```
 
 - ✅ Low overhead
 - ❌ May miss interesting traces
+
+> **xrpld note**: xrpld intentionally fixes head sampling at 100% (sample
+> everything) and does not expose a configurable ratio. A per-node ratio
+> would let different nodes make divergent keep/drop decisions for the same
+> distributed trace, producing broken/partial traces. xrpld uses a
+> `ParentBased` sampler so spans with a remote parent honor the upstream
+> decision. Volume reduction is delegated to collector-side tail sampling.
 
 ### Tail Sampling (after trace completes)
 
