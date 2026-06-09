@@ -41,9 +41,11 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/CheckInvariants.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <stdexcept>
 #include <utility>

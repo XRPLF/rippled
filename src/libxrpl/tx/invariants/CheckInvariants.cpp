@@ -1,16 +1,24 @@
 #include <xrpl/tx/invariants/CheckInvariants.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <exception>
+#include <functional>
+#include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 
 namespace xrpl {
