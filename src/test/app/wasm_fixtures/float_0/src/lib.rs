@@ -39,13 +39,6 @@ pub extern "C" fn finish() -> i32 {
         return 1;
     }
 
-    // Compare result with zero
-    if 0 == unsafe { float_compare(f_result.as_ptr(), FLOAT_SIZE, f_result.as_ptr(), FLOAT_SIZE) } {
-        let _ = trace("  float 0 compare: good");
-    } else {
-        let _ = trace("  float 0 compare: bad");
-    }
-
     // Compare result with FLOAT_ZERO constant
     if 0 == unsafe { float_compare(f_result.as_ptr(), FLOAT_SIZE, FLOAT_ZERO.as_ptr(), FLOAT_SIZE) } {
         let _ = trace("  FLOAT_ZERO compare: good");
