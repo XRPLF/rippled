@@ -27,7 +27,6 @@
 #include <bit>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <utility>
 
@@ -1014,10 +1013,7 @@ AMMDeposit::equalDepositInEmptyState(
 }
 
 void
-AMMDeposit::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMDeposit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

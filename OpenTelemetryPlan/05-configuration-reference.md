@@ -53,7 +53,7 @@ Add to `cfg/xrpld-example.cfg`:
 # trace_transactions=1     # Transaction relay and processing
 # trace_consensus=1        # Consensus rounds and proposals
 # trace_rpc=1              # RPC request handling
-# trace_peer=0             # Peer messages (high volume, disabled by default)
+# trace_peer=1             # Peer messages (high volume, enabled by default)
 # trace_ledger=1           # Ledger acquisition and building
 #
 # # Planned (not yet parsed by TelemetryConfig.cpp):
@@ -85,7 +85,7 @@ enabled=0
 | `trace_transactions`  | bool   | `true`                            | Enable transaction tracing                |
 | `trace_consensus`     | bool   | `true`                            | Enable consensus tracing                  |
 | `trace_rpc`           | bool   | `true`                            | Enable RPC tracing                        |
-| `trace_peer`          | bool   | `false`                           | Enable peer message tracing (high volume) |
+| `trace_peer`          | bool   | `true`                            | Enable peer message tracing (high volume) |
 | `trace_ledger`        | bool   | `true`                            | Enable ledger tracing                     |
 | `service_name`        | string | `"xrpld"`                         | Service name for traces                   |
 | `service_instance_id` | string | `<node_pubkey>`                   | Instance identifier                       |
@@ -161,7 +161,7 @@ setup_Telemetry(
     setup.traceTransactions = section.value_or("trace_transactions", true);
     setup.traceConsensus = section.value_or("trace_consensus", true);
     setup.traceRpc = section.value_or("trace_rpc", true);
-    setup.tracePeer = section.value_or("trace_peer", false);
+    setup.tracePeer = section.value_or("trace_peer", true);
     setup.traceLedger = section.value_or("trace_ledger", true);
     setup.tracePathfind = section.value_or("trace_pathfind", true);
     setup.traceTxQ = section.value_or("trace_txq", true);
