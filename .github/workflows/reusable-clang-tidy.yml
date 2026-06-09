@@ -29,14 +29,14 @@ jobs:
     if: ${{ inputs.check_only_changed }}
     permissions:
       contents: read
-    uses: XRPLF/actions/.github/workflows/determine-tidy-files.yml@224f3c48d3014d082a1129237b8291ff0b0a331f
+    uses: XRPLF/actions/.github/workflows/determine-tidy-files.yml@312aaab296060ff89d7f798dcab59f019bea6e02
 
   run-clang-tidy:
     name: Run clang tidy
     needs: [determine-files]
     if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.cpp_changed_files != '' || needs.determine-files.outputs.clang_tidy_config_changed == 'true') }}
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-8abe82e"
+    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-63ffdc3"
     permissions:
       contents: read
       issues: write
@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
+        uses: XRPLF/actions/prepare-runner@c47daebb2f9db64ffbac71b47d68a661498d5ce8
         with:
           enable_ccache: false
 
