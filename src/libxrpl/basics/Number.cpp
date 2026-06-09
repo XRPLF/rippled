@@ -494,7 +494,8 @@ Number::Guard::doRoundUp(bool& negative, T& mantissa, int& exponent, std::string
                 // be impossible to recurse more than once, because once the mantissa is divided by
                 // 10, it will be _well_ under maxMantissa and kMaxRep, so adding 1 will have no
                 // chance of bringing it back over.
-                if (mantissa > kMaxRep && mantissa < kMaxRepUp)
+                if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled &&
+                    mantissa > kMaxRep && mantissa < kMaxRepUp)
                 {
                     mantissa = kMaxRepUp;
                 }
@@ -964,9 +965,8 @@ Number::operator*=(Number const& y)
         g.setNegative();
 
     auto const& maxMantissa = g.maxMantissa;
-    auto const cuspRoundingFix = g.cuspRoundingFix;
     auto const repLimit =
-        cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled ? kMaxRepUp : kMaxRep;
+        g.cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled ? kMaxRepUp : kMaxRep;
 
     while (zm > maxMantissa || zm > repLimit)
     {
