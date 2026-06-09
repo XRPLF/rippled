@@ -38,6 +38,7 @@
 
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/TraceContextValidation.h>
 
 namespace xrpl::telemetry {
 
@@ -65,8 +66,9 @@ proposalReceiveSpan([[maybe_unused]] protocol::TMProposeSet const& msg)
     if (msg.has_trace_context())
     {
         auto const& tc = msg.trace_context();
-        if (tc.has_span_id() && tc.span_id().size() == 8 && tc.has_trace_id() &&
-            tc.trace_id().size() == 16)
+        // Reject malformed or all-zero ids from the peer before trusting
+        // them as a parent. See TraceContextValidation.h.
+        if (isValidTraceContext(tc))
         {
             // Create a child span using the sender's trace_id and
             // span_id as parent. Use hashSpan with the sender's
@@ -103,8 +105,9 @@ validationReceiveSpan([[maybe_unused]] protocol::TMValidation const& msg)
     if (msg.has_trace_context())
     {
         auto const& tc = msg.trace_context();
-        if (tc.has_span_id() && tc.span_id().size() == 8 && tc.has_trace_id() &&
-            tc.trace_id().size() == 16)
+        // Reject malformed or all-zero ids from the peer before trusting
+        // them as a parent. See TraceContextValidation.h.
+        if (isValidTraceContext(tc))
         {
             return SpanGuard::hashSpan(
                 TraceCategory::Consensus,

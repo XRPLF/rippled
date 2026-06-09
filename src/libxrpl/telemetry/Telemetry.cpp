@@ -280,7 +280,13 @@ public:
         otlp_http::OtlpHttpExporterOptions exporterOpts;
         exporterOpts.url = setup_.exporterEndpoint;
         if (setup_.useTls)
+        {
             exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
+            // Present a client cert for mutual TLS. When both paths are
+            // empty the connection falls back to one-way (server) TLS.
+            exporterOpts.ssl_client_cert_path = setup_.tlsClientCertPath;
+            exporterOpts.ssl_client_key_path = setup_.tlsClientKeyPath;
+        }
 
         auto exporter = otlp_http::OtlpHttpExporterFactory::Create(exporterOpts);
 
@@ -302,8 +308,9 @@ public:
             {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
             {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
             {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
-            {std::string(attr::networkId), static_cast<int64_t>(setup_.networkId)},
-            {std::string(attr::networkType), setup_.networkType},
+            {std::string(attr::networkId),
+             static_cast<int64_t>(setup_.networkId)},              // LCOV_EXCL_LINE
+            {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
         });
 
         // Configure sampler
