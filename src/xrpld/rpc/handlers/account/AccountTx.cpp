@@ -39,26 +39,26 @@
 
 namespace xrpl {
 
-Expected<DelegateFilter, Json::Value>
-DelegateFilter::create(Json::Value const& delegateNode)
+Expected<DelegateFilter, json::Value>
+DelegateFilter::create(json::Value const& delegateNode)
 {
     if (!delegateNode.isObject())
-        return Unexpected(RPC::invalid_field_error(jss::delegate));
+        return Unexpected(RPC::invalidFieldError(jss::delegate));
 
     if (!delegateNode.isMember(jss::delegate_filter) ||
         !delegateNode[jss::delegate_filter].isString())
-        return Unexpected(RPC::invalid_field_error(jss::delegate_filter));
+        return Unexpected(RPC::invalidFieldError(jss::delegate_filter));
 
     auto const& delegateFilterStr = delegateNode[jss::delegate_filter].asString();
 
-    auto typeResult = [&]() -> Expected<DelegateType, Json::Value> {
+    auto typeResult = [&]() -> Expected<DelegateType, json::Value> {
         if (delegateFilterStr == "actor")
             return DelegateType::Actor;
 
         if (delegateFilterStr == "authorizer")
             return DelegateType::Authorizer;
 
-        return Unexpected(RPC::invalid_field_error(jss::delegate_filter));
+        return Unexpected(RPC::invalidFieldError(jss::delegate_filter));
     }();
 
     if (!typeResult)
@@ -70,12 +70,12 @@ DelegateFilter::create(Json::Value const& delegateNode)
     if (delegateNode.isMember(jss::counter_party))
     {
         if (!delegateNode[jss::counter_party].isString())
-            return Unexpected(RPC::invalid_field_error(jss::counter_party));
+            return Unexpected(RPC::invalidFieldError(jss::counter_party));
 
         counterparty = parseBase58<AccountID>(delegateNode[jss::counter_party].asString());
 
         if (!counterparty)
-            return Unexpected(rpcError(rpcACT_MALFORMED));
+            return Unexpected(rpcError(RpcActMalformed));
     }
 
     return DelegateFilter{.type = type, .counterparty = counterparty};

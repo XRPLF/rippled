@@ -44,9 +44,9 @@ enum class DelegateType {
 struct DelegateFilter
 {
     // Parses a "delegate" JSON node into a DelegateFilter.
-    // Returns an error Json::Value if the node is malformed.
-    static Expected<DelegateFilter, Json::Value>
-    create(Json::Value const& delegateNode);
+    // Returns an error json::Value if the node is malformed.
+    static Expected<DelegateFilter, json::Value>
+    create(json::Value const& delegateNode);
 
     DelegateType type = DelegateType::Actor;
     std::optional<AccountID> counterparty;

@@ -915,7 +915,7 @@ class AccountTx_test : public beast::unit_test::Suite
         env.close();
 
         // Delegated TX: Alice pays Bob (Signed by Bob using Delegation)
-        env(pay(alice, bob, XRP(20)), delegate::as(bob));
+        env(pay(alice, bob, XRP(20)), delegate::As(bob));
         env.close();
 
         // Normal TX: Bob pays Carol (Signed by Bob for himself)
@@ -923,8 +923,8 @@ class AccountTx_test : public beast::unit_test::Suite
         env.close();
 
         auto const countTxs = [&](AccountID const& account,
-                                  Json::Value const& delegateParams) -> int {
-            Json::Value params;
+                                  json::Value const& delegateParams) -> int {
+            json::Value params;
             params[jss::account] = toBase58(account);
             params[jss::ledger_index_min] = -1;
             params[jss::ledger_index_max] = -1;
@@ -939,9 +939,9 @@ class AccountTx_test : public beast::unit_test::Suite
             return 0;
         };
 
-        auto const checkError = [&](Json::Value const& delegateParams,
+        auto const checkError = [&](json::Value const& delegateParams,
                                     std::string const& errToken) {
-            Json::Value params;
+            json::Value params;
             params[jss::account] = alice.human();
             params[jss::delegate] = delegateParams;
             auto res = env.rpc("json", "account_tx", to_string(params));
@@ -950,14 +950,14 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // Filter: Delegatee. Expects TX #2 (Signed by Bob)
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "actor";
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
         }
 
         // Filter: Delegatee + Counterparty Bob. Expects TX #2.
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "actor";
             p[jss::counter_party] = bob.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
@@ -965,7 +965,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // Filter: Delegatee + Counterparty Carol. Expects 0.
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "actor";
             p[jss::counter_party] = carol.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 0);
@@ -974,14 +974,14 @@ class AccountTx_test : public beast::unit_test::Suite
         // Filter: Delegator. Expects TX #2.
         // (Bob signed it, but Alice is the owner).
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "authorizer";
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
         }
 
         // Filter: Delegator + Counterparty Alice. Expects TX #2.
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "authorizer";
             p[jss::counter_party] = alice.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
@@ -990,7 +990,7 @@ class AccountTx_test : public beast::unit_test::Suite
         // Query Bob (Signer), Filter: Delegator, Counterparty: Carol
         // Expect: None (Alice is Owner, not Carol)
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "authorizer";
             p[jss::counter_party] = carol.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 0);
@@ -999,40 +999,40 @@ class AccountTx_test : public beast::unit_test::Suite
         // Query Bob (Signer), Filter: Delegatee
         // Expect: None. Bob did not employ a delegatee for his own TXs (TX C).
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "actor";
             BEAST_EXPECT(countTxs(bob.id(), p) == 0);
         }
 
         // "delegate" is not an object (e.g., string)
         {
-            Json::Value const p = "not_an_object";
+            json::Value const p = "not_an_object";
             checkError(p, "invalidParams");
         }
 
         // Missing "delegate_filter" inside object
         {
-            Json::Value const p(Json::objectValue);
+            json::Value const p(json::ValueType::Object);
             checkError(p, "invalidParams");
         }
 
         // "delegate_filter" is not a string (e.g., int)
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = 123;
             checkError(p, "invalidParams");
         }
 
         // "delegate_filter" has invalid value
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "random_string";
             checkError(p, "invalidParams");
         }
 
         // "counterparty" is not a string
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "actor";
             p[jss::counter_party] = 123;
             checkError(p, "invalidParams");
@@ -1040,7 +1040,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // "counterparty" is malformed base58
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "actor";
             p[jss::counter_party] = "not_an_account";
             checkError(p, "actMalformed");
@@ -1057,13 +1057,13 @@ class AccountTx_test : public beast::unit_test::Suite
             env(signers(alice, 2, {{daria, 1}, {edward, 1}}));
             env.close();
             env(pay(alice, carol, XRP(1)),
-                fee(drops(env.current()->fees().increment * 2)),
-                msig(daria, edward));
+                Fee(drops(env.current()->fees().increment * 2)),
+                Msig(daria, edward));
             env.close();
 
             // Alice's actor filter should still see only the 1 delegated tx,
             // not the multi-signed one.
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "actor";
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
         }
@@ -1093,12 +1093,12 @@ class AccountTx_test : public beast::unit_test::Suite
         env.close();
 
         // Delegated tx: Alice pays Carol, Bob signs via multi-sig
-        env(pay(alice, carol, XRP(10)), fee(XRP(1)), delegate::as(bob), msig(daria, edward));
+        env(pay(alice, carol, XRP(10)), Fee(XRP(1)), delegate::As(bob), Msig(daria, edward));
         env.close();
 
         auto const countTxs = [&](AccountID const& account,
-                                  Json::Value const& delegateParams) -> int {
-            Json::Value params;
+                                  json::Value const& delegateParams) -> int {
+            json::Value params;
             params[jss::account] = toBase58(account);
             params[jss::ledger_index_min] = -1;
             params[jss::ledger_index_max] = -1;
@@ -1113,14 +1113,14 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // Alice (owner) finds the tx with actor filter
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "actor";
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
         }
 
         // Alice (owner) + counterparty Bob finds the tx
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "actor";
             p[jss::counter_party] = bob.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
@@ -1128,14 +1128,14 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // Bob (delegatee) finds the tx with authorizer filter
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "authorizer";
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
         }
 
         // Bob (delegatee) + counterparty Alice finds the tx
         {
-            Json::Value p;
+            json::Value p;
             p[jss::delegate_filter] = "authorizer";
             p[jss::counter_party] = alice.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
