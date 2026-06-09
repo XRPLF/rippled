@@ -498,7 +498,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     }
 
     void
-    testConvertProofContextBinding(FeatureBitset features)
+    testConvertInvalidProofContextBinding(FeatureBitset features)
     {
         testcase("Convert proof context binding");
         using namespace test::jtx;
@@ -4192,118 +4192,77 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     }
 
     void
-    testClawbackContextBinding(FeatureBitset features)
+    testClawbackInvalidProofContextBinding(FeatureBitset features)
     {
         testcase("ConfidentialMPTClawback context binding");
         using namespace test::jtx;
 
-        Env env{*this, features};
-        Account const alice("alice");
-        Account const bob("bob");
-        Account const carol("carol");
-        ConfidentialEnv confEnv{
-            env,
-            alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 60},
-             {.account = carol, .payAmount = 100, .convertAmount = 60}},
-            tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount};
-        auto& mptAlice = confEnv.mpt;
+        auto runBadProof = [&](auto makeContextHash) {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 60}},
+                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount};
+            auto& mptAlice = confEnv.mpt;
 
-        auto getProof = [&](uint256 const& contextHash) -> std::optional<std::string> {
             auto const privKey = mptAlice.getPrivKey(alice);
             if (!BEAST_EXPECT(privKey.has_value()))
-                return std::nullopt;
+                return;
 
-            auto const proof = mptAlice.getClawbackProof(bob, 60, *privKey, contextHash);
+            auto const proof = mptAlice.getClawbackProof(
+                bob, 60, *privKey, makeContextHash(env, mptAlice, alice, bob, carol));
             if (!BEAST_EXPECT(proof.has_value()))
-                return std::nullopt;
-
-            return strHex(*proof);
-        };
-
-        auto submitBadContext = [&](uint256 const& contextHash) {
-            auto const proof = getProof(contextHash);
-            if (!proof)
                 return;
 
             mptAlice.confidentialClaw({
                 .account = alice,
                 .holder = bob,
                 .amt = 60,
-                .proof = proof,
+                .proof = strHex(*proof),
                 .err = tecBAD_PROOF,
             });
         };
 
-        // Wrong transaction sequence in the proof context.
-        submitBadContext(getClawbackContextHash(
-            alice.id(), mptAlice.issuanceID(), env.seq(alice) + 1, bob.id()));
-        // Wrong issuance ID in the proof context.
-        submitBadContext(getClawbackContextHash(
-            alice.id(), makeMptID(env.seq(alice) + 100, alice), env.seq(alice), bob.id()));
-        // Wrong holder in the proof context.
-        submitBadContext(
-            getClawbackContextHash(alice.id(), mptAlice.issuanceID(), env.seq(alice), carol.id()));
         // Wrong account (issuer) in the proof context.
-        submitBadContext(
-            getClawbackContextHash(carol.id(), mptAlice.issuanceID(), env.seq(alice), bob.id()));
-
-        auto const proof = getProof(
-            getClawbackContextHash(alice.id(), mptAlice.issuanceID(), env.seq(alice), bob.id()));
-        if (!proof)
-            return;
-
-        mptAlice.confidentialClaw({
-            .account = alice,
-            .holder = bob,
-            .amt = 60,
-            .proof = proof,
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const& alice,
+                        Account const& bob,
+                        Account const& carol) {
+            return getClawbackContextHash(carol.id(), mpt.issuanceID(), env.seq(alice), bob.id());
         });
-    }
 
-    void
-    testClawbackIgnoresHolderVersion(FeatureBitset features)
-    {
-        testcase("ConfidentialMPTClawback omits holder version binding");
-        using namespace test::jtx;
+        // Wrong issuance ID in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const&,
+                        Account const& alice,
+                        Account const& bob,
+                        Account const&) {
+            return getClawbackContextHash(
+                alice.id(), makeMptID(env.seq(alice) + 100, alice), env.seq(alice), bob.id());
+        });
 
-        Env env{*this, features};
-        Account const alice("alice");
-        Account const bob("bob");
-        ConfidentialEnv confEnv{
-            env,
-            alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 60}},
-            tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount};
-        auto& mptAlice = confEnv.mpt;
+        // Wrong transaction sequence in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const& alice,
+                        Account const& bob,
+                        Account const&) {
+            return getClawbackContextHash(
+                alice.id(), mpt.issuanceID(), env.seq(alice) + 1, bob.id());
+        });
 
-        auto const privKey = mptAlice.getPrivKey(alice);
-        if (!BEAST_EXPECT(privKey.has_value()))
-            return;
-
-        auto const issuerSeq = env.seq(alice);
-        auto const proof = mptAlice.getClawbackProof(
-            bob,
-            60,
-            *privKey,
-            getClawbackContextHash(alice.id(), mptAlice.issuanceID(), issuerSeq, bob.id()));
-        if (!BEAST_EXPECT(proof.has_value()))
-            return;
-
-        // Change Bob's confidential balance version after generating the
-        // clawback proof. An empty-inbox merge leaves the balance unchanged but
-        // still bumps sfConfidentialBalanceVersion.
-        auto const versionBefore = mptAlice.getMPTokenVersion(bob);
-        mptAlice.mergeInbox({.account = bob});
-        BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) != versionBefore);
-
-        // The clawback context hash omits the holder version, so the proof
-        // generated against the old version is still accepted.
-        mptAlice.confidentialClaw({
-            .account = alice,
-            .holder = bob,
-            .amt = 60,
-            .proof = strHex(*proof),
+        // Wrong holder in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const& alice,
+                        Account const&,
+                        Account const& carol) {
+            return getClawbackContextHash(alice.id(), mpt.issuanceID(), env.seq(alice), carol.id());
         });
     }
 
@@ -4852,6 +4811,48 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = carol,
                 .amt = 400,
+            });
+        }
+
+        // SCENARIO 3: the clawback proof omits the holder's confidential
+        // balance version. A proof generated before the version advances is
+        // still accepted, because getClawbackContextHash has no version
+        // component.
+        {
+            Env env{*this, features};
+            auto mptAlice = setupEnv(env);
+
+            mptAlice.convert({.account = bob, .amt = 500, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            auto const privKey = mptAlice.getPrivKey(alice);
+            if (!BEAST_EXPECT(privKey.has_value()))
+                return;
+
+            auto const proof = mptAlice.getClawbackProof(
+                bob,
+                500,
+                *privKey,
+                getClawbackContextHash(
+                    alice.id(), mptAlice.issuanceID(), env.seq(alice), bob.id()));
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            // Advance bob's balance version after the proof is generated. An
+            // empty-inbox merge leaves the balance unchanged but still bumps
+            // sfConfidentialBalanceVersion.
+            auto const versionBefore = mptAlice.getMPTokenVersion(bob);
+            mptAlice.mergeInbox({.account = bob});
+            BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) != versionBefore);
+
+            // The stale-version proof is still accepted.
+            mptAlice.confidentialClaw({
+                .account = alice,
+                .holder = bob,
+                .amt = 500,
+                .proof = strHex(*proof),
             });
         }
     }
@@ -5588,7 +5589,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     // variable and submitting it with the real parameters must be rejected
     // with tecBAD_PROOF
     void
-    testConvertBackProofContextBinding(FeatureBitset features)
+    testConvertBackInvalidProofContextBinding(FeatureBitset features)
     {
         testcase("ConvertBack proof context binding");
         using namespace test::jtx;
@@ -6899,7 +6900,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     }
 
     void
-    testSendProofContextBinding(FeatureBitset features)
+    testSendInvalidProofContextBinding(FeatureBitset features)
     {
         testcase("Send proof context binding");
         using namespace test::jtx;
@@ -7847,7 +7848,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // ConfidentialMPTConvert
         testConvert(features);
         testConvertPreflight(features);
-        testConvertProofContextBinding(features);
+        testConvertInvalidProofContextBinding(features);
         testConvertPreclaim(features);
         testConvertWithAuditor(features);
 
@@ -7875,8 +7876,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testClawbackPreclaim(features);
         testClawbackProof(features);
         testClawbackWithAuditor(features);
-        testClawbackContextBinding(features);
-        testClawbackIgnoresHolderVersion(features);
+        testClawbackInvalidProofContextBinding(features);
 
         testDelete(features);
 
@@ -7904,7 +7904,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // Replay tests
         testMutatePrivacy(features);
-        testConvertBackProofContextBinding(features);
+        testConvertBackInvalidProofContextBinding(features);
         testConvertBackProofCiphertextBinding(features);
         testConvertBackProofVersionMismatch(features);
 
@@ -7918,7 +7918,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testTransferFee(features);
 
         // Zero knowledge proof tests
-        testSendProofContextBinding(features);
+        testSendInvalidProofContextBinding(features);
         testSendForgedEqualityProof(features);
         testSendForgedRangeProof(features);
         testSendNegativeValueMalleability(features);
