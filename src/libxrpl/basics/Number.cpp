@@ -294,7 +294,7 @@ private:
     pushOverflow(T const& mantissa);
 
     enum class Round {
-        // The result is exact. No rounding is needed. Only used if cuspRoundingFix is Enabled.
+        // The result is exact. No rounding is needed. Only used if cuspRoundingFix is Enabled330.
         Exact = -2,
         // Round down. Since we use integer math, that usually means no change is needed.
         // Exceptions are for when the result is between kMaxRap and kMaxRepUp (round to kMaxRep),
@@ -304,7 +304,7 @@ private:
         // The result was exactly half-way between two integers. This will round to even.
         Even = 0,
         // Round up. Always adds 1 (or subtracts 1 in some cases if cuspRoundingFix is not
-        // Enabled)
+        // Enabled330)
         Up = 1,
     };
 
@@ -401,7 +401,7 @@ void
 Number::Guard::pushOverflow(T const& mantissa)
 {
     XRPL_ASSERT(mantissa <= kMaxRepUp, "xrpl::Number::Guard::doRoundUp : valid mantissa");
-    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled && mantissa > kMaxRep &&
+    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 && mantissa > kMaxRep &&
         mantissa < kMaxRepUp)
     {
         // Special case rounding rules for the values between kMaxRep and kMaxRepUp.
@@ -488,13 +488,13 @@ Number::Guard::bringIntoRange(bool& negative, T& mantissa, int& exponent)
     // Bring mantissa back into the minMantissa / maxMantissa range AFTER
     // rounding
     if (mantissa < minMantissa &&
-        (cuspRoundingFix < MantissaRange::CuspRoundingFix::Enabled || mantissa != 0))
+        (cuspRoundingFix < MantissaRange::CuspRoundingFix::Enabled330 || mantissa != 0))
     {
         mantissa *= 10;
         --exponent;
     }
     if (exponent < kMinExponent ||
-        (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled && mantissa == 0))
+        (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 && mantissa == 0))
     {
         static constexpr Number kZero = Number{};
 
@@ -532,7 +532,7 @@ Number::Guard::doRoundUp(bool& negative, T& mantissa, int& exponent, std::string
                 // be impossible to recurse more than once, because once the mantissa is divided by
                 // 10, it will be _well_ under maxMantissa and kMaxRep, so adding 1 will have no
                 // chance of bringing it back over.
-                if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled &&
+                if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 &&
                     mantissa > kMaxRep && mantissa < kMaxRepUp)
                 {
                     mantissa = kMaxRepUp;
@@ -565,7 +565,7 @@ Number::Guard::doRoundUp(bool& negative, T& mantissa, int& exponent, std::string
         }
     }
     else if (
-        cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled && mantissa > kMaxRep &&
+        cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 && mantissa > kMaxRep &&
         mantissa < kMaxRepUp)
     {
         mantissa = kMaxRep;
@@ -632,7 +632,7 @@ Number::Guard::doRound(rep& drops, std::string location)
         ++drops;
     }
     else if (
-        cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled && drops > kMaxRep &&
+        cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 && drops > kMaxRep &&
         drops < kMaxRepUp)
     {
         // This will probably be impossible because this function is not called by mutating
@@ -688,7 +688,7 @@ doNormalize(
 {
     static constexpr auto kMinExponent = Number::kMinExponent;
     static constexpr auto kMaxExponent = Number::kMaxExponent;
-    auto const repLimit = cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled
+    auto const repLimit = cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330
         ? Number::kMaxRepUp
         : Number::kMaxRep;
 
@@ -883,7 +883,7 @@ Number::operator+=(Number const& y)
     auto const cuspRoundingFix = g.cuspRoundingFix;
 
     auto const repLimit =
-        cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled ? kMaxRepUp : kMaxRep;
+        cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 ? kMaxRepUp : kMaxRep;
 
     // Bring the exponents of both values into agreement, so the mantissas are on the same scale
     //   and can be added directly together.
@@ -1004,7 +1004,7 @@ Number::operator*=(Number const& y)
 
     auto const& maxMantissa = g.maxMantissa;
     auto const repLimit =
-        g.cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled ? kMaxRepUp : kMaxRep;
+        g.cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 ? kMaxRepUp : kMaxRep;
 
     while (zm > maxMantissa || zm > repLimit)
     {
