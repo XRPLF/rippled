@@ -210,7 +210,7 @@ fn test_transaction_data_functions() -> i32 {
     // Use get_tx_field() with appropriate parameters for all transaction field access.
 
     // Test 2.2: get_tx_nested_field() - Nested field access with locator
-    let locator = [0x01, 0x00]; // Simple locator for first element
+    let locator = [0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8]; // Two int32s in little-endian: [1, 0]
     let mut nested_buffer = [0u8; 32];
     let nested_result = unsafe {
         host::tx_inner(
@@ -323,7 +323,7 @@ fn test_current_ledger_object_functions() -> i32 {
     }
 
     // Test 3.2: get_current_ledger_obj_nested_field() - Nested field access
-    let locator = [0x01, 0x00]; // Simple locator
+    let locator = [0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8]; // Two int32s in little-endian: [1, 0]
     let mut current_nested_buffer = [0u8; 32];
     let current_nested_result = unsafe {
         host::home_le_inner(
@@ -434,7 +434,7 @@ fn test_any_ledger_object_functions() -> i32 {
         }
 
         // Test get_ledger_obj_nested_field with invalid slot
-        let locator = [0x01, 0x00];
+        let locator = [0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8]; // Two int32s in little-endian: [1, 0]
         let nested_result = unsafe {
             host::le_inner(
                 1,
@@ -517,7 +517,7 @@ fn test_any_ledger_object_functions() -> i32 {
     }
 
     // Test 4.3: get_ledger_obj_nested_field() - Nested field from cached object
-    let locator = [0x01, 0x00];
+    let locator = [0x01_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8, 0x00_u8]; // Two int32s in little-endian: [1, 0]
     let mut cached_nested_buffer = [0u8; 32];
     let cached_nested_result = unsafe {
         host::le_inner(

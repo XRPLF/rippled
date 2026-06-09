@@ -18,8 +18,7 @@ class WasmHostFunctionsImpl : public HostFunctions
 
     std::optional<Bytes> data_;
 
-    void* rt_ = nullptr;
-
+public:
     Expected<std::shared_ptr<SLE const>, HostFunctionError>
     getCurrentLedgerObj() const
     {
@@ -63,18 +62,6 @@ public:
     WasmHostFunctionsImpl(ApplyContext& ct, Keylet const& leKey)
         : HostFunctions(ct.journal), ctx_(ct), leKey_(leKey)
     {
-    }
-
-    void
-    setRT(void* rt) override
-    {
-        rt_ = rt;
-    }
-
-    void*
-    getRT() const override
-    {
-        return rt_;
     }
 
     bool
@@ -121,13 +108,13 @@ public:
     getLedgerObjField(int32_t cacheIdx, SField const& fname) const override;
 
     Expected<Bytes, HostFunctionError>
-    getTxNestedField(Slice const& locator) const override;
+    getTxNestedField(FieldLocator const& locator) const override;
 
     Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjNestedField(Slice const& locator) const override;
+    getCurrentLedgerObjNestedField(FieldLocator const& locator) const override;
 
     Expected<Bytes, HostFunctionError>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) const override;
+    getLedgerObjNestedField(int32_t cacheIdx, FieldLocator const& locator) const override;
 
     Expected<int32_t, HostFunctionError>
     getTxArrayLen(SField const& fname) const override;
@@ -139,13 +126,13 @@ public:
     getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) const override;
 
     Expected<int32_t, HostFunctionError>
-    getTxNestedArrayLen(Slice const& locator) const override;
+    getTxNestedArrayLen(FieldLocator const& locator) const override;
 
     Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator) const override;
+    getCurrentLedgerObjNestedArrayLen(FieldLocator const& locator) const override;
 
     Expected<int32_t, HostFunctionError>
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) const override;
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, FieldLocator const& locator) const override;
 
     Expected<int32_t, HostFunctionError>
     updateData(Slice const& data) override;
