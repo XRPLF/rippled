@@ -203,7 +203,7 @@ Controlled by `trace_ledger=1` in `[telemetry]` config.
 
 #### Peer Spans
 
-Controlled by `trace_peer=1` in `[telemetry]` config. **Disabled by default** (high volume).
+Controlled by `trace_peer` in `[telemetry]` config. **Enabled by default** (high volume).
 
 | Span Name                 | Parent | Source File | Description                           |
 | ------------------------- | ------ | ----------- | ------------------------------------- |
@@ -788,7 +788,7 @@ count_over_time({job="xrpld"} |= "trace_id=" [5m])
 | `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp |
 | `xrpld_job_count` may not emit in standalone mode                  | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
 | `xrpld_rpc_requests` depends on `[insight]` config                 | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
-| Peer tracing disabled by default                                   | No `peer.*` spans unless `trace_peer=1`          | Intentional — high volume on mainnet                                 |
+| Peer tracing enabled by default                                    | `peer.*` spans emit unless `trace_peer=0`        | High volume — set `trace_peer=0` to opt out on busy mainnet nodes    |
 
 ---
 
@@ -847,4 +847,4 @@ prefix=xrpld
 | `trace_transactions` | `1`     | `tx.*` spans                 |
 | `trace_consensus`    | `1`     | `consensus.*` spans          |
 | `trace_ledger`       | `1`     | `ledger.*` spans             |
-| `trace_peer`         | `0`     | `peer.*` spans (high volume) |
+| `trace_peer`         | `1`     | `peer.*` spans (high volume) |
