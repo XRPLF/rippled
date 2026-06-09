@@ -62,7 +62,9 @@ if(telemetry)
         PRIVATE opentelemetry-cpp::opentelemetry-cpp
     )
     # ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its
-    # implementation directly into the test binary.
+    # implementation directly into the test binary and put src/ on the include
+    # path so its tests can reach <xrpld/telemetry/...> headers.
+    target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
     target_sources(
         xrpl_tests
         PRIVATE
