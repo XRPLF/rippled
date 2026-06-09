@@ -58,7 +58,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
         {
             if (enableCuspRounding3_3_0)
             {
-                return MantissaRange::MantissaScale::LargeNew;
+                return MantissaRange::MantissaScale::Large;
             }
             if (enableCuspRounding3_2_0)
             {
