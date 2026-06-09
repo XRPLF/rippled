@@ -29,7 +29,6 @@
 #include <algorithm>
 #include <bit>
 #include <cstdint>
-#include <memory>
 #include <vector>
 
 namespace xrpl {
@@ -831,10 +830,7 @@ LoanPay::doApply()
 }
 
 void
-LoanPay::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+LoanPay::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

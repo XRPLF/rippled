@@ -422,7 +422,7 @@ enabled=1
 trace_transactions=1
 trace_consensus=1
 trace_rpc=1
-trace_peer=0          # Disable peer tracing (high volume, includes addresses)
+trace_peer=0          # Disable peer tracing (high volume)
 
 # Redact specific attributes
 redact_account=1      # Hash account addresses before export

@@ -178,8 +178,9 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
         bool const isUnlimited = clientIsUnlimited();
         if (!isUnlimited && usage.disconnect(app_.getJournal("gRPCServer")))
         {
-            span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::error);
-            span.setError(grpc_span::val::resourceExhausted);
+            span.setAttribute(
+                grpc_span::attr::grpcStatus, grpc_span::val::error);  // LCOV_EXCL_LINE
+            span.setError(grpc_span::val::resourceExhausted);         // LCOV_EXCL_LINE
             grpc::Status const status{
                 grpc::StatusCode::RESOURCE_EXHAUSTED, "usage balance exceeds threshold"};
             responder_.FinishWithError(status, this);
@@ -230,8 +231,9 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
             if (conditionMetRes != RpcSuccess)
             {
                 RPC::ErrorInfo const errorInfo = RPC::getErrorInfo(conditionMetRes);
-                span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::error);
-                span.setError(errorInfo.token.cStr());
+                span.setAttribute(
+                    grpc_span::attr::grpcStatus, grpc_span::val::error);  // LCOV_EXCL_LINE
+                span.setError(errorInfo.token.cStr());                    // LCOV_EXCL_LINE
                 grpc::Status const status{
                     grpc::StatusCode::FAILED_PRECONDITION, errorInfo.message.cStr()};
                 responder_.FinishWithError(status, this);
@@ -248,8 +250,8 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
     }
     catch (std::exception const& ex)
     {
-        span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::error);
-        span.recordException(ex);
+        span.setAttribute(grpc_span::attr::grpcStatus, grpc_span::val::error);  // LCOV_EXCL_LINE
+        span.recordException(ex);                                               // LCOV_EXCL_LINE
         grpc::Status const status{grpc::StatusCode::INTERNAL, ex.what()};
         responder_.FinishWithError(status, this);
     }
