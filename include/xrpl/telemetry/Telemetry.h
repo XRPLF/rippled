@@ -172,13 +172,16 @@ public:
             whenever tlsClientCertPath is set. */
         std::string tlsClientKeyPath;
 
-        /** Head-based sampling ratio in [0.0, 1.0]. 1.0 = trace everything.
-            This is a head-based (pre-decision) sampler using
-            TraceIdRatioBasedSampler — the decision to record or drop a
-            trace is made before the root span starts. For post-hoc
-            (tail-based) filtering, see SpanGuard::discard().
+        /** Head-based sampling ratio. Intentionally fixed at 1.0 (sample
+            everything) and NOT read from config. A per-node ratio would let
+            nodes make divergent keep/drop decisions for the same distributed
+            trace, producing broken/partial traces. The ratio sampler is wrapped
+            in a ParentBasedSampler (see Telemetry.cpp) so spans inheriting a
+            remote parent honor the upstream sampled flag. Volume reduction is
+            delegated to the collector's tail sampling; for node-local post-hoc
+            dropping see SpanGuard::discard().
         */
-        double samplingRatio = 1.0;
+        double const samplingRatio = 1.0;
 
         /** Maximum number of spans per batch export. */
         std::uint32_t batchSize = 512;
