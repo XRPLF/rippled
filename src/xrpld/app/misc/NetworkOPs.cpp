@@ -24,7 +24,6 @@
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
 #include <xrpld/overlay/Overlay.h>
@@ -54,6 +53,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
@@ -313,7 +313,7 @@ public:
         , consensus_(
               registry_.get().getApp(),
               makeFeeVote(
-                  setupFeeVote(registry_.get().getApp().config().section("voting")),
+                  setupFeeVote(registry_.get().getApp().config().section(Sections::kVoting)),
                   registry_.get().getJournal("FeeVote")),
               ledgerMaster,
               *localTX_,
@@ -2973,11 +2973,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-        if (registry_.get().getApp().config().exists(SECTION_PORT_GRPC))
+        if (registry_.get().getApp().config().exists(Sections::kPortGrpc))
         {
-            auto const& grpcSection = registry_.get().getApp().config().section(SECTION_PORT_GRPC);
-            auto const optPort = grpcSection.get("port");
-            if (optPort && grpcSection.get("ip"))
+            auto const& grpcSection =
+                registry_.get().getApp().config().section(Sections::kPortGrpc);
+            auto const optPort = grpcSection.get(Keys::kPort);
+            if (optPort && grpcSection.get(Keys::kIp))
             {
                 auto& jv = ports.append(json::Value(json::ValueType::Object));
                 jv[jss::port] = *optPort;
