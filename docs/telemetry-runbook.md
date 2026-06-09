@@ -49,7 +49,7 @@ cmake --build --preset default
 | `trace_rpc`                | `1`                               | Enable RPC request tracing                                |
 | `trace_transactions`       | `1`                               | Enable transaction tracing                                |
 | `trace_consensus`          | `1`                               | Enable consensus tracing                                  |
-| `trace_peer`               | `0`                               | Enable peer message tracing (high volume)                 |
+| `trace_peer`               | `1`                               | Enable peer message tracing (high volume)                 |
 | `trace_ledger`             | `1`                               | Enable ledger tracing                                     |
 | `consensus_trace_strategy` | `deterministic`                   | Consensus trace ID strategy (`deterministic` or `random`) |
 | `batch_size`               | `512`                             | Max spans per batch export                                |
