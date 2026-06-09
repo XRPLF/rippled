@@ -544,61 +544,13 @@ ValidVault::finalize(
     result &= [&]() {
         switch (txnType)
         {
-            case ttVAULT_CREATE: {
-                bool result = true;
-
-                if (!beforeVault_.empty())
-                {
-                    JLOG(j.fatal())  //
-                        << "Invariant failed: create operation must not have "
-                           "updated a vault";
-                    result = false;
-                }
-
-                if (afterVault.assetsAvailable != kZero || afterVault.assetsTotal != kZero ||
-                    afterVault.lossUnrealized != kZero || updatedShares->sharesTotal != 0)
-                {
-                    JLOG(j.fatal())  //
-                        << "Invariant failed: created vault must be empty";
-                    result = false;
-                }
-
-                if (afterVault.pseudoId != updatedShares->share.getIssuer())
-                {
-                    JLOG(j.fatal())  //
-                        << "Invariant failed: shares issuer and vault "
-                           "pseudo-account must be the same";
-                    result = false;
-                }
-
-                auto const sleSharesIssuer =
-                    view.read(keylet::account(updatedShares->share.getIssuer()));
-                if (!sleSharesIssuer)
-                {
-                    JLOG(j.fatal())  //
-                        << "Invariant failed: shares issuer must exist";
-                    return false;
-                }
-
-                if (!isPseudoAccount(sleSharesIssuer))
-                {
-                    JLOG(j.fatal())  //
-                        << "Invariant failed: shares issuer must be a "
-                           "pseudo-account";
-                    result = false;
-                }
-
-                if (auto const vaultId = (*sleSharesIssuer)[~sfVaultID];
-                    !vaultId || *vaultId != afterVault.key)
-                {
-                    JLOG(j.fatal())  //
-                        << "Invariant failed: shares issuer pseudo-account "
-                           "must point back to the vault";
-                    result = false;
-                }
-
-                return result;
-            }
+            case ttVAULT_CREATE:
+            case ttLOAN_SET:
+            case ttLOAN_MANAGE:
+            case ttLOAN_PAY:
+                // Create-specific checks live in VaultCreate::finalizeInvariants.
+                // Loan checks are TBD.
+                return true;
             case ttVAULT_SET: {
                 bool result = true;
 
@@ -1040,13 +992,6 @@ ValidVault::finalize(
                 }
 
                 return result;
-            }
-
-            case ttLOAN_SET:
-            case ttLOAN_MANAGE:
-            case ttLOAN_PAY: {
-                // TBD
-                return true;
             }
 
             default:
