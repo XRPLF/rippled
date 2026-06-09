@@ -31,7 +31,7 @@ namespace xrpl {
 
 thread_local Number::RoundingMode Number::mode = Number::RoundingMode::ToNearest;
 thread_local std::reference_wrapper<MantissaRange const> Number::kRange =
-    MantissaRange::getMantissaRange(MantissaRange::MantissaScale::LargeNew);
+    MantissaRange::getMantissaRange(MantissaRange::MantissaScale::Large);
 
 std::set<MantissaRange::MantissaScale> const&
 MantissaRange::getAllScales()
@@ -40,7 +40,7 @@ MantissaRange::getAllScales()
         MantissaRange::MantissaScale::Small,
         MantissaRange::MantissaScale::LargeLegacy,
         MantissaRange::MantissaScale::Large3_2_0,
-        MantissaRange::MantissaScale::LargeNew,
+        MantissaRange::MantissaScale::Large,
     };
     return kScales;
 }
@@ -92,14 +92,14 @@ MantissaRange::getRanges()
         }
         {
             [[maybe_unused]]
-            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::LargeNew};
+            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large};
             static_assert(isPowerOfTen(kRange.min));
             static_assert(kRange.min == 1'000'000'000'000'000'000ULL);
             static_assert(kRange.max == rep(9'999'999'999'999'999'999ULL));
             static_assert(kRange.log == 18);
             static_assert(kRange.min < Number::kMaxRep);
             static_assert(kRange.max > Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::EnabledNew);
+            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled);
         }
         return map;
     }();
@@ -237,7 +237,7 @@ public:
     doDropDigit(T& mantissa, int& exponent) noexcept;
 
     enum class Round {
-        // The result is exact. No rounding is needed. Only used if cuspRoundingFix is EnabledNew.
+        // The result is exact. No rounding is needed. Only used if cuspRoundingFix is Enabled.
         Exact = -2,
         // Round down. Since we use integer math, that usually means no change is needed.
         // Exceptions are for when the result is between kMaxRap and kMaxRepUp (round to kMaxRep),
@@ -247,7 +247,7 @@ public:
         // The result was exactly half-way between two integers. This will round to even.
         Even = 0,
         // Round up. Always adds 1 (or subtracts 1 in some cases if cuspRoundingFix is not
-        // EnabledNew)
+        // Enabled)
         Up = 1,
     };
 
@@ -363,7 +363,7 @@ Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
-    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::EnabledNew && empty())
+    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled && empty())
     {
         // No remainder
         return Round::Exact;
@@ -482,7 +482,7 @@ void
 Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent)
 {
     auto r = round();
-    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::EnabledNew)
+    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled)
     {
         // If there was any remainder, subtract 1 from the result. This is sufficient to get the
         // best rounding.
@@ -814,7 +814,7 @@ Number::operator+=(Number const& y)
             xe = ye;
             xn = yn;
         }
-        if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::EnabledNew)
+        if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled)
         {
             // Grow xm/xe and pull digits out of the Guard until it's a little bit larger than
             // maxMantissa, so that normalize will have enough information to make an accurate

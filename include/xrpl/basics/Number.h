@@ -132,14 +132,14 @@ struct MantissaRange final
         LargeLegacy,
         // Large3_2_0 can be removed when fixCleanup3_3_0 is retired
         Large3_2_0,
-        LargeNew,  // TODO: Convert this back to Large after conversion is done
+        Large,
     };
 
     // This entire enum can be removed when fixCleanup3_2_0 is retired
     enum class CuspRoundingFix : std::uint8_t {
         Disabled = 0,
         Enabled3_2_0 = 1,
-        EnabledNew = 2,  // TODO: Convert this back to Enabled after conversion is done
+        Enabled = 2,
     };
 
     explicit constexpr MantissaRange(MantissaScale sc) : scale(sc)
@@ -168,7 +168,7 @@ private:
                 return 15;
             case MantissaScale::LargeLegacy:
             case MantissaScale::Large3_2_0:
-            case MantissaScale::LargeNew:
+            case MantissaScale::Large:
                 return 18;
             // LCOV_EXCL_START
             default:
@@ -199,8 +199,8 @@ private:
                 return CuspRoundingFix::Disabled;
             case MantissaScale::Large3_2_0:
                 return CuspRoundingFix::Enabled3_2_0;
-            case MantissaScale::LargeNew:
-                return CuspRoundingFix::EnabledNew;
+            case MantissaScale::Large:
+                return CuspRoundingFix::Enabled;
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
@@ -885,7 +885,7 @@ to_string(MantissaRange::MantissaScale const& scale)
             return "LargeLegacy";
         case MantissaRange::MantissaScale::Large3_2_0:
             return "Large320";
-        case MantissaRange::MantissaScale::LargeNew:
+        case MantissaRange::MantissaScale::Large:
             return "Large";
         default:
             throw std::runtime_error("Bad scale");

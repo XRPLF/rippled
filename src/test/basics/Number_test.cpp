@@ -1813,7 +1813,7 @@ public:
             switch (scale)
             {
                 case MantissaRange::MantissaScale::Large3_2_0:
-                case MantissaRange::MantissaScale::LargeNew:
+                case MantissaRange::MantissaScale::Large:
                     BEAST_EXPECT(signedDifference >= 0);
                     BEAST_EXPECT(signedDifference < pow10<BigInt>(product.exponent()));
                     BEAST_EXPECT(
@@ -1896,7 +1896,7 @@ public:
             switch (scale)
             {
                 case MantissaRange::MantissaScale::Large3_2_0:
-                case MantissaRange::MantissaScale::LargeNew:
+                case MantissaRange::MantissaScale::Large:
                     BEAST_EXPECT(stored >= exact);
                     BEAST_EXPECT(diff < pow10(quotient.exponent()));
                     break;
@@ -1947,7 +1947,7 @@ public:
             switch (scale)
             {
                 case MantissaRange::MantissaScale::Large3_2_0:
-                case MantissaRange::MantissaScale::LargeNew:
+                case MantissaRange::MantissaScale::Large:
                     BEAST_EXPECT(stored <= exact);
                     BEAST_EXPECT(diff > -pow10(quotient.exponent()));
                     break;
@@ -2005,7 +2005,7 @@ public:
             switch (scale)
             {
                 case MantissaRange::MantissaScale::Large3_2_0:
-                case MantissaRange::MantissaScale::LargeNew:
+                case MantissaRange::MantissaScale::Large:
                     BEAST_EXPECT(stored >= exact);
                     BEAST_EXPECT(diff < pow10(quotient.exponent()));
                     break;
