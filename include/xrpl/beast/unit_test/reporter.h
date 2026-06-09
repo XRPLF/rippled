@@ -77,8 +77,8 @@ private:
 
     std::ostream& os_;
     Results results_;
-    SuiteResults suite_results_;
-    CaseResults case_results_;
+    SuiteResults suiteResults_;
+    CaseResults caseResults_;
 
 public:
     Reporter(Reporter const&) = delete;
@@ -196,22 +196,22 @@ template <class Unused>
 void
 Reporter<Unused>::onSuiteBegin(SuiteInfo const& info)
 {
-    suite_results_ = SuiteResults{info.fullName()};
+    suiteResults_ = SuiteResults{info.fullName()};
 }
 
 template <class Unused>
 void
 Reporter<Unused>::onSuiteEnd()
 {
-    results_.add(suite_results_);
+    results_.add(suiteResults_);
 }
 
 template <class Unused>
 void
 Reporter<Unused>::onCaseBegin(std::string const& name)
 {
-    case_results_ = CaseResults(name);
-    os_ << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
+    caseResults_ = CaseResults(name);
+    os_ << suiteResults_.name << (caseResults_.name.empty() ? "" : (" " + caseResults_.name))
         << std::endl;
 }
 
@@ -219,23 +219,23 @@ template <class Unused>
 void
 Reporter<Unused>::onCaseEnd()
 {
-    suite_results_.add(case_results_);
+    suiteResults_.add(caseResults_);
 }
 
 template <class Unused>
 void
 Reporter<Unused>::onPass()
 {
-    ++case_results_.total;
+    ++caseResults_.total;
 }
 
 template <class Unused>
 void
 Reporter<Unused>::onFail(std::string const& reason)
 {
-    ++case_results_.failed;
-    ++case_results_.total;
-    os_ << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ") << reason
+    ++caseResults_.failed;
+    ++caseResults_.total;
+    os_ << "#" << caseResults_.total << " failed" << (reason.empty() ? "" : ": ") << reason
         << std::endl;
 }
 

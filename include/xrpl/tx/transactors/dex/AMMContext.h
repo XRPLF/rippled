@@ -22,7 +22,7 @@ public:
 
 private:
     // Tx account owner is required to get the AMM trading fee in BookStep
-    AccountID account_;
+    AccountID accountID_;
     // true if payment has multiple paths
     bool multiPath_{false};
     // Is true if AMM offer is consumed during a payment engine iteration.
@@ -31,7 +31,8 @@ private:
     std::uint16_t ammIters_{0};
 
 public:
-    AMMContext(AccountID const& account, bool multiPath) : account_(account), multiPath_(multiPath)
+    AMMContext(AccountID const& account, bool multiPath)
+        : accountID_(account), multiPath_(multiPath)
     {
     }
     ~AMMContext() = default;
@@ -80,7 +81,7 @@ public:
     [[nodiscard]] AccountID
     account() const
     {
-        return account_;
+        return accountID_;
     }
 
     /** Strand execution may fail. Reset the flag at the start

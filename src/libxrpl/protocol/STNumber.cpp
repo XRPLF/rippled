@@ -96,7 +96,8 @@ STNumber::add(Serializer& s) const
             // Json. Regardless, the only time we should be serializing an
             // STNumber is when the scale is large.
             XRPL_ASSERT_PARTS(
-                Number::getMantissaScale() == MantissaRange::MantissaScale::Large,
+                Number::getMantissaScale() == MantissaRange::MantissaScale::LargeLegacy ||
+                    Number::getMantissaScale() == MantissaRange::MantissaScale::Large,
                 "xrpl::STNumber::add",
                 "STNumber only used with large mantissa scale");
 #endif

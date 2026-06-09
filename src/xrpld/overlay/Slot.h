@@ -544,8 +544,8 @@ public:
         : handler_(handler)
         , logs_(registry.getLogs())
         , journal_(registry.getJournal("Slots"))
-        , baseSquelchEnabled_(config.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-        , maxSelectedPeers_(config.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS)
+        , baseSquelchEnabled_(config.vpReduceRelayBaseSquelchEnable)
+        , maxSelectedPeers_(config.vpReduceRelaySquelchMaxSelectedPeers)
     {
     }
     ~Slots() = default;

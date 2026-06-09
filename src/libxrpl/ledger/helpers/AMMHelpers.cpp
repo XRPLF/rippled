@@ -1,6 +1,5 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -34,8 +33,8 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <expected>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -464,7 +463,7 @@ checkAMMPrecisionLoss(
     return tecPRECISION_LOSS;
 }
 
-Expected<std::tuple<STAmount, STAmount, STAmount>, TER>
+std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>
 ammHolds(
     ReadView const& view,
     SLE const& ammSle,
@@ -520,7 +519,7 @@ ammHolds(
         return std::make_optional(std::make_pair(asset1, asset2));
     }();
     if (!assets)
-        return Unexpected(tecAMM_INVALID_TOKENS);
+        return std::unexpected(tecAMM_INVALID_TOKENS);
     auto const [amount1, amount2] = ammPoolHolds(
         view,
         ammSle.getAccountID(sfAccount),
@@ -666,7 +665,7 @@ deleteAMMTrustLines(
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             uint256 const&,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM and MPToken
             if (nodeType == ltAMM || nodeType == ltMPTOKEN)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -702,7 +701,7 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
         keylet::ownerDir(ammAccountID),
         [&](LedgerEntryType nodeType,
             uint256 const&,
-            std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
+            SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
             // Skip AMM
             if (nodeType == ltAMM)
                 return {tesSUCCESS, SkipEntry::Yes};
@@ -798,7 +797,7 @@ deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Jo
 void
 initializeFeeAuctionVote(
     ApplyView& view,
-    std::shared_ptr<SLE>& ammSle,
+    SLE::pointer& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee)
@@ -852,7 +851,7 @@ initializeFeeAuctionVote(
         auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
-Expected<bool, TER>
+std::expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount)
 {
     // Liquidity Provider (LP) must have one LPToken trustline
@@ -883,18 +882,18 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
     {
         auto const ownerDir = view.read(currentIndex);
         if (!ownerDir)
-            return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+            return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
         for (auto const& key : ownerDir->getFieldV256(sfIndexes))
         {
             auto const sle = view.read(keylet::child(key));
             if (!sle)
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const entryType = sle->getFieldU16(sfLedgerEntryType);
             // Only one AMM object
             if (entryType == ltAMM)
             {
                 if (hasAMM)
-                    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                    return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 hasAMM = true;
                 continue;
             }
@@ -904,7 +903,7 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
                 continue;
             }
             if (entryType != ltRIPPLE_STATE)
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const lowLimit = sle->getFieldAmount(sfLowLimit);
             auto const highLimit = sle->getFieldAmount(sfHighLimit);
             auto const isLPTrustline =
@@ -920,12 +919,12 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
                 {
                     // LP has exactly one LPToken trustline
                     if (++nLPTokenTrustLines > 1)
-                        return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                        return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 }
                 // AMM account has at most two IOU trustlines
                 else if (++nIOUTrustLines > 2)
                 {
-                    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                    return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
                 }
             }
             // Another Liquidity Provider LPToken trustline
@@ -936,7 +935,7 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
             // AMM account has at most two IOU trustlines
             else if (++nIOUTrustLines > 2)
             {
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             }
         }
         auto const uNodeNext = ownerDir->getFieldU64(sfIndexNext);
@@ -944,25 +943,25 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
         {
             if (nLPTokenTrustLines != 1 || (nIOUTrustLines == 0 && nMPT == 0) ||
                 (nIOUTrustLines > 2 || nMPT > 2) || (nIOUTrustLines + nMPT) > 2)
-                return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             return true;
         }
         currentIndex = keylet::page(root, uNodeNext);
     }
-    return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+    return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
 }
 
-Expected<bool, TER>
+std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    std::shared_ptr<SLE>& ammSle,
+    SLE::pointer& ammSle,
     AccountID const& account)
 {
     auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);
     if (!res.has_value())
     {
-        return Unexpected<TER>(res.error());
+        return std::unexpected<TER>(res.error());
     }
 
     if (res.value())
@@ -975,7 +974,7 @@ verifyAndAdjustLPTokenBalance(
         }
         else
         {
-            return Unexpected<TER>(tecAMM_INVALID_TOKENS);
+            return std::unexpected<TER>(tecAMM_INVALID_TOKENS);
         }
     }
     return true;

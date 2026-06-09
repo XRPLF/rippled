@@ -39,7 +39,7 @@ public:
 protected:
     // This class should not be instantiated directly. Use one of the derived
     // classes.
-    TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount);
+    TrustLineBase(SLE::const_ref sle, AccountID const& viewAccount);
 
     ~TrustLineBase() = default;
     TrustLineBase(TrustLineBase const&) = default;
@@ -175,7 +175,7 @@ public:
     PathFindTrustLine() = delete;
 
     static std::optional<PathFindTrustLine>
-    makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
+    makeItem(AccountID const& accountID, SLE::const_ref sle);
 
     static std::vector<PathFindTrustLine>
     getItems(AccountID const& accountID, ReadView const& view, LineDirection direction);
@@ -190,7 +190,7 @@ class RPCTrustLine final : public TrustLineBase, public CountedObject<RPCTrustLi
 public:
     RPCTrustLine() = delete;
 
-    RPCTrustLine(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount);
+    RPCTrustLine(SLE::const_ref sle, AccountID const& viewAccount);
 
     [[nodiscard]] Rate const&
     getQualityIn() const
@@ -205,7 +205,7 @@ public:
     }
 
     static std::optional<RPCTrustLine>
-    makeItem(AccountID const& accountID, std::shared_ptr<SLE const> const& sle);
+    makeItem(AccountID const& accountID, SLE::const_ref sle);
 
     static std::vector<RPCTrustLine>
     getItems(AccountID const& accountID, ReadView const& view);

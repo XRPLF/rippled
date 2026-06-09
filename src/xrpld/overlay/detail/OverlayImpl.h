@@ -80,7 +80,7 @@ private:
     };
 
     Application& app_;
-    boost::asio::io_context& io_context_;
+    boost::asio::io_context& ioContext_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
@@ -96,8 +96,8 @@ private:
     hash_map<std::shared_ptr<PeerFinder::Slot>, std::weak_ptr<PeerImp>> peers_;
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& resolver_;
-    std::atomic<Peer::id_t> next_id_;
-    int timer_count_{0};
+    std::atomic<Peer::id_t> nextId_;
+    int timerCount_{0};
     std::atomic<uint64_t> jqTransOverflow_{0};
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
@@ -202,16 +202,16 @@ public:
     findPeerByPublicKey(PublicKey const& pubKey) override;
 
     void
-    broadcast(protocol::TMProposeSet& m) override;
+    broadcast(protocol::TMProposeSet const& m) override;
 
     void
-    broadcast(protocol::TMValidation& m) override;
+    broadcast(protocol::TMValidation const& m) override;
 
     std::set<Peer::id_t>
-    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) override;
+    relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator) override;
 
     std::set<Peer::id_t>
-    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) override;
+    relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator) override;
 
     void
     relay(
@@ -433,7 +433,7 @@ private:
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
         address_type remoteAddress,
-        std::string msg);
+        std::string const& msg);
 
     /** Handles crawl requests. Crawl returns information about the
         node and its peers so crawlers can map the network.

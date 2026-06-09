@@ -15,8 +15,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
-
 namespace xrpl {
 
 std::uint32_t
@@ -48,7 +46,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //       `holderID` is NOT used
     if (!holderID)
     {
-        std::shared_ptr<SLE const> const sleMpt =
+        SLE::const_pointer const sleMpt =
             ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
         // There is an edge case where all holders have zero balance, issuance
@@ -133,8 +131,9 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     // Can't unauthorize the pseudo-accounts because they are implicitly
     // always authorized. No need to amendment gate since Vault and LoanBroker
-    // can only be created if the Vault amendment is enabled.
-    if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID}))
+    // can only be created if the Vault amendment is enabled; AMM with MPToken asset
+    // can only be created if MPTokensV2 is enabled.
+    if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -148,17 +147,14 @@ MPTokenAuthorize::doApply()
         ctx_.view(),
         preFeeBalance_,
         tx[sfMPTokenIssuanceID],
-        account_,
+        accountID_,
         ctx_.journal,
         tx.getFlags(),
         tx[~sfHolder]);
 }
 
 void
-MPTokenAuthorize::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+MPTokenAuthorize::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

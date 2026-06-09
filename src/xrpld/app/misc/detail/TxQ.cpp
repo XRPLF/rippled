@@ -3,12 +3,13 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
@@ -150,7 +151,7 @@ TxQ::FeeMetrics::update(
             // current size limit, use a limit that is
             // 90% of the way from max_element to the
             // current size limit.
-            return (txnsExpected_ * 9 + *iter) / 10;
+            return ((txnsExpected_ * 9) + *iter) / 10;
         }();
         // Ledgers are processing in a timely manner,
         // so keep the limit high, but don't let it
@@ -218,7 +219,7 @@ sumOfFirstSquares(std::size_t xIn)
     // in a ledger, this is the least of our problems.
     if (x >= (1 << 21))
         return {false, std::numeric_limits<std::uint64_t>::max()};
-    return {true, (x * (x + 1) * (2 * x + 1)) / 6};
+    return {true, (x * (x + 1) * ((2 * x) + 1)) / 6};
 }
 
 // Unit tests for sumOfSquares()
@@ -387,7 +388,7 @@ TxQ::canBeHeld(
     STTx const& tx,
     ApplyFlags const flags,
     OpenView const& view,
-    std::shared_ptr<SLE const> const& sleAccount,
+    SLE::const_ref sleAccount,
     AccountMap::iterator const& accountIter,
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock)
@@ -395,7 +396,7 @@ TxQ::canBeHeld(
     // PreviousTxnID is deprecated and should never be used.
     // AccountTxnID is not supported by the transaction
     // queue yet, but should be added in the future.
-    // tapFAIL_HARD transactions are never held
+    // TapFailHard transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
         ((flags & TapFailHard) != 0u))
         return telCAN_NOT_QUEUE;
@@ -1576,7 +1577,7 @@ TxQ::accept(Application& app, OpenView& view)
 //
 // Acquires a lock and calls the implementation.
 SeqProxy
-TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
+TxQ::nextQueuableSeq(SLE::const_ref sleAccount) const
 {
     std::scoped_lock const lock(mutex_);
     return nextQueuableSeqImpl(sleAccount, lock);
@@ -1589,9 +1590,7 @@ TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
 // sequence number, that is not used by a transaction in the queue, must
 // be found and returned.
 SeqProxy
-TxQ::nextQueuableSeqImpl(
-    std::shared_ptr<SLE const> const& sleAccount,
-    std::scoped_lock<std::mutex> const&) const
+TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const
 {
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.
@@ -1874,16 +1873,16 @@ TxQ::Setup
 setupTxQ(Config const& config)
 {
     TxQ::Setup setup;
-    auto const& section = config.section("transaction_queue");
-    set(setup.ledgersInQueue, "ledgers_in_queue", section);
-    set(setup.queueSizeMin, "minimum_queue_size", section);
-    set(setup.retrySequencePercent, "retry_sequence_percent", section);
-    set(setup.minimumEscalationMultiplier, "minimum_escalation_multiplier", section);
-    set(setup.minimumTxnInLedger, "minimum_txn_in_ledger", section);
-    set(setup.minimumTxnInLedgerSA, "minimum_txn_in_ledger_standalone", section);
-    set(setup.targetTxnInLedger, "target_txn_in_ledger", section);
+    auto const& section = config.section(Sections::kTransactionQueue);
+    set(setup.ledgersInQueue, Keys::kLedgersInQueue, section);
+    set(setup.queueSizeMin, Keys::kMinimumQueueSize, section);
+    set(setup.retrySequencePercent, Keys::kRetrySequencePercent, section);
+    set(setup.minimumEscalationMultiplier, Keys::kMinimumEscalationMultiplier, section);
+    set(setup.minimumTxnInLedger, Keys::kMinimumTxnInLedger, section);
+    set(setup.minimumTxnInLedgerSA, Keys::kMinimumTxnInLedgerStandalone, section);
+    set(setup.targetTxnInLedger, Keys::kTargetTxnInLedger, section);
     std::uint32_t max = 0;
-    if (set(max, "maximum_txn_in_ledger", section))
+    if (set(max, Keys::kMaximumTxnInLedger, section))
     {
         if (max < setup.minimumTxnInLedger)
         {
@@ -1911,7 +1910,7 @@ setupTxQ(Config const& config)
        moot. (There are other ways to do that, including
        minimum_txn_in_ledger_.)
     */
-    set(setup.normalConsensusIncreasePercent, "normal_consensus_increase_percent", section);
+    set(setup.normalConsensusIncreasePercent, Keys::kNormalConsensusIncreasePercent, section);
     setup.normalConsensusIncreasePercent =
         std::clamp(setup.normalConsensusIncreasePercent, 0u, 1000u);
 
@@ -1919,11 +1918,11 @@ setupTxQ(Config const& config)
        are nonsensical (uint overflows happen, so the limit grows
        instead of shrinking). 0 is not recommended.
     */
-    set(setup.slowConsensusDecreasePercent, "slow_consensus_decrease_percent", section);
+    set(setup.slowConsensusDecreasePercent, Keys::kSlowConsensusDecreasePercent, section);
     setup.slowConsensusDecreasePercent = std::clamp(setup.slowConsensusDecreasePercent, 0u, 100u);
 
-    set(setup.maximumTxnPerAccount, "maximum_txn_per_account", section);
-    set(setup.minimumLastLedgerBuffer, "minimum_last_ledger_buffer", section);
+    set(setup.maximumTxnPerAccount, Keys::kMaximumTxnPerAccount, section);
+    set(setup.minimumLastLedgerBuffer, Keys::kMinimumLastLedgerBuffer, section);
 
     setup.standAlone = config.standalone();
     return setup;

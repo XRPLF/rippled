@@ -125,6 +125,12 @@ Payment::preflight(PreflightContext const& ctx)
     if (!mpTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
+    // A zero DomainID is invalid for a PermissionedDomain ledger entry because
+    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    if (auto const domainID = tx[~sfDomainID];
+        ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
+        return temMALFORMED;
+
     bool const partialPaymentAllowed = tx.isFlag(tfPartialPayment);
     bool const limitQuality = tx.isFlag(tfLimitQuality);
     bool const defaultPathsAllowed = !tx.isFlag(tfNoRippleDirect);
@@ -410,7 +416,7 @@ Payment::doApply()
     AccountID const dstAccountID(ctx_.tx.getAccountID(sfDestination));
     STAmount const dstAmount(ctx_.tx.getFieldAmount(sfAmount));
     bool const isDstMPT = dstAmount.holds<MPTIssue>();
-    STAmount const maxSourceAmount = getMaxSourceAmount(account_, dstAmount, sendMax);
+    STAmount const maxSourceAmount = getMaxSourceAmount(accountID_, dstAmount, sendMax);
 
     JLOG(j_.trace()) << "maxSourceAmount=" << maxSourceAmount.getFullText()
                      << " dstAmount=" << dstAmount.getFullText();
@@ -453,7 +459,7 @@ Payment::doApply()
         //  2. If Account is deposit preauthorized by destination.
 
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -472,7 +478,7 @@ Payment::doApply()
                 maxSourceAmount,
                 dstAmount,
                 dstAccountID,
-                account_,
+                accountID_,
                 ctx_.tx.getFieldPathSet(sfPaths),
                 ctx_.tx[~sfDomainID],
                 ctx_.registry,
@@ -512,18 +518,18 @@ Payment::doApply()
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();
 
-        if (auto const ter = requireAuth(view(), mptIssue, account_); !isTesSuccess(ter))
+        if (auto const ter = requireAuth(view(), mptIssue, accountID_); !isTesSuccess(ter))
             return ter;
 
         if (auto const ter = requireAuth(view(), mptIssue, dstAccountID); !isTesSuccess(ter))
             return ter;
 
-        if (auto const ter = canTransfer(view(), mptIssue, account_, dstAccountID);
+        if (auto const ter = canTransfer(view(), mptIssue, accountID_, dstAccountID);
             !isTesSuccess(ter))
             return ter;
 
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -532,13 +538,13 @@ Payment::doApply()
         // Transfer rate
         Rate rate{QUALITY_ONE};
         // Payment between the holders
-        if (account_ != issuer && dstAccountID != issuer)
+        if (accountID_ != issuer && dstAccountID != issuer)
         {
             // If globally/individually locked then
             //   - can't send between holders
             //   - holder can send back to issuer
             //   - issuer can send to holder
-            if (isAnyFrozen(view(), {account_, dstAccountID}, mptIssue))
+            if (isAnyFrozen(view(), {accountID_, dstAccountID}, mptIssue))
                 return tecLOCKED;
 
             // Get the rate for a payment between the holders.
@@ -566,7 +572,7 @@ Payment::doApply()
             return tecPATH_PARTIAL;
 
         PaymentSandbox pv(&view());
-        auto res = accountSend(pv, account_, dstAccountID, amountDeliver, ctx_.journal);
+        auto res = accountSend(pv, accountID_, dstAccountID, amountDeliver, ctx_.journal);
         if (isTesSuccess(res))
         {
             pv.apply(ctx_.rawView());
@@ -589,7 +595,7 @@ Payment::doApply()
 
     // Direct XRP payment.
 
-    auto const sleSrc = view().peek(keylet::account(account_));
+    auto const sleSrc = view().peek(keylet::account(accountID_));
     if (!sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -601,10 +607,10 @@ Payment::doApply()
     auto const reserve = view().fees().accountReserve(ownerCount);
 
     // In a delegated payment, the fee payer is the delegated account,
-    // not the source account (account_).
-    bool const accountIsPayer = (ctx_.tx.getFeePayer() == account_);
+    // not the source account (accountID_).
+    bool const accountIsPayer = (ctx_.tx.getFeePayer() == accountID_);
 
-    // preFeeBalance_ is the balance on the source account (account_) BEFORE the fees
+    // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
     // were charged. If source account is the fee payer, it must also cover the fee.
     // The final spend may use the reserve to cover fees.
     auto const minRequiredFunds =
@@ -656,7 +662,7 @@ Payment::doApply()
     if (dstAmount > dstReserve || sleDst->getFieldAmount(sfBalance) > dstReserve)
     {
         if (auto err = verifyDepositPreauth(
-                ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
+                ctx_.tx, ctx_.view(), accountID_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }
@@ -673,10 +679,7 @@ Payment::doApply()
 }
 
 void
-Payment::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+Payment::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
