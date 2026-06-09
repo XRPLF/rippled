@@ -6,6 +6,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/check.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/noop.h>
@@ -836,6 +837,31 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             Ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 2);
+
+        {
+            env(pay(env.master, buyer, XRP(10000)));
+            env.close();
+
+            using namespace ::xrpl::test::jtx::directory;
+            auto const nftDir = keylet::nftBuys(nftAlice0ID);
+            auto const n1 = getIndexCountToBump(env, nftDir);
+            for (auto i = 1; i <= n1; ++i)
+                env(token::createOffer(buyer, nftAlice0ID, gwAUD(i)), token::Owner(alice));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), nftDir, adjustOwnerNode));
+
+            env(token::createOffer(buyer, nftAlice0ID, gwAUD(1)),
+                token::Owner(alice),
+                Ter(tecDIR_FULL));
+
+            auto const buyerDir = keylet::ownerDir(buyer.id());
+            auto const n = getIndexCountToBump(env, buyerDir);
+            env(ticket::create(buyer, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), buyerDir, adjustOwnerNode));
+
+            env(token::createOffer(buyer, nftAlice0ID, gwAUD(1)),
+                token::Owner(alice),
+                Ter(tecDIR_FULL));
+        }
     }
 
     void

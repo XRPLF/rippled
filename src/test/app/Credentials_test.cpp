@@ -536,16 +536,18 @@ struct Credentials_test : public beast::unit_test::Suite
             {
                 testcase("Credentials fail, directory full");
                 std::uint32_t const issuerSeq{env.seq(issuer) + 1};
-                env(ticket::create(issuer, 63));
-                env.close();
 
+                auto const issuerDir = keylet::ownerDir(issuer.id());
+                auto const n1 = directory::getIndexCountToBump(env, issuerDir);
+                env(ticket::create(issuer, n1));
+                env.close();
                 // Everything below can only be tested on open ledger.
-                auto const res1 = directory::bumpLastPage(
-                    env,
-                    directory::maximumPageIndex(env),
-                    keylet::ownerDir(issuer.id()),
-                    directory::adjustOwnerNode);
-                BEAST_EXPECT(res1);
+                BEAST_EXPECT(
+                    directory::bumpLastPage(
+                        env,
+                        directory::maximumPageIndex(env),
+                        issuerDir,
+                        directory::adjustOwnerNode));
 
                 // NOLINTNEXTLINE(readability-suspicious-call-argument)
                 auto const jv = credentials::create(issuer, subject, credType);
@@ -553,14 +555,15 @@ struct Credentials_test : public beast::unit_test::Suite
                 // Free one directory entry by using a ticket
                 env(noop(issuer), ticket::Use(issuerSeq + 40));
 
-                // Fill subject directory
-                env(ticket::create(subject, 63));
-                auto const res2 = directory::bumpLastPage(
-                    env,
-                    directory::maximumPageIndex(env),
-                    keylet::ownerDir(subject.id()),
-                    directory::adjustOwnerNode);
-                BEAST_EXPECT(res2);
+                auto const subjectDir = keylet::ownerDir(subject.id());
+                auto const n2 = directory::getIndexCountToBump(env, subjectDir);
+                env(ticket::create(subject, n2));
+                BEAST_EXPECT(
+                    directory::bumpLastPage(
+                        env,
+                        directory::maximumPageIndex(env),
+                        subjectDir,
+                        directory::adjustOwnerNode));
                 env(jv, Ter(tecDIR_FULL));
 
                 // End test

@@ -587,7 +587,7 @@ OfferCreate::applyHybrid(
     if (!bookNode)
     {
         JLOG(j_.debug()) << "final result: failed to add hybrid offer to open book";
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
+        return tecDIR_FULL;
     }
 
     STArray bookArr(sfAdditionalBooks, 1);
@@ -861,10 +861,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     if (!ownerNode)
     {
-        // LCOV_EXCL_START
         JLOG(j_.debug()) << "final result: failed to add offer to owner's directory";
         return {tecDIR_FULL, true};
-        // LCOV_EXCL_STOP
     }
 
     // Update owner count.
@@ -915,10 +913,8 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     if (!bookNode)
     {
-        // LCOV_EXCL_START
         JLOG(j_.debug()) << "final result: failed to add offer to book";
         return {tecDIR_FULL, true};
-        // LCOV_EXCL_STOP
     }
 
     auto sleOffer = std::make_shared<SLE>(offerIndex);

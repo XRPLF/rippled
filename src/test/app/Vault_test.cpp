@@ -6,6 +6,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -1344,6 +1345,28 @@ class Vault_test : public beast::unit_test::Suite
                 {
                     auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
                     env(tx, Ter(terNO_ACCOUNT));
+                    env.close();
+                }
+            }
+
+            {
+                testcase("IOU dir full");
+                Env env{*this, testableAmendments() | featureSingleAssetVault};
+                Account const bob{"issuer"};
+                env.fund(XRP(10000), bob);
+                env.close();
+
+                using namespace ::xrpl::test::jtx::directory;
+                auto const bobDir = keylet::ownerDir(bob.id());
+                auto const n = getIndexCountToBump(env, bobDir);
+                env(ticket::create(bob, n));
+                BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+                Vault const vault{env};
+                Asset const asset = bob["IOU"].asset();
+                {
+                    auto [tx, keylet] = vault.create({.owner = bob, .asset = asset});
+                    env(tx, Ter(tecDIR_FULL));
                     env.close();
                 }
             }

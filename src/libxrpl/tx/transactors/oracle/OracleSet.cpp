@@ -313,7 +313,7 @@ OracleSet::doApply()
         auto page = ctx_.view().dirInsert(
             keylet::ownerDir(accountID_), sle->key(), describeOwnerDir(accountID_));
         if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+            return tecDIR_FULL;
 
         (*sle)[sfOwnerNode] = *page;
 

@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
@@ -13,6 +14,7 @@
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -383,6 +385,25 @@ private:
             Oracle const oracle1(
                 env, {.owner = owner, .fee = static_cast<int>(env.current()->fees().base.drops())});
             oracle.set(UpdateArg{.owner = owner, .fee = -1, .err = Ter(temBAD_FEE)});
+        }
+        {
+            Env env(*this);
+            env.fund(XRP(10000), owner);
+
+            CreateArg const arg{
+                .owner = owner,
+                .fee = static_cast<int>(env.current()->fees().base.drops()),
+                .err = Ter(tecDIR_FULL)};
+            // Oracle closes env, which reverts changes made in bumpLastPage
+            Oracle oracle1(env, arg, false);
+
+            using namespace ::xrpl::test::jtx::directory;
+            auto const ownerDir = keylet::ownerDir(owner.id());
+            auto const n = getIndexCountToBump(env, ownerDir);
+            env(ticket::create(owner, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), ownerDir, adjustOwnerNode));
+
+            oracle1.set(arg);
         }
     }
 

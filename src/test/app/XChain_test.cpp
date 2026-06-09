@@ -3,6 +3,7 @@
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/attester.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -10,6 +11,7 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/regkey.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/xchain_bridge.h>
@@ -515,6 +517,18 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         XEnv(*this)
             .disableFeature(featureXChainBridge)
             .tx(createBridge(mcAlice, jvb), Ter(temDISABLED));
+
+        {
+            XEnv xenv(*this, true);
+            using namespace ::xrpl::test::jtx::directory;
+            auto const masterDir = keylet::ownerDir(Account::kMaster.id());
+            auto n = getIndexCountToBump(xenv.env, masterDir);
+            xenv.tx(ticket::create(Account::kMaster, n));
+            BEAST_EXPECT(
+                bumpLastPage(xenv.env, maximumPageIndex(xenv.env), masterDir, adjustOwnerNode));
+
+            xenv.tx(createBridge(Account::kMaster, jvb), Ter(tecDIR_FULL));
+        }
     }
 
     void
@@ -1261,6 +1275,20 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             .close()
             .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice), Ter(temDISABLED))
             .close();
+
+        {
+            XEnv xenv(*this, true);
+            using namespace ::xrpl::test::jtx::directory;
+            auto const aliceDir = keylet::ownerDir(scAlice.id());
+            auto const n = getIndexCountToBump(xenv.env, aliceDir);
+            xenv.tx(ticket::create(scAlice, n));
+            BEAST_EXPECT(
+                bumpLastPage(xenv.env, maximumPageIndex(xenv.env), aliceDir, adjustOwnerNode));
+
+            xenv.tx(createBridge(Account::kMaster, jvb))
+                .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice), Ter(tecDIR_FULL))
+                .close();
+        }
     }
 
     void
@@ -1861,6 +1889,44 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
                 BEAST_EXPECT(!scEnv.caClaimID(jvb, 3));    // claim id 3 deleted
                 BEAST_EXPECT(scEnv.claimCount(jvb) == 3);  // claim count now 3
+            }
+        }
+
+        {
+            XEnv mcEnv(*this);
+            XEnv scEnv(*this, true);
+            auto const amt = XRP(1000);
+            auto const amtPlusReward = amt + reward;
+
+            {
+                Balance const door(mcEnv, mcDoor);
+                Balance const carol(mcEnv, mcCarol);
+
+                mcEnv.tx(createBridge(mcDoor, jvb, reward, XRP(20)))
+                    .close()
+                    .tx(sidechainXchainAccountCreate(mcAlice, jvb, scuAlice, amt, reward))
+                    .tx(sidechainXchainAccountCreate(mcBob, jvb, scuBob, amt, reward))
+                    .tx(sidechainXchainAccountCreate(mcCarol, jvb, scuCarol, amt, reward))
+                    .close();
+
+                BEAST_EXPECT(
+                    door.diff() == (multiply(amtPlusReward, STAmount(3), xrpIssue()) - txFee()));
+                BEAST_EXPECT(carol.diff() == -(amt + reward + txFee()));
+            }
+
+            scEnv.tx(createBridge(Account::kMaster, jvb, reward, XRP(20)))
+                .tx(jtx::signers(Account::kMaster, quorum, signers))
+                .close();
+
+            {
+                using namespace ::xrpl::test::jtx::directory;
+                auto const masterDir = keylet::ownerDir(Account::kMaster.id());
+                auto const n = getIndexCountToBump(scEnv.env, masterDir);
+                scEnv.tx(ticket::create(Account::kMaster, n));
+                BEAST_EXPECT(bumpLastPage(
+                    scEnv.env, maximumPageIndex(scEnv.env), masterDir, adjustOwnerNode));
+
+                scEnv.multiTx(attCreateAcctVec(1, amt, scuAlice, 2), Ter(tecDIR_FULL)).close();
             }
         }
 

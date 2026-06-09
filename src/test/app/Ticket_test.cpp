@@ -4,6 +4,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/deposit.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/noop.h>
@@ -23,6 +24,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Seed.h>
@@ -841,6 +843,29 @@ class Ticket_test : public beast::unit_test::Suite
     }
 
     void
+    testDirectoryFull()
+    {
+        testcase("Directory full");
+
+        using namespace test::jtx;
+        using namespace ::xrpl::test::jtx::directory;
+
+        Env env{*this, testableAmendments()};
+        Account const alice{"alice"};
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto const aliceDir = keylet::ownerDir(alice.id());
+        auto const n1 = getIndexCountToBump(env, aliceDir);
+        env(ticket::create(alice, n1));
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+
+        env(ticket::create(alice, 1), Ter(tecDIR_FULL));
+        env.close();
+    }
+
+    void
     testFixBothSeqAndTicket()
     {
         using namespace test::jtx;
@@ -877,6 +902,7 @@ public:
     void
     run() override
     {
+        testDirectoryFull();
         testTicketCreatePreflightFail();
         testTicketCreatePreclaimFail();
         testTicketInsufficientReserve();

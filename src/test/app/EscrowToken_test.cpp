@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/directory.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -10,6 +11,7 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
@@ -2835,6 +2837,46 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kFulfillment(escrow::kFb1),
                 Fee(baseFee * 150),
                 Ter(tesSUCCESS));
+            env.close();
+        }
+
+        // tecDir_FULL: bob submits; directory full
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            env.fund(XRP(10'000), bob);
+            env.close();
+
+            MPTTester mptGw(env, gw, {.holders = {alice}});
+            mptGw.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(escrow::create(alice, bob, mpt(10)),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFinishTime(env.now() + 1s),
+                Fee(baseFee * 150),
+                Ter(tesSUCCESS));
+            env.close();
+
+            using namespace ::xrpl::test::jtx::directory;
+            auto const bobDir = keylet::ownerDir(bob.id());
+            auto const n = getIndexCountToBump(env, bobDir);
+            env(ticket::create(bob, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+            env(escrow::finish(bob, alice, seq1),
+                escrow::kCondition(escrow::kCb1),
+                escrow::kFulfillment(escrow::kFb1),
+                Fee(baseFee * 150),
+                Ter(tecDIR_FULL));
             env.close();
         }
 

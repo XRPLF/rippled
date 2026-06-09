@@ -4,6 +4,7 @@
 #include <test/jtx/JTx.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -156,7 +157,7 @@ public:
         using namespace jtx;
         Env env{*this, features};
         Account const alice{"alice", KeyType::Ed25519};
-        env.fund(XRP(1000), alice);
+        env.fund(XRP(10000), alice);
         env.close();
 
         // Add alice as a multisigner for herself.  Should fail.
@@ -219,6 +220,13 @@ public:
         // clang-format on
         env.close();
         env.require(Owners(alice, 0));
+
+        using namespace ::xrpl::test::jtx::directory;
+        auto const aliceDir = keylet::ownerDir(alice.id());
+        auto const n2 = getIndexCountToBump(env, aliceDir);
+        env(ticket::create(alice, n2));
+        BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), aliceDir, adjustOwnerNode));
+        env(signers(alice, 1, {{bogie_, 1}, {demon_, 1}}), Ter(tecDIR_FULL));
     }
 
     void

@@ -4,12 +4,17 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/deposit.h>
+#include <test/jtx/directory.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -67,9 +72,11 @@ public:
         Account const alice{"alice"};
         Account const becky{"becky"};
         Account const carol{"carol"};
+        Account const bob("bob");
 
         Env env(*this);
         env.fund(XRP(1000), alice, becky, carol);
+        env.fund(XRP(10000), bob);
         env.close();
 
         // becky is authorized to deposit to herself.
@@ -112,6 +119,16 @@ public:
                 "deposit_authorized",
                 depositAuthArgs(becky, alice, "current").toStyledString()),
             true);
+
+        {
+            using namespace ::xrpl::test::jtx::directory;
+            auto const bobDir = keylet::ownerDir(bob.id());
+            auto const n = getIndexCountToBump(env, bobDir);
+            env(ticket::create(bob, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+            env(deposit::auth(bob, alice), Ter(tecDIR_FULL));
+        }
 
         // becky creates a deposit authorization for alice.
         env(deposit::auth(becky, alice));
@@ -307,9 +324,11 @@ public:
         Account const becky{"becky"};
         Account const diana{"diana"};
         Account const carol{"carol"};
+        Account const bob("bob");
 
         Env env(*this);
         env.fund(XRP(1000), alice, becky, carol, diana);
+        env.fund(XRP(10000), bob);
         env.close();
 
         // carol recognize alice
@@ -322,6 +341,16 @@ public:
         // becky sets the DepositAuth flag in the current ledger.
         env(fset(becky, asfDepositAuth));
         env.close();
+
+        {
+            using namespace ::xrpl::test::jtx::directory;
+            auto const bobDir = keylet::ownerDir(bob.id());
+            auto const n = getIndexCountToBump(env, bobDir);
+            env(ticket::create(bob, n));
+            BEAST_EXPECT(bumpLastPage(env, maximumPageIndex(env), bobDir, adjustOwnerNode));
+
+            env(deposit::authCredentials(bob, {{carol, credType}}), Ter(tecDIR_FULL));
+        }
 
         // becky authorize any account recognized by carol to make a payment
         env(deposit::authCredentials(becky, {{.issuer = carol, .credType = credType}}));

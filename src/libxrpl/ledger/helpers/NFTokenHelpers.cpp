@@ -12,6 +12,7 @@
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -943,7 +944,7 @@ tokenOfferCreateApply(
             view.dirInsert(keylet::ownerDir(acctID), offerID, describeOwnerDir(acctID));
 
         if (!ownerNode)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+            return tecDIR_FULL;
 
         bool const isSellOffer = (txFlags & tfSellNFToken) != 0u;
 
@@ -958,7 +959,7 @@ tokenOfferCreateApply(
             });
 
         if (!offerNode)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+            return tecDIR_FULL;
 
         std::uint32_t sleFlags = 0;
 
