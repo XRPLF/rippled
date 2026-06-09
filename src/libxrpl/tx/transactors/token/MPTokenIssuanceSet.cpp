@@ -41,35 +41,34 @@ MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
     return tfMPTokenIssuanceSetMask;
 }
 
-// Maps set/clear mutable flags in an MPTokenIssuanceSet transaction to the
-// corresponding ledger mutable flags that control whether the change is
-// allowed.
+// Maps each MPTokenIssuanceSet MutableFlags to the corresponding mutable
+// flag and the target ledger flag to mutate.
 struct MPTMutabilityFlags
 {
     std::uint32_t setFlag;
-    std::uint32_t clearFlag;
     std::uint32_t canMutateFlag;
+    std::uint32_t ledgerFlag;
 };
 
 static constexpr std::array<MPTMutabilityFlags, 6> kMptMutabilityFlags = {
     {{.setFlag = tmfMPTSetCanLock,
-      .clearFlag = tmfMPTClearCanLock,
-      .canMutateFlag = lsmfMPTCanMutateCanLock},
+      .canMutateFlag = lsmfMPTCanMutateCanLock,
+      .ledgerFlag = lsfMPTCanLock},
      {.setFlag = tmfMPTSetRequireAuth,
-      .clearFlag = tmfMPTClearRequireAuth,
-      .canMutateFlag = lsmfMPTCanMutateRequireAuth},
+      .canMutateFlag = lsmfMPTCanMutateRequireAuth,
+      .ledgerFlag = lsfMPTRequireAuth},
      {.setFlag = tmfMPTSetCanEscrow,
-      .clearFlag = tmfMPTClearCanEscrow,
-      .canMutateFlag = lsmfMPTCanMutateCanEscrow},
+      .canMutateFlag = lsmfMPTCanMutateCanEscrow,
+      .ledgerFlag = lsfMPTCanEscrow},
      {.setFlag = tmfMPTSetCanTrade,
-      .clearFlag = tmfMPTClearCanTrade,
-      .canMutateFlag = lsmfMPTCanMutateCanTrade},
+      .canMutateFlag = lsmfMPTCanMutateCanTrade,
+      .ledgerFlag = lsfMPTCanTrade},
      {.setFlag = tmfMPTSetCanTransfer,
-      .clearFlag = tmfMPTClearCanTransfer,
-      .canMutateFlag = lsmfMPTCanMutateCanTransfer},
+      .canMutateFlag = lsmfMPTCanMutateCanTransfer,
+      .ledgerFlag = lsfMPTCanTransfer},
      {.setFlag = tmfMPTSetCanClawback,
-      .clearFlag = tmfMPTClearCanClawback,
-      .canMutateFlag = lsmfMPTCanMutateCanClawback}}};
+      .canMutateFlag = lsmfMPTCanMutateCanClawback,
+      .ledgerFlag = lsfMPTCanClawback}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -121,17 +120,6 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         {
             if ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceSetMutableMask) != 0u))
                 return temINVALID_FLAG;
-
-            // Can not set and clear the same flag
-            if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags](auto const& f) {
-                    return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
-                }))
-                return temINVALID_FLAG;
-
-            // Trying to set a non-zero TransferFee and clear MPTCanTransfer
-            // in the same transaction is not allowed.
-            if ((transferFee.value_or(0) != 0u) && ((*mutableFlags & tmfMPTClearCanTransfer) != 0u))
-                return temMALFORMED;
         }
     }
 
@@ -232,15 +220,8 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
     {
         if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
-                return !isMutableFlag(f.canMutateFlag) &&
-                    ((*mutableFlags & (f.setFlag | f.clearFlag)));
+                return !isMutableFlag(f.canMutateFlag) && ((*mutableFlags & f.setFlag) != 0u);
             }))
-            return tecNO_PERMISSION;
-
-        // Clearing lsfMPTRequireAuth is invalid when the issuance already has
-        // a DomainID set, because a DomainID requires RequireAuth to be active.
-        if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u &&
-            sleMptIssuance->isFieldPresent(sfDomainID))
             return tecNO_PERMISSION;
     }
 
@@ -301,19 +282,8 @@ MPTokenIssuanceSet::doApply()
         {
             if ((mutableFlags & f.setFlag) != 0u)
             {
-                flagsOut |= f.canMutateFlag;
+                flagsOut |= f.ledgerFlag;
             }
-            else if ((mutableFlags & f.clearFlag) != 0u)
-            {
-                flagsOut &= ~f.canMutateFlag;
-            }
-        }
-
-        if ((mutableFlags & tmfMPTClearCanTransfer) != 0u)
-        {
-            // If the lsfMPTCanTransfer flag is being cleared, then also clear
-            // the TransferFee field.
-            sle->makeFieldAbsent(sfTransferFee);
         }
     }
 

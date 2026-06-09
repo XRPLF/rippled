@@ -28,6 +28,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -39,6 +40,21 @@
 #include <vector>
 
 namespace xrpl::test::jtx {
+
+struct MPTSetFlagMapping
+{
+    std::uint32_t setFlag;
+    std::uint32_t ledgerFlag;
+};
+
+static constexpr std::array<MPTSetFlagMapping, 6> mptSetFlagMappings = {{
+    {tmfMPTSetCanLock, lsfMPTCanLock},
+    {tmfMPTSetRequireAuth, lsfMPTRequireAuth},
+    {tmfMPTSetCanEscrow, lsfMPTCanEscrow},
+    {tmfMPTSetCanClawback, lsfMPTCanClawback},
+    {tmfMPTSetCanTrade, lsfMPTCanTrade},
+    {tmfMPTSetCanTransfer, lsfMPTCanTransfer},
+}};
 
 void
 MptFlags::operator()(Env& env) const
@@ -424,59 +440,9 @@ MPTTester::set(MPTSet const& arg)
 
                 if (arg.mutableFlags)
                 {
-                    if (*arg.mutableFlags & tmfMPTSetCanLock)
-                    {
-                        flags |= lsfMPTCanLock;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanLock)
-                    {
-                        flags &= ~lsfMPTCanLock;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetRequireAuth)
-                    {
-                        flags |= lsfMPTRequireAuth;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearRequireAuth)
-                    {
-                        flags &= ~lsfMPTRequireAuth;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetCanEscrow)
-                    {
-                        flags |= lsfMPTCanEscrow;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanEscrow)
-                    {
-                        flags &= ~lsfMPTCanEscrow;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetCanClawback)
-                    {
-                        flags |= lsfMPTCanClawback;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanClawback)
-                    {
-                        flags &= ~lsfMPTCanClawback;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetCanTrade)
-                    {
-                        flags |= lsfMPTCanTrade;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanTrade)
-                    {
-                        flags &= ~lsfMPTCanTrade;
-                    }
-
-                    if (*arg.mutableFlags & tmfMPTSetCanTransfer)
-                    {
-                        flags |= lsfMPTCanTransfer;
-                    }
-                    else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
-                    {
-                        flags &= ~lsfMPTCanTransfer;
-                    }
+                    for (auto const& [setFlag, ledgerFlag] : mptSetFlagMappings)
+                        if ((*arg.mutableFlags & setFlag) != 0u)
+                            flags |= ledgerFlag;
                 }
             }
             env_.require(MptFlags(*this, flags, holder));
