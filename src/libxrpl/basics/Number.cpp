@@ -31,7 +31,45 @@ namespace xrpl {
 
 thread_local Number::RoundingMode Number::mode = Number::RoundingMode::ToNearest;
 thread_local std::reference_wrapper<MantissaRange const> Number::kRange =
-    MantissaRange::getMantissaRange(MantissaRange::MantissaScale::Large);
+    MantissaRange::getMantissaRange(MantissaRange::MantissaScale::Large330);
+
+std::string
+to_string(MantissaRange::MantissaScale const& scale)
+{
+    switch (scale)
+    {
+        case MantissaRange::MantissaScale::Small:
+            return "Small";
+        case MantissaRange::MantissaScale::LargeLegacy:
+            return "LargeLegacy";
+        case MantissaRange::MantissaScale::Large320:
+            return "Large320";
+        case MantissaRange::MantissaScale::Large330:
+            return "Large330";
+        default:
+            throw std::runtime_error("Bad scale");
+    }
+}
+
+std::string
+to_string(Number::RoundingMode const& round)
+{
+    switch (round)
+    {
+        enum class RoundingMode { ToNearest, TowardsZero, Downward, Upward };
+
+        case Number::RoundingMode::ToNearest:
+            return "ToNearest";
+        case Number::RoundingMode::TowardsZero:
+            return "TowardsZero";
+        case Number::RoundingMode::Downward:
+            return "Downward";
+        case Number::RoundingMode::Upward:
+            return "Upward";
+        default:
+            throw std::runtime_error("Bad rounding mode");
+    }
+}
 
 std::set<MantissaRange::MantissaScale> const&
 MantissaRange::getAllScales()
@@ -39,8 +77,8 @@ MantissaRange::getAllScales()
     static std::set<MantissaRange::MantissaScale> const kScales = {
         MantissaRange::MantissaScale::Small,
         MantissaRange::MantissaScale::LargeLegacy,
-        MantissaRange::MantissaScale::Large3_2_0,
-        MantissaRange::MantissaScale::Large,
+        MantissaRange::MantissaScale::Large320,
+        MantissaRange::MantissaScale::Large330,
     };
     return kScales;
 }
@@ -81,25 +119,25 @@ MantissaRange::getRanges()
         }
         {
             [[maybe_unused]]
-            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large3_2_0};
+            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large320};
             static_assert(isPowerOfTen(kRange.min));
             static_assert(kRange.min == 1'000'000'000'000'000'000ULL);
             static_assert(kRange.max == rep(9'999'999'999'999'999'999ULL));
             static_assert(kRange.log == 18);
             static_assert(kRange.min < Number::kMaxRep);
             static_assert(kRange.max > Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled3_2_0);
+            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled320);
         }
         {
             [[maybe_unused]]
-            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large};
+            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large330};
             static_assert(isPowerOfTen(kRange.min));
             static_assert(kRange.min == 1'000'000'000'000'000'000ULL);
             static_assert(kRange.max == rep(9'999'999'999'999'999'999ULL));
             static_assert(kRange.log == 18);
             static_assert(kRange.min < Number::kMaxRep);
             static_assert(kRange.max > Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled);
+            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled330);
         }
         return map;
     }();
@@ -405,7 +443,7 @@ Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
-    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled && empty())
+    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 && empty())
     {
         // No remainder
         return Round::Exact;
@@ -544,7 +582,7 @@ Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent)
     // Do not pushOverflow here.
 
     auto r = round();
-    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled)
+    if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330)
     {
         // If there was any remainder, subtract 1 from the result. This is sufficient to get the
         // best rounding.
@@ -891,7 +929,7 @@ Number::operator+=(Number const& y)
             xe = ye;
             xn = yn;
         }
-        if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled)
+        if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330)
         {
             // Grow xm/xe and pull digits out of the Guard until it's a little bit larger than
             // maxMantissa, so that normalize will have enough information to make an accurate

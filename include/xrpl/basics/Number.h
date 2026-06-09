@@ -130,16 +130,16 @@ struct MantissaRange final
         Small,
         // LargeLegacy can be removed when fixCleanup3_2_0 is retired
         LargeLegacy,
-        // Large3_2_0 can be removed when fixCleanup3_3_0 is retired
-        Large3_2_0,
-        Large,
+        // Large320 can be removed when fixCleanup3_3_0 is retired
+        Large320,
+        Large330,
     };
 
     // This entire enum can be removed when fixCleanup3_2_0 is retired
     enum class CuspRoundingFix : std::uint8_t {
         Disabled = 0,
-        Enabled3_2_0 = 1,
-        Enabled = 2,
+        Enabled320 = 1,
+        Enabled330 = 2,
     };
 
     explicit constexpr MantissaRange(MantissaScale sc) : scale(sc)
@@ -167,8 +167,8 @@ private:
             case MantissaScale::Small:
                 return 15;
             case MantissaScale::LargeLegacy:
-            case MantissaScale::Large3_2_0:
-            case MantissaScale::Large:
+            case MantissaScale::Large320:
+            case MantissaScale::Large330:
                 return 18;
             // LCOV_EXCL_START
             default:
@@ -197,10 +197,10 @@ private:
             case MantissaScale::Small:
             case MantissaScale::LargeLegacy:
                 return CuspRoundingFix::Disabled;
-            case MantissaScale::Large3_2_0:
-                return CuspRoundingFix::Enabled3_2_0;
-            case MantissaScale::Large:
-                return CuspRoundingFix::Enabled;
+            case MantissaScale::Large320:
+                return CuspRoundingFix::Enabled320;
+            case MantissaScale::Large330:
+                return CuspRoundingFix::Enabled330;
             default:
                 // If called in a constexpr context, this throw assures that the build fails if an
                 // invalid scale is used.
@@ -876,43 +876,11 @@ squelch(Number const& x, Number const& limit) noexcept
     return x;
 }
 
-inline std::string
-to_string(MantissaRange::MantissaScale const& scale)
-{
-    switch (scale)
-    {
-        case MantissaRange::MantissaScale::Small:
-            return "Small";
-        case MantissaRange::MantissaScale::LargeLegacy:
-            return "LargeLegacy";
-        case MantissaRange::MantissaScale::Large3_2_0:
-            return "Large320";
-        case MantissaRange::MantissaScale::Large:
-            return "Large";
-        default:
-            throw std::runtime_error("Bad scale");
-    }
-}
+std::string
+to_string(MantissaRange::MantissaScale const& scale);
 
-inline std::string
-to_string(Number::RoundingMode const& round)
-{
-    switch (round)
-    {
-        enum class RoundingMode { ToNearest, TowardsZero, Downward, Upward };
-
-        case Number::RoundingMode::ToNearest:
-            return "ToNearest";
-        case Number::RoundingMode::TowardsZero:
-            return "TowardsZero";
-        case Number::RoundingMode::Downward:
-            return "Downward";
-        case Number::RoundingMode::Upward:
-            return "Upward";
-        default:
-            throw std::runtime_error("Bad rounding mode");
-    }
-}
+std::string
+to_string(Number::RoundingMode const& round);
 
 class SaveNumberRoundMode
 {
