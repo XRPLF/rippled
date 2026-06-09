@@ -27,7 +27,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <set>
 #include <utility>
@@ -379,10 +378,7 @@ AMMBid::doApply()
 }
 
 void
-AMMBid::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMBid::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

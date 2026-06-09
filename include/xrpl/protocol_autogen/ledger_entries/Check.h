@@ -33,7 +33,7 @@ public:
      * @brief Construct a Check ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Check(std::shared_ptr<SLE const> sle)
+    explicit Check(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -269,7 +269,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    CheckBuilder(std::shared_ptr<SLE const> sle)
+    CheckBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltCHECK)
         {

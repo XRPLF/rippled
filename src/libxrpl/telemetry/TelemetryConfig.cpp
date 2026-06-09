@@ -74,7 +74,7 @@ setupTelemetry(
     setup.traceTransactions = section.valueOr<int>("trace_transactions", 1) != 0;
     setup.traceConsensus = section.valueOr<int>("trace_consensus", 1) != 0;
     setup.traceRpc = section.valueOr<int>("trace_rpc", 1) != 0;
-    setup.tracePeer = section.valueOr<int>("trace_peer", 0) != 0;
+    setup.tracePeer = section.valueOr<int>("trace_peer", 1) != 0;
     setup.traceLedger = section.valueOr<int>("trace_ledger", 1) != 0;
 
     setup.consensusTraceStrategy =
