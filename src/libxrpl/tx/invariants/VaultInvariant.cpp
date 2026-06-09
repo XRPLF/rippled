@@ -5,7 +5,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -525,9 +524,8 @@ ValidVault::finalize(
     }();
 
     if (!beforeShares &&
-        (tx.getTxnType() == ttVAULT_DEPOSIT ||   //
-         tx.getTxnType() == ttVAULT_WITHDRAW ||  //
-         tx.getTxnType() == ttVAULT_CLAWBACK))
+        (tx.getTxnType() == ttVAULT_DEPOSIT ||  //
+         tx.getTxnType() == ttVAULT_WITHDRAW))
     {
         JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
                            "without updating shares";
@@ -545,10 +543,12 @@ ValidVault::finalize(
         switch (txnType)
         {
             case ttVAULT_CREATE:
+            case ttVAULT_CLAWBACK:
             case ttLOAN_SET:
             case ttLOAN_MANAGE:
             case ttLOAN_PAY:
                 // Create-specific checks live in VaultCreate::finalizeInvariants.
+                // Clawback-specific checks live in VaultClawback::finalizeInvariants.
                 // Loan checks are TBD.
                 return true;
             case ttVAULT_SET: {
@@ -899,101 +899,6 @@ ValidVault::finalize(
 
                 return result;
             }
-            case ttVAULT_CLAWBACK: {
-                bool result = true;
-
-                XRPL_ASSERT(
-                    !beforeVault_.empty(), "xrpl::ValidVault::finalize : clawback updated a vault");
-                auto const& beforeVault = beforeVault_[0];
-
-                if (vaultAsset.native() || vaultAsset.getIssuer() != tx[sfAccount])
-                {
-                    // The owner can use clawback to force-burn shares when the
-                    // vault is empty but there are outstanding shares
-                    if (!(beforeShares && beforeShares->sharesTotal > 0 &&
-                          isVaultEmpty(beforeVault) && beforeVault.owner == tx[sfAccount]))
-                    {
-                        JLOG(j.fatal()) << "Invariant failed: " <<  //
-                            "clawback may only be performed by the asset issuer, or by the vault "
-                            "owner of an empty vault";
-                        return false;  // That's all we can do
-                    }
-                }
-
-                auto const maybeVaultDeltaAssets = deltaAssets(afterVault.pseudoId);
-                if (maybeVaultDeltaAssets)
-                {
-                    auto const minScale =
-                        computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
-                    auto const vaultDeltaAssets =
-                        roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
-                    if (vaultDeltaAssets >= kZero)
-                    {
-                        JLOG(j.fatal()) << "Invariant failed: clawback must decrease vault balance";
-                        result = false;
-                    }
-
-                    auto const assetsTotalDelta = roundToAsset(
-                        vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                    if (assetsTotalDelta != vaultDeltaAssets)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: clawback and assets outstanding must add up";
-                        result = false;
-                    }
-
-                    auto const assetAvailableDelta = roundToAsset(
-                        vaultAsset,
-                        afterVault.assetsAvailable - beforeVault.assetsAvailable,
-                        minScale);
-                    if (assetAvailableDelta != vaultDeltaAssets)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: clawback and assets available must add up";
-                        result = false;
-                    }
-                }
-                else if (!isVaultEmpty(beforeVault))
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must change vault balance";
-                    return false;  // That's all we can do
-                }
-
-                // We don't need to round shares, they are integral MPT
-                auto const maybeAccountDeltaShares = deltaShares(tx[sfHolder]);
-                if (!maybeAccountDeltaShares)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must change holder shares";
-                    return false;  // That's all we can do
-                }
-                if (maybeAccountDeltaShares->delta >= kZero)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must decrease holder shares";
-                    result = false;
-                }
-
-                // We don't need to round shares, they are integral MPT
-                auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!vaultDeltaShares || vaultDeltaShares->delta == kZero)
-                {
-                    JLOG(j.fatal()) <<  //
-                        "Invariant failed: clawback must change vault shares";
-                    return false;  // That's all we can do
-                }
-
-                if (vaultDeltaShares->delta * -1 != maybeAccountDeltaShares->delta)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: " <<  //
-                        "clawback must change holder and vault shares by equal amount";
-                    result = false;
-                }
-
-                return result;
-            }
-
             default:
                 // LCOV_EXCL_START
                 UNREACHABLE("xrpl::ValidVault::finalize : unknown transaction type");

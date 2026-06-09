@@ -25,6 +25,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/invariants/VaultInvariantData.h>
 
 #include <optional>
 #include <stdexcept>
@@ -451,20 +452,168 @@ VaultClawback::doApply()
 }
 
 void
-VaultClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultClawback::visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // No transaction-specific invariants yet (future work).
+    data_.visitEntry(isDelete, before, after);
 }
 
 bool
 VaultClawback::finalizeInvariants(
-    STTx const&,
-    TER,
+    STTx const& tx,
+    TER result,
     XRPAmount,
-    ReadView const&,
-    beast::Journal const&)
+    ReadView const& view,
+    beast::Journal const& j)
 {
-    // No transaction-specific invariants yet (future work).
+    static constexpr Number kZero{};
+    bool const enforce = view.rules().enabled(featureSingleAssetVault);
+
+    if (!isTesSuccess(result))
+        return true;  // Do not perform checks
+
+    auto const& afterVaults = data_.afterVaults();
+    if (afterVaults.empty())
+        return true;
+
+    auto const& afterVault = afterVaults[0];
+    auto const& vaultAsset = afterVault.asset;
+
+    auto const& beforeVaults = data_.beforeVaults();
+    XRPL_ASSERT(
+        !beforeVaults.empty(),
+        "xrpl::VaultClawback::finalizeInvariants : clawback updated a vault");
+    auto const& beforeVault = beforeVaults[0];
+
+    // Retrieve the before-shares for this vault (from beforeMPTs_).
+    auto const beforeShares = [&]() -> std::optional<VaultInvariantData::Shares> {
+        for (auto const& e : data_.beforeMPTIssuances())
+        {
+            if (e.share.getMptID() == beforeVault.shareMPTID)
+                return e;
+        }
+        return std::nullopt;
+    }();
+
+    auto const isVaultEmpty = [](VaultInvariantData::Vault const& v) -> bool {
+        return v.assetsAvailable == Number{} && v.assetsTotal == Number{};
+    };
+
+    // Check 1: clawback is either by the asset issuer, OR by the vault owner
+    // on an empty vault (force-burn of lingering shares).
+    if (vaultAsset.native() || vaultAsset.getIssuer() != tx[sfAccount])
+    {
+        if (!(beforeShares && beforeShares->sharesTotal > 0 && isVaultEmpty(beforeVault) &&
+              beforeVault.owner == tx[sfAccount]))
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: "  //
+                << "clawback may only be performed by the asset issuer, or by the vault "
+                << "owner of an empty vault";
+            XRPL_ASSERT(
+                enforce,
+                "xrpl::VaultClawback::finalizeInvariants : clawback issuer or empty vault owner");
+            return !enforce;  // That's all we can do
+        }
+    }
+
+    bool checkResult = true;
+
+    auto const maybeVaultDeltaAssets = data_.deltaAssets(afterVault.pseudoId);
+    if (maybeVaultDeltaAssets)
+    {
+        auto const minScale = data_.computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
+        auto const vaultDeltaAssets =
+            roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
+
+        // Check 2: vault balance decreased.
+        if (vaultDeltaAssets >= kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: clawback must decrease vault balance";
+            checkResult = false;
+        }
+
+        // Check 3: assetsTotal changed by vaultDelta.
+        auto const assetsTotalDelta =
+            roundToAsset(vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+        if (assetsTotalDelta != vaultDeltaAssets)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: clawback and assets outstanding must add up";
+            checkResult = false;
+        }
+
+        // Check 4: assetsAvailable changed by vaultDelta.
+        auto const assetAvailableDelta = roundToAsset(
+            vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
+        if (assetAvailableDelta != vaultDeltaAssets)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: clawback and assets available must add up";
+            checkResult = false;
+        }
+    }
+    else if (!isVaultEmpty(beforeVault))
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: clawback must change vault balance";
+        XRPL_ASSERT(
+            enforce, "xrpl::VaultClawback::finalizeInvariants : clawback vault balance invariant");
+        return !enforce;  // That's all we can do
+    }
+
+    // Check 5: holder shares (tx[sfHolder]) decreased.
+    // We don't need to round shares, they are integral MPT.
+    auto const maybeAccountDeltaShares = data_.deltaShares(tx[sfHolder]);
+    if (!maybeAccountDeltaShares)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: clawback must change holder shares";
+        XRPL_ASSERT(
+            enforce, "xrpl::VaultClawback::finalizeInvariants : clawback holder shares invariant");
+        if (!checkResult)
+        {
+            XRPL_ASSERT(
+                enforce, "xrpl::VaultClawback::finalizeInvariants : vault clawback invariants");
+        }
+        return !enforce;  // That's all we can do
+    }
+    if (maybeAccountDeltaShares->delta >= kZero)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: clawback must decrease holder shares";
+        checkResult = false;
+    }
+
+    // Check 6: vault shares (outstanding) changed by same amount as holder decrease.
+    // We don't need to round shares, they are integral MPT.
+    auto const vaultDeltaShares = data_.deltaShares(afterVault.pseudoId);
+    if (!vaultDeltaShares || vaultDeltaShares->delta == kZero)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: clawback must change vault shares";
+        XRPL_ASSERT(
+            enforce, "xrpl::VaultClawback::finalizeInvariants : clawback vault shares invariant");
+        if (!checkResult)
+        {
+            XRPL_ASSERT(
+                enforce, "xrpl::VaultClawback::finalizeInvariants : vault clawback invariants");
+        }
+        return !enforce;  // That's all we can do
+    }
+
+    if (vaultDeltaShares->delta * -1 != maybeAccountDeltaShares->delta)
+    {
+        JLOG(j.fatal()) << "Invariant failed: "  //
+                        << "clawback must change holder and vault shares by equal amount";
+        checkResult = false;
+    }
+
+    if (!checkResult)
+    {
+        XRPL_ASSERT(enforce, "xrpl::VaultClawback::finalizeInvariants : vault clawback invariants");
+        return !enforce;
+    }
+
     return true;
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/invariants/VaultInvariantData.h>
 
 namespace xrpl {
 
@@ -34,6 +35,8 @@ public:
         beast::Journal const& j) override;
 
 private:
+    VaultInvariantData data_;
+
     Expected<std::pair<STAmount, STAmount>, TER>
     assetsToClawback(
         SLE::ref vault,
