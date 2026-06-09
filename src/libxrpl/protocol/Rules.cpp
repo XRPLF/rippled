@@ -46,21 +46,21 @@ setCurrentTransactionRules(std::optional<Rules> r)
         // to useRulesGuards.
         bool const enableVaultNumbers =
             !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
-        bool const enableCuspRounding3_2_0 = !r || r->enabled(fixCleanup3_2_0);
-        bool const enableCuspRounding3_3_0 = !r || r->enabled(fixNumberStuff);
+        bool const enableCuspRounding320 = !r || r->enabled(fixCleanup3_2_0);
+        bool const enableCuspRounding330 = !r || r->enabled(fixNumberStuff);
         XRPL_ASSERT(
             !r ||
                 useRulesGuards(*r) ==
-                    (enableVaultNumbers || enableCuspRounding3_2_0 || enableCuspRounding3_3_0),
+                    (enableVaultNumbers || enableCuspRounding320 || enableCuspRounding330),
             "setCurrentTransactionRules : rule decisions match");
 
         if (enableVaultNumbers)
         {
-            if (enableCuspRounding3_3_0)
+            if (enableCuspRounding330)
             {
                 return MantissaRange::MantissaScale::Large330;
             }
-            if (enableCuspRounding3_2_0)
+            if (enableCuspRounding320)
             {
                 return MantissaRange::MantissaScale::Large320;
             }
