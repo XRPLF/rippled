@@ -40,22 +40,29 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // Push the appropriate setting, instead of having the class pull every time
     // the value is needed. That could get expensive fast.
 
-    // If any new conditions with new amendments are added, those amendments must also be added to
-    // useRulesGuards.
-    bool const enableVaultNumbers =
-        !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
-    bool const enableCuspRoundingFix = !r || r->enabled(fixCleanup3_2_0);
-    XRPL_ASSERT(
-        !r || useRulesGuards(*r) == (enableCuspRoundingFix || enableVaultNumbers),
-        "setCurrentTransactionRules : rule decisions match");
-
     // Declare the range this way to keep clang-tidy from complaining
-    auto const range = [enableCuspRoundingFix, enableVaultNumbers]() {
+    auto const range = [&r]() {
+        // If any new conditions with new amendments are added, those amendments must also be added
+        // to useRulesGuards.
+        bool const enableVaultNumbers =
+            !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+        bool const enableCuspRounding3_2_0 = !r || r->enabled(fixCleanup3_2_0);
+        bool const enableCuspRounding3_3_0 = !r || r->enabled(fixNumberStuff);
+        XRPL_ASSERT(
+            !r ||
+                useRulesGuards(*r) ==
+                    (enableVaultNumbers || enableCuspRounding3_2_0 || enableCuspRounding3_3_0),
+            "setCurrentTransactionRules : rule decisions match");
+
         if (enableVaultNumbers)
         {
-            if (enableCuspRoundingFix)
+            if (enableCuspRounding3_3_0)
             {
-                return MantissaRange::MantissaScale::Large;
+                return MantissaRange::MantissaScale::LargeNew;
+            }
+            if (enableCuspRounding3_2_0)
+            {
+                return MantissaRange::MantissaScale::Large3_2_0;
             }
             return MantissaRange::MantissaScale::LargeLegacy;
         }
@@ -76,8 +83,8 @@ useRulesGuards(Rules const& rules)
     // As soon as any one of these amendments is retired, this whole function can be removed, along
     // with createGuards, and any other callers, and the first set of guards can be created directly
     // at the call site, without using optional.
-    return rules.enabled(fixCleanup3_2_0) || rules.enabled(featureSingleAssetVault) ||
-        rules.enabled(featureLendingProtocol);
+    return rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol) ||
+        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixNumberStuff);
 }
 
 void
