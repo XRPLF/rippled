@@ -171,7 +171,7 @@ flowchart TB
 ```mermaid
 flowchart LR
     subgraph head["Head Sampling (Node)"]
-        hs[Node-level head sampling<br/>configurable, default: 100%<br/>recommended production: 10%]
+        hs[Node-level head sampling<br/>fixed at 100%<br/>not configurable]
     end
 
     subgraph tail["Tail Sampling (Collector)"]
@@ -197,7 +197,7 @@ flowchart LR
 
 **Reading the diagram:**
 
-- **Head Sampling (Node)**: The first filter -- each xrpld node decides whether to sample a trace at creation time (default 100%, recommended 10% in production). This controls the volume leaving the node.
+- **Head Sampling (Node)**: xrpld pins head sampling at 100% (sample everything) and does not expose a configurable ratio. This is intentional: a per-node ratio would let different nodes make divergent keep/drop decisions for the same distributed trace, producing broken/partial traces. xrpld uses a `ParentBased` sampler so spans inheriting a remote parent honor the upstream decision. Volume reduction is delegated to the collector's tail sampling.
 - **Tail Sampling (Collector)**: The second filter -- the collector inspects completed traces and applies rules: keep all errors, keep anything slower than 5 seconds, and keep 10% of the remainder.
 - **Arrow head → tail**: All head-sampled traces flow to the collector, where tail sampling further reduces volume while preserving the most valuable data.
 - **Final Traces**: The output after both sampling stages; this is what gets stored and queried. The two-stage approach balances cost with debuggability.
