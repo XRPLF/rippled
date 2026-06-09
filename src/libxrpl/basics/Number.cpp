@@ -39,7 +39,7 @@ MantissaRange::getAllScales()
     static std::set<MantissaRange::MantissaScale> const kScales = {
         MantissaRange::MantissaScale::Small,
         MantissaRange::MantissaScale::LargeLegacy,
-        MantissaRange::MantissaScale::Large3_2_0,
+        MantissaRange::MantissaScale::Large320,
         MantissaRange::MantissaScale::Large,
     };
     return kScales;
@@ -81,14 +81,14 @@ MantissaRange::getRanges()
         }
         {
             [[maybe_unused]]
-            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large3_2_0};
+            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large320};
             static_assert(isPowerOfTen(kRange.min));
             static_assert(kRange.min == 1'000'000'000'000'000'000ULL);
             static_assert(kRange.max == rep(9'999'999'999'999'999'999ULL));
             static_assert(kRange.log == 18);
             static_assert(kRange.min < Number::kMaxRep);
             static_assert(kRange.max > Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled3_2_0);
+            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled320);
         }
         {
             [[maybe_unused]]

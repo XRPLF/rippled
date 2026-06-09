@@ -1812,7 +1812,7 @@ public:
 
             switch (scale)
             {
-                case MantissaRange::MantissaScale::Large3_2_0:
+                case MantissaRange::MantissaScale::Large320:
                 case MantissaRange::MantissaScale::Large:
                     BEAST_EXPECT(signedDifference >= 0);
                     BEAST_EXPECT(signedDifference < pow10<BigInt>(product.exponent()));
@@ -1895,7 +1895,7 @@ public:
             // Upward invariant: stored >= exact. Bug: stored < exact.
             switch (scale)
             {
-                case MantissaRange::MantissaScale::Large3_2_0:
+                case MantissaRange::MantissaScale::Large320:
                 case MantissaRange::MantissaScale::Large:
                     BEAST_EXPECT(stored >= exact);
                     BEAST_EXPECT(diff < pow10(quotient.exponent()));
@@ -1946,7 +1946,7 @@ public:
             // invariant: stored <= exact. Bug: stored > exact.
             switch (scale)
             {
-                case MantissaRange::MantissaScale::Large3_2_0:
+                case MantissaRange::MantissaScale::Large320:
                 case MantissaRange::MantissaScale::Large:
                     BEAST_EXPECT(stored <= exact);
                     BEAST_EXPECT(diff > -pow10(quotient.exponent()));
@@ -2004,7 +2004,7 @@ public:
             // invariant: stored >= exact. Bug: stored < exact.
             switch (scale)
             {
-                case MantissaRange::MantissaScale::Large3_2_0:
+                case MantissaRange::MantissaScale::Large320:
                 case MantissaRange::MantissaScale::Large:
                     BEAST_EXPECT(stored >= exact);
                     BEAST_EXPECT(diff < pow10(quotient.exponent()));
@@ -2108,7 +2108,7 @@ public:
                     {
                         case MantissaRange::MantissaScale::Small:
                         case MantissaRange::MantissaScale::LargeLegacy:
-                        case MantissaRange::MantissaScale::Large3_2_0: {
+                        case MantissaRange::MantissaScale::Large320: {
                             // Without the fix, all the results but one round up
                             if (r == Number::RoundingMode::Downward)
                             {
