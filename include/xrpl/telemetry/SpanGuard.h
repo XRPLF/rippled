@@ -42,23 +42,27 @@
 
     Usage examples:
 
+    Span names and attribute keys come from per-module `*SpanNames.h`
+    headers (e.g. RpcSpanNames.h, TxSpanNames.h) as typed compile-time
+    constants — never raw string literals — so the naming spec is
+    enforced at the call site and dashboards stay in sync.
+
     1. Basic RPC tracing (factory method with category):
     @code
-        // Define prefix at class level:
-        static constexpr std::string_view spanPrefix_ = "rpc.command";
+        #include <xrpld/rpc/detail/RpcSpanNames.h>
+        using namespace xrpl::telemetry;
 
-        // At the call site:
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, spanPrefix_, "submit");
-        span.setAttribute("xrpl.rpc.command", "submit");
-        span.setAttribute("xrpl.rpc.status", "success");
+            TraceCategory::Rpc, rpc_span::prefix::command, "submit");
+        span.setAttribute(rpc_span::attr::command, "submit");
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
         // span ended automatically on scope exit
     @endcode
 
     2. Error recording:
     @code
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, "rpc.command", "submit");
+            TraceCategory::Rpc, rpc_span::prefix::command, "submit");
         try {
             doWork();
             span.setOk();
@@ -69,29 +73,32 @@
 
     3. Cross-thread context propagation:
     @code
+        #include <xrpld/consensus/ConsensusSpanNames.h>
+        using namespace xrpl::telemetry;
+
         // Thread A: create span and capture context
         auto span = SpanGuard::span(
-            TraceCategory::Consensus, "consensus", "round");
+            TraceCategory::Consensus, seg::consensus, consensus::span::op::round);
         auto ctx = span.captureContext();
 
         // Thread B: create child with captured context
-        auto child = SpanGuard::childSpan("consensus.accept", ctx);
+        auto child = SpanGuard::childSpan(consensus::span::accept, ctx);
     @endcode
 
     4. Conditional check (rarely needed — methods are no-ops on null):
     @code
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, "rpc", "request");
+            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
         if (span) {
             // expensive attribute computation only when active
-            span.setAttribute("xrpl.rpc.payload_size", computeSize());
+            span.setAttribute(rpc_span::attr::requestPayloadSize, computeSize());
         }
     @endcode
 
     5. Tail-based filtering via discard():
     @code
         auto span = SpanGuard::span(
-            TraceCategory::Transactions, "tx", "process");
+            TraceCategory::Transactions, tx_span::prefix::tx, tx_span::op::process);
         auto result = preflight(tx);
         if (result != tesSUCCESS) {
             span.discard();  // drop span, never exported

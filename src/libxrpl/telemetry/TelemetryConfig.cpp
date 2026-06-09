@@ -8,15 +8,48 @@
 */
 
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/telemetry/Telemetry.h>
 
-#include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <string>
 
 namespace xrpl::telemetry {
 
 namespace {
+
+/** Config key names for the [telemetry] section.
+
+    Each must match the corresponding option documented in
+    cfg/xrpld-example.cfg verbatim. Defined as `char const*` so they
+    pass to Section::valueOr() (which takes `std::string const&`)
+    without an explicit conversion, exactly as a literal would.
+*/
+namespace key {
+constexpr char const* enabled = "enabled";
+constexpr char const* serviceName = "service_name";
+constexpr char const* serviceInstanceId = "service_instance_id";
+constexpr char const* endpoint = "endpoint";
+constexpr char const* useTls = "use_tls";
+constexpr char const* tlsCaCert = "tls_ca_cert";
+constexpr char const* batchSize = "batch_size";
+constexpr char const* batchDelayMs = "batch_delay_ms";
+constexpr char const* maxQueueSize = "max_queue_size";
+constexpr char const* traceTransactions = "trace_transactions";
+constexpr char const* traceConsensus = "trace_consensus";
+constexpr char const* traceRpc = "trace_rpc";
+constexpr char const* tracePeer = "trace_peer";
+constexpr char const* traceLedger = "trace_ledger";
+}  // namespace key
+
+/** Default values applied when a key is absent from the config. */
+namespace dflt {
+constexpr char const* endpoint = "http://localhost:4318/v1/traces";
+constexpr std::uint32_t batchSize = 512u;
+constexpr std::uint32_t batchDelayMs = 5000u;
+constexpr std::uint32_t maxQueueSize = 2048u;
+}  // namespace dflt
 
 /** Derive a human-readable network type label from the numeric network ID.
     @param networkId  The network identifier from [network_id] config.
@@ -49,33 +82,35 @@ setupTelemetry(
 {
     Telemetry::Setup setup;
 
-    setup.enabled = section.valueOr<int>("enabled", 0) != 0;
-    setup.serviceName = section.valueOr<std::string>("service_name", "xrpld");
+    setup.enabled = section.valueOr<int>(key::enabled, 0) != 0;
+    setup.serviceName = section.valueOr<std::string>(key::serviceName, systemName());
     setup.serviceVersion = version;
-    setup.serviceInstanceId = section.valueOr<std::string>("service_instance_id", nodePublicKey);
+    setup.serviceInstanceId = section.valueOr<std::string>(key::serviceInstanceId, nodePublicKey);
 
-    setup.exporterEndpoint =
-        section.valueOr<std::string>("endpoint", "http://localhost:4318/v1/traces");
+    setup.exporterEndpoint = section.valueOr<std::string>(key::endpoint, dflt::endpoint);
 
-    setup.useTls = section.valueOr<int>("use_tls", 0) != 0;
-    setup.tlsCertPath = section.valueOr<std::string>("tls_ca_cert", "");
+    setup.useTls = section.valueOr<int>(key::useTls, 0) != 0;
+    setup.tlsCertPath = section.valueOr<std::string>(key::tlsCaCert, "");
 
-    setup.samplingRatio = section.valueOr<double>("sampling_ratio", 1.0);
-    setup.samplingRatio = std::clamp(setup.samplingRatio, 0.0, 1.0);
+    // Head sampling is intentionally fixed at 1.0 (sample everything) and is
+    // not read from config. A per-node ratio would let nodes make divergent
+    // keep/drop decisions for the same distributed trace, producing broken
+    // traces; volume reduction is delegated to the collector's tail sampling.
+    // setup.samplingRatio is a const member fixed at 1.0; nothing to parse.
 
-    setup.batchSize = section.valueOr<std::uint32_t>("batch_size", 512u);
-    setup.batchDelay =
-        std::chrono::milliseconds{section.valueOr<std::uint32_t>("batch_delay_ms", 5000u)};
-    setup.maxQueueSize = section.valueOr<std::uint32_t>("max_queue_size", 2048u);
+    setup.batchSize = section.valueOr<std::uint32_t>(key::batchSize, dflt::batchSize);
+    setup.batchDelay = std::chrono::milliseconds{
+        section.valueOr<std::uint32_t>(key::batchDelayMs, dflt::batchDelayMs)};
+    setup.maxQueueSize = section.valueOr<std::uint32_t>(key::maxQueueSize, dflt::maxQueueSize);
 
     setup.networkId = networkId;
     setup.networkType = networkTypeFromId(networkId);
 
-    setup.traceTransactions = section.valueOr<int>("trace_transactions", 1) != 0;
-    setup.traceConsensus = section.valueOr<int>("trace_consensus", 1) != 0;
-    setup.traceRpc = section.valueOr<int>("trace_rpc", 1) != 0;
-    setup.tracePeer = section.valueOr<int>("trace_peer", 1) != 0;
-    setup.traceLedger = section.valueOr<int>("trace_ledger", 1) != 0;
+    setup.traceTransactions = section.valueOr<int>(key::traceTransactions, 1) != 0;
+    setup.traceConsensus = section.valueOr<int>(key::traceConsensus, 1) != 0;
+    setup.traceRpc = section.valueOr<int>(key::traceRpc, 1) != 0;
+    setup.tracePeer = section.valueOr<int>(key::tracePeer, 1) != 0;
+    setup.traceLedger = section.valueOr<int>(key::traceLedger, 1) != 0;
 
     return setup;
 }
