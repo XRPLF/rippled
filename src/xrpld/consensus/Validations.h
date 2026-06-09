@@ -693,7 +693,7 @@ public:
         validationSET_EXPIRES ago and were not asked to keep.
     */
     void
-    expire(beast::Journal& j)
+    expire(beast::Journal const& j)
     {
         auto const start = std::chrono::steady_clock::now();
         {
