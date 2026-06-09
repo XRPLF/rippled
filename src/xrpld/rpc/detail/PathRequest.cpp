@@ -72,7 +72,7 @@ PathRequest::PathRequest(
 
 PathRequest::PathRequest(
     Application& app,
-    std::function<void(void)> const& completion,
+    std::function<void(void)> completion,
     Resource::Consumer& consumer,
     int id,
     PathRequestManager& owner,
@@ -80,7 +80,7 @@ PathRequest::PathRequest(
     : app_(app)
     , journal_(journal)
     , owner_(owner)
-    , fCompletion_(completion)
+    , fCompletion_(std::move(completion))
     , consumer_(consumer)
     , jvStatus_(json::ValueType::Object)
     , lastIndex_(0)

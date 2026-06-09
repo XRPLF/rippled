@@ -1,5 +1,6 @@
 
 #include <test/jtx/Account.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
 #include <test/jtx/TestHelpers.h>
@@ -52,6 +53,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string_view>
 #include <tuple>
@@ -1708,7 +1710,8 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const alice("alice");
 
         auto const withFix = features[fixCleanup3_2_0];
-        Env env(*this, features);
+        std::string logs;
+        Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
         env.fund(XRP(100'000), issuer, alice);
         env.close();
 

@@ -1,19 +1,15 @@
 {
-  "architecture": [
+  "platform": "macos/arm64",
+  "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"],
+  "configs": [
     {
-      "platform": "macos/arm64",
-      "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
-    }
-  ],
-  "os": [
+      "build_type": "Release",
+      "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+    },
     {
-      "distro_name": "macos",
-      "distro_version": "",
-      "compiler_name": "",
-      "compiler_version": "",
-      "image_sha": ""
+      "build_type": "Debug",
+      "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+      "build_only": true
     }
-  ],
-  "build_type": ["Debug", "Release"],
-  "cmake_args": ["-DCMAKE_POLICY_VERSION_MINIMUM=3.5"]
+  ]
 }

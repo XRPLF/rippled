@@ -736,10 +736,10 @@ unlockEscrowMPT(
     STAmount const& grossAmount,
     beast::Journal j)
 {
-    if (!view.rules().enabled(fixTokenEscrowV1))
-    {
-        XRPL_ASSERT(netAmount == grossAmount, "xrpl::unlockEscrowMPT : netAmount == grossAmount");
-    }
+    XRPL_ASSERT_IF(
+        !view.rules().enabled(fixTokenEscrowV1),
+        netAmount == grossAmount,
+        "xrpl::unlockEscrowMPT : netAmount == grossAmount");
 
     auto const& issuer = netAmount.getIssuer();
     auto const& mptIssue = netAmount.get<MPTIssue>();
