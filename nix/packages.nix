@@ -12,8 +12,10 @@ in
     cmake
     conan
     curlMinimal # needed for codecov/codecov-action
+    doxygen
     gcovr
     git
+    git-cliff
     gnumake
     gnupg # needed for signing commits & codecov/codecov-action
     llvmPackages_22.clang-tools

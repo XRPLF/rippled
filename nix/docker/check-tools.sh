@@ -9,11 +9,13 @@ clang-format --version
 cmake --version
 conan --version
 curl --version
+doxygen --version
 g++ --version
 gcc --version
 gcov --version
 gcovr --version
 git --version
+git-cliff --version
 gpg --version
 less --version
 make --version

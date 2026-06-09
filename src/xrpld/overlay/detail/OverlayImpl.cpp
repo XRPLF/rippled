@@ -407,7 +407,7 @@ OverlayImpl::makeErrorResponse(
     std::shared_ptr<PeerFinder::Slot> const& slot,
     http_request_type const& request,
     address_type remoteAddress,
-    std::string text)
+    std::string const& text)
 {
     boost::beast::http::response<boost::beast::http::empty_body> msg;
     msg.version(request.version());
@@ -1157,14 +1157,14 @@ OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 }
 
 void
-OverlayImpl::broadcast(protocol::TMProposeSet& m)
+OverlayImpl::broadcast(protocol::TMProposeSet const& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER);
     forEach([&](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
-OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator)
+OverlayImpl::relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
@@ -1179,14 +1179,14 @@ OverlayImpl::relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey cons
 }
 
 void
-OverlayImpl::broadcast(protocol::TMValidation& m)
+OverlayImpl::broadcast(protocol::TMValidation const& m)
 {
     auto const sm = std::make_shared<Message>(m, protocol::mtVALIDATION);
     forEach([sm](std::shared_ptr<PeerImp> const& p) { p->send(sm); });
 }
 
 std::set<Peer::id_t>
-OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator)
+OverlayImpl::relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator)
 {
     if (auto const toSkip = app_.getHashRouter().shouldRelay(uid))
     {
