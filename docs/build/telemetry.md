@@ -24,6 +24,7 @@ This document explains how to build xrpld with OpenTelemetry distributed tracing
     - [CMake target not found](#cmake-target-not-found)
   - [Architecture](#architecture)
     - [Key files](#key-files)
+    - [Span discard mechanism](#span-discard-mechanism)
     - [Conditional compilation](#conditional-compilation)
 
 ## Overview
