@@ -232,7 +232,9 @@ if __name__ == "__main__":
         sys.exit(1)
     if len(sys.argv) == 2:
         project_name = os.path.splitext(os.path.basename(sys.argv[1]))[0]
-        if os.path.isdir(os.path.join(os.path.dirname(__file__), project_name)):
+        wat_fixture_files = [
+            f for f in (os.listdir(wat_path) if os.path.isdir(wat_path) else []) if f.endswith((".wat", ".zip"))
+        ]
             process_rust(project_name)
         elif os.path.isfile(
             os.path.join(os.path.dirname(__file__), f"{project_name}.c")
