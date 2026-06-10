@@ -586,7 +586,6 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         BEAST_EXPECT(!ec);
 
         std::vector<std::pair<ip::tcp::socket, boost::beast::multi_buffer>> clients;
-        int connectionCount = 0;
 
         // Env owns a persistent JSON-RPC HTTP client connection to port_rpc as
         // part of startup, which counts against this port's connection limit.
@@ -607,7 +606,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         // and expect them all to succeed.
 
         int const testTo = (limit == 0) ? 50 : limit + 1;
-        while (connectionCount < testTo)
+        while (static_cast<int>(clients.size()) < testTo)
         {
             clients.emplace_back(ip::tcp::socket{ios}, boost::beast::multi_buffer{});
             async_connect(clients.back().first, it, yield[ec]);
@@ -615,42 +614,24 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             auto req = makeHTTPRequest(ip, port, to_string(jr), {});
             async_write(clients.back().first, req, yield[ec]);
             BEAST_EXPECT(!ec);
-            ++connectionCount;
         }
 
         int successfulReads = 0;
-        int failedReads = 0;
         for (auto& [soc, buf] : clients)
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
             async_read(soc, buf, resp, yield[ec]);
-            if (ec)
-            {
-                ++failedReads;
-            }
-            else
-            {
+            if (!ec)
                 ++successfulReads;
-            }
         }
 
-        // This test cares about the exact number of accepted vs rejected
-        // requests, not which specific client observed the rejection. The
-        // server rejects once the incremented connection count reaches the
-        // configured limit. After the hidden Env client has timed out:
-        //   limit == 0: all test-owned clients should succeed
-        //   limit > 0: exactly limit - 1 test-owned clients should succeed
-        //               and the remaining 2 should fail
-        if (limit == 0)
-        {
-            BEAST_EXPECT(successfulReads == static_cast<int>(clients.size()));
-            BEAST_EXPECT(failedReads == 0);
-        }
-        else
-        {
-            BEAST_EXPECT(successfulReads == limit - 1);
-            BEAST_EXPECT(failedReads == static_cast<int>(clients.size()) - (limit - 1));
-        }
+        // This test cares about the exact number of accepted requests, not which
+        // specific client observed the rejection. With a zero baseline (the
+        // hidden Env client dropped above), the server accepts until the
+        // connection count reaches the limit: all clients for limit 0, else
+        // limit - 1 of the limit + 1 clients (the last two are rejected).
+        int const expectedReads = (limit == 0) ? static_cast<int>(clients.size()) : limit - 1;
+        BEAST_EXPECT(successfulReads == expectedReads);
     }
 
     void
