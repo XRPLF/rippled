@@ -1,10 +1,10 @@
 #include <xrpld/app/rdb/PeerFinder.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/rdb/SociDB.h>
 

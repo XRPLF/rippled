@@ -11,9 +11,6 @@ endfunction()
 function(create_symbolic_link target link)
 endfunction()
 
-function(xrpl_add_test name)
-endfunction()
-
 macro(exclude_from_default target_)
 endmacro()
 

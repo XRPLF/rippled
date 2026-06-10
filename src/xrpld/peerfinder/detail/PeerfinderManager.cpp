@@ -4,13 +4,13 @@
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 #include <xrpld/peerfinder/detail/StoreSqdb.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/peerfinder/Config.h>
 #include <xrpl/peerfinder/PeerfinderManager.h>
 #include <xrpl/peerfinder/Slot.h>
@@ -28,6 +28,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -102,8 +103,7 @@ public:
     }
 
     void
-    addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses)
-        override
+    addFixedPeer(std::string_view name, std::vector<beast::IP::Endpoint> const& addresses) override
     {
         logic_.addFixedPeer(name, addresses);
     }
