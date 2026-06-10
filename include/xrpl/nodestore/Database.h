@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/nodestore/Backend.h>
@@ -9,6 +8,10 @@
 #include <xrpl/protocol/SystemParameters.h>
 
 #include <condition_variable>
+
+namespace xrpl {
+class Section;
+}  // namespace xrpl
 
 namespace xrpl::NodeStore {
 

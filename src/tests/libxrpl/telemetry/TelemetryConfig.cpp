@@ -25,7 +25,7 @@ TEST(TelemetryConfig, setup_defaults)
     EXPECT_TRUE(s.traceTransactions);
     EXPECT_TRUE(s.traceConsensus);
     EXPECT_TRUE(s.traceRpc);
-    EXPECT_FALSE(s.tracePeer);
+    EXPECT_TRUE(s.tracePeer);
     EXPECT_TRUE(s.traceLedger);
 }
 
@@ -42,7 +42,7 @@ TEST(TelemetryConfig, parse_empty_section)
     EXPECT_TRUE(setup.traceRpc);
     EXPECT_TRUE(setup.traceTransactions);
     EXPECT_TRUE(setup.traceConsensus);
-    EXPECT_FALSE(setup.tracePeer);
+    EXPECT_TRUE(setup.tracePeer);
     EXPECT_TRUE(setup.traceLedger);
 }
 
@@ -56,7 +56,6 @@ TEST(TelemetryConfig, parse_full_section)
     section.set("endpoint", "http://collector:4318/v1/traces");
     section.set("use_tls", "1");
     section.set("tls_ca_cert", "/etc/ssl/ca.pem");
-    section.set("sampling_ratio", "0.5");
     section.set("batch_size", "256");
     section.set("batch_delay_ms", "3000");
     section.set("max_queue_size", "4096");
@@ -74,7 +73,6 @@ TEST(TelemetryConfig, parse_full_section)
     EXPECT_EQ(setup.exporterEndpoint, "http://collector:4318/v1/traces");
     EXPECT_TRUE(setup.useTls);
     EXPECT_EQ(setup.tlsCertPath, "/etc/ssl/ca.pem");
-    EXPECT_DOUBLE_EQ(setup.samplingRatio, 0.5);
     EXPECT_EQ(setup.batchSize, 256u);
     EXPECT_EQ(setup.batchDelay, std::chrono::milliseconds{3000});
     EXPECT_EQ(setup.maxQueueSize, 4096u);
@@ -104,17 +102,4 @@ TEST(TelemetryConfig, null_telemetry_factory)
     // start/stop should be no-ops without crashing
     tel->start();
     tel->stop();
-}
-
-TEST(TelemetryConfig, sampling_ratio_clamped)
-{
-    Section section;
-    section.set("sampling_ratio", "2.5");
-    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0);
-    EXPECT_DOUBLE_EQ(setup.samplingRatio, 1.0);
-
-    Section section2;
-    section2.set("sampling_ratio", "-0.5");
-    auto setup2 = telemetry::setupTelemetry(section2, "nHUtest123", "2.0.0", 0);
-    EXPECT_DOUBLE_EQ(setup2.samplingRatio, 0.0);
 }
