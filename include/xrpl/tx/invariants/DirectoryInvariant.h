@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 
 #include <memory>
 
@@ -17,6 +18,8 @@ class ValidBookDirectory
     hash_set<uint256> rootIndexes_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltDIR_NODE>{};
+
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 

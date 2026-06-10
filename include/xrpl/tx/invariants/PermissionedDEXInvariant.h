@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 
 namespace xrpl {
 
@@ -17,6 +18,8 @@ class ValidPermissionedDEX
     hash_set<uint256> domains_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltDIR_NODE, ltOFFER>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 

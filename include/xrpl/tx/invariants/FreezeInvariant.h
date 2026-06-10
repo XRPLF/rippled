@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 
 #include <map>
 #include <vector>
@@ -38,6 +39,9 @@ class TransfersNotFrozen
     std::map<AccountID, SLE::const_pointer const> possibleIssuers_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes =
+        VisitLedgerEntryTypes<ltACCOUNT_ROOT, ltRIPPLE_STATE>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 

@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 
 #include <map>
 #include <vector>
@@ -45,6 +46,9 @@ class ValidLoanBroker
     goodZeroDirectory(ReadView const& view, SLE::const_ref dir, beast::Journal const& j);
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes =
+        VisitLedgerEntryTypes<ltLOAN_BROKER, ltACCOUNT_ROOT, ltRIPPLE_STATE, ltMPTOKEN>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 

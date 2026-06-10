@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 
 #include <cstdint>
 
@@ -32,6 +33,8 @@ class ValidNFTokenPage
     bool deletedLink_ = false;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltNFTOKEN_PAGE>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -60,6 +63,8 @@ class NFTokenCountTracking
     std::uint32_t afterBurnedTotal_ = 0;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltACCOUNT_ROOT>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
