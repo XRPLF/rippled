@@ -1274,7 +1274,7 @@ hasInvalidAmount(STBase const& field, int depth, beast::Journal j)
         default: {
             XRPL_ASSERT(
                 dynamic_cast<STObject const*>(&field) == nullptr,
-                "xrpl::hasInvalidAmount : valid object type");
+                "xrpl::hasInvalidAmount : unhandled STObject type");
             return false;
         }
     }
