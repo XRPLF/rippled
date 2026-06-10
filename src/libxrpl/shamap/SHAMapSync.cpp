@@ -69,9 +69,10 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                 SHAMapTreeNodePtr const child = descendNoStore(*node, pos);
                 if (!child)
                 {
-                    // Node was evicted after rotation; skip this subtree.
-                    JLOG(journal_.warn())
-                        << "visitNodes: missing child node " << node->getChildHash(pos).asUInt256();
+                    // Child node couldn't be fetched, which can be for a variety of reasons (e.g.
+                    // partial sync, node evicted after database rotation), so skip this subtree.
+                    JLOG(journal_.info())
+                        << "visitNodes: missing child node " << node->getChildHash(pos);
                     ++pos;
                     continue;
                 }

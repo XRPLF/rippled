@@ -90,8 +90,8 @@ TEST(SHAMapMissingNode, visitLeavesSkipsMissingNodes)
     source.visitLeaves([&beforeCount](auto const&) { ++beforeCount; });
     EXPECT_EQ(beforeCount, kItems);
 
-    // Deliver only 3 inner nodes so most subtrees remain absent from destFamily's DB, simulating
-    // child nodes evicted after a rotation.
+    // Deliver only 3 nodes so most subtrees remain absent from destFamily's DB, simulating child
+    // nodes evicted after a rotation or otherwise unavailable.
     SHAMap dest(SHAMapType::FREE, source.getHash().asUInt256(), destFamily);
     dest.setSynching();
     ASSERT_NO_FATAL_FAILURE(syncWithLimit(source, dest, 3));
