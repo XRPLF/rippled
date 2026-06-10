@@ -435,7 +435,7 @@ ServerHandler::processSession(
         // FIX: This rpcError is not delivered since the session
         // was just closed.
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
-        span.setError(rpc_span::val::error);
+        span.setError("resource threshold exceeded");
         return rpcError(RpcSlowDown);
     }
 
@@ -468,7 +468,7 @@ ServerHandler::processSession(
 
             is->getConsumer().charge(Resource::kFeeMalformedRpc);
             span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
-            span.setError(rpc_span::val::error);
+            span.setError(jr[jss::error].asString());
             return jr;
         }
 
@@ -554,7 +554,7 @@ ServerHandler::processSession(
         // doCommand, a FORBID role, or the catch block above — are not
         // overwritten as OK.
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
-        span.setError(rpc_span::val::error);
+        span.setError(jr[jss::error].asString());
     }
     else
     {
@@ -660,6 +660,7 @@ ServerHandler::processRequest(
     // (the span would otherwise end UNSET, invisible to {status.code=error}).
     auto httpReplyError = [&](int status, std::string const& message) {
         spanHadError = true;
+        span.setError(message);
         httpReply(status, message, output, rpcJ);
     };
 
