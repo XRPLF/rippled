@@ -122,7 +122,6 @@ private:
     std::optional<Rules> saved_;
 };
 
-class NumberSO;
 class NumberMantissaScaleGuard;
 
 bool
