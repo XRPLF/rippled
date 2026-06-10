@@ -122,7 +122,7 @@ doAMMInfo(RPC::JsonContext& context)
         {
             auto const& ammAccount = params[jss::amm_account];
             if (!ammAccount.isString())
-                return Unexpected(RpcActMalformed);
+                return std::unexpected(RpcActMalformed);
             auto const id = parseBase58<AccountID>(ammAccount.asString());
             if (!id)
                 return std::unexpected(RpcActMalformed);
@@ -138,7 +138,7 @@ doAMMInfo(RPC::JsonContext& context)
         {
             auto const& localAccount = params[jss::account];
             if (!localAccount.isString())
-                return Unexpected(RpcActMalformed);
+                return std::unexpected(RpcActMalformed);
             accountID = parseBase58<AccountID>(localAccount.asString());
             if (!accountID || !ledger->read(keylet::account(*accountID)))
                 return std::unexpected(RpcActMalformed);

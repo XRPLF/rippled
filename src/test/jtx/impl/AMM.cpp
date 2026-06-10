@@ -189,12 +189,14 @@ AMM::ammRpcInfo(
     bool ignoreParams,
     unsigned apiVersion) const
 {
+    auto const toJson = [](AccountID const& a) { return json::Value{to_string(a)}; };
+
     return ammRpcInfo(
-        account ? json::Value{to_string(*account)} : std::optional<json::Value>{},
+        account.transform(toJson),
         ledgerIndex,
         asset1,
         asset2,
-        ammAccount ? json::Value{to_string(*ammAccount)} : std::optional<json::Value>{},
+        ammAccount.transform(toJson),
         ignoreParams,
         apiVersion);
 }
