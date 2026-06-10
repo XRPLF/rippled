@@ -11,6 +11,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/owners.h>
+#include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 
 #include <xrpl/basics/Buffer.h>
@@ -27,8 +28,10 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <chrono>
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace xrpl {
 
