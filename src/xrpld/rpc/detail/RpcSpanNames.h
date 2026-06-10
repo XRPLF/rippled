@@ -159,7 +159,7 @@ using telemetry::attr_val::error;
 using telemetry::attr_val::success;
 inline constexpr auto admin = makeStr("admin");
 inline constexpr auto user = makeStr("user");
-inline constexpr auto unknownCommand = makeStr("unknown_command");
+inline constexpr auto unknownCommand = makeStr("unknown");
 /// "invalid_json" — WS message parse failure or oversize.
 inline constexpr auto invalidJson = makeStr("invalid_json");
 }  // namespace val

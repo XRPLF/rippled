@@ -95,7 +95,7 @@ datasources:
             tag: command
             operator: "="
             scope: span
-            type: static
+            type: dynamic
           - id: rpc-status
             tag: rpc_status
             operator: "="
