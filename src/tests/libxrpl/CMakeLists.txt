@@ -27,6 +27,7 @@ set(test_modules
     basics
     crypto
     json
+    shamap
     tx
     protocol_autogen
 )

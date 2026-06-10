@@ -70,6 +70,8 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                 if (!child)
                 {
                     // Node was evicted after rotation; skip this subtree.
+                    JLOG(journal_.warn())
+                        << "visitNodes: missing child node " << node->getChildHash(pos).asUInt256();
                     ++pos;
                     continue;
                 }

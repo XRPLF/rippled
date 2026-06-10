@@ -144,7 +144,9 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
         if (inner->isEmptyBranch(branch))
             return nullptr;
 
-        inNode = descendThrow(*inner, branch);
+        inNode.adopt(descend(inner.get(), branch));
+        if (!inNode)
+            return nullptr;
         nodeID = nodeID.getChildNodeID(branch);
     }
 
