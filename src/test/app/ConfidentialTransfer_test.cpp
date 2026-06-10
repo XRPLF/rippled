@@ -5,7 +5,6 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/ter.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Buffer.h>
@@ -30,7 +29,6 @@
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -41,12 +39,11 @@
 #include <optional>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace xrpl {
 
 // NOLINTBEGIN(misc-const-correctness, bugprone-unchecked-optional-access)
-class ConfidentialTransfer_test : public ConfidentialTransferTestBase
+class ConfidentialTransferTest : public ConfidentialTransferTestBase
 {
     void
     testConvert(FeatureBitset features)

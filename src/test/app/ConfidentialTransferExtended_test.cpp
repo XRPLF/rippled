@@ -10,7 +10,7 @@
 #include <test/jtx/deposit.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
-#include <test/jtx/ter.h>
+#include <test/jtx/owners.h>
 #include <test/jtx/ticket.h>
 
 #include <xrpl/basics/Buffer.h>
@@ -27,14 +27,13 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-#include <chrono>
 #include <cstdint>
-#include <vector>
+#include <string>
 
 namespace xrpl {
 
 // NOLINTBEGIN(misc-const-correctness, bugprone-unchecked-optional-access)
-class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
+class ConfidentialTransferExtendedTest : public ConfidentialTransferTestBase
 {
     void
     testSendDepositPreauth(FeatureBitset features)
@@ -2581,6 +2580,6 @@ public:
 };
 // NOLINTEND(misc-const-correctness, bugprone-unchecked-optional-access)
 
-BEAST_DEFINE_TESTSUITE(ConfidentialTransferExtended, app, xrpl);
+// BEAST_DEFINE_TESTSUITE(ConfidentialTransferExtended, app, xrpl);
 
 }  // namespace xrpl

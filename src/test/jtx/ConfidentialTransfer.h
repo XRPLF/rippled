@@ -209,7 +209,7 @@ protected:
         Buffer balanceCommitment;
 
         // Recipients vector
-        std::vector<ConfidentialRecipient> recipients;
+        std::vector<ConfidentialRecipient> recipients{};
 
         // Constructor that performs all common setup
         ConfidentialSendSetup(
