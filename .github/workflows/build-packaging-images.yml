@@ -6,15 +6,11 @@ on:
       - develop
     paths:
       - ".github/workflows/build-packaging-images.yml"
-      - ".github/workflows/reusable-build-docker-image.yml"
-      - ".github/workflows/reusable-build-merge-docker-images.yml"
       - "package/Dockerfile"
       - "package/install-packaging-tools.sh"
   pull_request:
     paths:
       - ".github/workflows/build-packaging-images.yml"
-      - ".github/workflows/reusable-build-docker-image.yml"
-      - ".github/workflows/reusable-build-merge-docker-images.yml"
       - "package/Dockerfile"
       - "package/install-packaging-tools.sh"
   workflow_dispatch:
@@ -42,8 +38,9 @@ jobs:
             base_image: debian:bookworm
           - name: rhel
             base_image: registry.access.redhat.com/ubi9/ubi:latest
-    uses: ./.github/workflows/reusable-build-merge-docker-images.yml
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@c1b480188519e0cad040e6aa70db1cbc5a797e07
     with:
       image_name: ghcr.io/xrplf/xrpld/packaging-${{ matrix.distro.name }}
       dockerfile: package/Dockerfile
       base_image: ${{ matrix.distro.base_image }}
+      push: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' }}

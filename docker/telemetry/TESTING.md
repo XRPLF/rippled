@@ -285,7 +285,6 @@ online_delete=256
 [telemetry]
 enabled=1
 endpoint=http://localhost:4318/v1/traces
-sampling_ratio=1.0
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048

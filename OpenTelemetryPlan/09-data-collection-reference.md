@@ -468,11 +468,11 @@ The `stage` dimension (3 values: `preflight`, `preclaim`, `apply`) turns the
 apply-pipeline spans into per-stage RED metrics with no native instruments — the
 _Transaction Overview_ dashboard charts rate, p95 latency, and failure rate by stage.
 
-> **Sampling caveat**: span-derived metrics inherit the **tracer head-sampling**
-> ratio (`sampling_ratio` in `[telemetry]`, via `TraceIdRatioBasedSampler`). At
-> `sampling_ratio < 1.0` the stage RED metrics undercount proportionally — they
-> reflect sampled traces, not the full transaction volume. Native StatsD/meter
-> metrics do not sample. Account for this when reading absolute stage rates.
+> **Sampling caveat**: xrpld head sampling is fixed at 1.0 (every trace is
+> recorded), so span-derived metrics are not undercounted at the node. If the
+> collector is configured with tail sampling, span-derived metrics reflect only
+> the retained traces, whereas native StatsD/meter metrics do not sample.
+> Account for any collector-side tail sampling when reading absolute stage rates.
 
 **Where to query**: Prometheus → `traces_span_metrics_calls_total{span_name="rpc.command.server_info"}`
 
@@ -1235,7 +1235,7 @@ The telemetry system is designed with privacy in mind:
 - **Transaction hashes** are included (public on-ledger data) but not transaction contents
 - **Peer IDs** are internal identifiers, not IP addresses
 - **All telemetry is opt-in** — disabled by default at build time (`-Dtelemetry=OFF`)
-- **Sampling** reduces data volume — `sampling_ratio=0.01` recommended for production
+- **Sampling** — head sampling is fixed at 1.0 (sample everything); reduce data volume with collector-side tail sampling
 - **Data stays local** — the default stack sends data to `localhost` only
 
 ---
@@ -1262,7 +1262,6 @@ prefix=xrpld
 [telemetry]
 enabled=1
 endpoint=http://otel-collector:4318/v1/traces
-sampling_ratio=0.01
 trace_peer=0
 batch_size=1024
 max_queue_size=4096
