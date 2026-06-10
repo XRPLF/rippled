@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -22,10 +23,10 @@ namespace xrpl {
 void
 ValidPermissionedDomain::visitEntry(bool isDel, SLE::const_ref before, SLE::const_ref after)
 {
-    if (before && before->getType() != ltPERMISSIONED_DOMAIN)
-        return;
-    if (after && after->getType() != ltPERMISSIONED_DOMAIN)
-        return;
+    XRPL_ASSERT(
+        (!before || before->getType() == ltPERMISSIONED_DOMAIN) &&
+            (!after || after->getType() == ltPERMISSIONED_DOMAIN),
+        "xrpl::ValidPermissionedDomain::visitEntry : permissioned domain input");
 
     auto check = [isDel](std::vector<SleStatus>& sleStatus, SLE::const_ref sle) {
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);

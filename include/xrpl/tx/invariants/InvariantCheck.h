@@ -130,8 +130,7 @@ class XRPNotCreated
     std::int64_t drops_ = 0;
 
 public:
-    static constexpr auto kRelevantLedgerEntryTypes =
-        VisitLedgerEntryTypes<ltACCOUNT_ROOT, ltPAYCHAN, ltESCROW>{};
+    static constexpr auto kRelevantLedgerEntryTypes = VisitAllLedgerEntryTypes{};
 
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);

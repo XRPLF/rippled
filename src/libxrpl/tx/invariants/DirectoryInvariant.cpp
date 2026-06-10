@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -51,7 +52,11 @@ ValidBookDirectory::visitEntry(
     // Only validate newly-created directories and sfRootIndex changes;
     // LedgerStateFix handles legacy bad exchange-rate metadata. Skip deletions
     // because `after` is not guaranteed to be null.
-    if (badBookDirectory_ || isDelete || !after || after->getType() != ltDIR_NODE)
+    XRPL_ASSERT(
+        (!before || before->getType() == ltDIR_NODE) && (!after || after->getType() == ltDIR_NODE),
+        "xrpl::ValidBookDirectory::visitEntry : directory node input");
+
+    if (badBookDirectory_ || isDelete || !after)
         return;
 
     auto const rootIndex = after->getFieldH256(sfRootIndex);

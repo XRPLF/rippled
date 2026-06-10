@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -17,10 +18,12 @@ namespace xrpl {
 void
 ValidLoan::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    if (after && after->getType() == ltLOAN)
-    {
+    XRPL_ASSERT(
+        (!before || before->getType() == ltLOAN) && (!after || after->getType() == ltLOAN),
+        "xrpl::ValidLoan::visitEntry : loan input");
+
+    if (after)
         loans_.emplace_back(before, after);
-    }
 }
 
 bool
