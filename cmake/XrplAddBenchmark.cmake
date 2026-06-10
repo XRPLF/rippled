@@ -20,6 +20,13 @@ function(xrpl_add_benchmark name)
     )
     add_executable(${target} ${ARGN} ${sources})
 
+    # Benchmark sources register cases through Google Benchmark's static
+    # registrars (anonymous-namespace lambdas). Merging several such files into
+    # one unity translation unit collides those internal-linkage entities, so
+    # keep benchmarks out of the unity build - mirroring xrpl.libpb in
+    # XrplCore.cmake. Each file compiles fine on its own.
+    set_target_properties(${target} PROPERTIES UNITY_BUILD OFF)
+
     isolate_headers(
         ${target}
         "${CMAKE_SOURCE_DIR}/src"
