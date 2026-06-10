@@ -148,11 +148,11 @@ public:
         std::string serviceName = "xrpld";
 
         /** OTel resource attribute `service.version` (set from BuildInfo). */
-        std::string serviceVersion;
+        std::string serviceVersion{};
 
         /** OTel resource attribute `service.instance.id` (defaults to node
             public key). */
-        std::string serviceInstanceId;
+        std::string serviceInstanceId{};
 
         /** OTLP/HTTP endpoint URL where spans are sent. */
         std::string exporterEndpoint = "http://localhost:4318/v1/traces";
@@ -161,7 +161,7 @@ public:
         bool useTls = false;
 
         /** Path to a CA certificate bundle for TLS verification. */
-        std::string tlsCertPath;
+        std::string tlsCertPath{};
 
         /** Path to this node's client certificate (PEM), presented to the
             collector for mutual TLS. Empty disables client-side auth, in
