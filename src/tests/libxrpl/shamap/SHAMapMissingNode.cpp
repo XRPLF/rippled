@@ -33,7 +33,8 @@ syncWithLimit(SHAMap const& source, SHAMap& dest, std::size_t nodeLimit)
     std::vector<std::pair<SHAMapNodeID, Blob>> rootData;
     if (!source.getNodeFat(SHAMapNodeID{}, rootData, false, 0))
         FAIL() << "Could not get root node";
-    dest.addRootNode(source.getHash(), makeSlice(rootData[0].second), nullptr);
+    if (!dest.addRootNode(source.getHash(), makeSlice(rootData[0].second), nullptr).isGood())
+        FAIL() << "Could not add root node";
 
     // Fetch nodes from the source map and deliver them to the dest map until we reach the limit or
     // there are no more missing nodes.
@@ -54,7 +55,10 @@ syncWithLimit(SHAMap const& source, SHAMap& dest, std::size_t nodeLimit)
                 continue;
 
             for (auto const& [id, blob] : nodeData)
-                dest.addKnownNode(id, makeSlice(blob), nullptr);
+            {
+                if (!dest.addKnownNode(id, makeSlice(blob), nullptr).isGood())
+                    FAIL() << "Could not add known node";
+            }
 
             ++delivered;
         }
