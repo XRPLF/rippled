@@ -10,6 +10,19 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
+
+// The mpt-crypto library's <mpt_protocol.h> (pulled in transitively via
+// ConfidentialTransfer.h -> <secp256k1_mpt.h>) defines ttCONFIDENTIAL_MPT_* as
+// preprocessor macros that collide with rippled's TxType enumerators of the
+// same name, rewriting e.g. `ttCONFIDENTIAL_MPT_SEND` into the bare integer
+// `88` at every use site. Tests only use the TxType enum, so drop the macros.
+// TODO: remove once mpt-crypto renames these macros (e.g. kMPT_TT_*).
+#undef ttCONFIDENTIAL_MPT_CONVERT
+#undef ttCONFIDENTIAL_MPT_MERGE_INBOX
+#undef ttCONFIDENTIAL_MPT_CONVERT_BACK
+#undef ttCONFIDENTIAL_MPT_SEND
+#undef ttCONFIDENTIAL_MPT_CLAWBACK
+
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>

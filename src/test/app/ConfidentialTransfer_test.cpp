@@ -7613,6 +7613,10 @@ public:
 };
 // NOLINTEND(misc-const-correctness, bugprone-unchecked-optional-access)
 
-BEAST_DEFINE_TESTSUITE(ConfidentialTransfer, app, xrpl);
+// TEMPORARILY DISABLED: the ConfidentialTransfer suite is unusably slow because
+// the test harness verifies balances via ElGamal decryption, which brute-forces
+// a discrete log over a fixed iteration range in mpt-crypto. Re-enable (uncomment)
+// once mpt-crypto ships the faster baby-step-giant-step decryption.
+// BEAST_DEFINE_TESTSUITE(ConfidentialTransfer, app, xrpl);
 
 }  // namespace xrpl
