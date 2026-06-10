@@ -88,7 +88,7 @@ private:
         auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
         std::string const logOutput = sink.messages().str();
-        BEAST_EXPECT(logOutput.find(expectedMessage) != std::string::npos);
+        BEAST_EXPECT(logOutput.contains(expectedMessage));
     }
 
     // Helper function to test power of two validation
@@ -105,7 +105,7 @@ private:
         auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
         std::string const logOutput = sink.messages().str();
-        bool const hasWarning = logOutput.find("Invalid nudb_block_size") != std::string::npos;
+        bool const hasWarning = logOutput.contains("Invalid nudb_block_size");
 
         BEAST_EXPECT(hasWarning == !shouldWork);
     }
@@ -221,10 +221,8 @@ public:
             catch (std::exception const& e)
             {
                 std::string const logOutput{e.what()};
-                BEAST_EXPECT(logOutput.find("Invalid nudb_block_size: 5000") != std::string::npos);
-                BEAST_EXPECT(
-                    logOutput.find("Must be power of 2 between 4096 and 32768") !=
-                    std::string::npos);
+                BEAST_EXPECT(logOutput.contains("Invalid nudb_block_size: 5000"));
+                BEAST_EXPECT(logOutput.contains("Must be power of 2 between 4096 and 32768"));
             }
         }
 
@@ -247,8 +245,7 @@ public:
             catch (std::exception const& e)
             {
                 std::string const logOutput{e.what()};
-                BEAST_EXPECT(
-                    logOutput.find("Invalid nudb_block_size value: invalid") != std::string::npos);
+                BEAST_EXPECT(logOutput.contains("Invalid nudb_block_size value: invalid"));
             }
         }
     }
@@ -291,7 +288,7 @@ public:
             catch (std::exception const& e)
             {
                 std::string const logOutput{e.what()};
-                BEAST_EXPECT(logOutput.find("Invalid nudb_block_size") != std::string::npos);
+                BEAST_EXPECT(logOutput.contains("Invalid nudb_block_size"));
             }
         }
     }
@@ -355,8 +352,7 @@ public:
 
             // Should log success message for valid values
             std::string const logOutput = sink.messages().str();
-            bool const hasSuccessMessage =
-                logOutput.find("Using custom NuDB block size") != std::string::npos;
+            bool const hasSuccessMessage = logOutput.contains("Using custom NuDB block size");
             BEAST_EXPECT(hasSuccessMessage);
         }
 
