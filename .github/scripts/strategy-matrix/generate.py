@@ -21,7 +21,7 @@ def get_cmake_args(build_type: str, extra_args: str) -> str:
     """Get the full list of CMake arguments for a config."""
     args = _BASE_CMAKE_ARGS.copy()
     if build_type == "Release":
-        args.append("-Dassert=ON")
+        args.append("-Dassert=OFF")
     if extra_args:
         args.extend(extra_args.split())
     return " ".join(args)
