@@ -484,11 +484,11 @@ public:
                 test(cSmall);
                 break;
             case MantissaRange::MantissaScale::LargeLegacy:
-            case MantissaRange::MantissaScale::Large3_2_0:
+            case MantissaRange::MantissaScale::Large320:
                 test(cLargeAll);
                 test(cLargeLegacy);
                 break;
-            case MantissaRange::MantissaScale::Large:
+            case MantissaRange::MantissaScale::Large330:
                 test(cLargeAll);
                 test(cLarge);
                 break;
@@ -1490,7 +1490,7 @@ public:
 
                     switch (scale)
                     {
-                        case MantissaRange::MantissaScale::Large:
+                        case MantissaRange::MantissaScale::Large330:
                             // Because the absolute value of min() is larger than max(), it
                             // will be rounded down toward max()
                             test(
@@ -1520,7 +1520,7 @@ public:
 
                 switch (scale)
                 {
-                    case MantissaRange::MantissaScale::Large:
+                    case MantissaRange::MantissaScale::Large330:
                         // Rounding to nearest, since the mantissa is below the halfway point from
                         // kMaxRep to kMaxRep up, it will be rounded down to kMaxRep
                         test(
@@ -2315,7 +2315,7 @@ public:
                     break;
 
                 case MantissaRange::MantissaScale::LargeLegacy:
-                case MantissaRange::MantissaScale::Large3_2_0:
+                case MantissaRange::MantissaScale::Large320:
                     // Upward round UP
                     BEAST_EXPECT(upward == above);
 
