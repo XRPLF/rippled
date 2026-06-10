@@ -1,6 +1,5 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -22,6 +21,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <expected>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -202,7 +202,7 @@ isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseud
             }) > 0;
 }
 
-Expected<SLE::pointer, TER>
+std::expected<SLE::pointer, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField)
 {
     [[maybe_unused]]
@@ -216,7 +216,7 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const
 
     auto const accountId = pseudoAccountAddress(view, pseudoOwnerKey);
     if (accountId == beast::kZero)
-        return Unexpected(tecDUPLICATE);
+        return std::unexpected(tecDUPLICATE);
 
     // Create pseudo-account.
     auto account = std::make_shared<SLE>(keylet::account(accountId));

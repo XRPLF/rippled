@@ -50,7 +50,6 @@ cmake --build --preset default
 | `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                        |
 | `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute             |
 | `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute      |
-| `sampling_ratio`           | `1.0`                             | Head-based sampling ratio (0.0--1.0)                      |
 | `trace_rpc`                | `1`                               | Enable RPC request tracing                                |
 | `trace_transactions`       | `1`                               | Enable transaction tracing                                |
 | `trace_consensus`          | `1`                               | Enable consensus tracing                                  |
@@ -870,7 +869,8 @@ The `getKBUsed*()` methods require SQLite databases to exist. If running with
 
 ### High memory usage
 
-- Reduce `sampling_ratio` (e.g., `0.1` for 10% sampling)
+- Reduce trace volume with collector-side tail sampling (xrpld head sampling is
+  fixed at 1.0 and is not configurable)
 - Reduce `max_queue_size` and `batch_size`
 - Disable high-volume trace categories: `trace_peer=0`
 
@@ -896,12 +896,12 @@ The `getKBUsed*()` methods require SQLite databases to exist. If running with
 
 ## Performance Tuning
 
-| Scenario                 | Recommendation                                    |
-| ------------------------ | ------------------------------------------------- |
-| Production mainnet       | `sampling_ratio=0.01`, `trace_peer=0`             |
-| Testnet/devnet           | `sampling_ratio=1.0` (full tracing)               |
-| Debugging specific issue | `sampling_ratio=1.0` temporarily                  |
-| High-throughput node     | Increase `batch_size=1024`, `max_queue_size=4096` |
+| Scenario                 | Recommendation                                            |
+| ------------------------ | --------------------------------------------------------- |
+| Production mainnet       | `trace_peer=0`; reduce volume via collector tail sampling |
+| Testnet/devnet           | Full tracing (head sampling fixed at 1.0)                 |
+| Debugging specific issue | Full tracing (head sampling fixed at 1.0)                 |
+| High-throughput node     | Increase `batch_size=1024`, `max_queue_size=4096`         |
 
 ## Disabling Telemetry
 
