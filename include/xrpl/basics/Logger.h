@@ -1,11 +1,11 @@
 #pragma once
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/StructuredLogging.h>
 
 #include <fmt/format.h>
 
 #include <cstddef>
+#include <expected>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -488,7 +488,7 @@ public:
      * @param config The configuration to use
      * @return Void on success, error message on failure
      */
-    [[nodiscard]] static Expected<void, std::string>
+    [[nodiscard]] static std::expected<void, std::string>
     init(LoggingConfiguration const& config);
 
     /**
@@ -569,8 +569,9 @@ private:
      * @param config The configuration to parse sinks from
      * @return A vector of sinks on success, error message on failure
      */
-    [[nodiscard]] static Expected<std::vector<std::shared_ptr<spdlog::sinks::sink>>, std::string>
-    getSinks(LoggingConfiguration const& config, std::string const& format);
+    [[nodiscard]] static std::
+        expected<std::vector<std::shared_ptr<spdlog::sinks::sink>>, std::string>
+        getSinks(LoggingConfiguration const& config, std::string const& format);
 
     struct FileLoggingParams
     {

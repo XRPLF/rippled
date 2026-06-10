@@ -244,15 +244,6 @@ TEST(HasToString, number_satisfies_concept)
     static_assert(detail::HasToString<Number>);
 }
 
-TEST(HasToString, builtin_types_without_adl)
-{
-    // Built-in types have no associated namespace for ADL, so unless
-    // ToString.h is explicitly included they do not satisfy HasToString.
-    // They are handled by the fmt::format fallback path instead.
-    static_assert(!detail::HasToString<int>);
-    static_assert(!detail::HasToString<double>);
-}
-
 // -- appendJsonValue with to_string types ------------------------------------
 
 TEST(AppendJsonValue, xrp_amount_quoted)

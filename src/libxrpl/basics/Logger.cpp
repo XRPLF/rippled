@@ -1,7 +1,5 @@
 #include <xrpl/basics/Logger.h>
 
-#include <xrpl/basics/Expected.h>
-
 #include <fmt/format.h>
 #include <spdlog/async.h>
 #include <spdlog/async_logger.h>
@@ -19,6 +17,7 @@
 #include <cstddef>
 #include <cstring>
 #include <ctime>
+#include <expected>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -396,7 +395,7 @@ LogServiceState::registerLogger(std::string_view channel, std::optional<Severity
     return logger;
 }
 
-Expected<std::vector<spdlog::sink_ptr>, std::string>
+std::expected<std::vector<spdlog::sink_ptr>, std::string>
 LogService::getSinks(LoggingConfiguration const& config, std::string const& format)
 {
     std::vector<spdlog::sink_ptr> allSinks = createConsoleSinks(config.enableConsole, format);
@@ -408,7 +407,7 @@ LogService::getSinks(LoggingConfiguration const& config, std::string const& form
         {
             if (std::error_code error; !std::filesystem::create_directories(dirPath, error))
             {
-                return Unexpected{fmt::format(
+                return std::unexpected{fmt::format(
                     "Couldn't create logs directory '{}': {}", dirPath.string(), error.message())};
             }
         }
@@ -421,7 +420,7 @@ LogService::getSinks(LoggingConfiguration const& config, std::string const& form
     return allSinks;
 }
 
-Expected<void, std::string>
+std::expected<void, std::string>
 LogService::init(LoggingConfiguration const& config)
 {
     // Format is fully determined by the logging mode.
@@ -430,7 +429,7 @@ LogService::init(LoggingConfiguration const& config)
     auto const sinksMaybe = getSinks(config, format_);
     if (!sinksMaybe.has_value())
     {
-        return Unexpected{sinksMaybe.error()};
+        return std::unexpected{sinksMaybe.error()};
     }
 
     logDir_ = config.directory;
