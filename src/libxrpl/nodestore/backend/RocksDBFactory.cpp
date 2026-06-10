@@ -1,8 +1,9 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
@@ -111,17 +112,18 @@ public:
         RocksDBEnv* env)
         : deletePath_(false), journal(journal), keyBytes(keyBytes), batch(*this, scheduler)
     {
-        if (!getIfExists(keyValues, "path", name))
+        if (!getIfExists(keyValues, Keys::kPath, name))
             Throw<std::runtime_error>("Missing path in RocksDBFactory backend");
 
         rocksdb::BlockBasedTableOptions tableOptions;
         options.env = env;
 
-        bool const hardSet = keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
+        bool const hardSet =
+            keyValues.exists(Keys::kHardSet) && get<bool>(keyValues, Keys::kHardSet);
 
-        if (keyValues.exists("cache_mb"))
+        if (keyValues.exists(Keys::kCacheMb))
         {
-            auto size = get<int>(keyValues, "cache_mb");
+            auto size = get<int>(keyValues, Keys::kCacheMb);
 
             if (!hardSet && size == 256)
                 size = 1024;
@@ -129,14 +131,14 @@ public:
             tableOptions.block_cache = rocksdb::NewLRUCache(megabytes(size));
         }
 
-        if (auto const v = get<int>(keyValues, "filter_bits"))
+        if (auto const v = get<int>(keyValues, Keys::kFilterBits))
         {
-            bool const filterBlocks =
-                !keyValues.exists("filter_full") || (get<int>(keyValues, "filter_full") == 0);
+            bool const filterBlocks = !keyValues.exists(Keys::kFilterFull) ||
+                (get<int>(keyValues, Keys::kFilterFull) == 0);
             tableOptions.filter_policy.reset(rocksdb::NewBloomFilterPolicy(v, filterBlocks));
         }
 
-        if (getIfExists(keyValues, "open_files", options.max_open_files))
+        if (getIfExists(keyValues, Keys::kOpenFiles, options.max_open_files))
         {
             if (!hardSet && options.max_open_files == 2000)
                 options.max_open_files = 8000;
@@ -144,9 +146,9 @@ public:
             fdMinRequired = options.max_open_files + 128;
         }
 
-        if (keyValues.exists("file_size_mb"))
+        if (keyValues.exists(Keys::kFileSizeMb))
         {
-            auto fileSizeMb = get<int>(keyValues, "file_size_mb");
+            auto fileSizeMb = get<int>(keyValues, Keys::kFileSizeMb);
 
             if (!hardSet && fileSizeMb == 8)
                 fileSizeMb = 256;
@@ -156,16 +158,17 @@ public:
             options.write_buffer_size = 2 * options.target_file_size_base;
         }
 
-        getIfExists(keyValues, "file_size_mult", options.target_file_size_multiplier);
+        getIfExists(keyValues, Keys::kFileSizeMult, options.target_file_size_multiplier);
 
-        if (keyValues.exists("bg_threads"))
+        if (keyValues.exists(Keys::kBgThreads))
         {
-            options.env->SetBackgroundThreads(get<int>(keyValues, "bg_threads"), rocksdb::Env::LOW);
+            options.env->SetBackgroundThreads(
+                get<int>(keyValues, Keys::kBgThreads), rocksdb::Env::LOW);
         }
 
-        if (keyValues.exists("high_threads"))
+        if (keyValues.exists(Keys::kHighThreads))
         {
-            auto const highThreads = get<int>(keyValues, "high_threads");
+            auto const highThreads = get<int>(keyValues, Keys::kHighThreads);
             options.env->SetBackgroundThreads(highThreads, rocksdb::Env::HIGH);
 
             // If we have high-priority threads, presumably we want to
@@ -176,10 +179,10 @@ public:
 
         options.compression = rocksdb::kSnappyCompression;
 
-        getIfExists(keyValues, "block_size", tableOptions.block_size);
+        getIfExists(keyValues, Keys::kBlockSize, tableOptions.block_size);
 
-        if (keyValues.exists("universal_compaction") &&
-            (get<int>(keyValues, "universal_compaction") != 0))
+        if (keyValues.exists(Keys::kUniversalCompaction) &&
+            (get<int>(keyValues, Keys::kUniversalCompaction) != 0))
         {
             options.compaction_style = rocksdb::kCompactionStyleUniversal;
             options.min_write_buffer_number_to_merge = 2;
@@ -187,11 +190,11 @@ public:
             options.write_buffer_size = 6 * options.target_file_size_base;
         }
 
-        if (keyValues.exists("bbt_options"))
+        if (keyValues.exists(Keys::kBbtOptions))
         {
             rocksdb::ConfigOptions const configOptions;
             auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
-                configOptions, tableOptions, get(keyValues, "bbt_options"), &tableOptions);
+                configOptions, tableOptions, get(keyValues, Keys::kBbtOptions), &tableOptions);
             if (!s.ok())
             {
                 Throw<std::runtime_error>(
@@ -201,10 +204,10 @@ public:
 
         options.table_factory.reset(NewBlockBasedTableFactory(tableOptions));
 
-        if (keyValues.exists("options"))
+        if (keyValues.exists(Keys::kOptions))
         {
             auto const s =
-                rocksdb::GetOptionsFromString(options, get(keyValues, "options"), &options);
+                rocksdb::GetOptionsFromString(options, get(keyValues, Keys::kOptions), &options);
             if (!s.ok())
             {
                 Throw<std::runtime_error>(
