@@ -2789,6 +2789,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                sleVault->setAccountID(sfAccount, a1.id());
                 ac.view().insert(sleVault);
                 return true;
             },
@@ -2861,6 +2862,7 @@ class Invariants_test : public beast::unit_test::Suite
                     auto const vaultPage = ac.view().dirInsert(
                         keylet::ownerDir(a.id()), sleVault->key(), describeOwnerDir(a.id()));
                     sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+                    sleVault->setAccountID(sfAccount, a.id());
                     ac.view().insert(sleVault);
                 };
                 insertVault(a1);
@@ -4883,6 +4885,63 @@ class Invariants_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testObjectHasPseudoAccount()
+    {
+        testcase << "object has pseudo-account";
+        using namespace jtx;
+
+        auto const amendments = defaultAmendments() | fixCleanup3_3_0;
+        // An account that is never funded, so it won't exist in any view.
+        AccountID const ghostId = Account{"Ghost"}.id();
+
+        // Vault: pseudo-account is referenced but does not exist on the ledger.
+        doInvariantCheck(
+            Env{*this, amendments},
+            {{"pseudo-account does not exist"}},
+            [ghostId](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const vaultKeylet = keylet::vault(a1.id(), ac.view().seq());
+                auto sle = std::make_shared<SLE>(vaultKeylet);
+                sle->setAccountID(sfAccount, ghostId);
+                auto const page = ac.view().dirInsert(
+                    keylet::ownerDir(a1.id()), sle->key(), describeOwnerDir(a1.id()));
+                if (!page)
+                    return false;
+                sle->setFieldU64(sfOwnerNode, *page);
+                ac.view().insert(sle);
+                return true;
+            });
+
+        // AMM: pseudo-account is referenced but does not exist on the ledger.
+        doInvariantCheck(
+            Env{*this, amendments},
+            {{"pseudo-account does not exist"}},
+            [ghostId](Account const&, Account const&, ApplyContext& ac) {
+                auto const ammKeylet = keylet::amm(uint256(1u));
+                auto sle = std::make_shared<SLE>(ammKeylet);
+                sle->setAccountID(sfAccount, ghostId);
+                ac.view().insert(sle);
+                return true;
+            });
+
+        // LoanBroker: pseudo-account is referenced but does not exist on the ledger.
+        doInvariantCheck(
+            Env{*this, amendments},
+            {{"pseudo-account does not exist"}},
+            [ghostId](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const brokerKeylet = keylet::loanbroker(a1.id(), ac.view().seq());
+                auto sle = std::make_shared<SLE>(brokerKeylet);
+                sle->setAccountID(sfAccount, ghostId);
+                auto const page = ac.view().dirInsert(
+                    keylet::ownerDir(a1.id()), sle->key(), describeOwnerDir(a1.id()));
+                if (!page)
+                    return false;
+                sle->setFieldU64(sfOwnerNode, *page);
+                ac.view().insert(sle);
+                return true;
+            });
+    }
+
 public:
     void
     run() override
@@ -4914,6 +4973,7 @@ public:
         testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
         testVaultComputeCoarsestScale();
         testAMM();
+        testObjectHasPseudoAccount();
     }
 };
 

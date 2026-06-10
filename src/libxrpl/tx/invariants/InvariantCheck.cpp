@@ -1069,4 +1069,61 @@ ValidAmounts::finalize(
     return true;
 }
 
+void
+ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+{
+    // If an object is deleted, pseudo-account is also deleted
+    if (isDelete)
+        return;
+
+    // After should never be null when isDelete = false, if it is, something went horribly wrong
+    if (!after)
+        return;
+
+    switch (after->getType())
+    {
+        case ltAMM:
+        case ltVAULT:
+        case ltLOAN_BROKER:
+            sle_ = after;
+        default:
+            return;
+    }
+}
+
+[[nodiscard]] bool
+ObjectHasPseudoAccount::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j) const
+{
+    if (!view.rules().enabled(fixCleanup3_3_0))
+        return true;
+
+    if (!sle_)
+        return true;
+
+    // For current ledger entry types, pseudo-account is identified by `sfAccount` field.
+    if (!sle_->isFieldPresent(sfAccount))
+    {
+        JLOG(j.fatal()) << "Invariant failed: ledger entry " << sle_->getSType()
+                        << " is missing pseudo-account field";
+        return false;
+    }
+
+    bool const exists = view.read(keylet::account(sle_->getAccountID(sfAccount))) != nullptr;
+
+    // The pseudo-account must exist on the ledger
+    if (!exists)
+    {
+        JLOG(j.fatal()) << "Invariant failed: ledger entry " << sle_->getSType()
+                        << " pseudo-account does not exist";
+        return false;
+    }
+
+    return true;
+}
+
 }  // namespace xrpl

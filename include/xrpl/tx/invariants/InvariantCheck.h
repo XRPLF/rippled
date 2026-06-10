@@ -375,16 +375,32 @@ public:
  */
 class ValidAmounts
 {
-    std::vector<std::shared_ptr<SLE const>> afterEntries_;
+    std::vector<SLE::const_pointer> afterEntries_;
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
+/*
+ * Verify that all objects that have associated pseudo-accounts, always have the said
+ * pseudo-accounts.
+ */
+class ObjectHasPseudoAccount
+{
+public:
+    void
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+
+private:
+    SLE::const_pointer sle_;
+};
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -415,7 +431,8 @@ using InvariantChecks = std::tuple<
     ValidVault,
     ValidMPTPayment,
     ValidAmounts,
-    ValidMPTTransfer>;
+    ValidMPTTransfer,
+    ObjectHasPseudoAccount>;
 
 /**
  * @brief get a tuple of all invariant checks
