@@ -60,19 +60,20 @@ struct RunState
     std::vector<uint256> missing;      // prefix-2 keys that are never stored
     std::vector<std::size_t> shuffle;  // [0, poolSize) permutation for random-like access
     std::size_t avgPayload = 0;        // mean getData().size() over `present`
-};
 
-// Release the per-run pools (which are large - 100k * ~700B each) so the
-// process resident set drops after each benchmark completes, instead of all
-// RunStates piling up until exit.
-void
-releasePools(RunState& rs)
-{
-    Batch{}.swap(rs.present);
-    Batch{}.swap(rs.recent);
-    std::vector<uint256>{}.swap(rs.missing);
-    std::vector<std::size_t>{}.swap(rs.shuffle);
-}
+    // Tear down the harness and free the per-run pools (which are large -
+    // 100k * ~700B each) so the process resident set drops after each benchmark
+    // completes, instead of all RunStates piling up until exit.
+    void
+    release()
+    {
+        harness.reset();
+        Batch{}.swap(present);
+        Batch{}.swap(recent);
+        std::vector<uint256>{}.swap(missing);
+        std::vector<std::size_t>{}.swap(shuffle);
+    }
+};
 
 // Apply the (size, threads) axes to a read workload. Read workloads can
 // safely repeat their access pattern across iterations, so Google Benchmark's
@@ -127,8 +128,7 @@ registerInsert(BackendConfig const& bc)
                         static_cast<std::int64_t>(state.iterations() * rs->avgPayload));
                     if (state.thread_index() == 0)
                     {
-                        rs->harness.reset();
-                        releasePools(*rs);
+                        rs->release();
                     }
                 })
                 ->Arg(poolSize)
@@ -172,8 +172,7 @@ registerFetch(BackendConfig const& bc)
             state.SetBytesProcessed(static_cast<std::int64_t>(state.iterations() * rs->avgPayload));
             if (state.thread_index() == 0)
             {
-                rs->harness.reset();
-                releasePools(*rs);
+                rs->release();
             }
         });
     applyReadAxes(b);
@@ -210,8 +209,7 @@ registerMissing(BackendConfig const& bc)
             state.SetItemsProcessed(state.iterations());
             if (state.thread_index() == 0)
             {
-                rs->harness.reset();
-                releasePools(*rs);
+                rs->release();
             }
         });
     applyReadAxes(b);
@@ -262,8 +260,7 @@ registerMixed(BackendConfig const& bc)
             state.SetItemsProcessed(state.iterations());
             if (state.thread_index() == 0)
             {
-                rs->harness.reset();
-                releasePools(*rs);
+                rs->release();
             }
         });
     applyReadAxes(b);
@@ -333,8 +330,7 @@ registerWork(BackendConfig const& bc)
                     state.SetItemsProcessed(state.iterations());
                     if (state.thread_index() == 0)
                     {
-                        rs->harness.reset();
-                        releasePools(*rs);
+                        rs->release();
                     }
                 })
                 ->Arg(poolSize)
@@ -389,8 +385,7 @@ registerStoreBatch(BackendConfig const& bc)
                 state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations() * kBatchSize));
                 state.SetBytesProcessed(
                     static_cast<std::int64_t>(state.iterations() * kBatchSize * rs->avgPayload));
-                rs->harness.reset();
-                releasePools(*rs);
+                rs->release();
             })
             ->Arg(poolSize)
             ->Iterations(numBatches);
