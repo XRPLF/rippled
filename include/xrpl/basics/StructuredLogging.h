@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpl/basics/ToString.h>
+
 #include <fmt/format.h>
 
 #include <concepts>

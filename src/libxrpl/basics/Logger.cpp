@@ -205,7 +205,7 @@ scrubSecrets(fmt::memory_buffer& output)
     // Fast path: if there's no double-quote anywhere in the message,
     // none of the JSON-like tokens can possibly match.
     std::string_view const view{output.data(), output.size()};
-    if (view.contains('"'))
+    if (!view.contains('"'))
         return;
 
     // We need string operations (find/replace) so convert temporarily.
