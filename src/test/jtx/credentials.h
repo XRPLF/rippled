@@ -40,7 +40,7 @@ private:
     std::vector<std::string> const credentials_;
 
 public:
-    explicit Ids(std::vector<std::string> const& creds) : credentials_(creds)
+    explicit Ids(std::vector<std::string> creds) : credentials_(std::move(creds))
     {
     }
 
