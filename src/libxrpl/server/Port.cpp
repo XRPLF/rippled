@@ -1,11 +1,12 @@
 #include <xrpl/server/Port.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -195,7 +196,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
 {
     port.name = section.name();
     {
-        auto const optResult = section.get("ip");
+        auto const optResult = section.get(Keys::kIp);
         if (optResult)
         {
             try
@@ -212,7 +213,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const optResult = section.get("port");
+        auto const optResult = section.get(Keys::kPort);
         if (optResult)
         {
             try
@@ -233,7 +234,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const optResult = section.get("protocol");
+        auto const optResult = section.get(Keys::kProtocol);
         if (optResult)
         {
             for (auto const& s : beast::rfc2616::splitCommas(optResult->begin(), optResult->end()))
@@ -242,7 +243,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const lim = get(section, "limit", "unlimited");
+        auto const lim = get(section, Keys::kLimit, "unlimited");
 
         if (!boost::iequals(lim, "unlimited"))
         {
@@ -260,7 +261,7 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
     }
 
     {
-        auto const optResult = section.get("send_queue_limit");
+        auto const optResult = section.get(Keys::kSendQueueLimit);
         if (optResult)
         {
             try
@@ -285,27 +286,28 @@ parsePort(ParsedPort& port, Section const& section, std::ostream& log)
         }
     }
 
-    populate(section, "admin", log, port.adminNetsV4, port.adminNetsV6);
-    populate(section, "secure_gateway", log, port.secureGatewayNetsV4, port.secureGatewayNetsV6);
+    populate(section, Keys::kAdmin, log, port.adminNetsV4, port.adminNetsV6);
+    populate(
+        section, Keys::kSecureGateway, log, port.secureGatewayNetsV4, port.secureGatewayNetsV6);
 
-    set(port.user, "user", section);
-    set(port.password, "password", section);
-    set(port.adminUser, "admin_user", section);
-    set(port.adminPassword, "admin_password", section);
-    set(port.sslKey, "ssl_key", section);
-    set(port.sslCert, "ssl_cert", section);
-    set(port.sslChain, "ssl_chain", section);
-    set(port.sslCiphers, "ssl_ciphers", section);
+    set(port.user, Keys::kUser, section);
+    set(port.password, Keys::kPassword, section);
+    set(port.adminUser, Keys::kAdminUser, section);
+    set(port.adminPassword, Keys::kAdminPassword, section);
+    set(port.sslKey, Keys::kSslKey, section);
+    set(port.sslCert, Keys::kSslCert, section);
+    set(port.sslChain, Keys::kSslChain, section);
+    set(port.sslCiphers, Keys::kSslCiphers, section);
 
-    port.pmdOptions.server_enable = section.valueOr("permessage_deflate", true);
-    port.pmdOptions.client_max_window_bits = section.valueOr("client_max_window_bits", 15);
-    port.pmdOptions.server_max_window_bits = section.valueOr("server_max_window_bits", 15);
+    port.pmdOptions.server_enable = section.valueOr(Keys::kPermessageDeflate, true);
+    port.pmdOptions.client_max_window_bits = section.valueOr(Keys::kClientMaxWindowBits, 15);
+    port.pmdOptions.server_max_window_bits = section.valueOr(Keys::kServerMaxWindowBits, 15);
     port.pmdOptions.client_no_context_takeover =
-        section.valueOr("client_no_context_takeover", false);
+        section.valueOr(Keys::kClientNoContextTakeover, false);
     port.pmdOptions.server_no_context_takeover =
-        section.valueOr("server_no_context_takeover", false);
-    port.pmdOptions.compLevel = section.valueOr("compress_level", 8);
-    port.pmdOptions.memLevel = section.valueOr("memory_level", 4);
+        section.valueOr(Keys::kServerNoContextTakeover, false);
+    port.pmdOptions.compLevel = section.valueOr(Keys::kCompressLevel, 8);
+    port.pmdOptions.memLevel = section.valueOr(Keys::kMemoryLevel, 4);
 }
 
 }  // namespace xrpl

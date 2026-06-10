@@ -33,6 +33,8 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -168,13 +170,13 @@ class Batch_test : public beast::unit_test::Suite
         std::map<std::string, std::string> extraVoting = {})
     {
         auto p = test::jtx::envconfig();
-        auto& section = p->section("transaction_queue");
-        section.set("ledgers_in_queue", "2");
-        section.set("minimum_queue_size", "2");
-        section.set("min_ledgers_to_compute_size_limit", "3");
-        section.set("max_ledger_counts_to_store", "100");
-        section.set("retry_sequence_percent", "25");
-        section.set("normal_consensus_increase_percent", "0");
+        auto& section = p->section(Sections::kTransactionQueue);
+        section.set(Keys::kLedgersInQueue, "2");
+        section.set(Keys::kMinimumQueueSize, "2");
+        section.set(Keys::kMinLedgersToComputeSizeLimit, "3");
+        section.set(Keys::kMaxLedgerCountsToStore, "100");
+        section.set(Keys::kRetrySequencePercent, "25");
+        section.set(Keys::kNormalConsensusIncreasePercent, "0");
 
         for (auto const& [k, v] : extraTxQ)
             section.set(k, v);
@@ -4361,7 +4363,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             test::jtx::Env env{
                 *this,
-                makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
+                makeSmallQueueConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}),
                 features,
                 nullptr,
                 beast::Severity::Error};
@@ -4417,7 +4419,7 @@ class Batch_test : public beast::unit_test::Suite
         {
             test::jtx::Env env{
                 *this,
-                makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
+                makeSmallQueueConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}),
                 features,
                 nullptr,
                 beast::Severity::Error};

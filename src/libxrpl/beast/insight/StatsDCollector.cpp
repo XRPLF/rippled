@@ -66,7 +66,7 @@ public:
 class StatsDHookImpl : public HookImpl, public StatsDMetricBase
 {
 public:
-    StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDHookImpl() override;
 
@@ -86,7 +86,7 @@ private:
 class StatsDCounterImpl : public CounterImpl, public StatsDMetricBase
 {
 public:
-    StatsDCounterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDCounterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDCounterImpl() override;
 
@@ -115,7 +115,7 @@ private:
 class StatsDEventImpl : public EventImpl
 {
 public:
-    StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDEventImpl() override = default;
 
@@ -140,7 +140,7 @@ private:
 class StatsDGaugeImpl : public GaugeImpl, public StatsDMetricBase
 {
 public:
-    StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDGaugeImpl() override;
 
@@ -174,7 +174,7 @@ private:
 class StatsDMeterImpl : public MeterImpl, public StatsDMetricBase
 {
 public:
-    explicit StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    explicit StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDMeterImpl() override;
 
@@ -478,8 +478,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-StatsDHookImpl::StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), handler_(std::move(handler))
+StatsDHookImpl::StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), handler_(std::move(handler))
 {
     impl_->add(*this);
 }
@@ -497,10 +497,8 @@ StatsDHookImpl::doProcess()
 
 //------------------------------------------------------------------------------
 
-StatsDCounterImpl::StatsDCounterImpl(
-    std::string name,
-    std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDCounterImpl::StatsDCounterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
     impl_->add(*this);
 }
@@ -550,8 +548,8 @@ StatsDCounterImpl::doProcess()
 
 //------------------------------------------------------------------------------
 
-StatsDEventImpl::StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDEventImpl::StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
 }
 
@@ -577,8 +575,8 @@ StatsDEventImpl::doNotify(EventImpl::value_type const& value)
 
 //------------------------------------------------------------------------------
 
-StatsDGaugeImpl::StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDGaugeImpl::StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
     impl_->add(*this);
 }
@@ -664,8 +662,8 @@ StatsDGaugeImpl::doProcess()
 
 //------------------------------------------------------------------------------
 
-StatsDMeterImpl::StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDMeterImpl::StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
     impl_->add(*this);
 }

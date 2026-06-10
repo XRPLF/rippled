@@ -153,7 +153,7 @@ Checks: "-*,
   readability-use-std-min-max
   "
 # ---
-# readability-inconsistent-declaration-parameter-name, # in this codebase this check will break a lot of arg names
+# readability-inconsistent-declaration-parameter-name, # In this codebase this check will break a lot of arg names
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. It makes the code less readable
 # ---
 
