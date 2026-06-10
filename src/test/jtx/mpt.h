@@ -13,7 +13,7 @@
 
 // The mpt-crypto library's <mpt_protocol.h> (pulled in transitively via
 // ConfidentialTransfer.h -> <secp256k1_mpt.h>) defines ttCONFIDENTIAL_MPT_* as
-// preprocessor macros that collide with rippled's TxType enumerators of the
+// preprocessor macros that collide with xrpld's TxType enumerators of the
 // same name, rewriting e.g. `ttCONFIDENTIAL_MPT_SEND` into the bare integer
 // `88` at every use site. Tests only use the TxType enum, so drop the macros.
 // TODO: remove once mpt-crypto renames these macros (e.g. kMPT_TT_*).
