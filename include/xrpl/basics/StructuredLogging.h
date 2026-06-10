@@ -164,7 +164,7 @@ class JsonLoggingPatternBuilder
 {
     std::string fields_;
 
-    static constexpr std::string_view kMESSAGE_FIELD = "\"message\": %v";
+    static constexpr std::string_view kMessageField = "\"message\": %v";
 
     static std::string
     extractFields(std::string_view pattern)
@@ -172,7 +172,7 @@ class JsonLoggingPatternBuilder
         if (!pattern.empty() && pattern.front() == '{')
             pattern.remove_prefix(1);
         // Strip the trailing message field: `"message": %v }` or `"message": %v }`
-        if (auto pos = pattern.rfind(kMESSAGE_FIELD); pos != std::string_view::npos)
+        if (auto pos = pattern.rfind(kMessageField); pos != std::string_view::npos)
         {
             // Also strip the leading ", " separator if present
             auto end = pos;
@@ -207,7 +207,7 @@ public:
         result += fields_;
         if (!fields_.empty())
             result += ", ";
-        result += kMESSAGE_FIELD;
+        result += kMessageField;
         result += " }";
         return result;
     }

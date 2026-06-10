@@ -68,7 +68,7 @@ enum class Severity {
  * '%K' is a custom flag that outputs the three-letter severity code
  * (TRC, DBG, NFO, WRN, ERR, FTL).
  */
-inline constexpr char const* kDEFAULT_LOG_FORMAT = "%Y-%b-%d %H:%M:%S.%f UTC %n:%K %v";
+inline constexpr char const* kDefaultLogFormat = "%Y-%b-%d %H:%M:%S.%f UTC %n:%K %v";
 
 /**
  * @brief Build the default JSON log format pattern.

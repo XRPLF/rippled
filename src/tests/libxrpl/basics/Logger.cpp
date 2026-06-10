@@ -33,7 +33,7 @@ protected:
     std::ostringstream output_;
 
     // Regex fragment matching the UTC timestamp produced by spdlog
-    static constexpr std::string_view kTS_RE =
+    static constexpr std::string_view kTsRe =
         R"(\d{4}-[A-Z][a-z]{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} UTC)";
 
     void
@@ -77,8 +77,7 @@ protected:
     expectText(std::string_view channel, std::string_view sev, std::string_view message)
     {
         auto const& line = output_.str();
-        auto const re =
-            fmt::format("{} {}:{} {}\r?\n?", kTS_RE, channel, sev, escapeRegex(message));
+        auto const re = fmt::format("{} {}:{} {}\r?\n?", kTsRe, channel, sev, escapeRegex(message));
         EXPECT_TRUE(std::regex_match(line, std::regex(re))) << "got: " << line;
     }
 
@@ -92,7 +91,7 @@ protected:
         auto const re = fmt::format(
             R"(\{{"timestamp":"{}","channel":"{}","severity":"{}")"
             R"(, "message": {} \}}\r?\n?)",
-            kTS_RE,
+            kTsRe,
             channel,
             sev,
             escapeRegex(msgPart));
@@ -340,7 +339,7 @@ TEST_F(LoggerFixture, severity_codes_in_default_format)
 
     // Each line has the full default format; build a regex for all six.
     auto const line = [&](std::string_view sev, std::string_view msg) {
-        return fmt::format("{} Test:{} {}\r?\n?", kTS_RE, sev, msg);
+        return fmt::format("{} Test:{} {}\r?\n?", kTsRe, sev, msg);
     };
     std::string re;
     re += line("TRC", "t");

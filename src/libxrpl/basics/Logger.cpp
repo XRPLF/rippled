@@ -90,7 +90,7 @@ class NonCriticalFormatter : public spdlog::formatter
 {
 public:
     NonCriticalFormatter(std::unique_ptr<spdlog::formatter> wrappedFormatter)
-        : wrapped_formatter_(std::move(wrappedFormatter))
+        : wrappedFormatter_(std::move(wrappedFormatter))
     {
     }
 
@@ -100,18 +100,18 @@ public:
         // Only format messages with severity less than critical
         if (msg.level != spdlog::level::critical)
         {
-            wrapped_formatter_->format(msg, dest);
+            wrappedFormatter_->format(msg, dest);
         }
     }
 
     [[nodiscard]] std::unique_ptr<formatter>
     clone() const override
     {
-        return std::make_unique<NonCriticalFormatter>(wrapped_formatter_->clone());
+        return std::make_unique<NonCriticalFormatter>(wrappedFormatter_->clone());
     }
 
 private:
-    std::unique_ptr<spdlog::formatter> wrapped_formatter_;
+    std::unique_ptr<spdlog::formatter> wrappedFormatter_;
 };
 
 /**
@@ -180,10 +180,10 @@ createPatternFormatter(std::string const& pattern)
 static void
 truncateMessage(fmt::memory_buffer& message)
 {
-    static constexpr std::size_t kMAX_MESSAGE_CHARS = 12 * 1024;
-    if (message.size() > kMAX_MESSAGE_CHARS)
+    static constexpr std::size_t kMaxMessageChars = 12 * 1024;
+    if (message.size() > kMaxMessageChars)
     {
-        message.resize(kMAX_MESSAGE_CHARS - 3);
+        message.resize(kMaxMessageChars - 3);
         static constexpr char kELLIPSIS[] = "...";
         message.append(kELLIPSIS, kELLIPSIS + 3);
     }
@@ -321,9 +321,9 @@ LogServiceState::init(
 
     if (isAsync)
     {
-        static constexpr size_t kQUEUE_SIZE = 8192;
-        static constexpr size_t kTHREAD_COUNT = 1;
-        spdlog::init_thread_pool(kQUEUE_SIZE, kTHREAD_COUNT);
+        static constexpr size_t kQueueSize = 8192;
+        static constexpr size_t kThreadCount = 1;
+        spdlog::init_thread_pool(kQueueSize, kThreadCount);
     }
 }
 
@@ -425,7 +425,7 @@ Expected<void, std::string>
 LogService::init(LoggingConfiguration const& config)
 {
     // Format is fully determined by the logging mode.
-    format_ = config.jsonMode ? defaultJsonLogFormat() : std::string(kDEFAULT_LOG_FORMAT);
+    format_ = config.jsonMode ? defaultJsonLogFormat() : std::string(kDefaultLogFormat);
 
     auto const sinksMaybe = getSinks(config, format_);
     if (!sinksMaybe.has_value())
@@ -548,14 +548,14 @@ Logger::Logger(std::string_view const channel)
 Logger::~Logger()
 {
     // One reference is held by logger_ and the other by spdlog registry
-    static constexpr size_t kLAST_LOGGER_REF_COUNT = 2;
+    static constexpr size_t kLastLoggerRefCount = 2;
 
     if (logger_ == nullptr)
     {
         return;  // LCOV_EXCL_LINE
     }
 
-    if (logger_.use_count() == kLAST_LOGGER_REF_COUNT)
+    if (logger_.use_count() == kLastLoggerRefCount)
     {
         spdlog::drop(logger_->name());
     }
@@ -601,8 +601,8 @@ Logger::Pump::~Pump()
             bool const hasMessage = !messageParams_.empty();
             if (hasContext || hasMessage)
             {
-                static constexpr auto kVALUES_OPEN = ", \"values\": {"sv;
-                wrapped.append(kVALUES_OPEN);
+                static constexpr auto kValuesOpen = ", \"values\": {"sv;
+                wrapped.append(kValuesOpen);
                 wrapped.append(
                     contextParams_.data(), contextParams_.data() + contextParams_.size());
                 if (hasContext && hasMessage)
