@@ -7,8 +7,11 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <new>
 #include <optional>
 #include <span>
+#include <type_traits>
 
 namespace beast {
 
