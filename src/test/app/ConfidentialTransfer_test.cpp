@@ -5,6 +5,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Buffer.h>
