@@ -188,7 +188,7 @@ InboundLedger::~InboundLedger()
 }
 
 static std::vector<uint256>
-neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter* filter)
+neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* filter)
 {
     std::vector<uint256> ret;
 
@@ -211,13 +211,13 @@ neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter* filter
 }
 
 std::vector<uint256>
-InboundLedger::neededTxHashes(int max, SHAMapSyncFilter* filter) const
+InboundLedger::neededTxHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().txHash, ledger_->txMap(), max, filter);
 }
 
 std::vector<uint256>
-InboundLedger::neededStateHashes(int max, SHAMapSyncFilter* filter) const
+InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().accountHash, ledger_->stateMap(), max, filter);
 }
@@ -820,7 +820,7 @@ InboundLedger::takeHeader(std::string const& data)
     Call with a lock
 */
 void
-InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
+InboundLedger::receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode& san)
 {
     if (!haveHeader_)
     {
@@ -1026,7 +1026,7 @@ InboundLedger::gotData(
 //        TODO Change peer to Consumer
 //
 int
-InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& packet)
+InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData const& packet)
 {
     if (packet.type() == protocol::liBASE)
     {
