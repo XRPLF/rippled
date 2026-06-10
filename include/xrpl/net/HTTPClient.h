@@ -53,7 +53,7 @@ public:
             boost::system::error_code const& ecResult,
             int iStatus,
             std::string const& strData)> complete,
-        beast::Journal& j);
+        beast::Journal const& j);
 
     static void
     get(bool bSSL,
@@ -67,7 +67,7 @@ public:
             boost::system::error_code const& ecResult,
             int iStatus,
             std::string const& strData)> complete,
-        beast::Journal& j);
+        beast::Journal const& j);
 
     static void
     request(
@@ -82,7 +82,7 @@ public:
             boost::system::error_code const& ecResult,
             int iStatus,
             std::string const& strData)> complete,
-        beast::Journal& j);
+        beast::Journal const& j);
 };
 
 }  // namespace xrpl

@@ -2,8 +2,9 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -62,9 +63,9 @@ class WSClientImpl : public WSClient
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parsePort(common, cfg["server"], log);
+        parsePort(common, cfg[Sections::kServer], log);
         auto const ps = v2 ? "ws2" : "ws";
-        for (auto const& name : cfg.section("server").values())
+        for (auto const& name : cfg.section(Sections::kServer).values())
         {
             if (!cfg.exists(name))
                 continue;
