@@ -49,7 +49,6 @@
 #include <cstdint>
 #include <iterator>
 #include <map>
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -755,11 +754,11 @@ public:
     }
 
     // Helper function that returns the Offers on an account.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     offersOnAccount(jtx::Env& env, jtx::Account const& account)
     {
-        std::vector<std::shared_ptr<SLE const>> result;
-        forEachItem(*env.current(), account, [&result](std::shared_ptr<SLE const> const& sle) {
+        std::vector<SLE::const_pointer> result;
+        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);
         });
@@ -1974,54 +1973,36 @@ public:
 
         using namespace jtx;
 
-        for (auto numberSwitchOver : {false, true})
-        {
-            Env env{*this, features};
-            if (numberSwitchOver)
-            {
-                env.enableFeature(fixUniversalNumber);
-            }
-            else
-            {
-                env.disableFeature(fixUniversalNumber);
-            }
+        Env env{*this, features};
 
-            auto const gw = Account{"gateway"};
-            auto const alice = Account{"alice"};
-            auto const bob = Account{"bob"};
-            auto const usd = gw["USD"];
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const usd = gw["USD"];
 
-            env.fund(XRP(10000), gw, alice, bob);
-            env.close();
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
 
-            env(rate(gw, 1.005));
+        env(rate(gw, 1.005));
 
-            env(trust(alice, usd(1000)));
-            env(trust(bob, usd(1000)));
-            env(trust(gw, alice["USD"](50)));
+        env(trust(alice, usd(1000)));
+        env(trust(bob, usd(1000)));
+        env(trust(gw, alice["USD"](50)));
 
-            env(pay(gw, bob, bob["USD"](1)));
-            env(pay(alice, gw, usd(50)));
+        env(pay(gw, bob, bob["USD"](1)));
+        env(pay(alice, gw, usd(50)));
 
-            env(trust(gw, alice["USD"](0)));
+        env(trust(gw, alice["USD"](0)));
 
-            env(offer(alice, usd(50), XRP(150000)));
-            env(offer(bob, XRP(100), usd(0.1)));
+        env(offer(alice, usd(50), XRP(150000)));
+        env(offer(bob, XRP(100), usd(0.1)));
 
-            auto jrr = ledgerEntryState(env, alice, gw, "USD");
-            BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "49.96666666666667");
+        auto jrr = ledgerEntryState(env, alice, gw, "USD");
+        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "49.96666666666667");
 
-            jrr = ledgerEntryState(env, bob, gw, "USD");
-            json::Value const bobUSD = jrr[jss::node][sfBalance.fieldName][jss::value];
-            if (!numberSwitchOver)
-            {
-                BEAST_EXPECT(bobUSD == "-0.966500000033334");
-            }
-            else
-            {
-                BEAST_EXPECT(bobUSD == "-0.9665000000333333");
-            }
-        }
+        jrr = ledgerEntryState(env, bob, gw, "USD");
+        json::Value const bobUSD = jrr[jss::node][sfBalance.fieldName][jss::value];
+        BEAST_EXPECT(bobUSD == "-0.9665000000333333");
     }
 
     void
@@ -3980,7 +3961,7 @@ public:
                 auto actorOffers = offersOnAccount(env, actor.acct);
                 auto const offerCount = std::distance(
                     actorOffers.begin(),
-                    std::ranges::remove_if(actorOffers, [](std::shared_ptr<SLE const>& offer) {
+                    std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
                         return (*offer)[sfTakerGets].signum() == 0;
                     }).begin());
                 BEAST_EXPECT(offerCount == actor.offers);
@@ -4126,7 +4107,7 @@ public:
                 auto actorOffers = offersOnAccount(env, actor.acct);
                 auto const offerCount = std::distance(
                     actorOffers.begin(),
-                    std::ranges::remove_if(actorOffers, [](std::shared_ptr<SLE const>& offer) {
+                    std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
                         return (*offer)[sfTakerGets].signum() == 0;
                     }).begin());
                 BEAST_EXPECT(offerCount == actor.offers);
@@ -4641,7 +4622,7 @@ public:
         env(offer(alice, xts(30), xxx(10)), Json(jss::Flags, tfSell));
 
         std::map<std::uint32_t, std::pair<STAmount, STAmount>> offers;
-        forEachItem(*env.current(), alice, [&](std::shared_ptr<SLE const> const& sle) {
+        forEachItem(*env.current(), alice, [&](SLE::const_ref sle) {
             if (sle->getType() == ltOFFER)
             {
                 offers.emplace(
@@ -4676,15 +4657,13 @@ public:
     }
 
     // Helper function that returns offers on an account sorted by sequence.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     sortedOffersOnAccount(jtx::Env& env, jtx::Account const& acct)
     {
-        std::vector<std::shared_ptr<SLE const>> offers{offersOnAccount(env, acct)};
-        std::ranges::sort(
-            offers,
-            [](std::shared_ptr<SLE const> const& rhs, std::shared_ptr<SLE const> const& lhs) {
-                return (*rhs)[sfSequence] < (*lhs)[sfSequence];
-            });
+        std::vector<SLE::const_pointer> offers{offersOnAccount(env, acct)};
+        std::ranges::sort(offers, [](SLE::const_ref rhs, SLE::const_ref lhs) {
+            return (*rhs)[sfSequence] < (*lhs)[sfSequence];
+        });
         return offers;
     }
 
