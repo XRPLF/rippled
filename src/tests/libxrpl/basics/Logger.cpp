@@ -64,7 +64,7 @@ protected:
         std::string result;
         for (char const c : s)
         {
-            if (std::string_view(R"(\^$.|?*+()[]{}-)").find(c) != std::string_view::npos)
+            if (std::string_view(R"(\^$.|?*+()[]{}-)").contains(c))
                 result += '\\';
             result += c;
         }
