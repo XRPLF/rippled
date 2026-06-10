@@ -17,7 +17,7 @@ namespace xrpl {
 class AssetCache final : public CountedObject<AssetCache>
 {
 public:
-    explicit AssetCache(std::shared_ptr<ReadView const> const& l, beast::Journal j);
+    explicit AssetCache(std::shared_ptr<ReadView const> l, beast::Journal j);
     ~AssetCache();
 
     [[nodiscard]] std::shared_ptr<ReadView const> const&

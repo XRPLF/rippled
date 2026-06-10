@@ -51,7 +51,7 @@ public:
     // Completion function is called after path update is complete
     PathRequest(
         Application& app,
-        std::function<void(void)> const& completion,
+        std::function<void(void)> completion,
         Resource::Consumer& consumer,
         int id,
         PathRequestManager&,

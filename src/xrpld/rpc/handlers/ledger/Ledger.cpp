@@ -8,7 +8,6 @@
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -28,6 +27,7 @@
 
 #include <chrono>
 #include <exception>
+#include <expected>
 #include <limits>
 #include <memory>
 #include <utility>
@@ -44,14 +44,14 @@ LedgerHandler::check()
 {
     auto const& params = context_.params;
 
-    auto getBool = [&](json::StaticString const& field) -> Expected<bool, Status> {
+    auto getBool = [&](json::StaticString const& field) -> std::expected<bool, Status> {
         if (!params.isMember(field))
         {
             return false;
         }
         if (!params[field].isBool())
         {
-            return Unexpected(RpcInvalidParams);
+            return std::unexpected(RpcInvalidParams);
         }
 
         return params[field].asBool();

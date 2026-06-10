@@ -11,5 +11,5 @@ using TreeNodeCache = TaggedCache<
     SHAMapTreeNode,
     /*IsKeyCache*/ false,
     intr_ptr::SharedWeakUnionPtr<SHAMapTreeNode>,
-    intr_ptr::SharedPtr<SHAMapTreeNode>>;
+    SHAMapTreeNodePtr>;
 }  // namespace xrpl

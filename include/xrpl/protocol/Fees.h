@@ -4,6 +4,16 @@
 
 namespace xrpl {
 
+// Reference fee-unit value from the pre-XRPFees amendment fee system. Retained
+// for historical compatibility (e.g., decoding legacy FeeSettings ledger
+// entries that predate the XRPFees activation). New code must use the
+// drop-denominated fee fields instead.
+[[deprecated(
+    "Pre-XRPFees fee-unit constant. Use drop-denominated fee fields "
+    "(sfBaseFeeDrops, sfReserveBaseDrops, sfReserveIncrementDrops) "
+    "instead.")]]
+inline constexpr std::uint32_t kFeeUnitsDeprecated = 10;
+
 /** Reflects the fee settings for a particular ledger.
 
     The fees are always the same for any transactions applied
