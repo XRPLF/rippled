@@ -262,10 +262,6 @@ struct BackendHarness
         if (backend)
             backend->close();
     }
-
-    BackendHarness(BackendHarness const&) = delete;
-    BackendHarness&
-    operator=(BackendHarness const&) = delete;
 };
 
 /** RAII owner of a NodeStore Database - the application-facing wrapper around a
@@ -291,10 +287,6 @@ struct DatabaseHarness
         if (db)
             db->stop();
     }
-
-    DatabaseHarness(DatabaseHarness const&) = delete;
-    DatabaseHarness&
-    operator=(DatabaseHarness const&) = delete;
 };
 
 // A NodeStore backend to benchmark, named for the --benchmark_filter CLI flag.
