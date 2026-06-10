@@ -10,6 +10,7 @@
 #include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <expected>
 #include <optional>
 
 namespace xrpl {
@@ -163,11 +164,11 @@ ledgerFromSpecifier(
  *
  * @param context The RPC JsonContext containing request parameters and
  * environment.
- * @return Expected<std::shared_ptr<Ledger const>, json::Value>
+ * @return std::expected<std::shared_ptr<Ledger const>, json::Value>
  *         On success, contains a shared pointer to the requested Ledger.
  *         On failure, contains a json::Value describing the error.
  */
-Expected<std::shared_ptr<Ledger const>, json::Value>
+std::expected<std::shared_ptr<Ledger const>, json::Value>
 getOrAcquireLedger(RPC::JsonContext const& context);
 
 }  // namespace RPC
