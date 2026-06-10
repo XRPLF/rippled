@@ -408,33 +408,40 @@ public:
     }
 
     friend constexpr bool
-    operator<(Number const& x, Number const& y) noexcept
+    operator<(Number const& l, Number const& r) noexcept
     {
+        bool const lneg = l.negative_;
+        bool const rneg = r.negative_;
+
         // If the two amounts have different signs (zero is treated as positive)
         // then the comparison is true iff the left is negative.
-        bool const lneg = x.negative_;
-        bool const rneg = y.negative_;
-
         if (lneg != rneg)
             return lneg;
 
-        // Both have same sign and the left is zero: the right must be
-        // greater than 0.
-        if (x.mantissa_ == 0)
-            return y.mantissa_ > 0;
+        // Both have same sign and the left is zero: both must be non-negative.
+        // If the right is greater than 0, then it is larger, so the comparison is true.
+        if (l.mantissa_ == 0)
+            return r.mantissa_ > 0;
 
-        // Both have same sign, the right is zero and the left is non-zero.
-        if (y.mantissa_ == 0)
+        // Both have same sign, the right is zero and the left is non-zero, so the left must be
+        // positive, and thus is larger, so the comparison is false.
+        if (r.mantissa_ == 0)
             return false;
 
         // Both have the same sign, compare by exponents:
-        if (x.exponent_ > y.exponent_)
+        if (l.exponent_ > r.exponent_)
             return lneg;
-        if (x.exponent_ < y.exponent_)
+        if (l.exponent_ < r.exponent_)
             return !lneg;
 
-        // If equal exponents, compare mantissas
-        return x.mantissa_ < y.mantissa_;
+        // If equal signs and exponents, compare mantissas.
+        if (lneg)
+        {
+            // If negative, the operator is reversed.
+            return l.mantissa_ > r.mantissa_;
+        }
+
+        return l.mantissa_ < r.mantissa_;
     }
 
     /** Return the sign of the amount */
