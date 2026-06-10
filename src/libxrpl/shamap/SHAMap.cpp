@@ -155,7 +155,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
             // Clear the stack so callers that use stack.empty() as a missing-node sentinel reliably
             // detect this error condition, rather than proceeding with a partially-populated stack
             // whose top is an inner node instead of the expected leaf.
-            if (stack)
+            if (stack != nullptr)
                 *stack = {};
             return nullptr;
         }
