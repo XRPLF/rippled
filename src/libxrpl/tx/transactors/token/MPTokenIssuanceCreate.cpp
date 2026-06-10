@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -22,6 +21,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 
 namespace xrpl {
@@ -100,16 +100,16 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-Expected<MPTID, TER>
+std::expected<MPTID, TER>
 MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
 {
     auto const acct = view.peek(keylet::account(args.account));
     if (!acct)
-        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+        return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
     if (args.priorBalance &&
         *(args.priorBalance) < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
-        return Unexpected(tecINSUFFICIENT_RESERVE);
+        return std::unexpected(tecINSUFFICIENT_RESERVE);
 
     auto const mptId = makeMptID(args.sequence, args.account);
     auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
@@ -120,7 +120,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
             keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
 
         if (!ownerNode)
-            return Unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
+            return std::unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
         auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
@@ -156,10 +156,10 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
             // would dangle the pointer and is a programmer error.
             auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
             if (!sleHolding)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const type = sleHolding->getType();
             if (type != ltMPTOKEN && type != ltRIPPLE_STATE)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
         }
 
