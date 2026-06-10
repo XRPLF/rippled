@@ -122,8 +122,7 @@ public:
         {
             // SpanGuard::discard() set the flag on this thread just before
             // calling Span::End(), which invokes OnEnd() synchronously.
-            // Clear the flag and drop the span.
-            gTlDiscardCurrentSpan = false;
+            // Drop the span.
             return;
         }
         delegate_->OnEnd(std::move(span));

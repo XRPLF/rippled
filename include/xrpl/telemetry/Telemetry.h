@@ -135,11 +135,11 @@ public:
         std::string serviceName = "xrpld";
 
         /** OTel resource attribute `service.version` (set from BuildInfo). */
-        std::string serviceVersion{};
+        std::string serviceVersion;
 
         /** OTel resource attribute `service.instance.id` (defaults to node
             public key). */
-        std::string serviceInstanceId{};
+        std::string serviceInstanceId;
 
         /** OTLP/HTTP endpoint URL where spans are sent. */
         std::string exporterEndpoint = "http://localhost:4318/v1/traces";
@@ -148,7 +148,7 @@ public:
         bool useTls = false;
 
         /** Path to a CA certificate bundle for TLS verification. */
-        std::string tlsCertPath{};
+        std::string tlsCertPath;
 
         /** Head-based sampling ratio. Intentionally fixed at 1.0 (sample
             everything) and NOT read from config. A per-node ratio would let
