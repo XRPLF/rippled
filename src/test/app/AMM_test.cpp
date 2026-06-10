@@ -4322,30 +4322,6 @@ private:
     }
 
     void
-    testAmendment()
-    {
-        testcase("Amendment");
-        FeatureBitset const all{testableAmendments()};
-        FeatureBitset const noNumber{all - fixUniversalNumber};
-        using namespace jtx;
-
-        for (auto const& feature : {noNumber})
-        {
-            Env env{*this, feature};
-            fund(env, gw_, {alice_}, {USD(1'000)}, Fund::All);
-            AMM amm(env, alice_, XRP(1'000), USD(1'000), Ter(temDISABLED));
-
-            env(amm.bid({.bidMax = 1000}), Ter(temMALFORMED));
-            env(amm.bid({}), Ter(temDISABLED));
-            amm.vote(VoteArg{.tfee = 100, .err = Ter(temDISABLED)});
-            amm.withdraw(WithdrawArg{.tokens = 100, .err = Ter(temMALFORMED)});
-            amm.withdraw(WithdrawArg{.err = Ter(temDISABLED)});
-            amm.deposit(DepositArg{.asset1In = USD(100), .err = Ter(temDISABLED)});
-            amm.ammDelete(alice_, Ter(temDISABLED));
-        }
-    }
-
-    void
     testFlags()
     {
         testcase("Flags");
@@ -7167,7 +7143,6 @@ private:
         testBasicPaymentEngine(all - fixReducedOffersV2);
         testBasicPaymentEngine(all - fixAMMv1_1 - fixAMMv1_3 - fixReducedOffersV2);
         testAMMTokens();
-        testAmendment();
         testFlags();
         testRippling();
         testAMMAndCLOB(all);

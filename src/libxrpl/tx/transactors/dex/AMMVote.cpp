@@ -22,7 +22,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <utility>
 
@@ -31,9 +30,6 @@ namespace xrpl {
 bool
 AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
     return ctx.rules.enabled(featureMPTokensV2) ||
         (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
@@ -249,10 +245,7 @@ AMMVote::doApply()
 }
 
 void
-AMMVote::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMVote::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

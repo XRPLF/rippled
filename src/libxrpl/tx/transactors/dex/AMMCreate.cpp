@@ -41,14 +41,8 @@ namespace xrpl {
 bool
 AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
-    if (!ctx.rules.enabled(featureMPTokensV2) &&
-        (ctx.tx[sfAmount].holds<MPTIssue>() || ctx.tx[sfAmount2].holds<MPTIssue>()))
-        return false;
-
-    return true;
+    return ctx.rules.enabled(featureMPTokensV2) ||
+        (!ctx.tx[sfAmount].holds<MPTIssue>() && !ctx.tx[sfAmount2].holds<MPTIssue>());
 }
 
 NotTEC
@@ -389,10 +383,7 @@ AMMCreate::doApply()
 }
 
 void
-AMMCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

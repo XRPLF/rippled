@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/dex/AMMBid.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -27,7 +26,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <memory>
+#include <expected>
 #include <optional>
 #include <set>
 #include <utility>
@@ -37,14 +36,8 @@ namespace xrpl {
 bool
 AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
-    if (!ctx.rules.enabled(featureMPTokensV2) &&
-        (ctx.tx[sfAsset].holds<MPTIssue>() || ctx.tx[sfAsset2].holds<MPTIssue>()))
-        return false;
-
-    return true;
+    return ctx.rules.enabled(featureMPTokensV2) ||
+        (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
 
 NotTEC
@@ -267,7 +260,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
     auto const bidMin = ctx.tx[~sfBidMin];
     auto const bidMax = ctx.tx[~sfBidMax];
 
-    auto getPayPrice = [&](Number const& computedPrice) -> Expected<Number, TER> {
+    auto getPayPrice = [&](Number const& computedPrice) -> std::expected<Number, TER> {
         auto const payPrice = [&]() -> std::optional<Number> {
             // Both min/max bid price are defined
             if (bidMin && bidMax)
@@ -296,11 +289,11 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
         }();
         if (!payPrice)
         {
-            return Unexpected(tecAMM_FAILED);
+            return std::unexpected(tecAMM_FAILED);
         }
         if (payPrice > lpTokens)
         {
-            return Unexpected(tecAMM_INVALID_TOKENS);
+            return std::unexpected(tecAMM_INVALID_TOKENS);
         }
         return *payPrice;
     };
@@ -379,10 +372,7 @@ AMMBid::doApply()
 }
 
 void
-AMMBid::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMBid::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

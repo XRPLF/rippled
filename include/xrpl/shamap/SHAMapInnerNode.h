@@ -87,7 +87,7 @@ public:
     void
     partialDestructor() override;
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const override;
 
     SHAMapNodeType
@@ -121,19 +121,19 @@ public:
     getChildHash(int m) const;
 
     void
-    setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child);
+    setChild(int m, SHAMapTreeNodePtr child);
 
     void
-    shareChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> const& child);
+    shareChild(int m, SHAMapTreeNodePtr const& child);
 
     SHAMapTreeNode*
     getChildPointer(int branch);
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     getChild(int branch);
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
-    canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNode> node);
+    SHAMapTreeNodePtr
+    canonicalizeChild(int branch, SHAMapTreeNodePtr node);
 
     // sync functions
     bool
@@ -161,10 +161,10 @@ public:
     void
     invariants(bool isRoot = false) const override;
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeFullInner(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeCompressedInner(Slice data);
 };
 

@@ -27,7 +27,6 @@
 #include <bit>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <utility>
 
@@ -36,9 +35,6 @@ namespace xrpl {
 bool
 AMMDeposit::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
 
@@ -1014,10 +1010,7 @@ AMMDeposit::equalDepositInEmptyState(
 }
 
 void
-AMMDeposit::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMDeposit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

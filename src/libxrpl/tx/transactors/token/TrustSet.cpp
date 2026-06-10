@@ -27,7 +27,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <unordered_set>
 
 namespace {
@@ -211,8 +210,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-    if ((ammEnabled(ctx.view.rules()) || ctx.view.rules().enabled(featureSingleAssetVault)) &&
-        sleDst == nullptr)
+    if (sleDst == nullptr)
         return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
@@ -669,10 +667,7 @@ TrustSet::doApply()
 }
 
 void
-TrustSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+TrustSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
