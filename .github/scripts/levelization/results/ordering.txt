@@ -207,8 +207,6 @@ test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.config
 tests.libxrpl > xrpl.core
-tests.libxrpl > xrpld.consensus
-tests.libxrpl > xrpld.rpc
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.ledger
 tests.libxrpl > xrpl.net
