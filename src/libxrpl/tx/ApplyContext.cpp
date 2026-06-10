@@ -8,11 +8,22 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/invariants/DirectoryInvariant.h>
+#include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
+#include <xrpl/tx/invariants/LoanBrokerInvariant.h>
+#include <xrpl/tx/invariants/LoanInvariant.h>
+#include <xrpl/tx/invariants/MPTInvariant.h>
+#include <xrpl/tx/invariants/NFTInvariant.h>
+#include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
+#include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
+#include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <array>
 #include <cstddef>
