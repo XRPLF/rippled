@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -8,6 +7,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
