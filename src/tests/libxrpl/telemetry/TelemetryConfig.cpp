@@ -1,5 +1,5 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <gtest/gtest.h>

@@ -97,7 +97,7 @@ datasources:
             tag: command
             operator: "="
             scope: span
-            type: static
+            type: dynamic
           - id: rpc-status
             tag: rpc_status
             operator: "="
@@ -126,17 +126,17 @@ datasources:
             type: dynamic
           # Phase 4: Consensus tracing filters
           - id: consensus-mode
-            tag: xrpl.consensus.mode
+            tag: consensus_mode
             operator: "="
             scope: span
             type: static
           - id: consensus-round
-            tag: xrpl.consensus.round
+            tag: consensus_round
             operator: "="
             scope: span
             type: dynamic
           - id: consensus-ledger-seq
-            tag: xrpl.ledger.seq
+            tag: ledger_seq
             operator: "="
             scope: span
             type: static
