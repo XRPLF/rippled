@@ -335,6 +335,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfCoverRateLiquidation);
     }
+
+    /**
+     * @brief Get sfDomainID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getDomainID() const
+    {
+        if (hasDomainID())
+            return this->sle_->at(sfDomainID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDomainID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDomainID() const
+    {
+        return this->sle_->isFieldPresent(sfDomainID);
+    }
 };
 
 /**
@@ -573,6 +597,17 @@ public:
     setCoverRateLiquidation(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfCoverRateLiquidation] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDomainID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanBrokerBuilder&
+    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfDomainID] = value;
         return *this;
     }
 

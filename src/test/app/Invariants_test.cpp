@@ -2252,6 +2252,7 @@ class Invariants_test : public beast::unit_test::Suite
                 [](SLE::pointer& sle) { sle->at(sfManagementFeeRate) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfCoverRateMinimum) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfCoverRateLiquidation) += 1; },
+                [](SLE::pointer& sle) { sle->setFlag(lsfLoanBrokerPrivate); },
                 [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = sle->at(sfVaultID).value(); },
             });
@@ -2560,6 +2561,25 @@ class Invariants_test : public beast::unit_test::Suite
                     // higher than any incidental balance
                     sle->at(sfCoverAvailable) = Number(1'000'000);
                     ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"DomainID is set on public Loan Broker"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    // Set DomainID without lsfLoanBrokerPrivate flag
+                    sleBroker->clearFlag(lsfLoanBrokerPrivate);
+                    sleBroker->at(sfDomainID) = uint256(42);
+                    ac.view().update(sleBroker);
                     return true;
                 },
                 XRPAmount{},

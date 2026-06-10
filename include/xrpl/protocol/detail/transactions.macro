@@ -961,6 +961,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     {sfDebtMaximum, SoeOptional},
     {sfCoverRateMinimum, SoeOptional},
     {sfCoverRateLiquidation, SoeOptional},
+    {sfDomainID,             SoeOptional},
 }))
 
 /** This transaction deletes a Loan Broker */

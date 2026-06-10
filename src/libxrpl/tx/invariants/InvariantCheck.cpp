@@ -979,7 +979,8 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfOwner) ||
                     kFieldChanged(before, after, sfManagementFeeRate) ||
                     kFieldChanged(before, after, sfCoverRateMinimum) ||
-                    kFieldChanged(before, after, sfCoverRateLiquidation);
+                    kFieldChanged(before, after, sfCoverRateLiquidation) ||
+                    kFieldChanged(before, after, sfFlags);
                 break;
             case ltLOAN:
                 /*

@@ -8703,6 +8703,301 @@ protected:
     }
 
     void
+    testPrivateBrokerCredentials()
+    {
+        testcase("Private Broker Credential Validation");
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};  // Broker owner
+        Account const bob{"bob"};      // Borrower with credentials
+        Account const carol{"carol"};  // Borrower without credentials
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "LoanCredential";
+
+        Env env{*this};
+        Vault const vault{env};
+
+        env.fund(XRP(100'000), issuer, alice, bob, carol, credIssuer);
+        env.close();
+
+        // Create an IOU asset and vault
+        env(trust(alice, issuer["IOU"](1'000'000)));
+        env(trust(bob, issuer["IOU"](1'000'000)));
+        env(trust(carol, issuer["IOU"](1'000'000)));
+        env.close();
+        PrettyAsset const asset{issuer["IOU"]};
+        env(pay(issuer, alice, asset(100'000)));
+        env(pay(issuer, bob, asset(10'000)));
+        env(pay(issuer, carol, asset(10'000)));
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+
+        // Deposit into vault
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50'000)}));
+        env.close();
+
+        // Create a permissioned domain
+        pdomain::Credentials const credentials{{credIssuer, credType}};
+        env(pdomain::setTx(credIssuer, credentials));
+        env.close();
+        auto const domainId = pdomain::getNewDomain(env.meta());
+
+        // Create a private loan broker with DomainID
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate), kDomainId(domainId));
+        env.close();
+
+        // Deposit cover into broker
+        env(coverDeposit(alice, brokerKeylet.key, asset(1000)));
+        env.close();
+
+        // Test 1: Borrower without credentials cannot create loan
+        {
+            auto setTx = env.jt(loan::set(carol, brokerKeylet.key, asset(100).number()));
+            Sig(sfCounterpartySignature, alice)(env, setTx);
+            Fee{env.current()->fees().base * 2}(env, setTx);
+            loan::kCounterparty(alice)(env, setTx);
+            loan::kInterestRate(TenthBips32{1000})(env, setTx);
+            loan::kPaymentTotal(2)(env, setTx);
+            loan::kPaymentInterval(100)(env, setTx);
+            env(setTx, Ter(tecNO_AUTH));
+        }
+
+        // Create credential for bob and accept it
+        env(credentials::create(bob, credIssuer, credType));
+        env.close();
+        env(credentials::accept(bob, credIssuer, credType));
+        env.close();
+
+        // Test 2: Borrower with valid credentials can create loan
+        {
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
+            Sig(sfCounterpartySignature, alice)(env, setTx);
+            Fee{env.current()->fees().base * 2}(env, setTx);
+            loan::kCounterparty(alice)(env, setTx);
+            loan::kInterestRate(TenthBips32{1000})(env, setTx);
+            loan::kPaymentTotal(2)(env, setTx);
+            loan::kPaymentInterval(100)(env, setTx);
+            env(setTx);
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+        }
+
+        // Test 3: Private broker without DomainID configured rejects loans
+        {
+            // Create another private broker without DomainID
+            auto const broker2Keylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate));  // No domainID
+            env.close();
+
+            env(coverDeposit(alice, broker2Keylet.key, asset(1000)));
+            env.close();
+
+            // Even bob with credentials should fail - broker has no domain configured
+            auto setTx = env.jt(loan::set(bob, broker2Keylet.key, asset(100).number()));
+            Sig(sfCounterpartySignature, alice)(env, setTx);
+            Fee{env.current()->fees().base * 2}(env, setTx);
+            loan::kCounterparty(alice)(env, setTx);
+            loan::kInterestRate(TenthBips32{1000})(env, setTx);
+            loan::kPaymentTotal(2)(env, setTx);
+            loan::kPaymentInterval(100)(env, setTx);
+            env(setTx, Ter(tecNO_AUTH));
+        }
+
+        // Test 4: Public broker allows anyone to create loan
+        {
+            auto const publicBrokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKeylet.key));  // No tfLoanBrokerPrivate = public
+            env.close();
+
+            env(coverDeposit(alice, publicBrokerKeylet.key, asset(1000)));
+            env.close();
+
+            // Carol without credentials can create loan on public broker
+            auto const loanKeylet = keylet::loan(publicBrokerKeylet.key, 1);
+            auto setTx = env.jt(loan::set(carol, publicBrokerKeylet.key, asset(100).number()));
+            Sig(sfCounterpartySignature, alice)(env, setTx);
+            Fee{env.current()->fees().base * 2}(env, setTx);
+            loan::kCounterparty(alice)(env, setTx);
+            loan::kInterestRate(TenthBips32{1000})(env, setTx);
+            loan::kPaymentTotal(2)(env, setTx);
+            loan::kPaymentInterval(100)(env, setTx);
+            env(setTx);
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+        }
+
+        // Test 5: When the broker owner submits, the domain check must validate
+        // the borrower (the counterparty), not the submitting account. The
+        // broker owner (alice) is the domain owner and holds credentials, so a
+        // bug that checked the submitter instead of the borrower would let a
+        // borrower without credentials (carol) through.
+        {
+            auto setTx = env.jt(loan::set(alice, brokerKeylet.key, asset(100).number()));
+            Sig(sfCounterpartySignature, carol)(env, setTx);
+            Fee{env.current()->fees().base * 2}(env, setTx);
+            loan::kCounterparty(carol)(env, setTx);
+            loan::kInterestRate(TenthBips32{1000})(env, setTx);
+            loan::kPaymentTotal(2)(env, setTx);
+            loan::kPaymentInterval(100)(env, setTx);
+            env(setTx, Ter(tecNO_AUTH));
+        }
+
+        // Test 6: Broker owner submits with a credentialed borrower (bob) as
+        // counterparty. This must succeed, confirming the domain check uses the
+        // borrower's credentials regardless of who submits.
+        {
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 2);
+            auto setTx = env.jt(loan::set(alice, brokerKeylet.key, asset(100).number()));
+            Sig(sfCounterpartySignature, bob)(env, setTx);
+            Fee{env.current()->fees().base * 2}(env, setTx);
+            loan::kCounterparty(bob)(env, setTx);
+            loan::kInterestRate(TenthBips32{1000})(env, setTx);
+            loan::kPaymentTotal(2)(env, setTx);
+            loan::kPaymentInterval(100)(env, setTx);
+            env(setTx);
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+        }
+    }
+
+    void
+    testPrivateBrokerLoanPayAfterCredentialRevoked()
+    {
+        testcase("LoanPay works after borrower credential is revoked");
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};  // Broker owner
+        Account const bob{"bob"};      // Borrower
+        Account const credIssuer{"credIssuer"};
+        std::string const credType = "LoanCredential";
+
+        Env env{*this};
+        Vault const vault{env};
+
+        env.fund(XRP(100'000), issuer, alice, bob, credIssuer);
+        env.close();
+
+        // Create an IOU asset and vault
+        env(trust(alice, issuer["IOU"](1'000'000)));
+        env(trust(bob, issuer["IOU"](1'000'000)));
+        env.close();
+        PrettyAsset const asset{issuer["IOU"]};
+        env(pay(issuer, alice, asset(100'000)));
+        env(pay(issuer, bob, asset(10'000)));
+        env.close();
+
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(tx);
+        env.close();
+
+        // Deposit into vault
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50'000)}));
+        env.close();
+
+        // Create a permissioned domain
+        pdomain::Credentials const credentials{{credIssuer, credType}};
+        env(pdomain::setTx(credIssuer, credentials));
+        env.close();
+        auto const domainId = pdomain::getNewDomain(env.meta());
+
+        // Create credential for bob and accept it
+        env(credentials::create(bob, credIssuer, credType));
+        env.close();
+        env(credentials::accept(bob, credIssuer, credType));
+        env.close();
+
+        // Create a private loan broker with DomainID
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key, tfLoanBrokerPrivate), kDomainId(domainId));
+        env.close();
+
+        // Deposit cover into broker
+        env(coverDeposit(alice, brokerKeylet.key, asset(1000)));
+        env.close();
+
+        // Create a loan for bob
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+        {
+            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
+            Sig(sfCounterpartySignature, alice)(env, setTx);
+            Fee{env.current()->fees().base * 2}(env, setTx);
+            loan::kCounterparty(alice)(env, setTx);
+            loan::kInterestRate(TenthBips32{1000})(env, setTx);
+            loan::kPaymentTotal(2)(env, setTx);
+            loan::kPaymentInterval(100)(env, setTx);
+            env(setTx);
+            env.close();
+
+            BEAST_EXPECT(env.le(loanKeylet));
+        }
+
+        // Now delete bob's credential
+        env(credentials::deleteCred(bob, bob, credIssuer, credType));
+        env.close();
+
+        // Verify credential is gone
+        auto const credKeylet = credentials::keylet(bob, credIssuer, credType);
+        BEAST_EXPECT(!env.le(credKeylet));
+
+        // Capture the pre-payment loan state and borrower balance so we can
+        // confirm the payment is genuinely applied, not merely that the loan
+        // object survives.
+        auto const bobBalanceBefore = env.balance(bob, asset).value();
+        auto const sleLoanBefore = env.le(loanKeylet);
+        if (!BEAST_EXPECT(sleLoanBefore))
+            return;
+        auto const paymentRemainingBefore = sleLoanBefore->at(sfPaymentRemaining);
+        auto const principalBefore = sleLoanBefore->at(sfPrincipalOutstanding);
+        auto const totalValueBefore = sleLoanBefore->at(sfTotalValueOutstanding);
+
+        // Bob should still be able to make a loan payment even without credentials
+        env(loan::pay(bob, loanKeylet.key, asset(51)));
+        env.close();
+
+        // Verify the loan still exists and payment was processed
+        auto const sleLoan = env.le(loanKeylet);
+        BEAST_EXPECT(sleLoan);
+
+        // Verify the payment was actually applied: the borrower's IOU balance
+        // dropped (fees are charged separately in XRP), one payment period was
+        // consumed, and the loan's outstanding figures decreased.
+        BEAST_EXPECT(env.balance(bob, asset).value() < bobBalanceBefore);
+        if (BEAST_EXPECT(sleLoan))
+        {
+            BEAST_EXPECT(sleLoan->at(sfPaymentRemaining) == paymentRemainingBefore - 1);
+            BEAST_EXPECT(sleLoan->at(sfPrincipalOutstanding) < principalBefore);
+            BEAST_EXPECT(sleLoan->at(sfTotalValueOutstanding) < totalValueBefore);
+        }
+
+        // Bob should NOT be able to create a NEW loan (no credentials)
+        {
+            auto const newLoanKeylet = keylet::loan(brokerKeylet.key, 2);
+            auto setTx = env.jt(loan::set(bob, brokerKeylet.key, asset(100).number()));
+            Sig(sfCounterpartySignature, alice)(env, setTx);
+            Fee{env.current()->fees().base * 2}(env, setTx);
+            loan::kCounterparty(alice)(env, setTx);
+            loan::kInterestRate(TenthBips32{1000})(env, setTx);
+            loan::kPaymentTotal(2)(env, setTx);
+            loan::kPaymentInterval(100)(env, setTx);
+            env(setTx, Ter(tecNO_AUTH));
+
+            BEAST_EXPECT(!env.le(newLoanKeylet));
+        }
+    }
+
+    void
     runAmendmentIndependent()
     {
         testDisabled();
@@ -8726,6 +9021,9 @@ protected:
         testBugInterestDueDeltaCrash();
         testFullLifecycleVaultPnLNearZeroRate();
         testLoanSetNearZeroInterestRateSucceeds();
+
+        testPrivateBrokerCredentials();
+        testPrivateBrokerLoanPayAfterCredentialRevoked();
     }
 
     // Tests run under each entry in amendmentCombinations().
