@@ -20,7 +20,6 @@
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -1199,8 +1198,6 @@ Transactor::operator()()
     // with_txn_type().
     //
     // raii classes for the current ledger rules.
-    // fixUniversalNumber predate the rulesGuard and should be replaced.
-    NumberSO const stNumberSO{view().rules().enabled(fixUniversalNumber)};
     CurrentTransactionRulesGuard const currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG

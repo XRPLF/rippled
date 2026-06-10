@@ -12,6 +12,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cctype>
 #include <cstdint>
@@ -22,6 +23,8 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -1413,10 +1416,104 @@ TEST(NumberTest, relationals)
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
-        EXPECT_FALSE(Number{100} < Number{10});
-        EXPECT_TRUE(Number{100} > Number{10});
-        EXPECT_TRUE(Number{100} >= Number{10});
-        EXPECT_FALSE(Number{100} <= Number{10});
+        {
+            auto test = [](auto const& nums) {
+                EXPECT_TRUE(std::ranges::is_sorted(nums));
+
+                for (auto iter1 = nums.begin(); iter1 != nums.end(); ++iter1)
+                {
+                    auto iter2 = iter1;
+                    for (++iter2; iter2 != nums.end(); ++iter2)
+                    {
+                        Number const& smaller = *iter1;
+                        Number const& larger = *iter2;
+                        std::stringstream ss;
+                        ss << smaller << " < " << larger;
+                        auto const str = ss.str();
+
+                        // The ==/!= operators use a completely different code path than <, etc.
+                        // This helps detect a breakage in one but not the other. It also helps
+                        // verify that the values are being ordered correctly.
+                        EXPECT_TRUE(smaller != larger) << str << " (!=)";
+                        EXPECT_FALSE(smaller == larger) << str << " (==)";
+
+                        // true results using operator< and derived operators
+                        EXPECT_TRUE(smaller < larger) << str << " (<)";
+                        EXPECT_TRUE(larger > smaller) << str << " (>)";
+                        EXPECT_TRUE(larger >= smaller) << str << " (>=)";
+                        EXPECT_TRUE(smaller <= larger) << str << " (<=)";
+
+                        // false results using operator< and derived operators
+                        EXPECT_FALSE(larger < smaller) << str << " (! <)";
+                        EXPECT_FALSE(smaller > larger) << str << " (! >)";
+                        EXPECT_FALSE(smaller >= larger) << str << " (! >=)";
+                        EXPECT_FALSE(larger <= smaller) << str << " (! <=)";
+                    }
+                }
+            };
+
+            auto const intNums = []() {
+                // Inequality test cases are built from a list of sorted integers
+                auto const values =
+                    std::to_array<int>({-100, -50, -20, -10, -1, 0, 1, 10, 20, 50, 100});
+                // Check this list is sorted before converting it to Numbers.
+                // That way if any of the other tests fail, we know it's because of code and not the
+                // source data.
+                EXPECT_TRUE(std::ranges::is_sorted(values));
+
+                std::vector<Number> result;
+                result.reserve(values.size());
+                for (auto const v : values)
+                    result.emplace_back(v);
+                return result;
+            }();
+
+            auto const otherNums = std::to_array<Number>({
+                Number{-5, 100},
+                Number{-1, 100},
+                Number{-7, -10},
+                Number{-2, -10},
+                Number{0},
+                Number{2, -10},
+                Number{7, -10},
+                Number{1, 100},
+                Number{5, 100},
+            });
+
+            test(intNums);
+            test(otherNums);
+        }
+
+        {
+            // Equality test cases are <Number, __LINE__>. Number will be compared against itself
+            using Case = std::pair<Number, int>;
+            auto const c = std::to_array<Case>({
+                {700, __LINE__},
+                {50, __LINE__},
+                {1, __LINE__},
+                {0, __LINE__},
+                {-1, __LINE__},
+                {-30, __LINE__},
+                {-600, __LINE__},
+            });
+            for (auto const& [n, line] : c)
+            {
+                auto const str = to_string(n);
+                auto const location =
+                    std::string{" ("} + __FILE__ + ":" + std::to_string(line) + ")";
+
+                // NOLINTBEGIN(misc-redundant-expression) Explicitly testing operators with
+                // equivalent values
+                EXPECT_TRUE(n == n) << str << " ==" << location;
+                EXPECT_FALSE(n != n) << str << " !=" << location;
+
+                EXPECT_FALSE(n < n) << str << " <" << location;
+                EXPECT_FALSE(n > n) << str << " >" << location;
+                EXPECT_TRUE(n >= n) << str << " >=" << location;
+                EXPECT_TRUE(n <= n) << str << " <=" << location;
+                // NOLINTEND(misc-redundant-expression)
+            }
+        }
     }
 }
 
@@ -1455,7 +1552,6 @@ TEST(NumberTest, to_st_amount)
     {
         NumberMantissaScaleGuard const sg(mantissaScale);
 
-        NumberSO const stNumberSO{true};
         Issue const issue;
         Number const n{7'518'783'80596, -5};
         SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};
