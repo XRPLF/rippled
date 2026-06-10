@@ -195,7 +195,7 @@ stringIsUInt256Sized(std::string const& pBuffStr)
 void
 PeerImp::run()
 {
-    dispatch(strand_, [this, self = shared_from_this()]() {
+    dispatch(strand_, [self = shared_from_this()]() {
         auto parseLedgerHash = [](std::string_view value) -> std::optional<uint256> {
             if (uint256 ret; ret.parseHex(value))
                 return ret;
@@ -209,40 +209,40 @@ PeerImp::run()
         std::optional<uint256> closed;
         std::optional<uint256> previous;
 
-        if (auto const iter = headers_.find("Closed-Ledger"); iter != headers_.end())
+        if (auto const iter = self->headers_.find("Closed-Ledger"); iter != self->headers_.end())
         {
             closed = parseLedgerHash(iter->value());
 
             if (!closed)
-                fail("Malformed handshake data (1)");
+                self->fail("Malformed handshake data (1)");
         }
 
-        if (auto const iter = headers_.find("Previous-Ledger"); iter != headers_.end())
+        if (auto const iter = self->headers_.find("Previous-Ledger"); iter != self->headers_.end())
         {
             previous = parseLedgerHash(iter->value());
 
             if (!previous)
-                fail("Malformed handshake data (2)");
+                self->fail("Malformed handshake data (2)");
         }
 
         if (previous && !closed)
-            fail("Malformed handshake data (3)");
+            self->fail("Malformed handshake data (3)");
 
         {
-            std::scoped_lock const sl(recentLock_);
+            std::scoped_lock const sl(self->recentLock_);
             if (closed)
-                closedLedgerHash_ = *closed;
+                self->closedLedgerHash_ = *closed;
             if (previous)
-                previousLedgerHash_ = *previous;
+                self->previousLedgerHash_ = *previous;
         }
 
-        if (inbound_)
+        if (self->inbound_)
         {
-            doAccept();
+            self->doAccept();
         }
         else
         {
-            doProtocolStart();
+            self->doProtocolStart();
         }
 
         // Anything else that needs to be done with the connection should be
@@ -253,11 +253,11 @@ PeerImp::run()
 void
 PeerImp::stop()
 {
-    dispatch(strand_, [this, self = shared_from_this()]() {
-        if (!socket_.is_open())
+    dispatch(strand_, [self = shared_from_this()]() {
+        if (!self->socket_.is_open())
             return;
 
-        close();
+        self->close();
     });
 }
 
@@ -266,58 +266,60 @@ PeerImp::stop()
 void
 PeerImp::send(std::shared_ptr<Message> const& m)
 {
-    dispatch(strand_, [this, self = shared_from_this(), m]() {
-        if (gracefulClose_)
+    dispatch(strand_, [self = shared_from_this(), m]() {
+        if (self->gracefulClose_)
             return;
-        if (detaching_)
+        if (self->detaching_)
             return;
-        if (!socket_.is_open())
+        if (!self->socket_.is_open())
             return;
 
         auto validator = m->getValidatorKey();
-        if (validator && !squelch_.expireSquelch(*validator))
+        if (validator && !self->squelch_.expireSquelch(*validator))
         {
-            overlay_.reportOutboundTraffic(
+            self->overlay_.reportOutboundTraffic(
                 TrafficCount::Category::SquelchSuppressed,
-                static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+                static_cast<int>(m->getBuffer(self->compressionEnabled_).size()));
             return;
         }
 
         // report categorized outgoing traffic
-        overlay_.reportOutboundTraffic(
+        self->overlay_.reportOutboundTraffic(
             safeCast<TrafficCount::Category>(m->getCategory()),
-            static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+            static_cast<int>(m->getBuffer(self->compressionEnabled_).size()));
 
         // report total outgoing traffic
-        overlay_.reportOutboundTraffic(
+        self->overlay_.reportOutboundTraffic(
             TrafficCount::Category::Total,
-            static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+            static_cast<int>(m->getBuffer(self->compressionEnabled_).size()));
 
-        auto sendqSize = sendQueue_.size();
+        auto sendqSize = self->sendQueue_.size();
 
         if (sendqSize < Tuning::kTargetSendQueue)
         {
             // To detect a peer that does not read from their
             // side of the connection, we expect a peer to have
             // a small sendq periodically
-            largeSendq_ = 0;
+            self->largeSendq_ = 0;
         }
-        else if (auto sink = journal_.debug(); sink && (sendqSize % Tuning::kSendQueueLogFreq) == 0)
+        else if (
+            auto sink = self->journal_.debug();
+            sink && (sendqSize % Tuning::kSendQueueLogFreq) == 0)
         {
-            std::string const n = name();
+            std::string const n = self->name();
             sink << n << " sendq: " << sendqSize;
         }
 
-        sendQueue_.push(m);
+        self->sendQueue_.push(m);
 
         if (sendqSize != 0)
             return;
 
         boost::asio::async_write(
-            stream_,
-            boost::asio::buffer(sendQueue_.front()->getBuffer(compressionEnabled_)),
+            self->stream_,
+            boost::asio::buffer(self->sendQueue_.front()->getBuffer(self->compressionEnabled_)),
             bind_executor(
-                strand_,
+                self->strand_,
                 std::bind(
                     &PeerImp::onWriteMessage, self, std::placeholders::_1, std::placeholders::_2)));
     });
@@ -326,15 +328,15 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 void
 PeerImp::sendTxQueue()
 {
-    dispatch(strand_, [this, self = shared_from_this()]() {
-        if (!txQueue_.empty())
+    dispatch(strand_, [self = shared_from_this()]() {
+        if (!self->txQueue_.empty())
         {
             protocol::TMHaveTransactions ht;
             std::ranges::for_each(
-                txQueue_, [&](auto const& hash) { ht.add_hashes(hash.data(), hash.size()); });
-            JLOG(pJournal_.trace()) << "sendTxQueue " << txQueue_.size();
-            txQueue_.clear();
-            send(std::make_shared<Message>(ht, protocol::mtHAVE_TRANSACTIONS));
+                self->txQueue_, [&](auto const& hash) { ht.add_hashes(hash.data(), hash.size()); });
+            JLOG(self->pJournal_.trace()) << "sendTxQueue " << self->txQueue_.size();
+            self->txQueue_.clear();
+            self->send(std::make_shared<Message>(ht, protocol::mtHAVE_TRANSACTIONS));
         }
     });
 }
@@ -342,37 +344,37 @@ PeerImp::sendTxQueue()
 void
 PeerImp::addTxQueue(uint256 const& hash)
 {
-    dispatch(strand_, [this, self = shared_from_this(), hash]() {
-        if (txQueue_.size() == reduce_relay::kMaxTxQueueSize)
+    dispatch(strand_, [self = shared_from_this(), hash]() {
+        if (self->txQueue_.size() == reduce_relay::kMaxTxQueueSize)
         {
-            JLOG(pJournal_.warn()) << "addTxQueue exceeds the cap";
-            sendTxQueue();
+            JLOG(self->pJournal_.warn()) << "addTxQueue exceeds the cap";
+            self->sendTxQueue();
         }
 
-        txQueue_.insert(hash);
-        JLOG(pJournal_.trace()) << "addTxQueue " << txQueue_.size();
+        self->txQueue_.insert(hash);
+        JLOG(self->pJournal_.trace()) << "addTxQueue " << self->txQueue_.size();
     });
 }
 
 void
 PeerImp::removeTxQueue(uint256 const& hash)
 {
-    dispatch(strand_, [this, self = shared_from_this(), hash]() {
-        auto removed = txQueue_.erase(hash);
-        JLOG(pJournal_.trace()) << "removeTxQueue " << removed;
+    dispatch(strand_, [self = shared_from_this(), hash]() {
+        auto removed = self->txQueue_.erase(hash);
+        JLOG(self->pJournal_.trace()) << "removeTxQueue " << removed;
     });
 }
 
 void
 PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 {
-    dispatch(strand_, [this, self = shared_from_this(), fee, context]() {
-        if ((usage_.charge(fee, context) == Resource::Disposition::Drop) &&
-            usage_.disconnect(pJournal_))
+    dispatch(strand_, [self = shared_from_this(), fee, context]() {
+        if ((self->usage_.charge(fee, context) == Resource::Disposition::Drop) &&
+            self->usage_.disconnect(self->pJournal_))
         {
             // Sever the connection
-            overlay_.incPeerDisconnectCharges();
-            fail("charge: Resources");
+            self->overlay_.incPeerDisconnectCharges();
+            self->fail("charge: Resources");
         }
     });
 }
@@ -602,13 +604,13 @@ PeerImp::close()
 void
 PeerImp::fail(std::string const& reason)
 {
-    dispatch(strand_, [this, self = shared_from_this(), reason]() {
-        if (journal_.active(beast::Severity::Warning) && socket_.is_open())
+    dispatch(strand_, [self = shared_from_this(), reason]() {
+        if (self->journal_.active(beast::Severity::Warning) && self->socket_.is_open())
         {
-            std::string const n = name();
-            JLOG(journal_.warn()) << n << " failed: " << reason;
+            std::string const n = self->name();
+            JLOG(self->journal_.warn()) << n << " failed: " << reason;
         }
-        close();
+        self->close();
     });
 }
 
@@ -2645,25 +2647,25 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMTransactions> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 {
-    dispatch(strand_, [this, self = shared_from_this(), m]() {
+    dispatch(strand_, [self = shared_from_this(), m]() {
         if (!m->has_validatorpubkey())
         {
-            fee_.update(Resource::kFeeInvalidData, "squelch no pubkey");
+            self->fee_.update(Resource::kFeeInvalidData, "squelch no pubkey");
             return;
         }
         auto validator = m->validatorpubkey();
         auto const slice{makeSlice(validator)};
         if (!publicKeyType(slice))
         {
-            fee_.update(Resource::kFeeInvalidData, "squelch bad pubkey");
+            self->fee_.update(Resource::kFeeInvalidData, "squelch bad pubkey");
             return;
         }
         PublicKey const key(slice);
 
         // Ignore the squelch for validator's own messages.
-        if (key == app_.getValidationPublicKey())
+        if (key == self->app_.getValidationPublicKey())
         {
-            JLOG(pJournal_.debug())
+            JLOG(self->pJournal_.debug())
                 << "onMessage: TMSquelch discarding validator's squelch " << slice;
             return;
         }
@@ -2671,15 +2673,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         std::uint32_t const duration = m->has_squelchduration() ? m->squelchduration() : 0;
         if (!m->squelch())
         {
-            squelch_.removeSquelch(key);
+            self->squelch_.removeSquelch(key);
         }
-        else if (!squelch_.addSquelch(key, std::chrono::seconds{duration}))
+        else if (!self->squelch_.addSquelch(key, std::chrono::seconds{duration}))
         {
-            fee_.update(Resource::kFeeInvalidData, "squelch duration");
+            self->fee_.update(Resource::kFeeInvalidData, "squelch duration");
         }
 
-        JLOG(pJournal_.debug()) << "onMessage: TMSquelch " << slice << " " << id() << " "
-                                << duration;
+        JLOG(self->pJournal_.debug())
+            << "onMessage: TMSquelch " << slice << " " << self->id() << " " << duration;
     });
 }
 
