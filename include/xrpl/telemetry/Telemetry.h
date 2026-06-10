@@ -70,8 +70,8 @@
     The OTel SDK's TracerProvider and Tracer are internally thread-safe.
 */
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 
 #include <atomic>
 #include <chrono>
