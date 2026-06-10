@@ -234,6 +234,44 @@ public:
     }
 
     void
+    sourceCurrencyWithSendMax()
+    {
+        testcase("source currency with send_max");
+        using namespace jtx;
+
+        Env env = pathTestEnv();
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gateway");
+        env.fund(XRP(10'000), alice, bob, gw);
+
+        MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}});
+        env(pay(gw, alice, usd(25)));
+        env.close();
+
+        // MPT source_currencies entries do not carry an issuer. A matching
+        // send_max identifies the same issuance, so the request should not run
+        // the IOU issuer reconciliation path.
+        auto const result = findPathsRequest(
+            env,
+            alice,
+            bob,
+            usd(-1),
+            std::optional<STAmount>(usd(10).value()),
+            std::optional<PathAsset>(usd.mpt()));
+        BEAST_EXPECTS(!result.isMember(jss::error), result.toStyledString());
+
+        auto const& alternatives = result[jss::alternatives];
+        if (BEAST_EXPECT(alternatives.size() == 1))
+        {
+            auto const sa = amountFromJson(sfGeneric, alternatives[0u][jss::source_amount]);
+            auto const da = amountFromJson(sfGeneric, alternatives[0u][jss::destination_amount]);
+            BEAST_EXPECTS(equal(sa, usd(10)), sa.getFullText());
+            BEAST_EXPECTS(equal(da, usd(10)), da.getFullText());
+        }
+    }
+
+    void
     maxedOutMPTPathfinding()
     {
         testcase("maxed-out MPT pathfinding");
@@ -629,6 +667,7 @@ public:
         noDirectPathNoIntermediaryNoAlternatives();
         directPathNoIntermediary();
         paymentAutoPathFind();
+        sourceCurrencyWithSendMax();
         maxedOutMPTPathfinding();
         convertAllSendMaxRanking();
         for (auto const domainEnabled : {false, true})
