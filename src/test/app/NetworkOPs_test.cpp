@@ -54,7 +54,7 @@ public:
             env.close();
         }
 
-        BEAST_EXPECT(logs.find("No transaction to process!") != std::string::npos);
+        BEAST_EXPECT(logs.contains("No transaction to process!"));
     }
 };
 

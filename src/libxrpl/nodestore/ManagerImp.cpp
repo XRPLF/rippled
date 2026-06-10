@@ -1,9 +1,10 @@
 #include <xrpl/nodestore/detail/ManagerImp.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Manager.h>
@@ -66,7 +67,7 @@ ManagerImp::makeBackend(
     Scheduler& scheduler,
     beast::Journal journal)
 {
-    std::string const type{get(parameters, "type")};
+    std::string const type{get(parameters, Keys::kType)};
     if (type.empty())
         missingBackend();
 

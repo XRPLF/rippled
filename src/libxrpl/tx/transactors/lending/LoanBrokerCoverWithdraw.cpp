@@ -20,8 +20,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 bool
@@ -94,6 +92,11 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
+    // Helper handles both IOU and MPT correctly without explicit branching.
+    if (auto const ret = canApplyToBrokerCover(
+            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverWithdraw"))
+        return ret;
+
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
     // Post-fixCleanup3_2_0: cover withdraw is a recovery path that bypasses
@@ -137,6 +140,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
     auto const minimumCover = [&]() {
+        if (ctx.view.rules().enabled(fixCleanup3_2_0))
+        {
+            return minimumBrokerCover(
+                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
+        }
+
         // Always round the minimum required up.
         // Applies to `tenthBipsOfValue` as well as `roundToAsset`.
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
@@ -193,10 +202,7 @@ LoanBrokerCoverWithdraw::doApply()
 }
 
 void
-LoanBrokerCoverWithdraw::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+LoanBrokerCoverWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

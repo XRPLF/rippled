@@ -94,6 +94,12 @@ OfferCreate::preflight(PreflightContext const& ctx)
     if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
         return temINVALID_FLAG;
 
+    // A zero DomainID is invalid for a PermissionedDomain ledger entry because
+    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    if (auto const domainID = tx[~sfDomainID];
+        ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
+        return temMALFORMED;
+
     bool const bImmediateOrCancel(tx.isFlag(tfImmediateOrCancel));
     bool const bFillOrKill(tx.isFlag(tfFillOrKill));
 
@@ -181,11 +187,15 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     auto viewJ = ctx.registry.get().getJournal("View");
 
-    if (isGlobalFrozen(ctx.view, saTakerPays.asset()) ||
-        isGlobalFrozen(ctx.view, saTakerGets.asset()))
+    if (auto const ter = checkGlobalFrozen(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
     {
-        JLOG(ctx.j.debug()) << "Offer involves frozen asset";
-        return tecFROZEN;
+        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
+        return ter;
+    }
+    if (auto const ter = checkGlobalFrozen(ctx.view, saTakerGets.asset()); !isTesSuccess(ter))
+    {
+        JLOG(ctx.j.debug()) << "Offer involves frozen or locked asset";
+        return ter;
     }
 
     // Allow unfunded MPT for issuer (OutstandingAmount >= MaximumAmount)
@@ -320,7 +330,13 @@ OfferCreate::checkAcceptAsset(
         [&](MPTIssue const& issue) -> TER {
             // WeakAuth - don't check if MPToken exists since it's created
             // if needed.
-            return requireAuth(view, issue, id, AuthType::WeakAuth);
+            if (auto const ter = requireAuth(view, issue, id, AuthType::WeakAuth);
+                !isTesSuccess(ter))
+            {
+                return ter;
+            }
+
+            return checkFrozen(view, id, issue);
         });
 }
 
@@ -543,7 +559,7 @@ OfferCreate::formatAmount(STAmount const& amount)
 TER
 OfferCreate::applyHybrid(
     Sandbox& sb,
-    std::shared_ptr<STLedgerEntry> sleOffer,
+    STLedgerEntry::pointer sleOffer,
     Keylet const& offerKey,
     STAmount const& saTakerPays,
     STAmount const& saTakerGets,
@@ -974,10 +990,7 @@ OfferCreate::doApply()
 }
 
 void
-OfferCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+OfferCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

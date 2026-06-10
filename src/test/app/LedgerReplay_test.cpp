@@ -549,7 +549,7 @@ struct LedgerServer
             while (senders.contains(fromIdx))
                 fromIdx = (fromIdx + 1) % fundedAccounts;
             senders.insert(fromIdx);
-            toIdx = (toIdx + r * 2) % fundedAccounts;
+            toIdx = (toIdx + (r * 2)) % fundedAccounts;
             if (toIdx == fromIdx)
                 toIdx = (toIdx + 1) % fundedAccounts;
         };

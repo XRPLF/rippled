@@ -806,7 +806,7 @@ public:
     {
         auto size = max - min;
         std::vector<std::uint32_t> s(size);
-        std::iota(s.begin(), s.end(), min);
+        std::iota(s.begin(), s.end(), min);  // NOLINT(modernize-use-ranges)
         std::random_device d;
         std::mt19937 g(d());
         std::shuffle(s.begin(), s.end(), g);
