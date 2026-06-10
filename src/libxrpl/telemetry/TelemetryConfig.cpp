@@ -7,7 +7,7 @@
     See cfg/xrpld-example.cfg for the full list of available options.
 */
 
-#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <chrono>
