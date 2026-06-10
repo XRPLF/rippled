@@ -146,7 +146,11 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
 
         inNode.adopt(descend(inner.get(), branch));
         if (!inNode)
+        {
+            JLOG(journal_.warn()) << "xrpl::SHAMap::walkTowardsKey: missing child node "
+                                  << inner->getChildHash(branch);
             return nullptr;
+        }
         nodeID = nodeID.getChildNodeID(branch);
     }
 

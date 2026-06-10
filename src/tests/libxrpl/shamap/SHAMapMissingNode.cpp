@@ -24,8 +24,8 @@ namespace {
 // Seed for the random number generator used to create the test data.
 constexpr std::uint32_t kSeed = 0xdeadbeefU;
 
-// Sync source into dest, delivering at most nodeLimit inner nodes. Returns the number of nodes
-// actually delivered to dest.
+// Sync source into dest, delivering at most nodeLimit nodes requested by dest.getMissingNodes().
+// This intentionally leaves parts of the tree absent to simulate missing subtrees.
 void
 syncWithLimit(SHAMap const& source, SHAMap& dest, std::size_t nodeLimit)
 {
@@ -44,7 +44,7 @@ syncWithLimit(SHAMap const& source, SHAMap& dest, std::size_t nodeLimit)
         if (missing.empty())
             break;
 
-        for (auto const& [nodeID, hash] : missing)
+        for (auto const& [nodeID, _] : missing)
         {
             if (delivered >= nodeLimit)
                 return;
@@ -90,7 +90,7 @@ TEST(SHAMapMissingNode, visitLeavesSkipsMissingNodes)
     // child nodes evicted after a rotation.
     SHAMap dest(SHAMapType::FREE, source.getHash().asUInt256(), destFamily);
     dest.setSynching();
-    syncWithLimit(source, dest, 3);
+    ASSERT_NO_FATAL_FAILURE(syncWithLimit(source, dest, 3));
 
     // Count the total number of leaf nodes in the dest map. Since most subtrees are now missing,
     // the traversal will result in fewer nodes being visited. The function must not throw.
