@@ -433,11 +433,7 @@ public:
             app().getNumberOfThreads() == 1,
             "syncClose() is only useful on an application with a single thread");
         auto const result = close();
-        auto serverBarrier = std::make_shared<std::promise<void>>();
-        auto future = serverBarrier->get_future();
-        boost::asio::post(app().getIOContext(), [serverBarrier]() { serverBarrier->set_value(); });
-        auto const status = future.wait_for(timeout);
-        return result && status == std::future_status::ready;
+        return result && drainServerIo(timeout);
     }
 
     /** Disconnect the Env's built-in client and wait for the server to
@@ -474,20 +470,13 @@ public:
 
         bundle_.client->disconnect();
 
-        // Drain the (single) server io_context thread. Each call returns only
-        // after a freshly-posted task has run, so all work queued before it -
-        // including the closed peer's teardown - has been processed.
-        auto drainServer = [this, timeout]() {
-            auto barrier = std::make_shared<std::promise<void>>();
-            auto future = barrier->get_future();
-            boost::asio::post(app().getIOContext(), [barrier]() { barrier->set_value(); });
-            return future.wait_for(timeout) == std::future_status::ready;
-        };
-
-        // Both barriers run unconditionally; the second drain must not be
-        // skipped by short-circuit if the first happens to time out.
-        bool const reaped = drainServer();
-        bool const toreDown = drainServer();
+        // Drain the server's single io thread twice: the first barrier flushes
+        // the reactor's reap of the closed socket (queuing the peer teardown),
+        // the second flushes that teardown - and therefore the connection-count
+        // decrement. Both run unconditionally so a timed-out first drain does
+        // not short-circuit the second.
+        bool const reaped = drainServerIo(timeout);
+        bool const toreDown = drainServerIo(timeout);
         return reaped && toreDown;
     }
 
@@ -749,6 +738,23 @@ public:
     }
 
 private:
+    /** Drain the (single) server io_context thread once.
+
+        Posts a barrier task to the server's io_context and blocks until it
+        runs, so every task queued before it has been processed. Only meaningful
+        with a single io thread (see syncClose()/disconnectClient()).
+
+        @return true if the barrier ran within timeout, false otherwise
+    */
+    [[nodiscard]] bool
+    drainServerIo(std::chrono::steady_clock::duration timeout)
+    {
+        auto barrier = std::make_shared<std::promise<void>>();
+        auto future = barrier->get_future();
+        boost::asio::post(app().getIOContext(), [barrier]() { barrier->set_value(); });
+        return future.wait_for(timeout) == std::future_status::ready;
+    }
+
     void
     fund(bool setDefaultRipple, STAmount const& amount, Account const& account);
 
