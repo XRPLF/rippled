@@ -129,7 +129,7 @@ public:
         b.clear();
         b.reserve(size);
         while ((size--) != 0u)
-            b.emplace_back(obj(n++));
+            b.push_back(obj(n++));
     }
 };
 
