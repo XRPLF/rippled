@@ -32,6 +32,7 @@
 #include <condition_variable>
 #include <exception>
 #include <functional>
+#include <future>
 #include <iostream>
 #include <list>
 #include <memory>
@@ -111,6 +112,11 @@ class WSClientImpl : public WSClient
 
     bool peerClosed_ = false;
 
+    // disconnect() state, mutated only on strand_
+    static constexpr auto kDisconnectTimeout = std::chrono::seconds{1};
+    bool closing_ = false;                           // we initiated the closing handshake
+    std::shared_ptr<std::promise<void>> closeDone_;  // fired when it completes
+
     // synchronize destructor
     bool b0_ = false;
     std::mutex m0_;
@@ -127,7 +133,7 @@ class WSClientImpl : public WSClient
     cleanup()
     {
         boost::asio::post(ios_, boost::asio::bind_executor(strand_, [this] {
-                              if (!peerClosed_)
+                              if (!peerClosed_ && !closing_)
                               {
                                   ws_.async_close(
                                       {}, boost::asio::bind_executor(strand_, [&](error_code) {
@@ -291,12 +297,44 @@ public:
     void
     disconnect() override
     {
-        // Close the underlying socket on the strand that owns it, so the
-        // server observes the connection drop without racing the io thread.
-        boost::asio::post(ios_, boost::asio::bind_executor(strand_, [this] {
-                              boost::system::error_code ec;
-                              stream_.close(ec);
+        // Perform a graceful WebSocket closing handshake and block until it
+        // completes, so the server observes a clean close (not a RST) and has
+        // finished tearing the connection down by the time we return. The
+        // handshake runs on the strand that owns the socket; async_close only
+        // sends our close frame, and the server's acknowledgment arrives on the
+        // outstanding read as websocket::error::closed (see onReadMsg), which
+        // fires closeDone_.
+        auto done = std::make_shared<std::promise<void>>();
+        auto fut = done->get_future();
+        boost::asio::post(ios_, boost::asio::bind_executor(strand_, [this, done] {
+                              if (peerClosed_ || closing_)
+                              {
+                                  // Server already closed, or disconnect() called twice: nothing
+                                  // to hand-shake, just make sure the socket is down.
+                                  boost::system::error_code ec;
+                                  stream_.close(ec);
+                                  done->set_value();
+                                  return;
+                              }
+                              closing_ = true;
+                              closeDone_ = done;
+                              ws_.async_close(
+                                  boost::beast::websocket::close_code::normal,
+                                  boost::asio::bind_executor(strand_, [](error_code) {
+                                      // Close frame sent; the acknowledgment is awaited on the
+                                      // read loop, which fires closeDone_.
+                                  }));
                           }));
+
+        // On timeout (server gone or not replying) force the socket closed so
+        // the outstanding read ends and the worker thread can later be joined.
+        if (fut.wait_for(kDisconnectTimeout) != std::future_status::ready)
+        {
+            boost::asio::post(ios_, boost::asio::bind_executor(strand_, [this] {
+                                  boost::system::error_code ec;
+                                  stream_.close(ec);
+                              }));
+        }
     }
 
 private:
@@ -307,6 +345,17 @@ private:
         {
             if (ec == boost::beast::websocket::error::closed)
                 peerClosed_ = true;
+            // If disconnect() initiated a closing handshake, this terminating
+            // read is the server's acknowledgment (error::closed) or the
+            // timeout force-close (operation_aborted): finish teardown and
+            // release the waiter.
+            if (closing_ && closeDone_)
+            {
+                boost::system::error_code e;
+                stream_.close(e);
+                closeDone_->set_value();
+                closeDone_.reset();
+            }
             return;
         }
 
