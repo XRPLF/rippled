@@ -135,7 +135,7 @@ into the staging area, and invokes the platform build tool.
 
 1. Creates the standard `rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}` tree inside the build directory.
 2. Copies `xrpld.spec` and all source files (binary, configs, service files) into `SOURCES/`.
-3. Runs `rpmbuild -bb --define "xrpld_version ..." --define "pkg_release ..."`. The spec uses manual `install` commands to place files.
+3. Runs `rpmbuild -bb --define "xrpld_version ..." --define "xrpld_release ..."`. The spec uses manual `install` commands to place files, disables `dwz`, and writes uncompressed RPM payloads while generating debuginfo packages.
 4. Output: `rpmbuild/RPMS/x86_64/xrpld-*.rpm`
 
 ### DEB

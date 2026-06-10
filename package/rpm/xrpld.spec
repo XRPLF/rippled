@@ -11,6 +11,8 @@ BuildRequires: systemd-rpm-macros
 
 %undefine _debugsource_packages
 %debug_package
+%global _binary_payload w.ufdio
+%global _find_debuginfo_dwz_opts %{nil}
 
 %build_mtime_policy clamp_to_source_date_epoch
 
