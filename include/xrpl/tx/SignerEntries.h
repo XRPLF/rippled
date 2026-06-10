@@ -1,11 +1,11 @@
 #pragma once
 
-#include <xrpl/basics/Expected.h>        //
 #include <xrpl/beast/utility/Journal.h>  // beast::Journal
 #include <xrpl/protocol/TER.h>           // temMALFORMED
 #include <xrpl/protocol/UintTypes.h>     // AccountID
 #include <xrpl/tx/Transactor.h>          // NotTEC
 
+#include <expected>
 #include <optional>
 #include <string_view>
 
@@ -60,7 +60,7 @@ public:
     // obj Contains a SignerEntries field that is an STArray.
     // journal For reporting error conditions.
     // annotation Source of SignerEntries, like "ledger" or "transaction".
-    static Expected<std::vector<SignerEntry>, NotTEC>
+    static std::expected<std::vector<SignerEntry>, NotTEC>
     deserialize(STObject const& obj, beast::Journal journal, std::string_view annotation);
 };
 

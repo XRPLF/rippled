@@ -2018,8 +2018,8 @@ class Delegate_test : public beast::unit_test::Suite
             auto jrr = env.rpc("json", "sign_for", to_string(jv))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(
-                jrr[jss::error_message].asString().find(
-                    "A Signer may not be the transaction's Account") != std::string::npos);
+                jrr[jss::error_message].asString().contains(
+                    "A Signer may not be the transaction's Account"));
         }
     }
 
