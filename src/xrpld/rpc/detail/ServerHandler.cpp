@@ -434,6 +434,8 @@ ServerHandler::processSession(
         session->close({boost::beast::websocket::policy_error, "threshold exceeded"});
         // FIX: This rpcError is not delivered since the session
         // was just closed.
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+        span.setError(rpc_span::val::error);
         return rpcError(RpcSlowDown);
     }
 
@@ -465,6 +467,8 @@ ServerHandler::processSession(
                 jr[jss::api_version] = jv[jss::api_version];
 
             is->getConsumer().charge(Resource::kFeeMalformedRpc);
+            span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+            span.setError(rpc_span::val::error);
             return jr;
         }
 
@@ -545,12 +549,19 @@ ServerHandler::processSession(
         }
 
         jr[jss::request] = rq;
+        // Mark the span according to the final result. Doing it here (rather
+        // than an unconditional setOk later) ensures error responses — from
+        // doCommand, a FORBID role, or the catch block above — are not
+        // overwritten as OK.
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+        span.setError(rpc_span::val::error);
     }
     else
     {
         if (jr[jss::result].isMember("forwarded") && jr[jss::result]["forwarded"])
             jr = jr[jss::result];
         jr[jss::status] = jss::success;
+        span.setOk();
     }
 
     if (jv.isMember(jss::id))
@@ -563,7 +574,6 @@ ServerHandler::processSession(
         jr[jss::api_version] = jv[jss::api_version];
 
     jr[jss::type] = jss::response;
-    span.setOk();
     return jr;
 }
 
@@ -576,7 +586,7 @@ ServerHandler::processSession(
     auto span =
         SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
 
-    processRequest(
+    bool const ok = processRequest(
         session->port(),
         buffersToString(session->request().body().data()),
         session->remoteAddress().atPort(0),
@@ -598,7 +608,15 @@ ServerHandler::processSession(
     {
         session->close(true);
     }
-    span.setOk();
+    // Reflect the request outcome on the wrapper span instead of always OK.
+    if (ok)
+    {
+        span.setOk();
+    }
+    else
+    {
+        span.setError(rpc_span::val::error);
+    }
 }
 
 static json::Value
@@ -617,7 +635,7 @@ constexpr json::Int kServerOverloaded = -32604;
 constexpr json::Int kForbidden = -32605;
 constexpr json::Int kWrongVersion = -32606;
 
-void
+bool
 ServerHandler::processRequest(
     Port const& port,
     std::string const& request,
@@ -630,18 +648,29 @@ ServerHandler::processRequest(
     auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
     auto rpcJ = app_.getJournal("RPC");
 
+    // Tracks whether any failure occurred. Set on every error path (early
+    // returns, the catch block, and per-request error replies) and used at the
+    // end to mark the span status. The HTTP status code alone is insufficient:
+    // it stays 200 for batch responses and for ripplerpc < 3.0, so relying on
+    // it would let payload-level errors end the span as successful.
+    bool spanHadError = false;
+
+    // Marks the span as failed before sending an error reply, so the
+    // early-return validation paths below are not later seen as successful
+    // (the span would otherwise end UNSET, invisible to {status.code=error}).
+    auto httpReplyError = [&](int status, std::string const& message) {
+        spanHadError = true;
+        httpReply(status, message, output, rpcJ);
+    };
+
     json::Value jsonOrig;
     {
         json::Reader reader;
         if ((request.size() > RPC::Tuning::kMaxRequestSize) || !reader.parse(request, jsonOrig) ||
             !jsonOrig || !jsonOrig.isObject())
         {
-            httpReply(
-                400,
-                "Unable to parse request: " + reader.getFormattedErrorMessages(),
-                output,
-                rpcJ);
-            return;
+            httpReplyError(400, "Unable to parse request: " + reader.getFormattedErrorMessages());
+            return false;
         }
     }
 
@@ -652,8 +681,8 @@ ServerHandler::processRequest(
         batch = true;
         if (!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
         {
-            httpReply(400, "Malformed batch request", output, rpcJ);
-            return;
+            httpReplyError(400, "Malformed batch request");
+            return false;
         }
         size = jsonOrig[jss::params].size();
     }
@@ -691,8 +720,8 @@ ServerHandler::processRequest(
         {
             if (!batch)
             {
-                httpReply(400, jss::invalid_API_version.cStr(), output, rpcJ);
-                return;
+                httpReplyError(400, jss::invalid_API_version.cStr());
+                return false;
             }
             json::Value r(json::ValueType::Object);
             r[jss::request] = jsonRPC;
@@ -734,8 +763,8 @@ ServerHandler::processRequest(
             {
                 if (!batch)
                 {
-                    httpReply(503, "Server is overloaded", output, rpcJ);
-                    return;
+                    httpReplyError(503, "Server is overloaded");
+                    return false;
                 }
                 json::Value r = jsonRPC;
                 r[jss::error] = makeJsonError(kServerOverloaded, "Server is overloaded");
@@ -749,8 +778,8 @@ ServerHandler::processRequest(
             usage.charge(Resource::kFeeMalformedRpc);
             if (!batch)
             {
-                httpReply(403, "Forbidden", output, rpcJ);
-                return;
+                httpReplyError(403, "Forbidden");
+                return false;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kForbidden, "Forbidden");
@@ -763,8 +792,8 @@ ServerHandler::processRequest(
             usage.charge(Resource::kFeeMalformedRpc);
             if (!batch)
             {
-                httpReply(400, "Null method", output, rpcJ);
-                return;
+                httpReplyError(400, "Null method");
+                return false;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "Null method");
@@ -778,8 +807,8 @@ ServerHandler::processRequest(
             usage.charge(Resource::kFeeMalformedRpc);
             if (!batch)
             {
-                httpReply(400, "method is not string", output, rpcJ);
-                return;
+                httpReplyError(400, "method is not string");
+                return false;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "method is not string");
@@ -793,8 +822,8 @@ ServerHandler::processRequest(
             usage.charge(Resource::kFeeMalformedRpc);
             if (!batch)
             {
-                httpReply(400, "method is empty", output, rpcJ);
-                return;
+                httpReplyError(400, "method is empty");
+                return false;
             }
             json::Value r = jsonRPC;
             r[jss::error] = makeJsonError(kMethodNotFound, "method is empty");
@@ -819,8 +848,8 @@ ServerHandler::processRequest(
             else if (!params.isArray() || params.size() != 1)
             {
                 usage.charge(Resource::kFeeMalformedRpc);
-                httpReply(400, "params unparsable", output, rpcJ);
-                return;
+                httpReplyError(400, "params unparsable");
+                return false;
             }
             else
             {
@@ -828,8 +857,8 @@ ServerHandler::processRequest(
                 if (!params.isObjectOrNull())
                 {
                     usage.charge(Resource::kFeeMalformedRpc);
-                    httpReply(400, "params unparsable", output, rpcJ);
-                    return;
+                    httpReplyError(400, "params unparsable");
+                    return false;
                 }
             }
         }
@@ -846,8 +875,8 @@ ServerHandler::processRequest(
                 usage.charge(Resource::kFeeMalformedRpc);
                 if (!batch)
                 {
-                    httpReply(400, "ripplerpc is not a string", output, rpcJ);
-                    return;
+                    httpReplyError(400, "ripplerpc is not a string");
+                    return false;
                 }
 
                 json::Value r = jsonRPC;
@@ -906,6 +935,7 @@ ServerHandler::processRequest(
                 << " when processing request: " << json::Compact{json::Value{params}};
             span.recordException(ex);
             span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+            spanHadError = true;
             // LCOV_EXCL_STOP
         }
 
@@ -922,6 +952,7 @@ ServerHandler::processRequest(
         {
             if (result.isMember(jss::error))
             {
+                spanHadError = true;
                 result[jss::status] = jss::error;
                 result["code"] = result[jss::error_code];
                 result["message"] = result[jss::error_message];
@@ -942,6 +973,7 @@ ServerHandler::processRequest(
             // received.
             if (result.isMember(jss::error))
             {
+                spanHadError = true;
                 auto rq = params;
 
                 if (rq.isObject())
@@ -1037,8 +1069,20 @@ ServerHandler::processRequest(
         }
     }
 
-    span.setOk();
+    // Mark the span error if any request failed or the HTTP status is an error.
+    // spanHadError catches payload-level errors that httpStatus misses (batch
+    // responses and ripplerpc < 3.0 always return HTTP 200).
+    if (spanHadError || httpStatus >= 400)
+    {
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
+        span.setError(rpc_span::val::error);
+    }
+    else
+    {
+        span.setOk();
+    }
     httpReply(httpStatus, response, output, rpcJ);
+    return !spanHadError;
 }
 
 //------------------------------------------------------------------------------
