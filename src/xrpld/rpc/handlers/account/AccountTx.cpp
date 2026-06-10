@@ -12,7 +12,6 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -31,6 +30,7 @@
 #include <xrpl/resource/Fees.h>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <type_traits>
@@ -39,30 +39,30 @@
 
 namespace xrpl {
 
-Expected<DelegateFilter, json::Value>
+std::expected<DelegateFilter, json::Value>
 DelegateFilter::create(json::Value const& delegateNode)
 {
     if (!delegateNode.isObject())
-        return Unexpected(RPC::invalidFieldError(jss::delegate));
+        return std::unexpected(RPC::invalidFieldError(jss::delegate));
 
     if (!delegateNode.isMember(jss::delegate_filter) ||
         !delegateNode[jss::delegate_filter].isString())
-        return Unexpected(RPC::invalidFieldError(jss::delegate_filter));
+        return std::unexpected(RPC::invalidFieldError(jss::delegate_filter));
 
     auto const& delegateFilterStr = delegateNode[jss::delegate_filter].asString();
 
-    auto typeResult = [&]() -> Expected<DelegateType, json::Value> {
+    auto typeResult = [&]() -> std::expected<DelegateType, json::Value> {
         if (delegateFilterStr == "actor")
             return DelegateType::Actor;
 
         if (delegateFilterStr == "authorizer")
             return DelegateType::Authorizer;
 
-        return Unexpected(RPC::invalidFieldError(jss::delegate_filter));
+        return std::unexpected(RPC::invalidFieldError(jss::delegate_filter));
     }();
 
     if (!typeResult)
-        return Unexpected(typeResult.error());
+        return std::unexpected(typeResult.error());
 
     DelegateType const type = *typeResult;
 
@@ -70,12 +70,12 @@ DelegateFilter::create(json::Value const& delegateNode)
     if (delegateNode.isMember(jss::counter_party))
     {
         if (!delegateNode[jss::counter_party].isString())
-            return Unexpected(RPC::invalidFieldError(jss::counter_party));
+            return std::unexpected(RPC::invalidFieldError(jss::counter_party));
 
         counterparty = parseBase58<AccountID>(delegateNode[jss::counter_party].asString());
 
         if (!counterparty)
-            return Unexpected(rpcError(RpcActMalformed));
+            return std::unexpected(rpcError(RpcActMalformed));
     }
 
     return DelegateFilter{.type = type, .counterparty = counterparty};

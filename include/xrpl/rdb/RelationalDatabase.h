@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -14,6 +13,8 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
+
+#include <expected>
 
 namespace xrpl {
 
@@ -45,7 +46,7 @@ struct DelegateFilter
 {
     // Parses a "delegate" JSON node into a DelegateFilter.
     // Returns an error json::Value if the node is malformed.
-    static Expected<DelegateFilter, json::Value>
+    static std::expected<DelegateFilter, json::Value>
     create(json::Value const& delegateNode);
 
     DelegateType type = DelegateType::Actor;
