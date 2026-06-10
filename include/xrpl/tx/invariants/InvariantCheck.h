@@ -399,7 +399,7 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 
 private:
-    SLE::const_pointer sle_;
+    std::vector<SLE::const_pointer> sles_;
 };
 // additional invariant checks can be declared above and then added to this
 // tuple

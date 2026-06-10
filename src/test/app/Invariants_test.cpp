@@ -4895,6 +4895,23 @@ class Invariants_test : public beast::unit_test::Suite
         // An account that is never funded, so it won't exist in any view.
         AccountID const ghostId = Account{"Ghost"}.id();
 
+        doInvariantCheck(
+            Env{*this, amendments},
+            {{"is missing pseudo-account field"}},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const brokerKeylet = keylet::loanbroker(a1.id(), ac.view().seq());
+                auto sle = std::make_shared<SLE>(brokerKeylet);
+                sle->makeFieldAbsent(sfAccount);
+                auto const page = ac.view().dirInsert(
+                    keylet::ownerDir(a1.id()), sle->key(), describeOwnerDir(a1.id()));
+                if (!page)
+                    return false;
+                sle->setFieldU64(sfOwnerNode, *page);
+                sle->setFieldU32(sfOwnerCount, 1);
+                ac.view().insert(sle);
+                return true;
+            });
+
         // Vault: pseudo-account is referenced but does not exist on the ledger.
         doInvariantCheck(
             Env{*this, amendments},

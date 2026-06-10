@@ -1078,14 +1078,20 @@ ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::co
 
     // After should never be null when isDelete = false, if it is, something went horribly wrong
     if (!after)
-        return;
+    {
+        XRPL_ASSERT(
+            after,
+            "xrpl::ObjectHasPseudoAccount::visitEntry : modified ledger entry missing after state");
+        return;  // LCOV_EXCL_LINE
+    }
 
     switch (after->getType())
     {
         case ltAMM:
         case ltVAULT:
         case ltLOAN_BROKER:
-            sle_ = after;
+            sles_.push_back(after);
+            break;
         default:
             return;
     }
@@ -1102,28 +1108,33 @@ ObjectHasPseudoAccount::finalize(
     if (!view.rules().enabled(fixCleanup3_3_0))
         return true;
 
-    if (!sle_)
+    if (sles_.empty())
         return true;
 
-    // For current ledger entry types, pseudo-account is identified by `sfAccount` field.
-    if (!sle_->isFieldPresent(sfAccount))
+    bool failed = false;
+    for (auto const& sle : sles_)
     {
-        JLOG(j.fatal()) << "Invariant failed: ledger entry " << sle_->getSType()
-                        << " is missing pseudo-account field";
-        return false;
+        // For current ledger entry types, pseudo-account is identified by `sfAccount` field.
+        if (!sle->isFieldPresent(sfAccount))
+        {
+            JLOG(j.fatal()) << "Invariant failed: ledger entry " << sle->getSType()
+                            << " is missing pseudo-account field";
+            failed = true;
+            continue;
+        }
+
+        bool const exists = view.read(keylet::account(sle->getAccountID(sfAccount))) != nullptr;
+
+        // The pseudo-account must exist on the ledger
+        if (!exists)
+        {
+            JLOG(j.fatal()) << "Invariant failed: ledger entry " << sle->getSType()
+                            << " pseudo-account does not exist";
+            failed = true;
+        }
     }
 
-    bool const exists = view.read(keylet::account(sle_->getAccountID(sfAccount))) != nullptr;
-
-    // The pseudo-account must exist on the ledger
-    if (!exists)
-    {
-        JLOG(j.fatal()) << "Invariant failed: ledger entry " << sle_->getSType()
-                        << " pseudo-account does not exist";
-        return false;
-    }
-
-    return true;
+    return !failed;
 }
 
 }  // namespace xrpl
