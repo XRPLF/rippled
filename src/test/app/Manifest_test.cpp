@@ -8,6 +8,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -246,7 +247,7 @@ public:
 
             auto& app = env.app();
             auto unl = std::make_unique<ValidatorList>(
-                m, m, env.timeKeeper(), app.config().legacy("database_path"), env.journal);
+                m, m, env.timeKeeper(), app.config().legacy(Sections::kDatabasePath), env.journal);
 
             {
                 // save should not store untrusted master keys to db
