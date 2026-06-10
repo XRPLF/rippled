@@ -388,47 +388,9 @@ operator+(STAmount const& v1, STAmount const& v2)
     if (v1.holds<MPTIssue>())
         return {v1.asset_, v1.mpt().value() + v2.mpt().value()};
 
-    if (getSTNumberSwitchover())
-    {
-        auto x = v1;
-        x = v1.iou() + v2.iou();
-        return x;
-    }
-
-    int ov1 = v1.exponent(), ov2 = v2.exponent();
-    std::int64_t vv1 = static_cast<std::int64_t>(v1.mantissa());
-    std::int64_t vv2 = static_cast<std::int64_t>(v2.mantissa());
-
-    if (v1.negative())
-        vv1 = -vv1;
-
-    if (v2.negative())
-        vv2 = -vv2;
-
-    while (ov1 < ov2)
-    {
-        vv1 /= 10;
-        ++ov1;
-    }
-
-    while (ov2 < ov1)
-    {
-        vv2 /= 10;
-        ++ov2;
-    }
-
-    // This addition cannot overflow an std::int64_t. It can overflow an
-    // STAmount and the constructor will throw.
-
-    std::int64_t const fv = vv1 + vv2;
-
-    if ((fv >= -10) && (fv <= 10))
-        return {v1.getFName(), v1.asset()};
-
-    if (fv >= 0)
-        return STAmount{v1.getFName(), v1.asset(), static_cast<std::uint64_t>(fv), ov1, false};
-
-    return STAmount{v1.getFName(), v1.asset(), static_cast<std::uint64_t>(-fv), ov1, true};
+    auto x = v1;
+    x = v1.iou() + v2.iou();
+    return x;
 }
 
 STAmount
@@ -877,53 +839,25 @@ STAmount::canonicalize()
         if (asset_.holds<MPTIssue>() && offset_ > 18)
             Throw<std::runtime_error>("MPT amount out of range");
 
-        if (getSTNumberSwitchover())
+        Number const num(isNegative_, value_, offset_, Number::Unchecked{});
+        auto set = [&](auto const& val) {
+            auto const value = val.value();
+            isNegative_ = value < 0;
+            value_ = isNegative_ ? -value : value;
+        };
+        if (native())
         {
-            Number const num(isNegative_, value_, offset_, Number::Unchecked{});
-            auto set = [&](auto const& val) {
-                auto const value = val.value();
-                isNegative_ = value < 0;
-                value_ = isNegative_ ? -value : value;
-            };
-            if (native())
-            {
-                set(XRPAmount{num});
-            }
-            else if (asset_.holds<MPTIssue>())
-            {
-                set(MPTAmount{num});
-            }
-            else
-            {
-                Throw<std::runtime_error>("Unknown integral asset type");
-            }
-            offset_ = 0;
+            set(XRPAmount{num});
+        }
+        else if (asset_.holds<MPTIssue>())
+        {
+            set(MPTAmount{num});
         }
         else
         {
-            while (offset_ < 0)
-            {
-                value_ /= 10;
-                ++offset_;
-            }
-
-            while (offset_ > 0)
-            {
-                // N.B. do not move the overflow check to after the
-                // multiplication
-                if (native() && value_ > kMaxNativeN)
-                {
-                    Throw<std::runtime_error>("Native currency amount out of range");
-                }
-                else if (!native() && value_ > kMaxMpTokenAmount)
-                {
-                    Throw<std::runtime_error>("MPT amount out of range");
-                }
-
-                value_ *= 10;
-                --offset_;
-            }
+            Throw<std::runtime_error>("Unknown integral asset type");  // LCOV_EXCL_LINE
         }
+        offset_ = 0;
 
         if (native() && value_ > kMaxNativeN)
         {
@@ -937,53 +871,7 @@ STAmount::canonicalize()
         return;
     }
 
-    if (getSTNumberSwitchover())
-    {
-        *this = iou();
-        return;
-    }
-
-    if (value_ == 0)
-    {
-        offset_ = -100;
-        isNegative_ = false;
-        return;
-    }
-
-    while ((value_ < kMinValue) && (offset_ > kMinOffset))
-    {
-        value_ *= 10;
-        --offset_;
-    }
-
-    while (value_ > kMaxValue)
-    {
-        if (offset_ >= kMaxOffset)
-            Throw<std::runtime_error>("value overflow");
-
-        value_ /= 10;
-        ++offset_;
-    }
-
-    if ((offset_ < kMinOffset) || (value_ < kMinValue))
-    {
-        value_ = 0;
-        isNegative_ = false;
-        offset_ = -100;
-        return;
-    }
-
-    if (offset_ > kMaxOffset)
-        Throw<std::runtime_error>("value overflow");
-
-    XRPL_ASSERT(
-        (value_ == 0) || ((value_ >= kMinValue) && (value_ <= kMaxValue)),
-        "xrpl::STAmount::canonicalize : value inside range");
-    XRPL_ASSERT(
-        (value_ == 0) || ((offset_ >= kMinOffset) && (offset_ <= kMaxOffset)),
-        "xrpl::STAmount::canonicalize : offset inside range");
-    XRPL_ASSERT(
-        (value_ != 0) || (offset_ != -100), "xrpl::STAmount::canonicalize : value or offset set");
+    *this = iou();
 }
 
 void
@@ -1395,44 +1283,8 @@ multiply(STAmount const& v1, STAmount const& v2, Asset const& asset)
         return STAmount(asset, minV * maxV);
     }
 
-    if (getSTNumberSwitchover())
-    {
-        auto const r = Number{v1} * Number{v2};
-        return STAmount{asset, r};
-    }
-
-    std::uint64_t value1 = v1.mantissa();
-    std::uint64_t value2 = v2.mantissa();
-    int offset1 = v1.exponent();
-    int offset2 = v2.exponent();
-
-    if (v1.integral())
-    {
-        while (value1 < STAmount::kMinValue)
-        {
-            value1 *= 10;
-            --offset1;
-        }
-    }
-
-    if (v2.integral())
-    {
-        while (value2 < STAmount::kMinValue)
-        {
-            value2 *= 10;
-            --offset2;
-        }
-    }
-
-    // We multiply the two mantissas (each is between 10^15
-    // and 10^16), so their product is in the 10^30 to 10^32
-    // range. Dividing their product by 10^14 maintains the
-    // precision, by scaling the result to 10^16 to 10^18.
-    return STAmount(
-        asset,
-        muldiv(value1, value2, kTenTO14) + 7,
-        offset1 + offset2 + 14,
-        v1.negative() != v2.negative());
+    auto const r = Number{v1} * Number{v2};
+    return STAmount{asset, r};
 }
 
 // This is the legacy version of canonicalizeRound.  It's been in use

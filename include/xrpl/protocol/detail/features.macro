@@ -64,7 +64,6 @@ XRPL_FIX    (DisallowIncomingV1,         Supported::Yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(XChainBridge,               Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(AMM,                        Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Clawback,                   Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (UniversalNumber,            Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(XRPFees,                    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::Yes, VoteBehavior::DefaultYes)
 
@@ -112,6 +111,7 @@ XRPL_RETIRE_FIX(RmSmallIncreasedQOffers)
 XRPL_RETIRE_FIX(STAmountCanonicalize)
 XRPL_RETIRE_FIX(TakerDryOfferRemoval)
 XRPL_RETIRE_FIX(TrustLinesToSelf)
+XRPL_RETIRE_FIX(UniversalNumber)
 
 XRPL_RETIRE_FEATURE(Checks)
 XRPL_RETIRE_FEATURE(CheckCashMakesTrustLine)
