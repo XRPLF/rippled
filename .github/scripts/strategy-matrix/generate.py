@@ -281,7 +281,8 @@ def expand_platform_matrix(
 
     if pf.toolsets:
         toolsets = [t for t in pf.toolsets if not t.exclude]
-    else:
+
+    if not toolsets:
         toolsets = [Toolset(name="", generator="", compiler_version="")]
 
     entries: list[MatrixEntry] = []
