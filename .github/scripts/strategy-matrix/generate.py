@@ -103,12 +103,27 @@ class PlatformConfig:
 
 
 @dataclasses.dataclass
+class Toolset:
+    """One entry in windows.json's 'toolsets' array (Windows only).
+
+    Each toolset selects a Visual Studio version: the CMake generator drives
+    the configure step, and compiler_version pins the matching Conan msvc
+    toolset so dependencies are built against the same compiler.
+    """
+
+    name: str  # short config-name suffix, e.g. "vs2022"
+    generator: str  # CMake generator, e.g. "Visual Studio 17 2022"
+    compiler_version: str = ""  # Conan msvc compiler.version, e.g. "194"
+
+
+@dataclasses.dataclass
 class PlatformFile:
     """Shape of macos.json and windows.json."""
 
     platform: str  # e.g. "macos/arm64" or "windows/amd64"
     runner: list[str]  # GitHub Actions runner labels
     configs: list[PlatformConfig]
+    toolsets: list[Toolset] = dataclasses.field(default_factory=list)
 
     @classmethod
     def load(cls, path: Path) -> "PlatformFile":
@@ -117,6 +132,7 @@ class PlatformFile:
             platform=data["platform"],
             runner=data["runner"],
             configs=[PlatformConfig(**c) for c in data["configs"]],
+            toolsets=[Toolset(**t) for t in data.get("toolsets", [])],
         )
 
 
@@ -144,6 +160,8 @@ class MatrixEntry:
     sanitizers: str
     image: str = ""  # container image; empty for macOS/Windows (runs natively)
     compiler: str = ""  # compiler name ("gcc" or "clang"); empty for macOS/Windows
+    generator: str = ""  # CMake generator; empty selects Ninja (Linux/macOS)
+    compiler_version: str = ""  # Conan msvc compiler.version; empty auto-detects
 
 
 @dataclasses.dataclass
@@ -248,24 +266,35 @@ def expand_platform_matrix(
     """Expand a PlatformFile (macOS or Windows) into matrix entries.
 
     Configs that exclude the current event are skipped.
+    
+
+    When toolsets are defined (Windows), the configs are expanded over the
+    cross-product with the toolsets so each config is built against every
+    Visual Studio version. Platforms without toolsets (macOS) use a single
+    implicit toolset with no generator override (the build defaults to Ninja).
     """
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
+    toolsets = pf.toolsets or [Toolset(name="", generator="", compiler_version="")]
+
     entries: list[MatrixEntry] = []
-    for cfg in pf.configs:
+    for toolset, cfg in itertools.product(toolsets, pf.configs):
         if not runs_on_event(cfg.exclude_event_types, event):
             continue
         for build_type in cfg.build_type:
+            name_parts = [platform_name, arch, toolset.name, build_type.lower()]
             entries.append(
                 MatrixEntry(
-                    config_name=f"{platform_name}-{arch}-{build_type.lower()}",
+                    config_name="-".join(p for p in name_parts if p),
                     cmake_args=get_cmake_args(build_type, cfg.extra_cmake_args),
                     cmake_target="install" if is_windows else "all",
                     build_only=cfg.build_only,
                     build_type=build_type,
                     architecture=Architecture(platform=pf.platform, runner=pf.runner),
                     sanitizers="",
+                    generator=toolset.generator,
+                    compiler_version=toolset.compiler_version,
                 )
             )
     return entries

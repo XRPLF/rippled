@@ -105,6 +105,7 @@ jobs:
           # amount of logs. For other OSes, the "verbose" logs are more useful.
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
           sanitizers: ${{ matrix.sanitizers }}
+          compiler_version: ${{ matrix.compiler_version || '' }}
 
       - name: Log into Conan remote
         if: ${{ github.repository == 'XRPLF/rippled' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}

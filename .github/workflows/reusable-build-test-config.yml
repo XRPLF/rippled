@@ -63,6 +63,18 @@ on:
         type: string
         default: ""
 
+      generator:
+        description: "The CMake generator to use. Leave empty to use Ninja (Linux/macOS)."
+        required: false
+        type: string
+        default: ""
+
+      compiler_version:
+        description: "Override the Conan compiler.version (Windows Visual Studio toolset). Leave empty to auto-detect."
+        required: false
+        type: string
+        default: ""
+
     secrets:
       CODECOV_TOKEN:
         description: "The Codecov token to use for uploading coverage reports."
@@ -150,6 +162,7 @@ jobs:
           # amount of logs. For other OSes, the "verbose" logs are more useful.
           log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
           sanitizers: ${{ inputs.sanitizers }}
+          compiler_version: ${{ inputs.compiler_version }}
 
       - name: Configure CMake
         working-directory: ${{ env.BUILD_DIR }}
@@ -158,7 +171,7 @@ jobs:
           CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: |
           cmake \
-              -G '${{ runner.os == 'Windows' && 'Visual Studio 17 2022' || 'Ninja' }}' \
+              -G '${{ inputs.generator != '' && inputs.generator || 'Ninja' }}' \
               -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
               -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
               ${CMAKE_ARGS} \

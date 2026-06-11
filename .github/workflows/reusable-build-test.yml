@@ -50,5 +50,7 @@ jobs:
       config_name: ${{ matrix.config_name }}
       sanitizers: ${{ matrix.sanitizers }}
       compiler: ${{ matrix.compiler || '' }}
+      generator: ${{ matrix.generator || '' }}
+      compiler_version: ${{ matrix.compiler_version || '' }}
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

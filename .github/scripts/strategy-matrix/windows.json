@@ -1,6 +1,18 @@
 {
   "platform": "windows/amd64",
-  "runner": ["self-hosted", "Windows", "devbox"],
+  "runner": ["self-hosted", "Windows", "devbox-jcw-test"],
+  "toolsets": [
+    {
+      "name": "vs2022",
+      "generator": "Visual Studio 17 2022",
+      "compiler_version": "194"
+    },
+    {
+      "name": "vs2026",
+      "generator": "Visual Studio 18 2026",
+      "compiler_version": "195"
+    }
+  ],
   "configs": [
     { "build_type": "Release" },
     {

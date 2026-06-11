@@ -22,6 +22,10 @@ inputs:
     description: "The sanitizers to enable."
     required: false
     default: ""
+  compiler_version:
+    description: "Override the Conan compiler.version (e.g. msvc '194' or '195'). Leave empty to auto-detect."
+    required: false
+    default: ""
 
 runs:
   using: composite
@@ -34,9 +38,15 @@ runs:
         BUILD_TYPE: ${{ inputs.build_type }}
         LOG_VERBOSITY: ${{ inputs.log_verbosity }}
         SANITIZERS: ${{ inputs.sanitizers }}
+        COMPILER_VERSION: ${{ inputs.compiler_version }}
       run: |
+        COMPILER_VERSION_SETTING=()
+        if [ -n "${COMPILER_VERSION}" ]; then
+            COMPILER_VERSION_SETTING=(--settings:all compiler.version="${COMPILER_VERSION}")
+        fi
         conan install \
             --profile:all ci \
+            "${COMPILER_VERSION_SETTING[@]}" \
             --build="${BUILD_OPTION}" \
             --options:host='&:tests=True' \
             --options:host='&:xrpld=True' \
