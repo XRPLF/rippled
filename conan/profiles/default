@@ -12,7 +12,7 @@ arch={{ arch }}
 build_type=Debug
 compiler={{compiler}}
 compiler.version={{ compiler_version }}
-compiler.cppstd=20
+compiler.cppstd=23
 {% if os == "Windows" %}
 compiler.runtime=static
 {% else %}

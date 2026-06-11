@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/dex/AMMBid.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -28,6 +27,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <set>
 #include <utility>
@@ -267,7 +267,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jour
     auto const bidMin = ctx.tx[~sfBidMin];
     auto const bidMax = ctx.tx[~sfBidMax];
 
-    auto getPayPrice = [&](Number const& computedPrice) -> Expected<Number, TER> {
+    auto getPayPrice = [&](Number const& computedPrice) -> std::expected<Number, TER> {
         auto const payPrice = [&]() -> std::optional<Number> {
             // Both min/max bid price are defined
             if (bidMin && bidMax)
@@ -296,11 +296,11 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jour
         }();
         if (!payPrice)
         {
-            return Unexpected(tecAMM_FAILED);
+            return std::unexpected(tecAMM_FAILED);
         }
         if (payPrice > lpTokens)
         {
-            return Unexpected(tecAMM_INVALID_TOKENS);
+            return std::unexpected(tecAMM_INVALID_TOKENS);
         }
         return *payPrice;
     };

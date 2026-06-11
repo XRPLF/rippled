@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverClawback.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -29,6 +28,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <expected>
 #include <optional>
 #include <variant>
 
@@ -84,7 +84,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-Expected<uint256, TER>
+std::expected<uint256, TER>
 determineBrokerID(ReadView const& view, STTx const& tx)
 {
     // If the broker ID was provided in the transaction, that's all we
@@ -97,7 +97,7 @@ determineBrokerID(ReadView const& view, STTx const& tx)
     // because that should have been rejected in preflight().
     auto const dstAmount = tx[~sfAmount];
     if (!dstAmount || !dstAmount->holds<Issue>())
-        return Unexpected{tecINTERNAL};  // LCOV_EXCL_LINE
+        return std::unexpected{tecINTERNAL};  // LCOV_EXCL_LINE
 
     // Every trust line is bidirectional. Both sides are simultaneously
     // issuer and holder. For this transaction, the Account is acting as
@@ -113,7 +113,7 @@ determineBrokerID(ReadView const& view, STTx const& tx)
 
     // If the account was not found, the transaction can't go further.
     if (!acct)
-        return Unexpected{tecNO_ENTRY};
+        return std::unexpected{tecNO_ENTRY};
 
     // If the account was found, and has a LoanBrokerID (and therefore
     // is a pseudo-account), that's the
@@ -123,11 +123,11 @@ determineBrokerID(ReadView const& view, STTx const& tx)
 
     // If the account does not have a LoanBrokerID, the transaction
     // can't go further, even if it's a different type of Pseudo-account.
-    return Unexpected{tecOBJECT_NOT_FOUND};
+    return std::unexpected{tecOBJECT_NOT_FOUND};
     // Or tecWRONG_ASSET?
 }
 
-Expected<Asset, TER>
+std::expected<Asset, TER>
 determineAsset(
     ReadView const& view,
     AccountID const& account,
@@ -154,10 +154,10 @@ determineAsset(
         return Issue{amount.get<Issue>().currency, account};
     }
 
-    return Unexpected(tecWRONG_ASSET);
+    return std::unexpected(tecWRONG_ASSET);
 }
 
-Expected<STAmount, TER>
+std::expected<STAmount, TER>
 determineClawAmount(
     SLE const& sleBroker,
     Asset const& vaultAsset,
@@ -183,7 +183,7 @@ determineClawAmount(
         return sleBroker[sfCoverAvailable] - minRequiredCover;
     }();
     if (maxClawAmount <= beast::kZero)
-        return Unexpected(tecINSUFFICIENT_FUNDS);
+        return std::unexpected(tecINSUFFICIENT_FUNDS);
 
     // Use the vaultAsset here, because it will be the right type in all
     // circumstances. The amount may be an IOU indicating the pseudo-account's

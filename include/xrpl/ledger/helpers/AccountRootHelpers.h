@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -12,6 +11,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <set>
 #include <vector>
@@ -211,7 +211,7 @@ getPseudoAccountFields();
  * before using a field. The amendment check is **not** performed in
  * createPseudoAccount.
  */
-[[nodiscard]] Expected<SLE::pointer, TER>
+[[nodiscard]] std::expected<SLE::pointer, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField);
 
 }  // namespace xrpl
