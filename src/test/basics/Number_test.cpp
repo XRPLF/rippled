@@ -1571,7 +1571,6 @@ public:
     void
     testToStAmount()
     {
-        NumberSO const stNumberSO{true};
         Issue const issue;
         Number const n{7'518'783'80596, -5};
         SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};
