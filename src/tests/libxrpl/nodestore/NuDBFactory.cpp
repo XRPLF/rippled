@@ -10,6 +10,7 @@
 #include <helpers/TestSink.h>
 #include <nodestore/TestBase.h>
 
+#include <array>
 #include <cstddef>
 #include <exception>
 #include <memory>
@@ -64,7 +65,7 @@ TEST(NuDBFactory, default_block_size)
 
 TEST(NuDBFactory, valid_block_sizes)
 {
-    std::vector<std::size_t> const kValidSizes = {4096, 8192, 16384, 32768};
+    std::array<std::size_t, 4> const kValidSizes{4096, 8192, 16384, 32768};
     for (auto const size : kValidSizes)
     {
         SCOPED_TRACE("size=" + std::to_string(size));
@@ -126,9 +127,10 @@ TEST(NuDBFactory, log_messages)
         beast::Journal const journal(sink);
 
         DummyScheduler scheduler;
-        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+        [[maybe_unused]] auto backend =
+            Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
-        EXPECT_NE(sink.messages().find("Using custom NuDB block size: 8192"), std::string::npos);
+        EXPECT_TRUE(sink.messages().contains("Using custom NuDB block size: 8192"));
     }
 
     // invalid block size throws with informative message
@@ -147,8 +149,8 @@ TEST(NuDBFactory, log_messages)
         catch (std::exception const& e)
         {
             std::string const what{e.what()};
-            EXPECT_NE(what.find("Invalid nudb_block_size: 5000"), std::string::npos);
-            EXPECT_NE(what.find("Must be power of 2 between 4096 and 32768"), std::string::npos);
+            EXPECT_TRUE(what.contains("Invalid nudb_block_size: 5000"));
+            EXPECT_TRUE(what.contains("Must be power of 2 between 4096 and 32768"));
         }
     }
 
@@ -168,7 +170,7 @@ TEST(NuDBFactory, log_messages)
         catch (std::exception const& e)
         {
             std::string const what{e.what()};
-            EXPECT_NE(what.find("Invalid nudb_block_size value: invalid"), std::string::npos);
+            EXPECT_TRUE(what.contains("Invalid nudb_block_size value: invalid"));
         }
     }
 }
@@ -207,7 +209,7 @@ TEST(NuDBFactory, power_of_two_validation)
             // message below (which would mask the regression).
             EXPECT_FALSE(shouldWork);
             std::string const what{e.what()};
-            EXPECT_NE(what.find("Invalid nudb_block_size"), std::string::npos);
+            EXPECT_TRUE(what.contains("Invalid nudb_block_size"));
         }
     }
 }
@@ -238,8 +240,9 @@ TEST(NuDBFactory, configuration_parsing)
         test::CaptureSink sink(beast::Severity::Info);
         beast::Journal const journal(sink);
         DummyScheduler scheduler;
-        auto backend = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
-        EXPECT_NE(sink.messages().find("Using custom NuDB block size"), std::string::npos);
+        [[maybe_unused]] auto backend =
+            Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+        EXPECT_TRUE(sink.messages().contains("Using custom NuDB block size"));
     }
 
     // Test whitespace handling separately since lexical_cast behavior may vary
