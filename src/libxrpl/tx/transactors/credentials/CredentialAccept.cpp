@@ -30,7 +30,7 @@ CredentialAccept::getFlagsMask(PreflightContext const& ctx)
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
 
-static NotTEC
+NotTEC
 CredentialAccept::preflight(PreflightContext const& ctx)
 {
     if (!ctx.tx[sfIssuer])
@@ -49,7 +49,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 CredentialAccept::preclaim(PreclaimContext const& ctx)
 {
     AccountID const subject = ctx.tx[sfAccount];
@@ -80,7 +80,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 CredentialAccept::doApply()
 {
     AccountID const issuer{ctx_.tx[sfIssuer]};
@@ -128,7 +128,7 @@ CredentialAccept::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 CredentialAccept::finalizeInvariants(
     STTx const&,
     TER,

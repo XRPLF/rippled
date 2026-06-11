@@ -3,11 +3,14 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -45,7 +48,7 @@ AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
     return true;
 }
 
-static NotTEC
+NotTEC
 AMMCreate::preflight(PreflightContext const& ctx)
 {
     auto const amount = ctx.tx[sfAmount];
@@ -85,7 +88,7 @@ AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     return calculateOwnerReserveFee(view, tx);
 }
 
-static TER
+TER
 AMMCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
@@ -374,7 +377,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& creatorAccountID, b
     return {res, isTesSuccess(res)};
 }
 
-static TER
+TER
 AMMCreate::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
@@ -394,7 +397,7 @@ AMMCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 AMMCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

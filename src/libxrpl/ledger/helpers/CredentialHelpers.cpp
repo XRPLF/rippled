@@ -17,6 +17,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/digest.h>
 
 #include <cstdint>
 #include <limits>
@@ -38,7 +39,7 @@ static std::expected<bool, TER>
 removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
     auto const closeTime = view.header().parentCloseTime;
-    bool const foundExpired = false;
+    bool foundExpired = false;
 
     for (auto const& h : arr)
     {
@@ -57,7 +58,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
         }
     }
 
-    return static_cast<int>(foundExpired);
+    return foundExpired;
 }
 
 TER
@@ -95,7 +96,7 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
 
     auto const issuer = sleCredential->getAccountID(sfIssuer);
     auto const subject = sleCredential->getAccountID(sfSubject);
-    bool const accepted = sleCredential->isFlag(lsfAccepted) = false;
+    bool const accepted = sleCredential->isFlag(lsfAccepted);
 
     auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
     if (!isTesSuccess(err))
@@ -185,7 +186,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
         return tecOBJECT_NOT_FOUND;
 
     auto const closeTime = view.header().parentCloseTime;
-    bool const foundExpired = false;
+    bool foundExpired = false;
     for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
     {
         auto const issuer = h.getAccountID(sfIssuer);

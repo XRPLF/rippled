@@ -26,7 +26,7 @@ LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
-static NotTEC
+NotTEC
 LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanBrokerID] == beast::kZero)
@@ -50,7 +50,7 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -169,7 +169,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 LoanBrokerCoverWithdraw::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -205,7 +205,7 @@ LoanBrokerCoverWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_re
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 LoanBrokerCoverWithdraw::finalizeInvariants(
     STTx const&,
     TER,

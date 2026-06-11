@@ -2,10 +2,12 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/conditions/Condition.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -121,7 +123,7 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static NotTEC
+NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
     STAmount const amount{ctx.tx[sfAmount]};
@@ -332,7 +334,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
-static TER
+TER
 EscrowCreate::preclaim(PreclaimContext const& ctx)
 {
     STAmount const amount{ctx.tx[sfAmount]};
@@ -414,7 +416,7 @@ escrowLockApplyHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
-static TER
+TER
 EscrowCreate::doApply()
 {
     auto const closeTime = ctx_.view().header().parentCloseTime;
@@ -543,7 +545,7 @@ EscrowCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 EscrowCreate::finalizeInvariants(
     STTx const&,
     TER,

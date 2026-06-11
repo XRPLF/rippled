@@ -44,7 +44,7 @@ MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
     return tfMPTokenIssuanceCreateMask;
 }
 
-static NotTEC
+NotTEC
 MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
     // sfReferenceHolding is set only internally by VaultCreate. Reject
@@ -97,7 +97,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static std::expected<MPTID, TER>
+std::expected<MPTID, TER>
 MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
 {
     WAccountRoot acct(args.account, view, journal);
@@ -169,7 +169,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
     return mptId;
 }
 
-static TER
+TER
 MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -197,7 +197,7 @@ MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 MPTokenIssuanceCreate::finalizeInvariants(
     STTx const&,
     TER,

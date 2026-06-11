@@ -37,7 +37,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
     return Transactor::calculateBaseFee(view, tx);
 }
 
-static NotTEC
+NotTEC
 SetRegularKey::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfRegularKey) &&
@@ -49,7 +49,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 SetRegularKey::doApply()
 {
     if (!account_)
@@ -82,7 +82,7 @@ SetRegularKey::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 SetRegularKey::finalizeInvariants(
     STTx const&,
     TER,

@@ -37,7 +37,7 @@ namespace xrpl {
 
 //------------------------------------------------------------------------------
 
-static NotTEC
+NotTEC
 DIDSet::preflight(PreflightContext const& ctx)
 {
     if (!ctx.tx.isFieldPresent(sfURI) && !ctx.tx.isFieldPresent(sfDIDDocument) &&
@@ -95,7 +95,7 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
     return tesSUCCESS;
 }
 
-static TER
+TER
 DIDSet::doApply()
 {
     // Edit ledger object if it already exists
@@ -155,7 +155,7 @@ DIDSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 DIDSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

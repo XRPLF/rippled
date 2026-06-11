@@ -142,7 +142,7 @@ private:
 
     bool convertAll_{};
 
-    std::recursive_mutex indexLock_;
+    std::recursive_mutex mutable indexLock_;
     LedgerIndex lastIndex_;
     bool inProgress_;
 

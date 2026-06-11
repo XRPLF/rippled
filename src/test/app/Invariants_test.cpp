@@ -1,11 +1,14 @@
+#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
@@ -18,6 +21,8 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
@@ -42,8 +47,10 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
+#include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
 #include <array>
@@ -127,7 +134,7 @@ class Invariants_test : public beast::unit_test::Suite
             setTxAccount);
     }
 
-    static void
+    void
     doInvariantCheck(
         test::jtx::Env&& env,
         std::vector<std::string> const& expectLogs,
@@ -153,7 +160,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters);
     }
 
-    static void
+    void
     doInvariantCheck(
         // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
         test::jtx::Env&& env,
@@ -211,7 +218,7 @@ class Invariants_test : public beast::unit_test::Suite
         }
     }
 
-    static void
+    void
     testXRPNotCreated()
     {
         using namespace test::jtx;
@@ -230,7 +237,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static void
+    void
     testAccountRootsNotRemoved()
     {
         using namespace test::jtx;
@@ -286,7 +293,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
     }
 
-    static void
+    void
     testAccountRootsDeletedClean()
     {
         using namespace test::jtx;
@@ -401,9 +408,9 @@ class Invariants_test : public beast::unit_test::Suite
             });
 
         // AMM special cases
-        AccountID const ammAcctID;
-        uint256 const ammKey;
-        Issue const ammIssue;
+        AccountID ammAcctID;
+        uint256 ammKey;
+        Issue ammIssue;
         doInvariantCheck(
             {{"account deletion left behind a DirectoryNode object"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -503,7 +510,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static void
+    void
     testTypesMatch()
     {
         using namespace test::jtx;
@@ -542,7 +549,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static void
+    void
     testNoXRPTrustLine()
     {
         using namespace test::jtx;
@@ -558,7 +565,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static void
+    void
     testNoDeepFreezeTrustLinesWithoutFreeze()
     {
         using namespace test::jtx;
@@ -636,7 +643,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static void
+    void
     testTransfersNotFrozen()
     {
         using namespace test::jtx;
@@ -727,7 +734,7 @@ class Invariants_test : public beast::unit_test::Suite
             a1DeepFrozenByIssuer);
     }
 
-    static void
+    void
     testXRPBalanceCheck()
     {
         using namespace test::jtx;
@@ -776,7 +783,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static void
+    void
     testTransactionFeeCheck()
     {
         using namespace test::jtx;
@@ -802,7 +809,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttACCOUNT_SET, [](STObject& tx) { tx.setFieldAmount(sfFee, XRPAmount{10}); }});
     }
 
-    static void
+    void
     testNoBadOffers()
     {
         using namespace test::jtx;
@@ -853,7 +860,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static void
+    void
     testNoZeroEscrow()
     {
         using namespace test::jtx;
@@ -1022,7 +1029,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static void
+    void
     testValidNewAccountRoot()
     {
         using namespace test::jtx;
@@ -1136,7 +1143,7 @@ class Invariants_test : public beast::unit_test::Suite
             STTx{ttAMM_CREATE, [](STObject& tx) {}});
     }
 
-    static void
+    void
     testNFTokenPageInvariants()
     {
         using namespace test::jtx;
@@ -1306,7 +1313,7 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const fixEnabled = features[fixCleanup3_1_3] = false;
+        bool const fixEnabled = features[fixCleanup3_1_3];
         std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
         std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
 
@@ -1650,7 +1657,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         using namespace jtx;
 
-        AccountID const pseudoAccountID;
+        AccountID pseudoAccountID;
         Preclose const createPseudo = [&, this](Account const& a, Account const& b, Env& env) {
             PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
@@ -1761,7 +1768,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static std::pair<std::uint32_t, uint256>
+    std::pair<std::uint32_t, uint256>
     createPermissionedDomainEnv(
         test::jtx::Env& env,
         test::jtx::Account const& a1,
@@ -1792,7 +1799,7 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const fixEnabled = features[fixCleanup3_1_3] = false;
+        bool const fixEnabled = features[fixCleanup3_1_3];
 
         testcase << "PermissionedDEX" + std::string(fixEnabled ? " fix" : "");
 
@@ -2192,7 +2199,7 @@ class Invariants_test : public beast::unit_test::Suite
         }
     }
 
-    static Keylet
+    Keylet
     createLoanBroker(jtx::Account const& a, jtx::Env& env, jtx::PrettyAsset const& asset)
     {
         using namespace jtx;
@@ -2216,14 +2223,14 @@ class Invariants_test : public beast::unit_test::Suite
         return loanBrokerKeylet;
     };
 
-    static void
+    void
     testNoModifiedUnmodifiableFields()
     {
         testcase("no modified unmodifiable fields");
         using namespace jtx;
 
         // Initialize with a placeholder value because there's no default ctor
-        Keylet const loanBrokerKeylet = keylet::amendments();
+        Keylet loanBrokerKeylet = keylet::amendments();
         Preclose const createLoanBroker = [&, this](Account const& a, Account const& b, Env& env) {
             PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
@@ -2289,7 +2296,7 @@ class Invariants_test : public beast::unit_test::Suite
         }
     }
 
-    static void
+    void
     testValidLoanBroker()
     {
         testcase << "valid loan broker";
@@ -2559,7 +2566,7 @@ class Invariants_test : public beast::unit_test::Suite
         }
     }
 
-    static void
+    void
     testVault()
     {
         using namespace test::jtx;
@@ -3956,7 +3963,7 @@ class Invariants_test : public beast::unit_test::Suite
 
             // Create MPT asset
             {
-                json::Value const jv;
+                json::Value jv;
                 jv[sfAccount] = a3.human();
                 jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
                 jv[sfFlags] = tfMPTCanTransfer;
@@ -3968,7 +3975,7 @@ class Invariants_test : public beast::unit_test::Suite
             Asset const asset = MPTIssue(mptID);
             // Authorize A1 A2 A4
             {
-                json::Value const jv;
+                json::Value jv;
                 jv[sfAccount] = a1.human();
                 jv[sfTransactionType] = jss::MPTokenAuthorize;
                 jv[sfMPTokenIssuanceID] = to_string(mptID);
@@ -4112,7 +4119,7 @@ class Invariants_test : public beast::unit_test::Suite
             precloseMpt);
     }
 
-    static void
+    void
     testMPT()
     {
         using namespace test::jtx;
@@ -4216,7 +4223,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         // Overflow/Invalid balance on payment
         auto testPayment = [&](std::string const& log, auto&& update) {
-            MPTID const id;
+            MPTID id;
             doInvariantCheck(
                 {{log}},
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -4341,7 +4348,7 @@ class Invariants_test : public beast::unit_test::Suite
         // sfReferenceHolding), then mutate it in precheck to produce a
         // before/after pair.
         {
-            uint256 const vaultKey;
+            uint256 vaultKey;
             doInvariantCheck(
                 {{"sfReferenceHolding was modified on an existing "
                   "MPTokenIssuance"}},
@@ -4383,7 +4390,7 @@ class Invariants_test : public beast::unit_test::Suite
         // other than a VaultDelete transaction. Set up a vault, then have
         // an arbitrary tx erase the pseudo's MPToken in precheck.
         {
-            uint256 const vaultKey;
+            uint256 vaultKey;
             doInvariantCheck(
                 {{"vault pseudo-account holding deleted by a "
                   "non-VaultDelete transaction"}},
@@ -4502,7 +4509,7 @@ class Invariants_test : public beast::unit_test::Suite
         }
     }
 
-    static void
+    void
     testAMM()
     {
         testcase << "AMM";
@@ -4612,11 +4619,11 @@ class Invariants_test : public beast::unit_test::Suite
     // behavior. With the fix enabled, |= accumulates violations across
     // entries so a later valid entry cannot clear an earlier violation.
     // Without the fix, = assignment means the last-visited entry wins.
-    static void
+    void
     testInvariantOverwrite(FeatureBitset features)
     {
         using namespace test::jtx;
-        bool const fixEnabled = features[fixCleanup3_1_3] = false;
+        bool const fixEnabled = features[fixCleanup3_1_3];
         std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
         std::initializer_list<TER> const passTers = {tesSUCCESS, tesSUCCESS};
 
@@ -4741,7 +4748,7 @@ class Invariants_test : public beast::unit_test::Suite
             failTers);
     }
 
-    static void
+    void
     testVaultComputeCoarsestScale()
     {
         using namespace jtx;

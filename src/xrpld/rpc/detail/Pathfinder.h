@@ -115,7 +115,7 @@ private:
     STPathSet&
     addPathsForType(PathType const& type, std::function<bool(void)> const& continueCallback);
 
-    static bool
+    bool
     issueMatchesOrigin(Asset const&);
 
     int
@@ -158,7 +158,7 @@ private:
     isNoRippleOut(STPath const& currentPath);
 
     // Is the "no ripple" flag set from one account to another?
-    static bool
+    bool
     isNoRipple(AccountID const& fromAccount, AccountID const& toAccount, Currency const& currency);
 
     void

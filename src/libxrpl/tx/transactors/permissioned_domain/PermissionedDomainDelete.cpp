@@ -14,7 +14,7 @@
 
 namespace xrpl {
 
-static NotTEC
+NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
@@ -24,7 +24,7 @@ PermissionedDomainDelete::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
@@ -43,7 +43,7 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 }
 
 /** Attempt to delete the Permissioned Domain. */
-static TER
+TER
 PermissionedDomainDelete::doApply()
 {
     XRPL_ASSERT(
@@ -77,7 +77,7 @@ PermissionedDomainDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_r
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 PermissionedDomainDelete::finalizeInvariants(
     STTx const&,
     TER,

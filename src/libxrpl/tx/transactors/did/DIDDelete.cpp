@@ -19,13 +19,13 @@
 
 namespace xrpl {
 
-static NotTEC
+NotTEC
 DIDDelete::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
 
-static TER
+TER
 DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
 {
     auto const sle = ctx.view().peek(sleKeylet);
@@ -35,7 +35,7 @@ DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
     return DIDDelete::deleteSLE(ctx.view(), sle, owner, ctx.journal);
 }
 
-static TER
+TER
 DIDDelete::deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, beast::Journal j)
 {
     // Remove object from owner directory
@@ -71,7 +71,7 @@ DIDDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 DIDDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

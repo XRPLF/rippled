@@ -9,6 +9,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -45,7 +46,7 @@ LoanSet::getFlagsMask(PreflightContext const& ctx)
     return tfLoanSetMask;
 }
 
-static NotTEC
+NotTEC
 LoanSet::preflight(PreflightContext const& ctx)
 {
     using namespace Lending;
@@ -133,7 +134,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static NotTEC
+NotTEC
 LoanSet::checkSign(PreclaimContext const& ctx)
 {
     if (auto ret = Transactor::checkSign(ctx))
@@ -188,7 +189,7 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     return normalCost + (signerCount * baseFee);
 }
 
-static std::vector<OptionaledField<STNumber>> const&
+std::vector<OptionaledField<STNumber>> const&
 LoanSet::getValueFields()
 {
     static std::vector<OptionaledField<STNumber>> const kValueFields{
@@ -209,7 +210,7 @@ getStartDate(ReadView const& view)
     return view.header().closeTime.time_since_epoch().count();
 }
 
-static TER
+TER
 LoanSet::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -361,7 +362,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 LoanSet::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -657,7 +658,7 @@ LoanSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 LoanSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

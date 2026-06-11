@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -25,7 +26,7 @@ LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
-static NotTEC
+NotTEC
 LoanBrokerDelete::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanBrokerID] == beast::kZero)
@@ -34,7 +35,7 @@ LoanBrokerDelete::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -120,7 +121,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 LoanBrokerDelete::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -208,7 +209,7 @@ LoanBrokerDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 LoanBrokerDelete::finalizeInvariants(
     STTx const&,
     TER,

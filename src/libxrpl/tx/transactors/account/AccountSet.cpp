@@ -63,7 +63,7 @@ AccountSet::getFlagsMask(PreflightContext const& ctx)
     return tfAccountSetMask;
 }
 
-static NotTEC
+NotTEC
 AccountSet::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
@@ -169,7 +169,7 @@ AccountSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static NotTEC
+NotTEC
 AccountSet::checkPermission(ReadView const& view, STTx const& tx)
 {
     // AccountSet is prohibited to be granted on a transaction level,
@@ -217,7 +217,7 @@ AccountSet::checkPermission(ReadView const& view, STTx const& tx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 AccountSet::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
@@ -276,13 +276,13 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 AccountSet::doApply()
 {
     if (!account_)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const uFlagsIn = account_->getFieldU32(sfFlags) = 0;
+    std::uint32_t const uFlagsIn = account_->getFieldU32(sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;
 
     STTx const& tx{ctx_.tx};
@@ -648,7 +648,7 @@ AccountSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 AccountSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

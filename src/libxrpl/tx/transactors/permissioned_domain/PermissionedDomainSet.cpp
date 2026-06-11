@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -28,7 +29,7 @@ PermissionedDomainSet::checkExtraFeatures(PreflightContext const& ctx)
     return ctx.rules.enabled(featureCredentials);
 }
 
-static NotTEC
+NotTEC
 PermissionedDomainSet::preflight(PreflightContext const& ctx)
 {
     if (auto err = credentials::checkArray(
@@ -45,7 +46,7 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx.getAccountID(sfAccount);
@@ -74,7 +75,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 }
 
 /** Attempt to create the Permissioned Domain. */
-static TER
+TER
 PermissionedDomainSet::doApply()
 {
     WAccountRoot wrappedOwner(accountID_, view(), j_);
@@ -138,7 +139,7 @@ PermissionedDomainSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 PermissionedDomainSet::finalizeInvariants(
     STTx const&,
     TER,

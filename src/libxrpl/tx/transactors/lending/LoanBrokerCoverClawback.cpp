@@ -36,7 +36,7 @@ LoanBrokerCoverClawback::checkExtraFeatures(PreflightContext const& ctx)
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
-static NotTEC
+NotTEC
 LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
 {
     auto const brokerID = ctx.tx[~sfLoanBrokerID];
@@ -230,7 +230,7 @@ preclaimHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
-static TER
+TER
 LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -330,7 +330,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         vaultAsset.value());
 }
 
-static TER
+TER
 LoanBrokerCoverClawback::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -378,7 +378,7 @@ LoanBrokerCoverClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_re
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 LoanBrokerCoverClawback::finalizeInvariants(
     STTx const&,
     TER,

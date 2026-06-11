@@ -5,6 +5,8 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
@@ -61,7 +63,7 @@ TransactionFeeCheck::visitEntry(bool, SLE::const_ref, SLE::const_ref)
     // nothing to do
 }
 
-static bool
+bool
 TransactionFeeCheck::finalize(
     STTx const& tx,
     TER const,
@@ -426,7 +428,7 @@ AccountRootsDeletedClean::visitEntry(bool isDelete, SLE::const_ref before, SLE::
         accountsDeleted_.emplace_back(before, after);
 }
 
-static bool
+bool
 AccountRootsDeletedClean::finalize(
     STTx const& tx,
     TER const result,
@@ -601,7 +603,7 @@ NoXRPTrustLines::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
         // relying on .native() just in case native somehow
         // were systematically incorrect
         bool const isXrp = after->getFieldAmount(sfLowLimit).asset() == xrpIssue() ||
-            after->getFieldAmount(sfHighLimit).asset() == xrpIssue() = false;
+            after->getFieldAmount(sfHighLimit).asset() == xrpIssue();
         if (overwriteFixEnabled)
         {
             xrpTrustLine_ |= isXrp;
@@ -637,11 +639,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(bool, SLE::const_ref, SLE::const
     {
         bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
-        bool const lowFreeze = after->isFlag(lsfLowFreeze) = false;
-        bool const lowDeepFreeze = after->isFlag(lsfLowDeepFreeze) = false;
+        bool const lowFreeze = after->isFlag(lsfLowFreeze);
+        bool const lowDeepFreeze = after->isFlag(lsfLowDeepFreeze);
 
-        bool const highFreeze = after->isFlag(lsfHighFreeze) = false;
-        bool const highDeepFreeze = after->isFlag(lsfHighDeepFreeze) = false;
+        bool const highFreeze = after->isFlag(lsfHighFreeze);
+        bool const highDeepFreeze = after->isFlag(lsfHighDeepFreeze);
 
         bool const bad = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
         if (overwriteFixEnabled)
@@ -906,7 +908,7 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
     }
 }
 
-static bool
+bool
 ValidPseudoAccounts::finalize(
     STTx const& tx,
     TER const,
@@ -945,7 +947,7 @@ NoModifiedUnmodifiableFields::visitEntry(bool isDelete, SLE::const_ref before, S
     changedEntries_.emplace(before, after);
 }
 
-static bool
+bool
 NoModifiedUnmodifiableFields::finalize(
     STTx const& tx,
     TER const,
@@ -1053,13 +1055,13 @@ ValidAmounts::visitEntry(
         afterEntries_.push_back(after);
 }
 
-static bool
+bool
 ValidAmounts::finalize(
     STTx const&,
     TER const,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     bool const badLedgerEntry = std::ranges::any_of(
         afterEntries_, [&](auto const& sle) { return hasInvalidAmount(*sle, j); });

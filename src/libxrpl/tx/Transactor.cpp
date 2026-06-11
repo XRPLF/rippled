@@ -6,11 +6,17 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -157,7 +163,7 @@ preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::J
 }  // namespace detail
 
 /** Performs early sanity checks on the account and fee fields */
-static NotTEC
+NotTEC
 Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
     if (ctx.tx.isFieldPresent(sfDelegate))
@@ -211,7 +217,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 }
 
 /** Checks whether the signature appears valid */
-static NotTEC
+NotTEC
 Transactor::preflight2(PreflightContext const& ctx)
 {
     if (auto const ret = detail::preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
@@ -247,7 +253,7 @@ Transactor::preflight2(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static NotTEC
+NotTEC
 Transactor::preflightUniversal(PreflightContext const& ctx)
 {
     if (ctx.rules.enabled(fixCleanup3_2_0) && hasInvalidAmount(ctx.tx, ctx.j))
@@ -281,13 +287,13 @@ Transactor::getFlagsMask(PreflightContext const& ctx)
     return tfUniversalMask;
 }
 
-static NotTEC
+NotTEC
 Transactor::preflightSigValidated(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
 
-static NotTEC
+NotTEC
 Transactor::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -352,7 +358,7 @@ Transactor::minimumFee(
     return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, (flags & TapUnlimited) != 0u);
 }
 
-static TER
+TER
 Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 {
     if (!ctx.tx[sfFee].native())
@@ -439,7 +445,7 @@ Transactor::payFee()
     return tesSUCCESS;
 }
 
-static NotTEC
+NotTEC
 Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j)
 {
     auto const id = tx.getAccountID(sfAccount);
@@ -504,7 +510,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
     return tesSUCCESS;
 }
 
-static NotTEC
+NotTEC
 Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx.getAccountID(sfAccount);
@@ -549,7 +555,7 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 }
 
 // Remove a single Ticket from the ledger.
-static TER
+TER
 Transactor::ticketDelete(
     ApplyView& view,
     AccountID const& account,
@@ -656,7 +662,7 @@ Transactor::apply()
     return doApply();
 }
 
-static NotTEC
+NotTEC
 Transactor::checkSign(
     ReadView const& view,
     ApplyFlags flags,
@@ -720,7 +726,7 @@ Transactor::checkSign(
     return checkSingleSign(view, idSigner, idAccount, acctSign.sle(), j);
 }
 
-static NotTEC
+NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
     auto const idAccount = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
@@ -728,7 +734,7 @@ Transactor::checkSign(PreclaimContext const& ctx)
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
 }
 
-static NotTEC
+NotTEC
 Transactor::checkBatchSign(PreclaimContext const& ctx)
 {
     NotTEC ret = tesSUCCESS;
@@ -772,7 +778,7 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
     return ret;
 }
 
-static NotTEC
+NotTEC
 Transactor::checkSingleSign(
     ReadView const& view,
     AccountID const& idSigner,
@@ -804,7 +810,7 @@ Transactor::checkSingleSign(
     return tefBAD_AUTH;
 }
 
-static NotTEC
+NotTEC
 Transactor::checkMultiSign(
     ReadView const& view,
     ApplyFlags flags,
@@ -969,7 +975,7 @@ Transactor::checkMultiSign(
 static void
 removeUnfundedOffers(ApplyView& view, std::vector<uint256> const& offers, beast::Journal viewJ)
 {
-    int const removed = 0;
+    int removed = 0;
 
     for (auto const& index : offers)
     {
@@ -989,7 +995,7 @@ removeExpiredNFTokenOffers(
     std::vector<uint256> const& offers,
     beast::Journal viewJ)
 {
-    std::size_t const removed = 0;
+    std::size_t removed = 0;
 
     for (auto const& index : offers)
     {
@@ -1080,7 +1086,7 @@ Transactor::reset(XRPAmount fee)
         return {tefINTERNAL, beast::kZero};
 
     auto const feePayer = ctx_.tx.getFeePayer();
-    bool const hasDelegateAcct = (feePayer != accountID_) = false;
+    bool const hasDelegateAcct = feePayer != accountID_;
     std::optional<WAccountRoot> delegateAcct;
     if (hasDelegateAcct)
     {
@@ -1195,7 +1201,7 @@ Transactor::operator()()
 
 #ifdef DEBUG
     {
-        Serializer const ser;
+        Serializer ser;
         ctx_.tx.add(ser);
         SerialIter sit(ser.slice());
         STTx const s2(sit);
@@ -1229,7 +1235,7 @@ Transactor::operator()()
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
 
-    bool applied = isTesSuccess(result) = false;
+    bool applied = isTesSuccess(result);
     auto fee = ctx_.tx.getFieldAmount(sfFee).xrp();
 
     if (ctx_.size() > kOversizeMetaDataCap)

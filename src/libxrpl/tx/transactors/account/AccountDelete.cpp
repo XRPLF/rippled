@@ -11,8 +11,10 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -25,6 +27,11 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/account/SignerListSet.h>
+#include <xrpl/tx/transactors/delegate/DelegateSet.h>
+#include <xrpl/tx/transactors/did/DIDDelete.h>
+#include <xrpl/tx/transactors/oracle/OracleDelete.h>
+#include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <cstdint>
 
@@ -36,7 +43,7 @@ AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
     return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
-static NotTEC
+NotTEC
 AccountDelete::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -70,7 +77,7 @@ using DeleterFuncPtr = TER (*)(
 
 // Local function definitions that provides signature compatibility.
 TER
-offerDelete(
+removeOfferFromLedger(
     ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
@@ -189,7 +196,7 @@ nonObligationDeleter(LedgerEntryType t)
     switch (t)
     {
         case ltOFFER:
-            return offerDelete;
+            return removeOfferFromLedger;
         case ltSIGNER_LIST:
             return removeSignersFromLedger;
         case ltTICKET:
@@ -213,7 +220,7 @@ nonObligationDeleter(LedgerEntryType t)
 
 }  // namespace
 
-static TER
+TER
 AccountDelete::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account{ctx.tx[sfAccount]};
@@ -334,7 +341,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 AccountDelete::doApply()
 {
     WAccountRoot src(accountID_, view(), j_);
@@ -414,7 +421,7 @@ AccountDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 AccountDelete::finalizeInvariants(
     STTx const&,
     TER,

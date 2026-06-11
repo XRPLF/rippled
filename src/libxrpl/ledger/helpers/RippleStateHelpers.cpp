@@ -299,8 +299,8 @@ trustDelete(
     beast::Journal j)
 {
     // Detect legacy dirs.
-    std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode) = 0;
-    std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode) = 0;
+    std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
+    std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
 
@@ -446,7 +446,7 @@ issueIOU(
     // this is unnecessarily inefficient as copying which could be avoided
     // is now required. Consider available options.
     STAmount const limit(Issue{issue.currency, account});
-    STAmount const finalBalance = amount;
+    STAmount finalBalance = amount;
 
     finalBalance.get<Issue>().account = noAccount();
 

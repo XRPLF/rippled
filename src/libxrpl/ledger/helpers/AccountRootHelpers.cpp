@@ -135,7 +135,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
     static constexpr std::uint16_t kMaxAccountAttempts = 256;
     for (std::uint16_t i = 0; i < kMaxAccountAttempts; ++i)
     {
-        RipeshaHasher const rsh;
+        RipeshaHasher rsh;
         auto const hash = sha512Half(i, view.header().parentHash, pseudoOwnerKey);
         rsh(hash.data(), hash.size());
         AccountID const ret = AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));

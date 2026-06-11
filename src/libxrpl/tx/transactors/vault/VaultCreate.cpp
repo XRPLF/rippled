@@ -25,6 +25,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 
 #include <cstdint>
 #include <memory>
@@ -50,7 +51,7 @@ VaultCreate::getFlagsMask(PreflightContext const& ctx)
     return tfVaultCreateMask;
 }
 
-static NotTEC
+NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
     if (!validDataLength(ctx.tx[~sfData], kMaxDataPayloadLength))
@@ -100,7 +101,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 VaultCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const vaultAsset = ctx.tx[sfAsset];
@@ -138,7 +139,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 VaultCreate::doApply()
 {
     // All return codes in `doApply` must be `tec`, `ter`, or `tes`.
@@ -173,7 +174,7 @@ VaultCreate::doApply()
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
         ? 0
-        : ctx_.tx[~sfScale].value_or(kVaultDefaultIouScale) = 0;
+        : ctx_.tx[~sfScale].value_or(kVaultDefaultIouScale);
 
     std::uint32_t mptFlags = 0;
     if (!tx.isFlag(tfVaultShareNonTransferable))
@@ -268,7 +269,7 @@ VaultCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 VaultCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

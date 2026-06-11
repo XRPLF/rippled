@@ -3,6 +3,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -81,7 +83,7 @@ ValidLoanBroker::goodZeroDirectory(
     return true;
 }
 
-static bool
+bool
 ValidLoanBroker::finalize(
     STTx const& tx,
     TER const,

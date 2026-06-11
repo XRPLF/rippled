@@ -79,7 +79,7 @@ NFTokenMint::getFlagsMask(PreflightContext const& ctx)
     return nfTokenMintMask;
 }
 
-static NotTEC
+NotTEC
 NFTokenMint::preflight(PreflightContext const& ctx)
 {
     if (auto const f = ctx.tx[~sfTransferFee])
@@ -177,7 +177,7 @@ NFTokenMint::createNFTokenID(
     return uint256::fromVoid(buf.data());
 }
 
-static TER
+TER
 NFTokenMint::preclaim(PreclaimContext const& ctx)
 {
     // The issuer of the NFT may or may not be the account executing this
@@ -277,7 +277,7 @@ NFTokenMint::doApply()
         return (tokenSeq.error());
 
     std::uint32_t const ownerCountBefore =
-        AccountRoot(accountID_ = 0, view(), j_)->getFieldU32(sfOwnerCount);
+        AccountRoot(accountID_, view(), j_)->getFieldU32(sfOwnerCount);
 
     // Assemble the new NFToken.
     SOTemplate const* nfTokenTemplate =
@@ -346,7 +346,7 @@ NFTokenMint::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 NFTokenMint::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

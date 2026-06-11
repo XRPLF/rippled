@@ -36,7 +36,7 @@ AMMBid::checkExtraFeatures(PreflightContext const& ctx)
     return true;
 }
 
-static NotTEC
+NotTEC
 AMMBid::preflight(PreflightContext const& ctx)
 {
     if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
@@ -91,7 +91,7 @@ AMMBid::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 AMMBid::preclaim(PreclaimContext const& ctx)
 {
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
@@ -357,7 +357,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jour
     return {res, isTesSuccess(res)};
 }
 
-static TER
+TER
 AMMBid::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
@@ -377,7 +377,7 @@ AMMBid::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 AMMBid::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

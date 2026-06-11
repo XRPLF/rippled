@@ -1,3 +1,4 @@
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
@@ -121,7 +122,7 @@ doAMMInfo(RPC::JsonContext& context)
             AccountRoot const acctAmm(*id, *ledger);
             if (!acctAmm)
                 return std::unexpected(RpcActMalformed);
-            ammID = sle->getFieldH256(sfAMMID);
+            ammID = acctAmm->getFieldH256(sfAMMID);
             if (ammID->isZero())
                 return std::unexpected(RpcActNotFound);
         }
@@ -189,7 +190,7 @@ doAMMInfo(RPC::JsonContext& context)
     lptAMMBalance.setJson(ammResult[jss::lp_token]);
     ammResult[jss::trading_fee] = (*amm)[sfTradingFee];
     ammResult[jss::account] = to_string(ammAccountID);
-    json::Value const voteSlots(json::ValueType::Array);
+    json::Value voteSlots(json::ValueType::Array);
     if (amm->isFieldPresent(sfVoteSlots))
     {
         for (auto const& voteEntry : amm->getFieldArray(sfVoteSlots))
@@ -222,7 +223,7 @@ doAMMInfo(RPC::JsonContext& context)
                 toIso8601(NetClock::time_point{NetClock::duration{auctionSlot[sfExpiration]}});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
             {
-                json::Value const auth;
+                json::Value auth;
                 for (auto const& acct : auctionSlot.getFieldArray(sfAuthAccounts))
                 {
                     json::Value jv;

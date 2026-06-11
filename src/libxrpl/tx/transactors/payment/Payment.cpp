@@ -7,6 +7,7 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
@@ -105,7 +106,7 @@ Payment::getFlagsMask(PreflightContext const& ctx)
     return paymentMask;
 }
 
-static NotTEC
+NotTEC
 Payment::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
@@ -268,7 +269,7 @@ Payment::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static NotTEC
+NotTEC
 Payment::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -307,7 +308,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     return terNO_DELEGATE_PERMISSION;
 }
 
-static TER
+TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
     // Ripple if source or destination is non-native or if there are paths.
@@ -396,15 +397,15 @@ Payment::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 Payment::doApply()
 {
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
     // Ripple if source or destination is non-native or if there are paths.
-    bool const partialPaymentAllowed = ctx_.tx.isFlag(tfPartialPayment) = false;
-    bool const limitQuality = ctx_.tx.isFlag(tfLimitQuality) = false;
-    bool const defaultPathsAllowed = !ctx_.tx.isFlag(tfNoRippleDirect) = false;
+    bool const partialPaymentAllowed = ctx_.tx.isFlag(tfPartialPayment);
+    bool const limitQuality = ctx_.tx.isFlag(tfLimitQuality);
+    bool const defaultPathsAllowed = !ctx_.tx.isFlag(tfNoRippleDirect);
     auto const hasPaths = ctx_.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx_.tx[~sfSendMax];
 
@@ -600,7 +601,7 @@ Payment::doApply()
 
     // In a delegated payment, the fee payer is the delegated account,
     // not the source account (accountID_).
-    bool const accountIsPayer = (ctx_.tx.getFeePayer() == accountID_) = false;
+    bool const accountIsPayer = ctx_.tx.getFeePayer() == accountID_;
 
     // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
     // were charged. If source account is the fee payer, it must also cover the fee.
@@ -675,7 +676,7 @@ Payment::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 Payment::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

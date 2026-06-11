@@ -12,8 +12,11 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -264,7 +267,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
     loadEvent_ = app_.getJobQueue().makeLoadEvent(JtPathFind, "FindPath");
     auto currencyIsXRP = isXRP(srcPathAsset_);
 
-    bool const useIssuerAccount = srcIssuer_ && !currencyIsXRP && !isXRP(*srcIssuer_) = false;
+    bool const useIssuerAccount = srcIssuer_ && !currencyIsXRP && !isXRP(*srcIssuer_);
     auto& account = useIssuerAccount ? *srcIssuer_ : srcAccount_;
     auto issuer = currencyIsXRP ? AccountID() : account;
     source_ = STPathElement(account, srcPathAsset_, issuer);
@@ -547,7 +550,7 @@ Pathfinder::rankPaths(
         auto const& currentPath = paths[i];
         if (!currentPath.empty())
         {
-            STAmount const liquidity;
+            STAmount liquidity;
             uint64_t uQuality = 0;
             auto const resultCode =
                 getPathLiquidity(currentPath, saMinDstAmount, liquidity, uQuality);
@@ -610,7 +613,7 @@ Pathfinder::getBestPaths(
 
     XRPL_ASSERT(
         fullLiquidityPath.empty(), "xrpl::Pathfinder::getBestPaths : first empty path result");
-    bool const issuerIsSender = isXRP(srcPathAsset_) || (srcIssuer == srcAccount_) = false;
+    bool const issuerIsSender = isXRP(srcPathAsset_) || (srcIssuer == srcAccount_);
 
     std::vector<PathRank> extraPathRanks;
     rankPaths(maxPaths, extraPaths, extraPathRanks, continueCallback);
@@ -735,9 +738,9 @@ Pathfinder::getBestPaths(
 bool
 Pathfinder::issueMatchesOrigin(Asset const& asset)
 {
-    bool const matchingAsset = (asset == srcPathAsset_) = false;
+    bool const matchingAsset = asset == srcPathAsset_;
     bool const matchingAccount = isXRP(asset) || (srcIssuer_ && asset.getIssuer() == srcIssuer_) ||
-        asset.getIssuer() == srcAccount_ = false;
+        asset.getIssuer() == srcAccount_;
 
     return matchingAsset && matchingAccount;
 }
@@ -893,7 +896,7 @@ Pathfinder::addPathsForType(
     JLOG(j_.debug()) << "getPaths< adding onto '" << pathTypeToString(parentPathType)
                      << "' to get '" << pathTypeToString(pathType) << "'";
 
-    int const initialSize = completePaths_.size() = 0;
+    int const initialSize = completePaths_.size();
 
     // Add the last NodeType to the lists.
     auto nodeType = pathType.back();
@@ -1003,7 +1006,7 @@ Pathfinder::addLink(
     // Does pathfinding really need to get this to
     // a gateway (the issuer of the destination amount)
     // rather than the ultimate destination?
-    bool const hasEffectiveDestination = effectiveDst_ != dstAccount_ = false;
+    bool const hasEffectiveDestination = effectiveDst_ != dstAccount_;
 
     JLOG(j_.trace()) << "addLink< flags=" << addFlags << " onXRP=" << bOnXRP
                      << " completePaths size=" << completePaths_.size();
@@ -1029,7 +1032,7 @@ Pathfinder::addLink(
             if (acctEnd)
             {
                 bool const bRequireAuth(acctEnd->isFlag(lsfRequireAuth));
-                bool const bIsEndAsset(uEndPathAsset == dstAmount_.asset()) = false;
+                bool const bIsEndAsset = uEndPathAsset == dstAmount_.asset();
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly((addFlags & kAfAcLast) != 0u);
 
@@ -1068,7 +1071,7 @@ Pathfinder::addLink(
                             continue;
                         }
 
-                        bool const bToDestination = acct == effectiveDst_ = false;
+                        bool const bToDestination = acct == effectiveDst_;
 
                         if (bDestOnly && !bToDestination)
                         {

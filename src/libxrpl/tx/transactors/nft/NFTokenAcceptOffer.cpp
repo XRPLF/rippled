@@ -29,7 +29,7 @@
 
 namespace xrpl {
 
-static NotTEC
+NotTEC
 NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 {
     auto const bo = ctx.tx[~sfNFTokenBuyOffer];
@@ -53,7 +53,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
     auto const checkOffer =
@@ -331,7 +331,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount const& amount)
 {
     // This should never happen, but it's easy and quick to check.
@@ -354,7 +354,7 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
     return tesSUCCESS;
 }
 
-static TER
+TER
 NFTokenAcceptOffer::transferNFToken(
     AccountID const& buyer,
     AccountID const& seller,
@@ -404,10 +404,10 @@ NFTokenAcceptOffer::transferNFToken(
     return insertRet;
 }
 
-static TER
+TER
 NFTokenAcceptOffer::acceptOffer(SLE::ref offer)
 {
-    bool const isSell = offer->isFlag(lsfSellNFToken) = false;
+    bool const isSell = offer->isFlag(lsfSellNFToken);
     AccountID const owner = (*offer)[sfOwner];
     AccountID const& seller = isSell ? owner : accountID_;
     AccountID const& buyer = isSell ? accountID_ : owner;
@@ -456,7 +456,7 @@ NFTokenAcceptOffer::doApply()
     // tecEXPIRED. This ensures expired offers are properly cleaned up from the ledger.
     if (view().rules().enabled(fixCleanup3_1_3))
     {
-        bool const foundExpired = false;
+        bool foundExpired = false;
 
         auto const deleteOfferIfExpired = [this, &foundExpired](SLE::ref offer) -> TER {
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
@@ -575,7 +575,7 @@ NFTokenAcceptOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 NFTokenAcceptOffer::finalizeInvariants(
     STTx const&,
     TER,

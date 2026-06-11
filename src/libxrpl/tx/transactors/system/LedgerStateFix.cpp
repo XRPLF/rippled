@@ -53,7 +53,7 @@ hasUnexpectedFixField(STTx const& tx, SField const& expected)
 
 }  // namespace
 
-static NotTEC
+NotTEC
 LedgerStateFix::preflight(PreflightContext const& ctx)
 {
     auto const fixType = static_cast<FixType>(ctx.tx[sfLedgerFixType]);
@@ -91,7 +91,7 @@ LedgerStateFix::calculateBaseFee(ReadView const& view, STTx const& tx)
     return calculateOwnerReserveFee(view, tx);
 }
 
-static TER
+TER
 LedgerStateFix::preclaim(PreclaimContext const& ctx)
 {
     if (static_cast<FixType>(ctx.tx[sfLedgerFixType]) == FixType::NfTokenPageLink)
@@ -125,7 +125,7 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
-static TER
+TER
 LedgerStateFix::doApply()
 {
     if (static_cast<FixType>(ctx_.tx[sfLedgerFixType]) == FixType::NfTokenPageLink)
@@ -158,7 +158,7 @@ LedgerStateFix::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 LedgerStateFix::finalizeInvariants(
     STTx const&,
     TER,

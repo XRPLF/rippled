@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -72,7 +73,7 @@ SignerListSet::getFlagsMask(PreflightContext const& ctx)
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
 
-static NotTEC
+NotTEC
 SignerListSet::preflight(PreflightContext const& ctx)
 {
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
@@ -228,7 +229,7 @@ SignerListSet::removeFromLedger(
     return removeSignersFromLedger(registry, view, account, j);
 }
 
-static NotTEC
+NotTEC
 SignerListSet::validateQuorumAndSignerEntries(
     std::uint32_t quorum,
     std::vector<SignerEntries::SignerEntry> const& signers,
@@ -259,7 +260,7 @@ SignerListSet::validateQuorumAndSignerEntries(
 
     // Make sure no signers reference this account.  Also make sure the
     // quorum can be reached.
-    std::uint64_t const allSignersWeight(0);
+    std::uint64_t allSignersWeight(0);
     for (auto const& signer : signers)
     {
         std::uint32_t const weight = signer.weight;
@@ -339,7 +340,7 @@ SignerListSet::replaceSignerList()
     return tesSUCCESS;
 }
 
-static TER
+TER
 SignerListSet::destroySignerList()
 {
     // Destroying the signer list is only allowed if either the master key
@@ -354,7 +355,7 @@ SignerListSet::destroySignerList()
 }
 
 void
-SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags)
+SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const
 {
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
@@ -392,7 +393,7 @@ SignerListSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 SignerListSet::finalizeInvariants(
     STTx const&,
     TER,

@@ -11,6 +11,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/rate.h>
+#include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 
 #include <xrpld/app/ledger/OpenLedger.h>
@@ -114,7 +115,7 @@ class View_test : public beast::unit_test::Suite
     }
 
     // Test succ correctness
-    static void
+    void
     succ(ReadView const& v, std::uint32_t id, std::optional<std::uint32_t> answer)
     {
         auto const next = v.succ(k(id).key);

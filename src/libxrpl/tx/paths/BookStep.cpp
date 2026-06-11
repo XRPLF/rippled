@@ -188,7 +188,7 @@ protected:
     std::string
     logStringImpl(char const* name) const
     {
-        std::ostringstream const ostr;
+        std::ostringstream ostr;
         ostr << name << ": "
              << "\ninIss: " << book_.in.getIssuer() << "\noutIss: " << book_.out.getIssuer()
              << "\ninCur: " << to_string(book_.in) << "\noutCur: " << to_string(book_.out);
@@ -911,7 +911,7 @@ std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
 BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
 {
     // This can be simplified (and sped up) if directories are never empty.
-    Sandbox const sb(&view, TapNone);
+    Sandbox sb(&view, TapNone);
     BookTip bt(sb, book_);
     auto const lobQuality = bt.step(j_) ? std::optional<Quality>(bt.quality()) : std::nullopt;
     // Multi-path offer generates an offer with the quality

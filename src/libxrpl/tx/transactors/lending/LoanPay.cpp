@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/lending/LoanManage.h>
 
 #include <algorithm>
 #include <bit>
@@ -42,7 +43,7 @@ LoanPay::getFlagsMask(PreflightContext const& ctx)
     return tfLoanPayMask;
 }
 
-static NotTEC
+NotTEC
 LoanPay::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanID] == beast::kZero)
@@ -172,7 +173,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     return feeIncrements * normalCost;
 }
 
-static TER
+TER
 LoanPay::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -267,15 +268,15 @@ LoanPay::preclaim(PreclaimContext const& ctx)
             SpendableHandling::FullBalance);
         balance < amount)
     {
-        JLOG(ctx.j.warn()) << "Payment amount too large. Amount: " << to_string(amount.getJson())
-                           << ". Balance: " << to_string(balance.getJson());
+        JLOG(ctx.j.warn()) << "Payment amount too large. Amount: " << amount.getFullText()
+                           << ". Balance: " << balance.getFullText();
         return tecINSUFFICIENT_FUNDS;
     }
 
     return tesSUCCESS;
 }
 
-static TER
+TER
 LoanPay::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -832,7 +833,7 @@ LoanPay::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 LoanPay::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

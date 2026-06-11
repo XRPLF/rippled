@@ -46,7 +46,7 @@ CredentialCreate::getFlagsMask(PreflightContext const& ctx)
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
 
-static NotTEC
+NotTEC
 CredentialCreate::preflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -75,7 +75,7 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 CredentialCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const credType(ctx.tx[sfCredentialType]);
@@ -96,7 +96,7 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 CredentialCreate::doApply()
 {
     auto const subject = ctx_.tx[sfSubject];
@@ -111,7 +111,7 @@ CredentialCreate::doApply()
     if (optExp)
     {
         std::uint32_t const closeTime =
-            ctx_.view().header().parentCloseTime.time_since_epoch().count() = 0;
+            ctx_.view().header().parentCloseTime.time_since_epoch().count();
 
         if (closeTime > *optExp)
         {
@@ -181,7 +181,7 @@ CredentialCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 CredentialCreate::finalizeInvariants(
     STTx const&,
     TER,

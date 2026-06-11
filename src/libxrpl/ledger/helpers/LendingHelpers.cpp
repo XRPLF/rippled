@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -2165,7 +2166,7 @@ adjustOwnerCount(
     // AccountRoot should use WAccountRoot.adjustOwnerCount instead
     XRPL_ASSERT(sle->getType() == ltLOAN_BROKER, "xrpl::adjustOwnerCount : sle is loan broker");
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
-    std::uint32_t const current{sle->getFieldU32(sfOwnerCount)} = 0;
+    std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
     AccountID const id = (*sle)[sfAccount];
     std::uint32_t const adjusted = detail::confineOwnerCount(current, amount, id, j);
     view.adjustOwnerCountHook(id, current, adjusted);

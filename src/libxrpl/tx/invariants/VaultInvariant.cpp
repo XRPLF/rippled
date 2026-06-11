@@ -185,7 +185,7 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
 }
 
 std::optional<ValidVault::DeltaInfo>
-ValidVault::deltaAssets(AccountID const& id)
+ValidVault::deltaAssets(AccountID const& id) const
 {
     auto const& vaultAsset = afterVault_[0].asset;
     auto const lookup = [&](uint256 const& key) -> std::optional<DeltaInfo> {
@@ -217,7 +217,7 @@ ValidVault::deltaAssets(AccountID const& id)
 }
 
 std::optional<ValidVault::DeltaInfo>
-ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee)
+ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
 {
     auto const& vaultAsset = afterVault_[0].asset;
     auto ret = deltaAssets(tx[sfAccount]);
@@ -235,7 +235,7 @@ ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee)
 }
 
 std::optional<ValidVault::DeltaInfo>
-ValidVault::deltaShares(AccountID const& id)
+ValidVault::deltaShares(AccountID const& id) const
 {
     auto const& afterVault = afterVault_[0];
     auto const it = [&]() {
@@ -254,7 +254,7 @@ ValidVault::isVaultEmpty(Vault const& vault)
 }
 
 std::int32_t
-ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules)
+ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const
 {
     // Returns the posterior `assetsTotal` scale.
     //
@@ -1077,7 +1077,7 @@ ValidVault::DeltaInfo::makeDelta(Number const& before, Number const& after, Asse
         .scale = std::max(xrpl::scale(after, asset), xrpl::scale(before, asset))};
 }
 
-[[nodiscard]] static std::int32_t
+[[nodiscard]] std::int32_t
 ValidVault::computeCoarsestScale(std::vector<DeltaInfo> const& numbers)
 {
     if (numbers.empty())

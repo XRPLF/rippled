@@ -206,7 +206,7 @@ protected:
     std::string
     logStringImpl(char const* name) const
     {
-        std::ostringstream const ostr;
+        std::ostringstream ostr;
         ostr << name << ": "
              << "\nSrc: " << src_ << "\nDst: " << dst_;
         return ostr.str();
@@ -262,8 +262,8 @@ public:
     [[nodiscard]] TER
     check(StrandContext const& ctx, RAccountRoot const& srcRoot) const;
 
-    static [[nodiscard]] std::string
-    logString() override
+    [[nodiscard]] std::string
+    logString() const override
     {
         return logStringImpl("MPTEndpointPaymentStep");
     }
@@ -310,8 +310,8 @@ public:
     static TER
     check(StrandContext const& ctx, RAccountRoot const& srcRoot);
 
-    static [[nodiscard]] std::string
-    logString() override
+    [[nodiscard]] std::string
+    logString() const override
     {
         return logStringImpl("MPTEndpointOfferCrossingStep");
     }
@@ -323,8 +323,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-static TER
-MPTEndpointPaymentStep::check(StrandContext const& ctx, RAccountRoot const& srcRoot)
+TER
+MPTEndpointPaymentStep::check(StrandContext const& ctx, RAccountRoot const& srcRoot) const
 {
     // Since this is a payment, MPToken must be present.  Perform all
     // MPToken related checks.
@@ -387,7 +387,7 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, RAccountRoot const& srcR
     return tesSUCCESS;
 }
 
-static TER
+TER
 MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, RAccountRoot const&)
 {
     // The standard checks are all we can do because any remaining checks
@@ -396,7 +396,7 @@ MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, RAccountRoot const
     return tesSUCCESS;
 }
 
-static TER
+TER
 MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view, xrpl::DebtDirection srcDebtDir)
 {
     // TakerPays is the last step if offer crossing

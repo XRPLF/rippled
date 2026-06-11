@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
@@ -122,7 +123,7 @@ protected:
     std::string
     logStringImpl(char const* name) const
     {
-        std::ostringstream const ostr;
+        std::ostringstream ostr;
         ostr << name << ": "
              << "\nAcc: " << acc_;
         return ostr.str();
@@ -169,15 +170,15 @@ public:
     {
     }
 
-    static XRPAmount
-    xrpLiquid(ReadView& sb)
+    XRPAmount
+    xrpLiquid(ReadView& sb) const
     {
         return xrpLiquidImpl(sb, 0);
         ;
     }
 
-    static [[nodiscard]] std::string
-    logString() override
+    [[nodiscard]] std::string
+    logString() const override
     {
         return logStringImpl("XRPEndpointPaymentStep");
     }
@@ -227,8 +228,8 @@ public:
         return xrpLiquidImpl(sb, reserveReduction_);
     }
 
-    static [[nodiscard]] std::string
-    logString() override
+    [[nodiscard]] std::string
+    logString() const override
     {
         return logStringImpl("XRPEndpointOfferCrossingStep");
     }

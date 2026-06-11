@@ -341,8 +341,8 @@ public:
 
 private:
     // Implementation for nextQueuableSeq().  The passed lock must be held.
-    static SeqProxy
-    nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&);
+    SeqProxy
+    nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const;
 
     /**
         Track and use the fee escalation metrics of the
@@ -501,7 +501,7 @@ private:
         std::optional<LedgerIndex> const lastValid;
         /// Transaction SeqProxy number
         /// (`sfSequence` or `sfTicketSequence` field).
-        SeqProxy const seqProxy{};
+        SeqProxy const seqProxy;
         /**
             A transaction at the front of the queue will be given
             several attempts to succeed before being dropped from
@@ -568,7 +568,7 @@ private:
             PreflightResult const& pfResult);
 
         /// Attempt to apply the queued transaction to the open ledger.
-        static ApplyResult
+        ApplyResult
         apply(Application& app, OpenView& view, beast::Journal j);
 
         /// Potential @ref TxConsequences of applying this transaction
@@ -681,7 +681,7 @@ private:
         getPrevTx(SeqProxy seqProx) const;
 
         /// Add a transaction candidate to this account for queuing
-        static MaybeTx&
+        MaybeTx&
         add(MaybeTx&&);
 
         /** Remove the candidate with given SeqProxy value from this

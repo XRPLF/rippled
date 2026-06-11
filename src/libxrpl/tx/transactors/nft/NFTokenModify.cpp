@@ -17,7 +17,7 @@
 
 namespace xrpl {
 
-static NotTEC
+NotTEC
 NFTokenModify::preflight(PreflightContext const& ctx)
 {
     if (auto owner = ctx.tx[~sfOwner]; owner == ctx.tx[sfAccount])
@@ -32,7 +32,7 @@ NFTokenModify::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 NFTokenModify::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account = ctx.tx[sfAccount];
@@ -58,7 +58,7 @@ NFTokenModify::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 NFTokenModify::doApply()
 {
     uint256 const nftokenID = ctx_.tx[sfNFTokenID];
@@ -73,7 +73,7 @@ NFTokenModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 NFTokenModify::finalizeInvariants(
     STTx const&,
     TER,

@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -69,7 +70,7 @@ TrustSet::getFlagsMask(PreflightContext const& ctx)
     return tfTrustSetMask;
 }
 
-static NotTEC
+NotTEC
 TrustSet::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
@@ -121,7 +122,7 @@ TrustSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static NotTEC
+NotTEC
 TrustSet::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -181,7 +182,7 @@ TrustSet::checkPermission(ReadView const& view, STTx const& tx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 TrustSet::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
@@ -320,25 +321,25 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 TrustSet::doApply()
 {
     TER terResult = tesSUCCESS;
 
     STAmount const saLimitAmount(ctx_.tx.getFieldAmount(sfLimitAmount));
-    bool const bQualityIn(ctx_.tx.isFieldPresent(sfQualityIn)) = false;
-    bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut)) = false;
+    bool const bQualityIn(ctx_.tx.isFieldPresent(sfQualityIn));
+    bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
     Currency const currency(saLimitAmount.get<Issue>().currency);
     AccountID const uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.
-    bool const bHigh = accountID_ > uDstAccountID = false;
+    bool const bHigh = accountID_ > uDstAccountID;
 
     if (!account_)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const uOwnerCount = account_->getFieldU32(sfOwnerCount) = 0;
+    std::uint32_t const uOwnerCount = account_->getFieldU32(sfOwnerCount);
 
     // The reserve that is required to create the line. Note
     // that although the reserve increases with every item
@@ -362,19 +363,19 @@ TrustSet::doApply()
         (uOwnerCount < 2) ? XRPAmount(beast::kZero)
                           : view().fees().accountReserve(uOwnerCount + 1));
 
-    std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0) = 0;
-    std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0) = 0;
+    std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
+    std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
 
     if (bQualityOut && QUALITY_ONE == uQualityOut)
         uQualityOut = 0;
 
-    bool const bSetAuth = ctx_.tx.isFlag(tfSetfAuth) = false;
-    bool const bSetNoRipple = ctx_.tx.isFlag(tfSetNoRipple) = false;
-    bool const bClearNoRipple = ctx_.tx.isFlag(tfClearNoRipple) = false;
-    bool const bSetFreeze = ctx_.tx.isFlag(tfSetFreeze) = false;
-    bool const bClearFreeze = ctx_.tx.isFlag(tfClearFreeze) = false;
-    bool const bSetDeepFreeze = ctx_.tx.isFlag(tfSetDeepFreeze) = false;
-    bool const bClearDeepFreeze = ctx_.tx.isFlag(tfClearDeepFreeze) = false;
+    bool const bSetAuth = ctx_.tx.isFlag(tfSetfAuth);
+    bool const bSetNoRipple = ctx_.tx.isFlag(tfSetNoRipple);
+    bool const bClearNoRipple = ctx_.tx.isFlag(tfClearNoRipple);
+    bool const bSetFreeze = ctx_.tx.isFlag(tfSetFreeze);
+    bool const bClearFreeze = ctx_.tx.isFlag(tfClearFreeze);
+    bool const bSetDeepFreeze = ctx_.tx.isFlag(tfSetDeepFreeze);
+    bool const bClearDeepFreeze = ctx_.tx.isFlag(tfClearDeepFreeze);
 
     auto viewJ = ctx_.registry.get().getJournal("View");
 
@@ -510,7 +511,7 @@ TrustSet::doApply()
         }
 
         // Have to use lsfNoFreeze to maintain pre-deep freeze behavior
-        bool const bNoFreeze = account_->isFlag(lsfNoFreeze) = false;
+        bool const bNoFreeze = account_->isFlag(lsfNoFreeze);
         uFlagsOut = computeFreezeFlags(
             uFlagsOut,
             bHigh,
@@ -670,7 +671,7 @@ TrustSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 TrustSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

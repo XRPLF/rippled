@@ -195,7 +195,7 @@ protected:
     std::string
     logStringImpl(char const* name) const
     {
-        std::ostringstream const ostr;
+        std::ostringstream ostr;
         ostr << name << ": "
              << "\nSrc: " << src_ << "\nDst: " << dst_;
         return ostr.str();
@@ -259,16 +259,16 @@ public:
     // the best available quality.
     // return: first element is max amount that can flow,
     //         second is the debt direction w.r.t. the source account
-    static [[nodiscard]] std::pair<IOUAmount, DebtDirection>
-    maxFlow(ReadView const& sb, IOUAmount const& desired);
+    [[nodiscard]] std::pair<IOUAmount, DebtDirection>
+    maxFlow(ReadView const& sb, IOUAmount const& desired) const;
 
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
     [[nodiscard]] TER
     check(StrandContext const& ctx, SLE::const_ref sleSrc) const;
 
-    static [[nodiscard]] std::string
-    logString() override
+    [[nodiscard]] std::string
+    logString() const override
     {
         return logStringImpl("DirectIPaymentStep");
     }
@@ -317,16 +317,16 @@ public:
     // the best available quality.
     // return: first element is max amount that can flow,
     //         second is the debt direction w.r.t the source
-    static [[nodiscard]] std::pair<IOUAmount, DebtDirection>
-    maxFlow(ReadView const& sb, IOUAmount const& desired);
+    [[nodiscard]] std::pair<IOUAmount, DebtDirection>
+    maxFlow(ReadView const& sb, IOUAmount const& desired) const;
 
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
     static TER
     check(StrandContext const& ctx, SLE::const_ref sleSrc);
 
-    static [[nodiscard]] std::string
-    logString() override
+    [[nodiscard]] std::string
+    logString() const override
     {
         return logStringImpl("DirectIOfferCrossingStep");
     }
@@ -384,13 +384,13 @@ DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir)
 }
 
 std::pair<IOUAmount, DebtDirection>
-DirectIPaymentStep::maxFlow(ReadView const& sb, IOUAmount const&)
+DirectIPaymentStep::maxFlow(ReadView const& sb, IOUAmount const&) const
 {
     return maxPaymentFlow(sb);
 }
 
 std::pair<IOUAmount, DebtDirection>
-DirectIOfferCrossingStep::maxFlow(ReadView const& sb, IOUAmount const& desired)
+DirectIOfferCrossingStep::maxFlow(ReadView const& sb, IOUAmount const& desired) const
 {
     // When isLast and offer crossing then ignore trust line limits.  Offer
     // crossing has the ability to exceed the limit set by a trust line.
@@ -410,8 +410,8 @@ DirectIOfferCrossingStep::maxFlow(ReadView const& sb, IOUAmount const& desired)
     return maxPaymentFlow(sb);
 }
 
-static TER
-DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc)
+TER
+DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 {
     // Since this is a payment a trust line must be present.  Perform all
     // trust line related checks.
@@ -458,7 +458,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc)
     return tesSUCCESS;
 }
 
-static TER
+TER
 DirectIOfferCrossingStep::check(StrandContext const&, SLE::const_ref)
 {
     // The standard checks are all we can do because any remaining checks

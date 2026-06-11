@@ -1,3 +1,4 @@
+#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
@@ -239,18 +240,18 @@ doAccountInfo(RPC::JsonContext& context)
                 auto& jvQueueTx = jvQueueData[jss::transactions];
                 jvQueueTx = json::ValueType::Array;
 
-                std::uint32_t const seqCount = 0;
-                std::uint32_t const ticketCount = 0;
+                std::uint32_t seqCount = 0;
+                std::uint32_t ticketCount = 0;
                 std::optional<std::uint32_t> lowestSeq;
                 std::optional<std::uint32_t> highestSeq;
                 std::optional<std::uint32_t> lowestTicket;
                 std::optional<std::uint32_t> highestTicket;
-                bool const anyAuthChanged = false;
-                XRPAmount const totalSpend(0);
+                bool anyAuthChanged = false;
+                XRPAmount totalSpend(0);
 
                 // We expect txs to be returned sorted by SeqProxy.  Verify
                 // that with a couple of asserts.
-                SeqProxy const prevSeqProxy = SeqProxy::sequence(0);
+                SeqProxy prevSeqProxy = SeqProxy::sequence(0);
                 for (auto const& tx : txs)
                 {
                     json::Value jvTx = json::ValueType::Object;

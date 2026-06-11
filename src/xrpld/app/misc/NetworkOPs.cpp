@@ -6,8 +6,11 @@
 #include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/ledger/LocalTxs.h>
+#include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/main/LoadManager.h>
+#include <xrpld/app/main/Tuning.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
@@ -17,10 +20,14 @@
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/predicates.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
+#include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/ToString.h>
@@ -42,8 +49,10 @@
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/git/Git.h>
 #include <xrpl/json/json_forwards.h>
@@ -53,6 +62,7 @@
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -66,9 +76,11 @@
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -83,6 +95,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
@@ -177,7 +190,7 @@ class NetworkOPsImp final : public NetworkOPs
     {
         struct Counters
         {
-            explicit Counters() = default;
+            Counters() = default;
 
             std::uint64_t transitions = 0;
             std::chrono::microseconds dur = std::chrono::microseconds(0);
@@ -222,8 +235,8 @@ class NetworkOPsImp final : public NetworkOPs
             decltype(initialSyncUs_) initialSyncUs{};
         };
 
-        static CounterData
-        getCounterData()
+        CounterData
+        getCounterData() const
         {
             std::scoped_lock const lock(mutex_);
             return {
@@ -638,7 +651,7 @@ public:
     stateAccounting(json::Value& obj) override;
 
 private:
-    static void
+    void
     setTimer(
         boost::asio::steady_timer& timer,
         std::chrono::milliseconds const& expiryTime,
@@ -680,8 +693,8 @@ private:
         TER result);
 
     void
-    pubServer() const;
-    static void
+    pubServer();
+    void
     pubConsensus(ConsensusPhase phase);
 
     std::string
@@ -1028,7 +1041,7 @@ NetworkOPsImp::processHeartbeatTimer()
         LoadManager& mgr(registry_.get().getLoadManager());
         mgr.heartbeat();
 
-        std::size_t const numPeers = registry_.get().getOverlay().size() = 0;
+        std::size_t const numPeers = registry_.get().getOverlay().size();
 
         // do we have sufficient peers? If not, we are disconnected.
         if (numPeers < minPeerCount_)
@@ -1108,7 +1121,7 @@ NetworkOPsImp::processClusterTimer()
     using namespace std::chrono_literals;
 
     bool const update = registry_.get().getCluster().update(
-        registry_.get().getApp().nodeIdentity().first = false,
+        registry_.get().getApp().nodeIdentity().first,
         "",
         (ledgerMaster_.getValidatedLedgerAge() <= 4min)
             ? registry_.get().getFeeTrack().getLocalFee()
@@ -1122,7 +1135,7 @@ NetworkOPsImp::processClusterTimer()
         return;
     }
 
-    protocol::TMCluster const cluster;
+    protocol::TMCluster cluster;
     registry_.get().getCluster().forEach([&cluster](ClusterNode const& node) {
         protocol::TMClusterNode& n = *cluster.add_clusternodes();
         n.set_publickey(toBase58(TokenType::NodePublic, node.identity()));
@@ -1211,7 +1224,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         return;
     }
 
-    std::string const reason;
+    std::string reason;
 
     auto tx = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
 
@@ -1325,7 +1338,7 @@ NetworkOPsImp::doTransactionSync(
     bool bUnlimited,
     FailHard failType)
 {
-    std::unique_lock<std::mutex> const lock(mutex_);
+    std::unique_lock<std::mutex> lock(mutex_);
 
     if (!transaction->getApplying())
     {
@@ -1461,7 +1474,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
     {
         std::unique_lock masterLock{registry_.get().getApp().getMasterMutex(), std::defer_lock};
-        bool const changed = false;
+        bool changed = false;
         {
             std::unique_lock ledgerLock{ledgerMaster_.peekMutex(), std::defer_lock};
             std::lock(masterLock, ledgerLock);
@@ -2105,9 +2118,9 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
         }
     }
 
-    uint256 const networkClosed;
+    uint256 networkClosed;
     bool const ledgerChange =
-        checkLastClosedLedger(registry_.get().getOverlay().getActivePeers() = false, networkClosed);
+        checkLastClosedLedger(registry_.get().getOverlay().getActivePeers(), networkClosed);
 
     if (networkClosed.isZero())
     {
@@ -2232,7 +2245,7 @@ trunc32(std::uint64_t v)
 };
 
 void
-NetworkOPsImp::pubServer() const
+NetworkOPsImp::pubServer()
 {
     // VFALCO TODO Don't hold the lock across calls to send...make a copy of the
     //             list into a local array while holding the lock then release
@@ -2716,7 +2729,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     {
         info[jss::counters] = registry_.get().getPerfLog().countersJson();
 
-        json::Value const nodestore(json::ValueType::Object);
+        json::Value nodestore(json::ValueType::Object);
         registry_.get().getNodeStore().getCountsJson(nodestore);
         info[jss::counters][jss::nodestore] = nodestore;
         info[jss::current_activities] = registry_.get().getPerfLog().currentJson();
@@ -2737,7 +2750,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     info[jss::peers] = json::UInt(registry_.get().getOverlay().size());
 
-    json::Value const lastClose = json::ValueType::Object;
+    json::Value lastClose = json::ValueType::Object;
     lastClose[jss::proposers] = json::UInt(consensus_.prevProposers());
 
     if (human)
@@ -2801,7 +2814,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
         if (admin)
         {
-            std::uint32_t fee = registry_.get().getFeeTrack().getLocalFee() = 0;
+            std::uint32_t fee = registry_.get().getFeeTrack().getLocalFee();
             if (fee != loadBaseServer)
                 info[jss::load_factor_local] = static_cast<double>(fee) / loadBaseServer;
             fee = registry_.get().getFeeTrack().getRemoteFee();
@@ -2972,7 +2985,7 @@ NetworkOPsImp::getLedgerFetchInfo()
     return registry_.get().getInboundLedgers().getInfo();
 }
 
-static void
+void
 NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<ReadView const> const& ledger,
     std::shared_ptr<STTx const> const& transaction,
@@ -3162,7 +3175,7 @@ NetworkOPsImp::getLocalTxCount()
 
 // This routine should only be used to publish accepted or validated
 // transactions.
-static MultiApiJson
+MultiApiJson
 NetworkOPsImp::transJson(
     std::shared_ptr<STTx const> const& transaction,
     TER result,
@@ -3195,7 +3208,7 @@ NetworkOPsImp::transJson(
         lookup.second && lookup.second->isFieldPresent(sfTransactionIndex))
     {
         uint32_t const txnSeq = lookup.second->getFieldU32(sfTransactionIndex);
-        uint32_t netID = registry_.get().getNetworkIDService().getNetworkID() = 0;
+        uint32_t netID = registry_.get().getNetworkIDService().getNetworkID();
         if (transaction->isFieldPresent(sfNetworkID))
             netID = transaction->getFieldU32(sfNetworkID);
 
@@ -3541,7 +3554,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
 // Monitoring
 //
 
-static void
+void
 NetworkOPsImp::subAccount(
     InfoSub::ref isrListener,
     hash_set<AccountID> const& vnaAccountIDs,
@@ -3593,7 +3606,7 @@ NetworkOPsImp::unsubAccount(
     unsubAccountInternal(isrListener->getSeq(), vnaAccountIDs, rt);
 }
 
-static void
+void
 NetworkOPsImp::unsubAccountInternal(
     std::uint64_t uSeq,
     hash_set<AccountID> const& vnaAccountIDs,

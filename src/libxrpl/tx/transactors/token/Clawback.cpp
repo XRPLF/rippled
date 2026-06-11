@@ -73,7 +73,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static NotTEC
+NotTEC
 Clawback::preflight(PreflightContext const& ctx)
 {
     if (auto const ret = std::visit(
@@ -179,7 +179,7 @@ preclaimHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
-static TER
+TER
 Clawback::preclaim(PreclaimContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
@@ -265,7 +265,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ctx.journal);
 }
 
-static TER
+TER
 Clawback::doApply()
 {
     return std::visit(
@@ -279,7 +279,7 @@ Clawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

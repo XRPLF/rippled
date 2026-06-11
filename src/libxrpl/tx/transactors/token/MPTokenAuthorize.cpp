@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -23,7 +24,7 @@ MPTokenAuthorize::getFlagsMask(PreflightContext const& ctx)
     return tfMPTokenAuthorizeMask;
 }
 
-static NotTEC
+NotTEC
 MPTokenAuthorize::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[~sfHolder])
@@ -32,7 +33,7 @@ MPTokenAuthorize::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
@@ -139,7 +140,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -159,7 +160,7 @@ MPTokenAuthorize::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 MPTokenAuthorize::finalizeInvariants(
     STTx const&,
     TER,

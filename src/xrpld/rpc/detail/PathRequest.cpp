@@ -28,6 +28,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
 #include <algorithm>
@@ -354,7 +355,7 @@ PathRequest::parseJson(json::Value const& jvParams)
                 return PFR_PJ_INVALID;
             }
 
-            PathAsset const srcPathAsset;
+            PathAsset srcPathAsset;
             if (c.isMember(jss::currency))
             {
                 Currency currency;
@@ -541,7 +542,7 @@ PathRequest::findPaths(
     {
         // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto assets = accountSourceAssets(*raSrcAccount_, cache, true);
-        bool const sameAccount = *raSrcAccount_ == * raDstAccount_ = false;
+        bool const sameAccount = *raSrcAccount_ == *raDstAccount_;
         // NOLINTEND(bugprone-unchecked-optional-access)
         for (auto const& asset : assets)
         {

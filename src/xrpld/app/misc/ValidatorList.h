@@ -643,7 +643,7 @@ public:
      *
      * @return quorum and keys.
      */
-    static QuorumKeys
+    QuorumKeys
     getQuorumKeys()
     {
         shared_lock const readLock{mutex_};

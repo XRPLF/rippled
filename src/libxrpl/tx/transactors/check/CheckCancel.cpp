@@ -15,13 +15,13 @@
 #include <cstdint>
 namespace xrpl {
 
-static NotTEC
+NotTEC
 CheckCancel::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
 
-static TER
+TER
 CheckCancel::preclaim(PreclaimContext const& ctx)
 {
     auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
@@ -50,7 +50,7 @@ CheckCancel::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 CheckCancel::doApply()
 {
     auto const sleCheck = view().peek(keylet::check(ctx_.tx[sfCheckID]));
@@ -102,7 +102,7 @@ CheckCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 CheckCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

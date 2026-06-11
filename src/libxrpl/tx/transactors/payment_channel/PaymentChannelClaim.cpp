@@ -4,6 +4,8 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Keylet.h>
@@ -36,7 +38,7 @@ PaymentChannelClaim::getFlagsMask(PreflightContext const&)
     return tfPaymentChannelClaimMask;
 }
 
-static NotTEC
+NotTEC
 PaymentChannelClaim::preflight(PreflightContext const& ctx)
 {
     auto const bal = ctx.tx[~sfBalance];
@@ -87,7 +89,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
 {
     if (!ctx.view.rules().enabled(featureCredentials))
@@ -100,7 +102,7 @@ PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 PaymentChannelClaim::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
@@ -201,7 +203,7 @@ PaymentChannelClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 PaymentChannelClaim::finalizeInvariants(
     STTx const&,
     TER,

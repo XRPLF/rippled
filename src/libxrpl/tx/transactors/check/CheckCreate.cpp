@@ -6,6 +6,8 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -30,7 +32,7 @@ CheckCreate::checkExtraFeatures(xrpl::PreflightContext const& ctx)
     return ctx.rules.enabled(featureMPTokensV2) || !ctx.tx[sfSendMax].holds<MPTIssue>();
 }
 
-static NotTEC
+NotTEC
 CheckCreate::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -68,7 +70,7 @@ CheckCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 CheckCreate::preclaim(PreclaimContext const& ctx)
 {
     AccountID const srcId{ctx.tx[sfAccount]};
@@ -178,7 +180,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 CheckCreate::doApply()
 {
     if (!account_)
@@ -197,7 +199,7 @@ CheckCreate::doApply()
 
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
-    std::uint32_t const seq = ctx_.tx.getSeqValue() = 0;
+    std::uint32_t const seq = ctx_.tx.getSeqValue();
     Keylet const checkKeylet = keylet::check(accountID_, seq);
     auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
@@ -256,7 +258,7 @@ CheckCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 CheckCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

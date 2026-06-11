@@ -306,7 +306,7 @@ public:
         // Call this function first to determine the type of the contained info.
         // Calling the wrong getter function will throw an exception.
         // See documentation for the getter functions for more details
-        static [[nodiscard]] bool
+        [[nodiscard]] bool
         isFound()
         {
             return std::holds_alternative<std::pair<uint256, uint32_t>>(locator);
@@ -315,7 +315,7 @@ public:
         // @return key used to find transaction in nodestore
         //
         // Throws if isFound() returns false
-        static uint256 const&
+        uint256 const&
         getNodestoreHash()
         {
             return std::get<std::pair<uint256, uint32_t>>(locator).first;
@@ -324,7 +324,7 @@ public:
         // @return sequence of ledger containing the transaction
         //
         // Throws is isFound() returns false
-        static uint32_t
+        uint32_t
         getLedgerSequence()
         {
             return std::get<std::pair<uint256, uint32_t>>(locator).second;

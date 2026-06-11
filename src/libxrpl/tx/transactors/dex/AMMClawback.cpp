@@ -48,7 +48,7 @@ AMMClawback::checkExtraFeatures(xrpl::PreflightContext const& ctx)
          !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
 
-static NotTEC
+NotTEC
 AMMClawback::preflight(PreflightContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
@@ -94,7 +94,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 AMMClawback::preclaim(PreclaimContext const& ctx)
 {
     auto const asset = ctx.tx[sfAsset];
@@ -146,7 +146,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 AMMClawback::doApply()
 {
     Sandbox sb(&ctx_.view());
@@ -158,7 +158,7 @@ AMMClawback::doApply()
     return ter;
 }
 
-static TER
+TER
 AMMClawback::applyGuts(Sandbox& sb)
 {
     std::optional<STAmount> const clawAmount = ctx_.tx[~sfAmount];
@@ -381,7 +381,7 @@ AMMClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 AMMClawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

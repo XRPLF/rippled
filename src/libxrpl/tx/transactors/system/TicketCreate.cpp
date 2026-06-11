@@ -27,17 +27,17 @@ TicketCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfTicketCount]};
 }
 
-static NotTEC
+NotTEC
 TicketCreate::preflight(PreflightContext const& ctx)
 {
-    if (std::uint32_t const count = ctx.tx[sfTicketCount] = 0;
+    if (std::uint32_t const count = ctx.tx[sfTicketCount];
         count < kMinValidCount || count > kMaxValidCount)
         return temINVALID_COUNT;
 
     return tesSUCCESS;
 }
 
-static TER
+TER
 TicketCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
@@ -48,7 +48,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
     // Make sure the TicketCreate would not cause the account to own
     // too many tickets.
     std::uint32_t const curTicketCount = acctRoot->at(~sfTicketCount).value_or(0u);
-    std::uint32_t const addedTickets = ctx.tx[sfTicketCount] = 0;
+    std::uint32_t const addedTickets = ctx.tx[sfTicketCount];
     std::uint32_t const consumedTickets = ctx.tx.getSeqProxy().isTicket() ? 1u : 0u;
 
     // Note that unsigned integer underflow can't currently happen because
@@ -63,7 +63,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 TicketCreate::doApply()
 {
     WAccountRoot wrappedOwner(accountID_, view(), j_);
@@ -73,7 +73,7 @@ TicketCreate::doApply()
     // Each ticket counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    std::uint32_t const ticketCount = ctx_.tx[sfTicketCount] = 0;
+    std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
     {
         XRPAmount const reserve =
             view().fees().accountReserve(wrappedOwner->getFieldU32(sfOwnerCount) + ticketCount);
@@ -90,7 +90,7 @@ TicketCreate::doApply()
 
     // Sanity check that the transaction machinery really did already
     // increment the account root Sequence.
-    if (std::uint32_t const txSeq = ctx_.tx[sfSequence] = 0;
+    if (std::uint32_t const txSeq = ctx_.tx[sfSequence];
         txSeq != 0 && txSeq != (firstTicketSeq - 1))
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -137,7 +137,7 @@ TicketCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 TicketCreate::finalizeInvariants(
     STTx const&,
     TER,

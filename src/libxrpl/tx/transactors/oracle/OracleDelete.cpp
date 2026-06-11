@@ -15,13 +15,13 @@
 
 namespace xrpl {
 
-static NotTEC
+NotTEC
 OracleDelete::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
 
-static TER
+TER
 OracleDelete::preclaim(PreclaimContext const& ctx)
 {
     if (!ctx.view.exists(keylet::account(ctx.tx.getAccountID(sfAccount))))
@@ -46,7 +46,7 @@ OracleDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
+TER
 OracleDelete::deleteOracle(
     ApplyView& view,
     SLE::ref sle,
@@ -77,7 +77,7 @@ OracleDelete::deleteOracle(
     return tesSUCCESS;
 }
 
-static TER
+TER
 OracleDelete::doApply()
 {
     if (auto sle = ctx_.view().peek(keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID])))
@@ -92,7 +92,7 @@ OracleDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 OracleDelete::finalizeInvariants(
     STTx const&,
     TER,

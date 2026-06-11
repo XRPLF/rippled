@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -12,7 +13,7 @@
 
 namespace xrpl {
 
-static NotTEC
+NotTEC
 OfferCancel::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfOfferSequence] == 0u)
@@ -26,7 +27,7 @@ OfferCancel::preflight(PreflightContext const& ctx)
 
 //------------------------------------------------------------------------------
 
-static TER
+TER
 OfferCancel::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
@@ -48,7 +49,7 @@ OfferCancel::preclaim(PreclaimContext const& ctx)
 
 //------------------------------------------------------------------------------
 
-static TER
+TER
 OfferCancel::doApply()
 {
     auto const offerSequence = ctx_.tx[sfOfferSequence];
@@ -72,7 +73,7 @@ OfferCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-static bool
+bool
 OfferCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).
