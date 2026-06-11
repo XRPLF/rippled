@@ -10,7 +10,7 @@
 
       {
         "compiler": ["gcc", "clang"],
-        "build_type": ["Debug"],
+        "build_type": ["Debug", "Release"],
         "arch": ["amd64"],
         "sanitizers": ["address", "undefinedbehavior"]
       },
