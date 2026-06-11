@@ -6,6 +6,15 @@
 >
 > **Branch**: `pratik/otel-phase5-docs-deployment` (from `pratik/otel-phase4-consensus-tracing`)
 
+> **Note on attribute names**: the `xrpl.<domain>.<field>` keys shown below
+> (including the collector spanmetrics dimension examples) are written in the
+> older dotted form for readability — it mirrors how the fully qualified
+> attribute reads in a Tempo trace view. The implemented keys follow the
+> convention in [CONTRIBUTING.md](../CONTRIBUTING.md#telemetry-span-attribute-naming)
+> (underscore form, e.g. `command`, `rpc_status`); the `*SpanNames.h` constants
+> are the single source of truth, and the real collector dimensions must use
+> those exact underscore keys (the CI naming check enforces this).
+
 ### Related Plan Documents
 
 | Document                                                         | Relevance                                                                  |
