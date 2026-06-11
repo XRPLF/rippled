@@ -169,9 +169,10 @@ jobs:
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
+          GENERATOR: ${{ inputs.generator != '' && inputs.generator || 'Ninja' }}
         run: |
           cmake \
-              -G '${{ inputs.generator != '' && inputs.generator || 'Ninja' }}' \
+              -G "$GENERATOR" \
               -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
               -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
               ${CMAKE_ARGS} \
