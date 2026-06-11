@@ -908,7 +908,7 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
     // AMM doesn't support domain books; exclude AMM liquidity so that
     // quality estimation is consistent with actual crossing (tryAMM skips
     // AMM for domain books).
-    if (book_.domain && view.rules().enabled(fixCleanup3_2_0))
+    if (book_.domain && view.rules().enabled(fixCleanup3_3_0))
         return std::nullopt;
     if (ammLiquidity_)
         return ammLiquidity_->getOffer(view, clobQuality);

@@ -996,11 +996,11 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testAmmQualityNotLeaked(FeatureBitset features)
     {
-        bool const excludesAmmFromDomainQuality = features[fixCleanup3_2_0];
+        bool const excludesAmmFromDomainQuality = features[fixCleanup3_3_0];
 
         testcase << "AMM quality not leaked into domain BookStep"
-                 << (excludesAmmFromDomainQuality ? " (Cleanup3_2_0 enabled)"
-                                                  : " (Cleanup3_2_0 disabled)");
+                 << (excludesAmmFromDomainQuality ? " (Cleanup3_3_0 enabled)"
+                                                  : " (Cleanup3_3_0 disabled)");
 
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
@@ -2021,7 +2021,7 @@ public:
         testRemoveUnfundedOffer(all);
         testAmmNotUsed(all);
         testAmmQualityNotLeaked(all);
-        testAmmQualityNotLeaked(all - fixCleanup3_2_0);
+        testAmmQualityNotLeaked(all - fixCleanup3_3_0);
         testAutoBridge(all);
 
         // Test hybrid offers
