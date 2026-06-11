@@ -326,6 +326,162 @@ class CamelToDotSegments(unittest.TestCase):
             shutil.rmtree(d)
 
 
+class SymbolCollision(unittest.TestCase):
+    """attr_keys_from_header must resolve a constant against ITS OWN header, so
+    two headers defining a same-named constant each report their real wire key.
+    Regression for the flat-symbol-table collision that let a later header
+    clobber an earlier one and erased a dotted key from L1 (a Rule-A blind
+    spot)."""
+
+    def _build(self, files):
+        d = Path(tempfile.mkdtemp())
+        paths = {}
+        for rel, text in files.items():
+            p = d / rel
+            _write(p, text)
+            paths[rel] = p
+        return d, paths
+
+    def test_same_named_const_not_clobbered_across_headers(self):
+        base = (
+            "#pragma once\n"
+            "namespace xrpl::telemetry {\n"
+            'namespace seg { inline constexpr auto xrpl = makeStr("xrpl");\n'
+            'inline constexpr auto ledger = makeStr("ledger"); }\n'
+            "namespace attr {\n"
+            "inline constexpr auto ledgerHash = "
+            'join(join(seg::xrpl, seg::ledger), makeStr("hash"));\n'
+            "}\n}\n"
+        )
+        cons = (
+            "#pragma once\n"
+            "namespace xrpl::telemetry::consensus::span {\n"
+            "namespace attr { inline constexpr auto ledgerHash = "
+            'makeStr("ledger_hash"); }\n}\n'
+        )
+        d, paths = self._build(
+            {
+                "include/xrpl/telemetry/SpanNames.h": base,
+                "src/xrpld/consensus/ConsensusSpanNames.h": cons,
+            }
+        )
+        try:
+            headers = chk.find_spanname_headers(d)
+            syms = chk.build_global_symbols(headers)
+            by_name = {p.name: chk.attr_keys_from_header(p, syms) for p in headers}
+            # The base header keeps its dotted key; consensus keeps the bare one.
+            self.assertIn("xrpl.ledger.hash", by_name["SpanNames.h"])
+            self.assertEqual(by_name["ConsensusSpanNames.h"], {"ledger_hash"})
+        finally:
+            shutil.rmtree(d)
+
+    def test_using_reexport_still_resolves_globally(self):
+        # A `using`-re-export imports a constant defined elsewhere; it must
+        # resolve against the global table, not the local header.
+        base = (
+            "#pragma once\n"
+            "namespace xrpl::telemetry {\n"
+            "namespace attr { inline constexpr auto txHash = "
+            'makeStr("tx_hash"); }\n}\n'
+        )
+        dom = (
+            "#pragma once\n"
+            "namespace xrpl::telemetry::tx::span {\n"
+            "namespace attr { using ::xrpl::telemetry::attr::txHash; }\n}\n"
+        )
+        d, paths = self._build(
+            {
+                "include/xrpl/telemetry/SpanNames.h": base,
+                "src/xrpld/app/misc/TxSpanNames.h": dom,
+            }
+        )
+        try:
+            headers = chk.find_spanname_headers(d)
+            syms = chk.build_global_symbols(headers)
+            keys = chk.attr_keys_from_header(
+                paths["src/xrpld/app/misc/TxSpanNames.h"], syms
+            )
+            self.assertEqual(keys, {"tx_hash"})
+        finally:
+            shutil.rmtree(d)
+
+
+class ResourceAllowlistScope(unittest.TestCase):
+    """derive_dotted_resource_keys must allowlist ONLY the dotted keys actually
+    passed to Resource::Create() — not every dotted key in the base header. A
+    dotted attr declared in a header but not set as a resource attr is a Rule-A
+    violation."""
+
+    def _derive(self, tele_text, span_text):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(d / "src" / "libxrpl" / "telemetry" / "Telemetry.cpp", tele_text)
+            _write(d / "include" / "xrpl" / "telemetry" / "SpanNames.h", span_text)
+            headers = chk.find_spanname_headers(d)
+            syms = chk.build_global_symbols(headers)
+            allow = chk.derive_dotted_resource_keys(d, syms, chk.Report())
+            return allow, syms, headers, d
+        except Exception:
+            shutil.rmtree(d)
+            raise
+
+    def test_dotted_span_attr_not_allowlisted_and_flagged(self):
+        span = (
+            "#pragma once\n"
+            "namespace xrpl::telemetry {\n"
+            'namespace seg { inline constexpr auto xrpl = makeStr("xrpl");\n'
+            'inline constexpr auto ledger = makeStr("ledger");\n'
+            'inline constexpr auto network = makeStr("network"); }\n'
+            "namespace attr {\n"
+            "inline constexpr auto networkId = "
+            'join(join(seg::xrpl, seg::network), makeStr("id"));\n'
+            "inline constexpr auto ledgerHash = "
+            'join(join(seg::xrpl, seg::ledger), makeStr("hash"));\n'
+            "}\n}\n"
+        )
+        tele = (
+            "auto r = resource::Resource::Create({\n"
+            "  {semconv::service::kServiceName, x},\n"
+            "  {std::string(attr::networkId), n},\n"
+            "});\n"
+        )
+        allow, syms, headers, d = self._derive(tele, span)
+        try:
+            # networkId IS a resource attr; ledgerHash is NOT, despite living in
+            # the base header.
+            self.assertIn("xrpl.network.id", allow)
+            self.assertNotIn("xrpl.ledger.hash", allow)
+            kbh = {h: chk.attr_keys_from_header(h, syms) for h in headers}
+            report = chk.Report()
+            chk.run_rule_a(kbh, allow, report)
+            self.assertEqual([v[2] for v in report.violations], ["xrpl.ledger.hash"])
+        finally:
+            shutil.rmtree(d)
+
+    def test_resource_block_brace_matched(self):
+        # A nested {key,value} initializer must not truncate the block scan.
+        tele = (
+            "auto r = resource::Resource::Create({\n"
+            "  {semconv::service::kServiceName, x},\n"
+            "  {std::string(attr::networkType), t},\n"
+            "});\n"
+        )
+        span = (
+            "#pragma once\n"
+            "namespace xrpl::telemetry {\n"
+            'namespace seg { inline constexpr auto xrpl = makeStr("xrpl");\n'
+            'inline constexpr auto network = makeStr("network"); }\n'
+            "namespace attr { inline constexpr auto networkType = "
+            'join(join(seg::xrpl, seg::network), makeStr("type")); }\n}\n'
+        )
+        allow, _syms, _headers, d = self._derive(tele, span)
+        try:
+            self.assertIn("xrpl.network.type", allow)
+            self.assertIn("service.name", allow)
+        finally:
+            shutil.rmtree(d)
+
+
 def _run_rule_a(keys_by_header, allow):
     report = chk.Report()
     chk.run_rule_a(keys_by_header, allow, report)

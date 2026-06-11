@@ -25,11 +25,16 @@ hardcoded allowlist:
 - **L1 keys** come from the `namespace attr { ... }` blocks of every
   `*SpanNames.h`, resolving the `makeStr("x")` / `join(seg::a, seg::b)` DSL
   (cross-file, so `join(seg::rpc, ...)` resolves `seg::rpc` from the base
-  `SpanNames.h`).
-- **Legitimate dotted keys** = the resource attrs declared in the base
-  `SpanNames.h` (`xrpl.network.*`) plus the `semconv::service::*` keys the code
-  passes to `Resource::Create()` in `Telemetry.cpp` (`service.*`). A dotted key
-  declared in any other header is a violation.
+  `SpanNames.h`). Each constant is resolved against **its own** header, so two
+  headers that define a same-named constant (e.g. a base `attr::ledgerHash` and
+  a domain `attr::ledgerHash`) each contribute their real wire key — a later
+  header cannot clobber an earlier one's value in a flat table.
+- **Legitimate dotted keys** = ONLY the keys the code actually sets as resource
+  attributes, i.e. the entries inside `Telemetry.cpp`'s `Resource::Create({...})`
+  call: the `semconv::service::*` keys (`service.*`) plus any `attr::<name>`
+  constants passed there (`xrpl.network.*`). A dotted key that is _declared_ in a
+  header but never set as a resource attr is a span attribute in resource
+  clothing — a Rule-A violation, even if it lives in the base `SpanNames.h`.
 
 ### Rules (each fails the build, when its inputs are present)
 
