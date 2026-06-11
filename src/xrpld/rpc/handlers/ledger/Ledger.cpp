@@ -30,6 +30,7 @@
 #include <expected>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl {
