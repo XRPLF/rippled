@@ -153,8 +153,8 @@ Checks: "-*,
   readability-use-std-min-max
   "
 # ---
-# readability-inconsistent-declaration-parameter-name, # in this codebase this check will break a lot of arg names
-# readability-static-accessed-through-instance,        # this check is probably unnecessary. it makes the code less readable
+# readability-inconsistent-declaration-parameter-name, # In this codebase this check will break a lot of arg names
+# readability-static-accessed-through-instance,        # this check is probably unnecessary. It makes the code less readable
 # ---
 
 CheckOptions:
@@ -191,11 +191,14 @@ CheckOptions:
   readability-identifier-naming.ParameterCase: camelBack
   readability-identifier-naming.FunctionCase: camelBack
   readability-identifier-naming.MemberCase: camelBack
+  readability-identifier-naming.PrivateMemberCase: camelBack
   readability-identifier-naming.PrivateMemberSuffix: _
+  readability-identifier-naming.ProtectedMemberCase: camelBack
   readability-identifier-naming.ProtectedMemberSuffix: _
+  readability-identifier-naming.PublicMemberCase: camelBack
   readability-identifier-naming.PublicMemberSuffix: ""
   readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
 
-HeaderFilterRegex: '^.*/(test|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
+HeaderFilterRegex: '^.*/(tests?|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
 ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'
 WarningsAsErrors: "*"

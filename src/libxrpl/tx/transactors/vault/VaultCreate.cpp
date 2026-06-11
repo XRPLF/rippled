@@ -1,12 +1,14 @@
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -145,13 +147,13 @@ VaultCreate::doApply()
 
     auto const& tx = ctx_.tx;
     auto const sequence = tx.getSeqValue();
-    auto const owner = view().peek(keylet::account(account_));
+    auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto vault = std::make_shared<SLE>(keylet::vault(account_, sequence));
+    auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
 
-    if (auto ter = dirLink(view(), account_, vault))
+    if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
     adjustOwnerCount(view(), owner, 2, j_);
@@ -162,9 +164,9 @@ VaultCreate::doApply()
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
         return maybePseudo.error();  // LCOV_EXCL_LINE
-    auto& pseudo = *maybePseudo;
-    auto pseudoId = pseudo->at(sfAccount);
-    auto asset = tx[sfAsset];
+    auto const& pseudo = *maybePseudo;
+    AccountID const pseudoId = pseudo->at(sfAccount);
+    auto const asset = tx[sfAsset];
 
     if (auto ter = addEmptyHolding(view(), pseudoId, preFeeBalance_, asset, j_); !isTesSuccess(ter))
         return ter;
@@ -182,13 +184,24 @@ VaultCreate::doApply()
     // Note, here we are **not** creating an MPToken for the assets held in
     // the vault. That MPToken or TrustLine/RippleState is created above, in
     // addEmptyHolding. Here we are creating MPTokenIssuance for the shares
-    // in the vault
-    auto maybeShare = MPTokenIssuanceCreate::create(
+    // in the vault.
+    //
+    // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
+    // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
+    // XRP underlyings leave it unset.
+    auto const referenceHolding = [&]() -> std::optional<uint256> {
+        if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
+            return std::nullopt;
+        return asset.holds<MPTIssue>()
+            ? keylet::mptoken(asset.get<MPTIssue>().getMptID(), pseudoId).key
+            : keylet::line(pseudoId, asset.get<Issue>()).key;
+    }();
+    auto const maybeShare = MPTokenIssuanceCreate::create(
         view(),
         j_,
         {
             .priorBalance = std::nullopt,
-            .account = pseudoId->value(),
+            .account = pseudoId,
             .sequence = 1,
             .flags = mptFlags,
             .assetScale = scale,
@@ -196,6 +209,7 @@ VaultCreate::doApply()
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
             .mutableFlags = std::nullopt,
+            .referenceHolding = referenceHolding,
         });
     if (!maybeShare)
         return maybeShare.error();  // LCOV_EXCL_LINE
@@ -204,7 +218,7 @@ VaultCreate::doApply()
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
     vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
-    vault->at(sfOwner) = account_;
+    vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAssetsTotal) = Number(0);
     vault->at(sfAssetsAvailable) = Number(0);
@@ -230,7 +244,7 @@ VaultCreate::doApply()
 
     // Explicitly create MPToken for the vault owner
     if (auto const err =
-            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, account_, ctx_.journal);
+            authorizeMPToken(view(), preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -238,7 +252,7 @@ VaultCreate::doApply()
     if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
-                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, account_);
+                view(), preFeeBalance_, mptIssuanceID, pseudoId, ctx_.journal, {}, accountID_);
             !isTesSuccess(err))
             return err;
     }
@@ -249,10 +263,7 @@ VaultCreate::doApply()
 }
 
 void
-VaultCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+VaultCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

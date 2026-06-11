@@ -21,7 +21,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <utility>
 
@@ -55,7 +54,7 @@ TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
     auto const checkOffer =
-        [&ctx](std::optional<uint256> id) -> std::pair<std::shared_ptr<const SLE>, TER> {
+        [&ctx](std::optional<uint256> id) -> std::pair<SLE::const_pointer, TER> {
         if (id)
         {
             if (id->isZero())
@@ -403,12 +402,12 @@ NFTokenAcceptOffer::transferNFToken(
 }
 
 TER
-NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
+NFTokenAcceptOffer::acceptOffer(SLE::ref offer)
 {
     bool const isSell = offer->isFlag(lsfSellNFToken);
     AccountID const owner = (*offer)[sfOwner];
-    AccountID const& seller = isSell ? owner : account_;
-    AccountID const& buyer = isSell ? account_ : owner;
+    AccountID const& seller = isSell ? owner : accountID_;
+    AccountID const& buyer = isSell ? accountID_ : owner;
 
     auto const nftokenID = (*offer)[sfNFTokenID];
 
@@ -441,7 +440,7 @@ TER
 NFTokenAcceptOffer::doApply()
 {
     auto const loadToken = [this](std::optional<uint256> const& id) {
-        std::shared_ptr<SLE> sle;
+        SLE::pointer sle;
         if (id)
             sle = view().peek(keylet::nftoffer(*id));
         return sle;
@@ -456,8 +455,7 @@ NFTokenAcceptOffer::doApply()
     {
         bool foundExpired = false;
 
-        auto const deleteOfferIfExpired =
-            [this, &foundExpired](std::shared_ptr<SLE> const& offer) -> TER {
+        auto const deleteOfferIfExpired = [this, &foundExpired](SLE::ref offer) -> TER {
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
             {
                 JLOG(j_.trace()) << "Offer is expired, deleting: " << offer->key();
@@ -528,7 +526,7 @@ NFTokenAcceptOffer::doApply()
         // Send the broker the amount they requested.
         if (auto const cut = ctx_.tx[~sfNFTokenBrokerFee]; cut && cut.value() != beast::kZero)
         {
-            if (auto const r = pay(buyer, account_, cut.value()); !isTesSuccess(r))
+            if (auto const r = pay(buyer, accountID_, cut.value()); !isTesSuccess(r))
                 return r;
 
             amount -= cut.value();
@@ -569,10 +567,7 @@ NFTokenAcceptOffer::doApply()
 }
 
 void
-NFTokenAcceptOffer::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenAcceptOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

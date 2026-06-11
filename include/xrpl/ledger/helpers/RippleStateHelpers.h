@@ -93,7 +93,7 @@ isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 // Overload with depth parameter for uniformity with MPTIssue version.
 // The depth parameter is ignored for IOUs since they don't have vault recursion.
 [[nodiscard]] inline bool
-isFrozen(ReadView const& view, AccountID const& account, Issue const& issue, int /*depth*/)
+isFrozen(ReadView const& view, AccountID const& account, Issue const& issue, std::uint8_t /*depth*/)
 {
     return isFrozen(view, account, issue);
 }
@@ -110,7 +110,7 @@ isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
     Issue const& issue,
-    int = 0 /*ignored*/)
+    std::uint8_t = 0 /*ignored*/)
 {
     return isDeepFrozen(view, account, issue.currency, issue.account);
 }
@@ -154,7 +154,7 @@ trustCreate(
 [[nodiscard]] TER
 trustDelete(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sleRippleState,
+    SLE::ref sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j);
@@ -248,7 +248,7 @@ removeEmptyHolding(
 [[nodiscard]] TER
 deleteAMMTrustLine(
     ApplyView& view,
-    std::shared_ptr<SLE> sleState,
+    SLE::pointer sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
 
@@ -258,7 +258,7 @@ deleteAMMTrustLine(
 [[nodiscard]] TER
 deleteAMMMPToken(
     ApplyView& view,
-    std::shared_ptr<SLE> sleMPT,
+    SLE::pointer sleMPT,
     AccountID const& ammAccountID,
     beast::Journal j);
 

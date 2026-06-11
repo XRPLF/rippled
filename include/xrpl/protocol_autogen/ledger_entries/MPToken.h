@@ -33,7 +33,7 @@ public:
      * @brief Construct a MPToken ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit MPToken(std::shared_ptr<SLE const> sle)
+    explicit MPToken(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -182,7 +182,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    MPTokenBuilder(std::shared_ptr<SLE const> sle)
+    MPTokenBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltMPTOKEN)
         {

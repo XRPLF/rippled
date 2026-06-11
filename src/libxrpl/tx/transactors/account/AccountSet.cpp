@@ -26,7 +26,6 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <cstdint>
-#include <memory>
 #include <unordered_set>
 
 namespace xrpl {
@@ -279,7 +278,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
 TER
 AccountSet::doApply()
 {
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sle = view().peek(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -298,7 +297,7 @@ AccountSet::doApply()
     bool const bSetDisallowXRP{tx.isFlag(tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
     bool const bClearDisallowXRP{tx.isFlag(tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
 
-    bool const sigWithMaster{[&tx, &acct = account_]() {
+    bool const sigWithMaster{[&tx, &acct = accountID_]() {
         auto const spk = tx.getSigningPubKey();
 
         if (publicKeyType(makeSlice(spk)))
@@ -367,7 +366,7 @@ AccountSet::doApply()
             return tecNEED_MASTER_KEY;
         }
 
-        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signers(account_))))
+        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signers(accountID_))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
@@ -643,10 +642,7 @@ AccountSet::doApply()
 }
 
 void
-AccountSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AccountSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -7,7 +7,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -26,7 +25,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -34,7 +32,6 @@
 #include <bit>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -242,24 +239,21 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                 return ter;
             }
             // AMM account or currency frozen
-            if (isFrozen(ctx.view, ammAccountID, amount->asset()))
+            if (auto const ter = checkFrozen(ctx.view, ammAccountID, amount->asset());
+                !isTesSuccess(ter))
             {
-                JLOG(ctx.j.debug())
-                    << "AMM Withdraw: AMM account or currency is frozen, " << to_string(accountID);
-                return tecFROZEN;
+                JLOG(ctx.j.debug()) << "AMM Withdraw: AMM account or currency is frozen or locked, "
+                                    << to_string(accountID);
+                return ter;
             }
             // Account frozen
-            if (isIndividualFrozen(ctx.view, accountID, amount->asset()))
-            {
-                JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen, " << to_string(accountID)
-                                    << " " << to_string(amount->asset());
-                return tecFROZEN;
-            }
-
-            if (auto const ter =
-                    checkMPTTxAllowed(ctx.view, ttAMM_WITHDRAW, amount->asset(), accountID);
+            if (auto const ter = checkIndividualFrozen(ctx.view, accountID, amount->asset());
                 !isTesSuccess(ter))
+            {
+                JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen or locked, "
+                                    << to_string(accountID) << " " << to_string(amount->asset());
                 return ter;
+            }
         }
         return tesSUCCESS;
     };
@@ -329,11 +323,11 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     // might not match the LP's trustline balance
     if (sb.rules().enabled(fixAMMv1_1))
     {
-        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, account_); !res)
+        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
             return {res.error(), false};
     }
 
-    auto const tfee = getTradingFee(ctx_.view(), *ammSle, account_);
+    auto const tfee = getTradingFee(ctx_.view(), *ammSle, accountID_);
 
     auto const expected = ammHolds(
         sb,
@@ -458,7 +452,7 @@ AMMWithdraw::withdraw(
         view,
         ammSle,
         ammAccount,
-        account_,
+        accountID_,
         amountBalance,
         amountWithdraw,
         amount2Withdraw,
@@ -635,10 +629,6 @@ AMMWithdraw::withdraw(
             auto const balanceAdj = isIssue ? std::max(priorBalance, balance.xrp()) : priorBalance;
             if (balanceAdj < reserve)
                 return tecINSUFFICIENT_RESERVE;
-
-            // Update owner count.
-            if (!isIssue)
-                adjustOwnerCount(view, sleAccount, 1, journal);
         }
         return tesSUCCESS;
     };
@@ -748,7 +738,7 @@ AMMWithdraw::equalWithdrawTokens(
     std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) = equalWithdrawTokens(
         view,
         ammSle,
-        account_,
+        accountID_,
         ammAccount,
         amountBalance,
         amount2Balance,
@@ -767,7 +757,7 @@ AMMWithdraw::equalWithdrawTokens(
 std::pair<TER, bool>
 AMMWithdraw::deleteAMMAccountIfEmpty(
     Sandbox& sb,
-    std::shared_ptr<SLE> const ammSle,
+    SLE::pointer const ammSle,
     STAmount const& lpTokenBalance,
     Asset const& asset1,
     Asset const& asset2,
@@ -1149,10 +1139,7 @@ AMMWithdraw::isWithdrawAll(STTx const& tx)
     return WithdrawAll::No;
 }
 void
-AMMWithdraw::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

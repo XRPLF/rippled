@@ -12,6 +12,7 @@
 #include <xrpl/ledger/OpenView.h>
 
 #include <mutex>
+#include <string_view>
 
 namespace xrpl {
 
@@ -33,8 +34,8 @@ class OpenLedger
 private:
     beast::Journal const j_;
     CachedSLEs& cache_;
-    std::mutex mutable modify_mutex_;
-    std::mutex mutable current_mutex_;
+    std::mutex mutable modifyMutex_;
+    std::mutex mutable currentMutex_;
     std::shared_ptr<OpenView const> current_;
 
 public:
@@ -149,7 +150,7 @@ public:
         bool retriesFirst,
         OrderedTxs& retries,
         ApplyFlags flags,
-        std::string const& suffix = "",
+        std::string_view suffix = "",
         modify_type const& f = {});
 
 private:
