@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/bridge/XChainBridge.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -40,6 +39,7 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <cstdint>
+#include <expected>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -186,7 +186,7 @@ checkAttestationPublicKey(
 
 enum class CheckDst { Check, Ignore };
 template <class TAttestation>
-Expected<std::vector<AccountID>, TER>
+std::expected<std::vector<AccountID>, TER>
 claimHelper(
     XChainAttestationsBase<TAttestation>& attestations,
     ReadView const& view,
@@ -233,7 +233,7 @@ claimHelper(
     if (weight >= quorum)
         return rewardAccounts;
 
-    return Unexpected(tecXCHAIN_CLAIM_NO_QUORUM);
+    return std::unexpected(tecXCHAIN_CLAIM_NO_QUORUM);
 }
 
 /**
@@ -337,7 +337,7 @@ onNewAttestations(
 // Check if there is a quorum of attestations for the given amount and
 // chain. If so return the reward accounts, if not return the tec code (most
 // likely tecXCHAIN_CLAIM_NO_QUORUM)
-Expected<std::vector<AccountID>, TER>
+std::expected<std::vector<AccountID>, TER>
 onClaim(
     XChainClaimAttestations& attestations,
     ReadView const& view,
@@ -847,14 +847,14 @@ applyClaimAttestations(
         AccountID cidOwner;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
         // views, it's important that the sle's lifetime doesn't overlap.
         auto const sleClaimID = psb.peek(claimIDKeylet);
         if (!sleClaimID)
-            return Unexpected(tecXCHAIN_NO_CLAIM_ID);
+            return std::unexpected(tecXCHAIN_NO_CLAIM_ID);
 
         // Add claims that are part of the signer's list to the "claims" vector
         std::vector<Attestations::AttestationClaim> atts;
@@ -868,13 +868,13 @@ applyClaimAttestations(
 
         if (atts.empty())
         {
-            return Unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
+            return std::unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
         }
 
         AccountID const otherChainSource = (*sleClaimID)[sfOtherChainSource];
         if (attBegin->sendingAccount != otherChainSource)
         {
-            return Unexpected(tecXCHAIN_SENDING_ACCOUNT_MISMATCH);
+            return std::unexpected(tecXCHAIN_SENDING_ACCOUNT_MISMATCH);
         }
 
         {
@@ -885,7 +885,7 @@ applyClaimAttestations(
 
             if (attDstChain != dstChain)
             {
-                return Unexpected(tecXCHAIN_WRONG_CHAIN);
+                return std::unexpected(tecXCHAIN_WRONG_CHAIN);
             }
         }
 
@@ -964,10 +964,10 @@ applyCreateAccountAttestations(
 
     PaymentSandbox psb(&view);
 
-    auto const claimCountResult = [&]() -> Expected<std::uint64_t, TER> {
+    auto const claimCountResult = [&]() -> std::expected<std::uint64_t, TER> {
         auto const sleBridge = psb.peek(bridgeK);
         if (!sleBridge)
-            return Unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);
 
         return (*sleBridge)[sfXChainAccountClaimCount];
     }();
@@ -1009,7 +1009,7 @@ applyCreateAccountAttestations(
         XChainCreateAccountAttestations curAtts;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1025,14 +1025,14 @@ applyCreateAccountAttestations(
 
             auto const sleDoor = psb.peek(doorK);
             if (!sleDoor)
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
             auto const reserve = psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
 
             if (balance < reserve)
-                return Unexpected(tecINSUFFICIENT_RESERVE);
+                return std::unexpected(tecINSUFFICIENT_RESERVE);
         }
 
         std::vector<Attestations::AttestationCreateAccount> atts;
@@ -1045,7 +1045,7 @@ applyCreateAccountAttestations(
         }
         if (atts.empty())
         {
-            return Unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
+            return std::unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
         }
 
         XChainCreateAccountAttestations curAtts = [&] {
@@ -1071,7 +1071,7 @@ applyCreateAccountAttestations(
             // Modify the object before it's potentially deleted, so the meta
             // data will include the new attestations
             if (!sleClaimID)
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
             sleClaimID->setFieldArray(sfXChainCreateAccountAttestations, curAtts.toSTArray());
             psb.update(sleClaimID);
         }
@@ -1244,7 +1244,7 @@ attestationDoApply(ApplyContext& ctx)
         Keylet bridgeK;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1252,7 +1252,7 @@ attestationDoApply(ApplyContext& ctx)
         auto sleBridge = readBridge(ctx.view(), bridgeSpec);
         if (!sleBridge)
         {
-            return Unexpected(tecNO_ENTRY);
+            return std::unexpected(tecNO_ENTRY);
         }
         Keylet const bridgeK{ltBRIDGE, sleBridge->key()};
         AccountID const thisDoor = (*sleBridge)[sfAccount];
@@ -1269,7 +1269,7 @@ attestationDoApply(ApplyContext& ctx)
             }
             else
             {
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
             }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
@@ -1279,7 +1279,7 @@ attestationDoApply(ApplyContext& ctx)
             getSignersListAndQuorum(ctx.view(), *sleBridge, ctx.journal);
 
         if (!isTesSuccess(slTer))
-            return Unexpected(slTer);
+            return std::unexpected(slTer);
 
         return ScopeResult{srcChain, std::move(signersList), quorum, thisDoor, bridgeK};
     }();
@@ -1721,7 +1721,7 @@ XChainClaim::doApply()
         STAmount signatureReward;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1732,7 +1732,7 @@ XChainClaim::doApply()
         auto const sleClaimID = psb.peek(claimIDKeylet);
 
         if (!(sleBridge && sleClaimID && sleAcct))
-            return Unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);
 
         AccountID const thisDoor = (*sleBridge)[sfAccount];
 
@@ -1748,7 +1748,7 @@ XChainClaim::doApply()
             }
             else
             {
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
             }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
@@ -1763,7 +1763,7 @@ XChainClaim::doApply()
             getSignersListAndQuorum(ctx_.view(), *sleBridge, ctx_.journal);
 
         if (!isTesSuccess(slTer))
-            return Unexpected(slTer);
+            return std::unexpected(slTer);
 
         XChainClaimAttestations curAtts{sleClaimID->getFieldArray(sfXChainClaimAttestations)};
 
@@ -1776,7 +1776,7 @@ XChainClaim::doApply()
             signersList,
             ctx_.journal);
         if (!claimR.has_value())
-            return Unexpected(claimR.error());
+            return std::unexpected(claimR.error());
 
         return ScopeResult{
             .rewardAccounts = claimR.value(),

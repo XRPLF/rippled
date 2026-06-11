@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/lending/LoanPay.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -29,6 +28,7 @@
 #include <algorithm>
 #include <bit>
 #include <cstdint>
+#include <expected>
 #include <vector>
 
 namespace xrpl {
@@ -380,7 +380,7 @@ LoanPay::doApply()
         return LoanPaymentType::Regular;
     }();
 
-    Expected<LoanPaymentParts, TER> const paymentParts =
+    std::expected<LoanPaymentParts, TER> const paymentParts =
         loanMakePayment(asset, view, loanSle, brokerSle, amount, paymentType, j_);
 
     if (!paymentParts)

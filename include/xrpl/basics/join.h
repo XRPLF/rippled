@@ -1,12 +1,13 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 namespace xrpl {
 
 template <class Stream, class Iter>
 Stream&
-join(Stream& s, Iter iter, Iter end, std::string const& delimiter)
+join(Stream& s, Iter iter, Iter end, std::string_view delimiter)
 {
     if (iter == end)
         return s;

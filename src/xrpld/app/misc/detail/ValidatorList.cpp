@@ -1777,7 +1777,7 @@ ValidatorList::getAvailable(
 {
     std::shared_lock const readLock{mutex_};
 
-    auto const keyBlob = strViewUnHex(pubKey);
+    auto const keyBlob = strUnHex(pubKey);
 
     if (!keyBlob || !publicKeyType(makeSlice(*keyBlob)))
     {
