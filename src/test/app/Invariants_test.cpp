@@ -1318,9 +1318,7 @@ class Invariants_test : public beast::unit_test::Suite
             auto const expectedLogWhenEnforced = enforceAMMDelete ? expectedLog : "";
             if (!expectedLogWhenEnforced.empty())
             {
-                BEAST_EXPECTS(
-                    messages.find(expectedLogWhenEnforced) != std::string::npos,
-                    expectedLogWhenEnforced);
+                BEAST_EXPECTS(messages.contains(expectedLogWhenEnforced), expectedLogWhenEnforced);
             }
             else
             {
