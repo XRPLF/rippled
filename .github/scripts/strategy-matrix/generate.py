@@ -266,7 +266,6 @@ def expand_platform_matrix(
     """Expand a PlatformFile (macOS or Windows) into matrix entries.
 
     Configs that exclude the current event are skipped.
-    
 
     When toolsets are defined (Windows), the configs are expanded over the
     cross-product with the toolsets so each config is built against every
