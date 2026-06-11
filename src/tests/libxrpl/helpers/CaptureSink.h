@@ -15,7 +15,7 @@ class CaptureSink : public beast::Journal::Sink
 
 public:
     explicit CaptureSink(beast::Severity threshold = beast::Severity::Debug)
-        : Sink(threshold, false)
+        : Sink{threshold, false}
     {
     }
 
@@ -35,11 +35,11 @@ public:
         // into writeAlways(), so the lock lives here only: locking in both
         // would self-deadlock on this non-recursive mutex.
         std::scoped_lock const lock(mutex_);
-        strm_ << text << std::endl;
+        strm_ << text << '\n';
     }
 
-    // Returns a snapshot of the captured output. Takes the lock so the read is
-    // safe even if a writer is still active.
+    /// Returns a snapshot of the captured output. Takes the lock so the read is
+    /// safe even if a writer is still active.
     [[nodiscard]] std::string
     messages() const
     {
