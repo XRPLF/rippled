@@ -279,12 +279,7 @@ def expand_platform_matrix(
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
-    toolsets = None
-    if pf.toolsets:
-        toolsets = [t for t in pf.toolsets if not t.exclude]
-
-    if not toolsets:
-        toolsets = [Toolset(name="", generator="", compiler_version="")]
+	toolsets = [t for t in pf.toolsets if not t.exclude] if pf.toolsets else [Toolset(name="", generator="")]
 
     entries: list[MatrixEntry] = []
     for toolset, cfg in itertools.product(toolsets, pf.configs):
