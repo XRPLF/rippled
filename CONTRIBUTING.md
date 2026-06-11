@@ -321,6 +321,10 @@ other layer must match them. A CI check enforces this end to end.
 5. Span names use `<subsystem>[.<component>]` (dotted). Only attribute _keys_
    follow rules 1–4.
 
+All attribute keys are `lower_snake_case` (lowercase letters, digits, and
+underscores; each dot-separated segment of a resource key likewise). No
+camelCase, uppercase, or spaces.
+
 Standard OpenTelemetry semantic-convention keys keep their canonical dotted
 form (e.g. `service.*` resource attributes, `http.*` span attributes); the
 "no dotted form" rule above applies to xrpl-custom keys, not to OTel-standard

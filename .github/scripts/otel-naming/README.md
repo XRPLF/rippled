@@ -36,6 +36,7 @@ hardcoded allowlist:
 | Rule | Check                                                                                                                                                                                             |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A    | No stray dotted span-attribute key (only the derived resource keys may be dotted).                                                                                                                |
+| G    | Attribute keys are `lower_snake_case` (`^[a-z][a-z0-9_]*$` per dot-segment) — no camelCase, UPPERCASE, or spaces.                                                                                 |
 | F    | No string literals as attribute keys or span-name arguments in `setAttribute`/`addEvent`/`span`/`childSpan`. Attribute _values_ are exempt (runtime data). `*SpanNames.h` definitions are exempt. |
 | B    | Every collector `spanmetrics.dimensions` name exists in the L1 key set.                                                                                                                           |
 | C    | Every Tempo span-filter tag exists in the L1 key set.                                                                                                                                             |

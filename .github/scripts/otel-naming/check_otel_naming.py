@@ -41,6 +41,8 @@ Rules (each FAILS the build, when its inputs are present)
 ---------------------------------------------------------
   A  No stray dotted span-attribute key. A dotted `<a>.<b>` used as a span
      attribute that is not in the derived resource-key set is a violation.
+  G  Attribute keys must be lower_snake_case (^[a-z][a-z0-9_]*$ per segment).
+     Flags camelCase, UPPERCASE, spaces, and other stray characters.
   F  No string literals as attribute keys/values or span-name arguments. Every
      setAttribute/addEvent/span/childSpan argument must reference a *SpanNames.h
      constant, never a "literal". Definitions inside *SpanNames.h are exempt.
@@ -303,6 +305,9 @@ def main() -> None:
     # --- Rule A: no stray dotted span-attribute keys -----------------------
     if l1_keys:
         run_rule_a(keys_by_header, dotted_allow, report)
+    # --- Rule G: keys must be lower_snake_case -----------------------------
+    if l1_keys:
+        run_rule_g(keys_by_header, report)
     # --- Rule F: no string literals at telemetry call-sites ----------------
     if headers:
         run_rule_f(root, report)
@@ -361,6 +366,28 @@ def run_rule_a(
                 report.violation("A", h.name, key, "underscore form, not dotted")
     if not found:
         report.ok("A: no stray dotted span-attribute keys")
+
+
+# A lower_snake_case identifier segment: starts lowercase, then lowercase /
+# digits / underscores. No uppercase, no spaces, no camelCase.
+SNAKE_SEGMENT = re.compile(r"^[a-z][a-z0-9_]*$")
+
+
+def run_rule_g(keys_by_header: Dict[Path, Set[str]], report: Report) -> None:
+    """Every attribute key must be lower_snake_case. Bare/underscore keys must
+    match ^[a-z][a-z0-9_]*$; dotted resource keys must be lowercase
+    dot-separated segments (each segment lower_snake_case). Flags camelCase,
+    UPPERCASE, spaces, and other stray characters."""
+    found = False
+    for h in sorted(keys_by_header):
+        for key in sorted(keys_by_header[h]):
+            segments = key.split(".")
+            if all(SNAKE_SEGMENT.match(seg) for seg in segments):
+                continue
+            found = True
+            report.violation("G", h.name, key, "must be lower_snake_case")
+    if not found:
+        report.ok("G: all attribute keys are lower_snake_case")
 
 
 # Which argument positions of each call must be a constant (0-based). The
