@@ -264,7 +264,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
     [[nodiscard]] TER
-    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const;
+    check(StrandContext const& ctx, SLE::const_ref sleSrc) const;
 
     [[nodiscard]] std::string
     logString() const override
@@ -312,7 +312,7 @@ public:
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
     static TER
-    check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc);
+    check(StrandContext const& ctx, SLE::const_ref sleSrc);
 
     [[nodiscard]] std::string
     logString() const override
@@ -328,8 +328,7 @@ public:
 //------------------------------------------------------------------------------
 
 TER
-MPTEndpointPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc)
-    const
+MPTEndpointPaymentStep::check(StrandContext const& ctx, SLE::const_ref sleSrc) const
 {
     // Since this is a payment, MPToken must be present.  Perform all
     // MPToken related checks.
@@ -393,8 +392,11 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SL
 }
 
 TER
-MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> const&)
+MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, SLE::const_ref)
 {
+    // The standard checks are all we can do because any remaining checks
+    // require the existence of a MPToken.  Offer crossing does not
+    // require a pre-existing MPToken.
     return tesSUCCESS;
 }
 
@@ -838,10 +840,17 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
     }
 
     // pure issue/redeem can't be frozen (issuer/holder)
+    // For the first step: check global freeze of the step's own asset.
+    // For the last step: check only the per-holder MPToken lock.
+    // Global freeze of the deliver asset is not checked here
+    // because MPT semantics allow issuer<->holder transfers even when globally
+    // locked — only holder-to-holder DEX paths are restricted.
     if (!(ctx.isLast && ctx.isFirst))
     {
         auto const& account = ctx.isFirst ? src_ : dst_;
-        if (isFrozen(ctx.view, account, mptIssue_))
+        bool const frozen = (ctx.isFirst && isGlobalFrozen(ctx.view, mptIssue_)) ||
+            isIndividualFrozen(ctx.view, account, mptIssue_);
+        if (frozen)
             return terLOCKED;
     }
 

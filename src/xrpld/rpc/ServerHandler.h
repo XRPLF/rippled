@@ -46,8 +46,8 @@ public:
             std::uint16_t port = 0;
             std::string user;
             std::string password;
-            std::string admin_user;
-            std::string admin_password;
+            std::string adminUser;
+            std::string adminPassword;
         };
 
         // Configuration when acting in client role
@@ -72,9 +72,9 @@ private:
     Setup setup_;
     Endpoints endpoints_;
     JobQueue& jobQueue_;
-    beast::insight::Counter rpc_requests_;
-    beast::insight::Event rpc_size_;
-    beast::insight::Event rpc_time_;
+    beast::insight::Counter rpcRequests_;
+    beast::insight::Event rpcSize_;
+    beast::insight::Event rpcTime_;
     std::mutex mutex_;
     std::condition_variable condition_;
     bool stopped_{false};

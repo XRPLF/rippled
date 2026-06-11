@@ -226,7 +226,7 @@ Pathfinder::Pathfinder(
     , srcPathAsset_(uSrcPathAsset)
     , srcIssuer_(uSrcIssuer)
     , srcAmount_(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount))
-    , convert_all_(convertAllCheck(dstAmount_))
+    , convertAll_(convertAllCheck(dstAmount_))
     , domain_(domain)
     , ledger_(cache->getLedger())
     , rLCache_(cache)
@@ -398,7 +398,7 @@ Pathfinder::getPathLiquidity(
     try
     {
         // Compute a path that provides at least the minimum liquidity.
-        if (convert_all_)
+        if (convertAll_)
             rcInput.partialPaymentAllowed = true;
 
         auto rc = path::RippleCalc::rippleCalculate(
@@ -418,7 +418,7 @@ Pathfinder::getPathLiquidity(
         qualityOut = getRate(rc.actualAmountOut, rc.actualAmountIn);
         amountOut = rc.actualAmountOut;
 
-        if (!convert_all_)
+        if (!convertAll_)
         {
             // Now try to compute the remaining liquidity.
             rcInput.partialPaymentAllowed = true;
@@ -451,7 +451,7 @@ Pathfinder::getPathLiquidity(
 void
 Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback)
 {
-    remainingAmount_ = convertAmount(dstAmount_, convert_all_);
+    remainingAmount_ = convertAmount(dstAmount_, convertAll_);
 
     // Must subtract liquidity in default path from remaining amount.
     try
@@ -536,7 +536,7 @@ Pathfinder::rankPaths(
     rankedPaths.reserve(paths.size());
 
     auto const saMinDstAmount = [&]() -> STAmount {
-        if (!convert_all_)
+        if (!convertAll_)
         {
             // Ignore paths that move only very small amounts.
             return smallestUsefulAmount(dstAmount_, maxPaths);
@@ -568,7 +568,11 @@ Pathfinder::rankPaths(
                 JLOG(j_.debug()) << "findPaths: quality: " << uQuality << ": "
                                  << currentPath.getJson(JsonOptions::Values::None);
 
-                rankedPaths.push_back({uQuality, currentPath.size(), liquidity, i});
+                rankedPaths.push_back(
+                    {.quality = uQuality,
+                     .length = currentPath.size(),
+                     .liquidity = liquidity,
+                     .index = i});
             }
         }
     }
@@ -581,7 +585,7 @@ Pathfinder::rankPaths(
     std::ranges::sort(
         rankedPaths, [&](Pathfinder::PathRank const& a, Pathfinder::PathRank const& b) {
             // 1) Higher quality (lower cost) is better
-            if (!convert_all_ && a.quality != b.quality)
+            if (!convertAll_ && a.quality != b.quality)
                 return a.quality < b.quality;
 
             // 2) More liquidity (higher volume) is better
@@ -1373,7 +1377,7 @@ fillPaths(Pathfinder::PaymentType type, PathCostList const& costs)
     auto& list = gPathTable[type];
     XRPL_ASSERT(list.empty(), "xrpl::fillPaths : empty paths");
     for (auto& cost : costs)
-        list.push_back({cost.cost, makePath(cost.path)});
+        list.push_back({.searchLevel = cost.cost, .type = makePath(cost.path)});
 }
 
 }  // namespace
@@ -1396,58 +1400,58 @@ Pathfinder::initPathTable()
 
     fillPaths(
         PaymentType::XrpToNonXrp,
-        {{1, "sfd"},    // source -> book -> gateway
-         {3, "sfad"},   // source -> book -> account -> destination
-         {5, "sfaad"},  // source -> book -> account -> account -> destination
-         {6, "sbfd"},   // source -> book -> book -> destination
-         {8, "sbafd"},  // source -> book -> account -> book -> destination
-         {9, "sbfad"},  // source -> book -> book -> account -> destination
-         {10, "sbafad"}});
+        {{.cost = 1, .path = "sfd"},    // source -> book -> gateway
+         {.cost = 3, .path = "sfad"},   // source -> book -> account -> destination
+         {.cost = 5, .path = "sfaad"},  // source -> book -> account -> account -> destination
+         {.cost = 6, .path = "sbfd"},   // source -> book -> book -> destination
+         {.cost = 8, .path = "sbafd"},  // source -> book -> account -> book -> destination
+         {.cost = 9, .path = "sbfad"},  // source -> book -> book -> account -> destination
+         {.cost = 10, .path = "sbafad"}});
 
     fillPaths(
         PaymentType::NonXrpToXrp,
-        {{1, "sxd"},   // gateway buys XRP
-         {2, "saxd"},  // source -> gateway -> book(XRP) -> dest
-         {6, "saaxd"},
-         {7, "sbxd"},
-         {8, "sabxd"},
-         {9, "sabaxd"}});
+        {{.cost = 1, .path = "sxd"},   // gateway buys XRP
+         {.cost = 2, .path = "saxd"},  // source -> gateway -> book(XRP) -> dest
+         {.cost = 6, .path = "saaxd"},
+         {.cost = 7, .path = "sbxd"},
+         {.cost = 8, .path = "sabxd"},
+         {.cost = 9, .path = "sabaxd"}});
 
     // non-XRP to non-XRP (same currency)
     fillPaths(
         PaymentType::NonXrpToSame,
         {
-            {1, "sad"},   // source -> gateway -> destination
-            {1, "sfd"},   // source -> book -> destination
-            {4, "safd"},  // source -> gateway -> book -> destination
-            {4, "sfad"},
-            {5, "saad"},
-            {5, "sbfd"},
-            {6, "sxfad"},
-            {6, "safad"},
-            {6, "saxfd"},  // source -> gateway -> book to XRP -> book ->
-                           // destination
-            {6, "saxfad"},
-            {6, "sabfd"},  // source -> gateway -> book -> book -> destination
-            {7, "saaad"},
+            {.cost = 1, .path = "sad"},   // source -> gateway -> destination
+            {.cost = 1, .path = "sfd"},   // source -> book -> destination
+            {.cost = 4, .path = "safd"},  // source -> gateway -> book -> destination
+            {.cost = 4, .path = "sfad"},
+            {.cost = 5, .path = "saad"},
+            {.cost = 5, .path = "sbfd"},
+            {.cost = 6, .path = "sxfad"},
+            {.cost = 6, .path = "safad"},
+            {.cost = 6, .path = "saxfd"},  // source -> gateway -> book to XRP -> book ->
+                                           // destination
+            {.cost = 6, .path = "saxfad"},
+            {.cost = 6, .path = "sabfd"},  // source -> gateway -> book -> book -> destination
+            {.cost = 7, .path = "saaad"},
         });
 
     // non-XRP to non-XRP (different currency)
     fillPaths(
         PaymentType::NonXrpToNonXrp,
         {
-            {1, "sfad"},
-            {1, "safd"},
-            {3, "safad"},
-            {4, "sxfd"},
-            {5, "saxfd"},
-            {5, "sxfad"},
-            {5, "sbfd"},
-            {6, "saxfad"},
-            {6, "sabfd"},
-            {7, "saafd"},
-            {8, "saafad"},
-            {9, "safaad"},
+            {.cost = 1, .path = "sfad"},
+            {.cost = 1, .path = "safd"},
+            {.cost = 3, .path = "safad"},
+            {.cost = 4, .path = "sxfd"},
+            {.cost = 5, .path = "saxfd"},
+            {.cost = 5, .path = "sxfad"},
+            {.cost = 5, .path = "sbfd"},
+            {.cost = 6, .path = "saxfad"},
+            {.cost = 6, .path = "sabfd"},
+            {.cost = 7, .path = "saafd"},
+            {.cost = 8, .path = "saafad"},
+            {.cost = 9, .path = "safaad"},
         });
     /* cspell: enable */
 }

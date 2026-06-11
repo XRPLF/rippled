@@ -23,7 +23,7 @@ checkExpired(SLE const& sleCredential, NetClock::time_point const& closed);
 
 // Actually remove a credentials object from the ledger
 [[nodiscard]] TER
-deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Journal j);
+deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j);
 
 // Amendment and parameters checks for sfCredentialIDs field
 NotTEC
@@ -70,7 +70,7 @@ verifyDepositPreauth(
     ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    std::shared_ptr<SLE const> const& sleDst,
+    SLE::const_ref sleDst,
     beast::Journal j);
 
 }  // namespace xrpl
