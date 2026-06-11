@@ -72,7 +72,7 @@ TransfersNotFrozen::finalize(
      *           view.rules().enabled(fixFreezeExploit);
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
-    bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_2_0);
+    bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_3_0);
 
     for (auto const& [issue, changes] : balanceChanges_)
     {
@@ -264,15 +264,16 @@ TransfersNotFrozen::validateFrozenState(
         return true;
     }
 
-    // Pre-fixCleanup3_2_0: the isAMMLine check incorrectly blocked clawback on
+    // Pre-fixCleanup3_3_0: the isAMMLine check incorrectly blocked clawback on
     // individually-frozen or deep-frozen AMM trust lines.
-    // Post-fixCleanup3_2_0: AMMClawbacks are allowed to override all freeze types.
+    // Post-fixCleanup3_3_0: AMMClawbacks are allowed to override all freeze types.
     bool const isAMMLine = !fixOverrideFreeze && change.line->isFlag(lsfAMMNode);
     if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, OverrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
-                        << " a frozen trustline for AMMClawback " << tx.getTransactionID();
+                        << " a frozen trustline for a freeze privileged transaction "
+                        << tx.getTransactionID();
         return true;
     }
 
