@@ -164,7 +164,7 @@ class MatrixEntry:
     image: str = ""  # container image; empty for macOS/Windows (runs natively)
     compiler: str = ""  # compiler name ("gcc" or "clang"); empty for macOS/Windows
     generator: str = ""  # CMake generator; empty selects Ninja (Linux/macOS)
-    compiler_version: str = ""  # Conan msvc compiler.version; empty auto-detects
+    compiler_version: str = ""  # Conan MSVC compiler.version; empty auto-detects
 
 
 @dataclasses.dataclass
