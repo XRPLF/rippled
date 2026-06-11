@@ -46,7 +46,6 @@ flowchart TB
 
     subgraph impl["Implementation"]
         strategy["03-implementation-strategy.md"]
-        code["04-code-samples.md"]
         config["05-configuration-reference.md"]
     end
 
@@ -55,7 +54,6 @@ flowchart TB
         backends["07-observability-backends.md"]
         appendix["08-appendix.md"]
         secure["secure-OTel.md"]
-        poc["POC_taskList.md"]
     end
 
     overview --> fundamentals
@@ -66,13 +64,11 @@ flowchart TB
     fund --> arch
     arch --> design
     design --> strategy
-    strategy --> code
-    code --> config
+    strategy --> config
     config --> phases
     phases --> backends
     backends --> appendix
     backends --> secure
-    phases --> poc
 
     style overview fill:#1b5e20,stroke:#0d3d14,color:#fff,stroke-width:2px
     style fundamentals fill:#00695c,stroke:#004d40,color:#fff
@@ -83,13 +79,11 @@ flowchart TB
     style arch fill:#0d47a1,stroke:#082f6a,color:#fff
     style design fill:#0d47a1,stroke:#082f6a,color:#fff
     style strategy fill:#bf360c,stroke:#8c2809,color:#fff
-    style code fill:#bf360c,stroke:#8c2809,color:#fff
     style config fill:#bf360c,stroke:#8c2809,color:#fff
     style phases fill:#4a148c,stroke:#2e0d57,color:#fff
     style backends fill:#4a148c,stroke:#2e0d57,color:#fff
     style appendix fill:#4a148c,stroke:#2e0d57,color:#fff
     style secure fill:#4a148c,stroke:#2e0d57,color:#fff
-    style poc fill:#4a148c,stroke:#2e0d57,color:#fff
 ```
 
 </div>
@@ -104,13 +98,11 @@ flowchart TB
 | **1**   | [Architecture Analysis](./01-architecture-analysis.md)     | xrpld component analysis, trace points, instrumentation priorities     |
 | **2**   | [Design Decisions](./02-design-decisions.md)               | SDK selection, exporters, span naming, attributes, context propagation |
 | **3**   | [Implementation Strategy](./03-implementation-strategy.md) | Directory structure, key principles, performance optimization          |
-| **4**   | [Code Samples](./04-code-samples.md)                       | C++ implementation examples for core infrastructure and key modules    |
 | **5**   | [Configuration Reference](./05-configuration-reference.md) | xrpld config, CMake integration, Collector configurations              |
 | **6**   | [Implementation Phases](./06-implementation-phases.md)     | 5-phase timeline, tasks, risks, success metrics                        |
 | **7**   | [Observability Backends](./07-observability-backends.md)   | Backend selection guide and production architecture                    |
 | **8**   | [Appendix](./08-appendix.md)                               | Glossary, references, version history                                  |
 | **Sec** | [Securing the OTel Pipeline](./secure-OTel.md)             | Threat model and hardening (mTLS, peer trace-context validation)       |
-| **POC** | [POC Task List](./POC_taskList.md)                         | Proof of concept tasks for RPC tracing end-to-end demo                 |
 
 ---
 
@@ -155,22 +147,6 @@ The telemetry code is organized under `include/xrpl/telemetry/` for headers and 
 Performance optimization strategies include head sampling fixed at 100% (intentionally not configurable, so trace keep/drop decisions stay coherent across nodes), tail-based sampling at the collector for errors and slow traces to reduce volume, batch export to reduce network overhead, and conditional instrumentation that compiles to no-ops when disabled.
 
 ➡️ **[Read full Implementation Strategy](./03-implementation-strategy.md)**
-
----
-
-## 4. Code Samples
-
-C++ implementation examples are provided for the core telemetry infrastructure and key modules:
-
-- `Telemetry.h` - Core interface for tracer access and span creation
-- `SpanGuard.h` - RAII wrapper for automatic span lifecycle management with `discard()` support
-- `DiscardFlag.h` - Thread-local flag for span discard signaling between SpanGuard and FilteringSpanProcessor
-- `SpanGuard.cpp` - Pimpl implementation confining all OTel SDK types
-- Protocol Buffer extensions for trace context propagation
-- Module-specific instrumentation (RPC, Consensus, P2P, JobQueue)
-- Remaining modules (PathFinding, TxQ, Validator, etc.) follow the same patterns
-
-➡️ **[View all Code Samples](./04-code-samples.md)**
 
 ---
 
@@ -229,14 +205,6 @@ The appendix contains a glossary of OpenTelemetry and xrpld-specific terms, refe
 Threat model and hardening guidance for production deployments where xrpld nodes ship telemetry to a centrally-hosted collector across an untrusted network. Covers the two attack surfaces (collector ingress and peer trace-context spoofing) and the chosen defenses: mTLS as primary collector auth, NetworkPolicy as defense-in-depth, and source-side validation plus per-peer rate limiting for the `protocol::TraceContext` field on peer messages.
 
 ➡️ **[View Securing the OTel Pipeline](./secure-OTel.md)**
-
----
-
-## POC Task List
-
-A step-by-step task list for building a minimal end-to-end proof of concept that demonstrates distributed tracing in xrpld. The POC scope is limited to RPC tracing — showing request traces flowing from xrpld through an OpenTelemetry Collector into Tempo, viewable in Grafana.
-
-➡️ **[View POC Task List](./POC_taskList.md)**
 
 ---
 

@@ -52,19 +52,22 @@
 
     2. Child span for a sub-operation (scoped child):
     @code
-        auto parent = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
+        auto parent = SpanGuard::span(
+            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
         {
-            auto child = parent.childSpan("tx.apply");
-            child.setAttribute("tx_type", txType);
+            auto child = parent.childSpan(rpc_span::op::process);
+            child.setAttribute(rpc_span::attr::version, apiVersion);
             // child ends here
         }
     @endcode
 
     3. Unrelated span (cross-scope, same thread):
     @code
-        // Transactions and RPC can be active simultaneously
-        auto txSpan = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
-        auto rpcSpan = SpanGuard::span(TraceCategory::Rpc, "rpc", "info");
+        // gRPC and RPC handlers can be active simultaneously
+        auto grpcSpan = SpanGuard::span(
+            TraceCategory::Rpc, grpc_span::prefix::grpc, grpc_span::attr::method);
+        auto rpcSpan = SpanGuard::span(
+            TraceCategory::Rpc, rpc_span::prefix::command, commandName);
         // both spans end on scope exit
     @endcode
 
@@ -74,7 +77,7 @@
         auto ctx = parentGuard.captureContext();
 
         // Thread B: create child span with explicit parent
-        auto child = SpanGuard::childSpan("async.work", ctx);
+        auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
     @endcode
 
     @note Thread safety: The Telemetry interface is safe for concurrent reads

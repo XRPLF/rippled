@@ -279,6 +279,7 @@ xrpld.consensus > xrpl.basics
 xrpld.consensus > xrpl.json
 xrpld.consensus > xrpl.ledger
 xrpld.consensus > xrpl.protocol
+xrpld.consensus > xrpl.telemetry
 xrpld.core > xrpl.basics
 xrpld.core > xrpl.config
 xrpld.core > xrpl.core

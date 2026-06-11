@@ -78,46 +78,46 @@ All spans instrumented in xrpld, grouped by subsystem:
 
 ### Transaction Spans (Phase 3)
 
-| Span Name    | Source File    | Attributes                                                                             | Description                           |
-| ------------ | -------------- | -------------------------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp | `xrpl.tx.hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied` | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp    | `xrpl.peer.id`, `xrpl.tx.hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`   | Transaction received from peer relay  |
+| Span Name    | Source File    | Attributes                                                                        | Description                           |
+| ------------ | -------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process` | NetworkOPs.cpp | `tx_hash`, `local`, `path`, `tx_type`, `fee`, `sequence`, `ter_result`, `applied` | Transaction submission and processing |
+| `tx.receive` | PeerImp.cpp    | `peer_id`, `tx_hash`, `tx_type`, `peer_version`, `suppressed`, `tx_status`        | Transaction received from peer relay  |
 
 ### Transaction Queue Spans (Phase 3)
 
-| Span Name          | Source File | Attributes                                                    | Description                                        |
-| ------------------ | ----------- | ------------------------------------------------------------- | -------------------------------------------------- |
-| `txq.enqueue`      | TxQ.cpp     | `xrpl.tx.hash`, `tx_type`                                     | Transaction enqueue decision (child of tx.process) |
-| `txq.apply_direct` | TxQ.cpp     | --                                                            | Direct apply attempt (bypassing queue)             |
-| `txq.batch_clear`  | TxQ.cpp     | --                                                            | Batch clear of queued transactions for an account  |
-| `txq.accept`       | TxQ.cpp     | `queue_size`, `ledger_changed`                                | Ledger-close accept loop over queued transactions  |
-| `txq.accept_tx`    | TxQ.cpp     | `xrpl.tx.hash`, `retries_remaining`, `ter_code`, `txq_status` | Per-transaction apply during accept                |
-| `txq.cleanup`      | TxQ.cpp     | `xrpl.ledger.seq`                                             | Post-close cleanup of expired queue entries        |
+| Span Name          | Source File | Attributes                                               | Description                                        |
+| ------------------ | ----------- | -------------------------------------------------------- | -------------------------------------------------- |
+| `txq.enqueue`      | TxQ.cpp     | `tx_hash`, `tx_type`                                     | Transaction enqueue decision (child of tx.process) |
+| `txq.apply_direct` | TxQ.cpp     | --                                                       | Direct apply attempt (bypassing queue)             |
+| `txq.batch_clear`  | TxQ.cpp     | --                                                       | Batch clear of queued transactions for an account  |
+| `txq.accept`       | TxQ.cpp     | `queue_size`, `ledger_changed`                           | Ledger-close accept loop over queued transactions  |
+| `txq.accept_tx`    | TxQ.cpp     | `tx_hash`, `retries_remaining`, `ter_code`, `txq_status` | Per-transaction apply during accept                |
+| `txq.cleanup`      | TxQ.cpp     | `ledger_seq`                                             | Post-close cleanup of expired queue entries        |
 
 ### Consensus Spans (Phase 4)
 
-| Span Name                      | Source File      | Attributes                                                                                                                                                                                                                        | Description                                                                                                                           |
-| ------------------------------ | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.round`              | RCLConsensus.cpp | `xrpl.consensus.ledger_id`, `xrpl.ledger.seq`, `xrpl.consensus.mode`, `trace_strategy`, `xrpl.consensus.round_id`                                                                                                                 | Root span for a consensus round (deterministic or random trace ID)                                                                    |
-| `consensus.phase.open`         | Consensus.h      | --                                                                                                                                                                                                                                | Open phase duration (child of round)                                                                                                  |
-| `consensus.proposal.send`      | RCLConsensus.cpp | `xrpl.consensus.round`, `is_bow_out`                                                                                                                                                                                              | Consensus proposal broadcast                                                                                                          |
-| `consensus.ledger_close`       | RCLConsensus.cpp | `xrpl.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                                          | Ledger close event                                                                                                                    |
-| `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`                                                                                                                                                                                | Establish phase duration (child of round)                                                                                             |
-| `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`                                                                                                                                                                                 | Position update and dispute resolution (see Events below)                                                                             |
-| `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `consensus_result`                                                                                                         | Consensus threshold check                                                                                                             |
-| `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                       | Ledger accepted by consensus                                                                                                          |
-| `consensus.accept.apply`       | RCLConsensus.cpp | `xrpl.ledger.seq`, `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction`, `tx_count` | Ledger application with close time details (see Events below)                                                                         |
-| `consensus.validation.send`    | RCLConsensus.cpp | `xrpl.ledger.seq`, `proposing`, `ledger_hash`, `full_validation`, `validation_sign_time`                                                                                                                                          | Validation sent after accept (follows-from link)                                                                                      |
-| `consensus.mode_change`        | RCLConsensus.cpp | `mode_old`, `mode_new`                                                                                                                                                                                                            | Consensus mode transition                                                                                                             |
-| `consensus.proposal.receive`   | PeerImp.cpp      | `trusted`, `xrpl.consensus.round`                                                                                                                                                                                                 | Proposal received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers)   |
-| `consensus.validation.receive` | PeerImp.cpp      | `trusted`, `xrpl.ledger.seq`                                                                                                                                                                                                      | Validation received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers) |
+| Span Name                      | Source File      | Attributes                                                                                                                                                                                                                   | Description                                                                                                                           |
+| ------------------------------ | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.round`              | RCLConsensus.cpp | `consensus_ledger_id`, `ledger_seq`, `consensus_mode`, `trace_strategy`, `consensus_round_id`                                                                                                                                | Root span for a consensus round (deterministic or random trace ID)                                                                    |
+| `consensus.phase.open`         | Consensus.h      | --                                                                                                                                                                                                                           | Open phase duration (child of round)                                                                                                  |
+| `consensus.proposal.send`      | RCLConsensus.cpp | `consensus_round`, `is_bow_out`                                                                                                                                                                                              | Consensus proposal broadcast                                                                                                          |
+| `consensus.ledger_close`       | RCLConsensus.cpp | `ledger_seq`, `consensus_mode`                                                                                                                                                                                               | Ledger close event                                                                                                                    |
+| `consensus.establish`          | Consensus.h      | `converge_percent`, `establish_count`, `proposers`                                                                                                                                                                           | Establish phase duration (child of round)                                                                                             |
+| `consensus.update_positions`   | Consensus.h      | `converge_percent`, `proposers`, `disputes_count`                                                                                                                                                                            | Position update and dispute resolution (see Events below)                                                                             |
+| `consensus.check`              | Consensus.h      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `consensus_result`                                                                                                    | Consensus threshold check                                                                                                             |
+| `consensus.accept`             | RCLConsensus.cpp | `proposers`, `round_time_ms`, `quorum`, `disputes_count`, `consensus_state`                                                                                                                                                  | Ledger accepted by consensus                                                                                                          |
+| `consensus.accept.apply`       | RCLConsensus.cpp | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction`, `tx_count` | Ledger application with close time details (see Events below)                                                                         |
+| `consensus.validation.send`    | RCLConsensus.cpp | `ledger_seq`, `proposing`, `ledger_hash`, `full_validation`, `validation_sign_time`                                                                                                                                          | Validation sent after accept (follows-from link)                                                                                      |
+| `consensus.mode_change`        | RCLConsensus.cpp | `mode_old`, `mode_new`                                                                                                                                                                                                       | Consensus mode transition                                                                                                             |
+| `consensus.proposal.receive`   | PeerImp.cpp      | `trusted`, `consensus_round`                                                                                                                                                                                                 | Proposal received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers)   |
+| `consensus.validation.receive` | PeerImp.cpp      | `trusted`, `ledger_seq`                                                                                                                                                                                                      | Validation received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers) |
 
 #### Consensus Span Events
 
-| Parent Span                  | Event Name        | Event Attributes                                                 | Description                                             |
-| ---------------------------- | ----------------- | ---------------------------------------------------------------- | ------------------------------------------------------- |
-| `consensus.update_positions` | `dispute.resolve` | `xrpl.tx.id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` | Emitted per dispute when votes are tallied              |
-| `consensus.accept.apply`     | `tx.included`     | `xrpl.tx.id`                                                     | Emitted per transaction included in the accepted ledger |
+| Parent Span                  | Event Name        | Event Attributes                                            | Description                                             |
+| ---------------------------- | ----------------- | ----------------------------------------------------------- | ------------------------------------------------------- |
+| `consensus.update_positions` | `dispute.resolve` | `tx_id`, `dispute_our_vote`, `dispute_yays`, `dispute_nays` | Emitted per dispute when votes are tallied              |
+| `consensus.accept.apply`     | `tx.included`     | `tx_id`                                                     | Emitted per transaction included in the accepted ledger |
 
 #### Close Time Queries (Tempo TraceQL)
 
@@ -132,10 +132,10 @@ All spans instrumented in xrpld, grouped by subsystem:
 {name="consensus.accept.apply"} | duration > 5s
 
 # Find specific ledger's consensus details
-{name="consensus.accept.apply"} | xrpl.ledger.seq = 92345678
+{name="consensus.accept.apply"} | ledger_seq = 92345678
 
 # Find all spans in a consensus round (deterministic trace strategy)
-{name="consensus.round"} | xrpl.consensus.round_id = "<round_id>"
+{name="consensus.round"} | consensus_round_id = "<round_id>"
 
 # Find dispute resolutions
 {name="consensus.update_positions"} >> {event:name="dispute.resolve"}
@@ -341,10 +341,10 @@ all its normal attributes, it just lacks a cross-node parent link.
 {name="consensus.proposal.receive"} && nestedSetParent > 0
 
 # Trace a transaction across the network by its hash
-{name=~"tx\\..*"} | xrpl.tx.hash = "<hash>"
+{name=~"tx\\..*"} | tx_hash = "<hash>"
 
 # Find all spans in a cross-node consensus trace
-{rootServiceName="xrpld"} | xrpl.consensus.round_id = "<round_id>"
+{rootServiceName="xrpld"} | consensus_round_id = "<round_id>"
 
 # Compare latency between sender and receiver for validations
 {name="consensus.validation.send" || name="consensus.validation.receive"}
@@ -376,12 +376,12 @@ Every metric carries these standard labels:
 
 Additionally, span attributes configured as dimensions in the collector become metric labels (dots → underscores):
 
-| Span Attribute        | Metric Label          | Applies To                     |
-| --------------------- | --------------------- | ------------------------------ |
-| `command`             | `xrpl_rpc_command`    | `rpc.command.*` spans          |
-| `rpc_status`          | `xrpl_rpc_status`     | `rpc.command.*` spans          |
-| `xrpl.consensus.mode` | `xrpl_consensus_mode` | `consensus.ledger_close` spans |
-| `local`               | `xrpl_tx_local`       | `tx.process` spans             |
+| Span Attribute   | Metric Label          | Applies To                     |
+| ---------------- | --------------------- | ------------------------------ |
+| `command`        | `xrpl_rpc_command`    | `rpc.command.*` spans          |
+| `rpc_status`     | `xrpl_rpc_status`     | `rpc.command.*` spans          |
+| `consensus_mode` | `xrpl_consensus_mode` | `consensus.ledger_close` spans |
+| `local`          | `xrpl_tx_local`       | `tx.process` spans             |
 
 ### Histogram Buckets
 
