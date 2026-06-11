@@ -127,7 +127,7 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
 bool
 ammEnabled(Rules const& rules)
 {
-    return rules.enabled(featureAMM) && rules.enabled(fixUniversalNumber);
+    return rules.enabled(featureAMM);
 }
 
 }  // namespace xrpl

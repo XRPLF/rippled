@@ -481,7 +481,7 @@ processors:
             - name: rpc-spans
               type: string_attribute
               string_attribute:
-                key: xrpl.rpc.command
+                key: command
                 values: [".*"]
                 enabled_regex_matching: true
             - name: latency
@@ -498,7 +498,7 @@ processors:
   attributes:
     actions:
       # Hash sensitive data
-      - key: xrpl.tx.account
+      - key: tx_account
         action: hash
       # Add deployment info
       - key: deployment.environment
@@ -674,7 +674,7 @@ datasources:
       httpMethod: GET
       tracesToLogs:
         datasourceUid: loki
-        tags: ["service.name", "xrpl.tx.hash"]
+        tags: ["service.name", "tx_hash"]
         mappedTags: [{ key: "trace_id", value: "traceID" }]
         mapTagNamesEnabled: true
         filterByTraceID: true
@@ -739,7 +739,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && span.xrpl.rpc.command != \"\"} | histogram_over_time(duration) by (span.xrpl.rpc.command)"
+          "query": "{resource.service.name=\"xrpld\" && span.command != \"\"} | histogram_over_time(duration) by (span.command)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
@@ -751,7 +751,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && status.code=error} | rate() by (span.xrpl.rpc.command)"
+          "query": "{resource.service.name=\"xrpld\" && status.code=error} | rate() by (span.command)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
@@ -763,7 +763,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && span.xrpl.rpc.command != \"\"} | avg(duration) by (span.xrpl.rpc.command) | topk(10)"
+          "query": "{resource.service.name=\"xrpld\" && span.command != \"\"} | avg(duration) by (span.command) | topk(10)"
         }
       ],
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
@@ -810,7 +810,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=\"tx.relay\"} | avg(span.xrpl.tx.relay_count)"
+          "query": "{resource.service.name=\"xrpld\" && name=\"tx.relay\"} | avg(span.relay_count)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
@@ -837,7 +837,7 @@ Common queries for xrpld traces:
 
 ```
 # Find all traces for a specific transaction hash
-{resource.service.name="xrpld" && span.xrpl.tx.hash="ABC123..."}
+{resource.service.name="xrpld" && span.tx_hash="ABC123..."}
 
 # Find slow RPC commands (>100ms)
 {resource.service.name="xrpld" && name=~"rpc.command.*"} | duration > 100ms
@@ -849,7 +849,7 @@ Common queries for xrpld traces:
 {resource.service.name="xrpld" && name="tx.validate" && status.code=error}
 
 # Find transactions relayed to many peers
-{resource.service.name="xrpld" && name="tx.relay"} | span.xrpl.tx.relay_count > 10
+{resource.service.name="xrpld" && name="tx.relay"} | span.relay_count > 10
 
 # Compare latency across nodes
 {resource.service.name="xrpld" && name="rpc.command.account_info"} | avg(duration) by (resource.service.instance.id)
@@ -909,7 +909,7 @@ In Tempo data source configuration, set up the derived field:
 jsonData:
   tracesToLogs:
     datasourceUid: loki
-    tags: ["trace_id", "xrpl.tx.hash"]
+    tags: ["trace_id", "tx_hash"]
     filterByTraceID: true
     filterBySpanID: false
 ```

@@ -39,7 +39,7 @@
     @code
         // In an RPC handler dispatch:
         auto guard = SpanGuard::span(TraceCategory::Rpc, "rpc", commandName);
-        guard.setAttribute("xrpl.rpc.command", commandName);
+        guard.setAttribute("command", commandName);
         // ... process request
         // guard destructor automatically ends the span on scope exit
     @endcode
@@ -49,7 +49,7 @@
         auto parent = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
         {
             auto child = parent.childSpan("tx.apply");
-            child.setAttribute("xrpl.tx.type", txType);
+            child.setAttribute("tx_type", txType);
             // child ends here
         }
         // parent continues, then ends here
