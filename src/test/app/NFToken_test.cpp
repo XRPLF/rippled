@@ -2236,17 +2236,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // See the impact of rounding when the nft is sold for small amounts
         // of drops.
-        for (auto numberSwitchOver : {true})
         {
-            if (numberSwitchOver)
-            {
-                env.enableFeature(fixUniversalNumber);
-            }
-            else
-            {
-                env.disableFeature(fixUniversalNumber);
-            }
-
             // An nft with a transfer fee of 1 basis point.
             uint256 const nftID = token::getNextID(env, alice, 0u, tfTransferable, 1);
             env(token::mint(alice), Txflags(tfTransferable), token::XferFee(1));
@@ -2268,7 +2258,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
             // minter sells to carol.  The payment is just small enough that
             // alice does not get any transfer fee.
-            auto pmt = numberSwitchOver ? drops(50000) : drops(99999);
+            auto pmt = drops(50000);
             STAmount carolBalance = env.balance(carol);
             uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftID, pmt), Txflags(tfSellNFToken));
@@ -2285,7 +2275,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // transfer that enables a transfer fee of 1 basis point.
             STAmount beckyBalance = env.balance(becky);
             uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
-            pmt = numberSwitchOver ? drops(50001) : drops(100000);
+            pmt = drops(50001);
             env(token::createOffer(becky, nftID, pmt), token::Owner(carol));
             env.close();
             env(token::acceptBuyOffer(carol, beckyBuyOfferIndex));

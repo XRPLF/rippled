@@ -744,7 +744,9 @@ Consensus<Adaptor>::startRoundInternal(
     // after the new round span is in place.
     if (reason == StartRoundReason::Recovered)
     {
-        adaptor_.onPhaseEvent(telemetry::consensus::span::event::phaseOpen, "open");
+        adaptor_.onPhaseEvent(
+            telemetry::consensus::span::event::phaseOpen,
+            telemetry::consensus::span::val::phaseOpen);
     }
     mode_.set(mode, adaptor_);
     now_ = now;
@@ -994,7 +996,9 @@ Consensus<Adaptor>::simulate(
     result_->proposers = prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
     phase_ = ConsensusPhase::Accepted;
-    adaptor_.onPhaseEvent(telemetry::consensus::span::event::phaseAccepted, "accepted");
+    adaptor_.onPhaseEvent(
+        telemetry::consensus::span::event::phaseAccepted,
+        telemetry::consensus::span::val::phaseAccepted);
     adaptor_.onForceAccept(
         *result_, previousLedger_, closeResolution_, rawCloseTimes_, mode_.get(), getJson(true));
     // NOLINTEND(bugprone-unchecked-optional-access)
@@ -1474,7 +1478,9 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
         }
     }
     phase_ = ConsensusPhase::Accepted;
-    adaptor_.onPhaseEvent(telemetry::consensus::span::event::phaseAccepted, "accepted");
+    adaptor_.onPhaseEvent(
+        telemetry::consensus::span::event::phaseAccepted,
+        telemetry::consensus::span::val::phaseAccepted);
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::Accepted";
     adaptor_.onAccept(
         *result_,
@@ -1508,7 +1514,9 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
     }
     openSpan_.reset();
     phase_ = ConsensusPhase::Establish;
-    adaptor_.onPhaseEvent(telemetry::consensus::span::event::phaseEstablish, "establish");
+    adaptor_.onPhaseEvent(
+        telemetry::consensus::span::event::phaseEstablish,
+        telemetry::consensus::span::val::phaseEstablish);
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::Establish";
     rawCloseTimes_.self = now_;
     peerUnchangedCounter_ = 0;
@@ -1638,7 +1646,9 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
                 span.addEvent(
                     consensus::span::event::disputeResolve,
                     {{consensus::span::attr::txId, to_string(txId)},
-                     {consensus::span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"},
+                     {consensus::span::attr::disputeOurVote,
+                      dispute.getOurVote() ? std::string_view{consensus::span::val::yes}
+                                           : std::string_view{consensus::span::val::no}},
                      {consensus::span::attr::disputeYays, yaysStr},
                      {consensus::span::attr::disputeNays, naysStr}});
             }
@@ -1831,6 +1841,38 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         j_,
         clog);
 
+    // Set span attributes before the early-return branches below so the
+    // consensus.check span carries diagnostic data even when consensus is
+    // not reached (the No / Expired paths return early).
+    span.setAttribute(consensus::span::attr::agreeCount, static_cast<int64_t>(agree));
+    span.setAttribute(consensus::span::attr::disagreeCount, static_cast<int64_t>(disagree));
+    span.setAttribute(
+        consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+    span.setAttribute(consensus::span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
+    span.setAttribute(
+        consensus::span::attr::thresholdPercent,
+        static_cast<int64_t>(adaptor_.parms().avCtConsensusPct));
+    span.setAttribute(
+        consensus::span::attr::proposersFinished, static_cast<int64_t>(currentFinished));
+    span.setAttribute(consensus::span::attr::consensusStalled, stalled);
+    span.setAttribute(
+        consensus::span::attr::establishCounter, static_cast<int64_t>(establishCounter_));
+
+    std::string_view stateStr = consensus::span::val::no;
+    if (result_->state == ConsensusState::Yes)
+    {
+        stateStr = consensus::span::val::yes;
+    }
+    else if (result_->state == ConsensusState::MovedOn)
+    {
+        stateStr = consensus::span::val::movedOn;
+    }
+    else if (result_->state == ConsensusState::Expired)
+    {
+        stateStr = consensus::span::val::expired;
+    }
+    span.setAttribute(consensus::span::attr::consensusResult, stateStr);
+
     if (result_->state == ConsensusState::No)
     {
         CLOG(clog) << "No consensus. ";
@@ -1871,35 +1913,6 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         JLOG(j_.error()) << json::Compact{getJson(true)};
         CLOG(clog) << "Unable to reach consensus " << json::Compact{getJson(true)} << ". ";
     }
-
-    span.setAttribute(consensus::span::attr::agreeCount, static_cast<int64_t>(agree));
-    span.setAttribute(consensus::span::attr::disagreeCount, static_cast<int64_t>(disagree));
-    span.setAttribute(
-        consensus::span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
-    span.setAttribute(consensus::span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
-    span.setAttribute(
-        consensus::span::attr::thresholdPercent,
-        static_cast<int64_t>(adaptor_.parms().avCtConsensusPct));
-    span.setAttribute(
-        consensus::span::attr::proposersFinished, static_cast<int64_t>(currentFinished));
-    span.setAttribute(consensus::span::attr::consensusStalled, stalled);
-    span.setAttribute(
-        consensus::span::attr::establishCounter, static_cast<int64_t>(establishCounter_));
-
-    char const* stateStr = "no";
-    if (result_->state == ConsensusState::Yes)
-    {
-        stateStr = "yes";
-    }
-    else if (result_->state == ConsensusState::MovedOn)
-    {
-        stateStr = "moved_on";
-    }
-    else if (result_->state == ConsensusState::Expired)
-    {
-        stateStr = "expired";
-    }
-    span.setAttribute(consensus::span::attr::consensusResult, stateStr);
 
     CLOG(clog) << "Consensus has been reached. ";
     // NOLINTEND(bugprone-unchecked-optional-access)

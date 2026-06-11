@@ -192,8 +192,17 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
             rpc_span::attr::rpcStatus,
             ret ? std::string_view{rpc_span::val::error}
                 : std::string_view{rpc_span::val::success});
-        if (!ret)
+        // Reflect the result in the OTel span status, not just the attribute,
+        // so non-exception RPC errors (rpcTOO_BUSY, rpcNO_PERMISSION, ...) are
+        // visible to {status.code=error} queries.
+        if (ret)
+        {
+            span.setError(rpc_span::val::error);
+        }
+        else
+        {
             span.setOk();
+        }
         return ret;
     }
     catch (std::exception& e)
@@ -238,6 +247,7 @@ doCommand(RPC::JsonContext& context, json::Value& result)
         // "unknown" name only when the request truly omits both fields.
         auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
         span.setAttribute(rpc_span::attr::command, cmdName.c_str());
+        span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::error);
         span.setError(getErrorInfo(error).token.cStr());
 
         injectError(error, result);

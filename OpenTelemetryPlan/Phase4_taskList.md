@@ -6,6 +6,13 @@
 >
 > **Branch**: `pratik/otel-phase4-consensus-tracing` (from `pratik/otel-phase3-tx-tracing`)
 
+> **Note on attribute names**: the `xrpl.<domain>.<field>` keys shown below are
+> written in the older dotted form for readability — it mirrors how the fully
+> qualified attribute reads in a Tempo trace view. The implemented keys follow
+> the convention in [CONTRIBUTING.md](../CONTRIBUTING.md#telemetry-span-attribute-naming)
+> (underscore form, e.g. `consensus_round`, `consensus_mode`); the
+> `*SpanNames.h` constants are the single source of truth.
+
 ### Related Plan Documents
 
 | Document                                                     | Relevance                                                   |
@@ -82,7 +89,7 @@
 
 - In `Adaptor::propose()`:
   - Creates `consensus.proposal.send` span via `SpanGuard::span()`
-  - Sets `xrpl.consensus.round` attribute (kept — rule 5)
+  - Sets `xrpl.consensus.round` attribute
 
 - In `PeerImp::onMessage(TMProposeSet)`:
   - Creates `consensus.proposal.receive` span
@@ -815,8 +822,8 @@ and OFF, and don't affect consensus timing.
 
 ```cpp
 // Round-level (on consensus.round) — ALL IMPLEMENTED
-"xrpl.consensus.round_id"             = int64    // Consensus round number (kept — rule 5)
-"xrpl.consensus.ledger_id"            = string   // previousLedger.id() hash (kept — rule 5)
+"xrpl.consensus.round_id"             = int64    // Consensus round number
+"xrpl.consensus.ledger_id"            = string   // previousLedger.id() hash
 "trace_strategy"                       = string   // "deterministic" or "attribute"
 
 // Establish-level — IMPLEMENTED
