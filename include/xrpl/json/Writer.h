@@ -161,7 +161,7 @@ public:
      *  While the JSON spec doesn't explicitly disallow this, you should avoid
      *  calling this method twice with the same tag for the same object.
      *
-     *  If CHECK_JSON_WRITER is defined, this function throws an exception if if
+     *  If CHECK_JSON_WRITER is defined, this function throws an exception if
      *  the tag you use has already been used in this object.
      */
     template <typename Type>

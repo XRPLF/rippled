@@ -91,7 +91,7 @@ Env::AppBundle::AppBundle(
     timeKeeper = tk.get();
     // Hack so we don't have to call Config::setup
     HTTPClient::initializeSSLContext(
-        config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
+        config->sslVerifyDir, config->sslVerifyFile, config->sslVerify, debugLog());
     owned = makeApplication(std::move(config), std::move(logs), std::move(tk));
     app = owned.get();
     app->getLogs().threshold(thresh);
@@ -280,13 +280,13 @@ Env::seq(Account const& account) const
     return sle->getFieldU32(sfSequence);
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Env::le(Account const& account) const
 {
     return le(keylet::account(account.id()));
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 Env::le(Keylet const& k) const
 {
     return current()->read(k);

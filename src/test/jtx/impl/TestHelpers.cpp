@@ -172,9 +172,9 @@ pathTestEnv(beast::unit_test::Suite& suite)
     // with the search parameters that the tests were written for.
     using namespace jtx;
     return Env(suite, envconfig([](std::unique_ptr<Config> cfg) {
-                   cfg->PATH_SEARCH_OLD = 7;
-                   cfg->PATH_SEARCH = 7;
-                   cfg->PATH_SEARCH_MAX = 10;
+                   cfg->pathSearchOld = 7;
+                   cfg->pathSearch = 7;
+                   cfg->pathSearchMax = 10;
                    return cfg;
                }));
 }
@@ -262,7 +262,7 @@ findPaths(
 
     STAmount da;
     if (result.isMember(jss::destination_amount))
-        da = amountFromJson(kSfGeneric, result[jss::destination_amount]);
+        da = amountFromJson(sfGeneric, result[jss::destination_amount]);
 
     STAmount sa;
     STPathSet paths;
@@ -274,10 +274,10 @@ findPaths(
             auto const& path = alts[0u];
 
             if (path.isMember(jss::source_amount))
-                sa = amountFromJson(kSfGeneric, path[jss::source_amount]);
+                sa = amountFromJson(sfGeneric, path[jss::source_amount]);
 
             if (path.isMember(jss::destination_amount))
-                da = amountFromJson(kSfGeneric, path[jss::destination_amount]);
+                da = amountFromJson(sfGeneric, path[jss::destination_amount]);
 
             if (path.isMember(jss::paths_computed))
             {
@@ -402,7 +402,7 @@ expectOffers(
 {
     std::uint16_t cnt = 0;
     std::uint16_t matched = 0;
-    forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
+    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
         if (!sle)
             return false;
         if (sle->getType() == ltOFFER)

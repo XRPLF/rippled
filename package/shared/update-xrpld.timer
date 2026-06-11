@@ -3,7 +3,7 @@ Description=Daily xrpld update check
 
 [Timer]
 OnCalendar=*-*-* 00:00:00
-RandomizedDelaySec=24h
+RandomizedDelaySec=4h
 Persistent=true
 
 [Install]

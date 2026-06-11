@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/AmendmentTable.h>
@@ -276,8 +277,8 @@ class Feature_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg)["port_rpc"].set("admin", "");
-                    (*cfg)["port_ws"].set("admin", "");
+                    (*cfg)[Sections::kPortRpc].set(Keys::kAdmin, "");
+                    (*cfg)[Sections::kPortWs].set(Keys::kAdmin, "");
                     return cfg;
                 })};
 

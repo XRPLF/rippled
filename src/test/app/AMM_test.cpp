@@ -2625,10 +2625,6 @@ private:
         using namespace jtx;
         using namespace std::chrono;
 
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas
-        features = features - featureSingleAssetVault - featureLendingProtocol;
-
         // Auction slot initially is owned by AMM creator, who pays 0 price.
 
         // Bid 110 tokens. Pay bidMin.
@@ -3336,11 +3332,6 @@ private:
     {
         testcase("Basic Payment");
         using namespace jtx;
-
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas
-        features =
-            features - featureSingleAssetVault - featureLendingProtocol - featureLendingProtocol;
 
         // Payment 100USD for 100XRP.
         // Force one path with tfNoRippleDirect.
@@ -4342,15 +4333,10 @@ private:
     testAmendment()
     {
         testcase("Amendment");
-        FeatureBitset const all{testableAmendments()};
-        FeatureBitset const noAMM{all - featureAMM};
-        FeatureBitset const noNumber{all - fixUniversalNumber};
-        FeatureBitset const noAMMAndNumber{all - featureAMM - fixUniversalNumber};
         using namespace jtx;
+        Env env{*this, testableAmendments() - featureAMM};
 
-        for (auto const& feature : {noAMM, noNumber, noAMMAndNumber})
         {
-            Env env{*this, feature};
             fund(env, gw_, {alice_}, {USD(1'000)}, Fund::All);
             AMM amm(env, alice_, XRP(1'000), USD(1'000), Ter(temDISABLED));
 
@@ -5093,7 +5079,7 @@ private:
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
+                    cfg->fees.referenceFee = XRPAmount(1);
                     return cfg;
                 }),
                 all);
@@ -5151,7 +5137,7 @@ private:
             Env env(
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
+                    cfg->fees.referenceFee = XRPAmount(1);
                     return cfg;
                 }),
                 all);
@@ -7090,7 +7076,7 @@ private:
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->FEES.reference_fee = XRPAmount(1);
+                cfg->fees.referenceFee = XRPAmount(1);
                 return cfg;
             }),
             features);

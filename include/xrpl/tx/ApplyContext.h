@@ -93,8 +93,8 @@ public:
         std::function<void(
             uint256 const& key,
             bool isDelete,
-            std::shared_ptr<SLE const> const& before,
-            std::shared_ptr<SLE const> const& after)> const& func);
+            SLE::const_ref before,
+            SLE::const_ref after)> const& func);
 
     void
     destroyXRP(XRPAmount const& fee)

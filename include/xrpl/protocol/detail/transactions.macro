@@ -688,6 +688,7 @@ TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix,
     ({
     {sfLedgerFixType, SoeRequired},
     {sfOwner, SoeOptional},
+    {sfBookDirectory, SoeOptional},
 }))
 
 /** This transaction type creates a MPTokensIssuance instance */
