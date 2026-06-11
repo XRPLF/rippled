@@ -1869,7 +1869,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             calcNodeID(app_.getValidatorManifests().getMasterKey(publicKey))});
 
     auto consSpan = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
-    consSpan->setAttribute(telemetry::consensus::span::attr::trusted, isTrusted);
+    consSpan->setAttribute(telemetry::consensus::span::attr::proposalTrusted, isTrusted);
     consSpan->setAttribute(
         telemetry::consensus::span::attr::round, static_cast<int64_t>(set.proposeseq()));
     // First 16 hex chars (8 bytes) of each hash — enough to disambiguate
@@ -2413,7 +2413,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             val->setSeen(closeTime);
         }
         valSpan.setAttribute(peer_span::attr::ledgerHash, to_string(val->getLedgerHash()).c_str());
-        valSpan.setAttribute(peer_span::attr::validationFull, val->isFull());
+        valSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
 
         if (!isCurrent(
                 app_.getValidations().parms(),
@@ -2470,7 +2470,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
         auto consSpan =
             std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
-        consSpan->setAttribute(telemetry::consensus::span::attr::trusted, isTrusted);
+        consSpan->setAttribute(telemetry::consensus::span::attr::validationTrusted, isTrusted);
         if (val->isFieldPresent(sfLedgerSequence))
         {
             consSpan->setAttribute(
