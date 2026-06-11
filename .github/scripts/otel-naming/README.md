@@ -41,7 +41,7 @@ hardcoded allowlist:
 | B    | Every collector `spanmetrics.dimensions` name exists in the L1 key set.                                                                                                                                          |
 | C    | Every Tempo span-filter tag exists in the L1 key set.                                                                                                                                                            |
 | D    | Every dashboard PromQL label (non-builtin) exists in the L1 key set.                                                                                                                                             |
-| E    | Every runbook attribute reference exists in the L1 key set.                                                                                                                                                      |
+| E    | No dotted `xrpl.<domain>.<field>` attribute key in the runbook (only the L1 resource attrs `xrpl.network.*` may be dotted). Span names, filenames, OTel-standard keys, and metric labels are not flagged.        |
 
 Rule F runs **unconditionally** (it is a purely syntactic check on the
 call-sites and needs no `*SpanNames.h`), so a code path that calls
@@ -62,4 +62,4 @@ This keeps the check correct no matter how telemetry work is split across PRs â€
 a stacked chain, one large PR, or independent per-stage PRs where (for example)
 the collector config lands before the dashboards. The collector/Tempo/dashboard/
 runbook layers are introduced in later phases; on a branch without them, only
-the L1-intrinsic rules (A, F) run.
+the L1-intrinsic rules (A, G, F) run.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Usage: check_naming.py
+Usage: check_otel_naming.py
 This script takes no parameters and can be called from any directory inside the
 repository (it locates the repo root via `git rev-parse`).
 
@@ -51,7 +51,9 @@ Rules (each FAILS the build, when its inputs are present)
   B  Every collector spanmetrics dimension exists in the L1 key set.
   C  Every tempo span-filter tag exists in the L1 key set.
   D  Every dashboard PromQL label (non-builtin) exists in the L1 key set.
-  E  Every attribute named in the runbook tables exists in the L1 key set.
+  E  No dotted `xrpl.<domain>.<field>` attribute key in the runbook (only the
+     L1 resource attrs xrpl.network.* may be dotted). Span names, filenames,
+     OTel-standard keys, and metric labels are not flagged.
 
 Warnings (printed, but do NOT fail the build)
 ----------------------------------------------
@@ -65,7 +67,6 @@ Exit code is non-zero if any present-and-enforced rule finds a violation.
 Warnings never change the exit code.
 """
 
-import json
 import re
 import subprocess
 import sys
@@ -78,14 +79,30 @@ from typing import Dict, List, Optional, Set, Tuple
 
 
 def repo_root() -> Path:
-    """Return the repository root, so the script works from any CWD."""
-    out = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
+    """Return the repository root, so the script works from any CWD.
+
+    Exits with a readable message (not a traceback) if git is unavailable or the
+    CWD is outside a repository."""
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print(
+            "error: check_otel_naming.py must be run inside the git repository.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
     return Path(out.stdout.strip())
+
+
+def read_source(path: Path) -> str:
+    """Read a file as UTF-8, tolerating stray non-UTF-8 bytes rather than
+    crashing the whole check on one bad byte."""
+    return path.read_text(encoding="utf-8", errors="ignore")
 
 
 # ---------------------------------------------------------------------------
@@ -97,6 +114,8 @@ CONST_DEF = re.compile(r"inline\s+constexpr\s+auto\s+(\w+)\s*=\s*(.+?);", re.DOT
 MAKESTR = re.compile(r'makeStr\(\s*"([^"]*)"\s*\)')
 # A `namespace <name> {` opener, to track which namespace a constant lives in.
 NS_OPEN = re.compile(r"namespace\s+([\w:]+)\s*\{")
+# A `using ::a::b::field;` re-export inside an attr block; captures the leaf.
+USING_DECL = re.compile(r"using\s+(?:::)?[\w:]*::(\w+)\s*;")
 # Telemetry call-sites whose string arguments must be constants, not literals.
 # Require a receiver so we match real SpanGuard calls, not std::span / a math
 # `span(...)` / a bare method declaration:
@@ -109,19 +128,26 @@ CALLSITE = re.compile(
 )
 # A C++ string literal (used to flag literals inside call-site argument lists).
 STRING_LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
-# Dotted token that looks like `a.b` or `a.b.c` (lowercase + underscore words).
-DOTTED_TOKEN = re.compile(r"\b([a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+)\b")
+# A C++ line comment (`//` ... end of line) and a block comment (`/* ... */`).
+LINE_COMMENT = re.compile(r"//[^\n]*")
+BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 
 
-def strip_block_comments(text: str) -> str:
-    """Remove /* ... */ comments but KEEP /// and // line comments.
+def strip_comments(text: str) -> str:
+    """Remove C/C++ `//` line comments and `/* ... */` block comments.
 
-    Doxygen @code examples live in /** ... */ blocks, and Rule F must still see
-    the call-sites inside them, so we do NOT strip /** */ wholesale. Instead we
-    only strip C-style comments that are clearly not doc blocks is unsafe, so we
-    keep all comments and rely on call-site detection. This function currently
-    returns text unchanged and exists as a single, documented control point.
+    Used only for L1 attribute-key extraction so that a commented-out or
+    illustrative `makeStr("...")` inside a `namespace attr` block does not leak
+    into the authoritative key set. Rule F deliberately does NOT strip comments
+    — it must still see `@code` doc-comment examples so their call-site
+    arguments are held to the constant-only convention.
+
+    String literals are not specially handled; a `//` or `/*` appearing inside a
+    string is vanishingly rare in the *SpanNames.h headers and would at worst
+    drop a constant from L1 (a conservative direction).
     """
+    text = BLOCK_COMMENT.sub("", text)
+    text = LINE_COMMENT.sub("", text)
     return text
 
 
@@ -189,17 +215,34 @@ def build_global_symbols(headers: List[Path]) -> Dict[str, str]:
     symbols: Dict[str, str] = {}
     ordered = sorted(headers, key=lambda p: (p.name != "SpanNames.h", str(p)))
     # Two passes: the first seeds segments, the second resolves dependents.
+    # Comments are stripped so a commented-out constant cannot seed the table.
     for _ in range(2):
         for h in ordered:
-            resolve_constants(h.read_text(), symbols)
+            resolve_constants(strip_comments(read_source(h)), symbols)
     return symbols
 
 
 def split_top_level_args(s: str) -> List[str]:
-    """Split a comma-separated arg list, respecting nested parentheses."""
+    """Split a comma-separated arg list, respecting nested parentheses and
+    ignoring parens/commas that appear inside a "string literal" (so a value
+    like `setAttribute(k, ",")` does not get mis-split)."""
     args, depth, cur = [], 0, ""
+    in_str = False
+    escaped = False
     for ch in s:
-        if ch == "(":
+        if in_str:
+            cur += ch
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+            cur += ch
+        elif ch == "(":
             depth += 1
             cur += ch
         elif ch == ")":
@@ -215,38 +258,54 @@ def split_top_level_args(s: str) -> List[str]:
     return args
 
 
+def attr_namespace_spans(text: str) -> List[str]:
+    """Return the source text of each `namespace attr { ... }` block in `text`.
+
+    Brace-matched over the whole (comment-stripped) text, so a definition that
+    wraps across several physical lines is contained in one span. Nested braces
+    inside the block are balanced correctly."""
+    spans: List[str] = []
+    for opener in NS_OPEN.finditer(text):
+        if opener.group(1).split("::")[-1] != "attr":
+            continue
+        # Walk from the opening brace, balancing nesting to the matching close.
+        i = opener.end()  # one char past the namespace's `{`
+        depth = 1
+        start = i
+        while i < len(text) and depth > 0:
+            c = text[i]
+            if c == "{":
+                depth += 1
+            elif c == "}":
+                depth -= 1
+            i += 1
+        spans.append(text[start : i - 1])
+    return spans
+
+
 def attr_keys_from_header(path: Path, symbols: Dict[str, str]) -> Set[str]:
     """Return the set of attribute-key strings declared in a header's
     `namespace attr { ... }` block(s). `symbols` is the global cross-file
-    table so `join(seg::rpc, ...)` style dotted attrs resolve correctly."""
-    text = path.read_text()
+    table so `join(seg::rpc, ...)` style dotted attrs resolve correctly.
+
+    Comments are stripped first (a commented constant must not enter L1), and
+    each attr block is brace-matched over the whole text so multi-line
+    `inline constexpr auto NAME = join(\\n  ...);` definitions are captured."""
+    text = strip_comments(read_source(path))
     keys: Set[str] = set()
-    # Walk the file tracking namespace nesting to find `namespace attr` blocks.
-    depth = 0
-    attr_depth: Optional[int] = None
-    for line in text.splitlines():
-        opener = NS_OPEN.search(line)
-        if opener:
-            if opener.group(1).split("::")[-1] == "attr":
-                attr_depth = depth
-            depth += 1
-            continue
-        # Count brace nesting crudely for namespace close detection.
-        depth += line.count("{") - line.count("}")
-        if attr_depth is not None and depth <= attr_depth:
-            attr_depth = None
-            continue
-        if attr_depth is not None:
-            md = CONST_DEF.search(line)
-            if md:
-                # Resolve the named constant against the global symbol table;
-                # this captures both makeStr("x") and join(seg::y, ...) forms.
-                val = symbols.get(md.group(1))
-                if val is not None:
-                    keys.add(val)
-            else:
-                for ms in MAKESTR.finditer(line):
-                    keys.add(ms.group(1))
+    for block in attr_namespace_spans(text):
+        for md in CONST_DEF.finditer(block):
+            # Resolve the named constant against the global symbol table; this
+            # captures makeStr("x"), join(seg::y, ...), and `using ::a::b` forms.
+            val = symbols.get(md.group(1))
+            if val is not None:
+                keys.add(val)
+        # `using ::ns::attr::field;` re-exports a base constant into this attr
+        # block (e.g. RpcSpanNames imports txHash). Resolve the imported name.
+        for um in USING_DECL.finditer(block):
+            val = symbols.get(um.group(1))
+            if val is not None:
+                keys.add(val)
     return keys
 
 
@@ -373,20 +432,28 @@ def derive_dotted_resource_keys(
             allow |= {k for k in keys if "." in k}
     tele = root / "src" / "libxrpl" / "telemetry" / "Telemetry.cpp"
     if tele.is_file():
-        text = tele.read_text()
-        # semconv::service::kServiceName -> service.name, etc.
+        text = read_source(tele)
+        # semconv::<group>::k<CamelKey> -> the dotted OTel-standard key. The
+        # CamelKey already embeds the group, e.g. service::kServiceInstanceId
+        # -> service.instance.id. Split the CamelCase name into dotted lowercase
+        # segments; if it does not lead with the group, prepend the group.
         for m in re.finditer(r"semconv::(\w+)::k(\w+)", text):
-            group = m.group(1)  # e.g. "service"
-            field = camel_to_snake(m.group(2)).replace("service_", "", 1)
-            allow.add(f"{group}.{field.replace('_', '.')}")
+            group, camel = m.group(1), m.group(2)
+            segments = camel_to_dotsegments(camel)
+            if segments and segments[0] == group:
+                allow.add(".".join(segments))
+            else:
+                allow.add(group + "." + ".".join(segments))
         report.ok(f"resource dotted-key allowlist derived: {sorted(allow)}")
     else:
         report.skip("resource-derive", "Telemetry.cpp not present")
     return allow
 
 
-def camel_to_snake(s: str) -> str:
-    return re.sub(r"(?<!^)(?=[A-Z])", "_", s).lower()
+def camel_to_dotsegments(s: str) -> List[str]:
+    """Split a CamelCase identifier into lowercase dot-segment parts, e.g.
+    `ServiceInstanceId` -> ['service', 'instance', 'id']."""
+    return [w.lower() for w in re.findall(r"[A-Z][a-z0-9]*", s)]
 
 
 def run_rule_a(
@@ -460,7 +527,7 @@ def spanname_symbol_names(headers: List[Path]) -> Set[str]:
     constant referenced at a call-site actually lives in a SpanNames header."""
     names: Set[str] = set()
     for h in headers:
-        for m in CONST_DEF.finditer(h.read_text(errors="ignore")):
+        for m in CONST_DEF.finditer(strip_comments(read_source(h))):
             names.add(m.group(1))
     return names
 
@@ -487,7 +554,7 @@ def run_rule_f(root: Path, report: Report, header_symbols: Set[str]) -> None:
     for path in sorted(sources):
         if path.name.endswith("SpanNames.h") or is_test_path(path):
             continue
-        text = path.read_text(errors="ignore")
+        text = read_source(path)
         rel = path.relative_to(root)
         for call, arglist, lineno in iter_calls(text):
             positions = CONSTANT_ARG_POSITIONS.get(call, set())
@@ -538,11 +605,24 @@ def iter_calls(text: str):
     for m in CALLSITE.finditer(text):
         name = m.group(1)
         # Walk from the opening paren, balancing nesting to find the close.
+        # Parens inside a "string literal" are ignored so a value such as
+        # `setAttribute(k, ")")` does not close the call early.
         i = m.end()  # one char past the '('
         depth = 1
+        in_str = False
+        escaped = False
         while i < len(text) and depth > 0:
             c = text[i]
-            if c == "(":
+            if in_str:
+                if escaped:
+                    escaped = False
+                elif c == "\\":
+                    escaped = True
+                elif c == '"':
+                    in_str = False
+            elif c == '"':
+                in_str = True
+            elif c == "(":
                 depth += 1
             elif c == ")":
                 depth -= 1
@@ -557,7 +637,7 @@ def run_rule_b_collector(root: Path, l1_keys: Set[str], report: Report) -> None:
     if not path.is_file():
         report.skip("B", "collector config not present")
         return
-    text = path.read_text()
+    text = read_source(path)
     if "spanmetrics" not in text:
         report.skip("B", "no spanmetrics block in collector config")
         return
@@ -593,7 +673,7 @@ def run_rule_c_tempo(root: Path, l1_keys: Set[str], report: Report) -> None:
     if not path.is_file():
         report.skip("C", "tempo.yaml not present")
         return
-    text = path.read_text()
+    text = read_source(path)
     tags = re.findall(r"(?:tag|attribute)\s*:\s*([A-Za-z0-9_.]+)", text)
     span_tags = [t for t in tags if not t.startswith(("service.", "span."))]
     if not span_tags:
@@ -632,7 +712,7 @@ def run_rule_d_dashboards(root: Path, l1_keys: Set[str], report: Report) -> None
     found = False
     for f in files:
         try:
-            text = f.read_text()
+            text = read_source(f)
         except OSError:
             continue
         # PromQL `sum by (a, b)` and `{label="..."}` references.
@@ -660,21 +740,27 @@ def run_rule_e_runbook(root: Path, l1_keys: Set[str], report: Report) -> None:
     if not l1_keys:
         report.skip("E", "no L1 key set to validate against")
         return
-    text = path.read_text()
+    text = read_source(path)
     found = False
-    # Attribute names appear as `code` spans in the runbook's reference tables.
-    for m in re.finditer(r"`([a-z][a-z0-9_]*(?:\.[a-z0-9_]+)*)`", text):
+    # Only the dotted `xrpl.<domain>.<field>` attribute form is a violation. The
+    # `xrpl.`-with-trailing-dot anchor is the discriminator: it matches the old
+    # dotted attribute convention being migrated away from, while everything
+    # else legitimately dotted in the runbook does NOT match it —
+    #   * span names      (`consensus.round`, `tx.process`)   no `xrpl.` prefix
+    #   * filenames       (`xrpld.cfg`, `RCLConsensus.cpp`)   `xrpld.`/`.cpp`, not `xrpl.`
+    #   * OTel-standard   (`service.name`, `http.method`)     no `xrpl.` prefix
+    #   * metric labels   (`xrpl_rpc_command`)                underscore, no dot
+    # Legitimate dotted resource attrs (`xrpl.network.id`/`.type`) are in L1 and
+    # are skipped. A dotted `xrpl.` token absent from L1 is a genuine doc/code
+    # mismatch (e.g. `xrpl.tx.hash` where the code emits `tx_hash`).
+    for m in re.finditer(r"`(xrpl\.[a-z][a-z0-9_.]*)`", text):
         token = m.group(1)
-        # Only consider tokens that look like attribute keys (underscore form or
-        # a dotted form), and skip obvious span names / prose words.
-        if "_" in token or "." in token:
-            if token in l1_keys:
-                continue
-            if "." in token:  # dotted: must be a resource key in L1
-                found = True
-                report.violation(
-                    "E", str(path.relative_to(root)), token, "underscore, not dotted"
-                )
+        if token in l1_keys:  # legitimate dotted resource attr (xrpl.network.*)
+            continue
+        found = True
+        report.violation(
+            "E", str(path.relative_to(root)), token, "underscore, not dotted"
+        )
     if not found:
         report.ok("E: runbook attribute references consistent with L1")
 
