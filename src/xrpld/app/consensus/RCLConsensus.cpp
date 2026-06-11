@@ -589,7 +589,8 @@ RCLConsensus::Adaptor::doAccept(
         static_cast<int64_t>(
             std::chrono::duration_cast<std::chrono::milliseconds>(closeResolution).count()));
     doAcceptSpan.setAttribute(
-        cs::attr::consensusState, std::string(consensusFail ? "moved_on" : "finished"));
+        cs::attr::consensusState,
+        consensusFail ? std::string_view{cs::val::movedOn} : std::string_view{cs::val::finished});
     doAcceptSpan.setAttribute(cs::attr::proposing, proposing);
     doAcceptSpan.setAttribute(
         cs::attr::roundTimeMs, static_cast<int64_t>(result.roundTime.read().count()));
@@ -1298,7 +1299,7 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     roundSpan_->setAttribute(cs::attr::previousProposers, static_cast<int64_t>(prevProposers_));
     roundSpan_->setAttribute(
         cs::attr::previousRoundTimeMs, static_cast<int64_t>(prevRoundTime_.load().count()));
-    roundSpan_->setAttribute(cs::attr::consensusPhase, "open");
+    roundSpan_->setAttribute(cs::attr::consensusPhase, cs::val::phaseOpen);
 
     roundSpan_->addEvent(cs::event::phaseOpen);
 

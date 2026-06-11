@@ -3,10 +3,12 @@
 # Access Grafana at http://localhost:3000, then use Explore -> Tempo
 # to browse xrpld traces using TraceQL.
 #
-# Search filters provide quick-start dropdowns in the Explore UI for the most
-# common investigation entry points. This is not an exhaustive attribute list —
-# use TraceQL autocomplete or see OpenTelemetryPlan/09-data-collection-reference.md §4
-# for the full attribute inventory and example queries.
+# Search filters provide pre-configured dropdowns in the Explore UI.
+# Each phase adds filters for the span attributes it introduces.
+# Phase 1b (infra): Base filters — node identity, service, span name, status.
+# Phase 2 (RPC):    RPC command, status, role filters.
+# Phase 3 (TX):     Transaction hash, local/peer origin, status.
+# Phase 4 (Cons):   Consensus mode, round, ledger sequence, close time.
 
 apiVersion: 1
 
@@ -38,39 +40,117 @@ datasources:
         spanEndTimeShift: "1h"
       search:
         filters:
-          # service.instance.id: unique node identifier (public key or configured name).
+          # --- Node identification filters ---
+          # service.name: logical service name (default: "xrpld").
+          #   Useful when running multiple service types in the same collector.
+          - id: service-name
+            tag: service.name
+            operator: "="
+            scope: resource
+            type: static
+          # service.instance.id: unique node identifier — configurable via
+          #   the service_instance_id setting in [telemetry], defaults to the
+          #   node's public key. E.g. "Node-1" or "nHB1X37...".
           - id: node-id
             tag: service.instance.id
             operator: "="
             scope: resource
             type: static
-          # name: span operation name (e.g., "rpc.command.server_info").
+          # service.version: xrpld build version (e.g., "2.4.0-b1").
+          #   Filter traces from specific software releases.
+          - id: node-version
+            tag: service.version
+            operator: "="
+            scope: resource
+            type: dynamic
+          # xrpl.network.id: numeric network identifier
+          #   (0 = mainnet, 1 = testnet, 2 = devnet, etc.).
+          #   Derived from the [network_id] config section.
+          - id: network-id
+            tag: xrpl.network.id
+            operator: "="
+            scope: resource
+            type: dynamic
+          # xrpl.network.type: human-readable network name derived from
+          #   network ID ("mainnet", "testnet", "devnet", "unknown").
+          - id: network-type
+            tag: xrpl.network.type
+            operator: "="
+            scope: resource
+            type: static
+          # --- Span intrinsic filters ---
+          # name: the span operation name (e.g., "rpc.command.server_info").
+          #   Use to find traces for a specific RPC command or subsystem.
           - id: span-name
             tag: name
             operator: "="
             scope: intrinsic
             type: static
           # status: span completion status ("ok", "error", "unset").
+          #   Filter for failed operations to diagnose errors.
           - id: span-status
             tag: status
             operator: "="
             scope: intrinsic
             type: static
-          # command: RPC command name (e.g., "server_info", "submit").
+          # duration: span wall-clock duration. Use with ">" operator
+          #   to find slow operations (e.g., duration > 500ms).
+          - id: span-duration
+            tag: duration
+            operator: ">"
+            scope: intrinsic
+            type: static
+          # Phase 2: RPC tracing filters
           - id: rpc-command
             tag: command
             operator: "="
             scope: span
-            type: static
-          # tx_hash: transaction hash — direct lookup for a known transaction.
+            type: dynamic
+          - id: rpc-status
+            tag: rpc_status
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: rpc-role
+            tag: rpc_role
+            operator: "="
+            scope: span
+            type: dynamic
+          # Phase 3: Transaction tracing filters
           - id: tx-hash
             tag: tx_hash
             operator: "="
             scope: span
             type: static
+          - id: tx-origin
+            tag: local
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-status
+            tag: tx_status
+            operator: "="
+            scope: span
+            type: dynamic
           # tx_type: transaction type (e.g., "Payment", "OfferCreate").
           - id: tx-type
             tag: tx_type
+            operator: "="
+            scope: span
+            type: static
+          # Phase 4: Consensus tracing filters
+          - id: consensus-mode
+            tag: consensus_mode
+            operator: "="
+            scope: span
+            type: static
+          - id: consensus-round
+            tag: consensus_round
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-ledger-seq
+            tag: ledger_seq
             operator: "="
             scope: span
             type: static
@@ -80,3 +160,69 @@ datasources:
             operator: "="
             scope: span
             type: static
+          - id: consensus-close-time-correct
+            tag: close_time_correct
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-state
+            tag: consensus_state
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-close-resolution
+            tag: close_resolution_ms
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-proposers
+            tag: proposers
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-result
+            tag: consensus_result
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-mode-old
+            tag: mode_old
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-mode-new
+            tag: mode_new
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-ledger-id
+            tag: consensus_ledger_id
+            operator: "="
+            scope: span
+            type: static
+          # Phase 3/4: Additional transaction and queue filters
+          - id: tx-path
+            tag: path
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-suppressed
+            tag: suppressed
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: peer-version
+            tag: peer_version
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: txq-status
+            tag: txq_status
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: txq-ter-code
+            tag: ter_code
+            operator: "="
+            scope: span
+            type: dynamic

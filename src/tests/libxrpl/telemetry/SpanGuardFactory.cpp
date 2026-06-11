@@ -30,8 +30,12 @@ TEST(SpanGuardFactory, category_span_returns_null_when_disabled)
     auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "test");
     EXPECT_FALSE(span);
 
-    span.setAttribute("xrpl.rpc.command", "test");
-    span.setAttribute("xrpl.rpc.status", "success");
+    // Attribute keys use the underscore convention for span attributes (the
+    // dotted xrpl.<domain>. form is reserved for resource attributes). The
+    // canonical constants live in the xrpld-level *SpanNames.h headers, which a
+    // libxrpl test cannot include, so the keys are written as literals here.
+    span.setAttribute("command", "test");
+    span.setAttribute("rpc_status", "success");
 }
 
 TEST(SpanGuardFactory, child_span_null_when_no_parent)
@@ -85,23 +89,26 @@ TEST(SpanGuardFactory, discard_safe_on_null)
 
 TEST(SpanGuardFactory, consensus_close_time_attributes)
 {
-    // Verify the consensus attribute pattern compiles and
-    // doesn't crash with null SpanGuard.
+    // Verify the consensus attribute pattern compiles and doesn't crash with a
+    // null SpanGuard. Attribute keys/values use the underscore convention; the
+    // canonical consensus::span constants are defined in the xrpld-level
+    // ConsensusSpanNames.h, which a libxrpl test cannot include, so the keys are
+    // written as literals here.
     {
         auto span = telemetry::SpanGuard::span(
             telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept.apply");
-        span.setAttribute("xrpl.consensus.ledger.seq", static_cast<int64_t>(42));
-        span.setAttribute("xrpl.consensus.close_time", static_cast<int64_t>(780000000));
-        span.setAttribute("xrpl.consensus.close_time_correct", true);
-        span.setAttribute("xrpl.consensus.close_resolution_ms", static_cast<int64_t>(30000));
-        span.setAttribute("xrpl.consensus.state", std::string("finished"));
-        span.setAttribute("xrpl.consensus.proposing", true);
-        span.setAttribute("xrpl.consensus.round_time_ms", static_cast<int64_t>(3500));
+        span.setAttribute("ledger_seq", static_cast<int64_t>(42));
+        span.setAttribute("close_time", static_cast<int64_t>(780000000));
+        span.setAttribute("close_time_correct", true);
+        span.setAttribute("close_resolution_ms", static_cast<int64_t>(30000));
+        span.setAttribute("consensus_state", std::string("finished"));
+        span.setAttribute("proposing", true);
+        span.setAttribute("round_time_ms", static_cast<int64_t>(3500));
     }
     {
         auto span = telemetry::SpanGuard::span(
             telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept.apply");
-        span.setAttribute("xrpl.consensus.close_time_correct", false);
-        span.setAttribute("xrpl.consensus.state", std::string("moved_on"));
+        span.setAttribute("close_time_correct", false);
+        span.setAttribute("consensus_state", std::string("moved_on"));
     }
 }
