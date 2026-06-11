@@ -1,6 +1,6 @@
 {
   "platform": "windows/amd64",
-  "runner": ["self-hosted", "Windows", "devbox-jcw-test"],
+  "runner": ["self-hosted", "Windows", "devbox"],
   "toolsets": [
     {
       "name": "vs2022",
