@@ -488,7 +488,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 | `txq.enqueue`     | `required_fee_level` | int64  | `getRequiredFeeLevel(...).value()`                                  |
 | `txq.batch_clear` | `num_cleared`        | int64  | queued txs cleared ahead of the applying tx                         |
 | `txq.cleanup`     | `expired_count`      | int64  | entries dropped for passed `LastLedgerSequence`                     |
-| `txq.accept.tx`   | `txq_status`         | string | `applied` / `failed` / `retried`                                    |
+| `txq.accept_tx`   | `txq_status`         | string | `applied` / `failed` / `retried`                                    |
 | `txq.accept`      | `ledger_changed`     | bool   | set at end of accept loop                                           |
 
 **New attr keys**: `TxSpanNames.h` (`txType`, `fee`, `sequence`, `terResult`, `applied`), `TxQSpanNames.h` (`txType`).
