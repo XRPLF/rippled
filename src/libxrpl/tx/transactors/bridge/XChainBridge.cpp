@@ -1,7 +1,9 @@
 #include <xrpl/tx/transactors/bridge/XChainBridge.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -11,6 +13,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
@@ -36,10 +39,14 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <cstdint>
+#include <expected>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <tuple>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -260,7 +267,7 @@ claimHelper(
  */
 struct OnNewAttestationResult
 {
-    std::optional<std::vector<AccountID>> rewardAccounts{};
+    std::optional<std::vector<AccountID>> rewardAccounts;
     // `changed` is true if the attestation collection changed in any way
     // (added/removed/changed)
     bool changed{false};
@@ -1228,7 +1235,7 @@ attestationDoApply(ApplyContext& ctx)
     struct ScopeResult
     {
         STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::Locking;
-        std::unordered_map<AccountID, std::uint32_t> signersList{};
+        std::unordered_map<AccountID, std::uint32_t> signersList;
         std::uint32_t quorum{};
         AccountID thisDoor;
         Keylet bridgeK;
@@ -1702,7 +1709,7 @@ XChainClaim::doApply()
 
     struct ScopeResult
     {
-        std::vector<AccountID> rewardAccounts{};
+        std::vector<AccountID> rewardAccounts;
         AccountID rewardPoolSrc;
         STAmount sendingAmount;
         STXChainBridge::ChainType srcChain;

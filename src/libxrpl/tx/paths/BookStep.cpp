@@ -19,6 +19,7 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Quality.h>
@@ -36,7 +37,10 @@
 #include <xrpl/tx/paths/detail/FlatSets.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <boost/container/flat_set.hpp>
+
 #include <cstdint>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <sstream>

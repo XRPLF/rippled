@@ -18,6 +18,7 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -44,6 +45,8 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <type_traits>
+#include <vector>
 
 namespace xrpl::test {
 

@@ -1,5 +1,6 @@
 #include <xrpl/tx/Transactor.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -46,6 +47,8 @@
 #include <exception>
 #include <optional>
 #include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

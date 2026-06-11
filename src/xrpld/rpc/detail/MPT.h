@@ -7,7 +7,7 @@ namespace xrpl {
 class PathFindMPT final
 {
 private:
-    MPTID const mptID_{};
+    MPTID const mptID_;
     // If true then holder's balance is 0, always false for issuer
     bool const zeroBalance_;
     // OutstandingAmount is equal to MaximumAmount

@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Quality.h>
@@ -19,8 +20,11 @@
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <boost/container/flat_set.hpp>
+
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>

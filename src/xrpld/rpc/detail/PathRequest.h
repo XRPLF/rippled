@@ -135,8 +135,8 @@ private:
     STAmount saDstAmount_;
     std::optional<STAmount> saSendMax_;
 
-    std::set<Asset> sciSourceAssets_{};
-    std::map<Asset, STPathSet> context_{};
+    std::set<Asset> sciSourceAssets_;
+    std::map<Asset, STPathSet> context_;
 
     std::optional<uint256> domain_;
 

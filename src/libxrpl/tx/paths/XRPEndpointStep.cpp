@@ -21,7 +21,10 @@
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <boost/container/flat_set.hpp>
+
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>

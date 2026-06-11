@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/TrustSet.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
@@ -27,6 +28,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <unordered_set>
 
 namespace {
 

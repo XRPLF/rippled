@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -23,6 +24,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <set>
 #include <utility>
 
 namespace xrpl {

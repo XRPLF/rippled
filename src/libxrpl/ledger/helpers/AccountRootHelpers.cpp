@@ -21,10 +21,13 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <expected>
 #include <limits>
 #include <memory>
 #include <optional>
+#include <set>
 #include <stdexcept>
+#include <vector>
 
 namespace xrpl {
 

@@ -23,6 +23,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <algorithm>
 #include <variant>
 
 namespace xrpl {

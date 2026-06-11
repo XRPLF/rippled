@@ -28,6 +28,8 @@
 #include <algorithm>
 #include <bit>
 #include <cstdint>
+#include <expected>
+#include <vector>
 
 namespace xrpl {
 

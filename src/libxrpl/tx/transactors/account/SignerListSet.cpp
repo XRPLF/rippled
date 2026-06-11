@@ -21,12 +21,16 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

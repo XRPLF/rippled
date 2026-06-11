@@ -224,14 +224,14 @@ public:
             `rules` change between attempts, `preflight` will be run again
             in `TxQ::MaybeTx::apply`.
         */
-        TER preflightResult{};
+        TER preflightResult;
         /** If the transactor attempted to apply the transaction to the open
             ledger from the queue and *failed*, then this is the transactor
             result from the last attempt. Should never be a `tec`, `tef`,
             `tem`, or `tesSUCCESS`, because those results cause the
             transaction to be removed from the queue.
         */
-        std::optional<TER> lastResult{};
+        std::optional<TER> lastResult;
     };
 
     /// Constructor
@@ -365,7 +365,7 @@ private:
         std::size_t txnsExpected_;
         /// Recent history of transaction counts that
         /// exceed the targetTxnCount_
-        boost::circular_buffer<std::size_t> recentTxnCounts_{};
+        boost::circular_buffer<std::size_t> recentTxnCounts_;
         /// Based on the median fee of the LCL. Used
         /// when fee escalation kicks in.
         FeeLevel64 escalationMultiplier_{};
@@ -521,7 +521,7 @@ private:
             `tem`, or `tesSUCCESS`, because those results cause the
             transaction to be removed from the queue.
         */
-        std::optional<TER> lastResult{};
+        std::optional<TER> lastResult;
         /** Cached result of the `preflight` operation. Because
             `preflight` is expensive, minimize the number of times
             it needs to be done.
@@ -640,7 +640,7 @@ private:
         /// The account
         AccountID const account;
         /// Sequence number will be used as the key.
-        TxMap transactions{};
+        TxMap transactions;
         /* If this account has had any transaction retry more than
             `retriesAllowed` times so that it was dropped from the
             queue, then all other transactions for this account will
@@ -740,14 +740,14 @@ private:
         @note This member must always and only be accessed under
         locked mutex_
     */
-    FeeMultiSet byFee_{};
+    FeeMultiSet byFee_;
     /** All of the accounts which currently have any transactions
         in the queue. Entries are created and destroyed dynamically
         as transactions are added and removed.
         @note This member must always and only be accessed under
         locked mutex_
     */
-    AccountMap byAccount_{};
+    AccountMap byAccount_;
     /** Maximum number of transactions allowed in the queue based
         on the current metrics. If uninitialized, there is no limit,
         but that condition cannot last for long in practice.

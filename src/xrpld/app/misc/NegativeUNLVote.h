@@ -111,8 +111,8 @@ private:
      */
     struct Candidates
     {
-        std::vector<NodeID> toDisableCandidates{};
-        std::vector<NodeID> toReEnableCandidates{};
+        std::vector<NodeID> toDisableCandidates;
+        std::vector<NodeID> toReEnableCandidates;
     };
 
     /**

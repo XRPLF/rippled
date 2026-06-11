@@ -129,7 +129,7 @@ public:
 private:
     Type type_ = Type::None;
     Code code_ = kOK;
-    Strings messages_{};
+    Strings messages_;
 };
 
 }  // namespace xrpl::RPC

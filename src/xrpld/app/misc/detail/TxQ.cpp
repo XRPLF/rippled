@@ -19,6 +19,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SField.h>
@@ -44,7 +45,9 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -793,8 +796,8 @@ TxQ::apply(
         {
         }
 
-        TxQAccount::TxMap::iterator first{};
-        TxQAccount::TxMap::iterator end{};
+        TxQAccount::TxMap::iterator first;
+        TxQAccount::TxMap::iterator end;
     };
 
     std::optional<TxIter> const txIter =

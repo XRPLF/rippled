@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/system/TicketCreate.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
@@ -17,6 +18,7 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <cstdint>
+#include <memory>
 
 namespace xrpl {
 

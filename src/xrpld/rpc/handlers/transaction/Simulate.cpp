@@ -29,7 +29,9 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
+#include <cstdint>
 #include <exception>
+#include <expected>
 #include <functional>
 #include <memory>
 #include <optional>

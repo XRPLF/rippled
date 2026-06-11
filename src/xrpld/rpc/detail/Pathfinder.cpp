@@ -11,7 +11,9 @@
 #include <xrpl/basics/join.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -19,6 +21,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/PathAsset.h>
@@ -34,10 +37,12 @@
 #include <cstdint>
 #include <exception>
 #include <functional>
+#include <map>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <string>
+#include <vector>
 
 namespace xrpl {
 static std::ostream&
@@ -124,7 +129,7 @@ using AccountCandidates = std::vector<AccountCandidate>;
 struct CostedPath
 {
     int searchLevel{};
-    Pathfinder::PathType type{};
+    Pathfinder::PathType type;
 };
 
 using CostedPathList = std::vector<CostedPath>;

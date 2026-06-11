@@ -299,7 +299,7 @@ public:
     // at the time of search.
     struct Locator
     {
-        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator{};
+        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator;
 
         // @return true if transaction was found, false otherwise
         //
@@ -307,7 +307,7 @@ public:
         // Calling the wrong getter function will throw an exception.
         // See documentation for the getter functions for more details
         [[nodiscard]] bool
-        isFound()
+        isFound() const
         {
             return std::holds_alternative<std::pair<uint256, uint32_t>>(locator);
         }

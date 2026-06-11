@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/conditions/Condition.h>
 #include <xrpl/conditions/Fulfillment.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/ledger/ReadView.h>

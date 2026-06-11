@@ -129,7 +129,7 @@ template <StepAmount TIn, StepAmount TOut>
 class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {
 private:
-    boost::container::flat_set<uint256> permToRemove_{};
+    boost::container::flat_set<uint256> permToRemove_;
 
 public:
     using TOfferStreamBase<TIn, TOut>::TOfferStreamBase;

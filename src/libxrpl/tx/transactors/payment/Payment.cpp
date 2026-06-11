@@ -19,6 +19,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
@@ -39,6 +40,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <optional>
+#include <unordered_set>
 
 namespace xrpl {
 

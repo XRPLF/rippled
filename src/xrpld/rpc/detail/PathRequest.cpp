@@ -9,10 +9,14 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -23,7 +27,9 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
@@ -39,6 +45,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <variant>
 
 namespace xrpl {
 

@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -26,7 +27,9 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <expected>
 #include <iterator>  // IWYU pragma: keep
+#include <utility>
 
 namespace xrpl {
 

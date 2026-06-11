@@ -7,6 +7,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 
 #include <algorithm>
@@ -177,7 +178,7 @@ public:
 
 private:
     std::mutex lock_;
-    std::list<LocalTx> txns_{};
+    std::list<LocalTx> txns_;
 };
 
 std::unique_ptr<LocalTxs>

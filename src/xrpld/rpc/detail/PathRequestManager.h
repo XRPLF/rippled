@@ -88,7 +88,7 @@ private:
     beast::insight::Event full_;
 
     // Track all requests
-    std::vector<PathRequest::wptr> requests_{};
+    std::vector<PathRequest::wptr> requests_;
 
     // Use a AssetCache
     std::weak_ptr<AssetCache> assetCache_;
