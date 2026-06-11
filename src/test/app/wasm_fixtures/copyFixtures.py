@@ -1,13 +1,15 @@
 # cspell: disable
 import os
-import sys
-import subprocess
 import re
+import shlex
+import subprocess
+import sys
 import tempfile
 import zipfile
 from difflib import get_close_matches
 
 OPT = "-Oz"
+BASE_PATH = os.path.abspath(os.path.dirname(__file__))
 
 
 def pascal_case(name):
@@ -25,7 +27,7 @@ def fixture_key(name):
 
 
 def declared_fixtures():
-    h_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "fixtures.h"))
+    h_path = os.path.join(BASE_PATH, "fixtures.h")
     with open(h_path, "r", encoding="utf8") as f:
         return re.findall(
             r"extern std::string const ([A-Za-z_][A-Za-z0-9_]*);", f.read()
@@ -63,16 +65,15 @@ def find_fixture_name(project_name, suffix):
 
 
 def fixture_cpp_path(fixture_name):
-    base_path = os.path.dirname(__file__)
     pattern = rf"extern std::string const {fixture_name} ="
-    for file_name in os.listdir(base_path):
+    for file_name in os.listdir(BASE_PATH):
         if not file_name.endswith(".cpp"):
             continue
-        cpp_path = os.path.abspath(os.path.join(base_path, file_name))
+        cpp_path = os.path.join(BASE_PATH, file_name)
         with open(cpp_path, "r", encoding="utf8") as f:
             if re.search(pattern, f.read()):
                 return cpp_path
-    return os.path.abspath(os.path.join(base_path, "fixtures.cpp"))
+    return os.path.join(BASE_PATH, "fixtures.cpp")
 
 
 def update_fixture(project_name, wasm, suffix="WasmHex"):
@@ -80,7 +81,7 @@ def update_fixture(project_name, wasm, suffix="WasmHex"):
     print(f"Updating fixture: {fixture_name}")
 
     cpp_path = fixture_cpp_path(fixture_name)
-    h_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "fixtures.h"))
+    h_path = os.path.join(BASE_PATH, "fixtures.h")
     with open(cpp_path, "r", encoding="utf8") as f:
         cpp_content = f.read()
 
@@ -115,50 +116,67 @@ def read_wasm_hex(path):
 
 
 def process_rust(project_name):
-    project_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), project_name)
-    )
-    wasm_location = f"target/wasm32v1-none/release/{project_name}.wasm"
-    build_cmd = (
-        f"(cd {project_path} "
-        f"&& cargo build --target wasm32v1-none --release "
-        f"&& wasm-opt {wasm_location} {OPT} -o {wasm_location}"
-        ")"
+    project_path = os.path.join(BASE_PATH, project_name)
+    wasm_location = os.path.join(
+        project_path, "target", "wasm32v1-none", "release", f"{project_name}.wasm"
     )
     try:
-        subprocess.run(build_cmd, shell=True, check=True)
+        subprocess.run(
+            ["cargo", "build", "--target", "wasm32v1-none", "--release"],
+            cwd=project_path,
+            check=True,
+        )
+        subprocess.run(
+            ["wasm-opt", wasm_location, OPT, "-o", wasm_location], check=True
+        )
         print(f"WASM file for {project_name} has been built and optimized.")
+    except FileNotFoundError as e:
+        print(f"exec error: {e.filename} is required to build Rust fixtures")
+        sys.exit(1)
     except subprocess.CalledProcessError as e:
         print(f"exec error: {e}")
         sys.exit(1)
 
-    src_path = os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__),
-            f"{project_name}/target/wasm32v1-none/release/{project_name}.wasm",
-        )
-    )
-    update_fixture(project_name, read_wasm_hex(src_path))
+    update_fixture(project_name, read_wasm_hex(wasm_location))
 
 
 def process_c(project_name):
-    project_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), f"{project_name}.c")
-    )
-    wasm_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), f"{project_name}.wasm")
-    )
-    build_cmd = (
-        f"$CC --sysroot=$SYSROOT "
-        f"-O3 -ffast-math --target=wasm32 -fno-exceptions -fno-threadsafe-statics -fvisibility=default -Wl,--export-all -Wl,--no-entry -Wl,--allow-undefined -DNDEBUG --no-standard-libraries -fno-builtin-memset "
-        f"-o {wasm_path} {project_path}"
-        f"&& wasm-opt {wasm_path} {OPT} -o {wasm_path}"
-    )
+    project_path = os.path.join(BASE_PATH, f"{project_name}.c")
+    wasm_path = os.path.join(BASE_PATH, f"{project_name}.wasm")
+    cc = os.environ.get("CC")
+    sysroot = os.environ.get("SYSROOT")
+    if not cc or not sysroot:
+        print("exec error: CC and SYSROOT are required to build C fixtures")
+        sys.exit(1)
+
+    build_cmd = [
+        *shlex.split(cc),
+        f"--sysroot={sysroot}",
+        "-O3",
+        "-ffast-math",
+        "--target=wasm32",
+        "-fno-exceptions",
+        "-fno-threadsafe-statics",
+        "-fvisibility=default",
+        "-Wl,--export-all",
+        "-Wl,--no-entry",
+        "-Wl,--allow-undefined",
+        "-DNDEBUG",
+        "--no-standard-libraries",
+        "-fno-builtin-memset",
+        "-o",
+        wasm_path,
+        project_path,
+    ]
     try:
-        subprocess.run(build_cmd, shell=True, check=True)
+        subprocess.run(build_cmd, check=True)
+        subprocess.run(["wasm-opt", wasm_path, OPT, "-o", wasm_path], check=True)
         print(
             f"WASM file for {project_name} has been built with WASI support using clang."
         )
+    except FileNotFoundError as e:
+        print(f"exec error: {e.filename} is required to build C fixtures")
+        sys.exit(1)
     except subprocess.CalledProcessError as e:
         print(f"exec error: {e}")
         sys.exit(1)
@@ -166,7 +184,7 @@ def process_c(project_name):
     update_fixture(project_name, read_wasm_hex(wasm_path))
 
 
-def wat2Wasm(wat_path, wasm_path):
+def wat_to_wasm(wat_path, wasm_path):
     build_cmd = ["wat2wasm", wat_path, "-o", wasm_path]
     try:
         subprocess.run(build_cmd, check=True)
@@ -188,7 +206,7 @@ def process_wat_file(wat_path):
 
     with tempfile.TemporaryDirectory() as tmpdir:
         wasm_path = os.path.join(tmpdir, f"{project_name}.wasm")
-        wat2Wasm(wat_path, wasm_path)
+        wat_to_wasm(wat_path, wasm_path)
         update_fixture(project_name, read_wasm_hex(wasm_path), "Hex")
 
 
@@ -203,16 +221,15 @@ def process_wat_zip(zip_path):
             archive.extract(wat_names[0], tmpdir)
 
         wasm_path = os.path.join(tmpdir, f"{project_name}.wasm")
-        wat2Wasm(os.path.join(tmpdir, wat_names[0]), wasm_path)
+        wat_to_wasm(os.path.join(tmpdir, wat_names[0]), wasm_path)
         update_fixture(project_name, read_wasm_hex(wasm_path), "Hex")
 
 
 def process_wat(project_name):
-    base_path = os.path.dirname(__file__)
     candidates = [
-        os.path.join(base_path, f"{project_name}.wat"),
-        os.path.join(base_path, "wat", f"{project_name}.wat"),
-        os.path.join(base_path, "wat", f"{project_name}.zip"),
+        os.path.join(BASE_PATH, f"{project_name}.wat"),
+        os.path.join(BASE_PATH, "wat", f"{project_name}.wat"),
+        os.path.join(BASE_PATH, "wat", f"{project_name}.zip"),
     ]
     for path in candidates:
         if os.path.isfile(path):
@@ -230,31 +247,29 @@ if __name__ == "__main__":
     if len(sys.argv) > 2:
         print("Usage: python copyFixtures.py [<project_name>]")
         sys.exit(1)
+
     if len(sys.argv) == 2:
         project_name = os.path.splitext(os.path.basename(sys.argv[1]))[0]
-        wat_fixture_files = [
-            f for f in (os.listdir(wat_path) if os.path.isdir(wat_path) else []) if f.endswith((".wat", ".zip"))
-        ]
+        if os.path.isfile(os.path.join(BASE_PATH, project_name, "Cargo.toml")):
             process_rust(project_name)
-        elif os.path.isfile(
-            os.path.join(os.path.dirname(__file__), f"{project_name}.c")
-        ):
+        elif os.path.isfile(os.path.join(BASE_PATH, f"{project_name}.c")):
             process_c(project_name)
         else:
             process_wat(project_name)
         print("Fixture has been processed.")
     else:
-        base_path = os.path.dirname(__file__)
         dirs = [
             d
-            for d in os.listdir(base_path)
-            if os.path.isfile(os.path.join(base_path, d, "Cargo.toml"))
+            for d in os.listdir(BASE_PATH)
+            if os.path.isfile(os.path.join(BASE_PATH, d, "Cargo.toml"))
         ]
-        c_files = [f for f in os.listdir(base_path) if f.endswith(".c")]
-        wat_files = [f for f in os.listdir(base_path) if f.endswith(".wat")]
-        wat_path = os.path.join(base_path, "wat")
+        c_files = [f for f in os.listdir(BASE_PATH) if f.endswith(".c")]
+        wat_files = [f for f in os.listdir(BASE_PATH) if f.endswith(".wat")]
+        wat_path = os.path.join(BASE_PATH, "wat")
         wat_fixture_files = [
-            f for f in os.listdir(wat_path) if f.endswith((".wat", ".zip"))
+            f
+            for f in (os.listdir(wat_path) if os.path.isdir(wat_path) else [])
+            if f.endswith((".wat", ".zip"))
         ]
 
         for d in sorted(dirs):
@@ -262,7 +277,7 @@ if __name__ == "__main__":
         for c in sorted(c_files):
             process_c(c[:-2])
         for wat in sorted(wat_files):
-            process_wat_file(os.path.join(base_path, wat))
+            process_wat_file(os.path.join(BASE_PATH, wat))
         for wat_fixture in sorted(wat_fixture_files):
             path = os.path.join(wat_path, wat_fixture)
             if wat_fixture.endswith(".zip"):
