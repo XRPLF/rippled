@@ -16,6 +16,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -28,6 +29,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -491,6 +493,75 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
                 .err = temMALFORMED,
             });
         }
+    }
+
+    void
+    testConvertInvalidProofContextBinding(FeatureBitset features)
+    {
+        testcase("Convert proof context binding");
+        using namespace test::jtx;
+
+        auto runBadProof = [&](auto makeContextHash) {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            auto const proof =
+                mptAlice.getSchnorrProof(bob, makeContextHash(env, mptAlice, alice, bob, carol));
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 10,
+                .proof = strHex(*proof),
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .err = tecBAD_PROOF,
+            });
+        };
+
+        // Wrong account in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const& carol) {
+            return getConvertContextHash(carol.id(), mpt.issuanceID(), env.seq(bob));
+        });
+
+        // Wrong issuance ID in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const&,
+                        Account const& alice,
+                        Account const& bob,
+                        Account const&) {
+            return getConvertContextHash(
+                bob.id(), makeMptID(env.seq(alice) + 100, alice), env.seq(bob));
+        });
+
+        // Wrong transaction sequence in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const&) {
+            return getConvertContextHash(bob.id(), mpt.issuanceID(), env.seq(bob) + 1);
+        });
     }
 
     void
@@ -1609,11 +1680,87 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     {
         testcase("Merge inbox");
         using namespace test::jtx;
-        Env env{*this, features};
-        Account const alice("alice");
-        Account const bob("bob");
-        ConfidentialEnv const confEnv{
-            env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+        // Merge with an empty inbox should succeed as a no-op.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+            });
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            mptAlice.mergeInbox({.account = bob});
+            // Inbox is empty after the first merge; the second merge is a no-op.
+            mptAlice.mergeInbox({.account = bob});
+        }
+
+        // Makes sure if merge inbox version is UINT32_MAX, the next merge wraps
+        // the version back to 0.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+            });
+
+            mptAlice.convert({
+                .account = bob,
+                .amt = 40,
+                .holderPubKey = mptAlice.getPubKey(bob),
+            });
+
+            // Force the on-ledger version to UINT32_MAX, then apply a merge and
+            // confirm the version wraps around to 0.
+            auto const wrappedFrom = std::numeric_limits<std::uint32_t>::max();
+            auto const jt = env.jt(mptAlice.mergeInboxJV({.account = bob}));
+            BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle = std::const_pointer_cast<SLE>(
+                    view.read(keylet::mptoken(mptAlice.issuanceID(), bob.id())));
+                if (!sle)
+                    return false;
+
+                (*sle)[sfConfidentialBalanceVersion] = wrappedFrom;
+                view.rawReplace(sle);
+
+                auto const result = xrpl::apply(env.app(), view, *jt.stx, TapNone, env.journal);
+                BEAST_EXPECT(result.ter == tesSUCCESS);
+                return result.applied;
+            }));
+
+            BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) == 0);
+        }
     }
 
     void
@@ -4042,6 +4189,81 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
         });
     }
 
+    void
+    testClawbackInvalidProofContextBinding(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTClawback context binding");
+        using namespace test::jtx;
+
+        auto runBadProof = [&](auto makeContextHash) {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 60}},
+                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount};
+            auto& mptAlice = confEnv.mpt;
+
+            auto const privKey = mptAlice.getPrivKey(alice);
+            if (!BEAST_EXPECT(privKey.has_value()))
+                return;
+
+            auto const proof = mptAlice.getClawbackProof(
+                bob, 60, *privKey, makeContextHash(env, mptAlice, alice, bob, carol));
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            mptAlice.confidentialClaw({
+                .account = alice,
+                .holder = bob,
+                .amt = 60,
+                .proof = strHex(*proof),
+                .err = tecBAD_PROOF,
+            });
+        };
+
+        // Wrong account (issuer) in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const& alice,
+                        Account const& bob,
+                        Account const& carol) {
+            return getClawbackContextHash(carol.id(), mpt.issuanceID(), env.seq(alice), bob.id());
+        });
+
+        // Wrong issuance ID in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const&,
+                        Account const& alice,
+                        Account const& bob,
+                        Account const&) {
+            return getClawbackContextHash(
+                alice.id(), makeMptID(env.seq(alice) + 100, alice), env.seq(alice), bob.id());
+        });
+
+        // Wrong transaction sequence in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const& alice,
+                        Account const& bob,
+                        Account const&) {
+            return getClawbackContextHash(
+                alice.id(), mpt.issuanceID(), env.seq(alice) + 1, bob.id());
+        });
+
+        // Wrong holder in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const& alice,
+                        Account const&,
+                        Account const& carol) {
+            return getClawbackContextHash(alice.id(), mpt.issuanceID(), env.seq(alice), carol.id());
+        });
+    }
+
     // Bob creates the AMM, but Bob is not the MPT holder checked below.
     // The AMM has its own pseudo-account (`ammHolder`) that can hold the
     // public MPT pool balance. That pseudo-account cannot normally
@@ -4587,6 +4809,48 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = carol,
                 .amt = 400,
+            });
+        }
+
+        // SCENARIO 3: the clawback proof omits the holder's confidential
+        // balance version. A proof generated before the version advances is
+        // still accepted, because getClawbackContextHash has no version
+        // component.
+        {
+            Env env{*this, features};
+            auto mptAlice = setupEnv(env);
+
+            mptAlice.convert({.account = bob, .amt = 500, .holderPubKey = mptAlice.getPubKey(bob)});
+            mptAlice.mergeInbox({
+                .account = bob,
+            });
+
+            auto const privKey = mptAlice.getPrivKey(alice);
+            if (!BEAST_EXPECT(privKey.has_value()))
+                return;
+
+            auto const proof = mptAlice.getClawbackProof(
+                bob,
+                500,
+                *privKey,
+                getClawbackContextHash(
+                    alice.id(), mptAlice.issuanceID(), env.seq(alice), bob.id()));
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            // Advance bob's balance version after the proof is generated. An
+            // empty-inbox merge leaves the balance unchanged but still bumps
+            // sfConfidentialBalanceVersion.
+            auto const versionBefore = mptAlice.getMPTokenVersion(bob);
+            mptAlice.mergeInbox({.account = bob});
+            BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) != versionBefore);
+
+            // The stale-version proof is still accepted.
+            mptAlice.confidentialClaw({
+                .account = alice,
+                .holder = bob,
+                .amt = 500,
+                .proof = strHex(*proof),
             });
         }
     }
@@ -5318,55 +5582,46 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
         }
     }
 
-    // This test verifies that proofs are non-replayable by simulating replays
-    // with an outdated ledger version or an old sequence number.
-    // It confirms that the validator detects the resulting ContextID mismatch
-    // and rejects the transaction with tecBAD_PROOF.
+    // A convert-back proof is bound to (account, issuance, sequence, version) via
+    // the Fiat-Shamir context hash. Crafting a proof against any single wrong
+    // variable and submitting it with the real parameters must be rejected
+    // with tecBAD_PROOF
     void
-    testProofContextBinding(FeatureBitset features)
+    testConvertBackInvalidProofContextBinding(FeatureBitset features)
     {
-        testcase("Proof context binding (Sequence and Version)");
+        testcase("ConvertBack proof context binding");
         using namespace test::jtx;
 
-        Env env{*this, features};
-        Account const alice("alice"), bob("bob");
-        ConfidentialEnv confEnv{
-            env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
-        auto& mptAlice = confEnv.mpt;
+        auto runBadProof = [&](auto makeContextHash) {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+            auto& mptAlice = confEnv.mpt;
 
-        uint64_t const amt = 10;
-        Buffer const blindingFactor = generateBlindingFactor();
-        Buffer const pcBlindingFactor = generateBlindingFactor();
+            std::uint64_t const amt = 10;
+            Buffer const blindingFactor = generateBlindingFactor();
+            Buffer const pcBlindingFactor = generateBlindingFactor();
 
-        auto const spendingBalance =
-            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
-        BEAST_EXPECT(
-            spendingBalance.has_value() && *spendingBalance == 40);  // because bob encrypted 40
-        auto const encryptedSpendingBalance =
-            mptAlice.getEncryptedBalance(bob, MPTTester::HolderEncryptedSpending);
-        BEAST_EXPECT(encryptedSpendingBalance.has_value() && !encryptedSpendingBalance->empty());
+            auto const spendingBalance =
+                mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
+            auto const encryptedSpendingBalance =
+                mptAlice.getEncryptedBalance(bob, MPTTester::HolderEncryptedSpending);
+            if (!BEAST_EXPECT(spendingBalance && encryptedSpendingBalance))
+                return;
 
-        Buffer const pedersenCommitment =
-            mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
-        Buffer const issuerCiphertext = mptAlice.encryptAmount(alice, amt, blindingFactor);
-        Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
-
-        auto const currentVersion = mptAlice.getMPTokenVersion(bob);
-
-        // Invalid Version Binding
-        // Simulates replaying a full transaction after the ledger's version
-        // has updated. We simulate this by attempting to use a proof built
-        // using an older version but with the current valid sequence.
-        {
-            uint32_t const seqA = env.seq(bob);
-            uint32_t const oldVersion = currentVersion - 1;
-            uint256 const badContextHash =
-                getConvertBackContextHash(bob, mptAlice.issuanceID(), seqA, oldVersion);
+            Buffer const pedersenCommitment =
+                mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
+            Buffer const issuerCiphertext = mptAlice.encryptAmount(alice, amt, blindingFactor);
+            Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
+            auto const version = mptAlice.getMPTokenVersion(bob);
 
             Buffer const proof = mptAlice.getConvertBackProof(
                 bob,
                 amt,
-                badContextHash,
+                makeContextHash(env, mptAlice, alice, bob, carol, version),
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = *spendingBalance,
@@ -5384,70 +5639,48 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
                 .pedersenCommitment = pedersenCommitment,
                 .err = tecBAD_PROOF,
             });
-        }
+        };
 
-        // Invalid Sequence Binding
-        // Simulates submitting a new transaction (with a new, valid signature
-        // and sequence) but reusing a ZKP from a previous sequence number.
-        {
-            // Fetch updated sequence, as the tecBAD_PROOF above consumed one
-            uint32_t const seqB = env.seq(bob);
-            uint32_t const oldSeq = seqB - 1;
-            uint256 const badContextHash =
-                getConvertBackContextHash(bob, mptAlice.issuanceID(), oldSeq, currentVersion);
+        // Wrong account in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const& carol,
+                        std::uint32_t version) {
+            return getConvertBackContextHash(carol.id(), mpt.issuanceID(), env.seq(bob), version);
+        });
 
-            Buffer const proof = mptAlice.getConvertBackProof(
-                bob,
-                amt,
-                badContextHash,
-                {
-                    .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
-                    .blindingFactor = pcBlindingFactor,
-                });
+        // Wrong issuance ID in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const&,
+                        Account const& alice,
+                        Account const& bob,
+                        Account const&,
+                        std::uint32_t version) {
+            return getConvertBackContextHash(
+                bob.id(), makeMptID(env.seq(alice) + 100, alice), env.seq(bob), version);
+        });
 
-            mptAlice.convertBack({
-                .account = bob,
-                .amt = amt,
-                .proof = proof,
-                .holderEncryptedAmt = bobCiphertext,
-                .issuerEncryptedAmt = issuerCiphertext,
-                .blindingFactor = blindingFactor,
-                .pedersenCommitment = pedersenCommitment,
-                .err = tecBAD_PROOF,
-            });
-        }
+        // Wrong transaction sequence in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const&,
+                        std::uint32_t version) {
+            return getConvertBackContextHash(bob.id(), mpt.issuanceID(), env.seq(bob) + 1, version);
+        });
 
-        // Verify Correct Proof Passes
-        // Ensure the test setup was correct and functions when no replay is attempted.
-        {
-            // Fetch updated sequence once more
-            uint32_t const seqC = env.seq(bob);
-            uint256 const goodContextHash =
-                getConvertBackContextHash(bob, mptAlice.issuanceID(), seqC, currentVersion);
-
-            Buffer const proof = mptAlice.getConvertBackProof(
-                bob,
-                amt,
-                goodContextHash,
-                {
-                    .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
-                    .blindingFactor = pcBlindingFactor,
-                });
-
-            mptAlice.convertBack({
-                .account = bob,
-                .amt = amt,
-                .proof = proof,
-                .holderEncryptedAmt = bobCiphertext,
-                .issuerEncryptedAmt = issuerCiphertext,
-                .blindingFactor = blindingFactor,
-                .pedersenCommitment = pedersenCommitment,
-            });
-        }
+        // Wrong balance version in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const&,
+                        std::uint32_t version) {
+            return getConvertBackContextHash(bob.id(), mpt.issuanceID(), env.seq(bob), version + 1);
+        });
     }
 
     // This test simulates a valid proof π extracted from a transaction
@@ -5456,9 +5689,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     // recomputation fails due to the ciphertext binding mismatch, resulting
     // in tecBAD_PROOF.
     void
-    testProofCiphertextBinding(FeatureBitset features)
+    testConvertBackProofCiphertextBinding(FeatureBitset features)
     {
-        testcase("Proof ciphertext binding");
+        testcase("ConvertBack: proof ciphertext binding");
         using namespace test::jtx;
 
         Env env{*this, features};
@@ -5516,9 +5749,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     // the CBS version to v+1. It confirms the validator rejects the transaction
     // before acceptance due to the ContextID mismatch.
     void
-    testProofVersionMismatch(FeatureBitset features)
+    testConvertBackProofVersionMismatch(FeatureBitset features)
     {
-        testcase("Proof version mismatch");
+        testcase("ConvertBack: proof version mismatch");
         using namespace test::jtx;
 
         Env env{*this, features};
@@ -5589,9 +5822,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
      * mismatch between the re-computed ciphertexts and the submitted ones,
      * resulting in tecBAD_PROOF.   */
     void
-    testHomomorphicCiphertextModification(FeatureBitset features)
+    testConvertBackHomomorphicCiphertextModification(FeatureBitset features)
     {
-        testcase("Homomorphic ciphertext modification");
+        testcase("ConvertBack: homomorphic ciphertext modification");
         using namespace test::jtx;
 
         Env env{*this, features};
@@ -6123,9 +6356,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     // would not actually hide anything. The validator must reject it at
     // preflight so no account can ever register a broken key.
     void
-    testIdentityElementRejection(FeatureBitset features)
+    testConvertIdentityElementRejection(FeatureBitset features)
     {
-        testcase("Send: all-zero public key rejected");
+        testcase("Convert: all-zero public key rejected");
         using namespace test::jtx;
 
         // 33 zero bytes — not a real public key; no valid secret maps to this.
@@ -6479,9 +6712,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testForgedEqualityProof(FeatureBitset features)
+    testSendForgedEqualityProof(FeatureBitset features)
     {
-        testcase("test Forged Equality Proof");
+        testcase("Send: forged equality proof");
 
         // Test that modifying a ciphertext after proof generation causes
         // verification to fail. The Fiat-Shamir challenge binds ciphertexts
@@ -6542,9 +6775,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testForgedRangeProof(FeatureBitset features)
+    testSendForgedRangeProof(FeatureBitset features)
     {
-        testcase("test Forged Range Proof");
+        testcase("Send: forged range proof");
 
         // Attack: send uint64_max tokens using Enc(uint64_max) ciphertexts
         // and a corrupted bulletproof. Verifier rejects due to inner-product
@@ -6610,9 +6843,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testNegativeValueMalleability(FeatureBitset features)
+    testSendNegativeValueMalleability(FeatureBitset features)
     {
-        testcase("test Negative Value Malleability");
+        testcase("Send: negative value malleability");
 
         // Attack: forge a bulletproof claiming remaining = (uint64_t)(-10).
         // Bob has 10 tokens, sends 10. Honest remaining is 0, but the
@@ -6665,9 +6898,107 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testFiatShamirBinding(FeatureBitset features)
+    testSendInvalidProofContextBinding(FeatureBitset features)
     {
-        testcase("test Fiat-Shamir Binding");
+        testcase("Send proof context binding");
+        using namespace test::jtx;
+
+        auto runBadProof = [&](auto makeContextHash) {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 40}, {.account = carol}}};
+            auto& mptAlice = confEnv.mpt;
+
+            ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, 10);
+
+            auto const proof = mptAlice.getConfidentialSendProof(
+                bob,
+                setup.sendAmount,
+                setup.recipients,
+                setup.blindingFactor,
+                makeContextHash(env, mptAlice, alice, bob, carol, setup.version),
+                {.pedersenCommitment = setup.amountCommitment,
+                 .amt = setup.sendAmount,
+                 .encryptedAmt = setup.senderAmt,
+                 .blindingFactor = setup.amountBlindingFactor},
+                {.pedersenCommitment = setup.balanceCommitment,
+                 .amt = setup.prevSpending,
+                 .encryptedAmt = setup.prevEncryptedSpending,
+                 .blindingFactor = setup.balanceBlindingFactor});
+            if (!BEAST_EXPECT(proof.has_value()))
+                return;
+
+            mptAlice.send(setup.sendArgs(bob, carol, *proof, tecBAD_PROOF));
+        };
+
+        // Wrong sender account in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const& carol,
+                        std::uint32_t version) {
+            return getSendContextHash(
+                carol.id(), mpt.issuanceID(), env.seq(bob), carol.id(), version);
+        });
+
+        // Wrong issuance ID in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const&,
+                        Account const& alice,
+                        Account const& bob,
+                        Account const& carol,
+                        std::uint32_t version) {
+            return getSendContextHash(
+                bob.id(),
+                makeMptID(env.seq(alice) + 100, alice),
+                env.seq(bob),
+                carol.id(),
+                version);
+        });
+
+        // Wrong transaction sequence in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const& carol,
+                        std::uint32_t version) {
+            return getSendContextHash(
+                bob.id(), mpt.issuanceID(), env.seq(bob) + 1, carol.id(), version);
+        });
+
+        // Wrong destination in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const&,
+                        std::uint32_t version) {
+            return getSendContextHash(bob.id(), mpt.issuanceID(), env.seq(bob), bob.id(), version);
+        });
+
+        // Wrong balance version in the proof context.
+        runBadProof([&](Env& env,
+                        MPTTester const& mpt,
+                        Account const&,
+                        Account const& bob,
+                        Account const& carol,
+                        std::uint32_t version) {
+            return getSendContextHash(
+                bob.id(), mpt.issuanceID(), env.seq(bob), carol.id(), version + 1);
+        });
+    }
+
+    void
+    testSendFiatShamirBinding(FeatureBitset features)
+    {
+        testcase("Send: Fiat-Shamir Binding");
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -6723,9 +7054,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testProofComponentReuse(FeatureBitset features)
+    testSendProofComponentReuse(FeatureBitset features)
     {
-        testcase("test Proof Component Reuse");
+        testcase("Send: Proof Component Reuse");
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -6777,9 +7108,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testSpecialWitnessValues(FeatureBitset features)
+    testSendSpecialWitnessValues(FeatureBitset features)
     {
-        testcase("test Special Witness Values");
+        testcase("Send: special witness values");
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -6879,9 +7210,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testCrossStatementProofSubstitution(FeatureBitset features)
+    testSendCrossStatementProofSubstitution(FeatureBitset features)
     {
-        testcase("test Cross-Statement Proof Substitution");
+        testcase("Send: cross-statement proof substitution");
 
         // This test verifies that proofs generated for one protocol component
         // cannot be used in place of another, and that proofs bound to
@@ -6993,9 +7324,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testCiphertextMalleability(FeatureBitset features)
+    testSendCiphertextMalleability(FeatureBitset features)
     {
-        testcase("test Ciphertext Malleability");
+        testcase("Send: ciphertext malleability");
 
         // Attack: replace ElGamal ciphertext Enc(m) with Enc(2m) to inflate
         // the amount credited to the recipient. ElGamal is homomorphic, so
@@ -7086,9 +7417,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testCiphertextNegation(FeatureBitset features)
+    testSendCiphertextNegation(FeatureBitset features)
     {
-        testcase("test Ciphertext Negation");
+        testcase("Send: ciphertext negation");
 
         // Attack: negate ciphertext -Enc(m) = (-C1, -C2) to reverse the
         // transaction direction. Negation decrypts to the group-level
@@ -7188,9 +7519,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testCiphertextCombination(FeatureBitset features)
+    testSendCiphertextCombination(FeatureBitset features)
     {
-        testcase("test Ciphertext Combination");
+        testcase("Send: ciphertext combination");
 
         // Attack: exploit ElGamal homomorphism to combine ciphertexts
         // Enc(m1) + Enc(m2) = Enc(m1+m2), inflating the credited amount
@@ -7297,9 +7628,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testCiphertextRerandomization(FeatureBitset features)
+    testSendCiphertextRerandomization(FeatureBitset features)
     {
-        testcase("test Ciphertext Rerandomization");
+        testcase("Send: ciphertext rerandomization");
 
         // Attack: substitute the randomness component C1 of an ElGamal
         // ciphertext (C1, C2) while keeping the message component C2
@@ -7390,9 +7721,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
-    testZeroRandomnessCiphertext(FeatureBitset features)
+    testSendZeroRandomnessCiphertext(FeatureBitset features)
     {
-        testcase("test Zero Randomness Ciphertext");
+        testcase("Send: zero randomness ciphertext");
 
         // Setting r = 0 in ElGamal yields C1 = O (identity), C2 = mG —
         // a deterministic ciphertext that reveals the plaintext.
@@ -7515,6 +7846,7 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
         // ConfidentialMPTConvert
         testConvert(features);
         testConvertPreflight(features);
+        testConvertInvalidProofContextBinding(features);
         testConvertPreclaim(features);
         testConvertWithAuditor(features);
 
@@ -7542,6 +7874,7 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
         testClawbackPreclaim(features);
         testClawbackProof(features);
         testClawbackWithAuditor(features);
+        testClawbackInvalidProofContextBinding(features);
 
         testDelete(features);
 
@@ -7555,13 +7888,13 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
 
         // Homomorphic operation tests
         testSendHomomorphicOverflow(features);
-        testHomomorphicCiphertextModification(features);
+        testConvertBackHomomorphicCiphertextModification(features);
         testConvertBackHomomorphicUnderflow(features);
 
         // Invalid curve points
         testSendInvalidCurvePoints(features);
         testSendWrongGroupPointInjection(features);
-        testIdentityElementRejection(features);
+        testConvertIdentityElementRejection(features);
         testSendWrongIssuerPublicKey(features);
 
         // public and private txns
@@ -7569,9 +7902,9 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
 
         // Replay tests
         testMutatePrivacy(features);
-        testProofContextBinding(features);
-        testProofCiphertextBinding(features);
-        testProofVersionMismatch(features);
+        testConvertBackInvalidProofContextBinding(features);
+        testConvertBackProofCiphertextBinding(features);
+        testConvertBackProofVersionMismatch(features);
 
         // Crafted-proof Tests
         testSendSharedRandomnessViolation(features);
@@ -7583,20 +7916,21 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
         testTransferFee(features);
 
         // Zero knowledge proof tests
-        testForgedEqualityProof(features);
-        testForgedRangeProof(features);
-        testNegativeValueMalleability(features);
-        testFiatShamirBinding(features);
-        testProofComponentReuse(features);
-        testSpecialWitnessValues(features);
-        testCrossStatementProofSubstitution(features);
+        testSendInvalidProofContextBinding(features);
+        testSendForgedEqualityProof(features);
+        testSendForgedRangeProof(features);
+        testSendNegativeValueMalleability(features);
+        testSendFiatShamirBinding(features);
+        testSendProofComponentReuse(features);
+        testSendSpecialWitnessValues(features);
+        testSendCrossStatementProofSubstitution(features);
 
         // Ciphertext malleability tests
-        testCiphertextMalleability(features);
-        testCiphertextNegation(features);
-        testCiphertextCombination(features);
-        testCiphertextRerandomization(features);
-        testZeroRandomnessCiphertext(features);
+        testSendCiphertextMalleability(features);
+        testSendCiphertextNegation(features);
+        testSendCiphertextCombination(features);
+        testSendCiphertextRerandomization(features);
+        testSendZeroRandomnessCiphertext(features);
     }
 
 public:

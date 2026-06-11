@@ -2137,6 +2137,9 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
     auto const prevInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
     auto const prevSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
     auto const prevIssuerBalance = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
+    auto const prevIssuerEncrypted = getEncryptedBalance(*arg.account, IssuerEncryptedBalance);
+    auto const prevAuditorEncrypted = getEncryptedBalance(*arg.account, AuditorEncryptedBalance);
+    auto const prevVersion = getMPTokenVersion(*arg.account);
 
     if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
         Throw<std::runtime_error>("Failed to get pre-mergeInbox balances");
@@ -2148,8 +2151,14 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
         auto const postInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
         auto const postSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
         auto const postIssuerBalance = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
+        auto const postInboxEncrypted = getEncryptedBalance(*arg.account, HolderEncryptedInbox);
+        auto const postIssuerEncrypted = getEncryptedBalance(*arg.account, IssuerEncryptedBalance);
+        auto const postAuditorEncrypted =
+            getEncryptedBalance(*arg.account, AuditorEncryptedBalance);
+        auto const postVersion = getMPTokenVersion(*arg.account);
 
-        if (!postInboxBalance || !postSpendingBalance || !postIssuerBalance)
+        if (!postInboxBalance || !postSpendingBalance || !postIssuerBalance ||
+            !prevIssuerEncrypted || !postInboxEncrypted || !postIssuerEncrypted)
             Throw<std::runtime_error>("Failed to get post-mergeInbox balances");
 
         env_.require(MptBalance(*this, *arg.account, holderPubAmt));
@@ -2163,6 +2172,24 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
 
         env_.require(
             RequireAny([&]() -> bool { return *prevIssuerBalance == *postIssuerBalance; }));
+
+        auto const holderPubKey = getPubKey(*arg.account);
+        if (!holderPubKey)
+            Throw<std::runtime_error>("Failed to get holder public key");
+
+        auto const expectedInbox =
+            encryptCanonicalZeroAmount(*holderPubKey, arg.account->id(), *id_);
+        if (!expectedInbox)
+            Throw<std::runtime_error>("Failed to get canonical zero encryption");
+
+        env_.require(RequireAny([&]() -> bool { return *postInboxEncrypted == *expectedInbox; }));
+        env_.require(
+            RequireAny([&]() -> bool { return *postIssuerEncrypted == *prevIssuerEncrypted; }));
+        env_.require(RequireAny([&]() -> bool {
+            return postAuditorEncrypted.has_value() == prevAuditorEncrypted.has_value() &&
+                (!postAuditorEncrypted || *postAuditorEncrypted == *prevAuditorEncrypted);
+        }));
+        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }));
 
         env_.require(RequireAny([&]() -> bool {
             return *postSpendingBalance + *postInboxBalance == *postIssuerBalance;
@@ -2308,11 +2335,13 @@ MPTTester::convertBack(MPTConvertBack const& arg)
     }
 
     auto const prevOutstanding = getIssuanceOutstandingBalance();
+    auto const prevVersion = getMPTokenVersion(*arg.account);
 
     if (submit(arg, jv) == tesSUCCESS)
     {
         auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
         auto const postOutstanding = getIssuanceOutstandingBalance();
+        auto const postVersion = getMPTokenVersion(*arg.account);
         env_.require(MptBalance(*this, *arg.account, holderAmt + *arg.amt));
         env_.require(RequireAny([&]() -> bool {
             return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
@@ -2351,6 +2380,9 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         // holder's spending balance is updated correctly
         env_.require(RequireAny(
             [&]() -> bool { return *prevSpendingBalance - *arg.amt == *postSpendingBalance; }));
+
+        // holder's confidential balance version is updated correctly
+        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }));
 
         // sum of holder's inbox and spending balance should equal to issuer's
         // encrypted balance
