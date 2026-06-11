@@ -114,6 +114,9 @@ class Toolset:
     name: str  # short config-name suffix, e.g. "vs2022"
     generator: str  # CMake generator, e.g. "Visual Studio 17 2022"
     compiler_version: str = ""  # Conan msvc compiler.version, e.g. "194"
+    # If true, the toolset is skipped entirely. Useful to disable a toolset
+    # until the runners have the matching Visual Studio version installed.
+    exclude: bool = False
 
 
 @dataclasses.dataclass
@@ -265,7 +268,8 @@ def expand_platform_matrix(
 ) -> list[MatrixEntry]:
     """Expand a PlatformFile (macOS or Windows) into matrix entries.
 
-    Configs that exclude the current event are skipped.
+    Configs that exclude the current event are skipped, as are toolsets that
+    are marked as excluded.
 
     When toolsets are defined (Windows), the configs are expanded over the
     cross-product with the toolsets so each config is built against every
@@ -275,7 +279,10 @@ def expand_platform_matrix(
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
-    toolsets = pf.toolsets or [Toolset(name="", generator="", compiler_version="")]
+    if pf.toolsets:
+        toolsets = [t for t in pf.toolsets if not t.exclude]
+    else:
+        toolsets = [Toolset(name="", generator="", compiler_version="")]
 
     entries: list[MatrixEntry] = []
     for toolset, cfg in itertools.product(toolsets, pf.configs):

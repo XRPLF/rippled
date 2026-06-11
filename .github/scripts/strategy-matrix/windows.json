@@ -10,7 +10,8 @@
     {
       "name": "vs2026",
       "generator": "Visual Studio 18 2026",
-      "compiler_version": "195"
+      "compiler_version": "195",
+      "exclude": true
     }
   ],
   "configs": [
