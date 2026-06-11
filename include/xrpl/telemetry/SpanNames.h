@@ -125,6 +125,13 @@ inline constexpr auto ledgerSeq = makeStr("ledger_seq");
 inline constexpr auto closeTime = makeStr("close_time");
 inline constexpr auto closeTimeCorrect = makeStr("close_time_correct");
 inline constexpr auto closeResolutionMs = makeStr("close_resolution_ms");
+/// Shared validation attrs — reused by the consensus and peer validation
+/// spans. Same concept, same key on every span; the span name tells them
+/// apart, so neither is emitter-prefixed. `ledgerHash` is a ledger-object
+/// property (bare, like ledgerSeq); `fullValidation` is the is-full-validation
+/// flag. Never the dotted xrpl. form (reserved for resource attrs).
+inline constexpr auto ledgerHash = makeStr("ledger_hash");
+inline constexpr auto fullValidation = makeStr("full_validation");
 }  // namespace attr
 
 // ===== Shared attribute values =============================================
