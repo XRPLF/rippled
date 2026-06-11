@@ -89,7 +89,7 @@
 
 - In `Adaptor::propose()`:
   - Creates `consensus.proposal.send` span via `SpanGuard::span()`
-  - Sets `xrpl.consensus.round` attribute (kept — rule 5)
+  - Sets `xrpl.consensus.round` attribute
 
 - In `PeerImp::onMessage(TMProposeSet)`:
   - Creates `consensus.proposal.receive` span
@@ -822,8 +822,8 @@ and OFF, and don't affect consensus timing.
 
 ```cpp
 // Round-level (on consensus.round) — ALL IMPLEMENTED
-"xrpl.consensus.round_id"             = int64    // Consensus round number (kept — rule 5)
-"xrpl.consensus.ledger_id"            = string   // previousLedger.id() hash (kept — rule 5)
+"xrpl.consensus.round_id"             = int64    // Consensus round number
+"xrpl.consensus.ledger_id"            = string   // previousLedger.id() hash
 "trace_strategy"                       = string   // "deterministic" or "attribute"
 
 // Establish-level — IMPLEMENTED
