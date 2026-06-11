@@ -42,14 +42,14 @@ isSame(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const
 }
 
 [[nodiscard]] inline Batch
-createPredictableBatch(int numObjects, std::uint64_t seed)
+createPredictableBatch(std::size_t numObjects, std::uint64_t seed)
 {
     Batch batch;
     batch.reserve(numObjects);
 
     beast::xor_shift_engine rng(seed);
 
-    for (int i = 0; i < numObjects; ++i)
+    for (auto i = 0uz; i < numObjects; ++i)
     {
         NodeObjectType const type = [&] {
             switch (randInt(rng, 3))
@@ -85,7 +85,7 @@ areBatchesEqual(Batch const& lhs, Batch const& rhs)
 {
     if (lhs.size() != rhs.size())
         return false;
-    for (std::size_t i = 0; i < lhs.size(); ++i)
+    for (auto i = 0uz; i < lhs.size(); ++i)
     {
         if (!isSame(lhs[i], rhs[i]))
             return false;
@@ -106,7 +106,7 @@ fetchCopyOfBatch(Backend& backend, Batch const& batch)
     Batch copy;
     copy.reserve(batch.size());
 
-    for (std::size_t i = 0; i < batch.size(); ++i)
+    for (auto i = 0uz; i < batch.size(); ++i)
     {
         SCOPED_TRACE("fetchCopyOfBatch index=" + std::to_string(i));
         std::shared_ptr<NodeObject> object;
@@ -124,7 +124,7 @@ fetchCopyOfBatch(Backend& backend, Batch const& batch)
 inline void
 fetchMissing(Backend& backend, Batch const& batch)
 {
-    for (std::size_t i = 0; i < batch.size(); ++i)
+    for (auto i = 0uz; i < batch.size(); ++i)
     {
         SCOPED_TRACE("fetchMissing index=" + std::to_string(i));
         std::shared_ptr<NodeObject> object;
@@ -161,7 +161,7 @@ fetchCopyOfBatch(Database& db, Batch const& batch)
 inline void
 fetchMissing(Database& db, Batch const& batch)
 {
-    for (std::size_t i = 0; i < batch.size(); ++i)
+    for (auto i = 0uz; i < batch.size(); ++i)
     {
         SCOPED_TRACE("fetchMissing(Database) index=" + std::to_string(i));
         EXPECT_EQ(db.fetchNodeObject(batch[i]->getHash(), 0), nullptr);

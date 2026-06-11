@@ -44,12 +44,12 @@ backendTypes()
 // parallel-for so the N items are partitioned, not duplicated).
 template <class Work>
 void
-parallelFor(std::size_t n, unsigned numThreads, Work work)
+parallelFor(std::size_t n, std::size_t numThreads, Work work)
 {
     std::atomic<std::size_t> next{0};
     std::vector<std::thread> threads;
     threads.reserve(numThreads);
-    for (unsigned t = 0; t < numThreads; ++t)
+    for (std::size_t t = 0; t < numThreads; ++t)
     {
         threads.emplace_back([&] {
             for (std::size_t i = next++; i < n; i = next++)
@@ -146,7 +146,7 @@ TEST_P(BackendTypeTest, concurrent_store_and_fetch)
     if (GetParam() == "sqlite")
         GTEST_SKIP() << "sqlite backend is not exercised under concurrency";
 
-    for (unsigned const numThreads : {4u, 8u})
+    for (std::size_t const numThreads : {4uz, 8uz})
     {
         SCOPED_TRACE("threads=" + std::to_string(numThreads));
 
