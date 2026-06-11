@@ -176,7 +176,7 @@ datasources:
             scope: span
             type: dynamic
           - id: consensus-ledger-id
-            tag: xrpl.consensus.ledger_id
+            tag: consensus_ledger_id
             operator: "="
             scope: span
             type: static
