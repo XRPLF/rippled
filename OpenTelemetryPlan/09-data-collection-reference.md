@@ -239,14 +239,14 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 `<domain>_<field>` underscore form where a bare name would collide (e.g.
 `rpc_status`, `grpc_status`, `tx_status`, `txq_status`).
 
-> **Dotted exceptions** (do not confuse with span attributes):
+> **Dotted keys are resource attributes, never span attributes:**
 >
-> - `xrpl.ledger.hash` is the **only** dotted span attribute. It is a shared
->   constant set on `peer.validation.receive`. Note that `consensus.validation.send`
->   uses the **bare** `ledger_hash` instead.
 > - `xrpl.network.id` and `xrpl.network.type` are **resource** attributes set
 >   once at startup on the OTel resource — not span attributes. They appear on
 >   every span's resource scope, queried as `{resource.xrpl.network.id=...}`.
+> - The ledger hash uses the bare `ledger_hash` key on every span that records
+>   it (both `consensus.validation.send` and `peer.validation.receive`) — there
+>   is no dotted span attribute.
 
 #### RPC Attributes
 
@@ -359,7 +359,7 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 | `close_time_vote_bins`     | string  | `consensus.accept.apply`                                                                           | Distribution of close-time votes                         |
 | `resolution_direction`     | string  | `consensus.accept.apply`                                                                           | Whether close resolution increased/decreased/unchanged   |
 | `tx_count`                 | int64   | `consensus.accept.apply`                                                                           | Transactions in the accepted set                         |
-| `ledger_hash`              | string  | `consensus.validation.send`                                                                        | Full hash of the validated ledger (**bare**, not dotted) |
+| `ledger_hash`              | string  | `consensus.validation.send`                                                                        | Full hash of the validated ledger (shared with peer)     |
 | `full_validation`          | boolean | `consensus.validation.send`                                                                        | Whether this is a full validation                        |
 | `validation_sign_time`     | int64   | `consensus.validation.send`                                                                        | Validation signing time                                  |
 | `mode_old`                 | string  | `consensus.mode_change`                                                                            | Operating mode before the transition                     |
@@ -393,8 +393,8 @@ the parent `ledger.build` carries `ledger_seq` and the close-time attributes.
 | `peer_id`            | int64   | `tx.receive`, `peer.proposal.receive`, `peer.validation.receive` | Peer identifier                                      |
 | `proposal_trusted`   | boolean | `peer.proposal.receive`                                          | Whether the proposal came from a trusted validator   |
 | `validation_trusted` | boolean | `peer.validation.receive`                                        | Whether the validation came from a trusted validator |
-| `validation_full`    | boolean | `peer.validation.receive`                                        | Whether the validation is a full validation          |
-| `xrpl.ledger.hash`   | string  | `peer.validation.receive`                                        | Validated ledger hash (**dotted** — shared constant) |
+| `full_validation`    | boolean | `peer.validation.receive`                                        | Whether the validation is a full validation          |
+| `ledger_hash`        | string  | `peer.validation.receive`                                        | Validated ledger hash (shared with consensus spans)  |
 
 **Prometheus labels**: `proposal_trusted`, `validation_trusted` (SpanMetrics dimensions).
 
