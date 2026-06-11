@@ -297,17 +297,17 @@ public:
         auto const args = parseArgs(arg());
         bool usage = args.empty();
 
-        if (!usage && args.find("from") == args.end())
+        if (!usage && !args.contains("from"))
         {
             log << "Missing parameter: from";
             usage = true;
         }
-        if (!usage && args.find("to") == args.end())
+        if (!usage && !args.contains("to"))
         {
             log << "Missing parameter: to";
             usage = true;
         }
-        if (!usage && args.find("buffer") == args.end())
+        if (!usage && !args.contains("buffer"))
         {
             log << "Missing parameter: buffer";
             usage = true;

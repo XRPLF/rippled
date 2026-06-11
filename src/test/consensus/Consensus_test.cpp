@@ -1296,14 +1296,11 @@ public:
                 auto const s = clog->str();
                 expect(s.find("stalled"), s, __FILE__, line);
                 expect(s.starts_with("Transaction "s + std::to_string(txid)), s, __FILE__, line);
-                expect(s.find("voting "s + (ourVote ? "YES" : "NO")) != s.npos, s, __FILE__, line);
+                expect(s.contains("voting "s + (ourVote ? "YES" : "NO")), s, __FILE__, line);
                 expect(
-                    s.find("for "s + std::to_string(ourTime) + " rounds."s) != s.npos,
-                    s,
-                    __FILE__,
-                    line);
+                    s.contains("for "s + std::to_string(ourTime) + " rounds."s), s, __FILE__, line);
                 expect(
-                    s.find("votes in "s + std::to_string(peerTime) + " rounds.") != s.npos,
+                    s.contains("votes in "s + std::to_string(peerTime) + " rounds."),
                     s,
                     __FILE__,
                     line);

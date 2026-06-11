@@ -1,6 +1,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
@@ -60,6 +61,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -6859,7 +6861,8 @@ class Vault_test : public beast::unit_test::Suite
                         "fixed-asset amount with impaired loan"} +
             (withFix ? " (fixCleanup3_2_0)" : " (pre-fix)"));
 
-        Env env(*this, features);
+        std::string logs;
+        Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
         auto const f = setupStuckDepositor(env);
         if (!f.vaultKeylet || !f.asset || f.sharesLender == 0)
         {
@@ -6977,7 +6980,8 @@ class Vault_test : public beast::unit_test::Suite
                         "burn is rejected while loss outstanding"} +
             (withFix ? " (fixCleanup3_2_0)" : " (pre-fix)"));
 
-        Env env(*this, features);
+        std::string logs;
+        Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
         auto const f = setupStuckDepositor(env);
         if (!f.vaultKeylet || f.sharesLender == 0)
         {
@@ -7303,7 +7307,8 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7379,7 +7384,8 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7455,7 +7461,8 @@ class Vault_test : public beast::unit_test::Suite
         enum class DestKind : bool { ThirdParty = false, Self = true };
 
         auto runScenario = [this](FeatureBitset features, DestKind destKind, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7560,7 +7567,8 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7643,7 +7651,8 @@ class Vault_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7718,7 +7727,8 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const owner{"owner"};

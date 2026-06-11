@@ -33,7 +33,6 @@ jobs:
     with:
       ccache_enabled: false
       os: ${{ matrix.os }}
-      strategy_matrix: minimal
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
