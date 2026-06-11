@@ -154,7 +154,7 @@ Controlled by `trace_transactions=1` in `[telemetry]` config.
 | `txq.apply_direct` | `txq.enqueue` | TxQ.cpp     | Direct apply attempt that bypasses the queue        |
 | `txq.batch_clear`  | `txq.enqueue` | TxQ.cpp     | Batch clear of an account's queued txs              |
 | `txq.accept`       | —             | TxQ.cpp     | Ledger-close accept loop (drains the queue)         |
-| `txq.accept.tx`    | `txq.accept`  | TxQ.cpp     | Per-queued-transaction apply inside the accept loop |
+| `txq.accept_tx`    | `txq.accept`  | TxQ.cpp     | Per-queued-transaction apply inside the accept loop |
 | `txq.cleanup`      | —             | TxQ.cpp     | Post-close cleanup of expired queue entries         |
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"txq.*"}`
@@ -306,16 +306,16 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 
 | Attribute            | Type    | Set On                         | Description                                                 |
 | -------------------- | ------- | ------------------------------ | ----------------------------------------------------------- |
-| `tx_hash`            | string  | `txq.enqueue`, `txq.accept.tx` | Transaction hash                                            |
+| `tx_hash`            | string  | `txq.enqueue`, `txq.accept_tx` | Transaction hash                                            |
 | `tx_type`            | string  | `txq.enqueue`                  | Transaction type name                                       |
-| `txq_status`         | string  | `txq.enqueue`, `txq.accept.tx` | Queue outcome (e.g. `queued`, `applied_direct`, `rejected`) |
+| `txq_status`         | string  | `txq.enqueue`, `txq.accept_tx` | Queue outcome (e.g. `queued`, `applied_direct`, `rejected`) |
 | `fee_level_paid`     | int64   | `txq.enqueue`                  | Fee level paid by the queued tx                             |
 | `required_fee_level` | int64   | `txq.enqueue`                  | Minimum fee level for inclusion                             |
 | `num_cleared`        | int64   | `txq.batch_clear`              | Entries cleared in a batch                                  |
 | `queue_size`         | int64   | `txq.accept`                   | Current TxQ depth                                           |
 | `ledger_changed`     | boolean | `txq.accept`                   | Whether the ledger changed since last attempt               |
-| `ter_code`           | int64   | `txq.accept.tx`                | Transaction engine result code                              |
-| `retries_remaining`  | int64   | `txq.accept.tx`                | Retries left before discard                                 |
+| `ter_code`           | int64   | `txq.accept_tx`                | Transaction engine result code                              |
+| `retries_remaining`  | int64   | `txq.accept_tx`                | Retries left before discard                                 |
 | `ledger_seq`         | int64   | `txq.cleanup`                  | Ledger sequence number                                      |
 | `expired_count`      | int64   | `txq.cleanup`                  | Number of expired entries cleared                           |
 
@@ -452,7 +452,7 @@ SpanMetrics connector does not rewrite or prefix it:
 | `tx_type`                         | string  | `tx.*`, `txq.enqueue`                          |
 | `ter_result`                      | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` |
 | `stage`                           | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` |
-| `txq_status`                      | string  | `txq.enqueue`, `txq.accept.tx`                 |
+| `txq_status`                      | string  | `txq.enqueue`, `txq.accept_tx`                 |
 | `consensus_state`                 | string  | `consensus.accept.apply`                       |
 | `load_type`                       | string  | `rpc.command.*`                                |
 | `is_batch`                        | boolean | `rpc.process`                                  |
