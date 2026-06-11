@@ -3,6 +3,10 @@
   "runner": ["self-hosted", "Windows", "devbox"],
   "configs": [
     { "build_type": "Release" },
-    { "build_type": "Debug", "build_only": true }
+    {
+      "build_type": "Debug",
+      "build_only": true,
+      "exclude_event_types": ["pull_request"]
+    }
   ]
 }

@@ -7,7 +7,6 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STVector256.h>
 
 #include <memory>
@@ -83,15 +82,12 @@ useRulesGuards(Rules const& rules)
 void
 createGuards(
     Rules const& rules,
-    std::optional<NumberSO>& stNumberSO,
     std::optional<CurrentTransactionRulesGuard>& rulesGuard,
     std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard)
 {
     if (useRulesGuards(rules))
     {
         // raii classes for the current ledger rules.
-        // fixUniversalNumber predates the rulesGuard and should be replaced.
-        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
         rulesGuard.emplace(rules);
     }
     else
