@@ -1,7 +1,7 @@
 # Implementation Strategy
 
 > **Parent Document**: [OpenTelemetryPlan.md](./OpenTelemetryPlan.md)
-> **Related**: [Code Samples](./04-code-samples.md) | [Configuration Reference](./05-configuration-reference.md)
+> **Related**: [Configuration Reference](./05-configuration-reference.md)
 
 ---
 
@@ -310,27 +310,12 @@ flowchart TD
 
 ### 3.7.3 Conditional Instrumentation
 
-SpanGuard's static factory methods handle both compile-time and runtime
-checks internally. When `XRPL_ENABLE_TELEMETRY` is not defined, the
-entire SpanGuard class compiles to a no-op stub with empty method bodies.
-When it is defined, the factory methods check the global Telemetry
-instance and the relevant component filter before creating a span:
-
-```cpp
-// SpanGuard factory methods handle all conditional logic internally.
-// When XRPL_ENABLE_TELEMETRY is not defined, these are no-ops.
-// When defined, they check Telemetry::getInstance() and the
-// component filter (e.g. shouldTracePeer()) at runtime.
-auto span = telemetry::SpanGuard::peerSpan("peer.message.receive");
-span.setAttribute("xrpl.peer.id", peerId);
-// No overhead when telemetry is disabled at compile time or runtime
-```
+Instrumentation is gated on two levels. A compile-time feature flag (`XRPL_ENABLE_TELEMETRY`) reduces the trace macros to no-ops when telemetry is built out, so disabled builds carry zero cost. At runtime, per-component guards (e.g. `shouldTracePeer()`) skip span creation for components whose tracing is turned off, incurring no overhead beyond a single boolean check.
 
 ---
 
 ## 3.8 Links to Detailed Documentation
 
-- **[Code Samples](./04-code-samples.md)**: Complete implementation code for all components
 - **[Configuration Reference](./05-configuration-reference.md)**: Configuration options and collector setup
 - **[Implementation Phases](./06-implementation-phases.md)**: Detailed timeline and milestones
 
@@ -478,53 +463,10 @@ If issues are discovered after deployment:
 
 ### 3.9.7 Code Change Examples
 
-**Minimal RPC Instrumentation (Low Intrusiveness):**
+**Minimal RPC Instrumentation (Low Intrusiveness):** Instrumenting an RPC handler adds roughly 3-4 lines: one macro to start the span and one or two `setAttribute` calls (command name, status). The span ends automatically via RAII, so the existing control flow — process the request, send the result — is untouched.
 
-```cpp
-// Before
-void ServerHandler::onRequest(...) {
-    auto result = processRequest(req);
-    send(result);
-}
-
-// After (only ~4 lines added)
-void ServerHandler::onRequest(...) {
-    auto span = telemetry::SpanGuard::rpcSpan("rpc.request");   // +1 line
-    span.setAttribute("command", command);                        // +1 line
-
-    auto result = processRequest(req);
-
-    span.setAttribute("rpc_status", status);                      // +1 line
-    send(result);
-}
-```
-
-SpanGuard factory methods (`rpcSpan`, `txSpan`, `consensusSpan`, etc.)
-access the global `Telemetry` instance internally and check the relevant
-component filter (`shouldTraceRpc()`, etc.) before creating a span. The
-public SpanGuard header has zero `opentelemetry/` includes -- all OTel
-types are hidden behind the pimpl idiom.
-
-**Consensus Instrumentation (Medium Intrusiveness):**
-
-```cpp
-// Before
-void RCLConsensusAdaptor::startRound(...) {
-    // ... existing logic
-}
-
-// After (context storage required)
-void RCLConsensusAdaptor::startRound(...) {
-    auto span = telemetry::SpanGuard::consensusSpan("consensus.round");
-    span.setAttribute("xrpl.consensus.ledger.seq", seq);
-
-    // Store context for child spans in phase transitions
-    currentRoundContext_ = span.context();  // New member variable
-
-    // ... existing logic unchanged
-}
-```
+**Consensus Instrumentation (Medium Intrusiveness):** Consensus is slightly more intrusive because child spans in later phase transitions need the round's context. Beyond the span-start and attribute macros, this requires storing the active context in a new member variable (`currentRoundContext_`) at round start. The existing round logic itself remains unchanged.
 
 ---
 
-_Previous: [Design Decisions](./02-design-decisions.md)_ | _Next: [Code Samples](./04-code-samples.md)_ | _Back to: [Overview](./OpenTelemetryPlan.md)_
+_Previous: [Design Decisions](./02-design-decisions.md)_ | _Next: [Configuration Reference](./05-configuration-reference.md)_ | _Back to: [Overview](./OpenTelemetryPlan.md)_

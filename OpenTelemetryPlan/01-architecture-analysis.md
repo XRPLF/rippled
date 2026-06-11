@@ -199,7 +199,7 @@ Consensus rounds are multi-phase operations that benefit significantly from trac
 ```mermaid
 flowchart TB
     subgraph round["consensus.round (root span)"]
-        attrs["Attributes:<br/>xrpl.consensus.ledger.seq = 12345678<br/>xrpl.consensus.mode = proposing<br/>xrpl.consensus.proposers = 35"]
+        attrs["Attributes:<br/>ledger_seq = 12345678<br/>consensus_mode = proposing<br/>proposers = 35"]
 
         subgraph open["consensus.phase.open"]
             open_desc["Duration: ~3s<br/>Waiting for transactions"]
@@ -211,7 +211,7 @@ flowchart TB
         end
 
         subgraph accept["consensus.phase.accept"]
-            acc_attrs["transactions_applied = 150<br/>ledger.hash = DEF456..."]
+            acc_attrs["transactions_applied = 150<br/>ledger_hash = DEF456..."]
             acc_children["├── ledger.build<br/>└── ledger.validate"]
         end
 
@@ -250,7 +250,7 @@ flowchart TB
         attrs["Attributes:<br/>http.method = POST<br/>net.peer.ip = 192.168.1.100<br/>command = submit"]
 
         subgraph enqueue["jobqueue.enqueue"]
-            job_attr["xrpl.job.type = jtCLIENT_RPC"]
+            job_attr["job_type = jtCLIENT_RPC"]
         end
 
         subgraph command["rpc.command.submit"]
@@ -354,17 +354,17 @@ After implementing OpenTelemetry, operators and developers will gain visibility 
 
 ### 1.8.1 What You Will See: Traces
 
-| Trace Type                 | Description                                                                                 | Example Query in Grafana/Tempo                       |
-| -------------------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| **Transaction Lifecycle**  | Full journey from RPC submission through validation, relay, consensus, and ledger inclusion | `{service.name="xrpld" && xrpl.tx.hash="ABC123..."}` |
-| **Cross-Node Propagation** | Transaction path across multiple xrpld nodes with timing                                    | `{xrpl.tx.relay_count > 0}`                          |
-| **Consensus Rounds**       | Complete round with all phases (open, establish, accept)                                    | `{span.name=~"consensus.round.*"}`                   |
-| **RPC Request Processing** | Individual command execution with timing breakdown                                          | `{command="account_info"}`                           |
-| **Ledger Acquisition**     | Peer-to-peer ledger data requests and responses                                             | `{span.name="ledger.acquire"}`                       |
-| **PathFinding Latency**    | Path computation time and cache effectiveness for payment RPCs                              | `{span.name="pathfind.compute"}`                     |
-| **TxQ Behavior**           | Queue depth, eviction patterns, fee escalation during congestion                            | `{span.name=~"txq.*"}`                               |
-| **Ledger Sync**            | Full acquisition timeline including delta and transaction fetches                           | `{span.name=~"ledger.acquire.*"}`                    |
-| **Validator Health**       | UNL fetch success, manifest updates, stale list detection                                   | `{span.name=~"validator.*"}`                         |
+| Trace Type                 | Description                                                                                 | Example Query in Grafana/Tempo                  |
+| -------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Transaction Lifecycle**  | Full journey from RPC submission through validation, relay, consensus, and ledger inclusion | `{service.name="xrpld" && tx_hash="ABC123..."}` |
+| **Cross-Node Propagation** | Transaction path across multiple xrpld nodes with timing                                    | `{relay_count > 0}`                             |
+| **Consensus Rounds**       | Complete round with all phases (open, establish, accept)                                    | `{span.name=~"consensus.round.*"}`              |
+| **RPC Request Processing** | Individual command execution with timing breakdown                                          | `{command="account_info"}`                      |
+| **Ledger Acquisition**     | Peer-to-peer ledger data requests and responses                                             | `{span.name="ledger.acquire"}`                  |
+| **PathFinding Latency**    | Path computation time and cache effectiveness for payment RPCs                              | `{span.name="pathfind.compute"}`                |
+| **TxQ Behavior**           | Queue depth, eviction patterns, fee escalation during congestion                            | `{span.name=~"txq.*"}`                          |
+| **Ledger Sync**            | Full acquisition timeline including delta and transaction fetches                           | `{span.name=~"ledger.acquire.*"}`               |
+| **Validator Health**       | UNL fetch success, manifest updates, stale list detection                                   | `{span.name=~"validator.*"}`                    |
 
 ### 1.8.2 What You Will See: Metrics (Derived from Traces)
 
@@ -456,9 +456,9 @@ xychart-beta
 
 ### 1.8.5 Developer Debugging Workflow
 
-1. **Find Transaction**: Query by `xrpl.tx.hash` to get full trace
+1. **Find Transaction**: Query by `tx_hash` to get full trace
 2. **Identify Bottleneck**: Look at span durations to find slowest component
-3. **Check Attributes**: Review `xrpl.tx.validity`, `rpc_status` for errors
+3. **Check Attributes**: Review `validity`, `rpc_status` for errors
 4. **Correlate Logs**: Use `trace_id` to find related PerfLog entries
 5. **Compare Nodes**: Filter by `service.instance.id` to compare behavior across nodes
 
