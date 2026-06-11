@@ -892,6 +892,25 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
         }
 
+        // Only test this with fixCleanup3_2_0 enabled. Without the fix,
+        // an assert-enabled build can crash when Ledger::read() receives
+        // a zero-key offer ID.
+        if (features[fixCleanup3_2_0])
+        {
+            // Zero is not a valid offer ID.
+            env(token::cancelOffer(buyer, {uint256{}}), Ter(temMALFORMED));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+
+            // List of offer IDs containing zero is invalid.
+            // craftedIndex is not a valid offer index but it is not zero.
+            auto const craftedIndex = keylet::nftoffer(gw, env.seq(gw)).key;
+            env(token::cancelOffer(buyer, {buyerOfferIndex, uint256{}, craftedIndex}),
+                Ter(temMALFORMED));
+            env.close();
+            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+        }
+
         // List of tokens to delete is too long.
         {
             std::vector<uint256> const offers(kMaxTokenOfferCancelCount + 1, buyerOfferIndex);
@@ -2217,17 +2236,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
         // See the impact of rounding when the nft is sold for small amounts
         // of drops.
-        for (auto numberSwitchOver : {true})
         {
-            if (numberSwitchOver)
-            {
-                env.enableFeature(fixUniversalNumber);
-            }
-            else
-            {
-                env.disableFeature(fixUniversalNumber);
-            }
-
             // An nft with a transfer fee of 1 basis point.
             uint256 const nftID = token::getNextID(env, alice, 0u, tfTransferable, 1);
             env(token::mint(alice), Txflags(tfTransferable), token::XferFee(1));
@@ -2249,7 +2258,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
             // minter sells to carol.  The payment is just small enough that
             // alice does not get any transfer fee.
-            auto pmt = numberSwitchOver ? drops(50000) : drops(99999);
+            auto pmt = drops(50000);
             STAmount carolBalance = env.balance(carol);
             uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftID, pmt), Txflags(tfSellNFToken));
@@ -2266,7 +2275,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // transfer that enables a transfer fee of 1 basis point.
             STAmount beckyBalance = env.balance(becky);
             uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
-            pmt = numberSwitchOver ? drops(50001) : drops(100000);
+            pmt = drops(50001);
             env(token::createOffer(becky, nftID, pmt), token::Owner(carol));
             env.close();
             env(token::acceptBuyOffer(carol, beckyBuyOfferIndex));

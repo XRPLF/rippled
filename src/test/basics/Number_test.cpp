@@ -10,6 +10,7 @@
 #include <boost/multiprecision/cpp_dec_float.hpp>
 #include <boost/multiprecision/number.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cctype>
 #include <cstdint>
@@ -20,6 +21,8 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -1386,10 +1389,103 @@ public:
     testRelationals()
     {
         testcase << "test_relationals " << to_string(Number::getMantissaScale());
-        BEAST_EXPECT(!(Number{100} < Number{10}));
-        BEAST_EXPECT(Number{100} > Number{10});
-        BEAST_EXPECT(Number{100} >= Number{10});
-        BEAST_EXPECT(!(Number{100} <= Number{10}));
+
+        {
+            auto test = [this](auto const& nums) {
+                BEAST_EXPECT(std::ranges::is_sorted(nums));
+
+                for (auto iter1 = nums.begin(); iter1 != nums.end(); ++iter1)
+                {
+                    auto iter2 = iter1;
+                    for (++iter2; iter2 != nums.end(); ++iter2)
+                    {
+                        Number const& smaller = *iter1;
+                        Number const& larger = *iter2;
+                        std::stringstream ss;
+                        ss << smaller << " < " << larger;
+                        auto const str = ss.str();
+
+                        // The ==/!= operators use a completely different code path than <, etc.
+                        // This helps detect a breakage in one but not the other. It also helps
+                        // verify that the values are being ordered correctly.
+                        BEAST_EXPECTS(smaller != larger, str + " (!=)");
+                        BEAST_EXPECTS(!(smaller == larger), str + " (==)");
+
+                        // true results using operator< and derived operators
+                        BEAST_EXPECTS(smaller < larger, str + " (<)");
+                        BEAST_EXPECTS(larger > smaller, str + " (>)");
+                        BEAST_EXPECTS(larger >= smaller, str + " (>=)");
+                        BEAST_EXPECTS(smaller <= larger, str + " (<=)");
+
+                        // false results using operator< and derived operators
+                        BEAST_EXPECTS(!(larger < smaller), str + " (! <)");
+                        BEAST_EXPECTS(!(smaller > larger), str + " (! >)");
+                        BEAST_EXPECTS(!(smaller >= larger), str + " (! >=)");
+                        BEAST_EXPECTS(!(larger <= smaller), str + " (! <=)");
+                    }
+                }
+            };
+
+            auto const intNums = [this]() {
+                // Inequality test cases are built from a list of sorted integers
+                auto const values =
+                    std::to_array<int>({-100, -50, -20, -10, -1, 0, 1, 10, 20, 50, 100});
+                // Check this list is sorted before converting it to Numbers.
+                // That way if any of the other tests fail, we know it's because of code and not the
+                // source data.
+                BEAST_EXPECT(std::ranges::is_sorted(values));
+
+                std::vector<Number> result;
+                result.reserve(values.size());
+                for (auto const v : values)
+                    result.emplace_back(v);
+                return result;
+            }();
+
+            auto const otherNums = std::to_array<Number>({
+                Number{-5, 100},
+                Number{-1, 100},
+                Number{-7, -10},
+                Number{-2, -10},
+                Number{0},
+                Number{2, -10},
+                Number{7, -10},
+                Number{1, 100},
+                Number{5, 100},
+            });
+
+            test(intNums);
+            test(otherNums);
+        }
+
+        {
+            // Equality test cases are <Number, __LINE__>. Number will be compared against itself
+            using Case = std::pair<Number, int>;
+            auto const c = std::to_array<Case>({
+                {700, __LINE__},
+                {50, __LINE__},
+                {1, __LINE__},
+                {0, __LINE__},
+                {-1, __LINE__},
+                {-30, __LINE__},
+                {-600, __LINE__},
+            });
+            for (auto const& [n, line] : c)
+            {
+                auto const str = to_string(n);
+
+                // NOLINTBEGIN(misc-redundant-expression) Explicitly testing operators with
+                // equivalent values
+                expect(n == n, str + " ==", __FILE__, line);
+                expect(!(n != n), str + " !=", __FILE__, line);
+
+                expect(!(n < n), str + " < ", __FILE__, line);
+                expect(!(n > n), str + " >", __FILE__, line);
+                expect(n >= n, str + " >=", __FILE__, line);
+                expect(n <= n, str + " <=", __FILE__, line);
+                // NOLINTEND(misc-redundant-expression)
+            }
+        }
     }
 
     void
@@ -1418,7 +1514,6 @@ public:
     void
     testToStAmount()
     {
-        NumberSO const stNumberSO{true};
         Issue const issue;
         Number const n{7'518'783'80596, -5};
         SaveNumberRoundMode const save{Number::setround(Number::RoundingMode::ToNearest)};

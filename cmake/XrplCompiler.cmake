@@ -145,13 +145,39 @@ else()
         INTERFACE
             -rdynamic
             $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now,--build-id>
-            # link to static libc/c++ iff: * static option set and * NOT APPLE (AppleClang does not support static
-            # libc/c++) and * NOT SANITIZERS (sanitizers typically don't work with static libc/c++)
-            $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>,$<NOT:$<BOOL:${SANITIZERS_ENABLED}>>>:
+            # link to static libc/c++ if:
+            # * static option set and
+            # * NOT APPLE (AppleClang does not support static libc/c++)
+            $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>>:
             -static-libstdc++
             -static-libgcc
             >
     )
+
+    # Keep -stdlib=libstdc++ off the compile commands, but preserve it for linking.
+    #
+    # Conan turns `compiler.libcxx=libstdc++` into `-stdlib=libstdc++` and puts it in
+    # CMAKE_CXX_FLAGS, which CMake passes to BOTH compile and link steps. On a normal Clang
+    # the compile step consumes it while choosing the C++ stdlib include paths. The Nixpkgs
+    # Clang wrapper supplies those paths itself (via -nostdinc++), so at compile time the
+    # flag is unused -> Clang errors under our -Werror. At link time the flag IS consumed
+    # (it selects the C++ runtime), so we move it there instead of dropping it entirely.
+    get_filename_component(_cxx_real "${CMAKE_CXX_COMPILER}" REALPATH)
+    if(
+        _cxx_real MATCHES "^/nix/store/"
+        AND is_linux
+        AND is_clang
+        AND CMAKE_CXX_FLAGS MATCHES "stdlib=libstdc"
+    )
+        string(
+            REPLACE "-stdlib=libstdc++"
+            ""
+            CMAKE_CXX_FLAGS
+            "${CMAKE_CXX_FLAGS}"
+        )
+        string(STRIP "${CMAKE_CXX_FLAGS}" CMAKE_CXX_FLAGS)
+        add_link_options($<$<LINK_LANGUAGE:CXX>:-stdlib=libstdc++>)
+    endif()
 endif()
 
 # Antithesis instrumentation will only be built and deployed using machines running Linux.
