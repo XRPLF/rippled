@@ -476,6 +476,69 @@ class RuleBCollector(unittest.TestCase):
         self.assertTrue(any("SKIP: B" in s for s in skips))
 
 
+class RuleCTempo(unittest.TestCase):
+    """Rule C reads the Grafana Tempo DATASOURCE file's search.filters and
+    validates only span-scope tags against L1."""
+
+    DS = "docker/telemetry/grafana/provisioning/datasources/tempo.yaml"
+
+    def _run(self, yaml_text, l1):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(d / self.DS, yaml_text)
+            report = chk.Report()
+            chk.run_rule_c_tempo(d, set(l1), report)
+            return sorted(v[2] for v in report.violations), report.skips
+        finally:
+            shutil.rmtree(d)
+
+    def _filter(self, fid, tag, scope):
+        return (
+            f"          - id: {fid}\n"
+            f"            tag: {tag}\n"
+            f'            operator: "="\n'
+            f"            scope: {scope}\n"
+            f"            type: static\n"
+        )
+
+    def test_span_tag_not_in_l1_flagged(self):
+        y = "search:\n        filters:\n" + self._filter("f1", "bogus_tag", "span")
+        v, _ = self._run(y, {"command"})
+        self.assertEqual(v, ["bogus_tag"])
+
+    def test_span_tags_in_l1_pass(self):
+        y = (
+            "search:\n        filters:\n"
+            + self._filter("f1", "command", "span")
+            + self._filter("f2", "tx_hash", "span")
+        )
+        v, _ = self._run(y, {"command", "tx_hash"})
+        self.assertEqual(v, [])
+
+    def test_resource_and_intrinsic_tags_ignored(self):
+        # service.* (resource) and name/status/duration (intrinsic) are not
+        # span attributes — they must not be validated against L1.
+        y = (
+            "search:\n        filters:\n"
+            + self._filter("f1", "service.instance.id", "resource")
+            + self._filter("f2", "name", "intrinsic")
+            + self._filter("f3", "duration", "intrinsic")
+        )
+        v, skips = self._run(y, {"command"})
+        self.assertEqual(v, [])
+        self.assertTrue(any("SKIP: C" in s for s in skips))
+
+    def test_skip_when_datasource_absent(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            report = chk.Report()
+            chk.run_rule_c_tempo(d, {"command"}, report)
+            self.assertEqual(report.violations, [])
+            self.assertTrue(any("SKIP: C" in s for s in report.skips))
+        finally:
+            shutil.rmtree(d)
+
+
 class RuleDDashboards(unittest.TestCase):
     def _run(self, json_text, l1, metric_labels=frozenset()):
         d = Path(tempfile.mkdtemp())

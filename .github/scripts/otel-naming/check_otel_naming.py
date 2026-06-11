@@ -685,24 +685,49 @@ def extract_spanmetrics_dimensions(text: str) -> List[str]:
 
 
 def run_rule_c_tempo(root: Path, l1_keys: Set[str], report: Report) -> None:
-    path = root / "docker" / "telemetry" / "tempo.yaml"
-    if not path.is_file():
-        report.skip("C", "tempo.yaml not present")
-        return
-    text = read_source(path)
-    tags = re.findall(r"(?:tag|attribute)\s*:\s*([A-Za-z0-9_.]+)", text)
-    span_tags = [t for t in tags if not t.startswith(("service.", "span."))]
-    if not span_tags:
-        report.skip("C", "no span-attribute tags in tempo.yaml")
+    # The trace-search filter tags live in the Grafana Tempo DATASOURCE
+    # provisioning file (search.filters[].{tag,scope}); the Tempo server
+    # tempo.yaml has no such tags. Prefer the datasource file; fall back to the
+    # server file so the rule still does something if the layout changes.
+    candidates = [
+        root / "docker/telemetry/grafana/provisioning/datasources/tempo.yaml",
+        root / "docker/telemetry/tempo.yaml",
+    ]
+    path = next((p for p in candidates if p.is_file()), None)
+    if path is None:
+        report.skip("C", "tempo datasource provisioning not present")
         return
     if not l1_keys:
         report.skip("C", "no L1 key set to validate against")
         return
+    # Pair each filter's `tag:` with its `scope:` (a few lines below it) and
+    # validate only span-scope tags — resource/intrinsic tags (service.*, name,
+    # status, duration) are not span attributes. Strip a TraceQL span. prefix.
+    lines = read_source(path).splitlines()
+    span_tags: List[str] = []
+    for i, line in enumerate(lines):
+        m = re.search(r"^\s*tag:\s*(\S+)", line)
+        if not m:
+            continue
+        scope = next(
+            (
+                sm.group(1)
+                for j in range(i, min(i + 4, len(lines)))
+                for sm in [re.search(r"scope:\s*(\S+)", lines[j])]
+                if sm
+            ),
+            "",
+        )
+        if scope == "span":
+            span_tags.append(TRACEQL_SCOPE.sub("", m.group(1)))
+    if not span_tags:
+        report.skip("C", "no span-scope filter tags in tempo datasource")
+        return
     miss = [t for t in span_tags if t not in l1_keys]
-    for t in miss:
+    for t in sorted(set(miss)):
         report.violation("C", str(path.relative_to(root)), t, "must exist in L1")
     if not miss:
-        report.ok(f"C: {len(span_tags)} tempo tag(s) all in L1")
+        report.ok(f"C: {len(span_tags)} tempo span-filter tag(s) all in L1")
 
 
 def metric_label_names(root: Path) -> Set[str]:
