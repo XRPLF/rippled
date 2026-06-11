@@ -238,6 +238,10 @@ inline constexpr auto expired = makeStr("expired");
 inline constexpr auto increased = makeStr("increased");
 inline constexpr auto decreased = makeStr("decreased");
 inline constexpr auto unchanged = makeStr("unchanged");
+// consensus_phase attribute values (the phase the round is entering).
+inline constexpr auto phaseOpen = makeStr("open");
+inline constexpr auto phaseEstablish = makeStr("establish");
+inline constexpr auto phaseAccepted = makeStr("accepted");
 }  // namespace val
 
 }  // namespace xrpl::telemetry::consensus::span

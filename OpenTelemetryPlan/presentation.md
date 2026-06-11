@@ -618,14 +618,14 @@ flowchart LR
 
 ### What Data is Collected
 
-| Category        | Attributes Collected                                                                 | Purpose                     |
-| --------------- | ------------------------------------------------------------------------------------ | --------------------------- |
-| **Transaction** | `tx.hash`, `tx.type`, `tx.result`, `tx.fee`, `ledger_index`                          | Trace transaction lifecycle |
-| **Consensus**   | `round`, `phase`, `mode`, `proposers` (count of proposing validators), `duration_ms` | Analyze consensus timing    |
-| **RPC**         | `command`, `version`, `status`, `duration_ms`                                        | Monitor RPC performance     |
-| **Peer**        | `peer.id`(public key), `latency_ms`, `message.type`, `message.size`                  | Network topology analysis   |
-| **Ledger**      | `ledger.hash`, `ledger.index`, `close_time`, `tx_count`                              | Ledger progression tracking |
-| **Job**         | `job.type`, `queue_ms`, `worker`                                                     | JobQueue performance        |
+| Category        | Attributes Collected                                                                                                 | Purpose                     |
+| --------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| **Transaction** | `tx_hash`, `tx_type`, `tx_result`, `tx_fee`, `ledger_index`                                                          | Trace transaction lifecycle |
+| **Consensus**   | `consensus_round`, `consensus_phase`, `consensus_mode`, `proposers` (count of proposing validators), `round_time_ms` | Analyze consensus timing    |
+| **RPC**         | `command`, `version`, `rpc_status`, `duration_ms`                                                                    | Monitor RPC performance     |
+| **Peer**        | `peer_id`(public key), `peer_latency_ms`, `message_type`, `message_size_bytes`                                       | Network topology analysis   |
+| **Ledger**      | `ledger_hash`, `ledger_index`, `close_time`, `ledger_tx_count`                                                       | Ledger progression tracking |
+| **Job**         | `job_type`, `job_queue_ms`, `job_worker`                                                                             | JobQueue performance        |
 
 ### What is NOT Collected (Privacy Guarantees)
 
@@ -658,13 +658,13 @@ flowchart LR
 
 ### Privacy Protection Mechanisms
 
-| Mechanism                  | Description                                                   |
-| -------------------------- | ------------------------------------------------------------- |
-| **Account Hashing**        | `xrpl.tx.account` is hashed at collector level before storage |
-| **Configurable Redaction** | Sensitive fields can be excluded via config                   |
-| **Sampling**               | Only 10% of traces recorded by default (reduces exposure)     |
-| **Local Control**          | Node operators control what gets exported                     |
-| **No Raw Payloads**        | Transaction content is never recorded, only metadata          |
+| Mechanism                  | Description                                               |
+| -------------------------- | --------------------------------------------------------- |
+| **Account Hashing**        | `tx_account` is hashed at collector level before storage  |
+| **Configurable Redaction** | Sensitive fields can be excluded via config               |
+| **Sampling**               | Only 10% of traces recorded by default (reduces exposure) |
+| **Local Control**          | Node operators control what gets exported                 |
+| **No Raw Payloads**        | Transaction content is never recorded, only metadata      |
 
 > **Key Principle**: Telemetry collects **operational metadata** (timing, counts, hashes) — never **sensitive content** (keys, balances, amounts).
 

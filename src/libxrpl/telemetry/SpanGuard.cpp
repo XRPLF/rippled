@@ -504,6 +504,14 @@ SpanGuard::discard()
     {
         gTlDiscardCurrentSpan = true;
         impl_->span->End();
+        // Clear here so discard() owns the flag's whole lifetime
+        // (set -> End -> clear) in one scope, rather than relying on
+        // FilteringSpanProcessor::OnEnd() to clear it. Today every valid guard
+        // wraps a recording span (head sampling is 1.0), so OnEnd() always runs
+        // and clearing here is equivalent — but colocating set and clear keeps
+        // the flag leak-proof if a later phase can hand back a non-recording
+        // span (e.g. honoring a non-sampled remote parent during propagation).
+        gTlDiscardCurrentSpan = false;
         impl_->span = nullptr;  // prevent ~Impl from calling End() again
         impl_.reset();
     }
