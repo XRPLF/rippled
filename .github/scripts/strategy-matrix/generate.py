@@ -163,7 +163,7 @@ class MatrixEntry:
     sanitizers: str
     image: str = ""  # container image; empty for macOS/Windows (runs natively)
     compiler: str = ""  # compiler name ("gcc" or "clang"); empty for macOS/Windows
-    generator: str = ""  # CMake generator; empty selects Ninja (Linux/macOS)
+    generator: str = "Ninja"  # CMake generator; defaults to Ninja (Linux/macOS)
     compiler_version: str = ""  # Conan MSVC compiler.version; empty auto-detects
 
 
@@ -274,12 +274,16 @@ def expand_platform_matrix(
     When toolsets are defined (Windows), the configs are expanded over the
     cross-product with the toolsets so each config is built against every
     Visual Studio version. Platforms without toolsets (macOS) use a single
-    implicit toolset with no generator override (the build defaults to Ninja).
+    implicit toolset that builds with the Ninja generator.
     """
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
-	toolsets = [t for t in pf.toolsets if not t.exclude] if pf.toolsets else [Toolset(name="", generator="")]
+    toolsets = (
+        [t for t in pf.toolsets if not t.exclude]
+        if pf.toolsets
+        else [Toolset(name="", generator="Ninja")]
+    )
 
     entries: list[MatrixEntry] = []
     for toolset, cfg in itertools.product(toolsets, pf.configs):

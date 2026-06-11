@@ -64,10 +64,9 @@ on:
         default: ""
 
       generator:
-        description: "The CMake generator to use. Leave empty to use Ninja (Linux/macOS)."
-        required: false
+        description: "The CMake generator to use (Linux/macOS use Ninja)."
+        required: true
         type: string
-        default: ""
 
       compiler_version:
         description: "Override the Conan compiler.version (Windows Visual Studio toolset). Leave empty to auto-detect."
@@ -169,7 +168,7 @@ jobs:
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
-          GENERATOR: ${{ inputs.generator != '' && inputs.generator || 'Ninja' }}
+          GENERATOR: ${{ inputs.generator }}
         run: |
           cmake \
               -G "$GENERATOR" \

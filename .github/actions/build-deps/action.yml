@@ -38,15 +38,11 @@ runs:
         BUILD_TYPE: ${{ inputs.build_type }}
         LOG_VERBOSITY: ${{ inputs.log_verbosity }}
         SANITIZERS: ${{ inputs.sanitizers }}
-        COMPILER_VERSION: ${{ inputs.compiler_version }}
+        COMPILER_VERSION_SETTING: ${{ inputs.compiler_version != '' && format('--settings:all compiler.version={0}', inputs.compiler_version) || '' }}
       run: |
-        COMPILER_VERSION_SETTING=()
-        if [ -n "${COMPILER_VERSION}" ]; then
-            COMPILER_VERSION_SETTING=(--settings:all compiler.version="${COMPILER_VERSION}")
-        fi
         conan install \
             --profile:all ci \
-            "${COMPILER_VERSION_SETTING[@]}" \
+            ${COMPILER_VERSION_SETTING} \
             --build="${BUILD_OPTION}" \
             --options:host='&:tests=True' \
             --options:host='&:xrpld=True' \
