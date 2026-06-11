@@ -56,8 +56,8 @@
         using namespace xrpl::telemetry;
 
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::command, "submit");
-        span.setAttribute(rpc_span::attr::command, "submit");
+            TraceCategory::Rpc, rpc_span::prefix::command, commandName);
+        span.setAttribute(rpc_span::attr::command, commandName);
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
         // span ended automatically on scope exit
     @endcode
@@ -65,7 +65,7 @@
     2. Error recording:
     @code
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::command, "submit");
+            TraceCategory::Rpc, rpc_span::prefix::command, commandName);
         try {
             doWork();
             span.setOk();
@@ -76,16 +76,16 @@
 
     3. Cross-thread context propagation:
     @code
-        #include <xrpld/consensus/ConsensusSpanNames.h>
+        #include <xrpld/rpc/detail/RpcSpanNames.h>
         using namespace xrpl::telemetry;
 
         // Thread A: create span and capture context
         auto span = SpanGuard::span(
-            TraceCategory::Consensus, seg::consensus, consensus::span::op::round);
+            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
         auto ctx = span.captureContext();
 
         // Thread B: create child with captured context
-        auto child = SpanGuard::childSpan(consensus::span::accept, ctx);
+        auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
     @endcode
 
     4. Conditional check (rarely needed — methods are no-ops on null):
