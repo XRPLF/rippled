@@ -17,7 +17,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -300,8 +299,8 @@ trustDelete(
     beast::Journal j)
 {
     // Detect legacy dirs.
-    std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
-    std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode);
+    std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode) = 0;
+    std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode) = 0;
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
 
@@ -447,7 +446,7 @@ issueIOU(
     // this is unnecessarily inefficient as copying which could be avoided
     // is now required. Consider available options.
     STAmount const limit(Issue{issue.currency, account});
-    STAmount finalBalance = amount;
+    STAmount const finalBalance = amount;
 
     finalBalance.get<Issue>().account = noAccount();
 

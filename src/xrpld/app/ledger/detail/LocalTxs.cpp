@@ -3,16 +3,13 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 
 #include <algorithm>
 #include <cstddef>
-#include <list>
 #include <memory>
 #include <mutex>
 
@@ -93,7 +90,7 @@ private:
     LedgerIndex expire_;
     uint256 id_;
     AccountID account_;
-    SeqProxy seqProxy_;
+    SeqProxy seqProxy_{};
 };
 
 //------------------------------------------------------------------------------
@@ -178,7 +175,7 @@ public:
 
 private:
     std::mutex lock_;
-    std::list<LocalTx> txns_;
+    std::list<LocalTx> txns_{};
 };
 
 std::unique_ptr<LocalTxs>

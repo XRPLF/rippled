@@ -374,7 +374,7 @@ public:
     bool
     dirRemove(Keylet const& directory, std::uint64_t page, uint256 const& key, bool keepRoot);
 
-    bool
+    static bool
     dirRemove(Keylet const& directory, std::uint64_t page, Keylet const& key, bool keepRoot)
     {
         return dirRemove(directory, page, key.key, keepRoot);

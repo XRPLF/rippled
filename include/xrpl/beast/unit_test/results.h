@@ -41,8 +41,8 @@ private:
         TestsT() = default;
 
         /** Returns the total number of test conditions. */
-        [[nodiscard]] std::size_t
-        total() const
+        static [[nodiscard]] std::size_t
+        total()
         {
             return cont().size();
         }
@@ -55,7 +55,7 @@ private:
         }
 
         /** Register a successful test condition. */
-        void
+        static void
         pass()
         {
             cont().emplace_back(true);
@@ -74,7 +74,7 @@ private:
     {
     public:
         /** Insert a string into the log. */
-        void
+        static void
         insert(std::string const& s)
         {
             cont().push_back(s);

@@ -659,7 +659,7 @@ directSendNoFeeIOU(
     }
 
     STAmount const saReceiverLimit(Issue{currency, uReceiverID});
-    STAmount saBalance{saAmount};
+    STAmount const saBalance{saAmount};
 
     saBalance.get<Issue>().account = noAccount();
 
@@ -852,7 +852,7 @@ accountSendIOU(
 
     if (!saAmount.native())
     {
-        STAmount saActual;
+        STAmount const saActual;
 
         JLOG(j.trace()) << "accountSendIOU: " << to_string(uSenderID) << " -> "
                         << to_string(uReceiverID) << " : " << saAmount.getFullText();
@@ -948,7 +948,7 @@ accountSendMultiIOU(
 
     if (!issue.native())
     {
-        STAmount actual;
+        STAmount const actual;
         JLOG(j.trace()) << "accountSendMultiIOU: " << to_string(senderID) << " sending "
                         << receivers.size() << " IOUs";
 
@@ -1228,7 +1228,7 @@ directSendNoLimitMultiMPT(
     // integer arithmetic. STAmount implicitly converts to Number, whose
     // small-scale mantissa (~16 digits) can lose precision for values near
     // kMaxMpTokenAmount (19 digits).
-    std::uint64_t totalSendAmount{0};
+    std::uint64_t const totalSendAmount{0};
     std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(kMaxMpTokenAmount);
     std::uint64_t const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
 
@@ -1360,7 +1360,7 @@ accountSendMultiMPT(
     beast::Journal j,
     WaiveTransferFee waiveFee)
 {
-    STAmount actual;
+    STAmount const actual;
 
     return directSendNoLimitMultiMPT(view, senderID, mptIssue, receivers, actual, j, waiveFee);
 }

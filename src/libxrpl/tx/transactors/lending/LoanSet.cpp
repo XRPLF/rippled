@@ -5,10 +5,10 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -17,7 +17,6 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
@@ -29,11 +28,8 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <optional>
-#include <type_traits>
-#include <vector>
 
 namespace xrpl {
 
@@ -49,7 +45,7 @@ LoanSet::getFlagsMask(PreflightContext const& ctx)
     return tfLoanSetMask;
 }
 
-NotTEC
+static NotTEC
 LoanSet::preflight(PreflightContext const& ctx)
 {
     using namespace Lending;
@@ -137,7 +133,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-NotTEC
+static NotTEC
 LoanSet::checkSign(PreclaimContext const& ctx)
 {
     if (auto ret = Transactor::checkSign(ctx))
@@ -192,7 +188,7 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     return normalCost + (signerCount * baseFee);
 }
 
-std::vector<OptionaledField<STNumber>> const&
+static std::vector<OptionaledField<STNumber>> const&
 LoanSet::getValueFields()
 {
     static std::vector<OptionaledField<STNumber>> const kValueFields{
@@ -213,7 +209,7 @@ getStartDate(ReadView const& view)
     return view.header().closeTime.time_since_epoch().count();
 }
 
-TER
+static TER
 LoanSet::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -365,7 +361,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 LoanSet::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -661,7 +657,7 @@ LoanSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 LoanSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

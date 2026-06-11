@@ -127,7 +127,7 @@ JobQueue::Coro::expectEarlyExit()
 inline void
 JobQueue::Coro::join()
 {
-    std::unique_lock<std::mutex> lk(mutexRun_);
+    std::unique_lock<std::mutex> const lk(mutexRun_);
     cv_.wait(lk, [this]() { return !running_; });
 }
 

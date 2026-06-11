@@ -1,9 +1,10 @@
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -14,13 +15,11 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
 #include <memory>
-#include <unordered_set>
 
 namespace xrpl {
 
-NotTEC
+static NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
@@ -45,7 +44,7 @@ DelegateSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 DelegateSet::preclaim(PreclaimContext const& ctx)
 {
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAccount])))
@@ -64,7 +63,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 DelegateSet::doApply()
 {
     WAccountRoot wrappedOwner(accountID_, ctx_.view(), j_);
@@ -130,7 +129,7 @@ DelegateSet::doApply()
     return tesSUCCESS;
 }
 
-TER
+static TER
 DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
 {
     if (!sle)
@@ -178,7 +177,7 @@ DelegateSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 DelegateSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

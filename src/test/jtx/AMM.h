@@ -282,7 +282,7 @@ public:
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<Ter> const& ter = std::nullopt);
 
-    IOUAmount
+    static IOUAmount
     withdrawAll(
         std::optional<Account> const& account,
         std::optional<STAmount> const& asset1OutDetails = std::nullopt,
@@ -413,7 +413,7 @@ public:
     struct Pool
     {
         AMM const& amm;
-        std::vector<json::StaticString> names;
+        std::vector<json::StaticString> names{};
         Pool(AMM const& a, std::vector<json::StaticString> const& n = {}) : amm(a), names(n)
         {
         }

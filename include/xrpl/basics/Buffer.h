@@ -15,7 +15,7 @@ namespace xrpl {
 class Buffer
 {
 private:
-    std::unique_ptr<std::uint8_t[]> p_;
+    std::unique_ptr<std::uint8_t[]> p_{};
     std::size_t size_ = 0;
 
 public:

@@ -1,9 +1,7 @@
 #include <xrpl/tx/transactors/bridge/XChainBridge.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -13,7 +11,6 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
@@ -39,14 +36,10 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <cstdint>
-#include <expected>
 #include <limits>
 #include <memory>
 #include <optional>
-#include <tuple>
-#include <unordered_map>
 #include <utility>
-#include <vector>
 
 namespace xrpl {
 
@@ -267,7 +260,7 @@ claimHelper(
  */
 struct OnNewAttestationResult
 {
-    std::optional<std::vector<AccountID>> rewardAccounts;
+    std::optional<std::vector<AccountID>> rewardAccounts{};
     // `changed` is true if the attestation collection changed in any way
     // (added/removed/changed)
     bool changed{false};
@@ -1235,7 +1228,7 @@ attestationDoApply(ApplyContext& ctx)
     struct ScopeResult
     {
         STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::Locking;
-        std::unordered_map<AccountID, std::uint32_t> signersList;
+        std::unordered_map<AccountID, std::uint32_t> signersList{};
         std::uint32_t quorum{};
         AccountID thisDoor;
         Keylet bridgeK;
@@ -1324,7 +1317,7 @@ attestationDoApply(ApplyContext& ctx)
 }  // namespace
 //------------------------------------------------------------------------------
 
-NotTEC
+static NotTEC
 XChainCreateBridge::preflight(PreflightContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
@@ -1393,7 +1386,7 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
@@ -1442,7 +1435,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 XChainCreateBridge::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
@@ -1494,7 +1487,7 @@ BridgeModify::getFlagsMask(PreflightContext const& ctx)
     return tfXChainModifyBridgeMask;
 }
 
-NotTEC
+static NotTEC
 BridgeModify::preflight(PreflightContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
@@ -1535,7 +1528,7 @@ BridgeModify::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 BridgeModify::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
@@ -1552,14 +1545,14 @@ BridgeModify::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 BridgeModify::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
-    bool const clearAccountCreate = ctx_.tx.isFlag(tfClearAccountCreateAmount);
+    bool const clearAccountCreate = ctx_.tx.isFlag(tfClearAccountCreateAmount) = false;
 
     if (!AccountRoot(account, ctx_.view(), j_))
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -1588,7 +1581,7 @@ BridgeModify::doApply()
 
 //------------------------------------------------------------------------------
 
-NotTEC
+static NotTEC
 XChainClaim::preflight(PreflightContext const& ctx)
 {
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
@@ -1604,7 +1597,7 @@ XChainClaim::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 XChainClaim::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account = ctx.tx[sfAccount];
@@ -1696,7 +1689,7 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 XChainClaim::doApply()
 {
     PaymentSandbox psb(&ctx_.view());
@@ -1709,7 +1702,7 @@ XChainClaim::doApply()
 
     struct ScopeResult
     {
-        std::vector<AccountID> rewardAccounts;
+        std::vector<AccountID> rewardAccounts{};
         AccountID rewardPoolSrc;
         STAmount sendingAmount;
         STXChainBridge::ChainType srcChain;
@@ -1826,7 +1819,7 @@ XChainCommit::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, maxSpend};
 }
 
-NotTEC
+static NotTEC
 XChainCommit::preflight(PreflightContext const& ctx)
 {
     auto const amount = ctx.tx[sfAmount];
@@ -1842,7 +1835,7 @@ XChainCommit::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 XChainCommit::preclaim(PreclaimContext const& ctx)
 {
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
@@ -1893,7 +1886,7 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 XChainCommit::doApply()
 {
     PaymentSandbox psb(&ctx_.view());
@@ -1938,7 +1931,7 @@ XChainCommit::doApply()
 
 //------------------------------------------------------------------------------
 
-NotTEC
+static NotTEC
 XChainCreateClaimID::preflight(PreflightContext const& ctx)
 {
     auto const reward = ctx.tx[sfSignatureReward];
@@ -1949,7 +1942,7 @@ XChainCreateClaimID::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
@@ -1985,7 +1978,7 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 XChainCreateClaimID::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
@@ -2045,19 +2038,19 @@ XChainCreateClaimID::doApply()
 
 //------------------------------------------------------------------------------
 
-NotTEC
+static NotTEC
 XChainAddClaimAttestation::preflight(PreflightContext const& ctx)
 {
     return attestationPreflight<Attestations::AttestationClaim>(ctx);
 }
 
-TER
+static TER
 XChainAddClaimAttestation::preclaim(PreclaimContext const& ctx)
 {
     return attestationPreclaim<Attestations::AttestationClaim>(ctx);
 }
 
-TER
+static TER
 XChainAddClaimAttestation::doApply()
 {
     return attestationDoApply<Attestations::AttestationClaim>(ctx_);
@@ -2065,19 +2058,19 @@ XChainAddClaimAttestation::doApply()
 
 //------------------------------------------------------------------------------
 
-NotTEC
+static NotTEC
 XChainAddAccountCreateAttestation::preflight(PreflightContext const& ctx)
 {
     return attestationPreflight<Attestations::AttestationCreateAccount>(ctx);
 }
 
-TER
+static TER
 XChainAddAccountCreateAttestation::preclaim(PreclaimContext const& ctx)
 {
     return attestationPreclaim<Attestations::AttestationCreateAccount>(ctx);
 }
 
-TER
+static TER
 XChainAddAccountCreateAttestation::doApply()
 {
     return attestationDoApply<Attestations::AttestationCreateAccount>(ctx_);
@@ -2085,7 +2078,7 @@ XChainAddAccountCreateAttestation::doApply()
 
 //------------------------------------------------------------------------------
 
-NotTEC
+static NotTEC
 XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
 {
     auto const amount = ctx.tx[sfAmount];
@@ -2103,7 +2096,7 @@ XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
 {
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
@@ -2166,7 +2159,7 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 XChainCreateAccountCommit::doApply()
 {
     PaymentSandbox psb(&ctx_.view());
@@ -2219,7 +2212,7 @@ XChainCreateBridge::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 XChainCreateBridge::finalizeInvariants(
     STTx const&,
     TER,
@@ -2237,7 +2230,7 @@ BridgeModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 BridgeModify::finalizeInvariants(
     STTx const&,
     TER,
@@ -2255,7 +2248,7 @@ XChainClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).
@@ -2268,7 +2261,7 @@ XChainCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 XChainCommit::finalizeInvariants(
     STTx const&,
     TER,
@@ -2286,7 +2279,7 @@ XChainCreateClaimID::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 XChainCreateClaimID::finalizeInvariants(
     STTx const&,
     TER,
@@ -2304,7 +2297,7 @@ XChainAddClaimAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 XChainAddClaimAttestation::finalizeInvariants(
     STTx const&,
     TER,
@@ -2322,7 +2315,7 @@ XChainAddAccountCreateAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 XChainAddAccountCreateAttestation::finalizeInvariants(
     STTx const&,
     TER,
@@ -2340,7 +2333,7 @@ XChainCreateAccountCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 XChainCreateAccountCommit::finalizeInvariants(
     STTx const&,
     TER,

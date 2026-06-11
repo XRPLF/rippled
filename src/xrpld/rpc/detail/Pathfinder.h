@@ -115,7 +115,7 @@ private:
     STPathSet&
     addPathsForType(PathType const& type, std::function<bool(void)> const& continueCallback);
 
-    bool
+    static bool
     issueMatchesOrigin(Asset const&);
 
     int
@@ -158,7 +158,7 @@ private:
     isNoRippleOut(STPath const& currentPath);
 
     // Is the "no ripple" flag set from one account to another?
-    bool
+    static bool
     isNoRipple(AccountID const& fromAccount, AccountID const& toAccount, Currency const& currency);
 
     void
@@ -182,15 +182,15 @@ private:
     std::optional<uint256> domain_;
 
     std::shared_ptr<ReadView const> ledger_;
-    std::unique_ptr<LoadEvent> loadEvent_;
+    std::unique_ptr<LoadEvent> loadEvent_{};
     std::shared_ptr<AssetCache> rLCache_;
 
     STPathElement source_;
     STPathSet completePaths_;
-    std::vector<PathRank> pathRanks_;
-    std::map<PathType, STPathSet> paths_;
+    std::vector<PathRank> pathRanks_{};
+    std::map<PathType, STPathSet> paths_{};
 
-    hash_map<Asset, int> pathsOutCountMap_;
+    hash_map<Asset, int> pathsOutCountMap_{};
 
     Application& app_;
     beast::Journal const j_;

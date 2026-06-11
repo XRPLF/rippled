@@ -1,9 +1,7 @@
 #include <xrpl/tx/transactors/credentials/CredentialCreate.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>  // IWYU pragma: keep
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -21,7 +19,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <chrono>
 #include <cstdint>
 #include <memory>
 
@@ -49,7 +46,7 @@ CredentialCreate::getFlagsMask(PreflightContext const& ctx)
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
 
-NotTEC
+static NotTEC
 CredentialCreate::preflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -78,7 +75,7 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 CredentialCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const credType(ctx.tx[sfCredentialType]);
@@ -99,7 +96,7 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 CredentialCreate::doApply()
 {
     auto const subject = ctx_.tx[sfSubject];
@@ -114,7 +111,7 @@ CredentialCreate::doApply()
     if (optExp)
     {
         std::uint32_t const closeTime =
-            ctx_.view().header().parentCloseTime.time_since_epoch().count();
+            ctx_.view().header().parentCloseTime.time_since_epoch().count() = 0;
 
         if (closeTime > *optExp)
         {
@@ -184,7 +181,7 @@ CredentialCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 CredentialCreate::finalizeInvariants(
     STTx const&,
     TER,

@@ -1,18 +1,13 @@
 #include <xrpl/tx/invariants/InvariantCheck.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
@@ -31,11 +26,8 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <functional>
 #include <memory>
-#include <optional>
 #include <sstream>
-#include <vector>
 
 namespace xrpl {
 
@@ -69,7 +61,7 @@ TransactionFeeCheck::visitEntry(bool, SLE::const_ref, SLE::const_ref)
     // nothing to do
 }
 
-bool
+static bool
 TransactionFeeCheck::finalize(
     STTx const& tx,
     TER const,
@@ -434,7 +426,7 @@ AccountRootsDeletedClean::visitEntry(bool isDelete, SLE::const_ref before, SLE::
         accountsDeleted_.emplace_back(before, after);
 }
 
-bool
+static bool
 AccountRootsDeletedClean::finalize(
     STTx const& tx,
     TER const result,
@@ -609,7 +601,7 @@ NoXRPTrustLines::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
         // relying on .native() just in case native somehow
         // were systematically incorrect
         bool const isXrp = after->getFieldAmount(sfLowLimit).asset() == xrpIssue() ||
-            after->getFieldAmount(sfHighLimit).asset() == xrpIssue();
+            after->getFieldAmount(sfHighLimit).asset() == xrpIssue() = false;
         if (overwriteFixEnabled)
         {
             xrpTrustLine_ |= isXrp;
@@ -645,11 +637,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(bool, SLE::const_ref, SLE::const
     {
         bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
-        bool const lowFreeze = after->isFlag(lsfLowFreeze);
-        bool const lowDeepFreeze = after->isFlag(lsfLowDeepFreeze);
+        bool const lowFreeze = after->isFlag(lsfLowFreeze) = false;
+        bool const lowDeepFreeze = after->isFlag(lsfLowDeepFreeze) = false;
 
-        bool const highFreeze = after->isFlag(lsfHighFreeze);
-        bool const highDeepFreeze = after->isFlag(lsfHighDeepFreeze);
+        bool const highFreeze = after->isFlag(lsfHighFreeze) = false;
+        bool const highDeepFreeze = after->isFlag(lsfHighDeepFreeze) = false;
 
         bool const bad = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
         if (overwriteFixEnabled)
@@ -914,7 +906,7 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const
     }
 }
 
-bool
+static bool
 ValidPseudoAccounts::finalize(
     STTx const& tx,
     TER const,
@@ -953,7 +945,7 @@ NoModifiedUnmodifiableFields::visitEntry(bool isDelete, SLE::const_ref before, S
     changedEntries_.emplace(before, after);
 }
 
-bool
+static bool
 NoModifiedUnmodifiableFields::finalize(
     STTx const& tx,
     TER const,
@@ -1061,13 +1053,13 @@ ValidAmounts::visitEntry(
         afterEntries_.push_back(after);
 }
 
-bool
+static bool
 ValidAmounts::finalize(
     STTx const&,
     TER const,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j) const
+    beast::Journal const& j)
 {
     bool const badLedgerEntry = std::ranges::any_of(
         afterEntries_, [&](auto const& sle) { return hasInvalidAmount(*sle, j); });

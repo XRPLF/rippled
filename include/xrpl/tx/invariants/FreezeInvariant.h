@@ -23,19 +23,19 @@ class TransfersNotFrozen
     struct BalanceChange
     {
         SLE::const_pointer const line;
-        int const balanceChangeSign;
+        int const balanceChangeSign{};
     };
 
     struct IssuerChanges
     {
-        std::vector<BalanceChange> senders;
-        std::vector<BalanceChange> receivers;
+        std::vector<BalanceChange> senders{};
+        std::vector<BalanceChange> receivers{};
     };
 
     using ByIssuer = std::map<Issue, IssuerChanges>;
-    ByIssuer balanceChanges_;
+    ByIssuer balanceChanges_{};
 
-    std::map<AccountID, SLE::const_pointer const> possibleIssuers_;
+    std::map<AccountID, SLE::const_pointer const> possibleIssuers_{};
 
 public:
     void

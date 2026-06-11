@@ -1,14 +1,13 @@
 #include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -27,9 +26,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
-#include <expected>
 #include <iterator>  // IWYU pragma: keep
-#include <utility>
 
 namespace xrpl {
 
@@ -82,7 +79,7 @@ NFTokenMint::getFlagsMask(PreflightContext const& ctx)
     return nfTokenMintMask;
 }
 
-NotTEC
+static NotTEC
 NFTokenMint::preflight(PreflightContext const& ctx)
 {
     if (auto const f = ctx.tx[~sfTransferFee])
@@ -180,7 +177,7 @@ NFTokenMint::createNFTokenID(
     return uint256::fromVoid(buf.data());
 }
 
-TER
+static TER
 NFTokenMint::preclaim(PreclaimContext const& ctx)
 {
     // The issuer of the NFT may or may not be the account executing this
@@ -280,7 +277,7 @@ NFTokenMint::doApply()
         return (tokenSeq.error());
 
     std::uint32_t const ownerCountBefore =
-        AccountRoot(accountID_, view(), j_)->getFieldU32(sfOwnerCount);
+        AccountRoot(accountID_ = 0, view(), j_)->getFieldU32(sfOwnerCount);
 
     // Assemble the new NFToken.
     SOTemplate const* nfTokenTemplate =
@@ -349,7 +346,7 @@ NFTokenMint::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 NFTokenMint::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

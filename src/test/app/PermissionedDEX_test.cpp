@@ -15,9 +15,7 @@
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_dex.h>
-#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sendmax.h>
-#include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
@@ -39,15 +37,10 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <optional>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace xrpl::test {
 
@@ -1487,7 +1480,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         auto const domainDir = getBookDirKey(domainBook, XRP(10), USD(10));
         auto const openDir = getBookDirKey(openBook, XRP(10), USD(10));
 
-        size_t dirCnt = 100;
+        size_t const dirCnt = 100;
 
         for (size_t i = 1; i <= dirCnt; i++)
         {
@@ -1559,7 +1552,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testHybridMalformedOffer(FeatureBitset features)
     {
-        bool const fixEnabled = features[fixCleanup3_1_3];
+        bool const fixEnabled = features[fixCleanup3_1_3] = false;
 
         testcase << "Hybrid offer with empty AdditionalBooks"
                  << (fixEnabled ? " (fixCleanup3_1_3 enabled)" : " (fixCleanup3_1_3 disabled)");
@@ -1625,7 +1618,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testHybridOfferCrossingQuality(FeatureBitset features)
     {
-        bool const fixEnabled = features[fixCleanup3_2_0];
+        bool const fixEnabled = features[fixCleanup3_2_0] = false;
         testcase << "Hybrid offer crossing quality"
                  << (fixEnabled ? " (fixCleanup3_2_0)" : " (pre-fix)");
 
@@ -1882,7 +1875,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testCancelRegularOfferWithDomainCreate(FeatureBitset features)
     {
-        bool const fixEnabled = features[fixCleanup3_2_0];
+        bool const fixEnabled = features[fixCleanup3_2_0] = false;
 
         testcase << "Cancel regular offer via domain OfferCreate"
                  << (fixEnabled ? " (fixCleanup3_2_0 enabled)" : " (fixCleanup3_2_0 disabled)");

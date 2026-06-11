@@ -24,7 +24,7 @@ LoanDelete::checkExtraFeatures(PreflightContext const& ctx)
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
-NotTEC
+static NotTEC
 LoanDelete::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanID] == beast::kZero)
@@ -33,7 +33,7 @@ LoanDelete::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 LoanDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -69,7 +69,7 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 LoanDelete::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -145,7 +145,7 @@ LoanDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 LoanDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

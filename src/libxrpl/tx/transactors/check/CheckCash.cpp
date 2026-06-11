@@ -6,30 +6,24 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <optional>
 
@@ -46,7 +40,7 @@ CheckCash::checkExtraFeatures(xrpl::PreflightContext const& ctx)
          !(optDeliverMin && optDeliverMin->holds<MPTIssue>()));
 }
 
-NotTEC
+static NotTEC
 CheckCash::preflight(PreflightContext const& ctx)
 {
     // Exactly one of Amount or DeliverMin must be present.
@@ -77,7 +71,7 @@ CheckCash::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 CheckCash::preclaim(PreclaimContext const& ctx)
 {
     auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
@@ -282,7 +276,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 CheckCash::doApply()
 {
     // Flow requires that we operate on a PaymentSandbox, rather than
@@ -404,8 +398,8 @@ CheckCash::doApply()
             };
 
             std::optional<Keylet> trustLineKey;
-            STAmount savedLimit;
-            bool destLow = false;
+            STAmount const savedLimit;
+            bool const destLow = false;
             AccountID const& deliverIssuer = flowDeliver.getIssuer();
             auto const err = flowDeliver.asset().visit(
                 [&](Issue const& issue) -> std::optional<TER> {
@@ -599,7 +593,7 @@ CheckCash::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 CheckCash::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

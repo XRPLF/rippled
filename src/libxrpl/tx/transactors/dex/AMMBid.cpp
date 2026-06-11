@@ -6,16 +6,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -24,13 +18,8 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <expected>
-#include <optional>
-#include <set>
-#include <utility>
 
 namespace xrpl {
 
@@ -47,7 +36,7 @@ AMMBid::checkExtraFeatures(PreflightContext const& ctx)
     return true;
 }
 
-NotTEC
+static NotTEC
 AMMBid::preflight(PreflightContext const& ctx)
 {
     if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
@@ -102,7 +91,7 @@ AMMBid::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 AMMBid::preclaim(PreclaimContext const& ctx)
 {
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
@@ -368,7 +357,7 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& accountId, beast::Jour
     return {res, isTesSuccess(res)};
 }
 
-TER
+static TER
 AMMBid::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
@@ -388,7 +377,7 @@ AMMBid::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 AMMBid::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

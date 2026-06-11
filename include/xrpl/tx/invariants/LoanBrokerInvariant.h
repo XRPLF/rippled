@@ -33,19 +33,19 @@ class ValidLoanBroker
     // Collect all the LoanBrokers found directly or indirectly through
     // pseudo-accounts. Key is the brokerID / index. It will be used to find the
     // LoanBroker object if brokerBefore and brokerAfter are nullptr
-    std::map<uint256, BrokerInfo> brokers_;
+    std::map<uint256, BrokerInfo> brokers_{};
     // Collect all the modified trust lines. Their high and low accounts will be
     // loaded to look for LoanBroker pseudo-accounts.
-    std::vector<SLE::const_pointer> lines_;
+    std::vector<SLE::const_pointer> lines_{};
     // Collect all the modified MPTokens. Their accounts will be loaded to look
     // for LoanBroker pseudo-accounts.
-    std::vector<SLE::const_pointer> mpts_;
+    std::vector<SLE::const_pointer> mpts_{};
 
     static bool
     goodZeroDirectory(ReadView const& view, SLE::const_ref dir, beast::Journal const& j);
 
 public:
-    void
+    static void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     bool

@@ -1,16 +1,11 @@
 #include <xrpl/tx/transactors/payment_channel/PaymentChannelFund.h>
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -26,7 +21,7 @@ PaymentChannelFund::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
-NotTEC
+static NotTEC
 PaymentChannelFund::preflight(PreflightContext const& ctx)
 {
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
@@ -35,7 +30,7 @@ PaymentChannelFund::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 PaymentChannelFund::doApply()
 {
     Keylet const k(ltPAYCHAN, ctx_.tx[sfChannel]);
@@ -110,7 +105,7 @@ PaymentChannelFund::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 PaymentChannelFund::finalizeInvariants(
     STTx const&,
     TER,

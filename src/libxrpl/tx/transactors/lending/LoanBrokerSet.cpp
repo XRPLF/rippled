@@ -4,16 +4,13 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -21,7 +18,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <memory>
-#include <vector>
 
 namespace xrpl {
 
@@ -31,7 +27,7 @@ LoanBrokerSet::checkExtraFeatures(PreflightContext const& ctx)
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
-NotTEC
+static NotTEC
 LoanBrokerSet::preflight(PreflightContext const& ctx)
 {
     using namespace Lending;
@@ -80,7 +76,7 @@ LoanBrokerSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-std::vector<OptionaledField<STNumber>> const&
+static std::vector<OptionaledField<STNumber>> const&
 LoanBrokerSet::getValueFields()
 {
     static std::vector<OptionaledField<STNumber>> const kValueFields{~sfDebtMaximum};
@@ -88,7 +84,7 @@ LoanBrokerSet::getValueFields()
     return kValueFields;
 }
 
-TER
+static TER
 LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -169,7 +165,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 LoanBrokerSet::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -284,7 +280,7 @@ LoanBrokerSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 LoanBrokerSet::finalizeInvariants(
     STTx const&,
     TER,

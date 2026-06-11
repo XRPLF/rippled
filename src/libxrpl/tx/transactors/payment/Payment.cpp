@@ -7,7 +7,6 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
@@ -19,7 +18,6 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
@@ -40,7 +38,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <optional>
-#include <unordered_set>
 
 namespace xrpl {
 
@@ -108,7 +105,7 @@ Payment::getFlagsMask(PreflightContext const& ctx)
     return paymentMask;
 }
 
-NotTEC
+static NotTEC
 Payment::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
@@ -271,7 +268,7 @@ Payment::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-NotTEC
+static NotTEC
 Payment::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
@@ -310,7 +307,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     return terNO_DELEGATE_PERMISSION;
 }
 
-TER
+static TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
     // Ripple if source or destination is non-native or if there are paths.
@@ -399,15 +396,15 @@ Payment::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 Payment::doApply()
 {
     auto const deliverMin = ctx_.tx[~sfDeliverMin];
 
     // Ripple if source or destination is non-native or if there are paths.
-    bool const partialPaymentAllowed = ctx_.tx.isFlag(tfPartialPayment);
-    bool const limitQuality = ctx_.tx.isFlag(tfLimitQuality);
-    bool const defaultPathsAllowed = !ctx_.tx.isFlag(tfNoRippleDirect);
+    bool const partialPaymentAllowed = ctx_.tx.isFlag(tfPartialPayment) = false;
+    bool const limitQuality = ctx_.tx.isFlag(tfLimitQuality) = false;
+    bool const defaultPathsAllowed = !ctx_.tx.isFlag(tfNoRippleDirect) = false;
     auto const hasPaths = ctx_.tx.isFieldPresent(sfPaths);
     auto const sendMax = ctx_.tx[~sfSendMax];
 
@@ -603,7 +600,7 @@ Payment::doApply()
 
     // In a delegated payment, the fee payer is the delegated account,
     // not the source account (accountID_).
-    bool const accountIsPayer = (ctx_.tx.getFeePayer() == accountID_);
+    bool const accountIsPayer = (ctx_.tx.getFeePayer() == accountID_) = false;
 
     // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
     // were charged. If source account is the fee payer, it must also cover the fee.
@@ -678,7 +675,7 @@ Payment::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 Payment::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

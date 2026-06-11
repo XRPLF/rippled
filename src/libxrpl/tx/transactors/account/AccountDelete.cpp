@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -10,10 +11,8 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -26,14 +25,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/account/SignerListSet.h>
-#include <xrpl/tx/transactors/delegate/DelegateSet.h>
-#include <xrpl/tx/transactors/did/DIDDelete.h>
-#include <xrpl/tx/transactors/oracle/OracleDelete.h>
-#include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <cstdint>
-#include <utility>
 
 namespace xrpl {
 
@@ -43,7 +36,7 @@ AccountDelete::checkExtraFeatures(PreflightContext const& ctx)
     return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
-NotTEC
+static NotTEC
 AccountDelete::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -220,7 +213,7 @@ nonObligationDeleter(LedgerEntryType t)
 
 }  // namespace
 
-TER
+static TER
 AccountDelete::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account{ctx.tx[sfAccount]};
@@ -341,7 +334,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 AccountDelete::doApply()
 {
     WAccountRoot src(accountID_, view(), j_);
@@ -421,7 +414,7 @@ AccountDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 AccountDelete::finalizeInvariants(
     STTx const&,
     TER,

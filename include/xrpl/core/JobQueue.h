@@ -55,7 +55,7 @@ public:
         std::mutex mutexRun_;
         std::condition_variable cv_;
         boost::coroutines2::coroutine<void>::push_type* yield_{};
-        boost::coroutines2::coroutine<void>::pull_type coro_;
+        boost::coroutines2::coroutine<void>::pull_type coro_{};
 #ifndef NDEBUG
         bool finished_ = false;
 #endif
@@ -112,7 +112,7 @@ public:
         resume();
 
         /** Returns true if the Coro is still runnable (has not returned). */
-        bool
+        [[nodiscard]] bool
         runnable() const;
 
         /** Once called, the Coro allows early exit without an assert. */

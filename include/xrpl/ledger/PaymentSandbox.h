@@ -37,7 +37,7 @@ private:
     struct IssuerValueMPT
     {
         IssuerValueMPT() = default;
-        std::map<AccountID, HolderValueMPT> holders;
+        std::map<AccountID, HolderValueMPT> holders{};
         // Credit to holder
         std::uint64_t credit = 0;
         // OutstandingAmount might overflow when MPTs are credited to a holder.
@@ -114,9 +114,9 @@ private:
     static KeyIOU
     makeKeyIOU(AccountID const& a1, AccountID const& a2, Currency const& currency);
 
-    std::map<KeyIOU, ValueIOU> creditsIOU_;
-    std::map<MPTID, IssuerValueMPT> creditsMPT_;
-    std::map<AccountID, std::uint32_t> ownerCounts_;
+    std::map<KeyIOU, ValueIOU> creditsIOU_{};
+    std::map<MPTID, IssuerValueMPT> creditsMPT_{};
+    std::map<AccountID, std::uint32_t> ownerCounts_{};
 };
 
 }  // namespace detail

@@ -21,7 +21,7 @@ class LedgerHolder : public CountedObject<LedgerHolder>
 {
 public:
     // Update the held ledger
-    void
+    static void
     set(std::shared_ptr<Ledger const> ledger)
     {
         if (!ledger)
@@ -33,14 +33,14 @@ public:
     }
 
     // Return the (immutable) held ledger
-    std::shared_ptr<Ledger const>
+    static std::shared_ptr<Ledger const>
     get()
     {
         std::scoped_lock const sl(lock_);
         return heldLedger_;
     }
 
-    bool
+    static bool
     empty()
     {
         std::scoped_lock const sl(lock_);

@@ -1,11 +1,10 @@
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -23,8 +22,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <optional>
-#include <set>
 #include <utility>
 
 namespace xrpl {
@@ -39,7 +36,7 @@ DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
     return !authCredPresent || ctx.rules.enabled(featureCredentials);
 }
 
-NotTEC
+static NotTEC
 DepositPreauth::preflight(PreflightContext const& ctx)
 {
     bool const authArrPresent = ctx.tx.isFieldPresent(sfAuthorizeCredentials);
@@ -93,7 +90,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 DepositPreauth::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account(ctx.tx[sfAccount]);
@@ -148,7 +145,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 DepositPreauth::doApply()
 {
     if (ctx_.tx.isFieldPresent(sfAuthorize))
@@ -263,7 +260,7 @@ DepositPreauth::doApply()
     return tesSUCCESS;
 }
 
-TER
+static TER
 DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
 {
     // Existence already checked in preclaim and AccountDelete
@@ -303,7 +300,7 @@ DepositPreauth::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 DepositPreauth::finalizeInvariants(
     STTx const&,
     TER,

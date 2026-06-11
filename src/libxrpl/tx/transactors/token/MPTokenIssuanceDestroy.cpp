@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceDestroy.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -11,13 +12,13 @@
 
 namespace xrpl {
 
-NotTEC
+static NotTEC
 MPTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
 
-TER
+static TER
 MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
@@ -39,7 +40,7 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 MPTokenIssuanceDestroy::doApply()
 {
     auto const mpt = view().peek(keylet::mptIssuance(ctx_.tx[sfMPTokenIssuanceID]));
@@ -63,7 +64,7 @@ MPTokenIssuanceDestroy::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 MPTokenIssuanceDestroy::finalizeInvariants(
     STTx const&,
     TER,

@@ -40,8 +40,8 @@ public:
     [[nodiscard]] value_type const&
     value() const noexcept;
 
-    void
-    setIssue(Asset const& issue);
+    static void
+    setIssue(Asset const& issue) const;
 
     [[nodiscard]] SerializedTypeID
     getSType() const override;
@@ -114,7 +114,7 @@ STIssue::value() const noexcept
 }
 
 inline void
-STIssue::setIssue(Asset const& asset)
+STIssue::setIssue(Asset const& asset) const
 {
     if (holds<Issue>() && !isConsistent(asset_.get<Issue>()))
         Throw<std::runtime_error>("Invalid asset: currency and account native mismatch");

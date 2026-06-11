@@ -24,7 +24,7 @@ public:
     RawStateTable()
         : monotonicResource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
               kInitialBufferSize)}
-        , items_{monotonicResource_.get()} {};
+        , items_{monotonicResource_.get()} = default;
 
     RawStateTable(RawStateTable const& rhs)
         : monotonicResource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
@@ -101,7 +101,7 @@ private:
         boost::container::pmr::polymorphic_allocator<std::pair<key_type const, SleAction>>>;
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
-    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonicResource_;
+    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonicResource_{};
     items_t items_;
 
     XRPAmount dropsDestroyed_{0};

@@ -5,18 +5,17 @@
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
-#include <test/jtx/deposit.h>
 #include <test/jtx/directory.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
@@ -36,6 +35,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <string_view>
 
 namespace xrpl::test {
@@ -1005,7 +1005,7 @@ struct Credentials_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const enabled = features[fixInvalidTxFlags];
+        bool const enabled = features[fixInvalidTxFlags] = false;
         testcase(std::string("Test flag, fix ") + (enabled ? "enabled" : "disabled"));
 
         char const credType[] = "abcde";
@@ -1037,7 +1037,7 @@ struct Credentials_test : public beast::unit_test::Suite
     void
     testRemoveExpiredCorruption(FeatureBitset features)
     {
-        bool const fixEnabled = features[fixCleanup3_1_3];
+        bool const fixEnabled = features[fixCleanup3_1_3] = false;
         testcase(
             "removeExpired ignores deleteSLE failure " +
             (fixEnabled ? std::string(" after fix") : std::string(" before fix")));

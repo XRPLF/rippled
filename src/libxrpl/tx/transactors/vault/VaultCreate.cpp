@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
@@ -9,7 +10,6 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -25,7 +25,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 
 #include <cstdint>
 #include <memory>
@@ -51,7 +50,7 @@ VaultCreate::getFlagsMask(PreflightContext const& ctx)
     return tfVaultCreateMask;
 }
 
-NotTEC
+static NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
     if (!validDataLength(ctx.tx[~sfData], kMaxDataPayloadLength))
@@ -101,7 +100,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 VaultCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const vaultAsset = ctx.tx[sfAsset];
@@ -139,7 +138,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 VaultCreate::doApply()
 {
     // All return codes in `doApply` must be `tec`, `ter`, or `tes`.
@@ -174,7 +173,7 @@ VaultCreate::doApply()
 
     std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
         ? 0
-        : ctx_.tx[~sfScale].value_or(kVaultDefaultIouScale);
+        : ctx_.tx[~sfScale].value_or(kVaultDefaultIouScale) = 0;
 
     std::uint32_t mptFlags = 0;
     if (!tx.isFlag(tfVaultShareNonTransferable))
@@ -269,7 +268,7 @@ VaultCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 VaultCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

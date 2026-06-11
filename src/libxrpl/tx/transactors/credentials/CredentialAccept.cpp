@@ -1,7 +1,6 @@
 #include <xrpl/tx/transactors/credentials/CredentialAccept.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -31,7 +30,7 @@ CredentialAccept::getFlagsMask(PreflightContext const& ctx)
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
 
-NotTEC
+static NotTEC
 CredentialAccept::preflight(PreflightContext const& ctx)
 {
     if (!ctx.tx[sfIssuer])
@@ -50,7 +49,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 CredentialAccept::preclaim(PreclaimContext const& ctx)
 {
     AccountID const subject = ctx.tx[sfAccount];
@@ -81,7 +80,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 CredentialAccept::doApply()
 {
     AccountID const issuer{ctx_.tx[sfIssuer]};
@@ -129,7 +128,7 @@ CredentialAccept::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 CredentialAccept::finalizeInvariants(
     STTx const&,
     TER,

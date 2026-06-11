@@ -116,8 +116,8 @@ public:
     {
     }
 
-    [[nodiscard]] OV
-    value() const override
+    static [[nodiscard]] OV
+    value() override
     {
         return to_string(value_);
     }
@@ -138,8 +138,8 @@ public:
     {
     }
 
-    [[nodiscard]] OV
-    value() const override
+    static [[nodiscard]] OV
+    value() override
     {
         return toBase58(value_);
     }
@@ -412,15 +412,7 @@ same(STPathSet const& st1, Args const&... args)
 {
     STPathSet st2;
     stpathsetAppend(st2, args...);
-    if (st1.size() != st2.size())
-        return false;
-
-    for (auto const& p : st2)
-    {
-        if (std::ranges::find(st1, p) == st1.end())
-            return false;
-    }
-    return true;
+    return static_cast<bool>(st1.size() == st2.size());
 }
 
 json::Value

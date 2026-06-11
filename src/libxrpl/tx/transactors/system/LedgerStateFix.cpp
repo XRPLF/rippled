@@ -2,11 +2,11 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -53,7 +53,7 @@ hasUnexpectedFixField(STTx const& tx, SField const& expected)
 
 }  // namespace
 
-NotTEC
+static NotTEC
 LedgerStateFix::preflight(PreflightContext const& ctx)
 {
     auto const fixType = static_cast<FixType>(ctx.tx[sfLedgerFixType]);
@@ -91,7 +91,7 @@ LedgerStateFix::calculateBaseFee(ReadView const& view, STTx const& tx)
     return calculateOwnerReserveFee(view, tx);
 }
 
-TER
+static TER
 LedgerStateFix::preclaim(PreclaimContext const& ctx)
 {
     if (static_cast<FixType>(ctx.tx[sfLedgerFixType]) == FixType::NfTokenPageLink)
@@ -125,7 +125,7 @@ LedgerStateFix::preclaim(PreclaimContext const& ctx)
     return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
-TER
+static TER
 LedgerStateFix::doApply()
 {
     if (static_cast<FixType>(ctx_.tx[sfLedgerFixType]) == FixType::NfTokenPageLink)
@@ -158,7 +158,7 @@ LedgerStateFix::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 LedgerStateFix::finalizeInvariants(
     STTx const&,
     TER,

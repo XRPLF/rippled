@@ -66,25 +66,25 @@ public:
         return transaction_;
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getID() const
     {
         return transactionID_;
     }
 
-    LedgerIndex
+    [[nodiscard]] LedgerIndex
     getLedger() const
     {
         return ledgerIndex_;
     }
 
-    bool
+    [[nodiscard]] bool
     isValidated() const
     {
         return ledgerIndex_ != 0;
     }
 
-    TransStatus
+    [[nodiscard]] TransStatus
     getStatus() const
     {
         return status_;
@@ -137,7 +137,7 @@ public:
      *
      * @return Whether transaction is being applied within a batch.
      */
-    bool
+    [[nodiscard]] bool
     getApplying() const
     {
         // Note that all access to applying_ are made by NetworkOPsImp, and must
@@ -190,7 +190,7 @@ public:
      * @brief getSubmitResult Return submit result
      * @return SubmitResult struct
      */
-    SubmitResult
+    [[nodiscard]] SubmitResult
     getSubmitResult() const
     {
         return submitResult_;
@@ -267,7 +267,7 @@ public:
      * @brief getCurrentLedgerState Get current ledger state of transaction
      * @return Current ledger state
      */
-    std::optional<CurrentLedgerState>
+    [[nodiscard]] std::optional<CurrentLedgerState>
     getCurrentLedgerState() const
     {
         return currentLedgerState_;
@@ -290,7 +290,7 @@ public:
         currentLedgerState_.emplace(validatedLedger, fee, accountSeq, availableSeq);
     }
 
-    json::Value
+    [[nodiscard]] json::Value
     getJson(JsonOptions options, bool binary = false) const;
 
     // Information used to locate a transaction.
@@ -299,15 +299,15 @@ public:
     // at the time of search.
     struct Locator
     {
-        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator;
+        std::variant<std::pair<uint256, uint32_t>, ClosedInterval<uint32_t>> locator{};
 
         // @return true if transaction was found, false otherwise
         //
         // Call this function first to determine the type of the contained info.
         // Calling the wrong getter function will throw an exception.
         // See documentation for the getter functions for more details
-        [[nodiscard]] bool
-        isFound() const
+        static [[nodiscard]] bool
+        isFound()
         {
             return std::holds_alternative<std::pair<uint256, uint32_t>>(locator);
         }
@@ -315,7 +315,7 @@ public:
         // @return key used to find transaction in nodestore
         //
         // Throws if isFound() returns false
-        uint256 const&
+        static uint256 const&
         getNodestoreHash()
         {
             return std::get<std::pair<uint256, uint32_t>>(locator).first;
@@ -324,7 +324,7 @@ public:
         // @return sequence of ledger containing the transaction
         //
         // Throws is isFound() returns false
-        uint32_t
+        static uint32_t
         getLedgerSequence()
         {
             return std::get<std::pair<uint256, uint32_t>>(locator).second;

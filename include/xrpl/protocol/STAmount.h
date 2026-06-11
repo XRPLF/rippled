@@ -556,12 +556,12 @@ STAmount::fromNumber(A const& a, Number const& number)
     if (asset.integral())
     {
         std::uint64_t const intValue = static_cast<std::int64_t>(working);
-        return STAmount{asset, intValue, 0, negative};
+        return STAmount{asset, static_cast<uint32_t>(intValue), 0, negative};
     }
 
     auto const [mantissa, exponent] = working.normalizeToRange<kMinValue, kMaxValue>();
 
-    return STAmount{asset, mantissa, exponent, negative};
+    return STAmount{asset, static_cast<uint32_t>(mantissa), exponent, negative};
 }
 
 inline void

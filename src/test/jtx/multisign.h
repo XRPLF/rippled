@@ -38,7 +38,7 @@ signers(Account const& account, NoneT);
 class Msig
 {
 public:
-    std::vector<Reg> signers;
+    std::vector<Reg> signers{};
     /** Alternative transaction object field in which to place the signer list.
      *
      * subField is only supported if an account_ is provided as well.

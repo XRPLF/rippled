@@ -282,13 +282,13 @@ class Validations
     mutable Mutex mutex_;
 
     // Validations from currently listed and trusted nodes (partial and full)
-    hash_map<NodeID, Validation> current_;
+    hash_map<NodeID, Validation> current_{};
 
     // Used to enforce the largest validation invariant for the local node
     SeqEnforcer<Seq> localSeqEnforcer_;
 
     // Sequence of the largest validation received from each node
-    hash_map<NodeID, SeqEnforcer<Seq>> seqEnforcers_;
+    hash_map<NodeID, SeqEnforcer<Seq>> seqEnforcers_{};
 
     //! Validations from listed nodes, indexed by ledger id (partial and full)
     beast::aged_unordered_map<
@@ -319,10 +319,10 @@ class Validations
 
     // Last (validated) ledger successfully acquired. If in this map, it is
     // accounted for in the trie.
-    hash_map<NodeID, Ledger> lastLedger_;
+    hash_map<NodeID, Ledger> lastLedger_{};
 
     // Set of ledgers being acquired from the network
-    hash_map<std::pair<Seq, ID>, hash_set<NodeID>> acquiring_;
+    hash_map<std::pair<Seq, ID>, hash_set<NodeID>> acquiring_{};
 
     // Parameters to determine validation staleness
     ValidationParms const parms_;

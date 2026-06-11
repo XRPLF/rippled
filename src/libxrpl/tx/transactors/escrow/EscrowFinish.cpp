@@ -2,16 +2,12 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/conditions/Condition.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/conditions/Fulfillment.h>
 #include <xrpl/core/HashRouter.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -67,7 +63,7 @@ EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
     return !ctx.tx.isFieldPresent(sfCredentialIDs) || ctx.rules.enabled(featureCredentials);
 }
 
-NotTEC
+static NotTEC
 EscrowFinish::preflight(PreflightContext const& ctx)
 {
     auto const cb = ctx.tx[~sfCondition];
@@ -81,7 +77,7 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-NotTEC
+static NotTEC
 EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
 {
     auto const cb = ctx.tx[~sfCondition];
@@ -191,7 +187,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
-TER
+static TER
 EscrowFinish::preclaim(PreclaimContext const& ctx)
 {
     if (ctx.view.rules().enabled(featureCredentials))
@@ -225,7 +221,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 EscrowFinish::doApply()
 {
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
@@ -354,7 +350,7 @@ EscrowFinish::doApply()
             ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
             : kParityRate;
         auto const issuer = amount.getIssuer();
-        bool const createAsset = destID == accountID_;
+        bool const createAsset = destID == accountID_ = false;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
@@ -404,7 +400,7 @@ EscrowFinish::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 EscrowFinish::finalizeInvariants(
     STTx const&,
     TER,

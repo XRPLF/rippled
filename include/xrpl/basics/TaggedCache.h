@@ -197,7 +197,7 @@ private:
     class KeyOnlyEntry
     {
     public:
-        clock_type::time_point lastAccess;
+        clock_type::time_point lastAccess{};
 
         explicit KeyOnlyEntry(clock_type::time_point const& lastAccess) : lastAccess(lastAccess)
         {
@@ -214,7 +214,7 @@ private:
     {
     public:
         shared_weak_combo_pointer_type ptr;
-        clock_type::time_point lastAccess;
+        clock_type::time_point lastAccess{};
 
         ValueEntry(clock_type::time_point const& lastAccess, shared_pointer_type const& ptr)
             : ptr(ptr), lastAccess(lastAccess)
@@ -289,11 +289,11 @@ private:
     int const targetSize_;
 
     // Desired maximum cache age
-    clock_type::duration const targetAge_;
+    clock_type::duration const targetAge_{};
 
     // Number of items cached
     int cacheCount_{0};
-    cache_type cache_;  // Hold strong reference to recent objects
+    cache_type cache_{};  // Hold strong reference to recent objects
     std::uint64_t hits_{0};
     std::uint64_t misses_{0};
 };

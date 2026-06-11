@@ -1,12 +1,12 @@
 #include <xrpl/tx/transactors/did/DIDSet.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
@@ -37,7 +37,7 @@ namespace xrpl {
 
 //------------------------------------------------------------------------------
 
-NotTEC
+static NotTEC
 DIDSet::preflight(PreflightContext const& ctx)
 {
     if (!ctx.tx.isFieldPresent(sfURI) && !ctx.tx.isFieldPresent(sfDIDDocument) &&
@@ -95,7 +95,7 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
     return tesSUCCESS;
 }
 
-TER
+static TER
 DIDSet::doApply()
 {
     // Edit ledger object if it already exists
@@ -155,7 +155,7 @@ DIDSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 DIDSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

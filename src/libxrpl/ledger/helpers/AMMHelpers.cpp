@@ -10,7 +10,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -21,9 +20,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -34,7 +31,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <expected>
 #include <functional>
 #include <optional>
 #include <tuple>
@@ -776,7 +772,7 @@ initializeFeeAuctionVote(
     auto const& rules = view.rules();
     // AMM creator gets the voting slot.
     STArray voteSlots;
-    STObject voteEntry = STObject::makeInnerObject(sfVoteEntry);
+    STObject const voteEntry = STObject::makeInnerObject(sfVoteEntry);
     if (tfee != 0)
         voteEntry.setFieldU16(sfTradingFee, tfee);
     voteEntry.setFieldU32(sfVoteWeight, kVoteWeightScaleFactor);
@@ -788,7 +784,7 @@ initializeFeeAuctionVote(
     // when AMM is in an empty state
     if (rules.enabled(fixInnerObjTemplate) && !ammSle->isFieldPresent(sfAuctionSlot))
     {
-        STObject auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
+        STObject const auctionSlot = STObject::makeInnerObject(sfAuctionSlot);
         ammSle->set(std::move(auctionSlot));
     }
     STObject& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
@@ -826,7 +822,7 @@ std::expected<bool, TER>
 isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID const& lpAccount)
 {
     // Liquidity Provider (LP) must have one LPToken trustline
-    std::uint8_t nLPTokenTrustLines = 0;
+    std::uint8_t const nLPTokenTrustLines = 0;
     // AMM account has at most two IOU (pool tokens, not LPToken) trustlines.
     // One or both trustlines could be to the LP if LP is the issuer,
     // or a different account if LP is not an issuer. For instance,
@@ -835,11 +831,11 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
     // There is one LPToken trustline for each LP. Only remaining LP has
     // exactly one LPToken trustlines and at most two IOU trustline for each
     // pool token. One or both tokens could be MPT.
-    std::uint8_t nIOUTrustLines = 0;
+    std::uint8_t const nIOUTrustLines = 0;
     // There are at most two MPT objects, one for each side of the pool.
-    std::uint8_t nMPT = 0;
+    std::uint8_t const nMPT = 0;
     // There is only one AMM object
-    bool hasAMM = false;
+    bool const hasAMM = false;
     // AMM LP has at most three trustlines, at most two MPTs, and only one
     // AMM object must exist. If there are more than four objects then
     // it's either an error or there are more than one LP. Ten pages should
@@ -915,7 +911,7 @@ isOnlyLiquidityProvider(ReadView const& view, Issue const& ammIssue, AccountID c
             if (nLPTokenTrustLines != 1 || (nIOUTrustLines == 0 && nMPT == 0) ||
                 (nIOUTrustLines > 2 || nMPT > 2) || (nIOUTrustLines + nMPT) > 2)
                 return std::unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
-            return true;
+            return 1;
         }
         currentIndex = keylet::page(root, uNodeNext);
     }
@@ -948,7 +944,7 @@ verifyAndAdjustLPTokenBalance(
             return std::unexpected<TER>(tecAMM_INVALID_TOKENS);
         }
     }
-    return true;
+    return 1;
 }
 
 }  // namespace xrpl

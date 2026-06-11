@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -18,13 +19,13 @@
 
 namespace xrpl {
 
-NotTEC
+static NotTEC
 DIDDelete::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
 
-TER
+static TER
 DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
 {
     auto const sle = ctx.view().peek(sleKeylet);
@@ -34,7 +35,7 @@ DIDDelete::deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner)
     return DIDDelete::deleteSLE(ctx.view(), sle, owner, ctx.journal);
 }
 
-TER
+static TER
 DIDDelete::deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, beast::Journal j)
 {
     // Remove object from owner directory
@@ -70,7 +71,7 @@ DIDDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 DIDDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

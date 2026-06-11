@@ -142,8 +142,8 @@ public:
                 is the transaction ID and the value is a bool of the transaction
                 exists in this set.
     */
-    [[nodiscard]] std::map<Tx::ID, bool>
-    compare(RCLTxSet const& j) const
+    static [[nodiscard]] std::map<Tx::ID, bool>
+    compare(RCLTxSet const& j)
     {
         SHAMap::Delta delta;
 

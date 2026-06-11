@@ -7,7 +7,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -21,16 +20,12 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <tuple>
-#include <utility>
-#include <vector>
 
 namespace xrpl {
 
@@ -77,7 +72,7 @@ SignerListSet::getFlagsMask(PreflightContext const& ctx)
     return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
 }
 
-NotTEC
+static NotTEC
 SignerListSet::preflight(PreflightContext const& ctx)
 {
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
@@ -233,7 +228,7 @@ SignerListSet::removeFromLedger(
     return removeSignersFromLedger(registry, view, account, j);
 }
 
-NotTEC
+static NotTEC
 SignerListSet::validateQuorumAndSignerEntries(
     std::uint32_t quorum,
     std::vector<SignerEntries::SignerEntry> const& signers,
@@ -264,7 +259,7 @@ SignerListSet::validateQuorumAndSignerEntries(
 
     // Make sure no signers reference this account.  Also make sure the
     // quorum can be reached.
-    std::uint64_t allSignersWeight(0);
+    std::uint64_t const allSignersWeight(0);
     for (auto const& signer : signers)
     {
         std::uint32_t const weight = signer.weight;
@@ -344,7 +339,7 @@ SignerListSet::replaceSignerList()
     return tesSUCCESS;
 }
 
-TER
+static TER
 SignerListSet::destroySignerList()
 {
     // Destroying the signer list is only allowed if either the master key
@@ -359,7 +354,7 @@ SignerListSet::destroySignerList()
 }
 
 void
-SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const
+SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags)
 {
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
@@ -397,7 +392,7 @@ SignerListSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 SignerListSet::finalizeInvariants(
     STTx const&,
     TER,

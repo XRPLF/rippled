@@ -4,7 +4,6 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -24,13 +23,10 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LoanManage.h>
 
 #include <algorithm>
 #include <bit>
 #include <cstdint>
-#include <expected>
-#include <vector>
 
 namespace xrpl {
 
@@ -46,7 +42,7 @@ LoanPay::getFlagsMask(PreflightContext const& ctx)
     return tfLoanPayMask;
 }
 
-NotTEC
+static NotTEC
 LoanPay::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanID] == beast::kZero)
@@ -176,7 +172,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     return feeIncrements * normalCost;
 }
 
-TER
+static TER
 LoanPay::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -279,7 +275,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 LoanPay::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -836,7 +832,7 @@ LoanPay::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 LoanPay::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

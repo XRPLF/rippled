@@ -1,18 +1,14 @@
 #include <xrpl/tx/transactors/dex/AMMClawback.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -52,7 +48,7 @@ AMMClawback::checkExtraFeatures(xrpl::PreflightContext const& ctx)
          !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
 
-NotTEC
+static NotTEC
 AMMClawback::preflight(PreflightContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
@@ -98,7 +94,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 AMMClawback::preclaim(PreclaimContext const& ctx)
 {
     auto const asset = ctx.tx[sfAsset];
@@ -150,7 +146,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 AMMClawback::doApply()
 {
     Sandbox sb(&ctx_.view());
@@ -162,7 +158,7 @@ AMMClawback::doApply()
     return ter;
 }
 
-TER
+static TER
 AMMClawback::applyGuts(Sandbox& sb)
 {
     std::optional<STAmount> const clawAmount = ctx_.tx[~sfAmount];
@@ -385,7 +381,7 @@ AMMClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 AMMClawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

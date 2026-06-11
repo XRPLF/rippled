@@ -9,14 +9,12 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -28,7 +26,7 @@ LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
-NotTEC
+static NotTEC
 LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanBrokerID] == beast::kZero)
@@ -52,7 +50,7 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -171,7 +169,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 LoanBrokerCoverWithdraw::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -207,7 +205,7 @@ LoanBrokerCoverWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_re
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 LoanBrokerCoverWithdraw::finalizeInvariants(
     STTx const&,
     TER,

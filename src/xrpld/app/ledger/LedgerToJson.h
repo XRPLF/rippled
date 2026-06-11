@@ -35,7 +35,7 @@ struct LedgerFill
 
     ReadView const& ledger;
     int options;
-    std::vector<TxQ::TxDetails> txQueue;
+    std::vector<TxQ::TxDetails> txQueue{};
     RPC::Context const* context;
     std::optional<NetClock::time_point> closeTime;
 };

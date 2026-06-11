@@ -1,14 +1,8 @@
 #include <xrpl/tx/transactors/vault/VaultDelete.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
@@ -19,7 +13,7 @@
 
 namespace xrpl {
 
-NotTEC
+static NotTEC
 VaultDelete::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::kZero)
@@ -31,7 +25,7 @@ VaultDelete::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 VaultDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
@@ -84,7 +78,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
@@ -216,7 +210,7 @@ VaultDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 VaultDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

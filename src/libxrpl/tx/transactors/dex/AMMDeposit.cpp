@@ -7,14 +7,11 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -52,7 +49,7 @@ AMMDeposit::getFlagsMask(PreflightContext const& ctx)
     return tfAMMDepositMask;
 }
 
-NotTEC
+static NotTEC
 AMMDeposit::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
@@ -173,7 +170,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
@@ -379,7 +376,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-std::pair<TER, bool>
+static std::pair<TER, bool>
 AMMDeposit::applyGuts(Sandbox& sb)
 {
     auto const amount = ctx_.tx[~sfAmount];
@@ -483,7 +480,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     return {result, isTesSuccess(result)};
 }
 
-TER
+static TER
 AMMDeposit::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
@@ -497,7 +494,7 @@ AMMDeposit::doApply()
     return result.first;
 }
 
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMDeposit::deposit(
     Sandbox& view,
     AccountID const& ammAccount,
@@ -633,7 +630,7 @@ adjustLPTokensOut(
 /** Proportional deposit of pools assets in exchange for the specified
  * amount of LPTokens.
  */
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMDeposit::equalDepositTokens(
     Sandbox& view,
     AccountID const& ammAccount,
@@ -706,7 +703,7 @@ AMMDeposit::equalDepositTokens(
  *     The amount of LPTokens to be issued is W
  * else, failed transaction
  */
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMDeposit::equalDepositLimit(
     Sandbox& view,
     AccountID const& ammAccount,
@@ -787,7 +784,7 @@ AMMDeposit::equalDepositLimit(
  * Use equation 3 @see singleDeposit to compute amount of LPTokens to be issued,
  * given the amount in Asset1In.
  */
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMDeposit::singleDeposit(
     Sandbox& view,
     AccountID const& ammAccount,
@@ -834,7 +831,7 @@ AMMDeposit::singleDeposit(
  * equation 3 @see singleDeposit for b. Fail if b exceeds specified
  * Max amount to deposit.
  */
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMDeposit::singleDepositTokens(
     Sandbox& view,
     AccountID const& ammAccount,
@@ -890,7 +887,7 @@ AMMDeposit::singleDepositTokens(
  *   The amount of asset1 to be deposited is Q
  *   The amount of LPTokens to be issued is W
  */
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMDeposit::singleDepositEPrice(
     Sandbox& view,
     AccountID const& ammAccount,
@@ -1019,7 +1016,7 @@ AMMDeposit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 AMMDeposit::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

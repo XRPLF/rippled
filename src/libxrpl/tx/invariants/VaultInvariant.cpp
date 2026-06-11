@@ -2,21 +2,24 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
@@ -25,7 +28,6 @@
 #include <cstdint>
 #include <optional>
 #include <variant>
-#include <vector>
 
 namespace xrpl {
 
@@ -183,7 +185,7 @@ ValidVault::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref afte
 }
 
 std::optional<ValidVault::DeltaInfo>
-ValidVault::deltaAssets(AccountID const& id) const
+ValidVault::deltaAssets(AccountID const& id)
 {
     auto const& vaultAsset = afterVault_[0].asset;
     auto const lookup = [&](uint256 const& key) -> std::optional<DeltaInfo> {
@@ -215,7 +217,7 @@ ValidVault::deltaAssets(AccountID const& id) const
 }
 
 std::optional<ValidVault::DeltaInfo>
-ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
+ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee)
 {
     auto const& vaultAsset = afterVault_[0].asset;
     auto ret = deltaAssets(tx[sfAccount]);
@@ -233,7 +235,7 @@ ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
 }
 
 std::optional<ValidVault::DeltaInfo>
-ValidVault::deltaShares(AccountID const& id) const
+ValidVault::deltaShares(AccountID const& id)
 {
     auto const& afterVault = afterVault_[0];
     auto const it = [&]() {
@@ -252,7 +254,7 @@ ValidVault::isVaultEmpty(Vault const& vault)
 }
 
 std::int32_t
-ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const
+ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules)
 {
     // Returns the posterior `assetsTotal` scale.
     //
@@ -1075,7 +1077,7 @@ ValidVault::DeltaInfo::makeDelta(Number const& before, Number const& after, Asse
         .scale = std::max(xrpl::scale(after, asset), xrpl::scale(before, asset))};
 }
 
-[[nodiscard]] std::int32_t
+[[nodiscard]] static std::int32_t
 ValidVault::computeCoarsestScale(std::vector<DeltaInfo> const& numbers)
 {
     if (numbers.empty())

@@ -3,22 +3,17 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -34,7 +29,6 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <utility>
 
 namespace xrpl {
 
@@ -51,7 +45,7 @@ AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
     return true;
 }
 
-NotTEC
+static NotTEC
 AMMCreate::preflight(PreflightContext const& ctx)
 {
     auto const amount = ctx.tx[sfAmount];
@@ -91,7 +85,7 @@ AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     return calculateOwnerReserveFee(view, tx);
 }
 
-TER
+static TER
 AMMCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
@@ -380,7 +374,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& creatorAccountID, b
     return {res, isTesSuccess(res)};
 }
 
-TER
+static TER
 AMMCreate::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
@@ -400,7 +394,7 @@ AMMCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 AMMCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

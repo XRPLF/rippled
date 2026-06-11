@@ -11,14 +11,12 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/rate.h>
-#include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -42,12 +40,9 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
-#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <type_traits>
-#include <vector>
 
 namespace xrpl::test {
 
@@ -119,7 +114,7 @@ class View_test : public beast::unit_test::Suite
     }
 
     // Test succ correctness
-    void
+    static void
     succ(ReadView const& v, std::uint32_t id, std::optional<std::uint32_t> answer)
     {
         auto const next = v.succ(k(id).key);

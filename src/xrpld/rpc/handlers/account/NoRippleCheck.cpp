@@ -11,6 +11,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
@@ -21,6 +22,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -140,9 +142,11 @@ doNoRippleCheck(RPC::JsonContext& context)
     forEachItemAfter(*ledger, accountID, uint256(), 0, limit, [&](SLE::const_ref ownedItem) {
         if (ownedItem->getType() == ltRIPPLE_STATE)
         {
-            bool const bLow = accountID == ownedItem->getFieldAmount(sfLowLimit).getIssuer();
+            bool const bLow = accountID == ownedItem->getFieldAmount(sfLowLimit).getIssuer() =
+                                  false;
 
-            bool const bNoRipple = ownedItem->isFlag(bLow ? lsfLowNoRipple : lsfHighNoRipple);
+            bool const bNoRipple = ownedItem->isFlag(bLow ? lsfLowNoRipple : lsfHighNoRipple) =
+                false;
 
             std::string problem;
             bool needFix = false;

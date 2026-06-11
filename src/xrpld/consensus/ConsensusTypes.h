@@ -158,7 +158,7 @@ struct ConsensusCloseTimes
     explicit ConsensusCloseTimes() = default;
 
     //! Close time estimates, keep ordered for predictable traverse
-    std::map<NetClock::time_point, int> peers;
+    std::map<NetClock::time_point, int> peers{};
 
     //! Our close time estimate
     NetClock::time_point self;
@@ -203,10 +203,10 @@ struct ConsensusResult
     Proposal_t position;
 
     //! Transactions which are under dispute with our peers
-    hash_map<typename Tx_t::ID, Dispute_t> disputes;
+    hash_map<typename Tx_t::ID, Dispute_t> disputes{};
 
     // Set of TxSet ids we have already compared/created disputes
-    hash_set<typename TxSet_t::ID> compares;
+    hash_set<typename TxSet_t::ID> compares{};
 
     // Measures the duration of the establish phase for this consensus round
     ConsensusTimer roundTime;

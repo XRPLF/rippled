@@ -10,7 +10,6 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Quality.h>
@@ -20,11 +19,8 @@
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
-#include <boost/container/flat_set.hpp>
-
 #include <algorithm>
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -210,7 +206,7 @@ protected:
     std::string
     logStringImpl(char const* name) const
     {
-        std::ostringstream ostr;
+        std::ostringstream const ostr;
         ostr << name << ": "
              << "\nSrc: " << src_ << "\nDst: " << dst_;
         return ostr.str();
@@ -266,8 +262,8 @@ public:
     [[nodiscard]] TER
     check(StrandContext const& ctx, RAccountRoot const& srcRoot) const;
 
-    [[nodiscard]] std::string
-    logString() const override
+    static [[nodiscard]] std::string
+    logString() override
     {
         return logStringImpl("MPTEndpointPaymentStep");
     }
@@ -314,8 +310,8 @@ public:
     static TER
     check(StrandContext const& ctx, RAccountRoot const& srcRoot);
 
-    [[nodiscard]] std::string
-    logString() const override
+    static [[nodiscard]] std::string
+    logString() override
     {
         return logStringImpl("MPTEndpointOfferCrossingStep");
     }
@@ -327,8 +323,8 @@ public:
 
 //------------------------------------------------------------------------------
 
-TER
-MPTEndpointPaymentStep::check(StrandContext const& ctx, RAccountRoot const& srcRoot) const
+static TER
+MPTEndpointPaymentStep::check(StrandContext const& ctx, RAccountRoot const& srcRoot)
 {
     // Since this is a payment, MPToken must be present.  Perform all
     // MPToken related checks.
@@ -391,7 +387,7 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, RAccountRoot const& srcR
     return tesSUCCESS;
 }
 
-TER
+static TER
 MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, RAccountRoot const&)
 {
     // The standard checks are all we can do because any remaining checks
@@ -400,7 +396,7 @@ MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, RAccountRoot const
     return tesSUCCESS;
 }
 
-TER
+static TER
 MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view, xrpl::DebtDirection srcDebtDir)
 {
     // TakerPays is the last step if offer crossing

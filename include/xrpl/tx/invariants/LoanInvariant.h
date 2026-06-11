@@ -19,7 +19,7 @@ class ValidLoan
 {
     // Pair is <before, after>. After is used for most of the checks, except
     // those that check changed values.
-    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> loans_;
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> loans_{};
 
 public:
     void

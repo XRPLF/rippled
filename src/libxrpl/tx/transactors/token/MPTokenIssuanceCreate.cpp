@@ -9,19 +9,16 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <expected>
 #include <memory>
 
 namespace xrpl {
@@ -47,7 +44,7 @@ MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
     return tfMPTokenIssuanceCreateMask;
 }
 
-NotTEC
+static NotTEC
 MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
     // sfReferenceHolding is set only internally by VaultCreate. Reject
@@ -100,7 +97,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-std::expected<MPTID, TER>
+static std::expected<MPTID, TER>
 MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args)
 {
     WAccountRoot acct(args.account, view, journal);
@@ -172,7 +169,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
     return mptId;
 }
 
-TER
+static TER
 MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -200,7 +197,7 @@ MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 MPTokenIssuanceCreate::finalizeInvariants(
     STTx const&,
     TER,

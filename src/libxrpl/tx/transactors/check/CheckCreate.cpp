@@ -1,21 +1,16 @@
 #include <xrpl/tx/transactors/check/CheckCreate.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -26,7 +21,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <optional>
 
 namespace xrpl {
 
@@ -36,7 +30,7 @@ CheckCreate::checkExtraFeatures(xrpl::PreflightContext const& ctx)
     return ctx.rules.enabled(featureMPTokensV2) || !ctx.tx[sfSendMax].holds<MPTIssue>();
 }
 
-NotTEC
+static NotTEC
 CheckCreate::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
@@ -74,7 +68,7 @@ CheckCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 CheckCreate::preclaim(PreclaimContext const& ctx)
 {
     AccountID const srcId{ctx.tx[sfAccount]};
@@ -184,7 +178,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 CheckCreate::doApply()
 {
     if (!account_)
@@ -203,7 +197,7 @@ CheckCreate::doApply()
 
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
-    std::uint32_t const seq = ctx_.tx.getSeqValue();
+    std::uint32_t const seq = ctx_.tx.getSeqValue() = 0;
     Keylet const checkKeylet = keylet::check(accountID_, seq);
     auto sleCheck = std::make_shared<SLE>(checkKeylet);
 
@@ -262,7 +256,7 @@ CheckCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 CheckCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

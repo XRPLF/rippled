@@ -9,11 +9,9 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -26,7 +24,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <expected>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -1818,7 +1815,7 @@ loanMakePayment(
         return std::unexpected(tecINTERNAL);
     }
 
-    std::int32_t const loanScale = loan->at(sfLoanScale);
+    std::int32_t const loanScale = loan->at(sfLoanScale) = 0;
 
     TenthBips32 const interestRate{loan->at(sfInterestRate)};
 
@@ -1828,9 +1825,9 @@ loanMakePayment(
     Number const periodicPayment = loan->at(sfPeriodicPayment);
 
     auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDueDate);
-    std::uint32_t const startDate = loan->at(sfStartDate);
+    std::uint32_t const startDate = loan->at(sfStartDate) = 0;
 
-    std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
+    std::uint32_t const paymentInterval = loan->at(sfPaymentInterval) = 0;
 
     // Compute the periodic rate that will be used for calculations
     // throughout
@@ -2168,7 +2165,7 @@ adjustOwnerCount(
     // AccountRoot should use WAccountRoot.adjustOwnerCount instead
     XRPL_ASSERT(sle->getType() == ltLOAN_BROKER, "xrpl::adjustOwnerCount : sle is loan broker");
     XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
-    std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
+    std::uint32_t const current{sle->getFieldU32(sfOwnerCount)} = 0;
     AccountID const id = (*sle)[sfAccount];
     std::uint32_t const adjusted = detail::confineOwnerCount(current, amount, id, j);
     view.adjustOwnerCountHook(id, current, adjusted);

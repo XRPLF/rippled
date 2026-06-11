@@ -1,10 +1,9 @@
 #include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -22,9 +21,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <map>
 #include <memory>
-#include <set>
 #include <utility>
 
 namespace xrpl {
@@ -37,7 +34,7 @@ tokenPairKey(STObject const& pair)
         pair.getFieldCurrency(sfQuoteAsset).currency());
 }
 
-NotTEC
+static NotTEC
 OracleSet::preflight(PreflightContext const& ctx)
 {
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
@@ -58,7 +55,7 @@ OracleSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 OracleSet::preclaim(PreclaimContext const& ctx)
 {
     AccountRoot const acctSetter(ctx.tx.getAccountID(sfAccount), ctx.view);
@@ -70,7 +67,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     using namespace std::chrono;
     std::size_t const closeTime =
         duration_cast<seconds>(ctx.view.header().closeTime.time_since_epoch()).count();
-    std::size_t const lastUpdateTime = ctx.tx[sfLastUpdateTime];
+    std::size_t const lastUpdateTime = ctx.tx[sfLastUpdateTime] = 0;
     if (lastUpdateTime < kEpochOffset.count())
         return tecINVALID_UPDATE_TIME;
     std::size_t const lastUpdateTimeEpoch = lastUpdateTime - kEpochOffset.count();
@@ -198,7 +195,7 @@ setPriceDataInnerObjTemplate(STObject& obj)
         obj.set(*elements);
 }
 
-TER
+static TER
 OracleSet::doApply()
 {
     auto const oracleID = keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]);
@@ -333,7 +330,7 @@ OracleSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 OracleSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

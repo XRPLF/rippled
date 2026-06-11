@@ -384,7 +384,7 @@ private:
     Stats stats_;
 
 private:
-    void
+    static void
     collectMetrics()
     {
         std::scoped_lock const lock(mutex_);

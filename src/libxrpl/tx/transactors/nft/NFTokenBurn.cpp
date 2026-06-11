@@ -17,13 +17,13 @@
 #include <cstddef>
 namespace xrpl {
 
-NotTEC
+static NotTEC
 NFTokenBurn::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
 
-TER
+static TER
 NFTokenBurn::preclaim(PreclaimContext const& ctx)
 {
     auto const owner = [&ctx]() {
@@ -56,7 +56,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 NFTokenBurn::doApply()
 {
     // Remove the token, effectively burning it:
@@ -100,7 +100,7 @@ NFTokenBurn::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 NFTokenBurn::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

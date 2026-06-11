@@ -12,7 +12,7 @@ namespace xrpl::test::jtx {
 class Ter
 {
 private:
-    std::optional<TER> v_;
+    std::optional<TER> v_{};
 
 public:
     explicit Ter(decltype(std::ignore))

@@ -1,19 +1,14 @@
 #include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
 
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -53,7 +48,7 @@ PaymentChannelCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
-NotTEC
+static NotTEC
 PaymentChannelCreate::preflight(PreflightContext const& ctx)
 {
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
@@ -68,7 +63,7 @@ PaymentChannelCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
@@ -116,7 +111,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 PaymentChannelCreate::doApply()
 {
     WAccountRoot wrappedOwner(accountID_, ctx_.view(), j_);
@@ -189,7 +184,7 @@ PaymentChannelCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 PaymentChannelCreate::finalizeInvariants(
     STTx const&,
     TER,

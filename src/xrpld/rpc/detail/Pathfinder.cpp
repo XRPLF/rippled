@@ -11,17 +11,11 @@
 #include <xrpl/basics/join.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/Job.h>
-#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/PathAsset.h>
@@ -37,12 +31,10 @@
 #include <cstdint>
 #include <exception>
 #include <functional>
-#include <map>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <string>
-#include <vector>
 
 namespace xrpl {
 static std::ostream&
@@ -99,7 +91,7 @@ constexpr std::size_t kPathfinderMaxCompletePaths = 1000;
 
 struct AccountCandidate
 {
-    int priority;
+    int priority{};
     AccountID account;
 
     static int const kHighPriority = 10000;
@@ -128,8 +120,8 @@ using AccountCandidates = std::vector<AccountCandidate>;
 
 struct CostedPath
 {
-    int searchLevel;
-    Pathfinder::PathType type;
+    int searchLevel{};
+    Pathfinder::PathType type{};
 };
 
 using CostedPathList = std::vector<CostedPath>;
@@ -272,7 +264,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
     loadEvent_ = app_.getJobQueue().makeLoadEvent(JtPathFind, "FindPath");
     auto currencyIsXRP = isXRP(srcPathAsset_);
 
-    bool const useIssuerAccount = srcIssuer_ && !currencyIsXRP && !isXRP(*srcIssuer_);
+    bool const useIssuerAccount = srcIssuer_ && !currencyIsXRP && !isXRP(*srcIssuer_) = false;
     auto& account = useIssuerAccount ? *srcIssuer_ : srcAccount_;
     auto issuer = currencyIsXRP ? AccountID() : account;
     source_ = STPathElement(account, srcPathAsset_, issuer);
@@ -555,7 +547,7 @@ Pathfinder::rankPaths(
         auto const& currentPath = paths[i];
         if (!currentPath.empty())
         {
-            STAmount liquidity;
+            STAmount const liquidity;
             uint64_t uQuality = 0;
             auto const resultCode =
                 getPathLiquidity(currentPath, saMinDstAmount, liquidity, uQuality);
@@ -618,7 +610,7 @@ Pathfinder::getBestPaths(
 
     XRPL_ASSERT(
         fullLiquidityPath.empty(), "xrpl::Pathfinder::getBestPaths : first empty path result");
-    bool const issuerIsSender = isXRP(srcPathAsset_) || (srcIssuer == srcAccount_);
+    bool const issuerIsSender = isXRP(srcPathAsset_) || (srcIssuer == srcAccount_) = false;
 
     std::vector<PathRank> extraPathRanks;
     rankPaths(maxPaths, extraPaths, extraPathRanks, continueCallback);
@@ -743,9 +735,9 @@ Pathfinder::getBestPaths(
 bool
 Pathfinder::issueMatchesOrigin(Asset const& asset)
 {
-    bool const matchingAsset = (asset == srcPathAsset_);
+    bool const matchingAsset = (asset == srcPathAsset_) = false;
     bool const matchingAccount = isXRP(asset) || (srcIssuer_ && asset.getIssuer() == srcIssuer_) ||
-        asset.getIssuer() == srcAccount_;
+        asset.getIssuer() == srcAccount_ = false;
 
     return matchingAsset && matchingAccount;
 }
@@ -901,7 +893,7 @@ Pathfinder::addPathsForType(
     JLOG(j_.debug()) << "getPaths< adding onto '" << pathTypeToString(parentPathType)
                      << "' to get '" << pathTypeToString(pathType) << "'";
 
-    int const initialSize = completePaths_.size();
+    int const initialSize = completePaths_.size() = 0;
 
     // Add the last NodeType to the lists.
     auto nodeType = pathType.back();
@@ -1011,7 +1003,7 @@ Pathfinder::addLink(
     // Does pathfinding really need to get this to
     // a gateway (the issuer of the destination amount)
     // rather than the ultimate destination?
-    bool const hasEffectiveDestination = effectiveDst_ != dstAccount_;
+    bool const hasEffectiveDestination = effectiveDst_ != dstAccount_ = false;
 
     JLOG(j_.trace()) << "addLink< flags=" << addFlags << " onXRP=" << bOnXRP
                      << " completePaths size=" << completePaths_.size();
@@ -1037,7 +1029,7 @@ Pathfinder::addLink(
             if (acctEnd)
             {
                 bool const bRequireAuth(acctEnd->isFlag(lsfRequireAuth));
-                bool const bIsEndAsset(uEndPathAsset == dstAmount_.asset());
+                bool const bIsEndAsset(uEndPathAsset == dstAmount_.asset()) = false;
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly((addFlags & kAfAcLast) != 0u);
 
@@ -1076,7 +1068,7 @@ Pathfinder::addLink(
                             continue;
                         }
 
-                        bool const bToDestination = acct == effectiveDst_;
+                        bool const bToDestination = acct == effectiveDst_ = false;
 
                         if (bDestOnly && !bToDestination)
                         {

@@ -19,7 +19,6 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Quality.h>
@@ -37,10 +36,7 @@
 #include <xrpl/tx/paths/detail/FlatSets.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
-#include <boost/container/flat_set.hpp>
-
 #include <cstdint>
-#include <memory>
 #include <numeric>
 #include <optional>
 #include <sstream>
@@ -192,7 +188,7 @@ protected:
     std::string
     logStringImpl(char const* name) const
     {
-        std::ostringstream ostr;
+        std::ostringstream const ostr;
         ostr << name << ": "
              << "\ninIss: " << book_.in.getIssuer() << "\noutIss: " << book_.out.getIssuer()
              << "\ninCur: " << to_string(book_.in) << "\noutCur: " << to_string(book_.out);
@@ -915,7 +911,7 @@ std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
 BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
 {
     // This can be simplified (and sped up) if directories are never empty.
-    Sandbox sb(&view, TapNone);
+    Sandbox const sb(&view, TapNone);
     BookTip bt(sb, book_);
     auto const lobQuality = bt.step(j_) ? std::optional<Quality>(bt.quality()) : std::nullopt;
     // Multi-path offer generates an offer with the quality

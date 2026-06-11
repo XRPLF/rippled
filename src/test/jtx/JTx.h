@@ -22,7 +22,7 @@ class Env;
 struct JTx
 {
     json::Value jv;
-    requires_t require;
+    requires_t require{};
     std::optional<TER> ter = TER{tesSUCCESS};
     std::optional<std::pair<ErrorCodeI, std::string>> rpcCode = std::nullopt;
     std::optional<std::pair<std::string, std::optional<std::string>>> rpcException = std::nullopt;
@@ -32,10 +32,10 @@ struct JTx
     bool fillNetid = true;
     std::shared_ptr<STTx const> stx;
     // Functions that sign the transaction from the Account
-    std::vector<std::function<void(Env&, JTx&)>> mainSigners;
+    std::vector<std::function<void(Env&, JTx&)>> mainSigners{};
     // Functions that sign something else after the mainSigners, such as
     // sfCounterpartySignature
-    std::vector<std::function<void(Env&, JTx&)>> postSigners;
+    std::vector<std::function<void(Env&, JTx&)>> postSigners{};
 
     JTx() = default;
     JTx(JTx const&) = default;
@@ -144,7 +144,7 @@ private:
         PropList&
         operator=(PropList&& src) = default;
 
-        std::vector<std::unique_ptr<BasicProp>> list;
+        std::vector<std::unique_ptr<BasicProp>> list{};
     };
 
     PropList props_;

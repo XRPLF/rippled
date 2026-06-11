@@ -469,8 +469,8 @@ public:
     gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet);
 
     // @see Consensus::prevLedgerID
-    RCLCxLedger::ID
-    prevLedgerID() const
+    static RCLCxLedger::ID
+    prevLedgerID()
     {
         std::scoped_lock const _{mutex_};
         return consensus_.prevLedgerID();

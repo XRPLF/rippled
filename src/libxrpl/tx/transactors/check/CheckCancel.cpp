@@ -1,7 +1,6 @@
 #include <xrpl/tx/transactors/check/CheckCancel.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -16,13 +15,13 @@
 #include <cstdint>
 namespace xrpl {
 
-NotTEC
+static NotTEC
 CheckCancel::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
 
-TER
+static TER
 CheckCancel::preclaim(PreclaimContext const& ctx)
 {
     auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
@@ -51,7 +50,7 @@ CheckCancel::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 CheckCancel::doApply()
 {
     auto const sleCheck = view().peek(keylet::check(ctx_.tx[sfCheckID]));
@@ -103,7 +102,7 @@ CheckCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 CheckCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

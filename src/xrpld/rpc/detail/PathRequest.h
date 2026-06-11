@@ -60,7 +60,7 @@ public:
     ~PathRequest() override;
 
     bool
-    isNew();
+    isNew() const;
     bool
     needsUpdate(bool newOnly, LedgerIndex index);
 
@@ -84,7 +84,7 @@ public:
         std::shared_ptr<AssetCache> const&,
         bool fast,
         std::function<bool(void)> const& continueCallback = {});
-    InfoSub::pointer
+    [[nodiscard]] InfoSub::pointer
     getSubscriber() const;
     bool
     hasCompletion();
@@ -135,8 +135,8 @@ private:
     STAmount saDstAmount_;
     std::optional<STAmount> saSendMax_;
 
-    std::set<Asset> sciSourceAssets_;
-    std::map<Asset, STPathSet> context_;
+    std::set<Asset> sciSourceAssets_{};
+    std::map<Asset, STPathSet> context_{};
 
     std::optional<uint256> domain_;
 

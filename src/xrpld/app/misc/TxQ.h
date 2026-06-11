@@ -196,7 +196,7 @@ public:
         }
 
         /// Fee level of the queued transaction
-        FeeLevel64 feeLevel;
+        FeeLevel64 feeLevel{};
         /// LastValidLedger field of the queued transaction, if any
         std::optional<LedgerIndex> lastValid;
         /** Potential @ref TxConsequences of applying the queued transaction
@@ -224,14 +224,14 @@ public:
             `rules` change between attempts, `preflight` will be run again
             in `TxQ::MaybeTx::apply`.
         */
-        TER preflightResult;
+        TER preflightResult{};
         /** If the transactor attempted to apply the transaction to the open
             ledger from the queue and *failed*, then this is the transactor
             result from the last attempt. Should never be a `tec`, `tef`,
             `tem`, or `tesSUCCESS`, because those results cause the
             transaction to be removed from the queue.
         */
-        std::optional<TER> lastResult;
+        std::optional<TER> lastResult{};
     };
 
     /// Constructor
@@ -341,8 +341,8 @@ public:
 
 private:
     // Implementation for nextQueuableSeq().  The passed lock must be held.
-    SeqProxy
-    nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const;
+    static SeqProxy
+    nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&);
 
     /**
         Track and use the fee escalation metrics of the
@@ -365,10 +365,10 @@ private:
         std::size_t txnsExpected_;
         /// Recent history of transaction counts that
         /// exceed the targetTxnCount_
-        boost::circular_buffer<std::size_t> recentTxnCounts_;
+        boost::circular_buffer<std::size_t> recentTxnCounts_{};
         /// Based on the median fee of the LCL. Used
         /// when fee escalation kicks in.
-        FeeLevel64 escalationMultiplier_;
+        FeeLevel64 escalationMultiplier_{};
         /// Journal
         beast::Journal const j_;
 
@@ -416,7 +416,7 @@ private:
             std::size_t const txnsExpected{};
             // Based on the median fee of the LCL. Used
             // when fee escalation kicks in.
-            FeeLevel64 const escalationMultiplier;
+            FeeLevel64 const escalationMultiplier{};
         };
 
         /// Get the current @ref Snapshot
@@ -501,7 +501,7 @@ private:
         std::optional<LedgerIndex> const lastValid;
         /// Transaction SeqProxy number
         /// (`sfSequence` or `sfTicketSequence` field).
-        SeqProxy const seqProxy;
+        SeqProxy const seqProxy{};
         /**
             A transaction at the front of the queue will be given
             several attempts to succeed before being dropped from
@@ -521,7 +521,7 @@ private:
             `tem`, or `tesSUCCESS`, because those results cause the
             transaction to be removed from the queue.
         */
-        std::optional<TER> lastResult;
+        std::optional<TER> lastResult{};
         /** Cached result of the `preflight` operation. Because
             `preflight` is expensive, minimize the number of times
             it needs to be done.
@@ -568,7 +568,7 @@ private:
             PreflightResult const& pfResult);
 
         /// Attempt to apply the queued transaction to the open ledger.
-        ApplyResult
+        static ApplyResult
         apply(Application& app, OpenView& view, beast::Journal j);
 
         /// Potential @ref TxConsequences of applying this transaction
@@ -640,7 +640,7 @@ private:
         /// The account
         AccountID const account;
         /// Sequence number will be used as the key.
-        TxMap transactions;
+        TxMap transactions{};
         /* If this account has had any transaction retry more than
             `retriesAllowed` times so that it was dropped from the
             queue, then all other transactions for this account will
@@ -681,7 +681,7 @@ private:
         getPrevTx(SeqProxy seqProx) const;
 
         /// Add a transaction candidate to this account for queuing
-        MaybeTx&
+        static MaybeTx&
         add(MaybeTx&&);
 
         /** Remove the candidate with given SeqProxy value from this
@@ -740,14 +740,14 @@ private:
         @note This member must always and only be accessed under
         locked mutex_
     */
-    FeeMultiSet byFee_;
+    FeeMultiSet byFee_{};
     /** All of the accounts which currently have any transactions
         in the queue. Entries are created and destroyed dynamically
         as transactions are added and removed.
         @note This member must always and only be accessed under
         locked mutex_
     */
-    AccountMap byAccount_;
+    AccountMap byAccount_{};
     /** Maximum number of transactions allowed in the queue based
         on the current metrics. If uninitialized, there is no limit,
         but that condition cannot last for long in practice.

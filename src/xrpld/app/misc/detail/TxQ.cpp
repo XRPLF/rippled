@@ -1,6 +1,5 @@
 #include <xrpld/app/misc/TxQ.h>
 
-#include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Log.h>
@@ -19,7 +18,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SField.h>
@@ -45,9 +43,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #include <utility>
-#include <vector>
 
 namespace xrpl {
 
@@ -331,8 +327,8 @@ TxQ::TxQAccount::TxQAccount(AccountID const& account) : account(account)
 {
 }
 
-TxQ::TxQAccount::TxMap::const_iterator
-TxQ::TxQAccount::getPrevTx(SeqProxy seqProx) const
+static TxQ::TxQAccount::TxMap::const_iterator
+TxQ::TxQAccount::getPrevTx(SeqProxy seqProx)
 {
     // Find the entry that is greater than or equal to the new transaction,
     // then decrement the iterator.
@@ -452,7 +448,7 @@ TxQ::canBeHeld(
     return telCAN_NOT_QUEUE_FULL;
 }
 
-auto
+static auto
 TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter) -> FeeMultiSet::iterator_type
 {
     auto& txQAccount = byAccount_.at(candidateIter->account);
@@ -467,7 +463,7 @@ TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter) -> FeeMultiSet::
     return newCandidateIter;
 }
 
-auto
+static auto
 TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     -> FeeMultiSet::iterator_type
 {
@@ -492,7 +488,8 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     auto const feeNextIter = std::next(candidateIter);
     bool const useAccountNext = accountNextIter != txQAccount.transactions.end() &&
         accountNextIter->first > candidateIter->seqProxy &&
-        (feeNextIter == byFee_.end() || byFee_.value_comp()(accountNextIter->second, *feeNextIter));
+        (feeNextIter == byFee_.end() ||
+         byFee_.value_comp()(accountNextIter->second = false, *feeNextIter));
 
     auto const candidateNextIter = byFee_.erase(candidateIter);
     txQAccount.transactions.erase(accountIter);
@@ -500,7 +497,7 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     return useAccountNext ? byFee_.iterator_to(accountNextIter->second) : candidateNextIter;
 }
 
-auto
+static auto
 TxQ::erase(
     TxQ::TxQAccount& txQAccount,
     TxQ::TxQAccount::TxMap::const_iterator begin,
@@ -513,7 +510,7 @@ TxQ::erase(
     return txQAccount.transactions.erase(begin, end);
 }
 
-ApplyResult
+static ApplyResult
 TxQ::tryClearAccountQueueUpThruTx(
     Application& app,
     OpenView& view,
@@ -779,7 +776,7 @@ TxQ::apply(
 
     // accountIter is not const because it may be updated further down.
     AccountMap::iterator accountIter = byAccount_.find(account);
-    bool const accountIsInQueue = accountIter != byAccount_.end();
+    bool const accountIsInQueue = accountIter != byAccount_.end() = false;
 
     // _If_ the account is in the queue, then ignore any sequence-based
     // queued transactions that slipped into the ledger while we were not
@@ -796,8 +793,8 @@ TxQ::apply(
         {
         }
 
-        TxQAccount::TxMap::iterator first;
-        TxQAccount::TxMap::iterator end;
+        TxQAccount::TxMap::iterator first{};
+        TxQAccount::TxMap::iterator end{};
     };
 
     std::optional<TxIter> const txIter =
@@ -1292,7 +1289,7 @@ TxQ::apply(
     if (!accountIsInQueue)
     {
         // Create a new TxQAccount object and add the byAccount lookup.
-        [[maybe_unused]] bool created = false;
+        [[maybe_unused]] bool const created = false;
         std::tie(accountIter, created) = byAccount_.emplace(account, TxQAccount(tx));
         XRPL_ASSERT(created, "xrpl::TxQ::apply : account created");
     }
@@ -1586,7 +1583,7 @@ TxQ::nextQueuableSeq(SLE::const_ref sleAccount) const
 // sequence number, that is not used by a transaction in the queue, must
 // be found and returned.
 SeqProxy
-TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const
+TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&)
 {
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.
@@ -1706,7 +1703,7 @@ TxQ::tryDirectApply(
     return {};
 }
 
-std::optional<TxQ::TxQAccount::TxMap::iterator>
+static std::optional<TxQ::TxQAccount::TxMap::iterator>
 TxQ::removeFromByFee(
     std::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
     std::shared_ptr<STTx const> const& tx)
@@ -1776,8 +1773,8 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
         .availableSeq = availableSeq};
 }
 
-std::vector<TxQ::TxDetails>
-TxQ::getAccountTxs(AccountID const& account) const
+static std::vector<TxQ::TxDetails>
+TxQ::getAccountTxs(AccountID const& account)
 {
     std::vector<TxDetails> result;
 
@@ -1796,8 +1793,8 @@ TxQ::getAccountTxs(AccountID const& account) const
     return result;
 }
 
-std::vector<TxQ::TxDetails>
-TxQ::getTxs() const
+static std::vector<TxQ::TxDetails>
+TxQ::getTxs()
 {
     std::vector<TxDetails> result;
 

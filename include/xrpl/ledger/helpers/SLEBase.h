@@ -223,7 +223,7 @@ protected:
     {
     }
 
-    view_ref_type view_;
+    view_ref_type view_{};
 
     // Keylet is only meaningful for writable views, but we conditionally
     // include it to avoid wasting space in read-only wrappers.
@@ -233,7 +233,7 @@ protected:
     [[no_unique_address]]
     std::conditional_t<kIsWritable, Keylet, Empty> key_{};
 
-    sle_ptr_type sle_;
+    sle_ptr_type sle_{};
     beast::Journal j_;
 };
 

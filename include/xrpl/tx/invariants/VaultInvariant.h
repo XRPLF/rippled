@@ -75,11 +75,11 @@ public:
     };
 
 private:
-    std::vector<Vault> afterVault_;
-    std::vector<Shares> afterMPTs_;
-    std::vector<Vault> beforeVault_;
-    std::vector<Shares> beforeMPTs_;
-    std::unordered_map<uint256, DeltaInfo> deltas_;
+    std::vector<Vault> afterVault_{};
+    std::vector<Shares> afterMPTs_{};
+    std::vector<Vault> beforeVault_{};
+    std::vector<Shares> beforeMPTs_{};
+    std::unordered_map<uint256, DeltaInfo> deltas_{};
 
     /**
      * @brief Compute the minimum STAmount scale for rounding invariant
@@ -93,8 +93,8 @@ private:
      * @param rules      Active ledger rules (used to check the amendment).
      * @returns The minimum scale to apply when rounding vault-related amounts.
      */
-    [[nodiscard]] std::int32_t
-    computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const;
+    static [[nodiscard]] std::int32_t
+    computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules);
 
     /**
      * @brief Return the vault-asset balance-change delta for an account.
@@ -106,8 +106,8 @@ private:
      * @param id Account whose asset delta is requested.
      * @returns The delta, or @c std::nullopt if the entry was not touched.
      */
-    [[nodiscard]] std::optional<DeltaInfo>
-    deltaAssets(AccountID const& id) const;
+    static [[nodiscard]] std::optional<DeltaInfo>
+    deltaAssets(AccountID const& id);
 
     /**
      * @brief Return the vault-asset delta for the transaction's sending
@@ -122,8 +122,8 @@ private:
      * @returns The fee-adjusted delta, or @c std::nullopt if the net delta is
      *          zero or the account entry was not touched.
      */
-    [[nodiscard]] std::optional<DeltaInfo>
-    deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const;
+    static [[nodiscard]] std::optional<DeltaInfo>
+    deltaAssetsTxAccount(STTx const& tx, XRPAmount fee);
 
     /**
      * @brief Return the vault-share balance-change delta for an account.
@@ -135,8 +135,8 @@ private:
      * @param id Account whose share delta is requested.
      * @returns The delta, or @c std::nullopt if the entry was not touched.
      */
-    [[nodiscard]] std::optional<DeltaInfo>
-    deltaShares(AccountID const& id) const;
+    static [[nodiscard]] std::optional<DeltaInfo>
+    deltaShares(AccountID const& id);
 
     /**
      * @brief Check whether a vault holds no assets.
@@ -153,7 +153,7 @@ public:
     [[nodiscard]] static std::int32_t
     computeCoarsestScale(std::vector<DeltaInfo> const& numbers);
 
-    void
+    static void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     bool

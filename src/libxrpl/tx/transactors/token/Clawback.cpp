@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/Clawback.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -22,7 +23,6 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <algorithm>
 #include <variant>
 
 namespace xrpl {
@@ -73,7 +73,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-NotTEC
+static NotTEC
 Clawback::preflight(PreflightContext const& ctx)
 {
     if (auto const ret = std::visit(
@@ -179,7 +179,7 @@ preclaimHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
-TER
+static TER
 Clawback::preclaim(PreclaimContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
@@ -265,7 +265,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ctx.journal);
 }
 
-TER
+static TER
 Clawback::doApply()
 {
     return std::visit(
@@ -279,7 +279,7 @@ Clawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

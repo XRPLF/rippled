@@ -8,18 +8,11 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -29,13 +22,9 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <algorithm>
 #include <bit>
 #include <cstdint>
-#include <exception>
 #include <optional>
-#include <tuple>
-#include <utility>
 
 namespace xrpl {
 
@@ -59,7 +48,7 @@ AMMWithdraw::getFlagsMask(PreflightContext const& ctx)
     return tfAMMWithdrawMask;
 }
 
-NotTEC
+static NotTEC
 AMMWithdraw::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
@@ -183,7 +172,7 @@ tokensWithdraw(
     return tokensIn;
 }
 
-TER
+static TER
 AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
@@ -303,7 +292,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-std::pair<TER, bool>
+static std::pair<TER, bool>
 AMMWithdraw::applyGuts(Sandbox& sb)
 {
     auto const amount = ctx_.tx[~sfAmount];
@@ -421,7 +410,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     return {tesSUCCESS, true};
 }
 
-TER
+static TER
 AMMWithdraw::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
@@ -435,7 +424,7 @@ AMMWithdraw::doApply()
     return result.first;
 }
 
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMWithdraw::withdraw(
     Sandbox& view,
     SLE const& ammSle,
@@ -722,7 +711,7 @@ adjustLPTokensIn(
 
 /** Proportional withdrawal of pool assets for the amount of LPTokens.
  */
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawTokens(
     Sandbox& view,
     SLE const& ammSle,
@@ -755,7 +744,7 @@ AMMWithdraw::equalWithdrawTokens(
     return {ter, newLPTokenBalance};
 }
 
-std::pair<TER, bool>
+static std::pair<TER, bool>
 AMMWithdraw::deleteAMMAccountIfEmpty(
     Sandbox& sb,
     SLE::pointer const ammSle,
@@ -895,7 +884,7 @@ AMMWithdraw::equalWithdrawTokens(
  *   The amount of asset1 to be withdrawn is W
  *   The amount of LPTokens redeemed is Q
  */
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawLimit(
     Sandbox& view,
     SLE const& ammSle,
@@ -965,7 +954,7 @@ AMMWithdraw::equalWithdrawLimit(
  *     where R = b/B, c = R*fee + 2 - fee
  * Use equation 7 to compute the t, given the amount in Asset1Out.
  */
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMWithdraw::singleWithdraw(
     Sandbox& view,
     SLE const& ammSle,
@@ -1016,7 +1005,7 @@ AMMWithdraw::singleWithdraw(
  *   The amount of LPTokens redeemed is LPTokens
  *  Equation 8 solves equation 7 @see singleWithdraw for b.
  */
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMWithdraw::singleWithdrawTokens(
     Sandbox& view,
     SLE const& ammSle,
@@ -1069,7 +1058,7 @@ AMMWithdraw::singleWithdrawTokens(
  *   The amount of assetOut is given by Y
  *   The amount of LPTokens is given by X
  */
-std::pair<TER, STAmount>
+static std::pair<TER, STAmount>
 AMMWithdraw::singleWithdrawEPrice(
     Sandbox& view,
     SLE const& ammSle,
@@ -1142,7 +1131,7 @@ AMMWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 AMMWithdraw::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

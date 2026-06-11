@@ -1,9 +1,9 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -14,7 +14,7 @@
 
 namespace xrpl {
 
-NotTEC
+static NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
@@ -24,7 +24,7 @@ PermissionedDomainDelete::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
@@ -43,7 +43,7 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 }
 
 /** Attempt to delete the Permissioned Domain. */
-TER
+static TER
 PermissionedDomainDelete::doApply()
 {
     XRPL_ASSERT(
@@ -77,7 +77,7 @@ PermissionedDomainDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_r
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 PermissionedDomainDelete::finalizeInvariants(
     STTx const&,
     TER,

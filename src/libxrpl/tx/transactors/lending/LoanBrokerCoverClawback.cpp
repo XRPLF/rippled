@@ -12,23 +12,19 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <expected>
 #include <optional>
 #include <variant>
 
@@ -40,7 +36,7 @@ LoanBrokerCoverClawback::checkExtraFeatures(PreflightContext const& ctx)
     return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
-NotTEC
+static NotTEC
 LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
 {
     auto const brokerID = ctx.tx[~sfLoanBrokerID];
@@ -234,7 +230,7 @@ preclaimHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
-TER
+static TER
 LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
@@ -334,7 +330,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         vaultAsset.value());
 }
 
-TER
+static TER
 LoanBrokerCoverClawback::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -382,7 +378,7 @@ LoanBrokerCoverClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_re
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 LoanBrokerCoverClawback::finalizeInvariants(
     STTx const&,
     TER,

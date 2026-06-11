@@ -162,7 +162,7 @@ public:
     OpenView(ReadView const* base, std::shared_ptr<void const> hold = nullptr);
 
     /** Returns true if this reflects an open ledger. */
-    bool
+    [[nodiscard]] bool
     open() const override
     {
         return open_;
@@ -173,7 +173,7 @@ public:
         This is used to set the "apply ordinal"
         when calculating transaction metadata.
     */
-    std::size_t
+    [[nodiscard]] std::size_t
     txCount() const;
 
     /** Apply changes. */
@@ -182,43 +182,43 @@ public:
 
     // ReadView
 
-    LedgerHeader const&
+    [[nodiscard]] LedgerHeader const&
     header() const override;
 
-    Fees const&
+    [[nodiscard]] Fees const&
     fees() const override;
 
-    Rules const&
+    [[nodiscard]] Rules const&
     rules() const override;
 
-    bool
+    [[nodiscard]] bool
     exists(Keylet const& k) const override;
 
-    std::optional<key_type>
+    [[nodiscard]] std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
-    SLE::const_pointer
+    [[nodiscard]] SLE::const_pointer
     read(Keylet const& k) const override;
 
-    std::unique_ptr<SlesType::iter_base>
+    [[nodiscard]] std::unique_ptr<SlesType::iter_base>
     slesBegin() const override;
 
-    std::unique_ptr<SlesType::iter_base>
+    [[nodiscard]] std::unique_ptr<SlesType::iter_base>
     slesEnd() const override;
 
-    std::unique_ptr<SlesType::iter_base>
+    [[nodiscard]] std::unique_ptr<SlesType::iter_base>
     slesUpperBound(uint256 const& key) const override;
 
-    std::unique_ptr<TxsType::iter_base>
+    [[nodiscard]] std::unique_ptr<TxsType::iter_base>
     txsBegin() const override;
 
-    std::unique_ptr<TxsType::iter_base>
+    [[nodiscard]] std::unique_ptr<TxsType::iter_base>
     txsEnd() const override;
 
-    bool
+    [[nodiscard]] bool
     txExists(key_type const& key) const override;
 
-    tx_type
+    [[nodiscard]] tx_type
     txRead(key_type const& key) const override;
 
     // RawView

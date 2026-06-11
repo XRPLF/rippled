@@ -6,13 +6,11 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -31,6 +29,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -48,7 +47,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
-#include <tuple>
+#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -85,7 +84,7 @@ OfferCreate::getFlagsMask(PreflightContext const& ctx)
     return tfOfferCreateMask | tfHybrid;
 }
 
-NotTEC
+static NotTEC
 OfferCreate::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
@@ -167,7 +166,7 @@ OfferCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 OfferCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
@@ -252,7 +251,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 OfferCreate::checkAcceptAsset(
     ReadView const& view,
     ApplyFlags const flags,
@@ -340,7 +339,7 @@ OfferCreate::checkAcceptAsset(
         });
 }
 
-std::pair<TER, Amounts>
+static std::pair<TER, Amounts>
 OfferCreate::flowCross(
     PaymentSandbox& psb,
     PaymentSandbox& psbCancel,
@@ -407,7 +406,7 @@ OfferCreate::flowCross(
         STPathSet paths;
         if (!takerAmount.in.native() && !takerAmount.out.native())
         {
-            STPath path;
+            STPath const path;
             path.emplaceBack(std::nullopt, xrpCurrency(), std::nullopt);
             paths.emplaceBack(std::move(path));
         }
@@ -556,7 +555,7 @@ OfferCreate::formatAmount(STAmount const& amount)
     return txt;
 }
 
-TER
+static TER
 OfferCreate::applyHybrid(
     Sandbox& sb,
     STLedgerEntry::pointer sleOffer,
@@ -603,16 +602,16 @@ OfferCreate::applyHybrid(
     return tesSUCCESS;
 }
 
-std::pair<TER, bool>
+static std::pair<TER, bool>
 OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 {
     using beast::kZero;
 
-    bool const bPassive(ctx_.tx.isFlag(tfPassive));
-    bool const bImmediateOrCancel(ctx_.tx.isFlag(tfImmediateOrCancel));
-    bool const bFillOrKill(ctx_.tx.isFlag(tfFillOrKill));
-    bool const bSell(ctx_.tx.isFlag(tfSell));
-    bool const bHybrid(ctx_.tx.isFlag(tfHybrid));
+    bool const bPassive(ctx_.tx.isFlag(tfPassive)) = false;
+    bool const bImmediateOrCancel(ctx_.tx.isFlag(tfImmediateOrCancel)) = false;
+    bool const bFillOrKill(ctx_.tx.isFlag(tfFillOrKill)) = false;
+    bool const bSell(ctx_.tx.isFlag(tfSell)) = false;
+    bool const bHybrid(ctx_.tx.isFlag(tfHybrid)) = false;
 
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];
@@ -965,7 +964,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     return {tesSUCCESS, true};
 }
 
-TER
+static TER
 OfferCreate::doApply()
 {
     // This is the ledger view that we work against. Transactions are applied
@@ -995,7 +994,7 @@ OfferCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 OfferCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
     // No transaction-specific invariants yet (future work).

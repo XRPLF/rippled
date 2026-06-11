@@ -1,9 +1,9 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -28,7 +28,7 @@ PermissionedDomainSet::checkExtraFeatures(PreflightContext const& ctx)
     return ctx.rules.enabled(featureCredentials);
 }
 
-NotTEC
+static NotTEC
 PermissionedDomainSet::preflight(PreflightContext const& ctx)
 {
     if (auto err = credentials::checkArray(
@@ -45,7 +45,7 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx.getAccountID(sfAccount);
@@ -74,7 +74,7 @@ PermissionedDomainSet::preclaim(PreclaimContext const& ctx)
 }
 
 /** Attempt to create the Permissioned Domain. */
-TER
+static TER
 PermissionedDomainSet::doApply()
 {
     WAccountRoot wrappedOwner(accountID_, view(), j_);
@@ -138,7 +138,7 @@ PermissionedDomainSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 PermissionedDomainSet::finalizeInvariants(
     STTx const&,
     TER,

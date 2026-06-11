@@ -594,7 +594,7 @@ struct AnyAmount
 
     // Reset the issue to a specific account
     void
-    to(AccountID const& id)
+    to(AccountID const& id) const
     {
         if (!isAny)
             return;

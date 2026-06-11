@@ -35,19 +35,19 @@ protected:
 private:
     friend class BasePeer<Handler, Impl>;
 
-    http_request_type request_;
+    http_request_type request_{};
     boost::beast::multi_buffer rb_;
     boost::beast::multi_buffer wb_;
-    std::list<std::shared_ptr<WSMsg>> wq_;
+    std::list<std::shared_ptr<WSMsg>> wq_{};
     /// The socket has been closed, or will close after the next write
     /// finishes. Do not do any more writes, and don't try to close
     /// again.
     bool doClose_ = false;
     boost::beast::websocket::close_reason cr_;
-    waitable_timer timer_;
+    waitable_timer timer_{};
     bool closeOnTimer_ = false;
     bool pingActive_ = false;
-    boost::beast::websocket::ping_data payload_;
+    boost::beast::websocket::ping_data payload_{};
     error_code ec_;
     std::function<void(boost::beast::websocket::frame_type, boost::beast::string_view)>
         controlCallback_;

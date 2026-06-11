@@ -132,7 +132,7 @@ public:
     operator result_type() noexcept
     {
         auto const d0 = sha256_hasher::result_type(h_);
-        ripemd160_hasher rh;
+        ripemd160_hasher const rh;
         rh(d0.data(), d0.size());
         return ripemd160_hasher::result_type(rh);
     }

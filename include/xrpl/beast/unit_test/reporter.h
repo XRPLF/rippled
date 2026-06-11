@@ -18,9 +18,7 @@
 #include <string>
 #include <utility>
 
-namespace beast::unit_test {
-
-namespace detail {
+namespace beast::unit_test::detail {
 
 /** A simple test runner that writes everything to a stream in real time.
     The totals are output when the object is destroyed.
@@ -68,7 +66,7 @@ private:
         std::size_t cases = 0;
         std::size_t total = 0;
         std::size_t failed = 0;
-        std::vector<run_time> top;
+        std::vector<run_time> top{};
         typename clock_type::time_point start = clock_type::now();
 
         void
@@ -246,8 +244,6 @@ Reporter<Unused>::onLog(std::string const& s)
     os_ << s;
 }
 
-}  // namespace detail
+}  // namespace beast::unit_test::detail
 
 using reporter = detail::Reporter<>;
-
-}  // namespace beast::unit_test

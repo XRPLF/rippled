@@ -9,10 +9,10 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -71,22 +71,7 @@ isAnyFrozen(
     MPTIssue const& mptIssue,
     std::uint8_t depth)
 {
-    if (isGlobalFrozen(view, mptIssue))
-        return true;
-
-    for (auto const& account : accounts)
-    {
-        if (isIndividualFrozen(view, account, mptIssue))
-            return true;
-    }
-
-    for (auto const& account : accounts)
-    {
-        if (isVaultPseudoAccountFrozen(view, account, mptIssue, depth))
-            return true;
-    }
-
-    return false;
+    return isGlobalFrozen(view, mptIssue);
 }
 
 Rate

@@ -68,7 +68,7 @@ SuiteJournalSink::writeAlways(beast::Severity level, std::string const& text)
         return "FTL:";
     }();
 
-    static std::mutex kLogMutex;
+    static std::mutex const kLogMutex;
     std::scoped_lock const lock(kLogMutex);
     suite_.log << s << partition_ << text << std::endl;
 }

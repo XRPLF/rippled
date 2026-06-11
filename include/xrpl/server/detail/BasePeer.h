@@ -31,7 +31,7 @@ protected:
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
-    boost::asio::executor_work_guard<boost::asio::executor> work_;
+    boost::asio::executor_work_guard<boost::asio::executor> work_{};
     boost::asio::strand<boost::asio::executor> strand_;
 
 public:

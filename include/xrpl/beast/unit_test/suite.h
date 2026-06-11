@@ -143,7 +143,7 @@ public:
         Text sent to the log output stream will be forwarded to
         the output stream associated with the runner.
     */
-    LogOs<char> log;
+    LogOs<char> log{};
 
     /** Memberspace for declaring test cases. */
     TestcaseT testcase;

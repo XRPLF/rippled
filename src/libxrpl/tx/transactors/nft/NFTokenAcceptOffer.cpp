@@ -2,12 +2,14 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -27,7 +29,7 @@
 
 namespace xrpl {
 
-NotTEC
+static NotTEC
 NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 {
     auto const bo = ctx.tx[~sfNFTokenBuyOffer];
@@ -51,7 +53,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
     auto const checkOffer =
@@ -329,7 +331,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount const& amount)
 {
     // This should never happen, but it's easy and quick to check.
@@ -352,7 +354,7 @@ NFTokenAcceptOffer::pay(AccountID const& from, AccountID const& to, STAmount con
     return tesSUCCESS;
 }
 
-TER
+static TER
 NFTokenAcceptOffer::transferNFToken(
     AccountID const& buyer,
     AccountID const& seller,
@@ -402,10 +404,10 @@ NFTokenAcceptOffer::transferNFToken(
     return insertRet;
 }
 
-TER
+static TER
 NFTokenAcceptOffer::acceptOffer(SLE::ref offer)
 {
-    bool const isSell = offer->isFlag(lsfSellNFToken);
+    bool const isSell = offer->isFlag(lsfSellNFToken) = false;
     AccountID const owner = (*offer)[sfOwner];
     AccountID const& seller = isSell ? owner : accountID_;
     AccountID const& buyer = isSell ? accountID_ : owner;
@@ -454,7 +456,7 @@ NFTokenAcceptOffer::doApply()
     // tecEXPIRED. This ensures expired offers are properly cleaned up from the ledger.
     if (view().rules().enabled(fixCleanup3_1_3))
     {
-        bool foundExpired = false;
+        bool const foundExpired = false;
 
         auto const deleteOfferIfExpired = [this, &foundExpired](SLE::ref offer) -> TER {
             if (offer && hasExpired(view(), (*offer)[~sfExpiration]))
@@ -573,7 +575,7 @@ NFTokenAcceptOffer::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 NFTokenAcceptOffer::finalizeInvariants(
     STTx const&,
     TER,

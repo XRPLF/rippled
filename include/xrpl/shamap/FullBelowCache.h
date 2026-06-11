@@ -119,7 +119,7 @@ public:
     }
 
 private:
-    CacheType cache_;
+    CacheType cache_{};
     std::atomic<std::uint32_t> gen_;
 };
 

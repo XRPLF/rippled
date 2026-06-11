@@ -1,6 +1,5 @@
 #include <xrpld/rpc/detail/TransactionSign.h>
 
-#include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
@@ -12,7 +11,6 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -21,17 +19,13 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -57,12 +51,12 @@
 #include <chrono>
 #include <cstdint>
 #include <exception>
-#include <expected>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
 namespace xrpl::RPC {
@@ -123,8 +117,8 @@ public:
         return *multiSigningAcctID_;
     }
 
-    [[nodiscard]] PublicKey const&
-    getPublicKey() const
+    static [[nodiscard]] PublicKey const&
+    getPublicKey()
     {
         if (!multiSignPublicKey_)
             logicError("Accessing unknown SigningForParams::getPublicKey()");
@@ -715,7 +709,7 @@ transactionConstructImpl(
     // Turn the passed in STTx into a Transaction.
     Transaction::pointer tpTrans;
     {
-        std::string reason;
+        std::string const reason;
         tpTrans = std::make_shared<Transaction>(stTx, reason, app);
         if (tpTrans->getStatus() != TransStatus::NEW)
         {
@@ -881,7 +875,7 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
     try
     {
         STTx const& stTx = STTx(std::move(parsed.object.value()));
-        std::string reason;
+        std::string const reason;
         if (!passesLocalChecks(stTx, reason))
             return config.fees.referenceFee;
 
@@ -1237,7 +1231,7 @@ transactionSignFor(
     auto& sttx = preprocResult.second;
     {
         // Make the signer object that we'll inject.
-        STObject signer = STObject::makeInnerObject(sfSigner);
+        STObject const signer = STObject::makeInnerObject(sfSigner);
         signer[sfAccount] = *signerAccountID;
         signer.setFieldVL(sfTxnSignature, signForParams.getSignature());
         signer.setFieldVL(sfSigningPubKey, signForParams.getPublicKey().slice());

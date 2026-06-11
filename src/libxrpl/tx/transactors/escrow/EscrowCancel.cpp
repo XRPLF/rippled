@@ -1,18 +1,13 @@
 #include <xrpl/tx/transactors/escrow/EscrowCancel.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/EscrowHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
@@ -24,12 +19,11 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <memory>
-#include <utility>
 #include <variant>
 
 namespace xrpl {
 
-NotTEC
+static NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
@@ -89,7 +83,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
-TER
+static TER
 EscrowCancel::preclaim(PreclaimContext const& ctx)
 {
     if (ctx.view.rules().enabled(featureTokenEscrow))
@@ -116,7 +110,7 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 EscrowCancel::doApply()
 {
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
@@ -179,7 +173,7 @@ EscrowCancel::doApply()
             return temDISABLED;  // LCOV_EXCL_LINE
 
         auto const issuer = amount.getIssuer();
-        bool const createAsset = account == accountID_;
+        bool const createAsset = account == accountID_ = false;
         // TODO: can be simplified to remove the variant when fixCleanup3_2_0 is retired
         using ReceiverAccount = std::variant<std::shared_ptr<SLE>, WAccountRoot>;
         auto const receiverAccount = ctx_.view().rules().enabled(fixCleanup3_2_0)
@@ -232,7 +226,7 @@ EscrowCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
     // No transaction-specific invariants yet (future work).
 }
 
-bool
+static bool
 EscrowCancel::finalizeInvariants(
     STTx const&,
     TER,
