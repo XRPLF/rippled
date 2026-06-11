@@ -1,10 +1,11 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
@@ -72,7 +73,7 @@ public:
         : j(journal)
         , keyBytes(keyBytes)
         , burstSize(burstSize)
-        , name(get(keyValues, "path"))
+        , name(get(keyValues, Keys::kPath))
         , blockSize(parseBlockSize(name, keyValues, journal))
         , deletePath(false)
         , scheduler(scheduler)
@@ -91,7 +92,7 @@ public:
         : j(journal)
         , keyBytes(keyBytes)
         , burstSize(burstSize)
-        , name(get(keyValues, "path"))
+        , name(get(keyValues, Keys::kPath))
         , blockSize(parseBlockSize(name, keyValues, journal))
         , db(context)
         , deletePath(false)
@@ -359,7 +360,7 @@ private:
         std::size_t const blockSize = defaultSize;
         std::string blockSizeStr;
 
-        if (!getIfExists(keyValues, "nudb_block_size", blockSizeStr))
+        if (!getIfExists(keyValues, Keys::kNudbBlockSize, blockSizeStr))
         {
             return blockSize;  // Early return with default
         }

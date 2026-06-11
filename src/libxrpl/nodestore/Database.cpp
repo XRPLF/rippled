@@ -1,12 +1,13 @@
 #include <xrpl/nodestore/Database.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
@@ -38,8 +39,8 @@ Database::Database(
     beast::Journal journal)
     : j_(journal)
     , scheduler_(scheduler)
-    , earliestLedgerSeq_(get<std::uint32_t>(config, "earliest_seq", kXrpLedgerEarliestSeq))
-    , requestBundle_(get<int>(config, "rq_bundle", 4))
+    , earliestLedgerSeq_(get<std::uint32_t>(config, Keys::kEarliestSeq, kXrpLedgerEarliestSeq))
+    , requestBundle_(get<int>(config, Keys::kRqBundle, 4))
     , readThreads_(std::max(1, readThreads))
 {
     XRPL_ASSERT(readThreads, "xrpl::NodeStore::Database::Database : nonzero threads input");

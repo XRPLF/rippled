@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/hardened_hash.h>
@@ -20,6 +19,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <expected>
 #include <type_traits>
 
 namespace xrpl {
@@ -177,7 +177,7 @@ private:
         BadChar,
     };
 
-    constexpr Expected<decltype(data_), ParseResult>
+    constexpr std::expected<decltype(data_), ParseResult>
     parseFromStringView(std::string_view sv) noexcept
     {
         // Local lambda that converts a single hex char to four bits and
@@ -216,7 +216,7 @@ private:
         }
 
         if (sv.size() != size() * 2)
-            return Unexpected(ParseResult::BadLength);
+            return std::unexpected(ParseResult::BadLength);
 
         std::size_t i = 0u;
         auto in = sv.begin();
@@ -227,7 +227,7 @@ private:
             {
                 if (auto const result = hexCharToUInt(*in++, shift, accum);
                     result != ParseResult::Okay)
-                    return Unexpected(result);
+                    return std::unexpected(result);
             }
             ret[i++] = accum;
         }
