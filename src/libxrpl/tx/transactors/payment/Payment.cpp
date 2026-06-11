@@ -125,6 +125,12 @@ Payment::preflight(PreflightContext const& ctx)
     if (!mpTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
+    // A zero DomainID is invalid for a PermissionedDomain ledger entry because
+    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    if (auto const domainID = tx[~sfDomainID];
+        ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
+        return temMALFORMED;
+
     bool const partialPaymentAllowed = tx.isFlag(tfPartialPayment);
     bool const limitQuality = tx.isFlag(tfLimitQuality);
     bool const defaultPathsAllowed = !tx.isFlag(tfNoRippleDirect);
@@ -673,10 +679,7 @@ Payment::doApply()
 }
 
 void
-Payment::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+Payment::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

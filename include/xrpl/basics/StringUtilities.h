@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 namespace xrpl {
@@ -95,13 +96,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 }
 
 inline std::optional<Blob>
-strUnHex(std::string const& strSrc)
-{
-    return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
-}
-
-inline std::optional<Blob>
-strViewUnHex(std::string_view strSrc)
+strUnHex(std::string_view strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }

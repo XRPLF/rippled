@@ -515,7 +515,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             {
                 // Removing the last token from the last page deletes the
                 // _previous_ page because we need to preserve that last
-                // page an an anchor.  The contents of the next-to-last page
+                // page as an anchor.  The contents of the next-to-last page
                 // are moved into the last page.
                 lastNFTokenPage = env.le(keylet::nftpageMax(alice));
                 BEAST_EXPECT(lastNFTokenPage);
@@ -694,7 +694,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
             {
                 // Removing the last token from the last page deletes the
                 // _previous_ page because we need to preserve that last
-                // page an an anchor.  The contents of the next-to-last page
+                // page as an anchor.  The contents of the next-to-last page
                 // are moved into the last page.
                 lastNFTokenPage = env.le(keylet::nftpageMax(alice));
                 BEAST_EXPECT(lastNFTokenPage);
@@ -794,9 +794,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                     BEAST_EXPECT(sink.messages().str().starts_with("Invariant failed:"));
                     // uncomment to log the invariant failure message
                     // log << "   --> " << sink.messages().str() << std::endl;
-                    BEAST_EXPECT(
-                        sink.messages().str().find(
-                            "Last NFT page deleted with non-empty directory") != std::string::npos);
+                    BEAST_EXPECT(sink.messages().str().contains(
+                        "Last NFT page deleted with non-empty directory"));
                 }
             }
             {
@@ -831,8 +830,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                     BEAST_EXPECT(sink.messages().str().starts_with("Invariant failed:"));
                     // uncomment to log the invariant failure message
                     // log << "   --> " << sink.messages().str() << std::endl;
-                    BEAST_EXPECT(
-                        sink.messages().str().find("Lost NextMinPage link") != std::string::npos);
+                    BEAST_EXPECT(sink.messages().str().contains("Lost NextMinPage link"));
                 }
             }
         }

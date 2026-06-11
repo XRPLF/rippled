@@ -5,23 +5,18 @@
 
 #include <algorithm>
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 
-AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> const& ledger) : ledger_(ledger)
+AcceptedLedger::AcceptedLedger(std::shared_ptr<ReadView const> ledger) : ledger_(std::move(ledger))
 {
     transactions_.reserve(256);
-
-    auto insertAll = [&](auto const& txns) {
-        for (auto const& item : txns)
-        {
-            transactions_.emplace_back(
-                std::make_unique<AcceptedLedgerTx>(ledger, item.first, item.second));
-        }
-    };
-
-    transactions_.reserve(256);
-    insertAll(ledger->txs);
+    for (auto const& item : ledger_->txs)
+    {
+        transactions_.emplace_back(
+            std::make_unique<AcceptedLedgerTx>(ledger_, item.first, item.second));
+    }
 
     std::ranges::sort(transactions_, [](auto const& a, auto const& b) {
         return a->getTxnSeq() < b->getTxnSeq();

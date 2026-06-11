@@ -14,8 +14,8 @@ namespace xrpl {
 BookDirs::BookDirs(ReadView const& view, Book const& book)
     : view_(&view)
     , root_(keylet::page(getBookBase(book)).key)
-    , next_quality_(getQualityNext(root_))
-    , key_(view_->succ(root_, next_quality_).value_or(beast::kZero))
+    , nextQuality_(getQualityNext(root_))
+    , key_(view_->succ(root_, nextQuality_).value_or(beast::kZero))
 {
     XRPL_ASSERT(root_ != beast::kZero, "xrpl::BookDirs::BookDirs : nonzero root");
     if (key_ != beast::kZero)
@@ -35,7 +35,7 @@ BookDirs::begin() const -> BookDirs::const_iterator
     auto it = BookDirs::const_iterator(*view_, root_, key_);
     if (key_ != beast::kZero)
     {
-        it.next_quality_ = next_quality_;
+        it.nextQuality_ = nextQuality_;
         it.sle_ = sle_;
         it.entry_ = entry_;
         it.index_ = index_;
@@ -59,7 +59,7 @@ BookDirs::const_iterator::operator==(BookDirs::const_iterator const& other) cons
         view_ == other.view_ && root_ == other.root_,
         "xrpl::BookDirs::const_iterator::operator== : views and roots are "
         "matching");
-    return entry_ == other.entry_ && cur_key_ == other.cur_key_ && index_ == other.index_;
+    return entry_ == other.entry_ && curKey_ == other.curKey_ && index_ == other.index_;
 }
 
 BookDirs::const_iterator::reference
@@ -78,18 +78,18 @@ BookDirs::const_iterator::operator++()
     using beast::kZero;
 
     XRPL_ASSERT(index_ != kZero, "xrpl::BookDirs::const_iterator::operator++ : nonzero index");
-    if (!cdirNext(*view_, cur_key_, sle_, entry_, index_))
+    if (!cdirNext(*view_, curKey_, sle_, entry_, index_))
     {
         if (index_ == 0)
-            cur_key_ = view_->succ(++cur_key_, next_quality_).value_or(kZero);
+            curKey_ = view_->succ(++curKey_, nextQuality_).value_or(kZero);
 
-        if (index_ != 0 || cur_key_ == kZero)
+        if (index_ != 0 || curKey_ == kZero)
         {
-            cur_key_ = key_;
+            curKey_ = key_;
             entry_ = 0;
             index_ = kZero;
         }
-        else if (!cdirFirst(*view_, cur_key_, sle_, entry_, index_))
+        else if (!cdirFirst(*view_, curKey_, sle_, entry_, index_))
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::BookDirs::const_iterator::operator++ : directory is empty");

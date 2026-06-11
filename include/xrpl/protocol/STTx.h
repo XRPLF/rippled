@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
@@ -11,6 +10,7 @@
 
 #include <boost/container/flat_set.hpp>
 
+#include <expected>
 #include <functional>
 
 namespace xrpl {
@@ -27,7 +27,7 @@ enum class TxnSql : char {
 class STTx final : public STObject, public CountedObject<STTx>
 {
     uint256 tid_;
-    TxType tx_type_;
+    TxType txType_;
 
 public:
     static constexpr std::size_t kMinMultiSigners = 1;
@@ -108,10 +108,10 @@ public:
         @param rules The current ledger rules.
         @return `true` if valid signature. If invalid, the error message string.
     */
-    Expected<void, std::string>
+    std::expected<void, std::string>
     checkSign(Rules const& rules) const;
 
-    Expected<void, std::string>
+    std::expected<void, std::string>
     checkBatchSign(Rules const& rules) const;
 
     // SQL Functions with metadata.
@@ -138,19 +138,19 @@ private:
             Will be *this more often than not.
         @return `true` if valid signature. If invalid, the error message string.
     */
-    Expected<void, std::string>
+    std::expected<void, std::string>
     checkSign(Rules const& rules, STObject const& sigObject) const;
 
-    Expected<void, std::string>
+    std::expected<void, std::string>
     checkSingleSign(STObject const& sigObject) const;
 
-    Expected<void, std::string>
+    std::expected<void, std::string>
     checkMultiSign(Rules const& rules, STObject const& sigObject) const;
 
-    Expected<void, std::string>
+    std::expected<void, std::string>
     checkBatchSingleSign(STObject const& batchSigner) const;
 
-    Expected<void, std::string>
+    std::expected<void, std::string>
     checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const;
 
     STBase*
@@ -187,7 +187,7 @@ inline STTx::STTx(SerialIter&& sit)  // NOLINT(cppcoreguidelines-rvalue-referenc
 inline TxType
 STTx::getTxnType() const
 {
-    return tx_type_;
+    return txType_;
 }
 
 inline Blob

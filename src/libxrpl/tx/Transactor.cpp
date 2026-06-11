@@ -20,13 +20,13 @@
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>  // IWYU pragma: keep
@@ -44,7 +44,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -252,6 +251,15 @@ Transactor::preflight2(PreflightContext const& ctx)
 
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
+
+    return tesSUCCESS;
+}
+
+NotTEC
+Transactor::preflightUniversal(PreflightContext const& ctx)
+{
+    if (ctx.rules.enabled(fixCleanup3_2_0) && hasInvalidAmount(ctx.tx, ctx.j))
+        return temBAD_AMOUNT;
 
     return tesSUCCESS;
 }
@@ -779,7 +787,7 @@ Transactor::checkSingleSign(
     ReadView const& view,
     AccountID const& idSigner,
     AccountID const& idAccount,
-    std::shared_ptr<SLE const> sleAccount,
+    SLE::const_pointer sleAccount,
     beast::Journal const j)
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
@@ -815,7 +823,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
+    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -1163,21 +1171,17 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
 [[nodiscard]] TER
 Transactor::checkInvariants(TER result, XRPAmount fee)
 {
-    // Transaction invariants first (more specific). These check post-conditions of the specific
-    // transaction. If these fail, the transaction's core logic is wrong.
-    auto const txResult = checkTransactionInvariants(result, fee);
-
-    // Protocol invariants second (broader). These check properties that must hold regardless of
-    // transaction type.
-    auto const protoResult = ctx_.checkInvariants(result, fee);
-
-    // Fail if either check failed. tef (fatal) takes priority over tec.
-    if (protoResult == tefINVARIANT_FAILED)
-        return tefINVARIANT_FAILED;
-    if (txResult == tecINVARIANT_FAILED || protoResult == tecINVARIANT_FAILED)
-        return tecINVARIANT_FAILED;
-
-    return result;
+    /*
+     * DISABLED for 3.2.0 — Must be re-introduced for 3.3.0
+     *
+     * Transaction invariants are disabled due to a performance regression:
+     * the two-pass design (transaction-specific invariants + protocol invariants)
+     * iterates over modified ledger entries twice per transaction.
+     *
+     * Until resolved, only protocol invariants are checked (delegated to ctx_).
+     * This is safe because all transaction invariants in 3.2.0 are  no-ops.
+     */
+    return ctx_.checkInvariants(result, fee);
 }
 //------------------------------------------------------------------------------
 ApplyResult
@@ -1190,8 +1194,6 @@ Transactor::operator()()
     // with_txn_type().
     //
     // raii classes for the current ledger rules.
-    // fixUniversalNumber predate the rulesGuard and should be replaced.
-    NumberSO const stNumberSO{view().rules().enabled(fixUniversalNumber)};
     CurrentTransactionRulesGuard const currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
@@ -1276,8 +1278,8 @@ Transactor::operator()()
                         &expiredCredentials](
                            uint256 const& index,
                            bool isDelete,
-                           std::shared_ptr<SLE const> const& before,
-                           std::shared_ptr<SLE const> const& after) {
+                           SLE::const_ref before,
+                           SLE::const_ref after) {
                 if (isDelete)
                 {
                     XRPL_ASSERT(

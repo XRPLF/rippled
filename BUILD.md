@@ -45,14 +45,14 @@ found here](./docs/build/environment.md).
     It is possible to build with Conan 1.60+, but the instructions are
     significantly different, which is why we are not recommending it.
 
-`xrpld` is written in the C++20 dialect and includes the `<concepts>` header.
-The [minimum compiler versions][2] required are:
+`xrpld` is written in the C++23 dialect and includes the `<concepts>` header.
+The [tested compiler versions][2] are:
 
 | Compiler    | Version   |
 | ----------- | --------- |
-| GCC         | 12        |
-| Clang       | 16        |
-| Apple Clang | 16        |
+| GCC         | 15        |
+| Clang       | 22        |
+| Apple Clang | 17        |
 | MSVC        | 19.44[^3] |
 
 ### Linux
@@ -151,8 +151,8 @@ git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
 for recipe in "${recipes[@]}"; do
-  echo "Checking out recipe '${recipe}'..."
-  git sparse-checkout add recipes/${recipe}
+    echo "Checking out recipe '${recipe}'..."
+    git sparse-checkout add recipes/${recipe}
 done
 git fetch origin master
 git checkout master
@@ -180,7 +180,7 @@ the new recipe will be automatically pulled from the official Conan Center.
 
 If you see an error similar to the following after running `conan profile show`:
 
-```bash
+```text
 ERROR: Invalid setting '17' is not a valid 'settings.compiler.version' value.
 Possible values are ['5.0', '5.1', '6.0', '6.1', '7.0', '7.3', '8.0', '8.1',
 '9.0', '9.1', '10.0', '11.0', '12.0', '13', '13.0', '13.1', '14', '14.0', '15',
@@ -232,11 +232,11 @@ name and then creating a new `default` profile for a different compiler.
 #### Select language
 
 The default profile created by Conan will typically select different C++ dialect
-than C++20 used by this project. You should set `20` in the profile line
+than C++23 used by this project. You should set `23` in the profile line
 starting with `compiler.cppstd=`. For example:
 
 ```bash
-sed -i.bak -e 's|^compiler\.cppstd=.*$|compiler.cppstd=20|' $(conan config home)/profiles/default
+sed -i.bak -e 's|^compiler\.cppstd=.*$|compiler.cppstd=23|' $(conan config home)/profiles/default
 ```
 
 #### Select standard library in Linux
@@ -427,15 +427,18 @@ install ccache --version 4.11.3 --allow-downgrade`.
    Single-config generators:
 
    ```
-   cmake --build .
+   cmake --build . --parallel N
    ```
 
    Multi-config generators:
 
    ```
-   cmake --build . --config Release
-   cmake --build . --config Debug
+   cmake --build . --config Release --parallel N
+   cmake --build . --config Debug --parallel N
    ```
+
+   Replace the `--parallel` parameter N with the desired number of parallel jobs. A common starting point is half of the number of available CPU
+   cores.
 
 5. Test xrpld.
 

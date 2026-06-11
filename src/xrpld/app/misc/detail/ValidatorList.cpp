@@ -455,7 +455,7 @@ ValidatorList::parseBlobs(std::uint32_t version, json::Value const& body)
 std::vector<ValidatorBlobInfo>
 ValidatorList::parseBlobs(protocol::TMValidatorList const& body)
 {
-    return {{body.blob(), body.signature(), {}}};
+    return {{.blob = body.blob(), .signature = body.signature(), .manifest = {}}};
 }
 
 // static
@@ -1777,7 +1777,7 @@ ValidatorList::getAvailable(
 {
     std::shared_lock const readLock{mutex_};
 
-    auto const keyBlob = strViewUnHex(pubKey);
+    auto const keyBlob = strUnHex(pubKey);
 
     if (!keyBlob || !publicKeyType(makeSlice(*keyBlob)))
     {

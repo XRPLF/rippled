@@ -18,12 +18,12 @@
 
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -321,7 +321,7 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             cfg = singleThreadIo(std::move(cfg));
             return cfg;
         }));
@@ -431,9 +431,10 @@ public:
 
         Env env{*this, singleThreadIo(envconfig(validator, "")), features};
         auto& cfg = env.app().config();
-        if (!BEAST_EXPECT(cfg.section(SECTION_VALIDATION_SEED).empty()))
+        if (!BEAST_EXPECT(cfg.section(Sections::kValidationSeed).empty()))
             return;
-        auto const parsedseed = parseBase58<Seed>(cfg.section(SECTION_VALIDATION_SEED).values()[0]);
+        auto const parsedseed =
+            parseBase58<Seed>(cfg.section(Sections::kValidationSeed).values()[0]);
         if (BEAST_EXPECT(parsedseed); not parsedseed.has_value())
             return;
 
@@ -1319,7 +1320,7 @@ public:
         auto const carol = permDex.carol;
         auto const domainID = permDex.domainID;
         auto const gw = permDex.gw;
-        auto const usd = permDex.USD;
+        auto const usd = permDex.usd;
 
         auto wsc = makeWSClient(env.app().config());
 

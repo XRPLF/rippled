@@ -33,7 +33,7 @@ public:
      * @brief Construct a ${name} ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit ${name}(std::shared_ptr<SLE const> sle)
+    explicit ${name}(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -168,7 +168,7 @@ ${field['typeData']['setter_type']} ${field['paramName']}${',' if i < len(requir
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    ${name}Builder(std::shared_ptr<SLE const> sle)
+    ${name}Builder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ${tag})
         {

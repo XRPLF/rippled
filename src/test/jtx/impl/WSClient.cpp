@@ -2,8 +2,9 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -62,15 +63,15 @@ class WSClientImpl : public WSClient
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parsePort(common, cfg["server"], log);
+        parsePort(common, cfg[Sections::kServer], log);
         auto const ps = v2 ? "ws2" : "ws";
-        for (auto const& name : cfg.section("server").values())
+        for (auto const& name : cfg.section(Sections::kServer).values())
         {
             if (!cfg.exists(name))
                 continue;
             ParsedPort pp;
             parsePort(pp, cfg[name], log);
-            if (pp.protocol.count(ps) == 0)
+            if (!pp.protocol.contains(ps))
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
@@ -120,7 +121,7 @@ class WSClientImpl : public WSClient
     std::condition_variable cv_;
     std::list<std::shared_ptr<Msg>> msgs_;
 
-    unsigned rpc_version_;
+    unsigned rpcVersion_;
 
     void
     cleanup()
@@ -157,7 +158,7 @@ public:
         , thread_([&] { ios_.run(); })
         , stream_(ios_)
         , ws_(stream_)
-        , rpc_version_(rpcVersion)
+        , rpcVersion_(rpcVersion)
     {
         try
         {
@@ -197,7 +198,7 @@ public:
             json::Value jp;
             if (params)
                 jp = params;
-            if (rpc_version_ == 2)
+            if (rpcVersion_ == 2)
             {
                 jp[jss::method] = cmd;
                 jp[jss::jsonrpc] = "2.0";
@@ -284,7 +285,7 @@ public:
     [[nodiscard]] unsigned
     version() const override
     {
-        return rpc_version_;
+        return rpcVersion_;
     }
 
 private:
