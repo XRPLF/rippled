@@ -15,15 +15,10 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <memory>
-
 namespace xrpl {
 
 void
-ValidPermissionedDEX::visitEntry(
-    bool isDelete,
-    std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const& after)
+ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     auto sle = after;
     if (!isFeatureEnabled(fixCleanup3_2_0) && !after)

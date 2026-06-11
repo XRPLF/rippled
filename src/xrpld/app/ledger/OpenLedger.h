@@ -12,6 +12,7 @@
 #include <xrpl/ledger/OpenView.h>
 
 #include <mutex>
+#include <string_view>
 
 namespace xrpl {
 
@@ -149,7 +150,7 @@ public:
         bool retriesFirst,
         OrderedTxs& retries,
         ApplyFlags flags,
-        std::string const& suffix = "",
+        std::string_view suffix = "",
         modify_type const& f = {});
 
 private:
