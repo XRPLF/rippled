@@ -494,16 +494,7 @@ traceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01
 
 ### Protocol Buffers (xrpld P2P messages)
 
-```protobuf
-message TMTransaction {
-    bytes rawTransaction = 1;
-    // ... existing fields ...
-
-    // Trace context extension
-    bytes trace_parent = 100;  // W3C traceparent
-    bytes trace_state = 101;   // W3C tracestate
-}
-```
+xrpld P2P messages such as `TMTransaction` carry the trace context in two added byte fields alongside the existing payload: `trace_parent` holds the W3C traceparent (`trace_id`, `span_id`, and `trace_flags`), and `trace_state` holds the optional W3C tracestate. Together they propagate the trace across the P2P boundary so a receiving node can attach its spans to the sender's span.
 
 ---
 

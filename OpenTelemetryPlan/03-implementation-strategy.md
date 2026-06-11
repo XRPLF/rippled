@@ -1,7 +1,7 @@
 # Implementation Strategy
 
 > **Parent Document**: [OpenTelemetryPlan.md](./OpenTelemetryPlan.md)
-> **Related**: [Code Samples](./04-code-samples.md) | [Configuration Reference](./05-configuration-reference.md)
+> **Related**: [Configuration Reference](./05-configuration-reference.md)
 
 ---
 
@@ -314,27 +314,12 @@ flowchart TD
 
 ### 3.7.3 Conditional Instrumentation
 
-```cpp
-// Compile-time feature flag
-#ifndef XRPL_ENABLE_TELEMETRY
-// Zero-cost when disabled
-#define XRPL_TRACE_SPAN(t, n) ((void)0)
-#endif
-
-// Runtime component filtering
-if (telemetry.shouldTracePeer())
-{
-    XRPL_TRACE_SPAN(telemetry, "peer.message.receive");
-    // ... instrumentation
-}
-// No overhead when component tracing disabled
-```
+Instrumentation is gated on two levels. A compile-time feature flag (`XRPL_ENABLE_TELEMETRY`) reduces the trace macros to no-ops when telemetry is built out, so disabled builds carry zero cost. At runtime, per-component guards (e.g. `shouldTracePeer()`) skip span creation for components whose tracing is turned off, incurring no overhead beyond a single boolean check.
 
 ---
 
 ## 3.8 Links to Detailed Documentation
 
-- **[Code Samples](./04-code-samples.md)**: Complete implementation code for all components
 - **[Configuration Reference](./05-configuration-reference.md)**: Configuration options and collector setup
 - **[Implementation Phases](./06-implementation-phases.md)**: Detailed timeline and milestones
 
@@ -482,47 +467,10 @@ If issues are discovered after deployment:
 
 ### 3.9.7 Code Change Examples
 
-**Minimal RPC Instrumentation (Low Intrusiveness):**
+**Minimal RPC Instrumentation (Low Intrusiveness):** Instrumenting an RPC handler adds roughly 3-4 lines: one macro to start the span and one or two `setAttribute` calls (command name, status). The span ends automatically via RAII, so the existing control flow — process the request, send the result — is untouched.
 
-```cpp
-// Before
-void ServerHandler::onRequest(...) {
-    auto result = processRequest(req);
-    send(result);
-}
-
-// After (only ~10 lines added)
-void ServerHandler::onRequest(...) {
-    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.request");  // +1 line
-    XRPL_TRACE_SET_ATTR("command", command);     // +1 line
-
-    auto result = processRequest(req);
-
-    XRPL_TRACE_SET_ATTR("rpc_status", status);       // +1 line
-    send(result);
-}
-```
-
-**Consensus Instrumentation (Medium Intrusiveness):**
-
-```cpp
-// Before
-void RCLConsensusAdaptor::startRound(...) {
-    // ... existing logic
-}
-
-// After (context storage required)
-void RCLConsensusAdaptor::startRound(...) {
-    XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.round");
-    XRPL_TRACE_SET_ATTR("ledger_seq", seq);
-
-    // Store context for child spans in phase transitions
-    currentRoundContext_ = _xrpl_guard_->context();  // New member variable
-
-    // ... existing logic unchanged
-}
-```
+**Consensus Instrumentation (Medium Intrusiveness):** Consensus is slightly more intrusive because child spans in later phase transitions need the round's context. Beyond the span-start and attribute macros, this requires storing the active context in a new member variable (`currentRoundContext_`) at round start. The existing round logic itself remains unchanged.
 
 ---
 
-_Previous: [Design Decisions](./02-design-decisions.md)_ | _Next: [Code Samples](./04-code-samples.md)_ | _Back to: [Overview](./OpenTelemetryPlan.md)_
+_Previous: [Design Decisions](./02-design-decisions.md)_ | _Next: [Configuration Reference](./05-configuration-reference.md)_ | _Back to: [Overview](./OpenTelemetryPlan.md)_

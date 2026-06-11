@@ -1,7 +1,7 @@
 # Configuration Reference
 
 > **Parent Document**: [OpenTelemetryPlan.md](./OpenTelemetryPlan.md)
-> **Related**: [Code Samples](./04-code-samples.md) | [Implementation Phases](./06-implementation-phases.md)
+> **Related**: [Implementation Phases](./06-implementation-phases.md)
 
 ---
 
@@ -11,63 +11,7 @@
 
 ### 5.1.1 Configuration File Section
 
-Add to `cfg/xrpld-example.cfg`:
-
-```ini
-# ═══════════════════════════════════════════════════════════════════════════════
-# TELEMETRY (OpenTelemetry Distributed Tracing)
-# ═══════════════════════════════════════════════════════════════════════════════
-#
-# Enables distributed tracing for transaction flow, consensus, and RPC calls.
-# Traces are exported to an OpenTelemetry Collector using OTLP protocol.
-#
-# [telemetry]
-#
-# # Enable/disable telemetry (default: 0 = disabled)
-# enabled=1
-#
-# # OTLP endpoint (default: http://localhost:4318/v1/traces - OTLP/HTTP)
-# # Note: only OTLP/HTTP is shipped in Phase 1b. OTLP/gRPC support is
-# # planned as future work and is not yet parsed by TelemetryConfig.cpp.
-# endpoint=http://localhost:4318/v1/traces
-#
-# # Use TLS for exporter connection (default: 0)
-# use_tls=0
-#
-# # Path to CA certificate for TLS (optional)
-# # tls_ca_cert=/path/to/ca.crt
-#
-# # Head sampling is intentionally fixed at 1.0 (sample everything) and is
-# # NOT configurable. A per-node head-sampling ratio would let nodes make
-# # divergent keep/drop decisions for the same distributed trace, producing
-# # broken/partial traces across the network. Volume reduction is delegated
-# # to the collector's tail sampling instead. See Section 7.4.2.
-#
-# # Batch processor settings
-# batch_size=512           # Spans per batch (default: 512)
-# batch_delay_ms=5000      # Max delay before sending batch (default: 5000)
-# max_queue_size=2048      # Max queued spans (default: 2048)
-#
-# # Component-specific tracing (default: all enabled except peer)
-# trace_transactions=1     # Transaction relay and processing
-# trace_consensus=1        # Consensus rounds and proposals
-# trace_rpc=1              # RPC request handling
-# trace_peer=1             # Peer messages (high volume, enabled by default)
-# trace_ledger=1           # Ledger acquisition and building
-#
-# # Planned (not yet parsed by TelemetryConfig.cpp):
-# # trace_pathfind=1       # Path computation (Phase 2)
-# # trace_txq=1            # Transaction queue (Phase 3)
-# # trace_validator=0      # Validator list / manifest (future)
-# # trace_amendment=0      # Amendment voting (future)
-#
-# # Service identification (automatically detected if not specified)
-# # service_name=xrpld
-# # service_instance_id=<node_public_key>
-
-[telemetry]
-enabled=0
-```
+The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Telemetry is disabled by default (`enabled=0`); enabling it turns on distributed tracing for transaction flow, consensus, and RPC calls, with traces exported to an OpenTelemetry Collector over OTLP. Head sampling is intentionally fixed at 1.0 (sample everything) and is not configurable — per-node head-sampling would produce broken/partial distributed traces, so volume reduction is delegated to the collector's tail sampling (see Section 7.4.2). The full option reference follows.
 
 ### 5.1.2 Configuration Options Summary
 
@@ -106,67 +50,7 @@ phases. They will be added as the corresponding subsystems are instrumented:
 
 > **TxQ** = Transaction Queue
 
-```cpp
-// src/libxrpl/telemetry/TelemetryConfig.cpp
-
-#include <xrpl/telemetry/Telemetry.h>
-#include <xrpl/basics/Log.h>
-
-namespace xrpl {
-namespace telemetry {
-
-Telemetry::Setup
-setup_Telemetry(
-    Section const& section,
-    std::string const& nodePublicKey,
-    std::string const& version)
-{
-    Telemetry::Setup setup;
-
-    // Basic settings
-    setup.enabled = section.value_or("enabled", false);
-    setup.serviceName = section.value_or("service_name", "xrpld");
-    setup.serviceVersion = version;
-    setup.serviceInstanceId = section.value_or(
-        "service_instance_id", nodePublicKey);
-
-    // Exporter settings
-    setup.exporterType = section.value_or("exporter", "otlp_grpc");
-
-    if (setup.exporterType == "otlp_grpc")
-        setup.exporterEndpoint = section.value_or("endpoint", "localhost:4317");
-    else if (setup.exporterType == "otlp_http")
-        setup.exporterEndpoint = section.value_or("endpoint", "localhost:4318");
-
-    setup.useTls = section.value_or("use_tls", false);
-    setup.tlsCertPath = section.value_or("tls_ca_cert", "");
-
-    // Head sampling is fixed at 1.0 (sample everything) and is not read from
-    // config — see Section 7.4.2. setup.samplingRatio stays at its 1.0 default.
-
-    // Batch processor
-    setup.batchSize = section.value_or("batch_size", 512u);
-    setup.batchDelay = std::chrono::milliseconds{
-        section.value_or("batch_delay_ms", 5000u)};
-    setup.maxQueueSize = section.value_or("max_queue_size", 2048u);
-
-    // Component filtering
-    setup.traceTransactions = section.value_or("trace_transactions", true);
-    setup.traceConsensus = section.value_or("trace_consensus", true);
-    setup.traceRpc = section.value_or("trace_rpc", true);
-    setup.tracePeer = section.value_or("trace_peer", true);
-    setup.traceLedger = section.value_or("trace_ledger", true);
-    setup.tracePathfind = section.value_or("trace_pathfind", true);
-    setup.traceTxQ = section.value_or("trace_txq", true);
-    setup.traceValidator = section.value_or("trace_validator", false);
-    setup.traceAmendment = section.value_or("trace_amendment", false);
-
-    return setup;
-}
-
-} // namespace telemetry
-} // namespace xrpl
-```
+The parser `setup_Telemetry()` in `src/libxrpl/telemetry/TelemetryConfig.cpp` reads the `[telemetry]` `Section` and populates a `Telemetry::Setup` struct, applying the defaults listed in Section 5.1.2 via `section.value_or(...)`. It derives `serviceInstanceId` from the node public key when not overridden, selects the exporter endpoint default by exporter type, and leaves the sampling ratio at its fixed 1.0 default (not read from config — see Section 7.4.2).
 
 ---
 
@@ -180,84 +64,11 @@ setup_Telemetry(
 > constructed with an empty `serviceInstanceId` and patched via
 > `setServiceInstanceId()` once `setup()` has called `getNodeIdentity()`.
 
-```cpp
-// src/xrpld/app/main/Application.cpp (modified)
-
-#include <xrpl/telemetry/Telemetry.h>
-
-class ApplicationImp : public Application, public BasicApp
-{
-    // ... existing members (perfLog_, etc.) ...
-
-    // Telemetry — constructed in the member initializer list with
-    // an empty serviceInstanceId, patched in setup().
-    std::unique_ptr<telemetry::Telemetry> telemetry_;
-
-    // Member initializer list (excerpt):
-    // ...
-    // , telemetry_(
-    //       telemetry::make_Telemetry(
-    //           telemetry::setup_Telemetry(
-    //               config_->section("telemetry"),
-    //               "",  // Updated later via setServiceInstanceId()
-    //               BuildInfo::getVersionString()),
-    //           logs_->journal("Telemetry")))
-    // ...
-
-    bool setup(...) override
-    {
-        // ... existing setup code ...
-
-        nodeIdentity_ = getNodeIdentity(*this, cmdline);
-
-        // Inject node identity into telemetry resource attributes,
-        // unless the user already set a custom service_instance_id.
-        if (!config_->section("telemetry").exists("service_instance_id"))
-            telemetry_->setServiceInstanceId(
-                toBase58(TokenType::NodePublic, nodeIdentity_->first));
-
-        // ... rest of setup ...
-    }
-
-    void start(bool withTimers) override
-    {
-        // ... existing start code ...
-        telemetry_->start();
-    }
-
-    void run() override
-    {
-        // ... existing run/shutdown code ...
-        telemetry_->stop();
-    }
-
-    telemetry::Telemetry&
-    getTelemetry() override
-    {
-        return *telemetry_;
-    }
-};
-```
+`ApplicationImp` (in `src/xrpld/app/main/Application.cpp`) owns a `std::unique_ptr<telemetry::Telemetry> telemetry_`. It is built in the member initializer list via `make_Telemetry(setup_Telemetry(...))` with an empty `serviceInstanceId`, then patched in `setup()` by calling `setServiceInstanceId()` with the Base58 node public key (unless the user supplied a custom `service_instance_id`). `start()` and `run()` forward to `telemetry_->start()` / `telemetry_->stop()`, and `getTelemetry()` returns the owned instance.
 
 ### 5.3.2 ServiceRegistry Interface Addition
 
-```cpp
-// include/xrpl/core/ServiceRegistry.h (modified)
-
-namespace telemetry {
-class Telemetry;
-}  // namespace telemetry
-
-class ServiceRegistry
-{
-public:
-    // ... existing virtual methods ...
-
-    /** Get the telemetry system for distributed tracing. */
-    virtual telemetry::Telemetry&
-    getTelemetry() = 0;
-};
-```
+`include/xrpl/core/ServiceRegistry.h` gains a pure-virtual `telemetry::Telemetry& getTelemetry()` (with a forward declaration of `telemetry::Telemetry`), giving every component a uniform accessor for the tracing subsystem.
 
 > **Note:** `Application` extends `ServiceRegistry`, so `getTelemetry()` is
 > available on both. Components that hold a `ServiceRegistry&` (e.g.
@@ -273,114 +84,11 @@ public:
 
 ### 5.4.1 Find OpenTelemetry Module
 
-```cmake
-# cmake/FindOpenTelemetry.cmake
-
-# Find OpenTelemetry C++ SDK
-#
-# This module defines:
-#   OpenTelemetry_FOUND - System has OpenTelemetry
-#   OpenTelemetry::api - API library target
-#   OpenTelemetry::sdk - SDK library target
-#   OpenTelemetry::otlp_grpc_exporter - OTLP gRPC exporter target
-#   OpenTelemetry::otlp_http_exporter - OTLP HTTP exporter target
-
-find_package(opentelemetry-cpp CONFIG QUIET)
-
-if(opentelemetry-cpp_FOUND)
-    set(OpenTelemetry_FOUND TRUE)
-
-    # Create imported targets if not already created by config
-    if(NOT TARGET OpenTelemetry::api)
-        add_library(OpenTelemetry::api ALIAS opentelemetry-cpp::api)
-    endif()
-    if(NOT TARGET OpenTelemetry::sdk)
-        add_library(OpenTelemetry::sdk ALIAS opentelemetry-cpp::sdk)
-    endif()
-    if(NOT TARGET OpenTelemetry::otlp_grpc_exporter)
-        add_library(OpenTelemetry::otlp_grpc_exporter ALIAS
-            opentelemetry-cpp::otlp_grpc_exporter)
-    endif()
-else()
-    # Try pkg-config fallback
-    find_package(PkgConfig QUIET)
-    if(PKG_CONFIG_FOUND)
-        pkg_check_modules(OTEL opentelemetry-cpp QUIET)
-        if(OTEL_FOUND)
-            set(OpenTelemetry_FOUND TRUE)
-            # Create imported targets from pkg-config
-            add_library(OpenTelemetry::api INTERFACE IMPORTED)
-            target_include_directories(OpenTelemetry::api INTERFACE
-                ${OTEL_INCLUDE_DIRS})
-        endif()
-    endif()
-endif()
-
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(OpenTelemetry
-    REQUIRED_VARS OpenTelemetry_FOUND)
-```
+A `cmake/FindOpenTelemetry.cmake` module locates the OpenTelemetry C++ SDK. It first tries `find_package(opentelemetry-cpp CONFIG)`, aliasing the imported targets `OpenTelemetry::api`, `OpenTelemetry::sdk`, and `OpenTelemetry::otlp_grpc_exporter`, and falls back to `pkg-config` when no CMake config package is present.
 
 ### 5.4.2 CMakeLists.txt Changes
 
-```cmake
-# CMakeLists.txt (additions)
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# TELEMETRY OPTIONS
-# ═══════════════════════════════════════════════════════════════════════════════
-
-option(XRPL_ENABLE_TELEMETRY
-    "Enable OpenTelemetry distributed tracing support" OFF)
-
-if(XRPL_ENABLE_TELEMETRY)
-    find_package(OpenTelemetry REQUIRED)
-
-    # Define compile-time flag
-    add_compile_definitions(XRPL_ENABLE_TELEMETRY)
-
-    message(STATUS "OpenTelemetry tracing: ENABLED")
-else()
-    message(STATUS "OpenTelemetry tracing: DISABLED")
-endif()
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# TELEMETRY LIBRARY
-# ═══════════════════════════════════════════════════════════════════════════════
-
-if(XRPL_ENABLE_TELEMETRY)
-    add_library(xrpl_telemetry
-        src/libxrpl/telemetry/Telemetry.cpp
-        src/libxrpl/telemetry/TelemetryConfig.cpp
-        src/libxrpl/telemetry/TraceContext.cpp
-    )
-
-    target_include_directories(xrpl_telemetry
-        PUBLIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/include
-    )
-
-    target_link_libraries(xrpl_telemetry
-        PUBLIC
-            OpenTelemetry::api
-            OpenTelemetry::sdk
-            OpenTelemetry::otlp_grpc_exporter
-        PRIVATE
-            xrpl_basics
-    )
-
-    # Add to main library dependencies
-    target_link_libraries(xrpld PRIVATE xrpl_telemetry)
-else()
-    # Create null implementation library
-    add_library(xrpl_telemetry
-        src/libxrpl/telemetry/NullTelemetry.cpp
-    )
-    target_include_directories(xrpl_telemetry
-        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
-    )
-endif()
-```
+The top-level `CMakeLists.txt` adds an `XRPL_ENABLE_TELEMETRY` option (default `OFF`). When enabled, it runs `find_package(OpenTelemetry REQUIRED)`, defines the `XRPL_ENABLE_TELEMETRY` compile flag, and builds the `xrpl_telemetry` library from the real telemetry sources linked against the OpenTelemetry targets; when disabled, it builds the same target from a no-op `NullTelemetry.cpp` so call sites compile unchanged.
 
 ---
 
@@ -388,151 +96,15 @@ endif()
 
 > **OTLP** = OpenTelemetry Protocol | **APM** = Application Performance Monitoring
 
+The authoritative collector config lives in the repo at `docker/telemetry/otel-collector-config.yaml` (with Tempo backend config in `docker/telemetry/tempo.yaml`). The sections below summarize the development and production shapes of that pipeline.
+
 ### 5.5.1 Development Configuration
 
-```yaml
-# otel-collector-dev.yaml
-# Minimal configuration for local development
-
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-
-processors:
-  batch:
-    timeout: 1s
-    send_batch_size: 100
-
-exporters:
-  # Console output for debugging
-  logging:
-    verbosity: detailed
-    sampling_initial: 5
-    sampling_thereafter: 200
-
-  # Tempo for trace visualization
-  otlp/tempo:
-    endpoint: tempo:4317
-    tls:
-      insecure: true
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [logging, otlp/tempo]
-```
+The development collector enables an OTLP receiver on both gRPC (`0.0.0.0:4317`) and HTTP (`0.0.0.0:4318`), a single `batch` processor (1s timeout, batch size 100), and two exporters: a `logging` exporter for console debugging and `otlp/tempo` (insecure) for trace visualization. The single `traces` pipeline wires receiver → batch → both exporters.
 
 ### 5.5.2 Production Configuration
 
-```yaml
-# otel-collector-prod.yaml
-# Production configuration with filtering, sampling, and multiple backends
-
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-        tls:
-          cert_file: /etc/otel/server.crt
-          key_file: /etc/otel/server.key
-          ca_file: /etc/otel/ca.crt
-
-processors:
-  # Memory limiter to prevent OOM
-  memory_limiter:
-    check_interval: 1s
-    limit_mib: 1000
-    spike_limit_mib: 200
-
-  # Batch processing for efficiency
-  batch:
-    timeout: 5s
-    send_batch_size: 512
-    send_batch_max_size: 1024
-
-  # Tail-based sampling (keep errors and slow traces)
-  tail_sampling:
-    decision_wait: 10s
-    num_traces: 100000
-    expected_new_traces_per_sec: 1000
-    policies:
-      # Always keep error traces
-      - name: errors
-        type: status_code
-        status_code:
-          status_codes: [ERROR]
-      # Keep slow consensus rounds (>5s)
-      - name: slow-consensus
-        type: latency
-        latency:
-          threshold_ms: 5000
-      # Keep slow RPC requests (>1s)
-      - name: slow-rpc
-        type: and
-        and:
-          and_sub_policy:
-            - name: rpc-spans
-              type: string_attribute
-              string_attribute:
-                key: command
-                values: [".*"]
-                enabled_regex_matching: true
-            - name: latency
-              type: latency
-              latency:
-                threshold_ms: 1000
-      # Probabilistic sampling for the rest
-      - name: probabilistic
-        type: probabilistic
-        probabilistic:
-          sampling_percentage: 10
-
-  # Attribute processing
-  attributes:
-    actions:
-      # Hash sensitive data
-      - key: tx_account
-        action: hash
-      # Add deployment info
-      - key: deployment.environment
-        value: production
-        action: upsert
-
-exporters:
-  # Grafana Tempo for long-term storage
-  otlp/tempo:
-    endpoint: tempo.monitoring:4317
-    tls:
-      insecure: false
-      ca_file: /etc/otel/tempo-ca.crt
-
-  # Elastic APM for correlation with logs
-  otlp/elastic:
-    endpoint: apm.elastic:8200
-    headers:
-      Authorization: "Bearer ${ELASTIC_APM_TOKEN}"
-
-extensions:
-  health_check:
-    endpoint: 0.0.0.0:13133
-  zpages:
-    endpoint: 0.0.0.0:55679
-
-service:
-  extensions: [health_check, zpages]
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [memory_limiter, tail_sampling, attributes, batch]
-      exporters: [otlp/tempo, otlp/elastic]
-```
+The production collector adds TLS on the OTLP gRPC receiver and a richer processor chain: a `memory_limiter` (OOM guard), `batch` (5s timeout, size 512), `tail_sampling`, and an `attributes` processor that hashes sensitive fields (e.g. `tx_account`) and stamps `deployment.environment`. Tail sampling keeps all `ERROR` traces, slow consensus rounds (>5s) and slow RPC requests (>1s), and probabilistically samples the remainder at 10%. Exporters target Grafana Tempo (TLS) and Elastic APM; `health_check` and `zpages` extensions are enabled for operability.
 
 ---
 
@@ -540,61 +112,7 @@ service:
 
 > **OTLP** = OpenTelemetry Protocol
 
-```yaml
-# docker-compose-telemetry.yaml
-version: "3.8"
-
-services:
-  # OpenTelemetry Collector
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.92.0
-    container_name: otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./otel-collector-dev.yaml:/etc/otel-collector-config.yaml:ro
-    ports:
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
-      - "13133:13133" # Health check
-    depends_on:
-      - tempo
-
-  # Tempo for trace visualization
-  tempo:
-    image: grafana/tempo:2.6.1
-    container_name: tempo
-    ports:
-      - "3200:3200" # Tempo HTTP API
-      - "4317" # OTLP gRPC (internal)
-
-  # Grafana for dashboards
-  grafana:
-    image: grafana/grafana:10.2.3
-    container_name: grafana
-    environment:
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-    volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-    ports:
-      - "3000:3000"
-    depends_on:
-      - tempo
-
-  # Prometheus for metrics (optional, for correlation)
-  prometheus:
-    image: prom/prometheus:v2.48.1
-    container_name: prometheus
-    volumes:
-      - ./prometheus.yaml:/etc/prometheus/prometheus.yml:ro
-    ports:
-      - "9090:9090"
-
-networks:
-  default:
-    name: xrpld-telemetry
-```
+The authoritative development stack lives in the repo at `docker/telemetry/docker-compose.yml`. It brings up four services on a shared `xrpld-telemetry` network: an `otel-collector` (otel/opentelemetry-collector-contrib) exposing OTLP gRPC `4317`, OTLP HTTP `4318`, and health check `13133`; `tempo` for trace storage/visualization; `grafana` with provisioned datasources and dashboards (anonymous admin enabled); and an optional `prometheus` for metric correlation.
 
 ---
 
@@ -661,175 +179,23 @@ Step-by-step instructions for integrating xrpld traces with Grafana.
 
 #### Tempo (Recommended)
 
-```yaml
-# grafana/provisioning/datasources/tempo.yaml
-apiVersion: 1
-
-datasources:
-  - name: Tempo
-    type: tempo
-    access: proxy
-    url: http://tempo:3200
-    jsonData:
-      httpMethod: GET
-      tracesToLogs:
-        datasourceUid: loki
-        tags: ["service.name", "tx_hash"]
-        mappedTags: [{ key: "trace_id", value: "traceID" }]
-        mapTagNamesEnabled: true
-        filterByTraceID: true
-      serviceMap:
-        datasourceUid: prometheus
-      nodeGraph:
-        enabled: true
-      search:
-        hide: false
-      lokiSearch:
-        datasourceUid: loki
-```
+A Tempo datasource (`grafana/provisioning/datasources/tempo.yaml`, provisioned from `docker/telemetry/grafana/`) points at `http://tempo:3200` and enables `tracesToLogs` (linking to Loki on `service.name`/`tx_hash` and mapping `trace_id` → `traceID`), `serviceMap` against Prometheus, the node graph, and Loki search.
 
 #### Elastic APM
 
-```yaml
-# grafana/provisioning/datasources/elastic-apm.yaml
-apiVersion: 1
-
-datasources:
-  - name: Elasticsearch-APM
-    type: elasticsearch
-    access: proxy
-    url: http://elasticsearch:9200
-    database: "apm-*"
-    jsonData:
-      esVersion: "8.0.0"
-      timeField: "@timestamp"
-      logMessageField: message
-      logLevelField: log.level
-```
+Alternatively, an Elasticsearch datasource (`grafana/provisioning/datasources/elastic-apm.yaml`) of type `elasticsearch` points at `http://elasticsearch:9200` against the `apm-*` index, using `@timestamp` as the time field and mapping the log message/level fields.
 
 ### 5.8.2 Dashboard Provisioning
 
-```yaml
-# grafana/provisioning/dashboards/dashboards.yaml
-apiVersion: 1
-
-providers:
-  - name: "xrpld-dashboards"
-    orgId: 1
-    folder: "xrpld"
-    folderUid: "xrpld"
-    type: file
-    disableDeletion: false
-    updateIntervalSeconds: 30
-    options:
-      path: /var/lib/grafana/dashboards/rippled
-```
+A dashboard provider (`grafana/provisioning/dashboards/dashboards.yaml`) loads the `xrpld` dashboard folder from disk (`/var/lib/grafana/dashboards/rippled`), polling for changes every 30s with deletion disabled.
 
 ### 5.8.3 Example Dashboard: RPC Performance
 
-```json
-{
-  "title": "xrpld RPC Performance",
-  "uid": "xrpld-rpc-performance",
-  "panels": [
-    {
-      "title": "RPC Latency by Command",
-      "type": "heatmap",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && span.command != \"\"} | histogram_over_time(duration) by (span.command)"
-        }
-      ],
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
-    },
-    {
-      "title": "RPC Error Rate",
-      "type": "timeseries",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && status.code=error} | rate() by (span.command)"
-        }
-      ],
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
-    },
-    {
-      "title": "Top 10 Slowest RPC Commands",
-      "type": "table",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && span.command != \"\"} | avg(duration) by (span.command) | topk(10)"
-        }
-      ],
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
-    },
-    {
-      "title": "Recent Traces",
-      "type": "table",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\"}"
-        }
-      ],
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
-    }
-  ]
-}
-```
+An example `xrpld RPC Performance` dashboard (uid `xrpld-rpc-performance`) sourced from Tempo via TraceQL provides four panels: RPC latency by command (heatmap), RPC error rate by command (timeseries), the top 10 slowest RPC commands by average duration (table), and a recent-traces table.
 
 ### 5.8.4 Example Dashboard: Transaction Tracing
 
-```json
-{
-  "title": "xrpld Transaction Tracing",
-  "uid": "xrpld-tx-tracing",
-  "panels": [
-    {
-      "title": "Transaction Throughput",
-      "type": "stat",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=\"tx.receive\"} | rate()"
-        }
-      ],
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
-    },
-    {
-      "title": "Cross-Node Relay Count",
-      "type": "timeseries",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=\"tx.relay\"} | avg(span.relay_count)"
-        }
-      ],
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
-    },
-    {
-      "title": "Transaction Validation Errors",
-      "type": "table",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=\"tx.validate\" && status.code=error}"
-        }
-      ],
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
-    }
-  ]
-}
-```
+An example `xrpld Transaction Tracing` dashboard (uid `xrpld-tx-tracing`) over Tempo provides three panels: transaction throughput (`tx.receive` rate, stat), cross-node relay count (average `span.relay_count` on `tx.relay`, timeseries), and a table of transaction validation errors (`tx.validate` with `status.code=error`).
 
 ### 5.8.5 TraceQL Query Examples
 
@@ -861,58 +227,15 @@ To correlate OpenTelemetry traces with existing PerfLog data:
 
 **Step 1: Configure Loki to ingest PerfLog**
 
-```yaml
-# promtail-config.yaml
-scrape_configs:
-  - job_name: xrpld-perflog
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: xrpld
-          __path__: /var/log/rippled/perf*.log
-    pipeline_stages:
-      - json:
-          expressions:
-            trace_id: trace_id
-            ledger_seq: ledger_seq
-            tx_hash: tx_hash
-      - labels:
-          trace_id:
-          ledger_seq:
-          tx_hash:
-```
+Configure a Promtail scrape job (`promtail-config.yaml`) that tails `/var/log/rippled/perf*.log`, parses each JSON line, and promotes `trace_id`, `ledger_seq`, and `tx_hash` to Loki labels.
 
 **Step 2: Add trace_id to PerfLog entries**
 
-Modify PerfLog to include trace_id when available:
-
-```cpp
-// In PerfLog output, add trace_id from current span context
-void logPerf(Json::Value& entry) {
-    auto span = opentelemetry::trace::GetSpan(
-        opentelemetry::context::RuntimeContext::GetCurrent());
-    if (span && span->GetContext().IsValid()) {
-        char traceIdHex[33];
-        span->GetContext().trace_id().ToLowerBase16(traceIdHex);
-        entry["trace_id"] = std::string(traceIdHex, 32);
-    }
-    // ... existing logging
-}
-```
+Modify PerfLog so its JSON output includes a `trace_id` field whenever a valid span is active: fetch the current span from the OpenTelemetry runtime context, and if its context is valid, render the trace ID as a 32-character lowercase hex string into the log entry.
 
 **Step 3: Configure Grafana trace-to-logs link**
 
-In Tempo data source configuration, set up the derived field:
-
-```yaml
-jsonData:
-  tracesToLogs:
-    datasourceUid: loki
-    tags: ["trace_id", "tx_hash"]
-    filterByTraceID: true
-    filterBySpanID: false
-```
+In the Tempo datasource, set the `tracesToLogs` derived field to link to Loki on the `trace_id` and `tx_hash` tags, with `filterByTraceID: true`.
 
 ### 5.8.7 Correlation with Insight/StatsD Metrics
 
@@ -920,46 +243,22 @@ To correlate traces with existing Beast Insight metrics:
 
 **Step 1: Export Insight metrics to Prometheus**
 
-```yaml
-# prometheus.yaml
-scrape_configs:
-  - job_name: "xrpld-statsd"
-    static_configs:
-      - targets: ["statsd-exporter:9102"]
-```
+Add a Prometheus scrape job (`prometheus.yaml`) named `xrpld-statsd` targeting the StatsD exporter at `statsd-exporter:9102`.
 
 **Step 2: Add exemplars to metrics**
 
-OpenTelemetry SDK automatically adds exemplars (trace IDs) to metrics when using the Prometheus exporter. This links metrics spikes to specific traces.
+The OpenTelemetry SDK automatically adds exemplars (trace IDs) to metrics when using the Prometheus exporter, linking metric spikes to specific traces.
 
 **Step 3: Configure Grafana metric-to-trace link**
 
-```yaml
-# In Prometheus data source
-jsonData:
-  exemplarTraceIdDestinations:
-    - name: trace_id
-      datasourceUid: tempo
-```
+In the Prometheus datasource, set `exemplarTraceIdDestinations` to map the `trace_id` exemplar to the Tempo datasource.
 
 **Step 4: Dashboard panel with exemplars**
 
-```json
-{
-  "title": "RPC Latency with Trace Links",
-  "type": "timeseries",
-  "datasource": "Prometheus",
-  "targets": [
-    {
-      "expr": "histogram_quantile(0.99, rate(xrpld_rpc_duration_seconds_bucket[5m]))",
-      "exemplar": true
-    }
-  ]
-}
-```
+Add a timeseries panel over Prometheus (e.g. `histogram_quantile(0.99, rate(xrpld_rpc_duration_seconds_bucket[5m]))`) with `exemplar: true` enabled.
 
 This allows clicking on metric data points to jump directly to the related trace.
 
 ---
 
-_Previous: [Code Samples](./04-code-samples.md)_ | _Next: [Implementation Phases](./06-implementation-phases.md)_ | _Back to: [Overview](./OpenTelemetryPlan.md)_
+_Previous: [Implementation Strategy](./03-implementation-strategy.md)_ | _Next: [Implementation Phases](./06-implementation-phases.md)_ | _Back to: [Overview](./OpenTelemetryPlan.md)_
