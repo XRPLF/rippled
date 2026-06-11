@@ -241,7 +241,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
     // is part of the domain
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (ctx.view.rules().enabled(fixCleanup3_2_0))
+        if (ctx.view.rules().enabled(fixCleanup3_3_0))
         {
             auto const domainID = ctx.tx[sfDomainID];
             auto const sleDomain = ctx.view.read(keylet::permissionedDomain(domainID));
@@ -998,7 +998,7 @@ OfferCreate::doApply()
     // sb) to rawView, so deletions made inside sb would be lost. Deletions made
     // directly to ctx_.view() here are preserved regardless of which branch
     // applyGuts takes.
-    if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixCleanup3_2_0))
+    if (ctx_.tx.isFieldPresent(sfDomainID) && ctx_.view().rules().enabled(fixCleanup3_3_0))
     {
         auto const domainID = ctx_.tx[sfDomainID];
         auto const sleDomain = ctx_.view().read(keylet::permissionedDomain(domainID));

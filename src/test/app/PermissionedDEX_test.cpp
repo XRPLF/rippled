@@ -1561,12 +1561,12 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testExpiredCredentialCleanup(FeatureBitset features)
     {
-        bool const cleanup320Enabled = features[fixCleanup3_2_0];
+        bool const cleanup330Enabled = features[fixCleanup3_3_0];
 
         testcase << "Expired credential cleanup"
-                 << (cleanup320Enabled ? " (Cleanup3_2_0 enabled)" : " (Cleanup3_2_0 disabled)");
+                 << (cleanup330Enabled ? " (Cleanup3_3_0 enabled)" : " (Cleanup3_3_0 disabled)");
 
-        TER const expectedExpiredCredTer = cleanup320Enabled ? tecEXPIRED : tecNO_PERMISSION;
+        TER const expectedExpiredCredTer = cleanup330Enabled ? tecEXPIRED : tecNO_PERMISSION;
 
         auto const fundAccount =
             [](Env& env, Account const& account, Account const& gw, IOU const& usd) {
@@ -1599,7 +1599,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         };
 
         auto const expectExpiredCredentialState = [&](Env const& env, Keylet const& credKey) {
-            if (cleanup320Enabled)
+            if (cleanup330Enabled)
             {
                 BEAST_EXPECT(!env.le(credKey));
             }
@@ -2143,7 +2143,7 @@ public:
         testAmmNotUsed(all);
         testAutoBridge(all);
         testExpiredCredentialCleanup(all);
-        testExpiredCredentialCleanup(all - fixCleanup3_2_0);
+        testExpiredCredentialCleanup(all - fixCleanup3_3_0);
 
         // Test hybrid offers
         testHybridOfferCreate(all);
