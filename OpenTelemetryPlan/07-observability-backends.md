@@ -230,205 +230,47 @@ Pre-built dashboards for xrpld observability.
 
 ### 7.6.1 Consensus Health Dashboard
 
-```json
-{
-  "title": "xrpld Consensus Health",
-  "uid": "xrpld-consensus-health",
-  "tags": ["xrpld", "consensus", "tracing"],
-  "panels": [
-    {
-      "title": "Consensus Round Duration",
-      "type": "timeseries",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=\"consensus.round\"} | avg(duration) by (resource.service.instance.id)"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms",
-          "thresholds": {
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 4000 },
-              { "color": "red", "value": 5000 }
-            ]
-          }
-        }
-      },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
-    },
-    {
-      "title": "Phase Duration Breakdown",
-      "type": "barchart",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=~\"consensus.phase.*\"} | avg(duration) by (name)"
-        }
-      ],
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
-    },
-    {
-      "title": "Proposers per Round",
-      "type": "stat",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=\"consensus.round\"} | avg(span.proposers)"
-        }
-      ],
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 }
-    },
-    {
-      "title": "Recent Slow Rounds (>5s)",
-      "type": "table",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=\"consensus.round\"} | duration > 5s"
-        }
-      ],
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 }
-    }
-  ]
-}
-```
+A Tempo-backed dashboard (uid `xrpld-consensus-health`) with four panels, all driven by TraceQL:
+
+- **Consensus Round Duration** (timeseries, ms): average `consensus.round` span duration per node instance, with yellow/red thresholds at 4s/5s.
+- **Phase Duration Breakdown** (barchart): average duration of `consensus.phase.*` spans grouped by span name.
+- **Proposers per Round** (stat): average of the `span.proposers` attribute on `consensus.round` spans.
+- **Recent Slow Rounds (>5s)** (table): `consensus.round` spans filtered to `duration > 5s`.
+
+The underlying TraceQL queries are listed in section 7.7.3 and used throughout this doc.
 
 ### 7.6.2 Node Overview Dashboard
 
-```json
-{
-  "title": "xrpld Node Overview",
-  "uid": "xrpld-node-overview",
-  "panels": [
-    {
-      "title": "Active Nodes",
-      "type": "stat",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\"} | count_over_time() by (resource.service.instance.id) | count()"
-        }
-      ],
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 }
-    },
-    {
-      "title": "Total Transactions (1h)",
-      "type": "stat",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=\"tx.receive\"} | count()"
-        }
-      ],
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 }
-    },
-    {
-      "title": "Error Rate",
-      "type": "gauge",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && status.code=error} | rate() / {resource.service.name=\"xrpld\"} | rate() * 100"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percent",
-          "max": 10,
-          "thresholds": {
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 1 },
-              { "color": "red", "value": 5 }
-            ]
-          }
-        }
-      },
-      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 }
-    },
-    {
-      "title": "Service Map",
-      "type": "nodeGraph",
-      "datasource": "Tempo",
-      "gridPos": { "h": 12, "w": 12, "x": 12, "y": 0 }
-    }
-  ]
-}
-```
+A Tempo-backed dashboard (uid `xrpld-node-overview`) with four panels:
+
+- **Active Nodes** (stat): count of distinct `resource.service.instance.id` values seen for the `xrpld` service.
+- **Total Transactions (1h)** (stat): count of `tx.receive` spans.
+- **Error Rate** (gauge, percent): ratio of `status.code=error` spans to all spans, with yellow/red thresholds at 1%/5%.
+- **Service Map** (nodeGraph): Tempo-generated service dependency graph.
 
 ### 7.6.3 Alert Rules
 
-```yaml
-# grafana/provisioning/alerting/rippled-alerts.yaml
-apiVersion: 1
+Grafana provisions three TraceQL-based alert rules (group `xrpld-tracing-alerts`, evaluated every 1m) against the Tempo datasource:
 
-groups:
-  - name: xrpld-tracing-alerts
-    folder: xrpld
-    interval: 1m
-    rules:
-      - uid: consensus-slow
-        title: Consensus Round Slow
-        condition: A
-        data:
-          - refId: A
-            datasourceUid: tempo
-            model:
-              queryType: traceql
-              query: '{resource.service.name="xrpld" && name="consensus.round"} | avg(duration) > 5s'
-              # Note: Verify TraceQL aggregate queries are supported by your
-              # Tempo version. Aggregate alerting (e.g., avg(duration)) requires
-              # Tempo 2.3+ with TraceQL metrics enabled.
-        for: 5m
-        annotations:
-          summary: Consensus rounds taking >5 seconds
-          description: "Consensus duration: {{ $value }}ms"
-        labels:
-          severity: warning
+- **Consensus Round Slow** (warning, `for: 5m`): fires when average `consensus.round` duration exceeds 5s.
 
-      - uid: rpc-error-spike
-        title: RPC Error Rate Spike
-        condition: B
-        data:
-          - refId: B
-            datasourceUid: tempo
-            model:
-              queryType: traceql
-              query: '{resource.service.name="xrpld" && name=~"rpc.command.*" && status.code=error} | rate() > 0.05'
-              # Note: Verify TraceQL aggregate queries are supported by your
-              # Tempo version. Aggregate alerting (e.g., rate()) requires
-              # Tempo 2.3+ with TraceQL metrics enabled.
-        for: 2m
-        annotations:
-          summary: RPC error rate >5%
-        labels:
-          severity: critical
+  ```
+  {resource.service.name="xrpld" && name="consensus.round"} | avg(duration) > 5s
+  ```
 
-      - uid: tx-throughput-drop
-        title: Transaction Throughput Drop
-        condition: C
-        data:
-          - refId: C
-            datasourceUid: tempo
-            model:
-              queryType: traceql
-              query: '{resource.service.name="xrpld" && name="tx.receive"} | rate() < 10'
-        for: 10m
-        annotations:
-          summary: Transaction throughput below threshold
-        labels:
-          severity: warning
-```
+- **RPC Error Rate Spike** (critical, `for: 2m`): fires when the error rate across `rpc.command.*` spans exceeds 5%.
+
+  ```
+  {resource.service.name="xrpld" && name=~"rpc.command.*" && status.code=error} | rate() > 0.05
+  ```
+
+- **Transaction Throughput Drop** (warning, `for: 10m`): fires when the `tx.receive` span rate falls below 10/s.
+
+  ```
+  {resource.service.name="xrpld" && name="tx.receive"} | rate() < 10
+  ```
+
+> **Note**: The first two rules use TraceQL aggregates (`avg(duration)`, `rate()`), which require Tempo 2.3+ with TraceQL metrics enabled. Verify aggregate query support in your Tempo version before provisioning.
 
 ---
 
@@ -548,93 +390,14 @@ rate(xrpld_tx_applied_total[1m])
 
 ### 7.7.4 Unified Dashboard Example
 
-```json
-{
-  "title": "xrpld Unified Observability",
-  "uid": "xrpld-unified",
-  "panels": [
-    {
-      "title": "Transaction Latency (Traces)",
-      "type": "timeseries",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=\"tx.receive\"} | histogram_over_time(duration)"
-        }
-      ],
-      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 }
-    },
-    {
-      "title": "Transaction Rate (Metrics)",
-      "type": "timeseries",
-      "datasource": "Prometheus",
-      "targets": [
-        {
-          "expr": "rate(xrpld_tx_received_total[5m])",
-          "legendFormat": "{{ instance }}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "links": [
-            {
-              "title": "View traces",
-              "url": "/explore?left={\"datasource\":\"Tempo\",\"query\":\"{resource.service.name=\\\"xrpld\\\" && name=\\\"tx.receive\\\"}\"}"
-            }
-          ]
-        }
-      },
-      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 }
-    },
-    {
-      "title": "Recent Logs",
-      "type": "logs",
-      "datasource": "Loki",
-      "targets": [
-        {
-          "expr": "{job=\"xrpld\"} | json"
-        }
-      ],
-      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 }
-    },
-    {
-      "title": "Trace Search",
-      "type": "table",
-      "datasource": "Tempo",
-      "targets": [
-        {
-          "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\"}"
-        }
-      ],
-      "fieldConfig": {
-        "overrides": [
-          {
-            "matcher": { "id": "byName", "options": "traceID" },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "View trace",
-                    "url": "/explore?left={\"datasource\":\"Tempo\",\"query\":\"${__value.raw}\"}"
-                  },
-                  {
-                    "title": "View logs",
-                    "url": "/explore?left={\"datasource\":\"Loki\",\"query\":\"{job=\\\"xrpld\\\"} |= \\\"${__value.raw}\\\"\"}"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 6 }
-    }
-  ]
-}
-```
+A single dashboard (uid `xrpld-unified`) that ties traces, metrics, and logs together across the Tempo, Prometheus, and Loki datasources:
+
+- **Transaction Latency (Traces)** (timeseries, Tempo): `histogram_over_time(duration)` of `tx.receive` spans.
+- **Transaction Rate (Metrics)** (timeseries, Prometheus): `rate(xrpld_tx_received_total[5m])` per instance, with a data link that opens the matching `tx.receive` traces in Tempo.
+- **Recent Logs** (logs, Loki): `{job="xrpld"} | json`.
+- **Trace Search** (table, Tempo): all `xrpld` traces, with per-row data links on `traceID` that jump to the trace in Tempo and to the correlated logs in Loki (`{job="xrpld"} |= "<traceID>"`).
+
+The cross-datasource data links are what make this a single-pane debugging view; the correlation fields they rely on are listed in section 7.7.2.
 
 ---
 
