@@ -43,11 +43,9 @@ Rules (each FAILS the build, when its inputs are present)
      attribute that is not in the derived resource-key set is a violation.
   G  Attribute keys must be lower_snake_case (^[a-z][a-z0-9_]*$ per segment).
      Flags camelCase, UPPERCASE, spaces, and other stray characters.
-  F  No string literals as attribute keys or span-name arguments. The
-     setAttribute/addEvent key and the span/childSpan prefix/name args must
-     reference a *SpanNames.h constant, never a "literal". Attribute VALUES are
-     exempt (runtime data). Definitions inside *SpanNames.h are exempt, and
-     test files are exempt (they pass arbitrary literals to exercise the API).
+  F  No string literals as attribute keys/values or span-name arguments. Every
+     setAttribute/addEvent/span/childSpan argument must reference a *SpanNames.h
+     constant, never a "literal". Definitions inside *SpanNames.h are exempt.
   B  Every collector spanmetrics dimension exists in the L1 key set.
   C  Every tempo span-filter tag exists in the L1 key set.
   D  Every dashboard PromQL label (non-builtin) exists in the L1 key set.
@@ -407,19 +405,10 @@ CONSTANT_ARG_POSITIONS: Dict[str, Set[int]] = {
 }
 
 
-def is_test_path(path: Path) -> bool:
-    """True if the path is test code. Tests legitimately pass arbitrary literal
-    keys/names to exercise the API mechanics, so Rule F does not apply to them.
-    Matches a `test`/`tests` directory anywhere in the path (e.g. src/test/,
-    src/tests/, .../detail/tests/)."""
-    return any(part in ("test", "tests") for part in path.parts)
-
-
 def run_rule_f(root: Path, report: Report) -> None:
     """Flag string literals in the constant-only argument positions of
     setAttribute/addEvent/span/childSpan. Attribute VALUES are exempt (runtime
-    data). *SpanNames.h definitions are exempt (constants live there). Test
-    files are exempt (they pass arbitrary literals to exercise the API)."""
+    data). *SpanNames.h definitions are exempt (constants live there)."""
     found = False
     sources = [
         p
@@ -429,7 +418,7 @@ def run_rule_f(root: Path, report: Report) -> None:
         if p.is_file()
     ]
     for path in sorted(sources):
-        if path.name.endswith("SpanNames.h") or is_test_path(path):
+        if path.name.endswith("SpanNames.h"):
             continue
         text = path.read_text(errors="ignore")
         for call, arglist, lineno in iter_calls(text):
