@@ -31,24 +31,18 @@
  *      span.setAttribute(...);
  *  @endcode
  *
- *  @note These span names use inline string_view literals. When
- *  ConsensusSpanNames.h (from Phase 4) is available, callers should
- *  migrate to using the constexpr constants defined there.
+ *  @note Span names come from the canonical constants in
+ *  ConsensusSpanNames.h (consensus::span::proposalReceive /
+ *  validationReceive) so they stay in sync with the rest of Phase 4.
  */
+
+#include <xrpld/consensus/ConsensusSpanNames.h>
 
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/TraceContextValidation.h>
 
 namespace xrpl::telemetry {
-
-// Inline span name constants for consensus receive spans.
-// Phase 4 will provide these via ConsensusSpanNames.h; these are
-// temporary definitions for the propagation infrastructure.
-namespace detail {
-inline constexpr std::string_view proposalReceiveName = "consensus.proposal.receive";
-inline constexpr std::string_view validationReceiveName = "consensus.validation.receive";
-}  // namespace detail
 
 /** Create a "consensus.proposal.receive" span for an incoming proposal.
  *
@@ -75,7 +69,7 @@ proposalReceiveSpan([[maybe_unused]] protocol::TMProposeSet const& msg)
             // trace_id so the receiving span shares the same trace.
             return SpanGuard::hashSpan(
                 TraceCategory::Consensus,
-                detail::proposalReceiveName,
+                consensus::span::proposalReceive,
                 reinterpret_cast<std::uint8_t const*>(tc.trace_id().data()),
                 tc.trace_id().size(),
                 reinterpret_cast<std::uint8_t const*>(tc.span_id().data()),
@@ -86,7 +80,8 @@ proposalReceiveSpan([[maybe_unused]] protocol::TMProposeSet const& msg)
     }
 #endif
     // No propagated context — create a standalone span.
-    return SpanGuard::span(TraceCategory::Consensus, "consensus", "proposal.receive");
+    return SpanGuard::span(
+        TraceCategory::Consensus, seg::consensus, consensus::span::op::proposalReceive);
 }
 
 /** Create a "consensus.validation.receive" span for an incoming validation.
@@ -111,7 +106,7 @@ validationReceiveSpan([[maybe_unused]] protocol::TMValidation const& msg)
         {
             return SpanGuard::hashSpan(
                 TraceCategory::Consensus,
-                detail::validationReceiveName,
+                consensus::span::validationReceive,
                 reinterpret_cast<std::uint8_t const*>(tc.trace_id().data()),
                 tc.trace_id().size(),
                 reinterpret_cast<std::uint8_t const*>(tc.span_id().data()),
@@ -122,7 +117,8 @@ validationReceiveSpan([[maybe_unused]] protocol::TMValidation const& msg)
     }
 #endif
     // No propagated context — create a standalone span.
-    return SpanGuard::span(TraceCategory::Consensus, "consensus", "validation.receive");
+    return SpanGuard::span(
+        TraceCategory::Consensus, seg::consensus, consensus::span::op::validationReceive);
 }
 
 }  // namespace xrpl::telemetry

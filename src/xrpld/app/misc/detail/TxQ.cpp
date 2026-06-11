@@ -18,8 +18,6 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -310,7 +308,6 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
 {
     // If the rules or flags change, preflight again
     XRPL_ASSERT(pfResult, "xrpl::TxQ::MaybeTx::apply : preflight result is set");
-    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     if (pfResult->rules != view.rules() || pfResult->flags != flags)
@@ -749,8 +746,6 @@ TxQ::apply(
     // Default outcome; overridden below on the direct-apply and queued paths.
     // Every other early return leaves the tx rejected from the queue.
     span.setAttribute(txq_span::attr::txqStatus, txq_span::val::rejected);
-
-    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
