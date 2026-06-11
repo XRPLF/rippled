@@ -43,15 +43,26 @@ Rules (each FAILS the build, when its inputs are present)
      attribute that is not in the derived resource-key set is a violation.
   G  Attribute keys must be lower_snake_case (^[a-z][a-z0-9_]*$ per segment).
      Flags camelCase, UPPERCASE, spaces, and other stray characters.
-  F  No string literals as attribute keys/values or span-name arguments. Every
-     setAttribute/addEvent/span/childSpan argument must reference a *SpanNames.h
-     constant, never a "literal". Definitions inside *SpanNames.h are exempt.
+  F  No string literals as attribute keys or span-name arguments. The
+     setAttribute/addEvent key and the span/childSpan prefix/name args must
+     reference a *SpanNames.h constant, never a "literal". Attribute VALUES are
+     exempt (runtime data). Definitions inside *SpanNames.h are exempt, and
+     test files are exempt (they pass arbitrary literals to exercise the API).
   B  Every collector spanmetrics dimension exists in the L1 key set.
   C  Every tempo span-filter tag exists in the L1 key set.
   D  Every dashboard PromQL label (non-builtin) exists in the L1 key set.
   E  Every attribute named in the runbook tables exists in the L1 key set.
 
+Warnings (printed, but do NOT fail the build)
+----------------------------------------------
+  H  A constant referenced at a telemetry call-site is not defined in any
+     *SpanNames.h. Span constants should live in the corresponding
+     *SpanNames.h (single source of truth); defining one in-place bypasses the
+     naming rules. A warning (not a failure) because the argument may instead
+     be a legitimately dynamic local (e.g. a computed span-name leaf).
+
 Exit code is non-zero if any present-and-enforced rule finds a violation.
+Warnings never change the exit code.
 """
 
 import json
@@ -87,7 +98,15 @@ MAKESTR = re.compile(r'makeStr\(\s*"([^"]*)"\s*\)')
 # A `namespace <name> {` opener, to track which namespace a constant lives in.
 NS_OPEN = re.compile(r"namespace\s+([\w:]+)\s*\{")
 # Telemetry call-sites whose string arguments must be constants, not literals.
-CALLSITE = re.compile(r"\b(setAttribute|addEvent|span|childSpan)\s*\(")
+# Require a receiver so we match real SpanGuard calls, not std::span / a math
+# `span(...)` / a bare method declaration:
+#   - `SpanGuard::span(` / `SpanGuard::childSpan(`  (static factory)
+#   - `<obj>.span(` / `<obj>->setAttribute(` etc.   (member call)
+# `span`/`childSpan` additionally require the `SpanGuard`/`.`/`->` receiver;
+# `setAttribute`/`addEvent` only ever exist on a guard, so a `.`/`->` suffices.
+CALLSITE = re.compile(
+    r"(?:SpanGuard::|\.|->)\s*(setAttribute|addEvent|span|childSpan)\s*\("
+)
 # A C++ string literal (used to flag literals inside call-site argument lists).
 STRING_LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
 # Dotted token that looks like `a.b` or `a.b.c` (lowercase + underscore words).
@@ -239,11 +258,19 @@ def attr_keys_from_header(path: Path, symbols: Dict[str, str]) -> Set[str]:
 class Report:
     def __init__(self) -> None:
         self.violations: List[Tuple[str, str, str, str]] = []
+        self.warnings: List[Tuple[str, str, str, str]] = []
         self.skips: List[str] = []
         self.checked: List[str] = []
 
     def violation(self, rule: str, loc: str, token: str, expected: str) -> None:
         self.violations.append((rule, loc, token, expected))
+
+    def warning(self, rule: str, loc: str, token: str, note: str) -> None:
+        """A non-fatal finding: printed, but does not fail the build. Used where
+        the script cannot be certain a finding is wrong (e.g. a constant used at
+        a call-site that is not defined in any *SpanNames.h — it might be a
+        misplaced constant, or a legitimately dynamic value)."""
+        self.warnings.append((rule, loc, token, note))
 
     def skip(self, rule: str, reason: str) -> None:
         self.skips.append(f"SKIP: {rule} — {reason}")
@@ -256,6 +283,12 @@ class Report:
             print(line)
         for line in self.checked:
             print(line)
+        if self.warnings:
+            print("\nNaming-convention warnings (non-fatal):\n")
+            print(f"  {'RULE':<5} {'LOCATION':<48} {'TOKEN':<28} NOTE")
+            print(f"  {'-' * 5} {'-' * 48} {'-' * 28} {'-' * 30}")
+            for rule, loc, token, note in self.warnings:
+                print(f"  {rule:<5} {loc:<48} {token:<28} {note}")
         if self.violations:
             print("\nNaming-convention violations:\n")
             print(f"  {'RULE':<5} {'LOCATION':<48} {'TOKEN':<28} EXPECTED")
@@ -308,11 +341,14 @@ def main() -> None:
     # --- Rule G: keys must be lower_snake_case -----------------------------
     if l1_keys:
         run_rule_g(keys_by_header, report)
-    # --- Rule F: no string literals at telemetry call-sites ----------------
-    if headers:
-        run_rule_f(root, report)
-    else:
-        report.skip("F", "no *SpanNames.h present")
+    # --- Rule F (+ Rule H): scan telemetry call-sites ----------------------
+    # Runs UNCONDITIONALLY: Rule F is a purely syntactic check (is this argument
+    # a literal?) and does not need the L1 key set, so a code path that uses
+    # SpanGuard::span/setAttribute directly without ever defining a *SpanNames.h
+    # is still caught. Rule H (warning) additionally flags constant references
+    # not defined in any *SpanNames.h.
+    header_symbols = spanname_symbol_names(headers)
+    run_rule_f(root, report, header_symbols)
 
     # --- Cross-layer rules B/C/D/E (each presence-gated) -------------------
     run_rule_b_collector(root, l1_keys, report)
@@ -405,11 +441,42 @@ CONSTANT_ARG_POSITIONS: Dict[str, Set[int]] = {
 }
 
 
-def run_rule_f(root: Path, report: Report) -> None:
-    """Flag string literals in the constant-only argument positions of
-    setAttribute/addEvent/span/childSpan. Attribute VALUES are exempt (runtime
-    data). *SpanNames.h definitions are exempt (constants live there)."""
-    found = False
+def is_test_path(path: Path) -> bool:
+    """True if the path is test code. Tests legitimately pass arbitrary literal
+    keys/names to exercise the API mechanics, so Rule F does not apply to them.
+    Matches a `test`/`tests` directory anywhere in the path (e.g. src/test/,
+    src/tests/, .../detail/tests/)."""
+    return any(part in ("test", "tests") for part in path.parts)
+
+
+# A constant reference passed at a call-site, e.g. `rpc_span::attr::command`
+# or a bare `myKey`. We capture the leaf identifier (after the last `::`).
+IDENTIFIER_ARG = re.compile(r"^[\s&*]*([A-Za-z_][\w:]*)\s*$")
+
+
+def spanname_symbol_names(headers: List[Path]) -> Set[str]:
+    """Every `inline constexpr auto NAME = ...;` symbol defined across the
+    *SpanNames.h headers, by bare name. Used by Rule H to tell whether a
+    constant referenced at a call-site actually lives in a SpanNames header."""
+    names: Set[str] = set()
+    for h in headers:
+        for m in CONST_DEF.finditer(h.read_text(errors="ignore")):
+            names.add(m.group(1))
+    return names
+
+
+def run_rule_f(root: Path, report: Report, header_symbols: Set[str]) -> None:
+    """Walk every telemetry call-site (non-test, non-*SpanNames.h) and check the
+    constant-only argument positions of setAttribute/addEvent/span/childSpan:
+
+      Rule F (FAIL): a string literal in a key / span-name position. Attribute
+        VALUES are exempt (runtime data).
+      Rule H (WARN): a constant reference whose name is not defined in any
+        *SpanNames.h. The constant should live in the corresponding
+        *SpanNames.h (single source of truth); defining it in-place bypasses
+        the naming rules. Warn rather than fail — the argument may instead be a
+        legitimately dynamic local (e.g. a computed span-name leaf)."""
+    found_f = False
     sources = [
         p
         for base in ("src", "include")
@@ -418,35 +485,56 @@ def run_rule_f(root: Path, report: Report) -> None:
         if p.is_file()
     ]
     for path in sorted(sources):
-        if path.name.endswith("SpanNames.h"):
+        if path.name.endswith("SpanNames.h") or is_test_path(path):
             continue
         text = path.read_text(errors="ignore")
+        rel = path.relative_to(root)
         for call, arglist, lineno in iter_calls(text):
             positions = CONSTANT_ARG_POSITIONS.get(call, set())
             args = split_top_level_args(arglist)
             for idx in positions:
                 if idx >= len(args):
                     continue
-                lit = STRING_LITERAL.search(args[idx])
+                arg = args[idx]
+                lit = STRING_LITERAL.search(arg)
                 if lit:
-                    found = True
+                    found_f = True
                     report.violation(
                         "F",
-                        f"{path.relative_to(root)}:{lineno}",
+                        f"{rel}:{lineno}",
                         f'{call} arg{idx} "{lit.group(1)}"',
                         "use a *SpanNames.h constant",
                     )
-    if not found:
+                    continue
+                # Not a literal: Rule H warns when a NAMESPACE-QUALIFIED constant
+                # reference (e.g. `consensus::span::accept`) is not defined in
+                # any *SpanNames.h — i.e. the constant was defined in-place
+                # instead of in the proper header. We only consider qualified
+                # refs (containing `::`): a bare lowercase identifier is almost
+                # always a legitimately dynamic local (a computed span-name leaf
+                # or attribute value), not a misplaced constant, so warning on it
+                # would be noise. Standard-library types (std::...) are skipped.
+                ident = IDENTIFIER_ARG.match(arg)
+                if not (ident and header_symbols):
+                    continue
+                ref = ident.group(1)
+                if "::" not in ref or ref.startswith("std::"):
+                    continue
+                leaf = ref.split("::")[-1]
+                if leaf not in header_symbols:
+                    report.warning(
+                        "H",
+                        f"{rel}:{lineno}",
+                        f"{call} arg{idx} {ref}",
+                        "not defined in any *SpanNames.h",
+                    )
+    if not found_f:
         report.ok("F: no string-literal keys/names at telemetry call-sites")
 
 
 def iter_calls(text: str):
     """Yield (call_name, raw_arglist, lineno) for each setAttribute/addEvent/
     span/childSpan invocation, spanning multiple physical lines if needed."""
-    # Precompute line-number lookup by character offset.
-    line_starts = [0]
-    for ch in text:
-        line_starts.append(line_starts[-1] + 1)
     for m in CALLSITE.finditer(text):
         name = m.group(1)
         # Walk from the opening paren, balancing nesting to find the close.

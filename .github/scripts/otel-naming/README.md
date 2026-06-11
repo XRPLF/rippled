@@ -33,15 +33,26 @@ hardcoded allowlist:
 
 ### Rules (each fails the build, when its inputs are present)
 
-| Rule | Check                                                                                                                                                                                             |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A    | No stray dotted span-attribute key (only the derived resource keys may be dotted).                                                                                                                |
-| G    | Attribute keys are `lower_snake_case` (`^[a-z][a-z0-9_]*$` per dot-segment) — no camelCase, UPPERCASE, or spaces.                                                                                 |
-| F    | No string literals as attribute keys or span-name arguments in `setAttribute`/`addEvent`/`span`/`childSpan`. Attribute _values_ are exempt (runtime data). `*SpanNames.h` definitions are exempt. |
-| B    | Every collector `spanmetrics.dimensions` name exists in the L1 key set.                                                                                                                           |
-| C    | Every Tempo span-filter tag exists in the L1 key set.                                                                                                                                             |
-| D    | Every dashboard PromQL label (non-builtin) exists in the L1 key set.                                                                                                                              |
-| E    | Every runbook attribute reference exists in the L1 key set.                                                                                                                                       |
+| Rule | Check                                                                                                                                                                                                            |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A    | No stray dotted span-attribute key (only the derived resource keys may be dotted).                                                                                                                               |
+| G    | Attribute keys are `lower_snake_case` (`^[a-z][a-z0-9_]*$` per dot-segment) — no camelCase, UPPERCASE, or spaces.                                                                                                |
+| F    | No string literals as attribute keys or span-name arguments in `setAttribute`/`addEvent`/`span`/`childSpan`. Attribute _values_ are exempt (runtime data); `*SpanNames.h` definitions and test files are exempt. |
+| B    | Every collector `spanmetrics.dimensions` name exists in the L1 key set.                                                                                                                                          |
+| C    | Every Tempo span-filter tag exists in the L1 key set.                                                                                                                                                            |
+| D    | Every dashboard PromQL label (non-builtin) exists in the L1 key set.                                                                                                                                             |
+| E    | Every runbook attribute reference exists in the L1 key set.                                                                                                                                                      |
+
+Rule F runs **unconditionally** (it is a purely syntactic check on the
+call-sites and needs no `*SpanNames.h`), so a code path that calls
+`SpanGuard::span`/`setAttribute` directly without ever defining a header is
+still caught.
+
+### Warnings (printed, never fail the build)
+
+| Rule | Check                                                                                                                                                                                                                                                                                                                                                                                      |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| H    | A namespace-qualified constant (e.g. `foo::bar::myKey`) used at a telemetry call-site is not defined in any `*SpanNames.h`. The constant should live in the proper header; defining it in-place bypasses rules A/G/F. Warns rather than fails — the argument may be a legitimately dynamic value, and the header may live on a later branch. Bare locals and `std::` names are not warned. |
 
 ## Presence-gated
 
