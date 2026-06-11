@@ -181,7 +181,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testOfferCreate(FeatureBitset features)
     {
-        testcase("OfferCreate");
+        bool const fixEnabled = features[fixCleanup3_3_0];
+
+        testcase << "OfferCreate"
+                 << (fixEnabled ? " (Cleanup3_3_0 enabled)" : " (Cleanup3_3_0 disabled)");
 
         // test preflight
         {
@@ -275,9 +278,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
             // time advance
             env.close(std::chrono::seconds(20));
 
-            // devin cannot create offer with expired cred; the expired credential
-            // SLE is deleted by doApply and tecEXPIRED is returned
-            env(offer(devin, XRP(10), USD(10)), Domain(domainID), Ter(tecEXPIRED));
+            // Devin cannot create offer with expired cred. After fixCleanup3_3_0,
+            // doApply deletes the expired credential SLE and returns tecEXPIRED.
+            TER const expectedExpiredCredTer = fixEnabled ? tecEXPIRED : tecNO_PERMISSION;
+            env(offer(devin, XRP(10), USD(10)), Domain(domainID), Ter(expectedExpiredCredTer));
             env.close();
         }
 
@@ -1390,7 +1394,10 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testHybridOpenBookAfterCredentialExpiry(FeatureBitset features)
     {
-        testcase("Hybrid open book after credential expiry");
+        bool const fixEnabled = features[fixCleanup3_3_0];
+
+        testcase << "Hybrid open book after credential expiry"
+                 << (fixEnabled ? " (Cleanup3_3_0 enabled)" : " (Cleanup3_3_0 disabled)");
 
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
@@ -1434,7 +1441,8 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         env.close(std::chrono::seconds(100));
 
         // Confirm devin can no longer create domain offers.
-        env(offer(devin, XRP(1), USD(1)), Domain(domainID), Ter(tecNO_PERMISSION));
+        TER const expectedExpiredCredTer = fixEnabled ? tecEXPIRED : tecNO_PERMISSION;
+        env(offer(devin, XRP(1), USD(1)), Domain(domainID), Ter(expectedExpiredCredTer));
         env.close();
 
         // The hybrid offer must still exist in the open book after expiry.
@@ -1561,12 +1569,12 @@ class PermissionedDEX_test : public beast::unit_test::Suite
     void
     testExpiredCredentialCleanup(FeatureBitset features)
     {
-        bool const cleanup330Enabled = features[fixCleanup3_3_0];
+        bool const fixEnabled = features[fixCleanup3_3_0];
 
         testcase << "Expired credential cleanup"
-                 << (cleanup330Enabled ? " (Cleanup3_3_0 enabled)" : " (Cleanup3_3_0 disabled)");
+                 << (fixEnabled ? " (Cleanup3_3_0 enabled)" : " (Cleanup3_3_0 disabled)");
 
-        TER const expectedExpiredCredTer = cleanup330Enabled ? tecEXPIRED : tecNO_PERMISSION;
+        TER const expectedExpiredCredTer = fixEnabled ? tecEXPIRED : tecNO_PERMISSION;
 
         auto const fundAccount =
             [](Env& env, Account const& account, Account const& gw, IOU const& usd) {
@@ -1599,7 +1607,7 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         };
 
         auto const expectExpiredCredentialState = [&](Env const& env, Keylet const& credKey) {
-            if (cleanup330Enabled)
+            if (fixEnabled)
             {
                 BEAST_EXPECT(!env.le(credKey));
             }
@@ -2133,7 +2141,7 @@ public:
 
         // Test domain offer (w/o hybrid)
         testOfferCreate(all);
-        testOfferCreate(all - fixCleanup3_2_0);
+        testOfferCreate(all - fixCleanup3_3_0);
         testPayment(all);
         testPayment(all - fixCleanup3_2_0);
         testBookStep(all);
