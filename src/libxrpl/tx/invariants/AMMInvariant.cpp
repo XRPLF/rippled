@@ -219,10 +219,10 @@ ValidAMM::finalizeDelete(bool enforce, bool enforceAMMDelete, TER res, beast::Jo
         }
         else if (ammDeleted_)
         {
-            // AMM should not be fully deleted on tecINCOMPLETE
+            // AMM should only be fully deleted when AMMDelete doesn't return tesSUCCESS.
             // LCOV_EXCL_START
-            JLOG(j.error())
-                << "Invariant failed: AMMDelete failed, AMM object deleted on tecINCOMPLETE";
+            JLOG(j.error()) << "Invariant failed: AMMDelete failed, AMM object deleted when result "
+                               "is not tesSUCCESS";
             return false;
             // LCOV_EXCL_STOP
         }
