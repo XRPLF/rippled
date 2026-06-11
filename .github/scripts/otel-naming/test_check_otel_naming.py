@@ -502,6 +502,14 @@ class RuleDDashboards(unittest.TestCase):
             [],
         )
 
+    def test_prometheus_name_label_not_flagged(self):
+        # `__name__` is the Prometheus reserved metric-name label; the renamed
+        # system-*.json dashboards use `sum by (le, __name__)`.
+        self.assertEqual(
+            self._run('"expr": "sum by (le, __name__) (rate(x[5m]))"', set()),
+            [],
+        )
+
     def test_l1_label_passes(self):
         self.assertEqual(self._run('"q": "{command=\\"x\\"}"', {"command"}), [])
 
