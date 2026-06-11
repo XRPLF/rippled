@@ -215,6 +215,39 @@ job:
   execute: "Job execution"
 ```
 
+### 2.3.3 Attribute Naming Conventions
+
+Span **names** follow §2.3.1 (dotted `<component>.<operation>`). Span
+**attribute keys** follow the rules below. The constants in the `*SpanNames.h`
+headers are the single source of truth; the collector, Tempo, the Grafana
+dashboards, and the runbook all consume these exact keys, so every layer must
+agree with the code. A CI check enforces this end to end.
+
+1. **Per-span unique attribute** → bare field name. The span name already
+   carries the domain, so no prefix is needed (e.g. `command`, `version`,
+   `local` on `rpc.command`).
+2. **Collision qualifier** → `<domain>_<field>` when a bare name would collide
+   across domains in the shared spanmetrics label space, or with the
+   OTel-reserved `status` key (e.g. `rpc_status`, `grpc_status`,
+   `proposal_trusted`, `validation_trusted`).
+3. **Shared cross-span attribute** → `<domain>_<field>` underscore form, used
+   wherever the same field appears on more than one span (e.g. `tx_hash`,
+   `peer_id`, `ledger_seq`, `consensus_round`, `consensus_mode`).
+4. **Resource attribute** → dotted `xrpl.<subsystem>.<field>`, reserved ONLY
+   for process/network identity set once at startup (`xrpl.network.id`,
+   `xrpl.network.type`). Span attributes are never dotted in the `xrpl.` form —
+   it blurs the resource/span scope boundary and parses awkwardly in TraceQL.
+5. **Span names** use `<subsystem>[.<component>]` (dotted, per §2.3.1). Only
+   attribute _keys_ follow rules 1–4.
+
+Standard OpenTelemetry semantic-convention keys keep their canonical dotted
+form (e.g. `service.*` resource attributes, `http.*` span attributes); the
+"no dotted form" rule applies to xrpl-custom keys only.
+
+The same rules are recorded in `CONTRIBUTING.md` (the permanent home, since
+`OpenTelemetryPlan/` is removed once the rollout completes). The attribute
+examples in §2.4 below follow these rules.
+
 ---
 
 ## 2.4 Attribute Schema
@@ -238,128 +271,135 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 
 ### 2.4.2 Span Attributes by Category
 
+> Span attribute keys use the underscore form from §2.3.3 (shared/qualified
+> keys are `<domain>_<field>`; per-span unique keys are bare). The dotted form
+> is reserved for the resource attributes in §2.4.1 above. This catalog lists
+> the planned attribute set by category; the exact emitted key for each
+> implemented span is defined by the `*SpanNames.h` constants, which are the
+> single source of truth where the two differ.
+
 #### Transaction Attributes
 
 ```cpp
-"xrpl.tx.hash"         = string   // Transaction hash (hex)
-"xrpl.tx.type"         = string   // "Payment", "OfferCreate", etc.
-"xrpl.tx.account"      = string   // Source account (redacted in prod)
-"xrpl.tx.sequence"     = int64    // Account sequence number
-"xrpl.tx.fee"          = int64    // Fee in drops
-"xrpl.tx.result"       = string   // "tesSUCCESS", "tecPATH_DRY", etc.
-"xrpl.tx.ledger_index" = int64    // Ledger containing transaction
+"tx_hash"         = string   // Transaction hash (hex)
+"tx_type"         = string   // "Payment", "OfferCreate", etc.
+"tx_account"      = string   // Source account (redacted in prod)
+"tx_sequence"     = int64    // Account sequence number
+"tx_fee"          = int64    // Fee in drops
+"tx_result"       = string   // "tesSUCCESS", "tecPATH_DRY", etc.
+"ledger_index"    = int64    // Ledger containing transaction
 ```
 
 #### Consensus Attributes
 
 ```cpp
-"xrpl.consensus.round"          = int64    // Round number
-"xrpl.consensus.phase"          = string   // "open", "establish", "accept"
-"xrpl.consensus.mode"           = string   // "proposing", "observing", etc.
-"xrpl.consensus.proposers"      = int64    // Number of proposers
-"xrpl.consensus.ledger.prev"    = string   // Previous ledger hash
-"xrpl.consensus.ledger.seq"     = int64    // Ledger sequence
-"xrpl.consensus.tx_count"       = int64    // Transactions in consensus set
-"xrpl.consensus.duration_ms"    = float64  // Round duration
+"consensus_round"      = int64    // Round number
+"consensus_phase"      = string   // "open", "establish", "accept"
+"consensus_mode"       = string   // "proposing", "observing", etc.
+"proposers"            = int64    // Number of proposers
+"prev_ledger_prefix"   = string   // Previous ledger hash prefix
+"ledger_seq"           = int64    // Ledger sequence
+"tx_count"             = int64    // Transactions in consensus set
+"round_time_ms"        = float64  // Round duration
 ```
 
 #### RPC Attributes
 
 ```cpp
-"xrpl.rpc.command"     = string   // Command name
-"xrpl.rpc.version"     = int64    // API version
-"xrpl.rpc.role"        = string   // "admin" or "user"
-"xrpl.rpc.params"      = string   // Sanitized parameters (optional)
+"command"     = string   // Command name (per-span unique on rpc.command)
+"version"     = int64    // API version
+"rpc_role"    = string   // "admin" or "user" (qualified — "role" is generic)
+"params"      = string   // Sanitized parameters (optional)
 ```
 
 #### Peer & Message Attributes
 
 ```cpp
-"xrpl.peer.id"            = string   // Peer public key (base58)
-"xrpl.peer.address"       = string   // IP:port
-"xrpl.peer.latency_ms"    = float64  // Measured latency
-"xrpl.peer.cluster"       = string   // Cluster name if clustered
-"xrpl.message.type"       = string   // Protocol message type name
-"xrpl.message.size_bytes" = int64    // Message size
-"xrpl.message.compressed" = bool     // Whether compressed
+"peer_id"            = string   // Peer public key (base58)
+"peer_address"       = string   // IP:port
+"peer_latency_ms"    = float64  // Measured latency
+"peer_cluster"       = string   // Cluster name if clustered
+"message_type"       = string   // Protocol message type name
+"message_size_bytes" = int64    // Message size
+"message_compressed" = bool     // Whether compressed
 ```
 
 #### Ledger & Job Attributes
 
 ```cpp
-"xrpl.ledger.hash"       = string   // Ledger hash
-"xrpl.ledger.index"      = int64    // Ledger sequence/index
-"xrpl.ledger.close_time" = int64    // Close time (epoch)
-"xrpl.ledger.tx_count"   = int64    // Transaction count
-"xrpl.job.type"          = string   // Job type name
-"xrpl.job.queue_ms"      = float64  // Time spent in queue
-"xrpl.job.worker"        = int64    // Worker thread ID
+"ledger_hash"       = string   // Ledger hash
+"ledger_index"      = int64    // Ledger sequence/index
+"close_time"        = int64    // Close time (epoch)
+"ledger_tx_count"   = int64    // Transaction count
+"job_type"          = string   // Job type name
+"job_queue_ms"      = float64  // Time spent in queue
+"job_worker"        = int64    // Worker thread ID
 ```
 
 #### PathFinding Attributes
 
 ```cpp
-"xrpl.pathfind.source_currency"  = string   // Source currency code
-"xrpl.pathfind.dest_currency"    = string   // Destination currency code
-"xrpl.pathfind.path_count"       = int64    // Number of paths found
-"xrpl.pathfind.cache_hit"        = bool     // RippleLineCache hit
+"pathfind_source_currency"  = string   // Source currency code
+"pathfind_dest_currency"    = string   // Destination currency code
+"pathfind_path_count"       = int64    // Number of paths found
+"pathfind_cache_hit"        = bool     // RippleLineCache hit
 ```
 
 #### TxQ Attributes
 
 ```cpp
-"xrpl.txq.queue_depth"      = int64    // Current queue depth
-"xrpl.txq.fee_level"        = int64    // Fee level of transaction
-"xrpl.txq.eviction_reason"  = string   // Why transaction was evicted
+"txq_queue_depth"      = int64    // Current queue depth
+"txq_fee_level"        = int64    // Fee level of transaction
+"txq_eviction_reason"  = string   // Why transaction was evicted
 ```
 
 #### Fee Attributes
 
 ```cpp
-"xrpl.fee.load_factor"      = int64    // Current load factor
-"xrpl.fee.escalation_level" = int64    // Fee escalation multiplier
+"fee_load_factor"      = int64    // Current load factor
+"fee_escalation_level" = int64    // Fee escalation multiplier
 ```
 
 #### Validator Attributes
 
 ```cpp
-"xrpl.validator.list_size"    = int64    // UNL size
-"xrpl.validator.list_age_sec" = int64    // Seconds since last update
+"validator_list_size"    = int64    // UNL size
+"validator_list_age_sec" = int64    // Seconds since last update
 ```
 
 #### Amendment Attributes
 
 ```cpp
-"xrpl.amendment.name"         = string   // Amendment name
-"xrpl.amendment.status"       = string   // "enabled", "vetoed", "supported"
+"amendment_name"         = string   // Amendment name
+"amendment_status"       = string   // "enabled", "vetoed", "supported"
 ```
 
 #### SHAMap Attributes
 
 ```cpp
-"xrpl.shamap.type"            = string   // "transaction", "state", "account_state"
-"xrpl.shamap.missing_nodes"   = int64    // Number of missing nodes during sync
-"xrpl.shamap.duration_ms"     = float64  // Sync duration
+"shamap_type"            = string   // "transaction", "state", "account_state"
+"shamap_missing_nodes"   = int64    // Number of missing nodes during sync
+"shamap_duration_ms"     = float64  // Sync duration
 ```
 
 ### 2.4.3 Data Collection Summary
 
 The following table summarizes what data is collected by category:
 
-| Category        | Attributes Collected                                                   | Purpose                      |
-| --------------- | ---------------------------------------------------------------------- | ---------------------------- |
-| **Transaction** | `tx.hash`, `tx.type`, `tx.result`, `tx.fee`, `ledger_index`            | Trace transaction lifecycle  |
-| **Consensus**   | `round`, `phase`, `mode`, `proposers` (public keys), `duration_ms`     | Analyze consensus timing     |
-| **RPC**         | `command`, `version`, `status`, `duration_ms`                          | Monitor RPC performance      |
-| **Peer**        | `peer.id` (public key), `latency_ms`, `message.type`, `message.size`   | Network topology analysis    |
-| **Ledger**      | `ledger.hash`, `ledger.index`, `close_time`, `tx_count`                | Ledger progression tracking  |
-| **Job**         | `job.type`, `queue_ms`, `worker`                                       | JobQueue performance         |
-| **PathFinding** | `pathfind.source_currency`, `dest_currency`, `path_count`, `cache_hit` | Payment path analysis        |
-| **TxQ**         | `txq.queue_depth`, `fee_level`, `eviction_reason`                      | Queue depth and fee tracking |
-| **Fee**         | `fee.load_factor`, `escalation_level`                                  | Fee escalation monitoring    |
-| **Validator**   | `validator.list_size`, `list_age_sec`                                  | UNL health monitoring        |
-| **Amendment**   | `amendment.name`, `status`                                             | Protocol upgrade tracking    |
-| **SHAMap**      | `shamap.type`, `missing_nodes`, `duration_ms`                          | State tree sync performance  |
+| Category        | Attributes Collected                                                                              | Purpose                      |
+| --------------- | ------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **Transaction** | `tx_hash`, `tx_type`, `tx_result`, `tx_fee`, `ledger_index`                                       | Trace transaction lifecycle  |
+| **Consensus**   | `consensus_round`, `consensus_phase`, `consensus_mode`, `proposers`, `round_time_ms`              | Analyze consensus timing     |
+| **RPC**         | `command`, `version`, `rpc_status`, `duration_ms`                                                 | Monitor RPC performance      |
+| **Peer**        | `peer_id` (public key), `peer_latency_ms`, `message_type`, `message_size_bytes`                   | Network topology analysis    |
+| **Ledger**      | `ledger_hash`, `ledger_index`, `close_time`, `ledger_tx_count`                                    | Ledger progression tracking  |
+| **Job**         | `job_type`, `job_queue_ms`, `job_worker`                                                          | JobQueue performance         |
+| **PathFinding** | `pathfind_source_currency`, `pathfind_dest_currency`, `pathfind_path_count`, `pathfind_cache_hit` | Payment path analysis        |
+| **TxQ**         | `txq_queue_depth`, `txq_fee_level`, `txq_eviction_reason`                                         | Queue depth and fee tracking |
+| **Fee**         | `fee_load_factor`, `fee_escalation_level`                                                         | Fee escalation monitoring    |
+| **Validator**   | `validator_list_size`, `validator_list_age_sec`                                                   | UNL health monitoring        |
+| **Amendment**   | `amendment_name`, `amendment_status`                                                              | Protocol upgrade tracking    |
+| **SHAMap**      | `shamap_type`, `shamap_missing_nodes`, `shamap_duration_ms`                                       | State tree sync performance  |
 
 ### 2.4.4 Privacy & Sensitive Data Policy
 
@@ -384,7 +424,7 @@ The following data is explicitly **excluded** from telemetry collection:
 
 | Mechanism                     | Description                                                               |
 | ----------------------------- | ------------------------------------------------------------------------- |
-| **Account Hashing**           | `xrpl.tx.account` is hashed at collector level before storage             |
+| **Account Hashing**           | `tx_account` is hashed at collector level before storage                  |
 | **Configurable Redaction**    | Sensitive fields can be excluded via `[telemetry]` config section         |
 | **Sampling**                  | Only 10% of traces recorded by default, reducing data exposure            |
 | **Local Control**             | Node operators have full control over what gets exported                  |
@@ -400,13 +440,13 @@ processors:
   attributes:
     actions:
       # Hash account addresses before storage
-      - key: xrpl.tx.account
+      - key: tx_account
         action: hash
       # Remove IP addresses entirely
-      - key: xrpl.peer.address
+      - key: peer_address
         action: delete
       # Redact specific fields
-      - key: xrpl.rpc.params
+      - key: params
         action: delete
 ```
 
@@ -544,8 +584,8 @@ insight.timing("consensus.round", duration);
 ```cpp
 // Example OpenTelemetry span
 auto span = telemetry.startSpan("tx.relay");
-span->SetAttribute("tx.hash", hash);
-span->SetAttribute("peer.id", peerId);
+span->SetAttribute("tx_hash", hash);
+span->SetAttribute("peer_id", peerId);
 // Span automatically linked to parent via context
 ```
 

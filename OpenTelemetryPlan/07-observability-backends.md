@@ -279,7 +279,7 @@ Pre-built dashboards for xrpld observability.
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"xrpld\" && name=\"consensus.round\"} | avg(span.xrpl.consensus.proposers)"
+          "query": "{resource.service.name=\"xrpld\" && name=\"consensus.round\"} | avg(span.proposers)"
         }
       ],
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 }
@@ -503,18 +503,18 @@ flowchart TB
 - **xrpld Node (three sources)**: A single node emits three independent data streams -- OpenTelemetry spans, PerfLog JSON logs, and Beast Insight StatsD metrics.
 - **Data Collection layer**: Each stream has its own collector -- OTel Collector for spans, Promtail/Fluentd for logs, and a StatsD exporter for metrics. They operate independently.
 - **Storage layer (Tempo, Loki, Prometheus)**: Each data type lands in a purpose-built store optimized for its query patterns (trace search, log grep, metric aggregation).
-- **Grafana Correlation Panel**: The key integration point -- Grafana queries all three stores and links them via shared fields (`trace_id`, `xrpl.tx.hash`, `ledger_seq`), enabling a single-pane debugging experience.
+- **Grafana Correlation Panel**: The key integration point -- Grafana queries all three stores and links them via shared fields (`trace_id`, `tx_hash`, `ledger_seq`), enabling a single-pane debugging experience.
 
 ### 7.7.2 Correlation Fields
 
-| Source      | Field                       | Link To       | Purpose                    |
-| ----------- | --------------------------- | ------------- | -------------------------- |
-| **Trace**   | `trace_id`                  | Logs          | Find log entries for trace |
-| **Trace**   | `xrpl.tx.hash`              | Logs, Metrics | Find TX-related data       |
-| **Trace**   | `xrpl.consensus.ledger.seq` | Logs          | Find ledger-related logs   |
-| **PerfLog** | `trace_id` (new)            | Traces        | Jump to trace from log     |
-| **PerfLog** | `ledger_seq`                | Traces        | Find consensus trace       |
-| **Insight** | `exemplar.trace_id`         | Traces        | Jump from metric spike     |
+| Source      | Field               | Link To       | Purpose                    |
+| ----------- | ------------------- | ------------- | -------------------------- |
+| **Trace**   | `trace_id`          | Logs          | Find log entries for trace |
+| **Trace**   | `tx_hash`           | Logs, Metrics | Find TX-related data       |
+| **Trace**   | `ledger_seq`        | Logs          | Find ledger-related logs   |
+| **PerfLog** | `trace_id` (new)    | Traces        | Jump to trace from log     |
+| **PerfLog** | `ledger_seq`        | Traces        | Find consensus trace       |
+| **Insight** | `exemplar.trace_id` | Traces        | Jump from metric spike     |
 
 ### 7.7.3 Example: Debugging a Slow Transaction
 
@@ -522,7 +522,7 @@ flowchart TB
 
 ```
 # In Grafana Explore with Tempo
-{resource.service.name="xrpld" && span.xrpl.tx.hash="ABC123..."}
+{resource.service.name="xrpld" && span.tx_hash="ABC123..."}
 ```
 
 **Step 2: Get the trace_id from the trace view**

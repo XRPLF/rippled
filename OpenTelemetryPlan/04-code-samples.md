@@ -674,9 +674,9 @@ PeerImp::handleTransaction(
         auto stx = std::make_shared<STTx const>(sit);
 
         // Add transaction attributes
-        guard.setAttribute("xrpl.tx.hash", to_string(stx->getTransactionID()));
-        guard.setAttribute("xrpl.tx.type", stx->getTxnType());
-        guard.setAttribute("xrpl.peer.id", remote_address_.to_string());
+        guard.setAttribute("tx_hash", to_string(stx->getTransactionID()));
+        guard.setAttribute("tx_type", stx->getTxnType());
+        guard.setAttribute("peer_id", remote_address_.to_string());
 
         // Check if we've seen this transaction (HashRouter)
         auto const [flags, suppressed] =
@@ -686,7 +686,7 @@ PeerImp::handleTransaction(
 
         if (suppressed)
         {
-            guard.setAttribute("xrpl.tx.suppressed", true);
+            guard.setAttribute("suppressed", true);
             guard.addEvent("tx.duplicate");
             return;  // Already processing this transaction
         }
@@ -697,7 +697,7 @@ PeerImp::handleTransaction(
             telemetry::SpanGuard validateGuard(validateSpan);
 
             auto [validity, reason] = checkTransaction(stx);
-            validateGuard.setAttribute("xrpl.tx.validity",
+            validateGuard.setAttribute("validity",
                 validity == Validity::Valid ? "valid" : "invalid");
 
             if (validity != Validity::Valid)
@@ -732,7 +732,7 @@ PeerImp::handleTransaction(
                 protoCtx,  // Pass trace context
                 exclusions);
 
-            relayGuard.setAttribute("xrpl.tx.relay_count",
+            relayGuard.setAttribute("relay_count",
                 static_cast<int64_t>(relayCount));
         }
 
@@ -763,12 +763,12 @@ RCLConsensusAdaptor::startRound(
 {
     XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.round");
 
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.ledger.prev", to_string(prevLedgerHash));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.ledger.seq",
+    XRPL_TRACE_SET_ATTR("prev_ledger_prefix", to_string(prevLedgerHash));
+    XRPL_TRACE_SET_ATTR("ledger_seq",
         static_cast<int64_t>(prevLedger.seq() + 1));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.proposers",
+    XRPL_TRACE_SET_ATTR("proposers",
         static_cast<int64_t>(peers.size()));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode",
+    XRPL_TRACE_SET_ATTR("consensus_mode",
         proposing ? "proposing" : "observing");
 
     // Store trace context for use in phase transitions
@@ -788,7 +788,7 @@ RCLConsensusAdaptor::phaseTransition(ConsensusPhase newPhase)
         currentRoundContext_);
     telemetry::SpanGuard guard(span);
 
-    guard.setAttribute("xrpl.consensus.phase", to_string(newPhase));
+    guard.setAttribute("consensus_phase", to_string(newPhase));
     guard.addEvent("phase.enter");
 
     auto const startTime = std::chrono::steady_clock::now();
@@ -798,7 +798,7 @@ RCLConsensusAdaptor::phaseTransition(ConsensusPhase newPhase)
         auto result = doPhaseTransition(newPhase);
 
         auto const duration = std::chrono::steady_clock::now() - startTime;
-        guard.setAttribute("xrpl.consensus.phase_duration_ms",
+        guard.setAttribute("consensus_phase_duration_ms",
             std::chrono::duration<double, std::milli>(duration).count());
 
         guard.setOk();
@@ -830,9 +830,9 @@ RCLConsensusAdaptor::peerProposal(
         opentelemetry::trace::SpanKind::kServer);
     telemetry::SpanGuard guard(span);
 
-    guard.setAttribute("xrpl.consensus.proposer",
+    guard.setAttribute("proposer",
         toBase58(TokenType::NodePublic, proposal.nodeId()));
-    guard.setAttribute("xrpl.consensus.round",
+    guard.setAttribute("consensus_round",
         static_cast<int64_t>(proposal.proposal().proposeSeq()));
 
     // ... existing implementation ...
@@ -901,7 +901,7 @@ ServerHandler::onRequest(
                 ? jv["method"].asString()
                 : "unknown";
 
-        guard.setAttribute("xrpl.rpc.command", command);
+        guard.setAttribute("command", command);
 
         // Create child span for command execution
         auto cmdSpan = app_.getTelemetry().startSpan(
@@ -915,7 +915,7 @@ ServerHandler::onRequest(
             // Record result attributes
             if (result.isMember("status"))
             {
-                cmdGuard.setAttribute("xrpl.rpc.status",
+                cmdGuard.setAttribute("rpc_status",
                     result["status"].asString());
             }
 
@@ -1027,8 +1027,8 @@ JobQueue::processTask(int instance)
     if (telemetry_.isEnabled())
     {
         guard.emplace(telemetry_.startSpan("job.execute"));
-        guard->setAttribute("xrpl.job.type", to_string(job.type()));
-        guard->setAttribute("xrpl.job.worker",
+        guard->setAttribute("job_type", to_string(job.type()));
+        guard->setAttribute("job_worker",
             static_cast<int64_t>(instance));
     }
 #endif

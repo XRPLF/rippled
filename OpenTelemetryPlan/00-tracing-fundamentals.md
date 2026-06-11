@@ -68,7 +68,7 @@ A **span** represents a single unit of work within a trace. Each span has:
 | `name`           | Operation name                   | `rpc.submit`               |
 | `start_time`     | When work began (local time)     | `2024-01-15T10:30:00Z`     |
 | `end_time`       | When work completed (local time) | `2024-01-15T10:30:00.050Z` |
-| `attributes`     | Key-value metadata               | `tx.hash=ABC...`           |
+| `attributes`     | Key-value metadata               | `tx_hash=ABC...`           |
 | `status`         | OK, ERROR MSG                    | `OK`                       |
 
 ### 3. Trace Context

@@ -494,11 +494,11 @@ void ServerHandler::onRequest(...) {
 // After (only ~10 lines added)
 void ServerHandler::onRequest(...) {
     XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.request");  // +1 line
-    XRPL_TRACE_SET_ATTR("xrpl.rpc.command", command);     // +1 line
+    XRPL_TRACE_SET_ATTR("command", command);     // +1 line
 
     auto result = processRequest(req);
 
-    XRPL_TRACE_SET_ATTR("xrpl.rpc.status", status);       // +1 line
+    XRPL_TRACE_SET_ATTR("rpc_status", status);       // +1 line
     send(result);
 }
 ```
@@ -514,7 +514,7 @@ void RCLConsensusAdaptor::startRound(...) {
 // After (context storage required)
 void RCLConsensusAdaptor::startRound(...) {
     XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.round");
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.ledger.seq", seq);
+    XRPL_TRACE_SET_ATTR("ledger_seq", seq);
 
     // Store context for child spans in phase transitions
     currentRoundContext_ = _xrpl_guard_->context();  // New member variable
