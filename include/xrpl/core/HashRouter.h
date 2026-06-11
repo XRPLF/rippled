@@ -32,7 +32,9 @@ enum class HashRouterFlags : std::uint16_t {
 constexpr HashRouterFlags
 operator|(HashRouterFlags lhs, HashRouterFlags rhs)
 {
-    return (lhs) | static_cast<std::underlying_type_t<HashRouterFlags>>(rhs);
+    return static_cast<HashRouterFlags>(
+        static_cast<std::underlying_type_t<HashRouterFlags>>(lhs) |
+        static_cast<std::underlying_type_t<HashRouterFlags>>(rhs));
 }
 
 constexpr HashRouterFlags&
@@ -45,7 +47,9 @@ operator|=(HashRouterFlags& lhs, HashRouterFlags rhs)
 constexpr HashRouterFlags
 operator&(HashRouterFlags lhs, HashRouterFlags rhs)
 {
-    return (lhs) & static_cast<std::underlying_type_t<HashRouterFlags>>(rhs);
+    return static_cast<HashRouterFlags>(
+        static_cast<std::underlying_type_t<HashRouterFlags>>(lhs) &
+        static_cast<std::underlying_type_t<HashRouterFlags>>(rhs));
 }
 
 constexpr HashRouterFlags&
@@ -127,7 +131,7 @@ private:
         }
 
         /** Return set of peers we've relayed to and reset tracking */
-        static std::set<PeerShortID>
+        std::set<PeerShortID>
         releasePeerSet()
         {
             return std::move(peers_);
@@ -146,25 +150,31 @@ private:
             If it has, return false. If it has not, update the
             last relay timestamp and return true.
         */
-        static bool
+        bool
         shouldRelay(Stopwatch::time_point const& now, std::chrono::seconds relayTime)
         {
-            return !relayed_ && *relayed_ + relayTime > now;
+            if (relayed_ && *relayed_ + relayTime > now)
+                return false;
+            relayed_.emplace(now);
+            return true;
         }
 
-        static bool
+        bool
         shouldProcess(Stopwatch::time_point now, std::chrono::seconds interval)
         {
-            return !processed_ && ((*processed_ + interval) > now);
+            if (processed_ && ((*processed_ + interval) > now))
+                return false;
+            processed_.emplace(now);
+            return true;
         }
 
     private:
         HashRouterFlags flags_ = HashRouterFlags::UNDEFINED;
-        std::set<PeerShortID> peers_{};
+        std::set<PeerShortID> peers_;
         // This could be generalized to a map, if more
         // than one flag needs to expire independently.
-        std::optional<Stopwatch::time_point> relayed_{};
-        std::optional<Stopwatch::time_point> processed_{};
+        std::optional<Stopwatch::time_point> relayed_;
+        std::optional<Stopwatch::time_point> processed_;
     };
 
 public:
@@ -241,7 +251,7 @@ private:
 
     // Stores all suppressed hashes and their expiration time
     beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type, HardenedHash<strong_hash>>
-        suppressionMap_{};
+        suppressionMap_;
 };
 
 }  // namespace xrpl

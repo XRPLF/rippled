@@ -118,7 +118,7 @@ private:
 
 class STPath final : public CountedObject<STPath>
 {
-    std::vector<STPathElement> path_{};
+    std::vector<STPathElement> path_;
 
 public:
     STPath() = default;
@@ -173,7 +173,7 @@ public:
 // A set of zero or more payment paths
 class STPathSet final : public STBase, public CountedObject<STPathSet>
 {
-    std::vector<STPath> value_{};
+    std::vector<STPath> value_;
 
 public:
     STPathSet() = default;

@@ -100,21 +100,21 @@ public:
 
         @return the sequence number
     */
-    [[nodiscard]] std::uint32_t
+    std::uint32_t
     proposeSeq() const
     {
         return proposeSeq_;
     }
 
     //! The current position on the consensus close time.
-    [[nodiscard]] NetClock::time_point const&
+    NetClock::time_point const&
     closeTime() const
     {
         return closeTime_;
     }
 
     //! Get when this position was taken.
-    [[nodiscard]] NetClock::time_point const&
+    NetClock::time_point const&
     seenTime() const
     {
         return time_;
@@ -123,21 +123,21 @@ public:
     /** Whether this is the first position taken during the current
         consensus round.
     */
-    [[nodiscard]] bool
+    bool
     isInitial() const
     {
         return proposeSeq_ == kSeqJoin;
     }
 
     //! Get whether this node left the consensus process
-    [[nodiscard]] bool
+    bool
     isBowOut() const
     {
         return proposeSeq_ == kSeqLeave;
     }
 
     //! Get whether this position is stale relative to the provided cutoff
-    [[nodiscard]] bool
+    bool
     isStale(NetClock::time_point cutoff) const
     {
         return time_ <= cutoff;
@@ -178,7 +178,7 @@ public:
         proposeSeq_ = kSeqLeave;
     }
 
-    [[nodiscard]] std::string
+    std::string
     render() const
     {
         std::stringstream ss;
@@ -190,7 +190,7 @@ public:
     }
 
     //! Get JSON representation for debugging
-    [[nodiscard]] json::Value
+    json::Value
     getJson() const
     {
         using std::to_string;
@@ -210,7 +210,7 @@ public:
     }
 
     //! The digest for this proposal, used for signing purposes.
-    [[nodiscard]] uint256 const&
+    uint256 const&
     signingHash() const
     {
         if (!signingHash_)

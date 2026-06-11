@@ -72,7 +72,7 @@ struct LexicalCast<Out, std::string_view>
     bool
     operator()(bool& out, std::string_view in) const
     {
-        std::string const result;
+        std::string result;
 
         // Convert the input to lowercase
         std::transform(in.begin(), in.end(), std::back_inserter(result), [](auto c) {

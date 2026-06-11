@@ -112,9 +112,9 @@ getOrThrow(json::Value const& v, xrpl::SField const& field)
     {
         auto const s = inner.asString();
         // parse as hex
-        std::uint64_t const val = 0;
+        std::uint64_t val = 0;
 
-        auto [p, ec] = std::from_chars(s.data(), s.data() + s.size(), val != 0u, 16);
+        auto [p, ec] = std::from_chars(s.data(), s.data() + s.size(), val, 16);
 
         if (ec != std::errc() || (p != s.data() + s.size()))
             Throw<JsonTypeMismatchError>(key, "uint64");

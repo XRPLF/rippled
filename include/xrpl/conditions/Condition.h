@@ -56,7 +56,7 @@ public:
     std::uint32_t cost;
 
     /** For compound conditions, set of conditions includes */
-    std::set<Type> subtypes{};
+    std::set<Type> subtypes;
 
     Condition(Type t, std::uint32_t c, Slice fp) : type(t), fingerprint(fp), cost(c)
     {

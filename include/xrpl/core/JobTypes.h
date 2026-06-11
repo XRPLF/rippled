@@ -160,7 +160,7 @@ public:
     }
 
     JobTypeInfo unknown;
-    Map map{};
+    Map map;
 };
 
 }  // namespace xrpl

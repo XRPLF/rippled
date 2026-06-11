@@ -36,7 +36,7 @@ class STValidation final : public STObject, public CountedObject<STValidation>
     // that use manifests this will be derived from the master public key.
     NodeID const nodeID_;
 
-    NetClock::time_point seenTime_{};
+    NetClock::time_point seenTime_;
 
 public:
     /** Construct a STValidation from a peer from serialized data.
@@ -72,35 +72,35 @@ public:
         F&& f);
 
     // Hash of the validated ledger
-    [[nodiscard]] uint256
+    uint256
     getLedgerHash() const;
 
     // Hash of consensus transaction set used to generate ledger
-    [[nodiscard]] uint256
+    uint256
     getConsensusHash() const;
 
-    [[nodiscard]] NetClock::time_point
+    NetClock::time_point
     getSignTime() const;
 
-    [[nodiscard]] NetClock::time_point
+    NetClock::time_point
     getSeenTime() const noexcept;
 
-    [[nodiscard]] PublicKey const&
+    PublicKey const&
     getSignerPublic() const noexcept;
 
-    [[nodiscard]] NodeID const&
+    NodeID const&
     getNodeID() const noexcept;
 
-    [[nodiscard]] bool
+    bool
     isValid() const noexcept;
 
-    [[nodiscard]] bool
+    bool
     isFull() const noexcept;
 
-    [[nodiscard]] bool
+    bool
     isTrusted() const noexcept;
 
-    [[nodiscard]] uint256
+    uint256
     getSigningHash() const;
 
     void
@@ -112,13 +112,13 @@ public:
     void
     setSeen(NetClock::time_point s);
 
-    [[nodiscard]] Blob
+    Blob
     getSerialized() const;
 
-    [[nodiscard]] Blob
+    Blob
     getSignature() const;
 
-    [[nodiscard]] std::string
+    std::string
     render() const
     {
         std::stringstream ss;

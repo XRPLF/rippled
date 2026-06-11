@@ -51,51 +51,51 @@ public:
     STTx(TxType type, std::function<void(STObject&)> assembler);
 
     // STObject functions.
-    [[nodiscard]] SerializedTypeID
+    SerializedTypeID
     getSType() const override;
 
-    [[nodiscard]] std::string
+    std::string
     getFullText() const override;
 
     // Outer transaction functions / signature functions.
     static Blob
     getSignature(STObject const& sigObject);
 
-    [[nodiscard]] Blob
+    Blob
     getSignature() const
     {
         return getSignature(*this);
     }
 
-    [[nodiscard]] uint256
+    uint256
     getSigningHash() const;
 
-    [[nodiscard]] TxType
+    TxType
     getTxnType() const;
 
-    [[nodiscard]] Blob
+    Blob
     getSigningPubKey() const;
 
-    [[nodiscard]] SeqProxy
+    SeqProxy
     getSeqProxy() const;
 
     /** Returns the first non-zero value of (Sequence, TicketSequence). */
-    [[nodiscard]] std::uint32_t
+    std::uint32_t
     getSeqValue() const;
 
-    [[nodiscard]] AccountID
+    AccountID
     getFeePayer() const;
 
-    [[nodiscard]] boost::container::flat_set<AccountID>
+    boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
-    [[nodiscard]] uint256
+    uint256
     getTransactionID() const;
 
-    [[nodiscard]] json::Value
+    json::Value
     getJson(JsonOptions options) const override;
 
-    [[nodiscard]] json::Value
+    json::Value
     getJson(JsonOptions options, bool binary) const;
 
     void
@@ -108,27 +108,27 @@ public:
         @param rules The current ledger rules.
         @return `true` if valid signature. If invalid, the error message string.
     */
-    [[nodiscard]] std::expected<void, std::string>
+    std::expected<void, std::string>
     checkSign(Rules const& rules) const;
 
-    [[nodiscard]] std::expected<void, std::string>
+    std::expected<void, std::string>
     checkBatchSign(Rules const& rules) const;
 
     // SQL Functions with metadata.
     static std::string const&
     getMetaSQLInsertReplaceHeader();
 
-    [[nodiscard]] std::string
+    std::string
     getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) const;
 
-    [[nodiscard]] std::string
+    std::string
     getMetaSQL(
         Serializer rawTxn,
         std::uint32_t inLedger,
         TxnSql status,
         std::string const& escapedMetaData) const;
 
-    [[nodiscard]] std::vector<uint256> const&
+    std::vector<uint256> const&
     getBatchTransactionIDs() const;
 
 private:
@@ -138,19 +138,19 @@ private:
             Will be *this more often than not.
         @return `true` if valid signature. If invalid, the error message string.
     */
-    [[nodiscard]] std::expected<void, std::string>
+    std::expected<void, std::string>
     checkSign(Rules const& rules, STObject const& sigObject) const;
 
-    [[nodiscard]] std::expected<void, std::string>
+    std::expected<void, std::string>
     checkSingleSign(STObject const& sigObject) const;
 
-    [[nodiscard]] std::expected<void, std::string>
+    std::expected<void, std::string>
     checkMultiSign(Rules const& rules, STObject const& sigObject) const;
 
-    [[nodiscard]] std::expected<void, std::string>
+    std::expected<void, std::string>
     checkBatchSingleSign(STObject const& batchSigner) const;
 
-    [[nodiscard]] std::expected<void, std::string>
+    std::expected<void, std::string>
     checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const;
 
     STBase*

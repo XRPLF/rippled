@@ -171,7 +171,7 @@ class AccountRootsDeletedClean
     // deleted, it can still be found. After is used specifically for any checks
     // that are expected as part of the deletion, such as zeroing out the
     // balance.
-    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> accountsDeleted_{};
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> accountsDeleted_;
 
 public:
     void
@@ -340,10 +340,10 @@ public:
  */
 class ValidPseudoAccounts
 {
-    std::vector<std::string> errors_{};
+    std::vector<std::string> errors_;
 
 public:
-    static void
+    void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     bool
@@ -360,10 +360,10 @@ public:
 class NoModifiedUnmodifiableFields
 {
     // Pair is <before, after>.
-    std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_{};
+    std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_;
 
 public:
-    static void
+    void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     bool
@@ -375,7 +375,7 @@ public:
  */
 class ValidAmounts
 {
-    std::vector<std::shared_ptr<SLE const>> afterEntries_{};
+    std::vector<std::shared_ptr<SLE const>> afterEntries_;
 
 public:
     void

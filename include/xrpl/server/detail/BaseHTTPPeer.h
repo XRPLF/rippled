@@ -49,14 +49,14 @@ protected:
             memcpy(data.get(), ptr, len);
         }
 
-        std::unique_ptr<char[]> data{};
+        std::unique_ptr<char[]> data;
         std::size_t bytes;
         std::size_t used{0};
     };
 
     Port const& port_;
     Handler& handler_;
-    boost::asio::executor_work_guard<boost::asio::executor> work_{};
+    boost::asio::executor_work_guard<boost::asio::executor> work_;
     boost::asio::strand<boost::asio::executor> strand_;
     endpoint_type remoteAddress_;
     beast::Journal const journal_;
@@ -65,9 +65,9 @@ protected:
     std::size_t nid_;
 
     boost::asio::streambuf readBuf_;
-    http_request_type message_{};
-    std::vector<Buffer> wq_{};
-    std::vector<Buffer> wq2_{};
+    http_request_type message_;
+    std::vector<Buffer> wq_;
+    std::vector<Buffer> wq2_;
     std::mutex mutex_;
     bool graceful_ = false;
     bool complete_ = false;
@@ -340,7 +340,7 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     bool keepAlive,
     yield_context doYield)
 {
-    std::function<void(void)> const resume;
+    std::function<void(void)> resume;
     {
         auto const p = impl().shared_from_this();
         resume = std::function<void(void)>([this, p, writer, keepAlive]() {

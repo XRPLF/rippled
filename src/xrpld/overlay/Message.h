@@ -63,14 +63,14 @@ public:
     getBuffer(Compressed tryCompressed);
 
     /** Get the traffic category */
-    [[nodiscard]] std::size_t
+    std::size_t
     getCategory() const
     {
         return category_;
     }
 
     /** Get the validator's key */
-    [[nodiscard]] std::optional<PublicKey> const&
+    std::optional<PublicKey> const&
     getValidatorKey() const
     {
         return validatorKey_;

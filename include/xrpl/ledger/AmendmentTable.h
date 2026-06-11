@@ -128,7 +128,7 @@ public:
     // implementation. These APIs will merge when the view code
     // supports a full ledger API
 
-    static void
+    void
     doVoting(
         std::shared_ptr<ReadView const> const& lastClosedLedger,
         std::vector<std::shared_ptr<STValidation>> const& parentValidations,
@@ -155,7 +155,7 @@ public:
                     obj.setFieldU32(sfFlags, it.second);
             });
 
-            Serializer const s;
+            Serializer s;
             amendTx.add(s);
 
             JLOG(j.debug()) << "Amendments: Adding pseudo-transaction: "

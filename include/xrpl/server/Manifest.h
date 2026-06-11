@@ -239,10 +239,10 @@ private:
     std::shared_mutex mutable mutex_;
 
     /** Active manifests stored by master public key. */
-    hash_map<PublicKey, Manifest> map_{};
+    hash_map<PublicKey, Manifest> map_;
 
     /** Master public keys stored by current ephemeral public key. */
-    hash_map<PublicKey, PublicKey> signingToMasterKeys_{};
+    hash_map<PublicKey, PublicKey> signingToMasterKeys_;
 
     std::atomic<std::uint32_t> seq_{0};
 

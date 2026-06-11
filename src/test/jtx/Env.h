@@ -144,10 +144,10 @@ private:
     struct AppBundle
     {
         Application* app = nullptr;
-        std::unique_ptr<Application> owned{};
+        std::unique_ptr<Application> owned;
         ManualTimeKeeper* timeKeeper = nullptr;
         std::thread thread;
-        std::unique_ptr<AbstractClient> client{};
+        std::unique_ptr<AbstractClient> client;
 
         AppBundle() = default;
         AppBundle(
@@ -161,7 +161,7 @@ private:
     AppBundle bundle_;
 
 public:
-    beast::Journal const journal{};
+    beast::Journal const journal;
 
     Env() = delete;
     Env&
@@ -391,7 +391,7 @@ public:
 
         @return true if no error, false if error
     */
-    static bool
+    bool
     close()
     {
         // VFALCO Is this the correct time?
@@ -836,7 +836,7 @@ protected:
     }
 
     // Map of account IDs to Account
-    std::unordered_map<AccountID, Account> map_{};
+    std::unordered_map<AccountID, Account> map_;
 };
 
 template <class... Args>

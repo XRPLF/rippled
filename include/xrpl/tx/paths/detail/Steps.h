@@ -300,7 +300,7 @@ using Strand = std::vector<std::unique_ptr<Step>>;
 inline std::uint32_t
 offersUsed(Strand const& strand)
 {
-    std::uint32_t const r = 0;
+    std::uint32_t r = 0;
     for (auto const& step : strand)
     {
         if (step)
@@ -483,7 +483,7 @@ public:
 class FlowException : public std::runtime_error
 {
 public:
-    TER ter{};
+    TER ter;
 
     FlowException(TER t, std::string const& msg) : std::runtime_error(msg), ter(t)
     {

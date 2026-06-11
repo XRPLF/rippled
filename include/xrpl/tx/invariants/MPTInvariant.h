@@ -33,7 +33,7 @@ class ValidMPTIssuance
     /// MPTokens and RippleStates deleted during apply. finalize() checks each
     /// holder's AccountRoot to detect vault pseudo-account holdings deleted
     /// outside VaultDelete. All these checks are gated on fixCleanup3_2_0.
-    std::vector<std::shared_ptr<SLE const>> deletedHoldings_{};
+    std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
 public:
     void
@@ -61,7 +61,7 @@ class ValidMPTPayment
     // true if OutstandingAmount > MaximumAmount in after for any MPT
     bool overflow_{false};
     // mptid:MPTData
-    hash_map<uint192, MPTData> data_{};
+    hash_map<uint192, MPTData> data_;
 
 public:
     void
@@ -79,10 +79,10 @@ class ValidMPTTransfer
         std::optional<std::uint64_t> amtAfter;
     };
     // MPTID: {holder: Value}
-    hash_map<uint192, hash_map<AccountID, Value>> amount_{};
+    hash_map<uint192, hash_map<AccountID, Value>> amount_;
     // Deleted MPToken
     // MPToken key: true if MPTAuthorized is set
-    hash_map<uint256, bool> deletedAuthorized_{};
+    hash_map<uint256, bool> deletedAuthorized_;
 
 public:
     void

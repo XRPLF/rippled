@@ -11,7 +11,9 @@
 #include <type_traits>
 #include <utility>
 
-namespace xrpl::detail {
+namespace xrpl {
+
+namespace detail {
 template <typename T>
 constexpr bool kIsIntegralConstant = false;
 template <typename I, auto A>
@@ -182,8 +184,10 @@ struct MultiApiJson
     }
 };
 
-}  // namespace xrpl::detail
+}  // namespace detail
 
 // Wrapper for Json for all supported API versions.
 using MultiApiJson =
     detail::MultiApiJson<RPC::kApiMinimumSupportedVersion, RPC::kApiMaximumValidVersion>;
+
+}  // namespace xrpl

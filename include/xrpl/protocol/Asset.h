@@ -89,8 +89,8 @@ public:
     [[nodiscard]] constexpr value_type const&
     value() const;
 
-    static [[nodiscard]] constexpr token_type
-    token();
+    [[nodiscard]] constexpr token_type
+    token() const;
 
     void
     setJson(json::Value& jv) const;
@@ -111,16 +111,16 @@ public:
         return detail::visit(issue_, std::forward<Visitors>(visitors)...);
     }
 
-    static [[nodiscard]] constexpr bool
-    native()
+    [[nodiscard]] constexpr bool
+    native() const
     {
         return visit(
             [&](Issue const& issue) { return issue.native(); },
             [&](MPTIssue const&) { return false; });
     }
 
-    static [[nodiscard]] bool
-    integral()
+    [[nodiscard]] bool
+    integral() const
     {
         return visit(
             [&](Issue const& issue) { return issue.native(); },
@@ -192,16 +192,16 @@ Asset::value() const
     return issue_;
 }
 
-static constexpr Asset::token_type
-Asset::token()
+constexpr Asset::token_type
+Asset::token() const
 {
     return visit(
         [&](Issue const& issue) -> Asset::token_type { return issue.currency; },
         [&](MPTIssue const& issue) -> Asset::token_type { return issue.getMptID(); });
 }
 
-static constexpr Asset::AmtType
-Asset::getAmountType()
+constexpr Asset::AmtType
+Asset::getAmountType() const
 {
     return visit(
         [&](Issue const& issue) -> Asset::AmtType {

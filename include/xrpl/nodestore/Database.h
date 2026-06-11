@@ -217,7 +217,7 @@ protected:
     // advanced tunable, via the config file. The default value is 4.
     int const requestBundle_;
 
-    static void
+    void
     storeStats(std::uint64_t count, std::uint64_t sz)
     {
         XRPL_ASSERT(count <= sz, "xrpl::NodeStore::Database::storeStats : valid inputs");

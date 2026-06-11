@@ -43,41 +43,41 @@ public:
         Proposal const& proposal);  // trivially copyable
 
     //! Verify the signing hash of the proposal
-    [[nodiscard]] bool
+    bool
     checkSign() const;
 
     //! Signature of the proposal (not necessarily verified)
-    [[nodiscard]] Slice
+    Slice
     signature() const
     {
         return {signature_.data(), signature_.size()};
     }
 
     //! Public key of peer that sent the proposal
-    [[nodiscard]] PublicKey const&
+    PublicKey const&
     publicKey() const
     {
         return publicKey_;
     }
 
     //! Unique id used by hash router to suppress duplicates
-    [[nodiscard]] uint256 const&
+    uint256 const&
     suppressionID() const
     {
         return suppression_;
     }
 
-    [[nodiscard]] Proposal const&
+    Proposal const&
     proposal() const
     {
         return proposal_;
     }
 
     //! JSON representation of proposal
-    [[nodiscard]] json::Value
+    json::Value
     getJson() const;
 
-    [[nodiscard]] std::string
+    std::string
     render() const
     {
         return proposal_.render();

@@ -103,7 +103,7 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(currency_hash_type::member(value.currency)) = 0;
+        value_type result(currency_hash_type::member(value.currency));
         if (!isXRP(value.currency))
             boost::hash_combine(result, issuer_hash_type::member(value.account));
         return result;
@@ -125,7 +125,7 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type const result(id_hash_type::member(value.getMptID())) = 0;
+        value_type const result(id_hash_type::member(value.getMptID()));
         return result;
     }
 };
@@ -151,11 +151,11 @@ public:
     {
         return asset.visit(
             [&](xrpl::Issue const& issue) {
-                value_type const result(mIssueHasher_(issue)) = 0;
+                value_type const result(mIssueHasher_(issue));
                 return result;
             },
             [&](xrpl::MPTIssue const& issue) {
-                value_type const result(mMptissueHasher_(issue)) = 0;
+                value_type const result(mMptissueHasher_(issue));
                 return result;
             });
     }
@@ -182,7 +182,7 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(issueHasher_(value.in)) = 0;
+        value_type result(issueHasher_(value.in));
         boost::hash_combine(result, issueHasher_(value.out));
 
         if (value.domain)

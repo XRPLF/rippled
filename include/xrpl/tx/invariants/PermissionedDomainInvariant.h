@@ -28,7 +28,7 @@ class ValidPermissionedDomain
         bool isUnique = false;
         bool isDelete = false;
     };
-    std::vector<SleStatus> sleStatus_{};
+    std::vector<SleStatus> sleStatus_;
 
 public:
     void

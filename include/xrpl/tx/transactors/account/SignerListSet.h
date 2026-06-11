@@ -21,7 +21,7 @@ private:
     enum class Operation { Unknown, Set, Destroy };
     Operation do_{Operation::Unknown};
     std::uint32_t quorum_{0};
-    std::vector<SignerEntries::SignerEntry> signers_{};
+    std::vector<SignerEntries::SignerEntry> signers_;
 
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Blocker;
@@ -77,8 +77,8 @@ private:
     TER
     destroySignerList();
 
-    static void
-    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags);
+    void
+    writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t flags) const;
 };
 
 }  // namespace xrpl

@@ -193,7 +193,7 @@ Door<Handler>::Detector::doDetect(boost::asio::yield_context doYield)
 {
     boost::beast::multi_buffer buf(16);
     stream_.expires_after(std::chrono::seconds(15));
-    boost::system::error_code const ec;
+    boost::system::error_code ec;
     bool const ssl = async_detect_ssl(stream_, buf, doYield[ec]);
     stream_.expires_never();
     if (!ec)
@@ -222,7 +222,7 @@ template <class Handler>
 void
 Door<Handler>::reOpen()
 {
-    error_code const ec;
+    error_code ec;
 
     if (acceptor_.is_open())
     {
@@ -306,7 +306,7 @@ Door<Handler>::close()
             strand_, std::bind(&Door<Handler>::close, this->shared_from_this()));
     }
     backoffTimer_.cancel();
-    error_code const ec;
+    error_code ec;
     acceptor_.close(ec);
 }
 
@@ -343,13 +343,13 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
         {
             JLOG(j_.warn()) << "Throttling do_accept for " << acceptDelay_.count() << "ms.";
             backoffTimer_.expires_after(acceptDelay_);
-            boost::system::error_code const tec;
+            boost::system::error_code tec;
             backoffTimer_.async_wait(doYield[tec]);
             acceptDelay_ = std::min(acceptDelay_ * 2, kMaxAcceptDelay);
             continue;
         }
 
-        error_code const ec;
+        error_code ec;
         endpoint_type remoteAddress;
         stream_type stream(ioc_);
         socket_type& socket = stream.socket();
@@ -369,7 +369,7 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
                                 << "ms.";
 
                 backoffTimer_.expires_after(acceptDelay_);
-                boost::system::error_code const tec;
+                boost::system::error_code tec;
                 backoffTimer_.async_wait(doYield[tec]);
 
                 acceptDelay_ = std::min(acceptDelay_ * 2, kMaxAcceptDelay);

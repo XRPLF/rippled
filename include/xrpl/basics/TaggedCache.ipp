@@ -232,7 +232,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
         std::vector<std::thread> workers;
         workers.reserve(cache_.partitions());
-        std::atomic<int> const allRemovals = 0;
+        std::atomic<int> allRemovals = 0;
 
         for (std::size_t p = 0; p < cache_.partitions(); ++p)
         {

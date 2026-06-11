@@ -177,11 +177,11 @@ public:
     getJson() const;
 
 private:
-    int yays_{0};    //< Number of yes votes
-    int nays_{0};    //< Number of no votes
-    bool ourVote_;   //< Our vote (true is yes)
-    Tx tx_;          //< Transaction under dispute
-    Map_t votes_{};  //< Map from NodeID to vote
+    int yays_{0};   //< Number of yes votes
+    int nays_{0};   //< Number of no votes
+    bool ourVote_;  //< Our vote (true is yes)
+    Tx tx_;         //< Transaction under dispute
+    Map_t votes_;   //< Map from NodeID to vote
     //! The number of rounds we've gone without changing our vote
     std::size_t currentVoteCounter_ = 0;
     //! Which minimum acceptance percentage phase we are currently in
@@ -328,7 +328,7 @@ DisputedTx<Tx, NodeId>::getJson() const
 
     if (!votes_.empty())
     {
-        json::Value const votes(json::ValueType::Object);
+        json::Value votes(json::ValueType::Object);
         for (auto const& [nodeId, vote] : votes_)
             votes[to_string(nodeId)] = vote;
         ret["votes"] = std::move(votes);

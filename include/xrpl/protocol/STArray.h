@@ -10,7 +10,7 @@ class STArray final : public STBase, public CountedObject<STArray>
 private:
     using list_type = std::vector<STObject>;
 
-    list_type v_{};
+    list_type v_;
 
 public:
     using value_type = STObject;
@@ -74,7 +74,7 @@ public:
         pushBack(object);
     }
 
-    static void
+    void
     // NOLINTNEXTLINE(readability-identifier-naming)
     push_back(STObject&& object)
     {

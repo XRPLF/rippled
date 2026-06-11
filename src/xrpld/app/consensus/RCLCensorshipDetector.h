@@ -46,7 +46,7 @@ public:
     using TxIDSeqVec = std::vector<TxIDSeq>;
 
 private:
-    TxIDSeqVec tracker_{};
+    TxIDSeqVec tracker_;
 
 public:
     RCLCensorshipDetector() = default;

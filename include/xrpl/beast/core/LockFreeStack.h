@@ -58,7 +58,7 @@ public:
         return result;
     }
 
-    [[nodiscard]] NodePtr
+    NodePtr
     node() const
     {
         return node_;

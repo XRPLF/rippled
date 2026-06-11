@@ -573,7 +573,7 @@ private:
     Ledger_t previousLedger_;
 
     // Transaction Sets, indexed by hash of transaction tree
-    hash_map<typename TxSet_t::ID, TxSet_t const> acquired_{};
+    hash_map<typename TxSet_t::ID, TxSet_t const> acquired_;
 
     std::optional<Result> result_;
     ConsensusCloseTimes rawCloseTimes_;
@@ -589,17 +589,17 @@ private:
     // Peer related consensus data
 
     // Peer proposed positions for the current round
-    hash_map<NodeID_t, PeerPosition_t> currPeerPositions_{};
+    hash_map<NodeID_t, PeerPosition_t> currPeerPositions_;
 
     // Recently received peer positions, available when transitioning between
     // ledgers or rounds
-    hash_map<NodeID_t, std::deque<PeerPosition_t>> recentPeerPositions_{};
+    hash_map<NodeID_t, std::deque<PeerPosition_t>> recentPeerPositions_;
 
     // The number of proposers who participated in the last consensus round
     std::size_t prevProposers_ = 0;
 
     // nodes that have bowed out of this consensus process
-    hash_set<NodeID_t> deadNodes_{};
+    hash_set<NodeID_t> deadNodes_;
 
     // Journal for debugging
     beast::Journal const j_;
@@ -887,7 +887,7 @@ Consensus<Adaptor>::gotTxSet(NetClock::time_point const& now, TxSet_t const& txS
         XRPL_ASSERT(
             id != result_->position.position(),
             "xrpl::Consensus::gotTxSet : updated transaction set");
-        bool const any = false;
+        bool any = false;
         for (auto const& [nodeId, peerPos] : currPeerPositions_)
         {
             if (peerPos.proposal().position() == id)
@@ -968,7 +968,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!currPeerPositions_.empty())
         {
-            json::Value const ppj(json::ValueType::Object);
+            json::Value ppj(json::ValueType::Object);
 
             for (auto const& [nodeId, peerPos] : currPeerPositions_)
             {
@@ -979,7 +979,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!acquired_.empty())
         {
-            json::Value const acq(json::ValueType::Array);
+            json::Value acq(json::ValueType::Array);
             for (auto const& at : acquired_)
             {
                 acq.append(to_string(at.first));
@@ -999,7 +999,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!rawCloseTimes_.peers.empty())
         {
-            json::Value const ctj(json::ValueType::Object);
+            json::Value ctj(json::ValueType::Object);
             for (auto const& ct : rawCloseTimes_.peers)
             {
                 ctj[std::to_string(ct.first.time_since_epoch().count())] = ct.second;
@@ -1009,7 +1009,7 @@ Consensus<Adaptor>::getJson(bool full) const
 
         if (!deadNodes_.empty())
         {
-            json::Value const dnj(json::ValueType::Array);
+            json::Value dnj(json::ValueType::Array);
             for (auto const& dn : deadNodes_)
             {
                 dnj.append(to_string(dn));
@@ -1531,7 +1531,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
             closeTimeAvalancheState_ = *newState;
         CLOG(clog) << "neededWeight " << neededWeight << ". ";
 
-        int participants = currPeerPositions_.size() = 0;
+        int participants = currPeerPositions_.size();
         if (mode_.get() == ConsensusMode::Proposing)
         {
             ++closeTimeVotes[asCloseTime(result_->position.closeTime())];
@@ -1544,7 +1544,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         // Threshold to declare consensus
         int const threshConsensus = participantsNeeded(participants, parms.avCtConsensusPct);
 
-        std::stringstream const ss;
+        std::stringstream ss;
         ss << "Proposers:" << currPeerPositions_.size() << " nw:" << neededWeight
            << " thrV:" << threshVote << " thrC:" << threshConsensus;
         JLOG(j_.info()) << ss.str();

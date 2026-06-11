@@ -65,8 +65,8 @@ public:
     }
 
     //! Whether consensus process agreed on close time of the ledger.
-    static [[nodiscard]] bool
-    closeAgree()
+    [[nodiscard]] bool
+    closeAgree() const
     {
         return xrpl::getCloseAgree(ledger->header());
     }
@@ -86,8 +86,8 @@ public:
     }
 
     //! JSON representation of this ledger.
-    static [[nodiscard]] json::Value
-    getJson()
+    [[nodiscard]] json::Value
+    getJson() const
     {
         return xrpl::getJson({*ledger, {}});
     }
