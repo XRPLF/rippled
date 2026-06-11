@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/hardened_hash.h>
@@ -20,6 +19,7 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <expected>
 #include <type_traits>
 
 namespace xrpl {
@@ -73,12 +73,12 @@ class BaseUInt
 
     static_assert(Bits >= 64, "The length of a base_uint in bits must be at least 64.");
 
-    static constexpr std::size_t kWIDTH = Bits / 32;
+    static constexpr std::size_t kWidth = Bits / 32;
 
     // This is really big-endian in byte order.
     // We sometimes use std::uint32_t for speed.
 
-    std::array<std::uint32_t, kWIDTH> data_;
+    std::array<std::uint32_t, kWidth> data_;
 
 public:
     //--------------------------------------------------------------------------
@@ -86,8 +86,8 @@ public:
     // STL Container Interface
     //
 
-    static std::size_t constexpr kBYTES = Bits / 8;
-    static_assert(sizeof(data_) == kBYTES, "");
+    static constexpr std::size_t kBytes = Bits / 8;
+    static_assert(sizeof(data_) == kBytes, "");
 
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
@@ -121,7 +121,7 @@ public:
     iterator
     end()
     {
-        return data() + kBYTES;
+        return data() + kBytes;
     }
     [[nodiscard]] const_iterator
     begin() const
@@ -131,7 +131,7 @@ public:
     [[nodiscard]] const_iterator
     end() const
     {
-        return data() + kBYTES;
+        return data() + kBytes;
     }
     [[nodiscard]] const_iterator
     cbegin() const
@@ -141,7 +141,7 @@ public:
     [[nodiscard]] const_iterator
     cend() const
     {
-        return data() + kBYTES;
+        return data() + kBytes;
     }
 
     /** Value hashing function.
@@ -167,7 +167,7 @@ private:
 
     explicit BaseUInt(void const* data, VoidHelper)
     {
-        memcpy(data_.data(), data, kBYTES);
+        memcpy(data_.data(), data, kBytes);
     }
 
     // Helper function to initialize a base_uint from a std::string_view.
@@ -177,7 +177,7 @@ private:
         BadChar,
     };
 
-    constexpr Expected<decltype(data_), ParseResult>
+    constexpr std::expected<decltype(data_), ParseResult>
     parseFromStringView(std::string_view sv) noexcept
     {
         // Local lambda that converts a single hex char to four bits and
@@ -216,7 +216,7 @@ private:
         }
 
         if (sv.size() != size() * 2)
-            return Unexpected(ParseResult::BadLength);
+            return std::unexpected(ParseResult::BadLength);
 
         std::size_t i = 0u;
         auto in = sv.begin();
@@ -227,7 +227,7 @@ private:
             {
                 if (auto const result = hexCharToUInt(*in++, shift, accum);
                     result != ParseResult::Okay)
-                    return Unexpected(result);
+                    return std::unexpected(result);
             }
             ret[i++] = accum;
         }
@@ -336,7 +336,7 @@ public:
     [[nodiscard]] constexpr int
     signum() const
     {
-        for (int i = 0; i < kWIDTH; i++)
+        for (int i = 0; i < kWidth; i++)
         {
             if (data_[i] != 0)
                 return 1;
@@ -348,7 +348,7 @@ public:
     bool
     operator!() const
     {
-        return *this == beast::kZERO;
+        return *this == beast::kZero;
     }
 
     constexpr BaseUInt
@@ -356,7 +356,7 @@ public:
     {
         BaseUInt ret;
 
-        for (int i = 0; i < kWIDTH; i++)
+        for (int i = 0; i < kWidth; i++)
             ret.data_[i] = ~data_[i];
 
         return ret;
@@ -365,7 +365,7 @@ public:
     BaseUInt&
     operator=(std::uint64_t uHost)
     {
-        *this = beast::kZERO;
+        *this = beast::kZero;
         // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
         union
         {
@@ -375,15 +375,15 @@ public:
         // NOLINTEND(cppcoreguidelines-pro-type-member-init)
         // Put in least significant bits.
         ul = boost::endian::native_to_big(uHost);
-        data_[kWIDTH - 2] = u[0];
-        data_[kWIDTH - 1] = u[1];
+        data_[kWidth - 2] = u[0];
+        data_[kWidth - 1] = u[1];
         return *this;
     }
 
     BaseUInt&
     operator^=(BaseUInt const& b)
     {
-        for (int i = 0; i < kWIDTH; i++)
+        for (int i = 0; i < kWidth; i++)
             data_[i] ^= b.data_[i];
 
         return *this;
@@ -392,7 +392,7 @@ public:
     BaseUInt&
     operator&=(BaseUInt const& b)
     {
-        for (int i = 0; i < kWIDTH; i++)
+        for (int i = 0; i < kWidth; i++)
             data_[i] &= b.data_[i];
 
         return *this;
@@ -401,7 +401,7 @@ public:
     BaseUInt&
     operator|=(BaseUInt const& b)
     {
-        for (int i = 0; i < kWIDTH; i++)
+        for (int i = 0; i < kWidth; i++)
             data_[i] |= b.data_[i];
 
         return *this;
@@ -411,7 +411,7 @@ public:
     operator++()
     {
         // prefix operator
-        for (int i = kWIDTH - 1; i >= 0; --i)
+        for (int i = kWidth - 1; i >= 0; --i)
         {
             data_[i] = boost::endian::native_to_big(boost::endian::big_to_native(data_[i]) + 1);
             if (data_[i] != 0)
@@ -434,7 +434,7 @@ public:
     BaseUInt&
     operator--()
     {
-        for (int i = kWIDTH - 1; i >= 0; --i)
+        for (int i = kWidth - 1; i >= 0; --i)
         {
             auto prev = data_[i];
             data_[i] = boost::endian::native_to_big(boost::endian::big_to_native(data_[i]) - 1);
@@ -475,7 +475,7 @@ public:
     {
         std::uint64_t carry = 0;
 
-        for (int i = kWIDTH - 1; i >= 0; i--)
+        for (int i = kWidth - 1; i >= 0; i--)
         {
             std::uint64_t const n = carry + boost::endian::big_to_native(data_[i]) +
                 boost::endian::big_to_native(b.data_[i]);
@@ -526,10 +526,10 @@ public:
         return parseHex(std::string_view{str});
     }
 
-    constexpr static std::size_t
+    static constexpr std::size_t
     size()
     {
-        return kBYTES;
+        return kBytes;
     }
 
     BaseUInt<Bits, Tag>&
@@ -543,17 +543,17 @@ public:
     [[nodiscard]] bool
     isZero() const
     {
-        return *this == beast::kZERO;
+        return *this == beast::kZero;
     }
     [[nodiscard]] bool
     isNonZero() const
     {
-        return *this != beast::kZERO;
+        return *this != beast::kZero;
     }
     void
     zero()
     {
-        *this = beast::kZERO;
+        *this = beast::kZero;
     }
 };
 
@@ -639,7 +639,7 @@ template <std::size_t Bits, class Tag>
 inline std::string
 toShortString(BaseUInt<Bits, Tag> const& a)
 {
-    static_assert(BaseUInt<Bits, Tag>::kBYTES > 4, "For 4 bytes or less, use a native type");
+    static_assert(BaseUInt<Bits, Tag>::kBytes > 4, "For 4 bytes or less, use a native type");
     return strHex(a.cbegin(), a.cbegin() + 4) + "...";
 }
 

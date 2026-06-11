@@ -61,7 +61,8 @@ Logs::File::open(boost::filesystem::path const& path)
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    std::unique_ptr<std::ofstream> stream(new std::ofstream(path.c_str(), std::fstream::app));
+    std::unique_ptr<std::ofstream> stream =
+        std::make_unique<std::ofstream>(path.c_str(), std::fstream::app);
 
     if (stream->good())
     {
@@ -293,9 +294,9 @@ Logs::format(
     output += message;
 
     // Limit the maximum length of the output
-    if (output.size() > kMAXIMUM_MESSAGE_CHARACTERS)
+    if (output.size() > kMaximumMessageCharacters)
     {
-        output.resize(kMAXIMUM_MESSAGE_CHARACTERS - 3);
+        output.resize(kMaximumMessageCharacters - 3);
         output += "...";
     }
 
@@ -384,8 +385,8 @@ public:
 static DebugSink&
 debugSink()
 {
-    static DebugSink kINST;
-    return kINST;
+    static DebugSink kInst;
+    return kInst;
 }
 
 std::unique_ptr<beast::Journal::Sink>

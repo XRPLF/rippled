@@ -12,15 +12,13 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
-    if (domain == beast::kZERO)
+    if (domain == beast::kZero)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -55,7 +53,7 @@ PermissionedDomainDelete::doApply()
     auto const slePd = view().peek(keylet::permissionedDomain(ctx_.tx.at(sfDomainID)));
     auto const page = (*slePd)[sfOwnerNode];
 
-    if (!view().dirRemove(keylet::ownerDir(account_), page, slePd->key(), true))
+    if (!view().dirRemove(keylet::ownerDir(accountID_), page, slePd->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete permissioned domain directory entry.";
@@ -63,7 +61,7 @@ PermissionedDomainDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const ownerSle = view().peek(keylet::account(account_));
+    auto const ownerSle = view().peek(keylet::account(accountID_));
     XRPL_ASSERT(
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
         "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
@@ -74,10 +72,7 @@ PermissionedDomainDelete::doApply()
 }
 
 void
-PermissionedDomainDelete::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+PermissionedDomainDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

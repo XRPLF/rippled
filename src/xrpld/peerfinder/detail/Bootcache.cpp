@@ -110,13 +110,13 @@ Bootcache::insert(beast::IP::Endpoint const& endpoint)
 bool
 Bootcache::insertStatic(beast::IP::Endpoint const& endpoint)
 {
-    auto result(map_.insert(value_type(endpoint, kSTATIC_VALENCE)));
+    auto result(map_.insert(value_type(endpoint, kStaticValence)));
 
-    if (!result.second && (result.first->right.valence() < kSTATIC_VALENCE))
+    if (!result.second && (result.first->right.valence() < kStaticValence))
     {
         // An existing entry has too low a valence, replace it
         map_.erase(result.first);
-        result = map_.insert(value_type(endpoint, kSTATIC_VALENCE));
+        result = map_.insert(value_type(endpoint, kStaticValence));
     }
 
     if (result.second)
@@ -199,11 +199,11 @@ Bootcache::onWrite(beast::PropertyStream::Map& map)
 void
 Bootcache::prune()
 {
-    if (size() <= Tuning::kBOOTCACHE_SIZE)
+    if (size() <= Tuning::kBootcacheSize)
         return;
 
     // Calculate the amount to remove
-    auto count((size() * Tuning::kBOOTCACHE_PRUNE_PERCENT) / 100);
+    auto count((size() * Tuning::kBootcachePrunePercent) / 100);
     decltype(count) pruned(0);
 
     // Work backwards because bimap doesn't handle
@@ -240,7 +240,7 @@ Bootcache::update()
     store_.save(list);
     // Reset the flag and cooldown timer
     needsUpdate_ = false;
-    whenUpdate_ = clock_.now() + Tuning::kBOOTCACHE_COOLDOWN_TIME;
+    whenUpdate_ = clock_.now() + Tuning::kBootcacheCooldownTime;
 }
 
 // Checks the clock and calls update if we are off the cooldown.

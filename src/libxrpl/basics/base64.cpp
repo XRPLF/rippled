@@ -47,15 +47,15 @@ namespace base64 {
 inline char const*
 getAlphabet()
 {
-    static char constexpr kTAB[] = {
+    static constexpr char kTab[] = {
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
-    return &kTAB[0];
+    return &kTab[0];
 }
 
 inline signed char const*
 getInverse()
 {
-    static signed char constexpr kTAB[] = {
+    static constexpr signed char kTab[] = {
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  //   0-15
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  //  16-31
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,  //  32-47
@@ -73,17 +73,19 @@ getInverse()
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  // 224-239
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1   // 240-255
     };
-    return &kTAB[0];
+    return &kTab[0];
 }
 
 /// Returns max chars needed to encode a base64 string
-std::size_t constexpr encodedSize(std::size_t n)
+constexpr std::size_t
+encodedSize(std::size_t n)
 {
     return 4 * ((n + 2) / 3);
 }
 
 /// Returns max bytes needed to decode a base64 string
-std::size_t constexpr decodedSize(std::size_t n)
+constexpr std::size_t
+decodedSize(std::size_t n)
 {
     return ((n / 4) * 3) + 2;
 }

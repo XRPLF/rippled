@@ -32,7 +32,7 @@ NotTEC
 TicketCreate::preflight(PreflightContext const& ctx)
 {
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
-        count < kMIN_VALID_COUNT || count > kMAX_VALID_COUNT)
+        count < kMinValidCount || count > kMaxValidCount)
         return temINVALID_COUNT;
 
     return tesSUCCESS;
@@ -58,7 +58,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
     //  o consumedTickets  <= 1
     // So in the worst case addedTickets == consumedTickets and the
     // computation yields curTicketCount.
-    if (curTicketCount + addedTickets - consumedTickets > kMAX_TICKET_THRESHOLD)
+    if (curTicketCount + addedTickets - consumedTickets > kMaxTicketThreshold)
         return tecDIR_FULL;
 
     return tesSUCCESS;
@@ -67,7 +67,7 @@ TicketCreate::preclaim(PreclaimContext const& ctx)
 TER
 TicketCreate::doApply()
 {
-    SLE::pointer const sleAccountRoot = view().peek(keylet::account(account_));
+    SLE::pointer const sleAccountRoot = view().peek(keylet::account(accountID_));
     if (!sleAccountRoot)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -100,15 +100,15 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::kTICKET(account_, curTicketSeq);
+        Keylet const ticketKeylet = keylet::kTicket(accountID_, curTicketSeq);
         SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
-        sleTicket->setAccountID(sfAccount, account_);
+        sleTicket->setAccountID(sfAccount, accountID_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
         view().insert(sleTicket);
 
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), ticketKeylet, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), ticketKeylet, describeOwnerDir(accountID_));
 
         JLOG(j_.trace()) << "Creating ticket " << to_string(ticketKeylet.key) << ": "
                          << (page ? "success" : "failure");
@@ -135,10 +135,7 @@ TicketCreate::doApply()
 }
 
 void
-TicketCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+TicketCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

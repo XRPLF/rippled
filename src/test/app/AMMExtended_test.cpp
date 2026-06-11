@@ -65,10 +65,15 @@ namespace xrpl::test {
 /**
  * Tests of AMM that use offers too.
  */
-struct AMMExtended_test : public jtx::AMMTest
+class AMMExtended_test : public jtx::AMMTest
 {
     // Use small Number mantissas for the life of this test.
-    NumberMantissaScaleGuard const sg{xrpl::MantissaRange::MantissaScale::Small};
+    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::MantissaScale::Small};
+
+    // For now, just disable SAV entirely, which locks in the small Number
+    // mantissas
+    FeatureBitset const all_{
+        testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
 
 private:
     void
@@ -1120,14 +1125,14 @@ private:
             env(pay(ann, cam, dBux(60)), Path(localBob, dan), Sendmax(aBux(200)));
             env.close();
 
-            BEAST_EXPECT(expectHolding(env, ann, aBux(kNONE)));
-            BEAST_EXPECT(expectHolding(env, ann, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, ann, aBux(kNone)));
+            BEAST_EXPECT(expectHolding(env, ann, dBux(kNone)));
             BEAST_EXPECT(expectHolding(env, localBob, aBux(72)));
             BEAST_EXPECT(expectHolding(env, localBob, dBux(40)));
-            BEAST_EXPECT(expectHolding(env, cam, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, cam, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, cam, dBux(60)));
-            BEAST_EXPECT(expectHolding(env, dan, aBux(kNONE)));
-            BEAST_EXPECT(expectHolding(env, dan, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, dan, aBux(kNone)));
+            BEAST_EXPECT(expectHolding(env, dan, dBux(kNone)));
 
             AMM const ammBob(env, localBob, aBux(30), dBux(30));
 
@@ -1139,12 +1144,12 @@ private:
             env.close();
 
             BEAST_EXPECT(ammBob.expectBalances(aBux(30), dBux(30), ammBob.tokens()));
-            BEAST_EXPECT(expectHolding(env, ann, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, ann, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, ann, dBux(0)));
-            BEAST_EXPECT(expectHolding(env, cam, aBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, cam, aBux(kNone)));
             BEAST_EXPECT(expectHolding(env, cam, dBux(60)));
             BEAST_EXPECT(expectHolding(env, dan, aBux(0)));
-            BEAST_EXPECT(expectHolding(env, dan, dBux(kNONE)));
+            BEAST_EXPECT(expectHolding(env, dan, dBux(kNone)));
         }
     }
 
@@ -1349,37 +1354,33 @@ private:
     testOffers()
     {
         using namespace jtx;
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas
-        FeatureBitset const all{
-            testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
 
-        testRmFundedOffer(all);
-        testRmFundedOffer(all - fixAMMv1_1 - fixAMMv1_3);
-        testEnforceNoRipple(all);
-        testFillModes(all);
-        testOfferCrossWithXRP(all);
-        testOfferCrossWithLimitOverride(all);
-        testCurrencyConversionEntire(all);
-        testCurrencyConversionInParts(all);
-        testCrossCurrencyStartXRP(all);
-        testCrossCurrencyEndXRP(all);
-        testCrossCurrencyBridged(all);
-        testOfferFeesConsumeFunds(all);
-        testOfferCreateThenCross(all);
-        testSellFlagExceedLimit(all);
-        testGatewayCrossCurrency(all);
-        testGatewayCrossCurrency(all - fixAMMv1_1 - fixAMMv1_3);
-        testBridgedCross(all);
-        testSellWithFillOrKill(all);
-        testTransferRateOffer(all);
-        testSelfIssueOffer(all);
-        testBadPathAssert(all);
-        testSellFlagBasic(all);
-        testDirectToDirectPath(all);
-        testDirectToDirectPath(all - fixAMMv1_1 - fixAMMv1_3);
-        testRequireAuth(all);
-        testMissingAuth(all);
+        testRmFundedOffer(all_);
+        testRmFundedOffer(all_ - fixAMMv1_1 - fixAMMv1_3);
+        testEnforceNoRipple(all_);
+        testFillModes(all_);
+        testOfferCrossWithXRP(all_);
+        testOfferCrossWithLimitOverride(all_);
+        testCurrencyConversionEntire(all_);
+        testCurrencyConversionInParts(all_);
+        testCrossCurrencyStartXRP(all_);
+        testCrossCurrencyEndXRP(all_);
+        testCrossCurrencyBridged(all_);
+        testOfferFeesConsumeFunds(all_);
+        testOfferCreateThenCross(all_);
+        testSellFlagExceedLimit(all_);
+        testGatewayCrossCurrency(all_);
+        testGatewayCrossCurrency(all_ - fixAMMv1_1 - fixAMMv1_3);
+        testBridgedCross(all_);
+        testSellWithFillOrKill(all_);
+        testTransferRateOffer(all_);
+        testSelfIssueOffer(all_);
+        testBadPathAssert(all_);
+        testSellFlagBasic(all_);
+        testDirectToDirectPath(all_);
+        testDirectToDirectPath(all_ - fixAMMv1_1 - fixAMMv1_3);
+        testRequireAuth(all_);
+        testMissingAuth(all_);
     }
 
     void
@@ -2714,7 +2715,7 @@ private:
         // Carol offers to buy 1000 XRP for 1000 USD. She removes Bob's next
         // 1000 offers as unfunded and hits the step limit.
         env(offer(carol_, USD(1'000), XRP(1'000)));
-        env.require(Balance(carol_, USD(kNONE)));
+        env.require(Balance(carol_, USD(kNone)));
         env.require(Owners(carol_, 1));
         env.require(Balance(bob_, USD(0)));
         env.require(Owners(bob_, 1));
@@ -3516,15 +3517,11 @@ private:
     testFlow()
     {
         using namespace jtx;
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas in the transaction engine
-        FeatureBitset const all{
-            testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
 
-        testFalseDry(all);
-        testBookStep(all);
-        testTransferRateNoOwnerFee(all);
-        testTransferRateNoOwnerFee(all - fixAMMv1_1 - fixAMMv1_3);
+        testFalseDry(all_);
+        testBookStep(all_);
+        testTransferRateNoOwnerFee(all_);
+        testTransferRateNoOwnerFee(all_ - fixAMMv1_1 - fixAMMv1_3);
         testLimitQuality();
         testXRPPathLoop();
     }
@@ -3533,34 +3530,22 @@ private:
     testCrossingLimits()
     {
         using namespace jtx;
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas in the transaction engine
-        FeatureBitset const all{
-            testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
-        testStepLimit(all);
-        testStepLimit(all - fixAMMv1_1 - fixAMMv1_3);
+        testStepLimit(all_);
+        testStepLimit(all_ - fixAMMv1_1 - fixAMMv1_3);
     }
 
     void
     testDeliverMin()
     {
         using namespace jtx;
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas in the transaction engine
-        FeatureBitset const all{
-            testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
-        testConvertAllOfAnAsset(all);
-        testConvertAllOfAnAsset(all - fixAMMv1_1 - fixAMMv1_3);
+        testConvertAllOfAnAsset(all_);
+        testConvertAllOfAnAsset(all_ - fixAMMv1_1 - fixAMMv1_3);
     }
 
     void
     testDepositAuth()
     {
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas in the transaction engine
-        FeatureBitset const all{
-            jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
-        testPayment(all);
+        testPayment(all_);
         testPayIOU();
     }
 
@@ -3568,13 +3553,9 @@ private:
     testFreeze()
     {
         using namespace test::jtx;
-        // For now, just disable SAV entirely, which locks in the small Number
-        // mantissas in the transaction engine
-        FeatureBitset const sa{
-            testableAmendments() - featureSingleAssetVault - featureLendingProtocol};
-        testRippleState(sa);
-        testGlobalFreeze(sa);
-        testOffersWhenFrozen(sa);
+        testRippleState(all_);
+        testGlobalFreeze(all_);
+        testOffersWhenFrozen(all_);
     }
 
     void

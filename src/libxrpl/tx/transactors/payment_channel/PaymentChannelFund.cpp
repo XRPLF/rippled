@@ -18,8 +18,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <memory>
-
 namespace xrpl {
 
 TxConsequences
@@ -31,7 +29,7 @@ PaymentChannelFund::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelFund::preflight(PreflightContext const& ctx)
 {
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZERO))
+    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -107,10 +105,7 @@ PaymentChannelFund::doApply()
 }
 
 void
-PaymentChannelFund::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+PaymentChannelFund::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

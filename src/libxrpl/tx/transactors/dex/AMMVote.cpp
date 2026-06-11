@@ -22,7 +22,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <utility>
 
@@ -47,7 +46,7 @@ AMMVote::preflight(PreflightContext const& ctx)
         return res;
     }
 
-    if (ctx.tx[sfTradingFee] > kTRADING_FEE_THRESHOLD)
+    if (ctx.tx[sfTradingFee] > kTradingFeeThreshold)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid trading fee.";
         return temBAD_FEE;
@@ -65,12 +64,12 @@ AMMVote::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
         return terNO_AMM;
     }
-    if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZERO)
+    if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero)
     {
         return tecAMM_EMPTY;
     }
     if (auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
-        lpTokensNew == beast::kZERO)
+        lpTokensNew == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";
         return tecAMM_INVALID_TOKENS;
@@ -80,14 +79,14 @@ AMMVote::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
+applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
 {
     auto const feeNew = ctx.tx[sfTradingFee];
     auto ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
-    auto const lpTokensNew = ammLPHolds(sb, *ammSle, account, ctx.journal);
+    auto const lpTokensNew = ammLPHolds(sb, *ammSle, accountID, ctx.journal);
     std::optional<STAmount> minTokens;
     std::size_t minPos{0};
     AccountID minAccount{0};
@@ -106,15 +105,15 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
     {
         auto const entryAccount = entry[sfAccount];
         auto lpTokens = ammLPHolds(sb, *ammSle, entryAccount, ctx.journal);
-        if (lpTokens == beast::kZERO)
+        if (lpTokens == beast::kZero)
         {
-            JLOG(j.debug()) << "AMMVote::applyVote, account " << entryAccount << " is not LP";
+            JLOG(j.debug()) << "AMMVote::applyVote, accountID " << entryAccount << " is not LP";
             continue;
         }
         auto feeVal = entry[sfTradingFee];
         STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
         // The account already has the vote entry.
-        if (entryAccount == account)
+        if (entryAccount == accountID)
         {
             lpTokens = lpTokensNew;
             feeVal = feeNew;
@@ -128,8 +127,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
             newEntry.setFieldU16(sfTradingFee, feeVal);
         newEntry.setFieldU32(
             sfVoteWeight,
-            static_cast<std::int64_t>(
-                Number(lpTokens) * kVOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
+            static_cast<std::int64_t>(Number(lpTokens) * kVoteWeightScaleFactor / lptAMMBalance));
 
         // Find an entry with the least tokens/fee. Make the order deterministic
         // if the tokens/fees are equal.
@@ -156,8 +154,8 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
             newEntry.setFieldU32(
                 sfVoteWeight,
                 static_cast<std::int64_t>(
-                    Number(lpTokensNew) * kVOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
-            newEntry.setAccountID(sfAccount, account);
+                    Number(lpTokensNew) * kVoteWeightScaleFactor / lptAMMBalance));
+            newEntry.setAccountID(sfAccount, accountID);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
             if (minPos)
@@ -171,7 +169,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         };
         // Add new entry if the number of the vote entries
         // is less than Max.
-        if (updatedVoteSlots.size() < kVOTE_MAX_SLOTS)
+        if (updatedVoteSlots.size() < kVoteMaxSlots)
         {
             update();
             // Add the entry if the account has more tokens than
@@ -209,7 +207,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         if (ammSle->isFieldPresent(sfAuctionSlot))
         {
             auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-            if (auto const discountedFee = fee / kAUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+            if (auto const discountedFee = fee / kAuctionSlotDiscountedFeeFraction)
             {
                 auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
             }
@@ -242,7 +240,7 @@ AMMVote::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const result = applyVote(ctx_, sb, account_, j_);
+    auto const result = applyVote(ctx_, sb, accountID_, j_);
     if (result.second)
         sb.apply(ctx_.rawView());
 
@@ -250,10 +248,7 @@ AMMVote::doApply()
 }
 
 void
-AMMVote::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMVote::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

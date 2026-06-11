@@ -37,7 +37,7 @@ SHAMapInnerNode::~SHAMapInnerNode() = default;
 void
 SHAMapInnerNode::partialDestructor()
 {
-    intr_ptr::SharedPtr<SHAMapTreeNode>* children = nullptr;
+    SHAMapTreeNodePtr* children = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, std::ignore, children) = hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) { children[indexNum].reset(); });
@@ -69,7 +69,7 @@ SHAMapInnerNode::getChildIndex(int i) const
     return hashesAndChildren_.getChildIndex(isBranch_, i);
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapInnerNode::clone(std::uint32_t cowid) const
 {
     auto const branchCount = getBranchCount();
@@ -78,8 +78,10 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     p->hash_ = hash_;
     p->isBranch_ = isBranch_;
     p->fullBelowGen_ = fullBelowGen_;
-    SHAMapHash *cloneHashes = nullptr, *thisHashes = nullptr;
-    intr_ptr::SharedPtr<SHAMapTreeNode>*cloneChildren = nullptr, *thisChildren = nullptr;
+    SHAMapHash* cloneHashes = nullptr;
+    SHAMapHash* thisHashes = nullptr;
+    SHAMapTreeNodePtr* cloneChildren = nullptr;
+    SHAMapTreeNodePtr* thisChildren = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, cloneHashes, cloneChildren) =
         p->hashesAndChildren_.getHashesAndChildren();
@@ -118,20 +120,20 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     return p;
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     // A full inner node is serialized as 16 256-bit hashes, back to back:
-    if (data.size() != kBRANCH_FACTOR * uint256::kBYTES)
+    if (data.size() != kBranchFactor * uint256::kBytes)
         Throw<std::runtime_error>("Invalid FI node");
 
-    auto ret = intr_ptr::makeShared<SHAMapInnerNode>(0, kBRANCH_FACTOR);
+    auto ret = intr_ptr::makeShared<SHAMapInnerNode>(0, kBranchFactor);
 
     SerialIter si(data);
 
     auto hashes = ret->hashesAndChildren_.getHashes();
 
-    for (int i = 0; i < kBRANCH_FACTOR; ++i)
+    for (int i = 0; i < kBranchFactor; ++i)
     {
         hashes[i].asUInt256() = si.getBitString<256>();
 
@@ -153,19 +155,19 @@ SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashVali
     return ret;
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapInnerNode::makeCompressedInner(Slice data)
 {
     // A compressed inner node is serialized as a series of 33 byte chunks,
     // representing a one byte "position" and a 256-bit hash:
-    constexpr std::size_t kCHUNK_SIZE = uint256::kBYTES + 1;
+    static constexpr std::size_t kChunkSize = uint256::kBytes + 1;
 
-    if (auto const s = data.size(); (s % kCHUNK_SIZE != 0) || (s > kCHUNK_SIZE * kBRANCH_FACTOR))
+    if (auto const s = data.size(); (s % kChunkSize != 0) || (s > kChunkSize * kBranchFactor))
         Throw<std::runtime_error>("Invalid CI node");
 
     SerialIter si(data);
 
-    auto ret = intr_ptr::makeShared<SHAMapInnerNode>(0, kBRANCH_FACTOR);
+    auto ret = intr_ptr::makeShared<SHAMapInnerNode>(0, kBranchFactor);
 
     auto hashes = ret->hashesAndChildren_.getHashes();
 
@@ -174,7 +176,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
         auto const hash = si.getBitString<256>();
         auto const pos = si.get8();
 
-        if (pos >= kBRANCH_FACTOR)
+        if (pos >= kBranchFactor)
             Throw<std::runtime_error>("invalid CI node");
 
         hashes[pos].asUInt256() = hash;
@@ -207,7 +209,7 @@ void
 SHAMapInnerNode::updateHashDeep()
 {
     SHAMapHash* hashes = nullptr;
-    intr_ptr::SharedPtr<SHAMapTreeNode>* children = nullptr;
+    SHAMapTreeNodePtr* children = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, hashes, children) = hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
@@ -231,12 +233,12 @@ SHAMapInnerNode::serializeForWire(Serializer& s) const
             s.addBitString(hashes[indexNum].asUInt256());
             s.add8(branchNum);
         });
-        s.add8(kWIRE_TYPE_COMPRESSED_INNER);
+        s.add8(kWireTypeCompressedInner);
     }
     else
     {
         iterChildren([&](SHAMapHash const& hh) { s.addBitString(hh.asUInt256()); });
-        s.add8(kWIRE_TYPE_INNER);
+        s.add8(kWireTypeInner);
     }
 }
 
@@ -265,10 +267,10 @@ SHAMapInnerNode::getString(SHAMapNodeID const& id) const
 
 // We are modifying an inner node
 void
-SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
+SHAMapInnerNode::setChild(int m, SHAMapTreeNodePtr child)
 {
     XRPL_ASSERT(
-        (m >= 0) && (m < kBRANCH_FACTOR), "xrpl::SHAMapInnerNode::setChild : valid branch input");
+        (m >= 0) && (m < kBranchFactor), "xrpl::SHAMapInnerNode::setChild : valid branch input");
     XRPL_ASSERT(cowid_, "xrpl::SHAMapInnerNode::setChild : nonzero cowid");
     XRPL_ASSERT(child.get() != this, "xrpl::SHAMapInnerNode::setChild : valid child input");
 
@@ -307,10 +309,10 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 
 // finished modifying, now make shareable
 void
-SHAMapInnerNode::shareChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> const& child)
+SHAMapInnerNode::shareChild(int m, SHAMapTreeNodePtr const& child)
 {
     XRPL_ASSERT(
-        (m >= 0) && (m < kBRANCH_FACTOR), "xrpl::SHAMapInnerNode::shareChild : valid branch input");
+        (m >= 0) && (m < kBranchFactor), "xrpl::SHAMapInnerNode::shareChild : valid branch input");
     XRPL_ASSERT(cowid_, "xrpl::SHAMapInnerNode::shareChild : nonzero cowid");
     XRPL_ASSERT(child, "xrpl::SHAMapInnerNode::shareChild : non-null child input");
     XRPL_ASSERT(child.get() != this, "xrpl::SHAMapInnerNode::shareChild : valid child input");
@@ -324,7 +326,7 @@ SHAMapTreeNode*
 SHAMapInnerNode::getChildPointer(int branch)
 {
     XRPL_ASSERT(
-        branch >= 0 && branch < kBRANCH_FACTOR,
+        branch >= 0 && branch < kBranchFactor,
         "xrpl::SHAMapInnerNode::getChildPointer : valid branch input");
     XRPL_ASSERT(
         !isEmptyBranch(branch), "xrpl::SHAMapInnerNode::getChildPointer : non-empty branch input");
@@ -337,11 +339,11 @@ SHAMapInnerNode::getChildPointer(int branch)
     return hashesAndChildren_.getChildren()[index].get();
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapInnerNode::getChild(int branch)
 {
     XRPL_ASSERT(
-        branch >= 0 && branch < kBRANCH_FACTOR,
+        branch >= 0 && branch < kBranchFactor,
         "xrpl::SHAMapInnerNode::getChild : valid branch input");
     XRPL_ASSERT(!isEmptyBranch(branch), "xrpl::SHAMapInnerNode::getChild : non-empty branch input");
 
@@ -357,19 +359,19 @@ SHAMapHash const&
 SHAMapInnerNode::getChildHash(int m) const
 {
     XRPL_ASSERT(
-        (m >= 0) && (m < kBRANCH_FACTOR),
+        (m >= 0) && (m < kBranchFactor),
         "xrpl::SHAMapInnerNode::getChildHash : valid branch input");
     if (auto const i = getChildIndex(m))
         return hashesAndChildren_.getHashes()[*i];
 
-    return kZERO_SHA_MAP_HASH;
+    return kZeroShaMapHash;
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
-SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNode> node)
+SHAMapTreeNodePtr
+SHAMapInnerNode::canonicalizeChild(int branch, SHAMapTreeNodePtr node)
 {
     XRPL_ASSERT(
-        branch >= 0 && branch < kBRANCH_FACTOR,
+        branch >= 0 && branch < kBranchFactor,
         "xrpl::SHAMapInnerNode::canonicalizeChild : valid branch input");
     XRPL_ASSERT(node != nullptr, "xrpl::SHAMapInnerNode::canonicalizeChild : valid node input");
     XRPL_ASSERT(
@@ -405,7 +407,7 @@ SHAMapInnerNode::invariants(bool isRoot) const
     [[maybe_unused]] unsigned count = 0;
     auto [numAllocated, hashes, children] = hashesAndChildren_.getHashesAndChildren();
 
-    if (numAllocated != kBRANCH_FACTOR)
+    if (numAllocated != kBranchFactor)
     {
         auto const branchCount = getBranchCount();
         for (int i = 0; i < branchCount; ++i)
@@ -420,7 +422,7 @@ SHAMapInnerNode::invariants(bool isRoot) const
     }
     else
     {
-        for (int i = 0; i < kBRANCH_FACTOR; ++i)
+        for (int i = 0; i < kBranchFactor; ++i)
         {
             if (hashes[i].isNonZero())
             {

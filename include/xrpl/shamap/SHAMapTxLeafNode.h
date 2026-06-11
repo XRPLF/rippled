@@ -26,7 +26,7 @@ public:
     {
     }
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const final
     {
         return intr_ptr::makeShared<SHAMapTxLeafNode>(item_, cowid, hash_);
@@ -48,7 +48,7 @@ public:
     serializeForWire(Serializer& s) const final
     {
         s.addRaw(item_->slice());
-        s.add8(kWIRE_TYPE_TRANSACTION);
+        s.add8(kWireTypeTransaction);
     }
 
     void

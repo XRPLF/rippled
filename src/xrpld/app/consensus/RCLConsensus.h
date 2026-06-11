@@ -33,7 +33,7 @@ class RCLConsensus
 {
     /** Warn for transactions that haven't been included every so many ledgers.
      */
-    constexpr static unsigned int kCENSORSHIP_WARN_INTERNAL = 15;
+    static constexpr unsigned int kCensorshipWarnInternal = 15;
 
     // Implements the Adaptor template interface required by Consensus.
     class Adaptor

@@ -12,7 +12,7 @@ class Sandbox;
 class OfferCreate : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Custom;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
     /** Construct a Transactor subclass that creates an offer in the ledger. */
     explicit OfferCreate(ApplyContext& ctx) : Transactor(ctx)
@@ -41,10 +41,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -81,10 +78,11 @@ private:
     TER
     applyHybrid(
         Sandbox& sb,
-        std::shared_ptr<STLedgerEntry> sleOffer,
+        STLedgerEntry::pointer sleOffer,
         Keylet const& offerIndex,
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,
+        std::uint64_t openRate,
         std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);
 };
 

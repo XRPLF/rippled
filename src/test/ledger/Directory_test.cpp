@@ -137,8 +137,8 @@ struct Directory_test : public beast::unit_test::Suite
 
                 // Ensure that the page contains the correct orders by
                 // calculating which sequence numbers belong here.
-                std::uint32_t const minSeq = firstOfferSeq + (page * kDIR_NODE_MAX_ENTRIES);
-                std::uint32_t const maxSeq = minSeq + kDIR_NODE_MAX_ENTRIES;
+                std::uint32_t const minSeq = firstOfferSeq + (page * kDirNodeMaxEntries);
+                std::uint32_t const maxSeq = minSeq + kDirNodeMaxEntries;
 
                 for (auto const& e : v)
                 {
@@ -189,14 +189,14 @@ struct Directory_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-        env(signers(alice, jtx::kNONE));
+        env(signers(alice, jtx::kNone));
         env.close();
         BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
         std::vector<IOU> const currencies = [this, &gw]() {
             std::vector<IOU> c;
 
-            c.reserve((2 * kDIR_NODE_MAX_ENTRIES) + 3);
+            c.reserve((2 * kDirNodeMaxEntries) + 3);
 
             while (c.size() != c.capacity())
                 c.push_back(gw[currcode(c.size())]);
@@ -295,7 +295,7 @@ struct Directory_test : public beast::unit_test::Suite
         // Fill up three pages of offers
         for (int i = 0; i < 3; ++i)
         {
-            for (int j = 0; j < kDIR_NODE_MAX_ENTRIES; ++j)
+            for (int j = 0; j < kDirNodeMaxEntries; ++j)
                 env(offer(alice, XRP(1), usd(1)));
         }
         env.close();
@@ -303,9 +303,9 @@ struct Directory_test : public beast::unit_test::Suite
         // remove all the offers. Remove the middle page last
         for (auto page : {0, 2, 1})
         {
-            for (int i = 0; i < kDIR_NODE_MAX_ENTRIES; ++i)
+            for (int i = 0; i < kDirNodeMaxEntries; ++i)
             {
-                env(offerCancel(alice, firstOfferSeq + (page * kDIR_NODE_MAX_ENTRIES) + i));
+                env(offerCancel(alice, firstOfferSeq + (page * kDirNodeMaxEntries) + i));
                 env.close();
             }
         }
@@ -346,54 +346,54 @@ struct Directory_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        constexpr uint256 kBASE("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
+        constexpr uint256 kBase("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
 
-        constexpr uint256 kITEM("bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
+        constexpr uint256 kItem("bad0f021aa3b2f6754a8fe82a5779730aa0bbbab82f17201ef24900efc2c7312");
 
         {
             // Create a chain of three pages:
             Sandbox sb(env.closed().get(), TapNone);
-            makePages(sb, kBASE, 3);
+            makePages(sb, kBase, 3);
 
             // Insert an item in the middle page:
             {
-                auto p = sb.peek(keylet::page(kBASE, 1));
+                auto p = sb.peek(keylet::page(kBase, 1));
                 BEAST_EXPECT(p);
 
                 STVector256 v;
-                v.pushBack(kITEM);
+                v.pushBack(kItem);
                 p->setFieldV256(sfIndexes, v);
                 sb.update(p);
             }
 
             // Now, try to delete the item from the middle
             // page. This should cause all pages to be deleted:
-            BEAST_EXPECT(sb.dirRemove(keylet::page(kBASE, 0), 1, keylet::unchecked(kITEM), false));
-            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 2)));
-            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 1)));
-            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 0)));
+            BEAST_EXPECT(sb.dirRemove(keylet::page(kBase, 0), 1, keylet::unchecked(kItem), false));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBase, 2)));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBase, 1)));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBase, 0)));
         }
 
         {
             // Create a chain of four pages:
             Sandbox sb(env.closed().get(), TapNone);
-            makePages(sb, kBASE, 4);
+            makePages(sb, kBase, 4);
 
             // Now add items on pages 1 and 2:
             {
-                auto p1 = sb.peek(keylet::page(kBASE, 1));
+                auto p1 = sb.peek(keylet::page(kBase, 1));
                 BEAST_EXPECT(p1);
 
                 STVector256 v1;
-                v1.pushBack(~kITEM);
+                v1.pushBack(~kItem);
                 p1->setFieldV256(sfIndexes, v1);
                 sb.update(p1);
 
-                auto p2 = sb.peek(keylet::page(kBASE, 2));
+                auto p2 = sb.peek(keylet::page(kBase, 2));
                 BEAST_EXPECT(p2);
 
                 STVector256 v2;
-                v2.pushBack(kITEM);
+                v2.pushBack(kItem);
                 p2->setFieldV256(sfIndexes, v2);
                 sb.update(p2);
             }
@@ -401,16 +401,16 @@ struct Directory_test : public beast::unit_test::Suite
             // Now, try to delete the item from page 2.
             // This should cause pages 2 and 3 to be
             // deleted:
-            BEAST_EXPECT(sb.dirRemove(keylet::page(kBASE, 0), 2, keylet::unchecked(kITEM), false));
-            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 3)));
-            BEAST_EXPECT(!sb.peek(keylet::page(kBASE, 2)));
+            BEAST_EXPECT(sb.dirRemove(keylet::page(kBase, 0), 2, keylet::unchecked(kItem), false));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBase, 3)));
+            BEAST_EXPECT(!sb.peek(keylet::page(kBase, 2)));
 
-            auto p1 = sb.peek(keylet::page(kBASE, 1));
+            auto p1 = sb.peek(keylet::page(kBase, 1));
             BEAST_EXPECT(p1);
             BEAST_EXPECT(p1->getFieldU64(sfIndexNext) == 0);
             BEAST_EXPECT(p1->getFieldU64(sfIndexPrevious) == 0);
 
-            auto p0 = sb.peek(keylet::page(kBASE, 0));
+            auto p0 = sb.peek(keylet::page(kBase, 0));
             BEAST_EXPECT(p0);
             BEAST_EXPECT(p0->getFieldU64(sfIndexNext) == 1);
             BEAST_EXPECT(p0->getFieldU64(sfIndexPrevious) == 1);
@@ -569,13 +569,13 @@ struct Directory_test : public beast::unit_test::Suite
             testableAmendments() - fixDirectoryLimit,
             [this](Env&) -> std::tuple<std::uint64_t, bool> {
                 testcase("directory full without fixDirectoryLimit");
-                return {kDIR_NODE_MAX_PAGES - 1, true};
+                return {kDirNodeMaxPages - 1, true};
             });
         testCase(
             testableAmendments(),  //
             [this](Env&) -> std::tuple<std::uint64_t, bool> {
                 testcase("directory not full with fixDirectoryLimit");
-                return {kDIR_NODE_MAX_PAGES - 1, false};
+                return {kDirNodeMaxPages - 1, false};
             });
         testCase(
             testableAmendments(),  //

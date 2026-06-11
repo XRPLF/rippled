@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 namespace xrpl {
@@ -34,7 +35,7 @@ template <typename T>
 concept SomeChar = std::same_as<std::remove_cvref_t<T>, int8_t> ||
     std::same_as<std::remove_cvref_t<T>, char> || std::same_as<std::remove_cvref_t<T>, uint8_t>;
 
-inline constexpr std::array<std::optional<int>, 256> const kDIGIT_LOOKUP_TABLE = []() {
+inline constexpr std::array<std::optional<int>, 256> const kDigitLookupTable = []() {
     std::array<std::optional<int>, 256> t{};
 
     for (int i = 0; i < 10; ++i)
@@ -52,7 +53,7 @@ inline constexpr std::array<std::optional<int>, 256> const kDIGIT_LOOKUP_TABLE =
 inline std::optional<int>
 hexCharToInt(SomeChar auto hexChar)
 {
-    return kDIGIT_LOOKUP_TABLE[static_cast<uint8_t>(hexChar)];
+    return kDigitLookupTable[static_cast<uint8_t>(hexChar)];
 }
 
 }  // namespace detail
@@ -95,13 +96,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
 }
 
 inline std::optional<Blob>
-strUnHex(std::string const& strSrc)
-{
-    return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
-}
-
-inline std::optional<Blob>
-strViewUnHex(std::string_view strSrc)
+strUnHex(std::string_view strSrc)
 {
     return strUnHex(strSrc.size(), strSrc.cbegin(), strSrc.cend());
 }

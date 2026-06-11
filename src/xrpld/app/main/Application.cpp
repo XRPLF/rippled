@@ -27,7 +27,6 @@
 #include <xrpld/app/misc/setup_HashRouter.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/NetworkIDServiceImpl.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/PeerSet.h>
@@ -40,7 +39,6 @@
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/shamap/NodeFamily.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MallocTrim.h>
@@ -56,6 +54,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
@@ -286,14 +286,14 @@ public:
         return 1;
 #else
 
-        if (config.IO_WORKERS > 0)
-            return config.IO_WORKERS;
+        if (config.ioWorkers > 0)
+            return config.ioWorkers;
 
         auto const cores = std::thread::hardware_concurrency();
 
         // Use a single thread when running on under-provisioned systems
         // or if we are configured to use minimal resources.
-        if ((cores == 1) || ((config.NODE_SIZE == 0) && (cores == 2)))
+        if ((cores == 1) || ((config.nodeSize == 0) && (cores == 2)))
             return 1;
 
         // Otherwise, prefer six threads.
@@ -316,32 +316,33 @@ public:
         // PerfLog must be started before any other threads are launched.
         , perfLog_(
               perf::makePerfLog(
-                  perf::setupPerfLog(config_->section("perf"), config_->CONFIG_DIR),
+                  perf::setupPerfLog(config_->section(Sections::kPerf), config_->configDir),
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
         , txMaster_(*this)
-        , collectorManager_(
-              makeCollectorManager(config_->section(SECTION_INSIGHT), logs_->journal("Collector")))
+        , collectorManager_(makeCollectorManager(
+              config_->section(Sections::kInsight),
+              logs_->journal("Collector")))
         , jobQueue_(
               std::make_unique<JobQueue>(
                   [](std::unique_ptr<Config> const& config) {
-                      if (config->standalone() && !config->FORCE_MULTI_THREAD)
+                      if (config->standalone() && !config->forceMultiThread)
                           return 1;
 
-                      if (config->WORKERS)
-                          return config->WORKERS;
+                      if (config->workers)
+                          return config->workers;
 
                       auto count = static_cast<int>(std::thread::hardware_concurrency());
 
                       // Be more aggressive about the number of threads to use
                       // for the job queue if the server is configured as
                       // "large" or "huge" if there are enough cores.
-                      if (config->NODE_SIZE >= 4 && count >= 16)
+                      if (config->nodeSize >= 4 && count >= 16)
                       {
                           count = 6 + std::min(count, 8);
                       }
-                      else if (config->NODE_SIZE >= 3 && count >= 8)
+                      else if (config->nodeSize >= 3 && count >= 8)
                       {
                           count = 4 + std::min(count, 6);
                       }
@@ -370,16 +371,16 @@ public:
               std::chrono::minutes(1),
               stopwatch(),
               logs_->journal("CachedSLEs"))
-        , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->NETWORK_ID))
+        , networkIDService_(std::make_unique<NetworkIDServiceImpl>(config_->networkId))
         , validatorKeys_(*config_, journal_)
         , resourceManager_(
               Resource::makeManager(collectorManager_->collector(), logs_->journal("Resource")))
         , nodeStore_(shaMapStore_->makeNodeStore(
-              config_->PREFETCH_WORKERS > 0 ? config_->PREFETCH_WORKERS : 4))
+              config_->prefetchWorkers > 0 ? config_->prefetchWorkers : 4))
         , nodeFamily_(*this, *collectorManager_)
         , orderBookDB_(makeOrderBookDb(
               *this,
-              {.pathSearchMax = config_->PATH_SEARCH_MAX, .standalone = config_->standalone()}))
+              {.pathSearchMax = config_->pathSearchMax, .standalone = config_->standalone()}))
         , pathRequestManager_(
               std::make_unique<PathRequestManager>(
                   *this,
@@ -415,8 +416,8 @@ public:
               *this,
               stopwatch(),
               config_->standalone(),
-              config_->NETWORK_QUORUM,
-              config_->START_VALID,
+              config_->networkQuorum,
+              config_->startValid,
               *jobQueue_,
               *ledgerMaster_,
               validatorKeys_,
@@ -435,7 +436,7 @@ public:
                   *timeKeeper_,
                   config_->legacy("database_path"),
                   logs_->journal("ValidatorList"),
-                  config_->VALIDATION_QUORUM))
+                  config_->validationQuorum))
         , validatorSites_(std::make_unique<ValidatorSite>(*this))
         , serverHandler_(makeServerHandler(
               *this,
@@ -492,7 +493,7 @@ public:
     void
     run() override;
     void
-    signalStop(std::string msg) override;
+    signalStop(std::string const& msg) override;
     bool
     checkSigs() const override;
     void
@@ -864,7 +865,7 @@ public:
                     megabytes(config_->getValueFor(SizedItem::BurstSize, std::nullopt)),
                     dummyScheduler,
                     0,
-                    config_->section(ConfigSection::importNodeDatabase()),
+                    config_->section(Sections::kImportNodeDatabase),
                     j);
 
             JLOG(j.warn()) << "Starting node import from '" << source->getName() << "' to '"
@@ -918,7 +919,7 @@ public:
         {
             using namespace std::chrono;
             sweepTimer_.expires_after(
-                seconds{config_->SWEEP_INTERVAL.value_or(
+                seconds{config_->sweepInterval.value_or(
                     config_->getValueFor(SizedItem::SweepInterval))});
             sweepTimer_.async_wait(std::move(*optionalCountedHandler));
         }
@@ -997,6 +998,10 @@ public:
 
             JLOG(journal_.debug()) << "MasterTransaction sweep.  Size before: " << oldMasterTxSize
                                    << "; size after: " << masterTxCache.size();
+        }
+        {
+            // Sweep NodeStore database cache(s), if enabled.
+            getNodeStore().sweep();
         }
         {
             std::size_t const oldLedgerMasterCacheSize = getLedgerMaster().getFetchPackCacheSize();
@@ -1220,13 +1225,13 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             }
             return supported;
         }();
-        Section const& downVoted = config_->section(SECTION_VETO_AMENDMENTS);
+        Section const& downVoted = config_->section(Sections::kVetoAmendments);
 
-        Section const& upVoted = config_->section(SECTION_AMENDMENTS);
+        Section const& upVoted = config_->section(Sections::kAmendments);
 
         amendmentTable_ = makeAmendmentTable(
             *this,
-            config().AMENDMENT_MAJORITY_TIME,
+            config().amendmentMajorityTime,
             supported,
             upVoted,
             downVoted,
@@ -1235,7 +1240,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     Pathfinder::initPathTable();
 
-    auto const startUp = config_->START_UP;
+    auto const startUp = config_->startUp;
     JLOG(journal_.debug()) << "startUp: " << startUp;
     if (startUp == StartUpType::Fresh)
     {
@@ -1250,13 +1255,13 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         JLOG(journal_.info()) << "Loading specified Ledger";
 
         if (!loadOldLedger(
-                config_->START_LEDGER,
+                config_->startLedger,
                 startUp == StartUpType::Replay,
                 startUp == StartUpType::LoadFile,
-                config_->TRAP_TX_HASH))
+                config_->trapTxHash))
         {
             JLOG(journal_.error()) << "The specified ledger could not be loaded.";
-            if (config_->FAST_LOAD)
+            if (config_->fastLoad)
             {
                 // Fall back to syncing from the network, such as
                 // when there's no existing data.
@@ -1282,7 +1287,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         startGenesisLedger();
     }
 
-    if (auto const& forcedRange = config().FORCED_LEDGER_RANGE_PRESENT)
+    if (auto const& forcedRange = config().forcedLedgerRangePresent)
     {
         ledgerMaster_->setLedgerRangePresent(forcedRange->first, forcedRange->second);
     }
@@ -1291,7 +1296,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
-    if (!cluster_->load(config().section(SECTION_CLUSTER_NODES)))
+    if (!cluster_->load(config().section(Sections::kClusterNodes)))
     {
         JLOG(journal_.fatal()) << "Invalid entry in cluster configuration.";
         return false;
@@ -1305,7 +1310,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                 getWalletDB(),
                 "ValidatorManifests",
                 validatorKeys_.manifest,
-                config().section(SECTION_VALIDATOR_KEY_REVOCATION).values()))
+                config().section(Sections::kValidatorKeyRevocation).values()))
         {
             JLOG(journal_.fatal()) << "Invalid configured validator manifest.";
             return false;
@@ -1316,7 +1321,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         // It is possible to have a valid ValidatorKeys object without
         // setting the signingKey or masterKey. This occurs if the
         // configuration file does not have either
-        // SECTION_VALIDATOR_TOKEN or SECTION_VALIDATION_SEED section.
+        // Sections::kValidatorToken or Sections::kValidationSeed section.
 
         // masterKey for the configuration-file specified validator keys
         std::optional<PublicKey> localSigningKey;
@@ -1326,18 +1331,18 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         // Setup trusted validators
         if (!validators_->load(
                 localSigningKey,
-                config().section(SECTION_VALIDATORS).values(),
-                config().section(SECTION_VALIDATOR_LIST_KEYS).values(),
-                config().VALIDATOR_LIST_THRESHOLD))
+                config().section(Sections::kValidators).values(),
+                config().section(Sections::kValidatorListKeys).values(),
+                config().validatorListThreshold))
         {
             JLOG(journal_.fatal()) << "Invalid entry in validator configuration.";
             return false;
         }
     }
 
-    if (!validatorSites_->load(config().section(SECTION_VALIDATOR_LIST_SITES).values()))
+    if (!validatorSites_->load(config().section(Sections::kValidatorListSites).values()))
     {
-        JLOG(journal_.fatal()) << "Invalid entry in [" << SECTION_VALIDATOR_LIST_SITES << "]";
+        JLOG(journal_.fatal()) << "Invalid entry in [" << Sections::kValidatorListSites << "]";
         return false;
     }
 
@@ -1357,7 +1362,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //             if (!config_.standalone())
     overlay_ = makeOverlay(
         *this,
-        setupOverlay(*config_),
+        setupOverlay(*config_, journal_),
         *serverHandler_,
         *resourceManager_,
         *resolver_,
@@ -1399,7 +1404,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     {
         // Should this message be here, conceptually? In theory this sort
         // of message, if displayed, should be displayed from PeerFinder.
-        if (config_->PEER_PRIVATE && config_->IPS_FIXED.empty())
+        if (config_->peerPrivate && config_->ipsFixed.empty())
         {
             JLOG(journal_.warn()) << "No outbound peer connections will be made";
         }
@@ -1435,7 +1440,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     // Execute start up rpc commands.
     //
-    for (auto const& cmd : config_->section(SECTION_RPC_STARTUP).lines())
+    for (auto const& cmd : config_->section(Sections::kRpcStartup).lines())
     {
         json::Reader jrReader;
         json::Value jvCommand;
@@ -1443,7 +1448,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         if (!jrReader.parse(cmd, jvCommand))
         {
             JLOG(journal_.fatal())
-                << "Couldn't parse entry in [" << SECTION_RPC_STARTUP << "]: '" << cmd;
+                << "Couldn't parse entry in [" << Sections::kRpcStartup << "]: '" << cmd;
         }
 
         if (!config_->quiet())
@@ -1451,7 +1456,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
         }
 
-        Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
+        Resource::Charge loadType = Resource::kFeeReferenceRpc;
         Resource::Consumer c;
         RPC::JsonContext context{
             {.j = getJournal("RPCHandler"),
@@ -1463,7 +1468,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              .role = Role::ADMIN,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::kAPI_MAXIMUM_SUPPORTED_VERSION},
+             .apiVersion = RPC::kApiMaximumSupportedVersion},
             jvCommand};
 
         json::Value jvResult;
@@ -1499,7 +1504,7 @@ ApplicationImp::start(bool withTimers)
         overlay_->start();
 
     if (grpcServer_->start())
-        fixConfigPorts(*config_, {{SECTION_PORT_GRPC, grpcServer_->getEndpoint()}});
+        fixConfigPorts(*config_, {{Sections::kPortGrpc, grpcServer_->getEndpoint()}});
 
     ledgerCleaner_->start();
     perfLog_->start();
@@ -1598,7 +1603,7 @@ ApplicationImp::run()
 }
 
 void
-ApplicationImp::signalStop(std::string msg)
+ApplicationImp::signalStop(std::string const& msg)
 {
     if (!isTimeToStop.test_and_set(std::memory_order_acquire))
     {
@@ -1659,14 +1664,14 @@ ApplicationImp::fdRequired() const
 void
 ApplicationImp::startGenesisLedger()
 {
-    std::vector<uint256> const initialAmendments = (config_->START_UP == StartUpType::Fresh)
+    std::vector<uint256> const initialAmendments = (config_->startUp == StartUpType::Fresh)
         ? amendmentTable_->getDesired()
         : std::vector<uint256>{};
 
     std::shared_ptr<Ledger> const genesis = std::make_shared<Ledger>(
-        kCREATE_GENESIS,
+        kCreateGenesis,
         Rules{config_->features},
-        config_->FEES.toFees(),
+        config_->fees.toFees(),
         initialAmendments,
         nodeFamily_);
     ledgerMaster_->storeLedger(genesis);
@@ -1674,7 +1679,7 @@ ApplicationImp::startGenesisLedger()
     auto const next = std::make_shared<Ledger>(*genesis, getTimeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
-        next->header().seq < kXRP_LEDGER_EARLIEST_FEES || next->read(keylet::fees()),
+        next->header().seq < kXrpLedgerEarliestFees || next->read(keylet::fees()),
         "xrpl::ApplicationImp::startGenesisLedger : valid ledger fees");
     next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
@@ -1690,13 +1695,13 @@ ApplicationImp::getLastFullLedger()
     try
     {
         auto const [ledger, seq, hash] =
-            getLatestLedger(Rules{config_->features}, config_->FEES.toFees(), *this);
+            getLatestLedger(Rules{config_->features}, config_->fees.toFees(), *this);
 
         if (!ledger)
             return ledger;
 
         XRPL_ASSERT(
-            ledger->header().seq < kXRP_LEDGER_EARLIEST_FEES || ledger->read(keylet::fees()),
+            ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::fees()),
             "xrpl::ApplicationImp::getLastFullLedger : valid ledger fees");
         ledger->setImmutable();
 
@@ -1802,7 +1807,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         }
 
         auto loadLedger = std::make_shared<Ledger>(
-            seq, closeTime, Rules{config_->features}, config_->FEES.toFees(), nodeFamily_);
+            seq, closeTime, Rules{config_->features}, config_->fees.toFees(), nodeFamily_);
         loadLedger->setTotalDrops(totalDrops);
 
         for (json::UInt index = 0; index < ledger.get().size(); ++index)
@@ -1847,8 +1852,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         loadLedger->stateMap().flushDirty(NodeObjectType::AccountNode);
 
         XRPL_ASSERT(
-            loadLedger->header().seq < kXRP_LEDGER_EARLIEST_FEES ||
-                loadLedger->read(keylet::fees()),
+            loadLedger->header().seq < kXrpLedgerEarliestFees || loadLedger->read(keylet::fees()),
             "xrpl::ApplicationImp::loadLedgerFromFile : valid ledger fees");
         loadLedger->setAccepted(closeTime, closeTimeResolution, !closeTimeEstimated);
 
@@ -1884,7 +1888,7 @@ ApplicationImp::loadOldLedger(
             if (hash.parseHex(ledgerID))
             {
                 loadLedger =
-                    loadByHash(hash, Rules{config_->features}, config_->FEES.toFees(), *this);
+                    loadByHash(hash, Rules{config_->features}, config_->fees.toFees(), *this);
 
                 if (!loadLedger)
                 {
@@ -1913,7 +1917,7 @@ ApplicationImp::loadOldLedger(
             if (beast::lexicalCastChecked(index, ledgerID))
             {
                 loadLedger =
-                    loadByIndex(index, Rules{config_->features}, config_->FEES.toFees(), *this);
+                    loadByIndex(index, Rules{config_->features}, config_->fees.toFees(), *this);
             }
         }
 
@@ -1932,7 +1936,7 @@ ApplicationImp::loadOldLedger(
             loadLedger = loadByHash(
                 replayLedger->header().parentHash,
                 Rules{config_->features},
-                config_->FEES.toFees(),
+                config_->fees.toFees(),
                 *this);
             if (!loadLedger)
             {
@@ -1964,13 +1968,13 @@ ApplicationImp::loadOldLedger(
         }
         using namespace std::chrono_literals;
         using namespace date;
-        static constexpr NetClock::time_point kLEDGER_WARN_TIME_POINT{
+        static constexpr NetClock::time_point kLedgerWarnTimePoint{
             sys_days{January / 1 / 2018} - sys_days{January / 1 / 2000}};
-        if (loadLedger->header().closeTime < kLEDGER_WARN_TIME_POINT)
+        if (loadLedger->header().closeTime < kLedgerWarnTimePoint)
         {
             JLOG(journal_.fatal()) << "\n\n***  WARNING   ***\n"
                                       "You are replaying a ledger from before "
-                                   << to_string(kLEDGER_WARN_TIME_POINT)
+                                   << to_string(kLedgerWarnTimePoint)
                                    << " UTC.\n"
                                       "This replay will not handle your ledger as it was "
                                       "originally "
@@ -2079,7 +2083,7 @@ ApplicationImp::loadOldLedger(
 bool
 ApplicationImp::serverOkay(std::string& reason)
 {
-    if (!config().ELB_SUPPORT)
+    if (!config().elbSupport)
         return true;
 
     if (isStopping())
@@ -2167,12 +2171,12 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
             continue;
 
         auto& section = config[name];
-        auto const optPort = section.get("port");
+        auto const optPort = section.get(Keys::kPort);
         if (optPort)
         {
             std::uint16_t const port = beast::lexicalCast<std::uint16_t>(*optPort);
             if (port == 0u)
-                section.set("port", std::to_string(ep.port()));
+                section.set(Keys::kPort, std::to_string(ep.port()));
         }
     }
 }

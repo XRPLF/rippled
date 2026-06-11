@@ -211,7 +211,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
 std::pair<AccountTxResult, RPC::Status>
 doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 {
-    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
+    context.loadType = Resource::kFeeMediumBurdenRpc;
 
     AccountTxResult result;
 
@@ -410,7 +410,7 @@ doAccountTx(RPC::JsonContext& context)
         return RPC::invalidFieldError(jss::forward);
     }
 
-    if (auto const err = RPC::readLimitField(args.limit, RPC::Tuning::kACCOUNT_TX, context))
+    if (auto const err = RPC::readLimitField(args.limit, RPC::Tuning::kAccountTx, context))
         return *err;
 
     args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();
