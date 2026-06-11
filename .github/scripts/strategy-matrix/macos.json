@@ -9,7 +9,8 @@
     {
       "build_type": "Debug",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
-      "build_only": true
+      "build_only": true,
+      "exclude_event_types": ["pull_request"]
     }
   ]
 }

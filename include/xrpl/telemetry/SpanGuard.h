@@ -53,8 +53,8 @@
         using namespace xrpl::telemetry;
 
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::command, "submit");
-        span.setAttribute(rpc_span::attr::command, "submit");
+            TraceCategory::Rpc, rpc_span::prefix::command, commandName);
+        span.setAttribute(rpc_span::attr::command, commandName);
         span.setAttribute(rpc_span::attr::rpcStatus, rpc_span::val::success);
         // span ended automatically on scope exit
     @endcode
@@ -62,7 +62,7 @@
     2. Error recording:
     @code
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, rpc_span::prefix::command, "submit");
+            TraceCategory::Rpc, rpc_span::prefix::command, commandName);
         try {
             doWork();
             span.setOk();
