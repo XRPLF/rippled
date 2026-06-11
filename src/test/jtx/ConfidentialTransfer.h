@@ -61,8 +61,7 @@ class ConfidentialTransferTestBase : public beast::unit_test::Suite
 protected:
     // Offset where the bulletproof begins in a send proof blob.
     // Proof layout: [compact_sigma | bulletproof]
-    static constexpr size_t kBULLETPROOF_OFFSET =
-        kEC_SEND_PROOF_LENGTH - kEC_DOUBLE_BULLETPROOF_LENGTH;
+    static constexpr size_t kBulletproofOffset = kEcSendProofLength - kEcDoubleBulletproofLength;
 
     // Generate a forged aggregated bulletproof (double bulletproof) for
     // the given values and blinding factors. Used to test that splicing
@@ -79,8 +78,8 @@ protected:
         secp256k1_pubkey h;
         secp256k1_mpt_get_h_generator(ctx, &h);
 
-        Buffer proof(kEC_DOUBLE_BULLETPROOF_LENGTH);
-        size_t proofLen = kEC_DOUBLE_BULLETPROOF_LENGTH;
+        Buffer proof(kEcDoubleBulletproofLength);
+        size_t proofLen = kEcDoubleBulletproofLength;
 
         unsigned char blindings[64];
         std::memcpy(blindings, blindingFactors[0].data(), 32);
@@ -105,16 +104,16 @@ protected:
     static Buffer const&
     getBadCiphertext()
     {
-        static Buffer const kBAD_CIPHERTEXT = []() {
-            Buffer buf(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
-            std::memset(buf.data(), 0xFF, kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+        static Buffer const kBadCiphertext = []() {
+            Buffer buf(kEcGamalEncryptedTotalLength);
+            std::memset(buf.data(), 0xFF, kEcGamalEncryptedTotalLength);
 
-            buf.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
-            buf.data()[kEC_GAMAL_ENCRYPTED_LENGTH] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+            buf.data()[0] = kEcCompressedPrefixEvenY;
+            buf.data()[kEcGamalEncryptedLength] = kEcCompressedPrefixEvenY;
             return buf;
         }();
 
-        return kBAD_CIPHERTEXT;
+        return kBadCiphertext;
     }
 
     // Get a trivial buffer that is structurally and mathematically valid, but
@@ -123,20 +122,20 @@ protected:
     static Buffer const&
     getTrivialCiphertext()
     {
-        static Buffer const kTRIVIAL_CIPHERTEXT = []() {
-            Buffer buf(kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
-            std::memset(buf.data(), 0, kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH);
+        static Buffer const kTrivialCiphertext = []() {
+            Buffer buf(kEcGamalEncryptedTotalLength);
+            std::memset(buf.data(), 0, kEcGamalEncryptedTotalLength);
 
-            buf.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
-            buf.data()[kEC_GAMAL_ENCRYPTED_LENGTH] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+            buf.data()[0] = kEcCompressedPrefixEvenY;
+            buf.data()[kEcGamalEncryptedLength] = kEcCompressedPrefixEvenY;
 
-            buf.data()[kEC_GAMAL_ENCRYPTED_LENGTH - 1] = 0x01;
-            buf.data()[kEC_GAMAL_ENCRYPTED_TOTAL_LENGTH - 1] = 0x01;
+            buf.data()[kEcGamalEncryptedLength - 1] = 0x01;
+            buf.data()[kEcGamalEncryptedTotalLength - 1] = 0x01;
 
             return buf;
         }();
 
-        return kTRIVIAL_CIPHERTEXT;
+        return kTrivialCiphertext;
     }
 
     // Returns a valid compressed EC point (33 bytes) that can pass preflight
@@ -144,31 +143,31 @@ protected:
     static Buffer const&
     getTrivialCommitment()
     {
-        static Buffer const kTRIVIAL_COMMITMENT = []() {
-            Buffer buf(kEC_PEDERSEN_COMMITMENT_LENGTH);
-            std::memset(buf.data(), 0, kEC_PEDERSEN_COMMITMENT_LENGTH);
+        static Buffer const kTrivialCommitment = []() {
+            Buffer buf(kEcPedersenCommitmentLength);
+            std::memset(buf.data(), 0, kEcPedersenCommitmentLength);
 
-            buf.data()[0] = kEC_COMPRESSED_PREFIX_EVEN_Y;
+            buf.data()[0] = kEcCompressedPrefixEvenY;
             // Set last byte to make it a valid x-coordinate on the curve
-            buf.data()[kEC_PEDERSEN_COMMITMENT_LENGTH - 1] = 0x01;
+            buf.data()[kEcPedersenCommitmentLength - 1] = 0x01;
 
             return buf;
         }();
 
-        return kTRIVIAL_COMMITMENT;
+        return kTrivialCommitment;
     }
 
     static std::string
     getTrivialSendProofHex()
     {
-        Buffer buf(kEC_SEND_PROOF_LENGTH);
-        std::memset(buf.data(), 0, kEC_SEND_PROOF_LENGTH);
+        Buffer buf(kEcSendProofLength);
+        std::memset(buf.data(), 0, kEcSendProofLength);
 
-        for (std::size_t i = 0; i < kEC_SEND_PROOF_LENGTH; i += kEC_GAMAL_ENCRYPTED_LENGTH)
+        for (std::size_t i = 0; i < kEcSendProofLength; i += kEcGamalEncryptedLength)
         {
-            buf.data()[i] = kEC_COMPRESSED_PREFIX_EVEN_Y;
-            if (i + kEC_GAMAL_ENCRYPTED_LENGTH - 1 < kEC_SEND_PROOF_LENGTH)
-                buf.data()[i + kEC_GAMAL_ENCRYPTED_LENGTH - 1] = 0x01;
+            buf.data()[i] = kEcCompressedPrefixEvenY;
+            if (i + kEcGamalEncryptedLength - 1 < kEcSendProofLength)
+                buf.data()[i + kEcGamalEncryptedLength - 1] = 0x01;
         }
 
         return strHex(buf);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -15,6 +14,7 @@
 #include <boost/container/vector.hpp>
 
 #include <cstddef>
+#include <expected>
 #include <utility>
 #include <vector>
 
@@ -357,7 +357,7 @@ private:
     // Set a max number of allowed attestations to limit the amount of memory
     // allocated and processing time. This number is much larger than the actual
     // number of attestation a server would ever expect.
-    static constexpr std::uint32_t kMAX_ATTESTATIONS = 256;
+    static constexpr std::uint32_t kMaxAttestations = 256;
     AttCollection attestations_;
 
 protected:

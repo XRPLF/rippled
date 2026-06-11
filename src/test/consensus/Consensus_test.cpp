@@ -453,7 +453,7 @@ public:
 
         // Vary the time it takes to process validations to exercise detecting
         // the wrong LCL at different phases of consensus
-        for (auto validationDelay : {0ms, parms.ledgerMIN_CLOSE})
+        for (auto validationDelay : {0ms, parms.ledgerMinClose})
         {
             // Consider 10 peers:
             // 0 1         2 3 4       5 6 7 8 9
@@ -492,7 +492,7 @@ public:
             CollectByNode<JumpCollector> jumps;
             sim.collectors.add(jumps);
 
-            BEAST_EXPECT(sim.trustGraph.canFork(parms.minCONSENSUS_PCT / 100.));
+            BEAST_EXPECT(sim.trustGraph.canFork(parms.minConsensusPct / 100.));
 
             // initial round to set prior state
             sim.run(1);
@@ -637,7 +637,7 @@ public:
         slow.connect(network, round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
         // Run to the ledger *prior* to decreasing the resolution
-        sim.run(kINCREASE_LEDGER_TIME_RESOLUTION_EVERY - 2);
+        sim.run(kIncreaseLedgerTimeResolutionEvery - 2);
 
         // In order to create the discrepancy, we want a case where if
         //   X = effCloseTime(closeTime, resolution, parentCloseTime)
@@ -1039,7 +1039,7 @@ public:
 #if 0
         // Have all beast::journal output printed to stdout
         for (Peer* p : network)
-            p->sink.threshold(beast::severities::kAll);
+            p->sink.threshold(beast::Severity::All);
 
         // Print ledger accept and fully validated events to stdout
         StreamCollector sc{std::cout};
@@ -1086,7 +1086,7 @@ public:
         ConsensusParms const p;
         std::size_t peersUnchanged = 0;
 
-        auto logs = std::make_unique<Logs>(beast::severities::KError);
+        auto logs = std::make_unique<Logs>(beast::Severity::Error);
         auto j = logs->journal("Test");
         auto clog = std::make_unique<std::stringstream>();
 
@@ -1296,14 +1296,11 @@ public:
                 auto const s = clog->str();
                 expect(s.find("stalled"), s, __FILE__, line);
                 expect(s.starts_with("Transaction "s + std::to_string(txid)), s, __FILE__, line);
-                expect(s.find("voting "s + (ourVote ? "YES" : "NO")) != s.npos, s, __FILE__, line);
+                expect(s.contains("voting "s + (ourVote ? "YES" : "NO")), s, __FILE__, line);
                 expect(
-                    s.find("for "s + std::to_string(ourTime) + " rounds."s) != s.npos,
-                    s,
-                    __FILE__,
-                    line);
+                    s.contains("for "s + std::to_string(ourTime) + " rounds."s), s, __FILE__, line);
                 expect(
-                    s.find("votes in "s + std::to_string(peerTime) + " rounds.") != s.npos,
+                    s.contains("votes in "s + std::to_string(peerTime) + " rounds."),
                     s,
                     __FILE__,
                     line);

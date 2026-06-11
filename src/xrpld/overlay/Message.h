@@ -11,7 +11,7 @@
 
 namespace xrpl {
 
-constexpr std::size_t kMAXIMUM_MESSAGE_SIZE = megabytes(64);
+constexpr std::size_t kMaximumMessageSize = megabytes(64);
 
 // VFALCO NOTE If we forward declare Message and write out shared_ptr
 //             instead of using the in-class type alias, we can remove the
@@ -80,7 +80,7 @@ private:
     std::vector<uint8_t> buffer_;
     std::vector<uint8_t> bufferCompressed_;
     std::size_t category_;
-    std::once_flag once_flag_;
+    std::once_flag onceFlag_;
     std::optional<PublicKey> validatorKey_;
 
     /** Set the payload header

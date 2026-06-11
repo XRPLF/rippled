@@ -10,6 +10,19 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
+
+// The mpt-crypto library's <mpt_protocol.h> (pulled in transitively via
+// ConfidentialTransfer.h -> <secp256k1_mpt.h>) defines ttCONFIDENTIAL_MPT_* as
+// preprocessor macros that collide with xrpld's TxType enumerators of the
+// same name, rewriting e.g. `ttCONFIDENTIAL_MPT_SEND` into the bare integer
+// `88` at every use site. Tests only use the TxType enum, so drop the macros.
+// TODO: remove once mpt-crypto renames these macros (e.g. kMPT_TT_*).
+#undef ttCONFIDENTIAL_MPT_CONVERT
+#undef ttCONFIDENTIAL_MPT_MERGE_INBOX
+#undef ttCONFIDENTIAL_MPT_CONVERT_BACK
+#undef ttCONFIDENTIAL_MPT_SEND
+#undef ttCONFIDENTIAL_MPT_CLAWBACK
+
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -20,7 +33,7 @@ namespace xrpl::test::jtx {
 
 class MPTTester;
 
-auto const kMPT_DEX_FLAGS = tfMPTCanTrade | tfMPTCanTransfer;
+auto const kMptDexFlags = tfMPTCanTrade | tfMPTCanTransfer;
 
 /*Helper lambda to create a zero-initialized buffer.
 WHY THIS IS NEEDED: In C++, xrpl::Buffer(size) allocates uninitialized heap memory.
@@ -127,7 +140,7 @@ struct MPTInit
     // create MPTIssuanceID if seated and follow rules for MPTCreate args
     std::optional<MPTCreate> create = std::nullopt;
 };
-static MPTInit const kMPT_INIT_NO_FUND{.fund = false};
+static MPTInit const kMptInitNoFund{.fund = false};
 
 struct MPTInitDef
 {
@@ -137,7 +150,7 @@ struct MPTInitDef
     std::optional<Account> auditor = std::nullopt;
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
-    std::uint32_t flags = kMPT_DEX_FLAGS;
+    std::uint32_t flags = kMptDexFlags;
     std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;

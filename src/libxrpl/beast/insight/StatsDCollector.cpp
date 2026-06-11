@@ -66,7 +66,7 @@ public:
 class StatsDHookImpl : public HookImpl, public StatsDMetricBase
 {
 public:
-    StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDHookImpl() override;
 
@@ -86,7 +86,7 @@ private:
 class StatsDCounterImpl : public CounterImpl, public StatsDMetricBase
 {
 public:
-    StatsDCounterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDCounterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDCounterImpl() override;
 
@@ -115,7 +115,7 @@ private:
 class StatsDEventImpl : public EventImpl
 {
 public:
-    StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDEventImpl() override = default;
 
@@ -140,7 +140,7 @@ private:
 class StatsDGaugeImpl : public GaugeImpl, public StatsDMetricBase
 {
 public:
-    StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDGaugeImpl() override;
 
@@ -164,7 +164,7 @@ public:
 private:
     std::shared_ptr<StatsDCollectorImp> impl_;
     std::string name_;
-    GaugeImpl::value_type last_value_{0};
+    GaugeImpl::value_type lastValue_{0};
     GaugeImpl::value_type value_{0};
     bool dirty_{false};
 };
@@ -174,7 +174,7 @@ private:
 class StatsDMeterImpl : public MeterImpl, public StatsDMetricBase
 {
 public:
-    explicit StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
+    explicit StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl);
 
     ~StatsDMeterImpl() override;
 
@@ -204,17 +204,12 @@ class StatsDCollectorImp : public StatsDCollector,
                            public std::enable_shared_from_this<StatsDCollectorImp>
 {
 private:
-    // Need to be named before converting
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum {
-        // MaxPacketSize = 484
-        MaxPacketSize = 1472
-    };
+    static constexpr auto kMaxPacketSize = 1472;
 
     Journal journal_;
     IP::Endpoint address_;
     std::string prefix_;
-    boost::asio::io_context io_context_;
+    boost::asio::io_context ioContext_;
     std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
@@ -237,10 +232,10 @@ public:
         : journal_(journal)
         , address_(std::move(address))
         , prefix_(std::move(prefix))
-        , work_(boost::asio::make_work_guard(io_context_))
-        , strand_(boost::asio::make_strand(io_context_))
-        , timer_(io_context_)
-        , socket_(io_context_)
+        , work_(boost::asio::make_work_guard(ioContext_))
+        , strand_(boost::asio::make_strand(ioContext_))
+        , timer_(ioContext_)
+        , socket_(ioContext_)
         , thread_(&StatsDCollectorImp::run, this)
     {
     }
@@ -311,7 +306,7 @@ public:
     boost::asio::io_context&
     getIoContext()
     {
-        return io_context_;
+        return ioContext_;
     }
 
     std::string const&
@@ -330,7 +325,7 @@ public:
     postBuffer(std::string&& buffer)
     {
         boost::asio::dispatch(
-            io_context_,
+            ioContext_,
             boost::asio::bind_executor(
                 strand_, std::bind(&StatsDCollectorImp::doPostBuffer, this, std::move(buffer))));
     }
@@ -392,7 +387,7 @@ public:
                 !s.empty(),
                 "beast::insight::detail::StatsDCollectorImp::sendBuffers : "
                 "non-empty payload");
-            if (!buffers.empty() && (size + length) > MaxPacketSize)
+            if (!buffers.empty() && (size + length) > kMaxPacketSize)
             {
                 log(buffers);
                 socket_.async_send(
@@ -470,21 +465,21 @@ public:
 
         setTimer();
 
-        io_context_.run();
+        ioContext_.run();
 
         // NOLINTNEXTLINE(bugprone-unused-return-value)
         socket_.shutdown(boost::asio::ip::udp::socket::shutdown_send, ec);
 
         socket_.close();
 
-        io_context_.poll();
+        ioContext_.poll();
     }
 };
 
 //------------------------------------------------------------------------------
 
-StatsDHookImpl::StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), handler_(std::move(handler))
+StatsDHookImpl::StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), handler_(std::move(handler))
 {
     impl_->add(*this);
 }
@@ -502,10 +497,8 @@ StatsDHookImpl::doProcess()
 
 //------------------------------------------------------------------------------
 
-StatsDCounterImpl::StatsDCounterImpl(
-    std::string name,
-    std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDCounterImpl::StatsDCounterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
     impl_->add(*this);
 }
@@ -555,8 +548,8 @@ StatsDCounterImpl::doProcess()
 
 //------------------------------------------------------------------------------
 
-StatsDEventImpl::StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDEventImpl::StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
 }
 
@@ -582,8 +575,8 @@ StatsDEventImpl::doNotify(EventImpl::value_type const& value)
 
 //------------------------------------------------------------------------------
 
-StatsDGaugeImpl::StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDGaugeImpl::StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
     impl_->add(*this);
 }
@@ -633,9 +626,9 @@ StatsDGaugeImpl::doSet(GaugeImpl::value_type value)
 {
     value_ = value;
 
-    if (value_ != last_value_)
+    if (value_ != lastValue_)
     {
-        last_value_ = value_;
+        lastValue_ = value_;
         dirty_ = true;
     }
 }
@@ -669,8 +662,8 @@ StatsDGaugeImpl::doProcess()
 
 //------------------------------------------------------------------------------
 
-StatsDMeterImpl::StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
-    : impl_(impl), name_(std::move(name))
+StatsDMeterImpl::StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> impl)
+    : impl_(std::move(impl)), name_(std::move(name))
 {
     impl_->add(*this);
 }

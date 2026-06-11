@@ -233,8 +233,8 @@ class ValidatorList
     std::optional<PublicKey> localPubKey_;
 
     // The below variable contains the Publisher list specified in the local
-    // config file under the title of SECTION_VALIDATORS or [validators].
-    // This list is not associated with the masterKey of any publisher.
+    // config file under the title of [validators]. This list is not associated
+    // with the masterKey of any publisher.
 
     // Apropos PublisherListCollection fields, localPublisherList does not
     // have any "remaining" manifests. It is assumed to be perennially
@@ -246,12 +246,12 @@ class ValidatorList
     hash_set<PublicKey> negativeUNL_;
 
     // Currently supported versions of publisher list format
-    static constexpr std::uint32_t kSUPPORTED_LIST_VERSIONS[]{1, 2};
+    static constexpr std::uint32_t kSupportedListVersions[]{1, 2};
     // In the initial release, to prevent potential abuse and attacks, any VL
     // collection with more than 5 entries will be considered malformed.
-    static constexpr std::size_t kMAX_SUPPORTED_BLOBS = 5;
+    static constexpr std::size_t kMaxSupportedBlobs = 5;
     // Prefix of the file name used to store cache files.
-    static std::string const kFILE_PREFIX;
+    static std::string const kFilePrefix;
 
 public:
     ValidatorList(
@@ -360,7 +360,7 @@ public:
         std::string const& rawManifest,
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         std::vector<MessageWithHash>& messages,
-        std::size_t maxSize = kMAXIMUM_MESSAGE_SIZE);
+        std::size_t maxSize = kMaximumMessageSize);
 
     /** Apply multiple published lists of public keys, then broadcast it to all
         peers that have not seen it or sent it.

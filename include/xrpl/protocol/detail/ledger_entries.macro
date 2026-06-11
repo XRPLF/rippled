@@ -84,7 +84,7 @@ LEDGER_ENTRY(ltNEGATIVE_UNL, 0x004e, NegativeUNL, nunl, ({
 
 /** A ledger object which contains a list of NFTs
 
-    \sa keylet::nftpage_min, keylet::nftpage_max, keylet::nftpage
+    \sa keylet::nftpageMin, keylet::nftpageMax, keylet::nftpage
  */
 LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
     {sfPreviousPageMin,      SoeOptional},
@@ -112,7 +112,7 @@ LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, ({
 
 /** A ledger object which describes a ticket.
 
-    \sa keylet::ticket
+    \sa keylet::kTicket
  */
 LEDGER_ENTRY(ltTICKET, 0x0054, Ticket, ticket, ({
     {sfAccount,              SoeRequired},
@@ -386,28 +386,24 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
 /** A ledger object which tracks MPTokenIssuance
     \sa keylet::mptIssuance
  */
-LEDGER_ENTRY(
-    ltMPTOKEN_ISSUANCE,
-    0x007e,
-    MPTokenIssuance,
-    mpt_issuance,
-    ({
-        {sfIssuer, SoeRequired},
-        {sfSequence, SoeRequired},
-        {sfTransferFee, SoeDefault},
-        {sfOwnerNode, SoeRequired},
-        {sfAssetScale, SoeDefault},
-        {sfMaximumAmount, SoeOptional},
-        {sfOutstandingAmount, SoeRequired},
-        {sfLockedAmount, SoeOptional},
-        {sfMPTokenMetadata, SoeOptional},
-        {sfPreviousTxnID, SoeRequired},
-        {sfPreviousTxnLgrSeq, SoeRequired},
-        {sfDomainID, SoeOptional},
-        {sfMutableFlags, SoeDefault},
-        {sfIssuerEncryptionKey, SoeOptional},
-        {sfAuditorEncryptionKey, SoeOptional},
-        {sfConfidentialOutstandingAmount, SoeDefault},
+LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
+    {sfIssuer,                   SoeRequired},
+    {sfSequence,                 SoeRequired},
+    {sfTransferFee,              SoeDefault},
+    {sfOwnerNode,                SoeRequired},
+    {sfAssetScale,               SoeDefault},
+    {sfMaximumAmount,            SoeOptional},
+    {sfOutstandingAmount,        SoeRequired},
+    {sfLockedAmount,             SoeOptional},
+    {sfMPTokenMetadata,          SoeOptional},
+    {sfPreviousTxnID,            SoeRequired},
+    {sfPreviousTxnLgrSeq,        SoeRequired},
+    {sfDomainID,                 SoeOptional},
+    {sfMutableFlags,             SoeDefault},
+    {sfReferenceHolding,         SoeOptional},
+    {sfIssuerEncryptionKey, SoeOptional},
+    {sfAuditorEncryptionKey, SoeOptional},
+    {sfConfidentialOutstandingAmount, SoeDefault},
 }))
 
 /** A ledger object which tracks MPToken
@@ -605,7 +601,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     //      LoanBroker.ManagementFeeRate
     //   The unrounded true total fee still owed to the broker.
     //
-    // Note the the "True" values may differ significantly from the tracked
+    // Note the "True" values may differ significantly from the tracked
     // rounded values.
     {sfPaymentRemaining,         SoeDefault},
     {sfPeriodicPayment,          SoeRequired},

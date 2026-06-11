@@ -56,7 +56,7 @@ SecretKey::toString() const
 namespace detail {
 
 void
-copyUint32(std::uint8_t* out, std::uint32_t v)
+copyUInt32(std::uint8_t* out, std::uint32_t v)
 {
     *out++ = v >> 24;
     *out++ = (v >> 16) & 0xff;
@@ -84,7 +84,7 @@ deriveDeterministicRootKey(Seed const& seed)
     // more iterations loop a few times.
     for (std::uint32_t seq = 0; seq != 128; ++seq)
     {
-        copyUint32(buf.data() + 16, seq);
+        copyUInt32(buf.data() + 16, seq);
 
         auto const ret = sha512Half(buf);
 
@@ -137,13 +137,13 @@ private:
 
         std::array<std::uint8_t, 41> buf{};
         std::ranges::copy(generator_, buf.begin());
-        copyUint32(buf.data() + 33, seq);
+        copyUInt32(buf.data() + 33, seq);
 
         // The odds that this loop executes more than once are negligible
         // but we impose a maximum limit just in case.
         for (std::uint32_t subseq = 0; subseq != 128; ++subseq)
         {
-            copyUint32(buf.data() + 37, subseq);
+            copyUInt32(buf.data() + 37, subseq);
 
             auto const ret = sha512HalfS(buf);
 

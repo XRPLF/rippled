@@ -1,9 +1,10 @@
 #include <xrpl/nodestore/detail/ManagerImp.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Manager.h>
@@ -26,8 +27,8 @@ namespace xrpl::NodeStore {
 ManagerImp&
 ManagerImp::instance()
 {
-    static ManagerImp k_;
-    return k_;
+    static ManagerImp kInst;
+    return kInst;
 }
 
 void
@@ -66,7 +67,7 @@ ManagerImp::makeBackend(
     Scheduler& scheduler,
     beast::Journal journal)
 {
-    std::string const type{get(parameters, "type")};
+    std::string const type{get(parameters, Keys::kType)};
     if (type.empty())
         missingBackend();
 
@@ -77,7 +78,7 @@ ManagerImp::makeBackend(
     }
 
     return factory->createInstance(
-        NodeObject::kKEY_BYTES, parameters, burstSize, scheduler, journal);
+        NodeObject::kKeyBytes, parameters, burstSize, scheduler, journal);
 }
 
 std::unique_ptr<Database>
