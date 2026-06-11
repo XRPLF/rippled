@@ -307,14 +307,25 @@ across the code, the OTel collector, Tempo, Grafana dashboards, and docs. The
 constants in the `*SpanNames.h` headers are the single source of truth; every
 other layer must match them. A CI check enforces this end to end.
 
-1. Per-span unique attribute: bare field name — the span name already carries
-   the domain (e.g. `command`, `local`, `version` on `rpc.command` / `tx.process`).
-2. Collision qualifier: `<domain>_<field>` when a bare name would collide across
-   domains (in the shared spanmetrics label space) or with the OTel-reserved
-   `status` key (e.g. `rpc_status`, `grpc_status`, `proposal_trusted`,
-   `validation_trusted`).
-3. Shared cross-span attribute: `<domain>_<field>` underscore form
-   (e.g. `tx_hash`, `peer_id`, `ledger_seq`, `consensus_round`).
+1. Per-span unique attribute: bare field name — allowed when the field is
+   recorded by a single span/workflow, so the span name already supplies the
+   domain (e.g. `command`, `local`, `version` on `rpc.command` / `tx.process`).
+2. Shared attribute (same concept on more than one span): ONE key, reused
+   verbatim on every span that records it — the span name tells the occurrences
+   apart, so no per-emitter prefix is added. Pick the name by the field's
+   meaning: a property of a domain object keeps that object's bare field name
+   (`ledger_hash`, `ledger_seq`, `tx_hash`, `peer_id`, `full_validation`); a
+   field already qualified by a sub-kind keeps that qualifier on every emitter
+   (`proposal_trusted` on both `consensus.proposal.receive` and
+   `peer.proposal.receive`; `validation_trusted` likewise). Define it once in
+   the base `SpanNames.h` `namespace attr` block and re-export (`using`) it from
+   each domain header, so all emitters share the exact string.
+3. Collision qualifier: `<domain>_<field>` — only when a bare name would collide
+   with a DIFFERENT concept in the shared spanmetrics label space, or with the
+   OTel-reserved `status` key (e.g. `rpc_status`, `grpc_status`,
+   `consensus_state`, `consensus_round`). This disambiguates distinct concepts
+   that share a word; it is NOT used to tag the same concept with the workflow
+   that emitted it — that is rule 2 (one shared name).
 4. Resource attribute: dotted `xrpl.<subsystem>.<field>` — reserved ONLY for
    process/network identity set once at startup (`xrpl.network.id`,
    `xrpl.network.type`). Never use the dotted `xrpl.` form for span attributes.
