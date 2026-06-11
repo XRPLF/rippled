@@ -7,11 +7,13 @@
     See cfg/xrpld-example.cfg for the full list of available options.
 */
 
+#include <xrpl/basics/contract.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <chrono>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 
 namespace xrpl::telemetry {
@@ -101,6 +103,16 @@ setupTelemetry(
     setup.tlsCertPath = section.valueOr<std::string>(key::tlsCaCert, "");
     setup.tlsClientCertPath = section.valueOr<std::string>(key::tlsClientCert, "");
     setup.tlsClientKeyPath = section.valueOr<std::string>(key::tlsClientKey, "");
+
+    // Mutual TLS needs both the client certificate and its private key.
+    // Supplying only one fails later with a cryptic SSL handshake error, so
+    // reject the partial configuration here with an actionable message.
+    if (setup.tlsClientCertPath.empty() != setup.tlsClientKeyPath.empty())
+    {
+        Throw<std::runtime_error>(
+            "[telemetry] tls_client_cert and tls_client_key must be set together "
+            "(set both for mutual TLS, or neither for one-way TLS).");
+    }
 
     // Head sampling is intentionally fixed at 1.0 (sample everything) and is
     // not read from config. A per-node ratio would let nodes make divergent

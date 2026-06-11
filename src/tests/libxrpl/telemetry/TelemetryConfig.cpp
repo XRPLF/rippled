@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include <stdexcept>
+
 using namespace xrpl;
 
 TEST(TelemetryConfig, setup_defaults)
@@ -81,6 +83,43 @@ TEST(TelemetryConfig, parse_full_section)
     EXPECT_TRUE(setup.traceRpc);
     EXPECT_TRUE(setup.tracePeer);
     EXPECT_FALSE(setup.traceLedger);
+}
+
+TEST(TelemetryConfig, mtls_cert_and_key_both_set)
+{
+    Section section;
+    section.set("use_tls", "1");
+    section.set("tls_client_cert", "/etc/ssl/client.pem");
+    section.set("tls_client_key", "/etc/ssl/client.key");
+
+    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0);
+    EXPECT_EQ(setup.tlsClientCertPath, "/etc/ssl/client.pem");
+    EXPECT_EQ(setup.tlsClientKeyPath, "/etc/ssl/client.key");
+}
+
+TEST(TelemetryConfig, mtls_cert_without_key_throws)
+{
+    Section section;
+    section.set("tls_client_cert", "/etc/ssl/client.pem");
+    EXPECT_THROW(telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0), std::runtime_error);
+}
+
+TEST(TelemetryConfig, mtls_key_without_cert_throws)
+{
+    Section section;
+    section.set("tls_client_key", "/etc/ssl/client.key");
+    EXPECT_THROW(telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0), std::runtime_error);
+}
+
+TEST(TelemetryConfig, mtls_neither_set_is_one_way_tls)
+{
+    Section section;
+    section.set("use_tls", "1");
+    section.set("tls_ca_cert", "/etc/ssl/ca.pem");
+
+    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0);
+    EXPECT_TRUE(setup.tlsClientCertPath.empty());
+    EXPECT_TRUE(setup.tlsClientKeyPath.empty());
 }
 
 TEST(TelemetryConfig, null_telemetry_factory)
