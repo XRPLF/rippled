@@ -36,6 +36,8 @@ Layers
   L3 tempo     : docker/telemetry/tempo.yaml                    (span filter tags)
   L4 dashboards: docker/telemetry/grafana/dashboards/*.json     (PromQL labels)
   L5 runbook   : docs/telemetry-runbook.md                      (attr tables)
+  L6 metrics   : MetricsRegistry.cpp instrument labels          (native-metric
+                 label keys, a valid dashboard-label source besides L1)
 
 Rules (each FAILS the build, when its inputs are present)
 ---------------------------------------------------------
@@ -50,7 +52,9 @@ Rules (each FAILS the build, when its inputs are present)
      test files are exempt (they pass arbitrary literals to exercise the API).
   B  Every collector spanmetrics dimension exists in the L1 key set.
   C  Every tempo span-filter tag exists in the L1 key set.
-  D  Every dashboard PromQL label (non-builtin) exists in the L1 key set.
+  D  Every dashboard label resolves to an L1 span attribute, an L6
+     native-metric label, or a builtin. TraceQL `span.`/`resource.` scope
+     prefixes are stripped before the L1 lookup.
   E  No dotted `xrpl.<domain>.<field>` attribute key in the runbook (only the
      L1 resource attrs xrpl.network.* may be dotted). Span names, filenames,
      OTel-standard keys, and metric labels are not flagged.
@@ -131,6 +135,13 @@ STRING_LITERAL = re.compile(r'"((?:[^"\\]|\\.)*)"')
 # A C++ line comment (`//` ... end of line) and a block comment (`/* ... */`).
 LINE_COMMENT = re.compile(r"//[^\n]*")
 BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
+# A TraceQL scope prefix on a label (`span.`, `resource.`, `event.`, etc.).
+# Dashboards reference span attributes in TraceQL as `span.<attr>`; the bare
+# attribute is what must exist in L1, so strip the scope before validating.
+TRACEQL_SCOPE = re.compile(r"^(?:span|resource|event|link|instrumentation_scope)\.")
+# An OTel metric label key as emitted in C++: `Add(.., {{"label", ...}})` /
+# `{{"label", value}}` instrument calls in MetricsRegistry.
+METRIC_LABEL = re.compile(r'\{\{\s*"([a-z_][a-z0-9_]*)"\s*,')
 
 
 def strip_comments(text: str) -> str:
@@ -410,9 +421,14 @@ def main() -> None:
     run_rule_f(root, report, header_symbols)
 
     # --- Cross-layer rules B/C/D/E (each presence-gated) -------------------
+    # L6 native-metric labels: span attributes are not the only valid dashboard
+    # labels — the MetricsRegistry emits OTel metrics whose label keys are an
+    # additional source of truth. Derive them dynamically (same principle as L1)
+    # so dashboards may reference them without tripping Rule D.
+    metric_labels = metric_label_names(root)
     run_rule_b_collector(root, l1_keys, report)
     run_rule_c_tempo(root, l1_keys, report)
-    run_rule_d_dashboards(root, l1_keys, report)
+    run_rule_d_dashboards(root, l1_keys, metric_labels, report)
     run_rule_e_runbook(root, l1_keys, report)
 
     report.render_and_exit()
@@ -689,7 +705,25 @@ def run_rule_c_tempo(root: Path, l1_keys: Set[str], report: Report) -> None:
         report.ok(f"C: {len(span_tags)} tempo tag(s) all in L1")
 
 
-def run_rule_d_dashboards(root: Path, l1_keys: Set[str], report: Report) -> None:
+def metric_label_names(root: Path) -> Set[str]:
+    """L6: OTel native-metric label keys emitted by the telemetry code, e.g.
+    `counter->Add(1, {{"job_type", value}})` in MetricsRegistry.cpp. These are
+    a valid source of dashboard labels distinct from span attributes (L1)."""
+    labels: Set[str] = set()
+    for base in ("src", "include"):
+        for p in (root / base).rglob("*.cpp"):
+            if not p.is_file():
+                continue
+            text = read_source(p)
+            if "MetricsRegistry" not in p.name and "metric" not in text.lower():
+                continue
+            labels |= set(METRIC_LABEL.findall(text))
+    return labels
+
+
+def run_rule_d_dashboards(
+    root: Path, l1_keys: Set[str], metric_labels: Set[str], report: Report
+) -> None:
     dash_dir = root / "docker" / "telemetry" / "grafana" / "dashboards"
     files = sorted(dash_dir.glob("*.json")) if dash_dir.is_dir() else []
     if not files:
@@ -710,6 +744,9 @@ def run_rule_d_dashboards(root: Path, l1_keys: Set[str], report: Report) -> None
         "job",
         "instance",
     }
+    # A dashboard label is valid if it is a span attribute (L1), a native-metric
+    # label (L6), or a Prometheus/Grafana builtin.
+    valid = l1_keys | metric_labels | builtins
     found = False
     for f in files:
         try:
@@ -720,17 +757,23 @@ def run_rule_d_dashboards(root: Path, l1_keys: Set[str], report: Report) -> None
         labels: Set[str] = set()
         for m in re.finditer(r"by\s*\(([^)]*)\)", text):
             labels |= {x.strip() for x in m.group(1).split(",") if x.strip()}
-        for m in re.finditer(r"\b([a-z_][a-z0-9_]*)\s*[=!]~?\s*\"", text):
+        for m in re.finditer(r"\b([a-z_][a-z0-9_.]*)\s*[=!]~?\s*\"", text):
             labels.add(m.group(1))
         for lbl in sorted(labels):
-            if lbl in builtins or lbl in l1_keys:
+            # Strip a TraceQL scope prefix (span./resource./...) — the bare
+            # attribute is what must resolve against L1.
+            bare = TRACEQL_SCOPE.sub("", lbl)
+            if bare in valid:
                 continue
             found = True
             report.violation(
-                "D", str(f.relative_to(root)), lbl, "must exist in L1 or builtin"
+                "D",
+                str(f.relative_to(root)),
+                lbl,
+                "must exist in L1, a metric label, or be a builtin",
             )
     if not found:
-        report.ok(f"D: dashboard PromQL labels all in L1 ({len(files)} file(s))")
+        report.ok(f"D: dashboard PromQL labels all resolve ({len(files)} file(s))")
 
 
 def run_rule_e_runbook(root: Path, l1_keys: Set[str], report: Report) -> None:
