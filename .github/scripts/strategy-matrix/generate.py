@@ -279,10 +279,9 @@ def expand_platform_matrix(
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
+    active_toolsets = [t for t in pf.toolsets if not t.exclude] if pf.toolsets else []
     toolsets = (
-        [t for t in pf.toolsets if not t.exclude]
-        if pf.toolsets
-        else [Toolset(name="", generator="Ninja")]
+        active_toolsets if active_toolsets else [Toolset(name="", generator="Ninja")]
     )
 
     entries: list[MatrixEntry] = []
