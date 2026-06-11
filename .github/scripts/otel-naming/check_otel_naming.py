@@ -699,6 +699,7 @@ def run_rule_d_dashboards(root: Path, l1_keys: Set[str], report: Report) -> None
         report.skip("D", "no L1 key set to validate against")
         return
     builtins = {
+        "__name__",  # Prometheus reserved label for the metric name itself
         "le",
         "exported_instance",
         "span_name",
