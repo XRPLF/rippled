@@ -2413,7 +2413,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             val->setSeen(closeTime);
         }
         valSpan.setAttribute(peer_span::attr::ledgerHash, to_string(val->getLedgerHash()).c_str());
-        valSpan.setAttribute(peer_span::attr::validationFull, val->isFull());
+        valSpan.setAttribute(peer_span::attr::fullValidation, val->isFull());
 
         if (!isCurrent(
                 app_.getValidations().parms(),
