@@ -922,9 +922,10 @@ PARITY_SPAN_ATTRS: list[dict[str, str]] = [
     {"span": "tx.receive", "attr": "peer_version"},
     {"span": "consensus.validation.send", "attr": "ledger_hash"},
     {"span": "consensus.validation.send", "attr": "full_validation"},
-    # peer.validation.receive uses the shared dotted xrpl.ledger.hash constant
-    # (intentionally dotted, unlike consensus.validation.send's bare ledger_hash).
-    {"span": "peer.validation.receive", "attr": "xrpl.ledger.hash"},
+    # peer.validation.receive shares the ledger_hash / full_validation keys with
+    # consensus.validation.send (same keys, told apart by span name).
+    {"span": "peer.validation.receive", "attr": "ledger_hash"},
+    {"span": "peer.validation.receive", "attr": "full_validation"},
     {"span": "consensus.accept", "attr": "quorum"},
 ]
 

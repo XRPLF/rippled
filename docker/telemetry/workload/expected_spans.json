@@ -116,7 +116,7 @@
       "note": "Ledger-close accept loop. Fires on the consensus thread; only meaningful when the queue is non-empty."
     },
     {
-      "name": "txq.accept.tx",
+      "name": "txq.accept_tx",
       "category": "transaction",
       "parent": "txq.accept",
       "required_attributes": [
@@ -241,7 +241,7 @@
         "full_validation"
       ],
       "config_flag": "trace_consensus",
-      "note": "follows-from consensus.accept. ledger_hash is BARE here (consensus-owned attr), unlike peer.validation.receive which uses the shared dotted xrpl.ledger.hash. Also carries validation_sign_time."
+      "note": "follows-from consensus.accept. ledger_hash and full_validation are shared with peer.validation.receive (same keys, told apart by span name). Also carries validation_sign_time."
     },
     {
       "name": "consensus.proposal.receive",
@@ -324,11 +324,11 @@
       "required_attributes": [
         "peer_id",
         "validation_trusted",
-        "xrpl.ledger.hash",
-        "validation_full"
+        "ledger_hash",
+        "full_validation"
       ],
       "config_flag": "trace_peer",
-      "note": "Uses the shared dotted xrpl.ledger.hash constant (intentionally dotted, unlike consensus.validation.send)."
+      "note": "ledger_hash and full_validation are shared with consensus.validation.send (same keys, told apart by span name)."
     },
     {
       "name": "pathfind.request",
