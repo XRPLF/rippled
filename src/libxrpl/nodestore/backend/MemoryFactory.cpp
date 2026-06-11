@@ -1,8 +1,9 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
@@ -90,7 +91,7 @@ private:
 
 public:
     MemoryBackend(size_t keyBytes, Section const& keyValues, beast::Journal journal)
-        : name_(get(keyValues, "path")), journal_(journal)
+        : name_(get(keyValues, Keys::kPath)), journal_(journal)
     {
         boost::ignore_unused(journal_);  // Keep unused journal_ just in case.
         if (name_.empty())
