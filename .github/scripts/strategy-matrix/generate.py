@@ -279,6 +279,7 @@ def expand_platform_matrix(
     platform_name, arch = pf.platform.split("/")
     is_windows = platform_name == "windows"
 
+    toolsets = None
     if pf.toolsets:
         toolsets = [t for t in pf.toolsets if not t.exclude]
 
