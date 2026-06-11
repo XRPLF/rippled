@@ -300,7 +300,7 @@ VaultWithdraw::doApply()
                 << "VaultWithdraw: "  //
                    "Cannot burn all outstanding shares while unrealized loss is non-zero";
             return tefINTERNAL;
-            // LCOV_EXCL_END
+            // LCOV_EXCL_STOP
         }
 
         STAmount const allAvailable{vaultAsset, *assetsAvailable};

@@ -3,6 +3,7 @@
 #include <xrpl/beast/insight/HookImpl.h>
 
 #include <memory>
+#include <utility>
 
 namespace beast::insight {
 
@@ -20,7 +21,7 @@ public:
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Hook(std::shared_ptr<HookImpl> const& impl) : impl_(impl)
+    explicit Hook(std::shared_ptr<HookImpl> impl) : impl_(std::move(impl))
     {
     }
 
