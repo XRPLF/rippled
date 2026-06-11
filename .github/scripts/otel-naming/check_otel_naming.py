@@ -297,22 +297,39 @@ def attr_namespace_spans(text: str) -> List[str]:
 def attr_keys_from_header(path: Path, symbols: Dict[str, str]) -> Set[str]:
     """Return the set of attribute-key strings declared in a header's
     `namespace attr { ... }` block(s). `symbols` is the global cross-file
-    table so `join(seg::rpc, ...)` style dotted attrs resolve correctly.
+    table, used ONLY to seed `seg::`/segment references for `join(...)`
+    resolution — never to look up an attr constant's value.
+
+    A constant DEFINED in this header is resolved against this header's OWN
+    text, so two headers that each define a same-named constant (e.g. the base
+    `attr::ledgerHash = xrpl.ledger.hash` and consensus
+    `attr::ledgerHash = ledger_hash`) each report their real wire key. The
+    global table is keyed by bare name and would otherwise let a later header
+    clobber an earlier one, erasing the real key from L1 (a Rule-A blind spot).
+    A `using`-re-export, by contrast, imports a constant defined elsewhere, so
+    it is resolved against the global table.
 
     Comments are stripped first (a commented constant must not enter L1), and
     each attr block is brace-matched over the whole text so multi-line
     `inline constexpr auto NAME = join(\\n  ...);` definitions are captured."""
     text = strip_comments(read_source(path))
+    # Local table: the global segments/symbols seed cross-file `join` parts,
+    # then this header's own definitions overwrite any same-named global entry
+    # so a locally-defined attr resolves to ITS value, not another header's.
+    local = dict(symbols)
+    resolve_constants(text, local)
     keys: Set[str] = set()
     for block in attr_namespace_spans(text):
         for md in CONST_DEF.finditer(block):
-            # Resolve the named constant against the global symbol table; this
-            # captures makeStr("x"), join(seg::y, ...), and `using ::a::b` forms.
-            val = symbols.get(md.group(1))
+            # Resolve a locally-defined constant against the LOCAL table; this
+            # captures makeStr("x") and join(seg::y, ...) with the header's own
+            # value, immune to cross-header bare-name collisions.
+            val = local.get(md.group(1))
             if val is not None:
                 keys.add(val)
-        # `using ::ns::attr::field;` re-exports a base constant into this attr
-        # block (e.g. RpcSpanNames imports txHash). Resolve the imported name.
+        # `using ::ns::attr::field;` re-exports a constant defined in ANOTHER
+        # header (e.g. PeerSpanNames imports the base ledgerHash). Resolve the
+        # imported name against the global table.
         for um in USING_DECL.finditer(block):
             val = symbols.get(um.group(1))
             if val is not None:
@@ -400,10 +417,12 @@ def main() -> None:
         keys_by_header = {}
 
     # --- Derive the legitimate dotted (resource) keys dynamically ----------
-    # ONLY the base SpanNames.h resource attrs + the semconv keys Telemetry.cpp
-    # passes to Resource::Create(). A dotted key from any other header is a
-    # violation, not an allowlist entry.
-    dotted_allow = derive_dotted_resource_keys(root, keys_by_header, report)
+    # ONLY the keys actually passed to Resource::Create() in Telemetry.cpp
+    # (semconv service.* + the attr:: constants set there, e.g. xrpl.network.*).
+    # A dotted key declared in a header but NOT set as a resource attr is a
+    # Rule-A violation, not an allowlist entry.
+    resource_symbols = symbols if headers else {}
+    dotted_allow = derive_dotted_resource_keys(root, resource_symbols, report)
 
     # --- Rule A: no stray dotted span-attribute keys -----------------------
     if l1_keys:
@@ -434,35 +453,63 @@ def main() -> None:
     report.render_and_exit()
 
 
+def resource_create_block(text: str) -> str:
+    """Return the text inside the first `Resource::Create({ ... })` argument
+    list, brace-matched so nested `{key, value}` initializers are contained.
+    Empty string if the call is absent."""
+    m = re.search(r"Resource::Create\(\s*\{", text)
+    if not m:
+        return ""
+    i = m.end()  # one char past the opening `{`
+    depth, start = 1, i
+    while i < len(text) and depth > 0:
+        c = text[i]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+        i += 1
+    return text[start : i - 1]
+
+
 def derive_dotted_resource_keys(
-    root: Path, keys_by_header: Dict[Path, Set[str]], report: Report
+    root: Path, symbols: Dict[str, str], report: Report
 ) -> Set[str]:
-    """Legitimate dotted keys = dotted attrs declared ONLY in the base
-    SpanNames.h (xrpl.network.*) plus the standard semconv keys the code
-    passes to Resource::Create() in Telemetry.cpp (service.*). Dotted keys
-    declared in any OTHER header are NOT allowlisted — they are Rule-A
-    violations."""
+    """Legitimate dotted keys = ONLY the keys the code actually sets as RESOURCE
+    attributes, i.e. the entries inside Telemetry.cpp's `Resource::Create({...})`
+    call: the standard semconv keys (`service.*`) plus any `attr::<name>`
+    constants passed there (resolved to their wire key via the global symbol
+    table, e.g. `attr::networkId` -> `xrpl.network.id`).
+
+    A dotted key DECLARED in a `*SpanNames.h` header but NOT passed to
+    Resource::Create() is a span attribute wearing the resource form — a Rule-A
+    violation, never allowlisted. Deriving the allowlist from the actual
+    resource call (not from "any dotted key in the base header") is what lets
+    Rule A catch a stray dotted span attr such as `xrpl.ledger.hash`."""
     allow: Set[str] = set()
-    for h, keys in keys_by_header.items():
-        if h.name == "SpanNames.h":  # the base header holds resource attrs
-            allow |= {k for k in keys if "." in k}
     tele = root / "src" / "libxrpl" / "telemetry" / "Telemetry.cpp"
-    if tele.is_file():
-        text = read_source(tele)
-        # semconv::<group>::k<CamelKey> -> the dotted OTel-standard key. The
-        # CamelKey already embeds the group, e.g. service::kServiceInstanceId
-        # -> service.instance.id. Split the CamelCase name into dotted lowercase
-        # segments; if it does not lead with the group, prepend the group.
-        for m in re.finditer(r"semconv::(\w+)::k(\w+)", text):
-            group, camel = m.group(1), m.group(2)
-            segments = camel_to_dotsegments(camel)
-            if segments and segments[0] == group:
-                allow.add(".".join(segments))
-            else:
-                allow.add(group + "." + ".".join(segments))
-        report.ok(f"resource dotted-key allowlist derived: {sorted(allow)}")
-    else:
+    if not tele.is_file():
         report.skip("resource-derive", "Telemetry.cpp not present")
+        return allow
+    block = resource_create_block(read_source(tele))
+    # semconv::<group>::k<CamelKey> -> the dotted OTel-standard key. The
+    # CamelKey already embeds the group, e.g. service::kServiceInstanceId
+    # -> service.instance.id. Split the CamelCase name into dotted lowercase
+    # segments; if it does not lead with the group, prepend the group.
+    for m in re.finditer(r"semconv::(\w+)::k(\w+)", block):
+        group, camel = m.group(1), m.group(2)
+        segments = camel_to_dotsegments(camel)
+        if segments and segments[0] == group:
+            allow.add(".".join(segments))
+        else:
+            allow.add(group + "." + ".".join(segments))
+    # attr::<name> constants set as resource attrs (e.g. networkId/networkType);
+    # resolve each to its wire key and allowlist only the dotted ones.
+    for m in re.finditer(r"attr::(\w+)", block):
+        val = symbols.get(m.group(1))
+        if val is not None and "." in val:
+            allow.add(val)
+    report.ok(f"resource dotted-key allowlist derived: {sorted(allow)}")
     return allow
 
 
