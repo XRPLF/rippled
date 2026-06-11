@@ -887,7 +887,7 @@ TEST_F(AmendmentTableTest, changed_unl)
 TEST_F(AmendmentTableTest, validator_flapping)
 {
     // We run a test where a validator flaps on and off every 23 hours
-    // and another one one where it flaps on and off every 25 hours.
+    // and another one where it flaps on and off every 25 hours.
     //
     // Since the local validator vote record expires after 24 hours,
     // with 23 hour flapping the amendment will go live.  But with 25
