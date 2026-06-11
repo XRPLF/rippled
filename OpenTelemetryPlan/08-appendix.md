@@ -177,7 +177,6 @@ flowchart TB
 | [01-architecture-analysis.md](./01-architecture-analysis.md)     | xrpld architecture and trace points          |
 | [02-design-decisions.md](./02-design-decisions.md)               | SDK selection, exporters, span conventions   |
 | [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure, performance analysis    |
-| [04-code-samples.md](./04-code-samples.md)                       | C++ code examples for all components         |
 | [05-configuration-reference.md](./05-configuration-reference.md) | xrpld config, CMake, Collector configs       |
 | [06-implementation-phases.md](./06-implementation-phases.md)     | Timeline, tasks, risks, success metrics      |
 | [07-observability-backends.md](./07-observability-backends.md)   | Backend selection and architecture           |
@@ -188,7 +187,6 @@ flowchart TB
 
 | Document                             | Description                                         |
 | ------------------------------------ | --------------------------------------------------- |
-| [POC_taskList.md](./POC_taskList.md) | Proof-of-concept telemetry integration              |
 | [presentation.md](./presentation.md) | Presentation slides for OpenTelemetry plan overview |
 
 ---

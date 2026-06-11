@@ -300,6 +300,35 @@ If you wish to automatically fix whatever clang-tidy finds _and_ is capable of f
 run-clang-tidy -p build -quiet -fix -allow-no-checks src tests
 ```
 
+## Telemetry span attribute naming
+
+OpenTelemetry span attribute keys follow these rules so they stay consistent
+across the code, the OTel collector, Tempo, Grafana dashboards, and docs. The
+constants in the `*SpanNames.h` headers are the single source of truth; every
+other layer must match them. A CI check enforces this end to end.
+
+1. Per-span unique attribute: bare field name — the span name already carries
+   the domain (e.g. `command`, `local`, `version` on `rpc.command` / `tx.process`).
+2. Collision qualifier: `<domain>_<field>` when a bare name would collide across
+   domains (in the shared spanmetrics label space) or with the OTel-reserved
+   `status` key (e.g. `rpc_status`, `grpc_status`, `proposal_trusted`,
+   `validation_trusted`).
+3. Shared cross-span attribute: `<domain>_<field>` underscore form
+   (e.g. `tx_hash`, `peer_id`, `ledger_seq`, `consensus_round`).
+4. Resource attribute: dotted `xrpl.<subsystem>.<field>` — reserved ONLY for
+   process/network identity set once at startup (`xrpl.network.id`,
+   `xrpl.network.type`). Never use the dotted `xrpl.` form for span attributes.
+5. Span names use `<subsystem>[.<component>]` (dotted). Only attribute _keys_
+   follow rules 1–4.
+
+Standard OpenTelemetry semantic-convention keys keep their canonical dotted
+form (e.g. `service.*` resource attributes, `http.*` span attributes); the
+"no dotted form" rule above applies to xrpl-custom keys, not to OTel-standard
+conventions.
+
+Always reference the `*SpanNames.h` constants — never pass string literals as
+attribute keys or values to `setAttribute`/`addEvent`.
+
 ## Contracts and instrumentation
 
 We are using [Antithesis](https://antithesis.com/) for continuous fuzzing,
