@@ -1856,7 +1856,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         consensus::span::attr::proposersFinished, static_cast<int64_t>(currentFinished));
     span.setAttribute(consensus::span::attr::consensusStalled, stalled);
     span.setAttribute(
-        consensus::span::attr::establishCounter, static_cast<int64_t>(establishCounter_));
+        consensus::span::attr::establishCount, static_cast<int64_t>(establishCounter_));
 
     std::string_view stateStr = consensus::span::val::no;
     if (result_->state == ConsensusState::Yes)
