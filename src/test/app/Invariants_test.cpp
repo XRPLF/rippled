@@ -1283,7 +1283,7 @@ class Invariants_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
 
-        bool const enforceAMMDelete = features[fixCleanup3_2_0];
+        bool const enforceAMMDelete = features[fixCleanup3_3_0];
         testcase << "AMM delete invariants" + std::string(enforceAMMDelete ? " fix" : "");
 
         Env env(*this, features);
@@ -4985,7 +4985,7 @@ public:
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
         testAMMDeleteInvariants(defaultAmendments());
-        testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_2_0);
+        testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_3_0);
         testPermissionedDomainInvariants(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);

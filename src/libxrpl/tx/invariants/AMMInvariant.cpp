@@ -353,7 +353,7 @@ ValidAMM::finalize(
         return true;
 
     bool const enforce = view.rules().enabled(fixAMMv1_3);
-    bool const enforceAMMDelete = view.rules().enabled(fixCleanup3_2_0);
+    bool const enforceAMMDelete = view.rules().enabled(fixCleanup3_3_0);
 
     // AMM can only be deleted by AMMWithdraw, AMMClawback, and AMMDelete
     if (enforceAMMDelete && ammDeleted_)
