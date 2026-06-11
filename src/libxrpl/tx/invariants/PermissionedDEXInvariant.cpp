@@ -6,7 +6,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -21,7 +20,7 @@ void
 ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     auto sle = after;
-    if (!isFeatureEnabled(fixCleanup3_2_0) && !after)
+    if (!isFeatureEnabled(fixCleanup3_3_0) && !after)
         sle = before;
 
     if (sle && sle->getType() == ltDIR_NODE)
@@ -55,11 +54,6 @@ ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::cons
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() != 1))
             badHybrids_ = true;
-
-        // pre-fixCleanup3_2_0: track hybrid offers that were fully consumed
-        // (after is null), which were previously a crash or invariant failure
-        if (!after && sle->isFlag(lsfHybrid))
-            badHybridDeleted_ = true;
     }
 }
 
@@ -81,14 +75,6 @@ ValidPermissionedDEX::finalize(
     if (txType == ttOFFER_CREATE && isMalformed)
     {
         JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
-        return false;
-    }
-
-    // pre-fixCleanup3_2_0: hybrid offer was fully consumed (deleted); before
-    // this fix, the invariant would crash or fail for such transactions
-    if (!view.rules().enabled(fixCleanup3_2_0) && badHybridDeleted_)
-    {
-        JLOG(j.fatal()) << "Invariant failed: hybrid offer was fully consumed";
         return false;
     }
 

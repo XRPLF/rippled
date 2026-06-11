@@ -2041,43 +2041,61 @@ class Invariants_test : public beast::unit_test::Suite
     }
 
     void
-    testPermissionedDEXDeletedHybridOffer()
+    testPermissionedDEXDeletedOfferFallback()
     {
         using namespace test::jtx;
 
-        testcase << "PermissionedDEX deleted hybrid offer";
+        testcase << "PermissionedDEX deleted offer fallback";
 
-        auto const checkDeletedHybridOffer = [this](
-                                                 FeatureBitset features,
-                                                 bool const expectInvariantFailure) {
-            Env const env(*this, features);
-            Account const offerOwner{"offerOwner"};
-            auto const sleOffer = std::make_shared<SLE>(keylet::offer(offerOwner.id(), 1));
-            sleOffer->setFlag(lsfHybrid);
+        auto const checkDeletedOfferFallback = [this](
+                                                   FeatureBitset features,
+                                                   bool const expectInvariantFailure) {
+            Env env(*this, features);
+
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env.fund(XRP(1000), a1, a2);
+            env.close();
+
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env, a1, a2);
+            [[maybe_unused]] auto [seq2, pd2] = createPermissionedDomainEnv(env, a1, a2);
+            env.close();
+
+            Keylet const offerKey = keylet::offer(a2.id(), 10);
+            auto sleOffer = std::make_shared<SLE>(offerKey);
+            sleOffer->setAccountID(sfAccount, a2);
+            sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
+            sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+            sleOffer->setFieldH256(sfDomainID, pd1);
+
+            CurrentTransactionRulesGuard const rulesGuard(env.current()->rules());
 
             ValidPermissionedDEX invariant;
             invariant.visitEntry(true, sleOffer, nullptr);
 
-            test::StreamSink sink{beast::Severity::Fatal};
+            STTx tx{ttOFFER_CREATE, [&pd2, &a1](STObject& tx) {
+                        tx.setFieldH256(sfDomainID, pd2);
+                        tx.setFieldAmount(sfTakerPays, a1["USD"](10));
+                        tx.setFieldAmount(sfTakerGets, XRP(1));
+                    }};
+
+            test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
-            bool const passed = invariant.finalize(
-                STTx{ttPAYMENT, [](STObject&) {}}, tesSUCCESS, XRPAmount{}, *env.current(), jlog);
-
+            bool const passed =
+                invariant.finalize(tx, tesSUCCESS, XRPAmount{}, *env.current(), jlog);
             BEAST_EXPECT(passed != expectInvariantFailure);
-
-            auto const messages = sink.messages().str();
             if (expectInvariantFailure)
             {
-                BEAST_EXPECT(messages.find("hybrid offer was fully consumed") != std::string::npos);
+                BEAST_EXPECT(sink.messages().str().contains("transaction consumed wrong domains"));
             }
             else
             {
-                BEAST_EXPECT(messages.empty());
+                BEAST_EXPECT(sink.messages().str().empty());
             }
         };
 
-        checkDeletedHybridOffer(defaultAmendments() - fixCleanup3_2_0, true);
-        checkDeletedHybridOffer(defaultAmendments(), false);
+        checkDeletedOfferFallback(defaultAmendments() - fixCleanup3_3_0, true);
+        checkDeletedOfferFallback(defaultAmendments(), false);
     }
 
     void
@@ -4945,7 +4963,7 @@ public:
         testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
-        testPermissionedDEXDeletedHybridOffer();
+        testPermissionedDEXDeletedOfferFallback();
         testBookDirectoryExchangeRate();
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();

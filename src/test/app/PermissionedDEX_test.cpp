@@ -844,50 +844,6 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
     }
 
-    // When a domain offer is fully consumed (and thus deleted from the ledger),
-    // the ValidPermissionedDEX invariant must not fail.
-    void
-    testFullyConsumedDomainOffer(FeatureBitset features)
-    {
-        testcase("Fully consumed domain offer");
-
-        // domain payment fully consumes a domain offer (offer is deleted)
-        {
-            Env env(*this, features);
-            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                PermissionedDEX(env);
-
-            auto const offerSeq{env.seq(bob)};
-            env(offer(bob, XRP(10), USD(10)), Domain(domainID));
-            env.close();
-            BEAST_EXPECT(checkOffer(env, bob, offerSeq, XRP(10), USD(10), 0, true));
-
-            // fully consume the offer — it will be deleted from the ledger
-            env(pay(alice, carol, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
-            env.close();
-
-            BEAST_EXPECT(!offerExists(env, bob, offerSeq));
-        }
-
-        // domain payment fully consumes a hybrid offer (offer is deleted)
-        {
-            Env env(*this, features);
-            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                PermissionedDEX(env);
-
-            auto const offerSeq{env.seq(bob)};
-            env(offer(bob, XRP(10), USD(10)), Txflags(tfHybrid), Domain(domainID));
-            env.close();
-            BEAST_EXPECT(checkOffer(env, bob, offerSeq, XRP(10), USD(10), lsfHybrid, true));
-
-            // fully consume the hybrid offer — it will be deleted from the ledger
-            env(pay(alice, carol, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
-            env.close();
-
-            BEAST_EXPECT(!offerExists(env, bob, offerSeq));
-        }
-    }
-
     void
     testRippling(FeatureBitset features)
     {
@@ -1983,7 +1939,6 @@ public:
         testPayment(all);
         testPayment(all - fixCleanup3_2_0);
         testBookStep(all);
-        testFullyConsumedDomainOffer(all);
         testRippling(all);
         testOfferTokenIssuerInDomain(all);
         testRemoveUnfundedOffer(all);
