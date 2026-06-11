@@ -1,10 +1,9 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 
-#include <xrpld/core/ConfigSections.h>
-
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 
@@ -366,7 +365,8 @@ public:
         Env env(*this, std::move(cfg));
 
         // Verify the server actually started by checking the port
-        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        auto const grpcPort =
+            env.app().config()[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
         BEAST_EXPECT(grpcPort.has_value());
         // NOLINTBEGIN(bugprone-unchecked-optional-access) grpcPort.has_value() checked above
         BEAST_EXPECT(*grpcPort > 0);
@@ -392,7 +392,8 @@ public:
         Env env(*this, std::move(cfg));
 
         // Verify the server actually started by checking the port
-        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        auto const grpcPort =
+            env.app().config()[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
         BEAST_EXPECT(grpcPort.has_value());
         // NOLINTBEGIN(bugprone-unchecked-optional-access) grpcPort.has_value() checked above
         BEAST_EXPECT(*grpcPort > 0);
@@ -429,7 +430,8 @@ public:
         Env env(*this, std::move(cfg));
 
         // Verify the server actually started by checking the port
-        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        auto const grpcPort =
+            env.app().config()[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
         BEAST_EXPECT(grpcPort.has_value());
         // NOLINTBEGIN(bugprone-unchecked-optional-access) grpcPort.has_value() checked above
         BEAST_EXPECT(*grpcPort > 0);
@@ -463,9 +465,9 @@ public:
 
         // Create config with only cert (missing key)
         auto cfg = envconfig();
-        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslCert, getServerCertPath().string());
         // Intentionally omit ssl_key
 
         try
@@ -475,8 +477,7 @@ public:
         }
         catch (std::runtime_error const& e)
         {
-            BEAST_EXPECT(
-                std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
+            BEAST_EXPECT(std::string(e.what()).contains("Incomplete TLS configuration"));
         }
     }
 
@@ -489,9 +490,9 @@ public:
 
         // Create config with only key (missing cert)
         auto cfg = envconfig();
-        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslKey, getServerKeyPath().string());
         // Intentionally omit ssl_cert
 
         try
@@ -501,8 +502,7 @@ public:
         }
         catch (std::runtime_error const& e)
         {
-            BEAST_EXPECT(
-                std::string(e.what()).find("Incomplete TLS configuration") != std::string::npos);
+            BEAST_EXPECT(std::string(e.what()).contains("Incomplete TLS configuration"));
         }
     }
 
@@ -516,9 +516,9 @@ public:
         // Test 1: ssl_client_ca specified without any TLS config
         {
             auto cfg = envconfig();
-            (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-            (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", getCACertPath().string());
+            (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+            (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+            (*cfg)[Sections::kPortGrpc].set(Keys::kSslClientCa, getCACertPath().string());
             // Intentionally omit both ssl_cert and ssl_key
 
             try
@@ -529,18 +529,18 @@ public:
             catch (std::runtime_error const& e)
             {
                 BEAST_EXPECT(
-                    std::string(e.what()).find(
-                        "ssl_client_ca requires both ssl_cert and ssl_key") != std::string::npos);
+                    std::string(e.what()).contains(
+                        "ssl_client_ca requires both ssl_cert and ssl_key"));
             }
         }
 
         // Test 2: ssl_client_ca with only ssl_cert (missing ssl_key)
         {
             auto cfg = envconfig();
-            (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-            (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", getCACertPath().string());
+            (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+            (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+            (*cfg)[Sections::kPortGrpc].set(Keys::kSslCert, getServerCertPath().string());
+            (*cfg)[Sections::kPortGrpc].set(Keys::kSslClientCa, getCACertPath().string());
             // Intentionally omit ssl_key
 
             try
@@ -552,19 +552,17 @@ public:
             {
                 // This should fail with "Incomplete TLS configuration" first
                 // because ssl_cert is specified without ssl_key
-                BEAST_EXPECT(
-                    std::string(e.what()).find("Incomplete TLS configuration") !=
-                    std::string::npos);
+                BEAST_EXPECT(std::string(e.what()).contains("Incomplete TLS configuration"));
             }
         }
 
         // Test 3: ssl_client_ca with only ssl_key (missing ssl_cert)
         {
             auto cfg = envconfig();
-            (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-            (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", getCACertPath().string());
+            (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+            (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+            (*cfg)[Sections::kPortGrpc].set(Keys::kSslKey, getServerKeyPath().string());
+            (*cfg)[Sections::kPortGrpc].set(Keys::kSslClientCa, getCACertPath().string());
             // Intentionally omit ssl_cert
 
             try
@@ -576,9 +574,7 @@ public:
             {
                 // This should fail with "Incomplete TLS configuration" first
                 // because ssl_key is specified without ssl_cert
-                BEAST_EXPECT(
-                    std::string(e.what()).find("Incomplete TLS configuration") !=
-                    std::string::npos);
+                BEAST_EXPECT(std::string(e.what()).contains("Incomplete TLS configuration"));
             }
         }
     }
@@ -593,9 +589,9 @@ public:
         // Test 1: ssl_cert_chain specified without any TLS config
         {
             auto cfg = envconfig();
-            (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-            (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", getCACertPath().string());
+            (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+            (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+            (*cfg)[Sections::kPortGrpc].set(Keys::kSslCertChain, getCACertPath().string());
             // Intentionally omit both ssl_cert and ssl_key
 
             try
@@ -606,18 +602,18 @@ public:
             catch (std::runtime_error const& e)
             {
                 BEAST_EXPECT(
-                    std::string(e.what()).find(
-                        "ssl_cert_chain requires both ssl_cert and ssl_key") != std::string::npos);
+                    std::string(e.what()).contains(
+                        "ssl_cert_chain requires both ssl_cert and ssl_key"));
             }
         }
 
         // Test 2: ssl_cert_chain with only ssl_cert (missing ssl_key)
         {
             auto cfg = envconfig();
-            (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-            (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
-            (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", getCACertPath().string());
+            (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+            (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+            (*cfg)[Sections::kPortGrpc].set(Keys::kSslCert, getServerCertPath().string());
+            (*cfg)[Sections::kPortGrpc].set(Keys::kSslCertChain, getCACertPath().string());
             // Intentionally omit ssl_key
 
             try
@@ -629,9 +625,7 @@ public:
             {
                 // This should fail with "Incomplete TLS configuration" first
                 // because ssl_cert is specified without ssl_key
-                BEAST_EXPECT(
-                    std::string(e.what()).find("Incomplete TLS configuration") !=
-                    std::string::npos);
+                BEAST_EXPECT(std::string(e.what()).contains("Incomplete TLS configuration"));
             }
         }
     }
@@ -653,7 +647,8 @@ public:
         Env env(*this, std::move(cfg));
 
         // Verify the server actually started by checking the port
-        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        auto const grpcPort =
+            env.app().config()[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
         BEAST_EXPECT(grpcPort.has_value());
         // NOLINTBEGIN(bugprone-unchecked-optional-access) grpcPort.has_value() checked above
         BEAST_EXPECT(*grpcPort > 0);
@@ -682,15 +677,16 @@ public:
         using namespace jtx;
 
         auto cfg = envconfig();
-        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", "/nonexistent/path/to/cert.pem");
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslCert, "/nonexistent/path/to/cert.pem");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslKey, getServerKeyPath().string());
 
         Env env(*this, std::move(cfg));
 
         // Server should fail to start - verify port is 0
-        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        auto const grpcPort =
+            env.app().config()[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
         BEAST_EXPECT(grpcPort.has_value());
         BEAST_EXPECT(*grpcPort == 0);  // NOLINT(bugprone-unchecked-optional-access)
     }
@@ -703,15 +699,16 @@ public:
         using namespace jtx;
 
         auto cfg = envconfig();
-        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", "/nonexistent/path/to/key.pem");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslCert, getServerCertPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslKey, "/nonexistent/path/to/key.pem");
 
         Env env(*this, std::move(cfg));
 
         // Server should fail to start - verify port is 0
-        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        auto const grpcPort =
+            env.app().config()[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
         BEAST_EXPECT(grpcPort.has_value());
         BEAST_EXPECT(*grpcPort == 0);  // NOLINT(bugprone-unchecked-optional-access)
     }
@@ -724,16 +721,17 @@ public:
         using namespace jtx;
 
         auto cfg = envconfig();
-        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", "/nonexistent/path/to/chain.pem");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslCert, getServerCertPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslKey, getServerKeyPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslCertChain, "/nonexistent/path/to/chain.pem");
 
         Env env(*this, std::move(cfg));
 
         // Server should fail to start - verify port is 0
-        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        auto const grpcPort =
+            env.app().config()[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
         BEAST_EXPECT(grpcPort.has_value());
         BEAST_EXPECT(*grpcPort == 0);  // NOLINT(bugprone-unchecked-optional-access)
     }
@@ -746,16 +744,17 @@ public:
         using namespace jtx;
 
         auto cfg = envconfig();
-        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", "/nonexistent/path/to/ca.pem");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslCert, getServerCertPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslKey, getServerKeyPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslClientCa, "/nonexistent/path/to/ca.pem");
 
         Env env(*this, std::move(cfg));
 
         // Server should fail to start - verify port is 0
-        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        auto const grpcPort =
+            env.app().config()[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
         BEAST_EXPECT(grpcPort.has_value());
         BEAST_EXPECT(*grpcPort == 0);  // NOLINT(bugprone-unchecked-optional-access)
     }
@@ -773,16 +772,17 @@ public:
         emptyFile.close();
 
         auto cfg = envconfig();
-        (*cfg)[SECTION_PORT_GRPC].set("ip", "127.0.0.1");
-        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", emptyCAPath.string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kIp, "127.0.0.1");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslCert, getServerCertPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslKey, getServerKeyPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslClientCa, emptyCAPath.string());
 
         Env env(*this, std::move(cfg));
 
         // Server should fail to start due to empty CA file
-        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        auto const grpcPort =
+            env.app().config()[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
         BEAST_EXPECT(grpcPort.has_value());
         BEAST_EXPECT(*grpcPort == 0);  // NOLINT(bugprone-unchecked-optional-access)
     }
@@ -796,18 +796,19 @@ public:
 
         // Test with all TLS features enabled: cert, key, cert_chain, and client_ca
         auto cfg = envconfig();
-        (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
-        (*cfg)[SECTION_PORT_GRPC].set("port", "0");
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", getServerCertPath().string());
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_key", getServerKeyPath().string());
-        (*cfg)[SECTION_PORT_GRPC].set(
-            "ssl_cert_chain", getCACertPath().string());  // Using CA as intermediate
-        (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", getCACertPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kIp, getEnvLocalhostAddr());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kPort, "0");
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslCert, getServerCertPath().string());
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslKey, getServerKeyPath().string());
+        (*cfg)[Sections::kPortGrpc].set(
+            Keys::kSslCertChain, getCACertPath().string());  // Using CA as intermediate
+        (*cfg)[Sections::kPortGrpc].set(Keys::kSslClientCa, getCACertPath().string());
 
         Env env(*this, std::move(cfg));
 
         // Verify the server started successfully
-        auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
+        auto const grpcPort =
+            env.app().config()[Sections::kPortGrpc].get<unsigned int>(Keys::kPort);
         BEAST_EXPECT(grpcPort.has_value());
         // NOLINTBEGIN(bugprone-unchecked-optional-access) grpcPort.has_value() checked above
         BEAST_EXPECT(*grpcPort > 0);

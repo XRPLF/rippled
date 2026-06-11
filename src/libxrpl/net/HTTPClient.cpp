@@ -64,7 +64,7 @@ public:
         boost::asio::io_context& ioContext,
         unsigned short const port,
         std::size_t maxResponseSize,
-        beast::Journal& j)
+        beast::Journal const& j)
         : socket_(
               ioContext,
               gHttpClientSslContext->context())  // NOLINT(bugprone-unchecked-optional-access)
@@ -552,7 +552,7 @@ HTTPClient::get(
     std::function<
         bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
         complete,
-    beast::Journal& j)
+    beast::Journal const& j)
 {
     auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
@@ -570,7 +570,7 @@ HTTPClient::get(
     std::function<
         bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
         complete,
-    beast::Journal& j)
+    beast::Journal const& j)
 {
     std::deque<std::string> const deqSites(1, strSite);
 
@@ -590,7 +590,7 @@ HTTPClient::request(
     std::function<
         bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
         complete,
-    beast::Journal& j)
+    beast::Journal const& j)
 {
     std::deque<std::string> const deqSites(1, strSite);
 

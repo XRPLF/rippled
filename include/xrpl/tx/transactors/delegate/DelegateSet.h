@@ -23,10 +23,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -38,7 +35,7 @@ public:
 
     // Interface used by AccountDelete
     static TER
-    deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j);
+    deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j);
 };
 
 }  // namespace xrpl

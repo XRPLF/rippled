@@ -15,32 +15,35 @@ runs:
   using: composite
 
   steps:
-    - name: Set up Conan configuration
+    - name: Apply custom configuration to global.conf
       shell: bash
       run: |
-        echo 'Installing configuration.'
         cat conan/global.conf ${{ runner.os == 'Linux' && '>>' || '>' }} $(conan config home)/global.conf
 
-        echo 'Conan configuration:'
-        conan config show '*'
-
-    - name: Set up Conan profile
+    - name: Show global configuration
       shell: bash
       run: |
-        echo 'Installing profile.'
+        conan config show '*'
+
+    - name: Install profiles
+      shell: bash
+      run: |
         conan config install conan/profiles/ -tf $(conan config home)/profiles/
 
-        echo 'Conan profile:'
+    - name: Show CI profile
+      shell: bash
+      run: |
         conan profile show --profile ci
 
-    - name: Set up Conan remote
+    - name: Add a remote
       shell: bash
       env:
         REMOTE_NAME: ${{ inputs.remote_name }}
         REMOTE_URL: ${{ inputs.remote_url }}
       run: |
-        echo "Adding Conan remote '${REMOTE_NAME}' at '${REMOTE_URL}'."
         conan remote add --index 0 --force "${REMOTE_NAME}" "${REMOTE_URL}"
 
-        echo 'Listing Conan remotes.'
+    - name: List remotes
+      shell: bash
+      run: |
         conan remote list
