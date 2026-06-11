@@ -71,13 +71,8 @@ vptr_check:boost
 vptr:boost
 
 # Google protobuf - intentional overflows in hash functions
-# unsigned-integer-overflow is a separate check that is NOT part of the
-# `undefined` group, so the `undefined:protobuf` line above does not cover it.
-# Match protobuf broadly for this check (arena.cc unsigned negation,
-# serial_arena.h pointer-size arithmetic).
 undefined:protobuf
 unsigned-integer-overflow:protobuf
-unsigned-integer-overflow:google/protobuf/stubs/stringpiece.h
 
 # gRPC intentional overflows in timer calculations
 unsigned-integer-overflow:grpc
