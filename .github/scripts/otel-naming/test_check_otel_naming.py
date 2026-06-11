@@ -476,8 +476,71 @@ class RuleBCollector(unittest.TestCase):
         self.assertTrue(any("SKIP: B" in s for s in skips))
 
 
+class RuleCTempo(unittest.TestCase):
+    """Rule C reads the Grafana Tempo DATASOURCE file's search.filters and
+    validates only span-scope tags against L1."""
+
+    DS = "docker/telemetry/grafana/provisioning/datasources/tempo.yaml"
+
+    def _run(self, yaml_text, l1):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(d / self.DS, yaml_text)
+            report = chk.Report()
+            chk.run_rule_c_tempo(d, set(l1), report)
+            return sorted(v[2] for v in report.violations), report.skips
+        finally:
+            shutil.rmtree(d)
+
+    def _filter(self, fid, tag, scope):
+        return (
+            f"          - id: {fid}\n"
+            f"            tag: {tag}\n"
+            f'            operator: "="\n'
+            f"            scope: {scope}\n"
+            f"            type: static\n"
+        )
+
+    def test_span_tag_not_in_l1_flagged(self):
+        y = "search:\n        filters:\n" + self._filter("f1", "bogus_tag", "span")
+        v, _ = self._run(y, {"command"})
+        self.assertEqual(v, ["bogus_tag"])
+
+    def test_span_tags_in_l1_pass(self):
+        y = (
+            "search:\n        filters:\n"
+            + self._filter("f1", "command", "span")
+            + self._filter("f2", "tx_hash", "span")
+        )
+        v, _ = self._run(y, {"command", "tx_hash"})
+        self.assertEqual(v, [])
+
+    def test_resource_and_intrinsic_tags_ignored(self):
+        # service.* (resource) and name/status/duration (intrinsic) are not
+        # span attributes — they must not be validated against L1.
+        y = (
+            "search:\n        filters:\n"
+            + self._filter("f1", "service.instance.id", "resource")
+            + self._filter("f2", "name", "intrinsic")
+            + self._filter("f3", "duration", "intrinsic")
+        )
+        v, skips = self._run(y, {"command"})
+        self.assertEqual(v, [])
+        self.assertTrue(any("SKIP: C" in s for s in skips))
+
+    def test_skip_when_datasource_absent(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            report = chk.Report()
+            chk.run_rule_c_tempo(d, {"command"}, report)
+            self.assertEqual(report.violations, [])
+            self.assertTrue(any("SKIP: C" in s for s in report.skips))
+        finally:
+            shutil.rmtree(d)
+
+
 class RuleDDashboards(unittest.TestCase):
-    def _run(self, json_text, l1):
+    def _run(self, json_text, l1, metric_labels=frozenset()):
         d = Path(tempfile.mkdtemp())
         try:
             _write(
@@ -485,7 +548,7 @@ class RuleDDashboards(unittest.TestCase):
                 json_text,
             )
             report = chk.Report()
-            chk.run_rule_d_dashboards(d, set(l1), report)
+            chk.run_rule_d_dashboards(d, set(l1), set(metric_labels), report)
             return sorted(v[2] for v in report.violations)
         finally:
             shutil.rmtree(d)
@@ -512,6 +575,72 @@ class RuleDDashboards(unittest.TestCase):
 
     def test_l1_label_passes(self):
         self.assertEqual(self._run('"q": "{command=\\"x\\"}"', {"command"}), [])
+
+    def test_traceql_span_prefix_stripped(self):
+        # `span.establish_count` must validate against the bare L1 key.
+        self.assertEqual(
+            self._run(
+                '"expr": "count_over_time(x) by (span.establish_count)"',
+                {"establish_count"},
+            ),
+            [],
+        )
+
+    def test_traceql_resource_prefix_stripped(self):
+        self.assertEqual(self._run('"q": "{resource.service_name=\\"x\\"}"', set()), [])
+
+    def test_native_metric_label_passes(self):
+        # `job_type` / `reason` are emitted by MetricsRegistry, not span attrs.
+        self.assertEqual(
+            self._run(
+                '"expr": "sum by (job_type, reason) (x)"',
+                {"command"},
+                metric_labels={"job_type", "reason"},
+            ),
+            [],
+        )
+
+    def test_unknown_label_still_flagged_with_metric_labels(self):
+        # A label that is neither L1, metric label, nor builtin still fails.
+        self.assertEqual(
+            self._run(
+                '"expr": "sum by (bogus) (x)"',
+                {"command"},
+                metric_labels={"job_type"},
+            ),
+            ["bogus"],
+        )
+
+    def test_span_prefixed_unknown_still_flagged(self):
+        # `span.not_a_key` whose bare form is unknown is still a violation.
+        self.assertEqual(
+            self._run('"expr": "x by (span.not_a_key)"', {"command"}),
+            ["span.not_a_key"],
+        )
+
+
+class MetricLabelExtraction(unittest.TestCase):
+    """L6: native-metric label keys parsed from C++ instrument calls."""
+
+    def test_extracts_add_label(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            _write(
+                d / "src" / "xrpld" / "telemetry" / "MetricsRegistry.cpp",
+                'counter->Add(1, {{"job_type", std::string(jobType)}});\n'
+                'c2->Add(1, {{"reason", std::string(r)}});\n',
+            )
+            self.assertEqual(chk.metric_label_names(d), {"job_type", "reason"})
+        finally:
+            shutil.rmtree(d)
+
+    def test_no_metrics_file_empty(self):
+        d = Path(tempfile.mkdtemp())
+        try:
+            (d / "src").mkdir()
+            self.assertEqual(chk.metric_label_names(d), set())
+        finally:
+            shutil.rmtree(d)
 
 
 class ReportExitContract(unittest.TestCase):
