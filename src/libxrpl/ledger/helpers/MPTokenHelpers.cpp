@@ -72,7 +72,22 @@ isAnyFrozen(
     MPTIssue const& mptIssue,
     std::uint8_t depth)
 {
-    return isGlobalFrozen(view, mptIssue);
+    if (isGlobalFrozen(view, mptIssue))
+        return true;
+
+    for (auto const& account : accounts)
+    {
+        if (isIndividualFrozen(view, account, mptIssue))
+            return true;
+    }
+
+    for (auto const& account : accounts)
+    {
+        if (isVaultPseudoAccountFrozen(view, account, mptIssue, depth))
+            return true;
+    }
+
+    return false;
 }
 
 Rate

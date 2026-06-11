@@ -1818,7 +1818,7 @@ loanMakePayment(
         return std::unexpected(tecINTERNAL);
     }
 
-    std::int32_t const loanScale = loan->at(sfLoanScale) = 0;
+    std::int32_t const loanScale = loan->at(sfLoanScale);
 
     TenthBips32 const interestRate{loan->at(sfInterestRate)};
 
@@ -1828,9 +1828,9 @@ loanMakePayment(
     Number const periodicPayment = loan->at(sfPeriodicPayment);
 
     auto prevPaymentDateProxy = loan->at(sfPreviousPaymentDueDate);
-    std::uint32_t const startDate = loan->at(sfStartDate) = 0;
+    std::uint32_t const startDate = loan->at(sfStartDate);
 
-    std::uint32_t const paymentInterval = loan->at(sfPaymentInterval) = 0;
+    std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
 
     // Compute the periodic rate that will be used for calculations
     // throughout
