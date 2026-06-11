@@ -13,17 +13,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/invariants/AMMInvariant.h>
-#include <xrpl/tx/invariants/DirectoryInvariant.h>
-#include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
-#include <xrpl/tx/invariants/LoanBrokerInvariant.h>
-#include <xrpl/tx/invariants/LoanInvariant.h>
-#include <xrpl/tx/invariants/MPTInvariant.h>
-#include <xrpl/tx/invariants/NFTInvariant.h>
-#include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
-#include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
-#include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
 #include <array>
@@ -165,7 +155,7 @@ visitMappedLedgerTypeInvariantChecks(
     std::pair<LedgerEntryType, LedgerTypeInvariantVisitor>{ \
         tag, &visitMappedLedgerTypeInvariantChecks<tag>},
 
-static constexpr auto kLedgerTypeInvariantVisitors =
+constexpr auto kLedgerTypeInvariantVisitors =
     std::to_array<std::pair<LedgerEntryType, LedgerTypeInvariantVisitor>>({
 #include <xrpl/protocol/detail/ledger_entries.macro>
     });

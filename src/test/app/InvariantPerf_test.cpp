@@ -2,17 +2,24 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/trust.h>
 #include <test/unit_test/SuiteJournal.h>
+
+#include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
@@ -43,6 +50,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -187,7 +195,7 @@ nftokens(std::uint32_t const seed)
     XRPL_ASSERT(format, "InvariantPerf_test::nftokens : NFToken inner format");
 
     STArray tokens(sfNFTokens, 1);
-    auto const tokenID = uint256{seed * 4 + 1};
+    auto const tokenID = uint256{(seed * 4) + 1};
     STObject token{
         *format, sfNFToken, [&](STObject& object) { object.setFieldH256(sfNFTokenID, tokenID); }};
     tokens.pushBack(std::move(token));
@@ -209,7 +217,7 @@ syntheticKey(LedgerEntryType const type, std::uint32_t const seed)
         case ltNEGATIVE_UNL:
             return {ltNEGATIVE_UNL, uint256{300'000 + seed}};
         case ltNFTOKEN_PAGE:
-            return {ltNFTOKEN_PAGE, uint256{seed * 4 + 2}};
+            return {ltNFTOKEN_PAGE, uint256{(seed * 4) + 2}};
         case ltSIGNER_LIST:
             return keylet::signers(id);
         case ltTICKET:
@@ -513,9 +521,9 @@ class InvariantPerf_test : public beast::unit_test::Suite
         double const mean = sum / samples;
         double const variance = (sumSquared / samples) - (mean * mean);
         return {
-            Clock::duration{static_cast<Clock::rep>(mean)},
-            Clock::duration{static_cast<Clock::rep>(std::sqrt(std::max(0.0, variance)))},
-            samples};
+            .mean = Clock::duration{static_cast<Clock::rep>(mean)},
+            .stdDev = Clock::duration{static_cast<Clock::rep>(std::sqrt(std::max(0.0, variance)))},
+            .samples = samples};
     }
 
     template <class SetupEnv, class SetupContext>
@@ -621,7 +629,7 @@ class InvariantPerf_test : public beast::unit_test::Suite
         }
     }
 
-    bool
+    static bool
     check(BenchContext& context)
     {
         return context.applyContext->checkInvariants(tesSUCCESS, XRPAmount{}) == tesSUCCESS;
