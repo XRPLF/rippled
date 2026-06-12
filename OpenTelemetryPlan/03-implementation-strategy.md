@@ -233,6 +233,14 @@ xychart-beta
 - Maximum memory is bounded: ~8.3 MB static (dominated by worker thread stack) + 2048 queued spans x ~500 bytes (~1 MB) + active spans (~0.8 MB) ≈ **~10 MB ceiling**
 - The worker thread stack (~8 MB) is virtual memory; actual RSS depends on stack usage (typically much less)
 
+> **Measured outcome**: A perf-iac comparison (telemetry compiled-in + enabled vs compiled-out,
+> 9 nodes — validators and client-handlers — under sustained payment load) recorded **no measurable
+> RSS increase over the telemetry-off baseline** (~15 GiB mean / ~18–19 GiB peak on both sides),
+> with no OOM, no swap, and no leak across the run. The ~10 MB ceiling above is therefore a
+> provisioning safety margin (dominated by virtual thread-stack address space), not an expected
+> resident-memory increase. Steady-state cost shows up as throughput (~3–4% at head sampling 1.0),
+> not memory.
+
 ### 3.5.4 Performance Data Sources
 
 The overhead estimates in Sections 3.3-3.5 are derived from the following sources:
@@ -335,7 +343,7 @@ This section provides a detailed assessment of how intrusive the OpenTelemetry i
 
 | Component             | Files Modified | Lines Added | Lines Changed | Architectural Impact |
 | --------------------- | -------------- | ----------- | ------------- | -------------------- |
-| **Core Telemetry**    | 5 new files    | ~800        | 0             | None (new module)    |
+| **Core Telemetry**    | 11 new files   | ~980        | 0             | None (new module)    |
 | **Application Init**  | 2 files        | ~30         | ~5            | Minimal              |
 | **RPC Layer**         | 3 files        | ~80         | ~20           | Minimal              |
 | **Transaction Relay** | 4 files        | ~120        | ~40           | Low                  |
@@ -345,7 +353,7 @@ This section provides a detailed assessment of how intrusive the OpenTelemetry i
 | **PathFinding**       | 2              | ~80         | ~5            | Minimal              |
 | **TxQ/Fee**           | 2              | ~60         | ~5            | Minimal              |
 | **Validator/Amend**   | 3              | ~40         | ~5            | Minimal              |
-| **Total**             | **~28 files**  | **~1,490**  | **~120**      | **Low**              |
+| **Total**             | **~34 files**  | **~1,670**  | **~120**      | **Low**              |
 
 ### 3.9.2 Detailed File Impact
 
@@ -365,15 +373,19 @@ pie title Code Changes by Component
 
 #### New Files (No Impact on Existing Code)
 
-| File                                           | Lines | Purpose              |
-| ---------------------------------------------- | ----- | -------------------- |
-| `include/xrpl/telemetry/Telemetry.h`           | ~160  | Main interface       |
-| `include/xrpl/telemetry/SpanGuard.h`           | ~120  | RAII wrapper         |
-| `include/xrpl/telemetry/TraceContext.h`        | ~80   | Context propagation  |
-| `src/xrpld/telemetry/TracingInstrumentation.h` | ~60   | Macros               |
-| `src/libxrpl/telemetry/Telemetry.cpp`          | ~200  | Implementation       |
-| `src/libxrpl/telemetry/TelemetryConfig.cpp`    | ~60   | Config parsing       |
-| `src/libxrpl/telemetry/NullTelemetry.cpp`      | ~40   | No-op implementation |
+| File                                             | Lines | Purpose                  |
+| ------------------------------------------------ | ----- | ------------------------ |
+| `include/xrpl/telemetry/Telemetry.h`             | ~160  | Main interface           |
+| `include/xrpl/telemetry/TelemetryConfig.h`       | ~80   | Configuration structures |
+| `include/xrpl/telemetry/TraceContext.h`          | ~80   | Context propagation      |
+| `include/xrpl/telemetry/SpanGuard.h`             | ~120  | RAII wrapper             |
+| `include/xrpl/telemetry/SpanAttributes.h`        | ~60   | Attribute helpers        |
+| `src/libxrpl/telemetry/Telemetry.cpp`            | ~200  | Implementation           |
+| `src/libxrpl/telemetry/TelemetryConfig.cpp`      | ~60   | Config parsing           |
+| `src/libxrpl/telemetry/TraceContext.cpp`         | ~80   | Context serialization    |
+| `src/libxrpl/telemetry/NullTelemetry.cpp`        | ~40   | No-op implementation     |
+| `src/xrpld/telemetry/TracingInstrumentation.h`   | ~60   | Macros                   |
+| `src/xrpld/telemetry/TracingInstrumentation.cpp` | ~40   | Instrumentation impl     |
 
 #### Modified Files (Existing Xrpld Code)
 

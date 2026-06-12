@@ -16,12 +16,12 @@ This document provides a comprehensive implementation plan for integrating OpenT
 
 ### Estimated Performance Overhead
 
-| Metric        | Overhead   | Notes                               |
-| ------------- | ---------- | ----------------------------------- |
-| CPU           | 1-3%       | Span creation and attribute setting |
-| Memory        | 2-5 MB     | Batch buffer for pending spans      |
-| Network       | 10-50 KB/s | Compressed OTLP export to collector |
-| Latency (p99) | <2%        | With proper sampling configuration  |
+| Metric        | Overhead   | Notes                                            |
+| ------------- | ---------- | ------------------------------------------------ |
+| CPU           | 1-3%       | Span creation and attribute setting              |
+| Memory        | <10 MB     | SDK statics + batch buffer + worker thread stack |
+| Network       | 10-50 KB/s | Compressed OTLP export to collector              |
+| Latency (p99) | <2%        | With proper sampling configuration               |
 
 ---
 

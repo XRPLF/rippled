@@ -36,13 +36,14 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 documents but are not parsed by `TelemetryConfig.cpp` in Phase 1b and later
 phases. They will be added as the corresponding subsystems are instrumented:
 
-| Option            | Planned Phase | Purpose                                  |
-| ----------------- | ------------- | ---------------------------------------- |
-| `exporter`        | Future        | Select between OTLP/HTTP and OTLP/gRPC   |
-| `trace_pathfind`  | Phase 2       | Path computation tracing toggle          |
-| `trace_txq`       | Phase 3       | Transaction queue tracing toggle         |
-| `trace_validator` | Future        | Validator list / manifest update tracing |
-| `trace_amendment` | Future        | Amendment voting tracing                 |
+| Option                     | Planned Phase | Purpose                                                                 |
+| -------------------------- | ------------- | ----------------------------------------------------------------------- |
+| `exporter`                 | Future        | Select between OTLP/HTTP and OTLP/gRPC                                  |
+| `trace_pathfind`           | Phase 2       | Path computation tracing toggle                                         |
+| `trace_txq`                | Phase 3       | Transaction queue tracing toggle                                        |
+| `trace_validator`          | Future        | Validator list / manifest update tracing                                |
+| `trace_amendment`          | Future        | Amendment voting tracing                                                |
+| `consensus_trace_strategy` | Phase 4       | Trace ID strategy for consensus rounds (`deterministic` \| `attribute`) |
 
 ---
 
