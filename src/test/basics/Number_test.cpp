@@ -426,7 +426,7 @@ public:
         // Note that items with extremely large mantissas need to be
         // calculated, because otherwise they overflow uint64. Items from C
         // with larger mantissa
-        auto const cLargeLegacy = std::to_array<Case>({
+        auto const cLarge = std::to_array<Case>({
             // Anything larger than kMaxRep rounds up
             {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
              Number{1, 0},
@@ -446,7 +446,7 @@ public:
              __LINE__},
             {power(2, 63), Number{3, 0}, Number{Number::kMaxRep}, __LINE__},
         });
-        auto const cLarge = std::to_array<Case>({
+        auto const cLarge330 = std::to_array<Case>({
             // kMaxRep + 1 is below the half-way point, so it rounds down to kMaxRep when the Number
             // is created.
             {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
@@ -488,11 +488,11 @@ public:
             case MantissaRange::MantissaScale::LargeLegacy:
             case MantissaRange::MantissaScale::Large320:
                 test(cLargeAll);
-                test(cLargeLegacy);
+                test(cLarge);
                 break;
             case MantissaRange::MantissaScale::Large330:
                 test(cLargeAll);
-                test(cLarge);
+                test(cLarge330);
                 break;
             default:
                 BEAST_EXPECT(false);
@@ -2274,7 +2274,7 @@ public:
             auto const actual = static_cast<std::uint64_t>(kMaxRep) + 1;
             Number const below{static_cast<std::int64_t>(kMaxRep), 0};
             Number const above{
-                false, static_cast<std::uint64_t>(kMaxRep) + 3, 0, Number::Unchecked{}};
+                false, static_cast<std::uint64_t>(kMaxRep) + 3, 0, Number::Normalized{}};
 
             auto construct = [](Number::RoundingMode mode) {
                 NumberRoundModeGuard const roundGuard{mode};
@@ -2297,20 +2297,14 @@ public:
             switch (scale)
             {
                 case MantissaRange::MantissaScale::Small:
-                    // With the small mantissa, everything rounds up
+                    // With the small mantissa, everything but Downward rounds UP, including the
+                    // reference values, "above" and "below"
 
-                    // Upward rounds UP
-                    BEAST_EXPECT(upward > above);
+                    BEAST_EXPECT(below == above);
+                    BEAST_EXPECT(upward == above);
+                    BEAST_EXPECT(toNearest == above);
 
-                    // ToNearest rounds UP when the DOWN neighbor is strictly closer
-                    BEAST_EXPECT(toNearest > above);
-                    BEAST_EXPECT(toNearest == below);
-
-                    // Downward undershoots: it returns a value below `below`
                     BEAST_EXPECT(downward < below);
-
-                    // Both should have given the same answer, but they differ
-                    BEAST_EXPECT(toNearest > downward);
 
                     break;
 

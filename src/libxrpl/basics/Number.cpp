@@ -431,10 +431,10 @@ Number::Guard::pushOverflow(T const& mantissa)
         // * For round to nearest
         //      * if the mantissa is below the midpoint, it'll round "down" to kMaxRep
         //      * if above the midpoint, it'll round "up" to kMaxRepUp
-        //      * if can never be exactly at the midpoint, because kMaxRepUp is always even, and
-        //        kMaxRep is always odd, so don't worry about it.
+        //      * it can never be exactly at the midpoint, because kMaxRepUp is always even, and
+        //        kMaxRep is always odd, so don't worry about that case.
         // * For round upward, will round up to kMaxRepUp for positive values, down to kMaxRep for
-        // negative.
+        //   negative.
         // * For round downward, does the opposite of upward.
         // * For round toward zero, always rounds down to kMaxRep.
         auto constexpr spread = kMaxRepUp - kMaxRep;
@@ -501,13 +501,14 @@ void
 Number::Guard::bringIntoRange(bool& negative, T& mantissa, int& exponent)
 {
     // Bring mantissa back into the minMantissa / maxMantissa range AFTER
-    // rounding
-    if (mantissa < minMantissa &&
-        (cuspRoundingFix < MantissaRange::CuspRoundingFix::Enabled330 || mantissa != 0))
+    // rounding. Mantissa should never be 0.
+    XRPL_ASSERT(mantissa != 0, "xrpl::Number::Guard::bringIntoRange : valid mantissa");
+    if (mantissa < minMantissa)
     {
         mantissa *= 10;
         --exponent;
     }
+    // mantissa should never be 0, but if it _is_ make the result kZero.
     if (exponent < kMinExponent ||
         (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 && mantissa == 0))
     {
