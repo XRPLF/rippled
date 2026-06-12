@@ -10,11 +10,14 @@ cmake --version
 conan --version
 curl --version
 doxygen --version
+file --version
 g++ --version
 gcc --version
 gcov --version
 gcovr --version
+gh --version
 git --version
+git-cliff --version
 gpg --version
 less --version
 make --version

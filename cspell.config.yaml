@@ -84,6 +84,7 @@ words:
   - coro
   - coros
   - cowid
+  - cpack
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
@@ -232,8 +233,10 @@ words:
   - pyenv
   - pyparsing
   - qalloc
+  - qbsprofile
   - queuable
   - Raphson
+  - rcflags
   - replayer
   - rerere
   - retriable

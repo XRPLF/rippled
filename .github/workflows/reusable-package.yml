@@ -68,31 +68,6 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      # Packaging runs in a vanilla distro image, so the tooling has to come
-      # from the distro's archive: debhelper for deb, rpm-build (and the
-      # systemd / find-debuginfo macros it depends on) for rpm. Run this
-      # before actions/checkout so the latter can use git (real history) for
-      # build_pkg.sh's SOURCE_DATE_EPOCH; otherwise it falls back to a tarball
-      # download and the timestamp comes from wall-clock time.
-      - name: Install packaging tooling (deb)
-        if: ${{ matrix.distro == 'debian' }}
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          apt-get update
-          apt-get install -y --no-install-recommends \
-              ca-certificates \
-              debhelper \
-              git
-
-      - name: Install packaging tooling (rpm)
-        if: ${{ matrix.distro == 'rhel' }}
-        run: |
-          dnf install -y --setopt=install_weak_deps=False \
-              git \
-              rpm-build \
-              redhat-rpm-config \
-              systemd-rpm-macros
-
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
