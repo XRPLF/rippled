@@ -205,15 +205,37 @@ divu10(uint128_t& u)
     return r;
 }
 
-// Guard
-
-// The Guard class is used to temporarily add extra digits of
-// precision to an operation.  This enables the final result
-// to be correctly rounded to the internal precision of Number.
-
 template <class T>
 concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>;
 
+/** Guard
+
+    The Guard class is used to temporarily add extra digits of
+    precision to an operation.  This enables the final result
+    to be correctly rounded to the internal precision of Number.
+
+    At it's core, the Guard really only needs three pieces of information to determine how to round:
+    1. The rounding mode
+    2. The last digit dropped from the mantissa (i.e. the first digit after the decimal point).
+        (first byte of digits_)
+    3. Whether any other non-zero digits were dropped from the mantissa. (xbit_)
+
+    Upward and Downward rounding modes round the unsigned mantissa toward or away from zero
+    depending on whether the sign is negative (sbit_). For positive values, Upward is away, and
+    Downward is toward. For negative values, that's reversed. For simplicity, I'm going to describe
+    the logic using "TowardZero" and "FromZero".
+
+    * TowardZero is the easiest rounding mode. It always rounds down. digits_ and xbit_ are
+        irrelevant.
+    * FromZero is almost as simple. If both "digits_" and "xbit_" are zero (0), it rounds down.
+        Else it rounds up.
+    * ToNearest is only a little more complicated. If the last dropped digit is < 5, then round
+        down. If it is > 5, round up. If it is exactly 5, and there are _any_ other digits (the
+        remainder of "digits_" or "xbit_"), round up, else round to even.
+
+    The current implementation stores 16 digits in "digits_" so that digits can be "pop"ped back
+    out if needed during subtraction (negative addition) operations.
+*/
 class Number::Guard
 {
     std::uint64_t digits_{0};    // 16 decimal guard digits
@@ -452,23 +474,18 @@ Number::Guard::round() const noexcept
     if (mode == RoundingMode::TowardsZero)
         return Round::Down;
 
-    if (mode == RoundingMode::Downward)
+    // Also Towards Zero
+    if ((mode == RoundingMode::Downward && !sbit_) || (mode == RoundingMode::Upward && sbit_))
     {
-        if (sbit_)
-        {
-            if (digits_ > 0 || xbit_)
-                return Round::Up;
-        }
         return Round::Down;
     }
 
-    if (mode == RoundingMode::Upward)
+    // Away from Zero
+    if ((mode == RoundingMode::Downward && sbit_) || (mode == RoundingMode::Upward && !sbit_))
     {
-        if (sbit_)
+        if (empty())
             return Round::Down;
-        if (digits_ > 0 || xbit_)
-            return Round::Up;
-        return Round::Down;
+        return Round::Up;
     }
 
     // assume round to nearest if mode is not one of the predefined values
@@ -887,35 +904,94 @@ Number::operator+=(Number const& y)
 
     // Bring the exponents of both values into agreement, so the mantissas are on the same scale
     //   and can be added directly together.
+
+    auto const upperLimit = static_cast<uint128_t>(g.minMantissa) * 1000;
+    // For the "adjust" lambda
+    // expandM / expandE: The values for which the mantissa will be expanded, and the exponent
+    //  decreased to match. Mantissa won't be expanded beyond upperLimit.
+    //  (37e8 == 37000e5 == 37000000e2)
+    // shrinkM / shrinkE: The values for which the mantissa will be shrunk, and exponent increased
+    //  to match, if necessary.
+    auto const adjust = [&g, &upperLimit](
+                            uint128_t& expandM, int& expandE, uint128_t& shrinkM, int& shrinkE) {
+        // Adjust up and down until the exponents match
+        if (g.cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled330)
+        {
+            // For Enabled330, there are three steps.
+            // 1. First, shrink the mantissa of shrinkM/shrinkE while shrinkM ends in 0.
+            while (shrinkE < expandE && shrinkM % 10 == 0)
+            {
+                g.doDropDigit(shrinkM, shrinkE);
+            }
+
+            // 2. Then expand the mantissa of expandM/expandE, with a limit for expandM a few orders
+            // of magnitude above the MantissaRange. This will leave a few extra digits for rounding
+            // later, but no excess.
+            while (shrinkE < expandE && expandE > kMinExponent && expandM < upperLimit)
+            {
+                expandM *= 10;
+                --expandE;
+            }
+        }
+
+        // 3. Finally, shrink the mantissa of shrinkM/shrinkE until the exponents match. Any removed
+        // digits will be put into the Guard. This is the only step for non-Enabled330 modes.
+        while (shrinkE < expandE)
+        {
+            g.doDropDigit(shrinkM, shrinkE);
+        }
+    };
+
     // Shrink the mantissa and raise the exponent of the value with the lower exponent. Store any
     // dropped digits in the Guard.
     if (xe < ye)
     {
         if (xn)
             g.setNegative();
-        do
-        {
-            g.doDropDigit(xm, xe);
-        } while (xe < ye);
+
+        adjust(ym, ye, xm, xe);
     }
     else if (xe > ye)
     {
         if (yn)
             g.setNegative();
-        do
-        {
-            g.doDropDigit(ym, ye);
-        } while (xe > ye);
+
+        adjust(xm, xe, ym, ye);
+    }
+    else if (g.cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled330)
+    {
+        // Both values have the same exponent.
+        // Set the sign of the Guard based on the sign of the Number with the smallest
+        // unsigned _mantissa_
+        if ((xm < ym && xn) || (ym < xm && yn))
+            g.setNegative();
     }
 
     if (xn == yn)
     {
         xm += ym;
-        if (xm > maxMantissa || xm > repLimit)
+
+        if (g.cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330)
         {
-            g.doDropDigit(xm, xe);
+            // Don't do any adjustments for Enabled330. Normalize will take care of it
+            // Because of "adjust", the only way there can be data in the Guard is if we first grew
+            // the mantissa past the maxMantissa. Since we added here, it can only get bigger.
+            // If xm > maxMantissa, then doNormalize has all the data it needs from the last 3-4
+            // digits, plus the "dropped" flag that will be passed in.
+            // If not, then the mantissa will only need to be padded out with 0s and won't need to
+            // round.
+            XRPL_ASSERT(
+                xm > maxMantissa || g.empty(),
+                "xrpl::Number::operator+ : rounding state expected after add");
         }
-        g.doRoundUp(xn, xm, xe, "Number::addition overflow");
+        else
+        {
+            if (xm > maxMantissa || xm > repLimit)
+            {
+                g.doDropDigit(xm, xe);
+            }
+            g.doRoundUp(xn, xm, xe, "Number::addition overflow");
+        }
     }
     else
     {
@@ -931,18 +1007,24 @@ Number::operator+=(Number const& y)
         }
         if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330)
         {
-            // Grow xm/xe and pull digits out of the Guard until it's a little bit larger than
-            // maxMantissa, so that normalize will have enough information to make an accurate
-            // rounding decision, but stop if the Guard empties out, because no rounding will be
-            // necessary. (Normalize will pad it back into range.) Note that if any digits were lost
-            // (xbit), the Guard will never be empty, so xm will get larger than upperLimit.
-            auto const upperLimit = static_cast<uint128_t>(minMantissa) * 1000;
+            // Because we subtracted, xm can have any number of digits from 1 up to
+            // upperLimit * 10, and g can be in any state. (Note that xm can't be zero, because that
+            // special case was tested earlier.)
+
+            // Grow xm/xe and pull digits out of the Guard until xm reaches upperLimit, but stop if
+            // the Guard empties out, because no rounding will be necessary. This will ensure that
+            // normalize will have enough information to make an accurate rounding decision.
+            // (Normalize will pad a small mantissa back into range.) Note that if any digits were
+            // lost (xbit_), the Guard will never be empty, so xm will grow larger than upperLimit.
             while (xm < upperLimit && !g.empty())
             {
                 xm *= 10;
                 xm -= g.pop();
                 --xe;
             }
+            XRPL_ASSERT(
+                xm > maxMantissa || g.empty(),
+                "xrpl::Number::operator+ : rounding state expected after subtract");
         }
         else
         {
@@ -955,12 +1037,31 @@ Number::operator+=(Number const& y)
                 --xe;
             }
         }
-        // Round down, based on whether there is any data left in the Guard (depending on
-        // cuspRoundingFix)
+        // Rounding down can result in decrementing xm, based on whether there is any data left in
+        // the Guard (depending on cuspRoundingFix). Note that if that happens, then the Guard is
+        // not empty. For Enabled330, that will also result in the "dropped" flag being passed to
+        // doNormalize, which may result in the mantissa being incremented again. It doesn't matter
+        // what the dropped digits are, only that they exist. This is because subtracting one
+        // "overcorrects", so we know there are still trailing digits to be accounted for in the
+        // rounding.
+        //
+        // This works because
+        // 1. The rounding up will be done _after_ the mantissa is brought into range. It may not
+        //    be in range right now, and
+        // 2. The "dropped" flag is only ever used as a tie-breaker, specifically when rounding
+        //    away from zero, and the dropped digits are 0, or when rounding to nearest, and
+        //    the dropped digits represent exactly 0.5.
         g.doRoundDown(xn, xm, xe);
     }
 
-    doNormalize(xn, xm, xe, minMantissa, maxMantissa, cuspRoundingFix, false);
+    doNormalize(
+        xn,
+        xm,
+        xe,
+        minMantissa,
+        maxMantissa,
+        cuspRoundingFix,
+        cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled330 && !g.empty());
     negative_ = xn;
     mantissa_ = static_cast<internalrep>(xm);
     exponent_ = xe;

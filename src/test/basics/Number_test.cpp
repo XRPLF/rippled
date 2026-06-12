@@ -50,9 +50,11 @@ class Number_test : public beast::unit_test::Suite
     toBigInt(Number const& n)
     {
         BigInt v = n.mantissa();
-        for (int i = 0; i < n.exponent(); ++i)
+        auto e = n.exponent();
+
+        for (; e > 0; --e)
             v *= 10;
-        for (int i = 0; i > n.exponent(); --i)
+        for (; e < 0; ++e)
         {
             BEAST_EXPECT(v % 10 == 0);
             v /= 10;
@@ -2351,11 +2353,223 @@ public:
     }
 
     void
+    testNumberAddDirectedSignWrong()
+    {
+        auto const scale = Number::getMantissaScale();
+        testcase << "operator+ directed rounding wrong for equal-exponent negative sums "
+                 << to_string(scale);
+        {
+            // Two negative numbers with the same exponent
+            Number const a{-6, Number::mantissaLog()};
+            Number const b{a - 3};
+            BEAST_EXPECT(a.exponent() == b.exponent() && abs(b) > abs(a));
+
+            BigInt const exact = toBigInt(a) + toBigInt(b);
+            if (scale == MantissaRange::MantissaScale::Small)
+            {
+                BEAST_EXPECT(exact == BigInt{"-12000000000000003"});
+            }
+            else
+            {
+                BEAST_EXPECT(exact == BigInt{"-12000000000000000003"});
+            }
+
+            Number down, up;
+            {
+                NumberRoundModeGuard const g{Number::RoundingMode::Downward};
+                down = a + b;
+            }
+            {
+                NumberRoundModeGuard const g{Number::RoundingMode::Upward};
+                up = a + b;
+            }
+
+            auto const valueDown = toBigInt(down);
+            auto const valueUp = toBigInt(up);
+            log << "    exact    = " << fmt(exact) << "\n    downward = " << fmt(valueDown)
+                << "   (correct rounding: <= exact)"
+                << "\n    upward   = " << fmt(valueUp) << "   (correct rounding: >= exact)\n\n";
+            log.flush();
+
+            if (scale == MantissaRange::MantissaScale::Large330)
+            {
+                BEAST_EXPECT(valueDown <= exact);  // Downward should round away from zero
+                BEAST_EXPECT(valueUp >= exact);    // Upward should round toward 0
+            }
+            else
+            {
+                BEAST_EXPECT(valueDown > exact);  // Downward rounded toward zero (too high)
+                BEAST_EXPECT(valueUp < exact);    // Upward rounded toward -inf (too low)
+            }
+        }
+
+        {
+            // Positive control: the same magnitudes with a positive result round
+            Number const pa{6, Number::mantissaLog()};
+            Number const pb{pa + 3};
+            BEAST_EXPECT(pa.exponent() == pb.exponent() && abs(pb) > abs(pa));
+            BigInt const pexact = toBigInt(pa) + toBigInt(pb);  // 12'000'000'000'000'000'003
+
+            Number pdown, pup;
+            {
+                NumberRoundModeGuard const g{Number::RoundingMode::Downward};
+                pdown = pa + pb;
+            }
+            {
+                NumberRoundModeGuard const g{Number::RoundingMode::Upward};
+                pup = pa + pb;
+            }
+            auto const valuePDown = toBigInt(pdown);
+            auto const valuePUp = toBigInt(pup);
+            log << "    exact    = " << fmt(pexact) << "\n    downward = " << fmt(valuePDown)
+                << "   (correct rounding: <= exact)"
+                << "\n    upward   = " << fmt(valuePUp) << "   (correct rounding: >= exact)\n\n";
+            log.flush();
+
+            BEAST_EXPECT(valuePDown <= pexact);  // correct for positive results
+            BEAST_EXPECT(valuePUp >= pexact);
+        }
+
+        {
+            // Mixed sign numbers with the same exponent: negative second value
+            Number const a{1, Number::mantissaLog()};
+            Number const b{Number{-9, Number::mantissaLog()} - 3};
+            BEAST_EXPECT(a.exponent() == b.exponent() && abs(b) > abs(a));
+
+            BigInt const exact = toBigInt(a) + toBigInt(b);
+            if (scale == MantissaRange::MantissaScale::Small)
+            {
+                BEAST_EXPECT(exact == BigInt{"-8000000000000003"});
+            }
+            else
+            {
+                BEAST_EXPECT(exact == BigInt{"-8000000000000000003"});
+            }
+
+            Number down, up;
+            {
+                NumberRoundModeGuard const g{Number::RoundingMode::Downward};
+                down = a + b;
+            }
+            {
+                NumberRoundModeGuard const g{Number::RoundingMode::Upward};
+                up = a + b;
+            }
+
+            auto const valueDown = toBigInt(down);
+            auto const valueUp = toBigInt(up);
+            log << "    exact    = " << fmt(exact) << "\n    downward = " << fmt(valueDown)
+                << "   (correct rounding: <= exact)"
+                << "\n    upward   = " << fmt(valueUp) << "   (correct rounding: >= exact)\n\n";
+            log.flush();
+
+            BEAST_EXPECT(valueDown <= exact);  // Downward should round away from zero
+            BEAST_EXPECT(valueUp >= exact);    // Upward should round toward 0
+        }
+
+        {
+            // Mixed sign numbers with the same exponent: negative first value
+            Number const a{-1, Number::mantissaLog()};
+            Number const b{Number{9, Number::mantissaLog()} + 3};
+            BEAST_EXPECT(a.exponent() == b.exponent() && abs(b) > abs(a));
+
+            BigInt const exact = toBigInt(a) + toBigInt(b);
+            if (scale == MantissaRange::MantissaScale::Small)
+            {
+                BEAST_EXPECT(exact == BigInt{"8000000000000003"});
+            }
+            else
+            {
+                BEAST_EXPECT(exact == BigInt{"8000000000000000003"});
+            }
+
+            Number down, up;
+            {
+                NumberRoundModeGuard const g{Number::RoundingMode::Downward};
+                down = a + b;
+            }
+            {
+                NumberRoundModeGuard const g{Number::RoundingMode::Upward};
+                up = a + b;
+            }
+
+            auto const valueDown = toBigInt(down);
+            auto const valueUp = toBigInt(up);
+            log << "    exact    = " << fmt(exact) << "\n    downward = " << fmt(valueDown)
+                << "   (correct rounding: <= exact)"
+                << "\n    upward   = " << fmt(valueUp) << "   (correct rounding: >= exact)\n\n";
+            log.flush();
+
+            BEAST_EXPECT(valueDown <= exact);  // Downward should round away from zero
+            BEAST_EXPECT(valueUp >= exact);    // Upward should round toward 0
+        }
+    }
+
+    void
+    testNumberAddToNearestPicksFarther()
+    {
+        auto const scale = Number::getMantissaScale();
+
+        // Case is <y, expected q>
+        using Case = std::pair<Number, std::int64_t>;
+
+        auto const c = std::to_array<Case>({
+            {Number{5'175'909'259'972'499'745LL, 22}, -1'074'951'375'311'646'003},
+            {Number{1}, -1'074'956'551'220'905'975},
+            {Number{1, 10}, -1'074'956'551'220'905'975},
+            {Number{1, 20}, -1'074'956'551'220'905'975},
+            {Number{1, 27}, -1'074'956'551'220'905'975},
+            {Number{1, 28}, -1'074'956'551'220'905'974},
+            {Number{1, 31}, -1'074'956'551'220'904'975},
+        });
+
+        testcase << "operator+ ToNearest picks farther representable in cancellation "
+                 << to_string(scale);
+
+        for (auto const& [y, expectedQ] : c)
+        {
+            NumberRoundModeGuard const roundGuard{Number::RoundingMode::ToNearest};
+
+            Number const x{-1'074'956'551'220'905'975LL, 28};
+            Number const res = x + y;
+
+            BigInt const exact = toBigInt(x) + toBigInt(y);
+            BigInt const vres = toBigInt(res);
+
+            BigInt ulp = 1;
+            for (int i = 0; i < res.exponent(); ++i)
+                ulp *= 10;
+
+            BigInt const q = (exact - ulp / 2) / ulp;
+            Number const normalizedExact{static_cast<std::int64_t>(q), res.exponent()};
+            BigInt const norm = toBigInt(normalizedExact);
+
+            log << "    x                = " << x << "\n    y                = " << y
+                << "\n    exact            = " << fmt(exact)
+                << "\n    result (x + y)   = " << fmt(vres)
+                << "\n    normalize(exact) = " << fmt(norm) << "\n\n";
+            log.flush();
+
+            if (scale == MantissaRange::MantissaScale::Small)
+            {
+                auto const comp = toBigInt(Number{expectedQ, -3});
+                BEAST_EXPECTS(q == comp, fmt(q) + " != " + fmt(comp));
+            }
+            else
+            {
+                BEAST_EXPECTS(q == expectedQ, fmt(q) + " != " + fmt(BigInt(expectedQ)));
+            }
+            BEAST_EXPECT(normalizedExact == res);
+        }
+    }
+
+    void
     run() override
     {
         for (auto const scale : MantissaRange::getAllScales())
         {
             NumberMantissaScaleGuard const sg(scale);
+
             testZero();
             testLimits();
             testToString();
@@ -2379,6 +2593,8 @@ public:
             testInt64();
 
             testEdgeCases();
+            testNumberAddDirectedSignWrong();
+            testNumberAddToNearestPicksFarther();
         }
     }
 };
