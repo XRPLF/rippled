@@ -46,7 +46,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
         bool const enableVaultNumbers =
             !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
         bool const enableCuspRounding320 = !r || r->enabled(fixCleanup3_2_0);
-        bool const enableCuspRounding330 = !r || r->enabled(fixNumberStuff);
+        bool const enableCuspRounding330 = !r || r->enabled(fixCleanup3_3_0);
         XRPL_ASSERT(
             !r ||
                 useRulesGuards(*r) ==
@@ -83,7 +83,7 @@ useRulesGuards(Rules const& rules)
     // with createGuards, and any other callers, and the first set of guards can be created directly
     // at the call site, without using optional.
     return rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol) ||
-        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixNumberStuff);
+        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixCleanup3_3_0);
 }
 
 void
