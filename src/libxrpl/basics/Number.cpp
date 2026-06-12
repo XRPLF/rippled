@@ -446,7 +446,7 @@ Number::Guard::pushOverflow(T const& mantissa)
         auto const diff = mantissa - kMaxRep;
         auto const digit = (diff * 10) / spread;
         XRPL_ASSERT(
-            digit > 0 && digit < 10, "xrpld::Number::Guard::pushOverflow : valid overflow digit");
+            digit > 0 && digit < 10, "xrpl::Number::Guard::pushOverflow : valid overflow digit");
 
         // Don't remove the digit from the mantissa, but add it to the guard as if it was.
         push(digit);
