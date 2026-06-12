@@ -783,7 +783,7 @@ PeerImp::onShutdown(error_code ec)
         // - broken_pipe: the peer is gone
         bool const shouldLog =
             (ec != boost::asio::error::eof && ec != boost::asio::error::operation_aborted &&
-             ec.message().find("application data after close notify") == std::string::npos);
+             !ec.message().contains("application data after close notify"));
 
         if (shouldLog)
         {

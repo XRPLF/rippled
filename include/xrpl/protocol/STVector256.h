@@ -17,8 +17,8 @@ public:
     STVector256() = default;
 
     explicit STVector256(SField const& n);
-    explicit STVector256(std::vector<uint256> const& vector);
-    STVector256(SField const& n, std::vector<uint256> const& vector);
+    explicit STVector256(std::vector<uint256> vector);
+    STVector256(SField const& n, std::vector<uint256> vector);
     STVector256(SerialIter& sit, SField const& name);
 
     [[nodiscard]] SerializedTypeID
@@ -103,12 +103,12 @@ inline STVector256::STVector256(SField const& n) : STBase(n)
 {
 }
 
-inline STVector256::STVector256(std::vector<uint256> const& vector) : value_(vector)
+inline STVector256::STVector256(std::vector<uint256> vector) : value_(std::move(vector))
 {
 }
 
-inline STVector256::STVector256(SField const& n, std::vector<uint256> const& vector)
-    : STBase(n), value_(vector)
+inline STVector256::STVector256(SField const& n, std::vector<uint256> vector)
+    : STBase(n), value_(std::move(vector))
 {
 }
 
