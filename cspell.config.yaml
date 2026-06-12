@@ -237,8 +237,10 @@ words:
   - pyenv
   - pyparsing
   - qalloc
+  - qbsprofile
   - queuable
   - Raphson
+  - rcflags
   - replayer
   - rerere
   - retriable
