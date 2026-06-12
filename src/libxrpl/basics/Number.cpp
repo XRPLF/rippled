@@ -56,7 +56,6 @@ to_string(Number::RoundingMode const& round)
 {
     switch (round)
     {
-        enum class RoundingMode { ToNearest, TowardsZero, Downward, Upward };
 
         case Number::RoundingMode::ToNearest:
             return "ToNearest";
