@@ -212,7 +212,7 @@ concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>
     precision to an operation.  This enables the final result
     to be correctly rounded to the internal precision of Number.
 
-    At it's core, the Guard really only needs three pieces of information to determine how to round:
+    At its core, the Guard really only needs three pieces of information to determine how to round:
     1. The rounding mode
     2. The last digit dropped from the mantissa (i.e. the first digit after the decimal point).
         (first byte of digits_)
