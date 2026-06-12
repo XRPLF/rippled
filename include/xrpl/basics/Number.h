@@ -127,18 +127,24 @@ struct MantissaRange final
     using rep = std::uint64_t;
 
     enum class MantissaScale {
+        // Small can be removed when either featureSingleAssetVault or featureLendingProtocol are
+        // retired
         Small,
         // LargeLegacy can be removed when fixCleanup3_2_0 is retired
         LargeLegacy,
         // Large320 can be removed when fixCleanup3_3_0 is retired
         Large320,
+        // If Large330 is ever the only remaining "Large*" entry, it can be renamed to just "Large".
         Large330,
     };
 
-    // This entire enum can be removed when fixCleanup3_2_0 is retired
+    // This entire enum can be removed when the last relevant amendment is retired
     enum class CuspRoundingFix : std::uint8_t {
+        // Disabled can be removed when fixCleanup3_2_0 is retired
         Disabled = 0,
+        // Enabled320 can be removed when fixCleanup3_3_0 is retired
         Enabled320 = 1,
+        // If we ever get to the point that there's only one entry, remove the entire enum
         Enabled330 = 2,
     };
 

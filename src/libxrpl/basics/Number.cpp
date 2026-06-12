@@ -47,7 +47,7 @@ to_string(MantissaRange::MantissaScale const& scale)
         case MantissaRange::MantissaScale::Large330:
             return "Large330";
         default:
-            throw std::runtime_error("Bad scale");
+            throw std::runtime_error("Bad scale");  // LCOV_EXCL_LINE
     }
 }
 
@@ -65,7 +65,7 @@ to_string(Number::RoundingMode const& round)
         case Number::RoundingMode::Upward:
             return "Upward";
         default:
-            throw std::runtime_error("Bad rounding mode");
+            throw std::runtime_error("Bad rounding mode");  // LCOV_EXCL_LINE
     }
 }
 
@@ -216,16 +216,17 @@ concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>
     1. The rounding mode
     2. The last digit dropped from the mantissa (i.e. the first digit after the decimal point).
         (first byte of digits_)
-    3. Whether any other non-zero digits were dropped from the mantissa. (xbit_)
+    3. Whether any other non-zero digits were dropped from the mantissa. (remaining bytes of digits_
+   and xbit_)
 
     Upward and Downward rounding modes round the unsigned mantissa toward or away from zero
     depending on whether the sign is negative (sbit_). For positive values, Upward is away, and
     Downward is toward. For negative values, that's reversed. For simplicity, I'm going to describe
-    the logic using "TowardZero" and "FromZero".
+    the logic using "TowardZero" and "AwayFromZero".
 
     * TowardZero is the easiest rounding mode. It always rounds down. digits_ and xbit_ are
         irrelevant.
-    * FromZero is almost as simple. If both "digits_" and "xbit_" are zero (0), it rounds down.
+    * AwayFromZero is almost as simple. If both "digits_" and "xbit_" are zero (0), it rounds down.
         Else it rounds up.
     * ToNearest is only a little more complicated. If the last dropped digit is < 5, then round
         down. If it is > 5, round up. If it is exactly 5, and there are _any_ other digits (the
@@ -295,7 +296,8 @@ public:
     doDropDigit(T& mantissa, int& exponent) noexcept;
 
     enum class Round {
-        // The result is exact. No rounding is needed. Only used if cuspRoundingFix is Enabled.
+        // The result is exact. No rounding is needed. Only used if cuspRoundingFix is Enabled330 or
+        // higher.
         Exact = -2,
         // Round down. Since we use integer math, that usually means no change is needed.
         // Exceptions are for when the result is between kMaxRep and kMaxRepUp (round to kMaxRep),
@@ -549,6 +551,8 @@ Number::Guard::doRoundDown(bool& negative, T& mantissa, int& exponent)
     }
     else
     {
+        // Need to preserve the incorrect behavior until the fix amendment can be retired,
+        // because otherwise would risk an unplanned ledger fork.
         if (r == Round::Up || (r == Round::Even && (mantissa & 1) == 1))
         {
             --mantissa;
@@ -847,7 +851,7 @@ Number::operator+=(Number const& y)
 
             // 2. Then expand the mantissa of expandM/expandE, with a limit for expandM a few orders
             // of magnitude above the MantissaRange. This will leave a few extra digits for rounding
-            // later, but no excess.
+            // later, but nothing excessive.
             while (shrinkE < expandE && expandE > kMinExponent && expandM < upperLimit)
             {
                 expandM *= 10;
