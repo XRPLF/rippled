@@ -5846,7 +5846,7 @@ class Vault_test : public beast::unit_test::Suite
             // This value will be rounded
             auto const insertAt = maxInt64Plus2.size() - 3;
             auto const decimalTest = maxInt64Plus2.substr(0, insertAt) + "." +
-                maxInt64Plus2.substr(insertAt);  // (max int64+1) / 1000
+                maxInt64Plus2.substr(insertAt);  // (max int64+2) / 1000
             BEAST_EXPECT(decimalTest == "9223372036854775.809");
             tx[sfAssetsMaximum] = decimalTest;
             auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
@@ -5898,7 +5898,7 @@ class Vault_test : public beast::unit_test::Suite
             // This value will be rounded
             auto const insertAt = maxInt64Plus2.size() - 1;
             auto const decimalTest = maxInt64Plus2.substr(0, insertAt) + "." +
-                maxInt64Plus2.substr(insertAt);  // (max int64+1) / 10
+                maxInt64Plus2.substr(insertAt);  // (max int64+2) / 10
             BEAST_EXPECT(decimalTest == "922337203685477580.9");
             tx[sfAssetsMaximum] = decimalTest;
             auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
@@ -5950,7 +5950,7 @@ class Vault_test : public beast::unit_test::Suite
             {
                 auto const insertAt = maxInt64Plus2.size() - 1;
                 auto const decimalTest = maxInt64Plus2.substr(0, insertAt) + "." +
-                    maxInt64Plus2.substr(insertAt);  // (max int64+1) / 10
+                    maxInt64Plus2.substr(insertAt);  // (max int64+2) / 10
                 BEAST_EXPECT(decimalTest == "922337203685477580.9");
                 tx[sfAssetsMaximum] = decimalTest;
                 auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));

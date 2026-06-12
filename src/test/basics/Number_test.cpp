@@ -2267,8 +2267,7 @@ public:
         }
 
         {
-            testcase << "normalization cusp: ToNearest and Downward disagree " << to_string(scale);
-
+            testcase << "normalization cusp: ToNearest and Downward behavior " << to_string(scale);
             constexpr auto kMaxRep = Number::kMaxRep;
 
             // Both ToNearest and Downward should round to `below`
