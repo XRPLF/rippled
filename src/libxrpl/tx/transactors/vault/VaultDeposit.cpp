@@ -107,13 +107,21 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    // Cannot deposit inside Vault an Asset frozen for the depositor
-    if (isFrozen(ctx.view, account, vaultAsset))
-        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    if (ctx.view.rules().enabled(fixCleanup3_3_0))
+    {
+        if (auto const ret = checkDepositFreeze(ctx.view, account, vaultAccount, vaultAsset))
+            return ret;
+    }
+    else
+    {
+        // Cannot deposit inside Vault an Asset frozen for the depositor
+        if (isFrozen(ctx.view, account, vaultAsset))
+            return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
-    // Cannot deposit if the shares of the vault are frozen
-    if (isFrozen(ctx.view, account, vaultShare))
-        return tecLOCKED;
+        // Cannot deposit if the shares of the vault are frozen
+        if (isFrozen(ctx.view, account, vaultShare))
+            return tecLOCKED;
+    }
 
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {

@@ -167,13 +167,13 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& ass
 TER
 checkWithdrawFreezes(
     ReadView const& view,
-    AccountID const& sourceAcct,
+    AccountID const& srcAcct,
     AccountID const& submitterAcct,
     AccountID const& dstAcct,
     Asset const& asset)
 {
     XRPL_ASSERT(
-        isPseudoAccount(view, sourceAcct),
+        isPseudoAccount(view, srcAcct),
         "xrpl::checkWithdrawFreezes : source must be a pseudo-account");
 
     // No matter what, funds can be sent to the issuer
@@ -182,13 +182,36 @@ checkWithdrawFreezes(
 
     // The transfer is from Submitter to Destination via Source (pseudo-account)
     // Both Source and Submitter must not be frozen to allow sending funds
-    if (auto const ret = checkFrozen(view, sourceAcct, asset))
+    if (auto const ret = checkFrozen(view, srcAcct, asset))
         return ret;
 
-    if (auto const ret = checkFrozen(view, submitterAcct, asset))
-        return ret;
+    // Check submitter's individual freeze only when Submitter != Destination (a regular freeze
+    // should not block self-withdrawal).
+    if (submitterAcct != dstAcct)
+    {
+        if (auto const ret = checkFrozen(view, submitterAcct, asset))
+            return ret;
+    }
 
     // The destination account must not be deep frozen to receive the funds
+    return checkDeepFrozen(view, dstAcct, asset);
+}
+
+[[nodiscard]] TER
+checkDepositFreeze(
+    ReadView const& view,
+    AccountID const& srcAcct,
+    AccountID const& dstAcct,
+    Asset const& asset)
+{
+    XRPL_ASSERT(
+        isPseudoAccount(view, dstAcct),
+        "xrpl::checkDepositFreeze : destination must be a pseudo-account");
+
+    if (auto const ret = checkFrozen(view, srcAcct, asset))
+        return ret;
+
+    // Pseudo-account cannot receive if asset is deep frozen
     return checkDeepFrozen(view, dstAcct, asset);
 }
 

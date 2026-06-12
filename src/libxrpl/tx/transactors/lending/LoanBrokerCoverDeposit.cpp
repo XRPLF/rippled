@@ -77,12 +77,10 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     // Cannot transfer a non-transferable Asset
     if (auto const ret = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
         return ret;
-    // Cannot transfer a frozen Asset
-    if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
+
+    if (auto const ret = checkDepositFreeze(ctx.view, account, pseudoAccountID, vaultAsset))
         return ret;
-    // Pseudo-account cannot receive if asset is deep frozen
-    if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
-        return ret;
+
     // Cannot transfer unauthorized asset
     if (auto const ret = requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
         return ret;

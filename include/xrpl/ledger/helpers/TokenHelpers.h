@@ -150,6 +150,18 @@ checkWithdrawFreezes(
     AccountID const& dstAcct,
     Asset const& asset);
 
+/**
+ * Checks freeze compliance for a pseudo-account deposit.
+ *  - The source pseudo-account is not deep frozen for the asset
+ *  - The submitting account is not individually frozen for the asset
+ */
+[[nodiscard]] TER
+checkDepositFreeze(
+    ReadView const& view,
+    AccountID const& sourceAcct,
+    AccountID const& dstAcct,
+    Asset const& asset);
+
 //------------------------------------------------------------------------------
 //
 // Account balance functions (Asset-based dispatchers)
