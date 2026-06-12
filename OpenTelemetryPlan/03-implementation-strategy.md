@@ -337,19 +337,19 @@ This section provides a detailed assessment of how intrusive the OpenTelemetry i
 
 ### 3.9.1 Files Modified Summary
 
-| Component             | Files Modified | Lines Added | Lines Changed | Architectural Impact |
-| --------------------- | -------------- | ----------- | ------------- | -------------------- |
-| **Core Telemetry**    | 11 new files   | ~980        | 0             | None (new module)    |
-| **Application Init**  | 2 files        | ~30         | ~5            | Minimal              |
-| **RPC Layer**         | 3 files        | ~80         | ~20           | Minimal              |
-| **Transaction Relay** | 4 files        | ~120        | ~40           | Low                  |
-| **Consensus**         | 3 files        | ~100        | ~30           | Low-Medium           |
-| **Protocol Buffers**  | 1 file         | ~25         | 0             | Low                  |
-| **CMake/Build**       | 3 files        | ~50         | ~10           | Minimal              |
-| **PathFinding**       | 2              | ~80         | ~5            | Minimal              |
-| **TxQ/Fee**           | 2              | ~60         | ~5            | Minimal              |
-| **Validator/Amend**   | 3              | ~40         | ~5            | Minimal              |
-| **Total**             | **~34 files**  | **~1,670**  | **~120**      | **Low**              |
+| Component             | Files Modified | Architectural Impact |
+| --------------------- | -------------- | -------------------- |
+| **Core Telemetry**    | 10 new files   | None (new module)    |
+| **Application Init**  | 2 files        | Minimal              |
+| **RPC Layer**         | 3 files        | Minimal              |
+| **Transaction Relay** | 4 files        | Low                  |
+| **Consensus**         | 3 files        | Low-Medium           |
+| **Protocol Buffers**  | 1 file         | Low                  |
+| **CMake/Build**       | 3 files        | Minimal              |
+| **PathFinding**       | 2              | Minimal              |
+| **TxQ/Fee**           | 2              | Minimal              |
+| **Validator/Amend**   | 3              | Minimal              |
+| **Total**             | **~33 files**  | **Low**              |
 
 ### 3.9.2 Detailed File Impact
 
@@ -369,44 +369,43 @@ pie title Code Changes by Component
 
 #### New Files (No Impact on Existing Code)
 
-| File                                             | Lines | Purpose                  |
-| ------------------------------------------------ | ----- | ------------------------ |
-| `include/xrpl/telemetry/Telemetry.h`             | ~160  | Main interface           |
-| `include/xrpl/telemetry/TelemetryConfig.h`       | ~80   | Configuration structures |
-| `include/xrpl/telemetry/TraceContext.h`          | ~80   | Context propagation      |
-| `include/xrpl/telemetry/SpanGuard.h`             | ~120  | RAII wrapper             |
-| `include/xrpl/telemetry/SpanAttributes.h`        | ~60   | Attribute helpers        |
-| `src/libxrpl/telemetry/Telemetry.cpp`            | ~200  | Implementation           |
-| `src/libxrpl/telemetry/TelemetryConfig.cpp`      | ~60   | Config parsing           |
-| `src/libxrpl/telemetry/TraceContext.cpp`         | ~80   | Context serialization    |
-| `src/libxrpl/telemetry/NullTelemetry.cpp`        | ~40   | No-op implementation     |
-| `src/xrpld/telemetry/TracingInstrumentation.h`   | ~60   | Macros                   |
-| `src/xrpld/telemetry/TracingInstrumentation.cpp` | ~40   | Instrumentation impl     |
+| File                                        | Purpose                   |
+| ------------------------------------------- | ------------------------- |
+| `include/xrpl/telemetry/Telemetry.h`        | Main interface            |
+| `include/xrpl/telemetry/TelemetryConfig.h`  | Configuration structures  |
+| `include/xrpl/telemetry/TraceContext.h`     | Context propagation       |
+| `include/xrpl/telemetry/SpanGuard.h`        | RAII wrapper              |
+| `include/xrpl/telemetry/DiscardFlag.h`      | Thread-local discard flag |
+| `include/xrpl/telemetry/SpanAttributes.h`   | Attribute helpers         |
+| `src/libxrpl/telemetry/Telemetry.cpp`       | Implementation            |
+| `src/libxrpl/telemetry/TelemetryConfig.cpp` | Config parsing            |
+| `src/libxrpl/telemetry/TraceContext.cpp`    | Context serialization     |
+| `src/libxrpl/telemetry/NullTelemetry.cpp`   | No-op implementation      |
 
 #### Modified Files (Existing Xrpld Code)
 
-| File                                              | Lines Added | Lines Changed | Risk Level |
-| ------------------------------------------------- | ----------- | ------------- | ---------- |
-| `src/xrpld/app/main/Application.cpp`              | ~15         | ~3            | Low        |
-| `include/xrpl/core/ServiceRegistry.h`             | ~5          | ~2            | Low        |
-| `src/xrpld/rpc/detail/ServerHandler.cpp`          | ~40         | ~10           | Low        |
-| `src/xrpld/rpc/handlers/*.cpp`                    | ~30         | ~8            | Low        |
-| `src/xrpld/overlay/detail/PeerImp.cpp`            | ~60         | ~15           | Medium     |
-| `src/xrpld/overlay/detail/OverlayImpl.cpp`        | ~30         | ~10           | Medium     |
-| `src/xrpld/app/consensus/RCLConsensus.cpp`        | ~50         | ~15           | Medium     |
-| `src/xrpld/app/consensus/RCLConsensusAdaptor.cpp` | ~40         | ~12           | Medium     |
-| `src/xrpld/core/JobQueue.cpp`                     | ~20         | ~5            | Low        |
-| `src/xrpld/app/paths/PathRequest.cpp`             | ~40         | ~3            | Low        |
-| `src/xrpld/app/paths/Pathfinder.cpp`              | ~40         | ~2            | Low        |
-| `src/xrpld/app/misc/TxQ.cpp`                      | ~40         | ~3            | Low        |
-| `src/xrpld/app/main/LoadManager.cpp`              | ~20         | ~2            | Low        |
-| `src/xrpld/app/misc/ValidatorList.cpp`            | ~20         | ~2            | Low        |
-| `src/xrpld/app/misc/AmendmentTable.cpp`           | ~10         | ~2            | Low        |
-| `src/xrpld/app/misc/Manifest.cpp`                 | ~10         | ~1            | Low        |
-| `src/xrpld/shamap/SHAMap.cpp`                     | ~20         | ~3            | Low        |
-| `src/xrpld/overlay/detail/ripple.proto`           | ~25         | 0             | Low        |
-| `CMakeLists.txt`                                  | ~40         | ~8            | Low        |
-| `cmake/FindOpenTelemetry.cmake`                   | ~50         | 0             | None (new) |
+| File                                              | Risk Level |
+| ------------------------------------------------- | ---------- |
+| `src/xrpld/app/main/Application.cpp`              | Low        |
+| `include/xrpl/core/ServiceRegistry.h`             | Low        |
+| `src/xrpld/rpc/detail/ServerHandler.cpp`          | Low        |
+| `src/xrpld/rpc/handlers/*.cpp`                    | Low        |
+| `src/xrpld/overlay/detail/PeerImp.cpp`            | Medium     |
+| `src/xrpld/overlay/detail/OverlayImpl.cpp`        | Medium     |
+| `src/xrpld/app/consensus/RCLConsensus.cpp`        | Medium     |
+| `src/xrpld/app/consensus/RCLConsensusAdaptor.cpp` | Medium     |
+| `src/xrpld/core/JobQueue.cpp`                     | Low        |
+| `src/xrpld/app/paths/PathRequest.cpp`             | Low        |
+| `src/xrpld/app/paths/Pathfinder.cpp`              | Low        |
+| `src/xrpld/app/misc/TxQ.cpp`                      | Low        |
+| `src/xrpld/app/main/LoadManager.cpp`              | Low        |
+| `src/xrpld/app/misc/ValidatorList.cpp`            | Low        |
+| `src/xrpld/app/misc/AmendmentTable.cpp`           | Low        |
+| `src/xrpld/app/misc/Manifest.cpp`                 | Low        |
+| `src/xrpld/shamap/SHAMap.cpp`                     | Low        |
+| `src/xrpld/overlay/detail/ripple.proto`           | Low        |
+| `CMakeLists.txt`                                  | Low        |
+| `cmake/FindOpenTelemetry.cmake`                   | None (new) |
 
 ### 3.9.3 Risk Assessment by Component
 
