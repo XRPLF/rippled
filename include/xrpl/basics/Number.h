@@ -525,10 +525,13 @@ public:
             return !lneg;
 
         // If equal signs and exponents, compare mantissas.
-        if (lneg)
+        if constexpr (std::is_unsigned_v<decltype(l.mantissa_)>)
         {
-            // If negative, the operator is reversed.
-            return l.mantissa_ > r.mantissa_;
+            if (lneg)
+            {
+                // If negative, the operator is reversed.
+                return l.mantissa_ < r.mantissa_;
+            }
         }
 
         return l.mantissa_ < r.mantissa_;
