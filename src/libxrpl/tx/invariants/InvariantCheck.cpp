@@ -1001,7 +1001,7 @@ NoModifiedImmutableFields::finalize(
         return beforeField != afterField || (afterField && before->at(field) != after->at(field));
     };
 
-    bool const useTemplate = view.rules().enabled(fixImmutableInvariant);
+    bool const useTemplate = view.rules().enabled(fixCleanup3_3_0);
 
     for (auto const& slePair : changedEntries_)
     {

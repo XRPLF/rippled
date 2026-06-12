@@ -217,7 +217,7 @@ class Invariants_test : public beast::unit_test::Suite
             // std::cerr << messages << '\n';
             for (auto const& m : expectLogs)
             {
-                BEAST_EXPECTS(messages.find(m) != std::string::npos, m);
+                BEAST_EXPECTS(messages.contains(m), m);
             }
         }
     }
@@ -2188,8 +2188,7 @@ class Invariants_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!invariant.finalize(
                     makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, missingRootJlog));
                 BEAST_EXPECT(
-                    missingRootSink.messages().str().find("book directory root missing") !=
-                    std::string::npos);
+                    missingRootSink.messages().str().contains("book directory root missing"));
             }
             {
                 // delete
@@ -2321,7 +2320,7 @@ class Invariants_test : public beast::unit_test::Suite
                 {tesSUCCESS, tesSUCCESS});
         }
 
-        // Without fixImmutableInvariant, old hardcoded path should
+        // Without fixCleanup3_3_0, old hardcoded path should
         // still catch sfLedgerEntryType/sfLedgerIndex changes
         {
             auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
@@ -2332,7 +2331,7 @@ class Invariants_test : public beast::unit_test::Suite
             for (auto const& mod : mods)
             {
                 doInvariantCheck(
-                    Env(*this, defaultAmendments() - fixImmutableInvariant),
+                    Env(*this, defaultAmendments() - fixCleanup3_3_0),
                     {{"changed an unchangeable field"}},
                     [&](Account const& a1, Account const&, ApplyContext& ac) {
                         auto sle = ac.view().peek(keylet::account(a1.id()));
@@ -2345,12 +2344,12 @@ class Invariants_test : public beast::unit_test::Suite
             }
         }
 
-        // Without fixImmutableInvariant, modifying a SoeImmutable field
+        // Without fixCleanup3_3_0, modifying a SoeImmutable field
         // that is NOT sfLedgerEntryType/sfLedgerIndex on a non-loan
         // type should NOT fail (old code doesn't check it)
         {
             doInvariantCheck(
-                Env(*this, defaultAmendments() - fixImmutableInvariant),
+                Env(*this, defaultAmendments() - fixCleanup3_3_0),
                 {},
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     auto sle = ac.view().peek(keylet::account(a1.id()));
