@@ -52,7 +52,7 @@ namespace detail {
  * inefficient.
  */
 constexpr std::size_t kUint64Digits = 20;
-constexpr std::size_t kUint128Digits = 39;
+[[maybe_unused]] constexpr std::size_t kUint128Digits = 39;
 
 template <typename T, std::size_t Digits>
 consteval std::array<T, Digits>

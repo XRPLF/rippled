@@ -212,7 +212,7 @@ concept UnsignedMantissa = std::is_unsigned_v<T> || std::is_same_v<T, uint128_t>
     precision to an operation.  This enables the final result
     to be correctly rounded to the internal precision of Number.
 
-    At it's core, the Guard really only needs three pieces of information to determine how to round:
+    At its core, the Guard really only needs three pieces of information to determine how to round:
     1. The rounding mode
     2. The last digit dropped from the mantissa (i.e. the first digit after the decimal point).
         (first byte of digits_)
@@ -298,7 +298,7 @@ public:
         // The result is exact. No rounding is needed. Only used if cuspRoundingFix is Enabled.
         Exact = -2,
         // Round down. Since we use integer math, that usually means no change is needed.
-        // Exceptions are for when the result is between kMaxRap and kMaxRepUp (round to kMaxRep),
+        // Exceptions are for when the result is between kMaxRep and kMaxRepUp (round to kMaxRep),
         // or after subtraction where _any_ remainder will modify the result. The latter is what
         // distinguishes Exact from Down.
         Down = -1,
