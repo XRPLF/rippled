@@ -4987,7 +4987,7 @@ class Invariants_test : public beast::unit_test::Suite
             sleVault->makeFieldAbsent(sfAccount);
             ov.rawInsert(sleVault);
 
-            STTx tx{ttVAULT_DELETE, [](STObject&) {}};
+            STTx const tx{ttVAULT_DELETE, [](STObject&) {}};
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ApplyContext ac{
