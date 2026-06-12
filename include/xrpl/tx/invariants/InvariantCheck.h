@@ -386,8 +386,11 @@ public:
 };
 
 /*
- * Verify that all objects that have associated pseudo-accounts, always have the said
- * pseudo-accounts.
+ * Verify that when an object with an associated pseudo-account is deleted,
+ * its pseudo-account is also deleted.
+ *
+ * The reverse (pseudo-account deleted → object deleted) is enforced by
+ * AccountRootsDeletedClean via getPseudoAccountFields().
  */
 class ObjectHasPseudoAccount
 {
@@ -399,7 +402,7 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 
 private:
-    std::vector<SLE::const_pointer> sles_;
+    std::vector<SLE::const_pointer> deletedObjSles_;
 };
 // additional invariant checks can be declared above and then added to this
 // tuple

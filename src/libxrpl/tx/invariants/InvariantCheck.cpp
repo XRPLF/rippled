@@ -1072,25 +1072,24 @@ ValidAmounts::finalize(
 void
 ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    // If an object is deleted, pseudo-account is also deleted
-    if (isDelete)
+    if (!isDelete)
         return;
 
-    // After should never be null when isDelete = false, if it is, something went horribly wrong
-    if (!after)
+    // Before should never be null when isDelete = true
+    if (!before)
     {
         XRPL_ASSERT(
-            after,
-            "xrpl::ObjectHasPseudoAccount::visitEntry : modified ledger entry missing after state");
+            before,
+            "xrpl::ObjectHasPseudoAccount::visitEntry : deleted ledger entry missing before state");
         return;  // LCOV_EXCL_LINE
     }
 
-    switch (after->getType())
+    switch (before->getType())
     {
         case ltAMM:
         case ltVAULT:
         case ltLOAN_BROKER:
-            sles_.push_back(after);
+            deletedObjSles_.push_back(before);
             break;
         default:
             return;
@@ -1108,28 +1107,32 @@ ObjectHasPseudoAccount::finalize(
     if (!view.rules().enabled(fixCleanup3_3_0))
         return true;
 
-    if (sles_.empty())
+    if (deletedObjSles_.empty())
         return true;
 
+    auto const typeName = [](SLE const& sle) {
+        if (auto item = LedgerFormats::getInstance().findByType(sle.getType()))
+            return item->getName();
+        return std::to_string(sle.getType());
+    };
+
     bool failed = false;
-    for (auto const& sle : sles_)
+    for (auto const& sle : deletedObjSles_)
     {
-        // For current ledger entry types, pseudo-account is identified by `sfAccount` field.
         if (!sle->isFieldPresent(sfAccount))
         {
-            JLOG(j.fatal()) << "Invariant failed: ledger entry " << sle->getSType()
+            JLOG(j.fatal()) << "Invariant failed: deleted " << typeName(*sle)
                             << " is missing pseudo-account field";
             failed = true;
             continue;
         }
 
+        // The pseudo-account must NOT exist on the ledger after the object is deleted.
         bool const exists = view.read(keylet::account(sle->getAccountID(sfAccount))) != nullptr;
-
-        // The pseudo-account must exist on the ledger
-        if (!exists)
+        if (exists)
         {
-            JLOG(j.fatal()) << "Invariant failed: ledger entry " << sle->getSType()
-                            << " pseudo-account does not exist";
+            JLOG(j.fatal()) << "Invariant failed: deleted " << typeName(*sle)
+                            << " without deleting its pseudo-account";
             failed = true;
         }
     }
