@@ -48,12 +48,12 @@ struct MPTSetFlagMapping
 };
 
 static constexpr std::array<MPTSetFlagMapping, 6> mptSetFlagMappings = {{
-    {tmfMPTSetCanLock, lsfMPTCanLock},
-    {tmfMPTSetRequireAuth, lsfMPTRequireAuth},
-    {tmfMPTSetCanEscrow, lsfMPTCanEscrow},
-    {tmfMPTSetCanClawback, lsfMPTCanClawback},
-    {tmfMPTSetCanTrade, lsfMPTCanTrade},
-    {tmfMPTSetCanTransfer, lsfMPTCanTransfer},
+    {.setFlag = tmfMPTSetCanLock, .ledgerFlag = lsfMPTCanLock},
+    {.setFlag = tmfMPTSetRequireAuth, .ledgerFlag = lsfMPTRequireAuth},
+    {.setFlag = tmfMPTSetCanEscrow, .ledgerFlag = lsfMPTCanEscrow},
+    {.setFlag = tmfMPTSetCanClawback, .ledgerFlag = lsfMPTCanClawback},
+    {.setFlag = tmfMPTSetCanTrade, .ledgerFlag = lsfMPTCanTrade},
+    {.setFlag = tmfMPTSetCanTransfer, .ledgerFlag = lsfMPTCanTransfer},
 }};
 
 void
@@ -441,8 +441,12 @@ MPTTester::set(MPTSet const& arg)
                 if (arg.mutableFlags)
                 {
                     for (auto const& [setFlag, ledgerFlag] : mptSetFlagMappings)
+                    {
                         if ((*arg.mutableFlags & setFlag) != 0u)
+                        {
                             flags |= ledgerFlag;
+                        }
+                    }
                 }
             }
             env_.require(MptFlags(*this, flags, holder));

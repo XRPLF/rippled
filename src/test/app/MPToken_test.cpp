@@ -4357,13 +4357,13 @@ class MPToken_test : public beast::unit_test::Suite
         {
             Env env(*this);
             env.fund(XRP(1'000), gw, alice, carol);
-            MPTTester btc(
+            MPTTester const btc(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol},
                  .pay = 100,
                  .flags = tfMPTCanTrade | tfMPTCanTransfer});
-            MPTTester eth(
+            MPTTester const eth(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol},
@@ -4719,13 +4719,13 @@ class MPToken_test : public beast::unit_test::Suite
             auto const ed = Account{"ed"};
             Env env{*this, features};
             env.fund(XRP(1'000), gw, alice, carol, bob, ed);
-            MPTTester btc(
+            MPTTester const btc(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob, ed},
                  .pay = 1'000,
                  .flags = tfMPTCanTrade});
-            MPTTester eth(
+            MPTTester const eth(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice, carol, bob, ed},
@@ -7611,7 +7611,7 @@ class MPToken_test : public beast::unit_test::Suite
                                                   TER const gwToAlice,
                                                   TER const aliceToAlice,
                                                   TER const aliceToCarol) {
-            MPTTester mpt(
+            MPTTester const mpt(
                 {.env = env, .issuer = gw, .holders = {alice, carol}, .pay = 100, .flags = flags});
 
             BEAST_EXPECT(canMPTTradeAndTransfer(*env.current(), mpt, gw, gw) == gwToGw);
