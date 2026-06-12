@@ -28,6 +28,7 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <random>
 #include <string>

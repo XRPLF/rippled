@@ -36,6 +36,7 @@
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -548,7 +549,7 @@ run(int argc, char** argv)
 
         if (vm.contains("unittest-arg"))
             argument = vm["unittest-arg"].as<std::string>();
-        if (vm.count("unittest-fee"))
+        if (vm.contains("unittest-fee") != 0u)
             referenceFee = vm["unittest-fee"].as<std::int64_t>();
 
         std::size_t numJobs = 1;
@@ -571,8 +572,9 @@ run(int argc, char** argv)
     }
     // LCOV_EXCL_START
 
-    if (vm.count("unittest-jobs") || vm.count("unittest-arg") || vm.count("unittest-fee") ||
-        vm.count("unittest-log") || vm.count("unittest-ipv6"))
+    if ((vm.contains("unittest-jobs") != 0u) || (vm.contains("unittest-arg") != 0u) ||
+        (vm.contains("unittest-fee") != 0u) || (vm.contains("unittest-log") != 0u) ||
+        (vm.contains("unittest-ipv6") != 0u))
     {
         // unittest jobs only makes sense with `unittest`
         std::cerr << "xrpld: unittest-related parameter specified without '--unittest'.\n";

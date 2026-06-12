@@ -5,16 +5,18 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 
+#include <xrpld/core/Config.h>
+
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <functional>
 #include <memory>
 #include <string>
-#include <utility>
 
 namespace xrpl::RPC {
 

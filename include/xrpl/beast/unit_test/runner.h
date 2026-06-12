@@ -67,7 +67,7 @@ public:
     }
 
     /** Returns the reference fee, if any. */
-    std::optional<std::int64_t> const&
+    [[nodiscard]] std::optional<std::int64_t> const&
     referenceFee() const
     {
         return referenceFee_;

@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <optional>
+#include <string>
 #include <thread>
 #include <utility>
 

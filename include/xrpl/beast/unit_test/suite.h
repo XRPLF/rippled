@@ -285,7 +285,7 @@ public:
     referenceFee() const
     {
         assert(runner_);
-        if (!runner_)
+        if (runner_ == nullptr)
             return {};
         return runner_->referenceFee();
     }
