@@ -4788,6 +4788,157 @@ public:
     }
 
     void
+    testMPTOfferZeroRate(FeatureBitset features)
+    {
+        // An MPT offer whose quality is not representable must be rejected in
+        // preflight with temBAD_OFFER -- on both the buy and sell sides, with
+        // or without a TickSize on the IOU issuer.
+        //
+        // getRate(TakerGets, TakerPays) returns 0 when the rate overflows: a
+        // large MPT TakerPays (XLS-0082 allows up to 2^63-1) over a small IOU
+        // TakerGets. Such an offer would otherwise (a) rest in the quality-0
+        // book directory, whose index equals getBookBase(), which BookTip's
+        // strict successor scan never returns -- so it can never be crossed yet
+        // still consumes the owner's reserve; and (b) on a TickSize market,
+        // drive the tick-rounding path in applyGuts to divide by a zero rate,
+        // throwing and surfacing as tefEXCEPTION. A normally-priced offer in the
+        // same market is unaffected.
+        testcase("MPT Offer Zero Rate");
+
+        using namespace jtx;
+
+        // Mantissa well above the ~1.84e17 overflow threshold (with an IOU
+        // denominator mantissa of 1e15); still within the XLS-0082 range.
+        auto const kBigMpt = 5'000'000'000'000'000'000LL;
+
+        auto runScenario = [&](bool withTickSize) {
+            Env env{*this, features};
+            auto const gw = Account{"gateway"};
+            auto const alice = Account{"alice"};
+            env.fund(XRP(10'000), gw, alice);
+            env.close();
+
+            auto const usd = gw["USD"];
+            env(trust(alice, usd(1'000)));
+            env(pay(gw, alice, usd(100)));
+            env.close();
+
+            if (withTickSize)
+            {
+                auto txn = noop(gw);
+                txn[sfTickSize.fieldName] = 5;
+                env(txn);
+                env.close();
+                BEAST_EXPECT((*env.le(gw))[sfTickSize] == 5);
+            }
+
+            // gw issues a DEX-tradable MPT (CanTrade | CanTransfer by default)
+            // and authorizes alice to hold it.
+            MPT const mpt = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice}, .maxAmt = kMaxMpTokenAmount});
+
+            // Buy side: TakerPays = large MPT, TakerGets = small IOU.
+            // getRate() overflows to 0 -> rejected, no offer placed.
+            BEAST_EXPECT(getRate(usd(1), mpt(kBigMpt)) == 0);
+            env(offer(alice, mpt(kBigMpt), usd(1)), Ter(temBAD_OFFER));
+            env.close();
+            BEAST_EXPECT(offersOnAccount(env, alice).empty());
+
+            // Sell side (tfSell): preflight rejects regardless of the flag,
+            // since the rate is computed from the raw amounts either way.
+            BEAST_EXPECT(getRate(usd(1), mpt(kBigMpt)) == 0);
+            env(offer(alice, mpt(kBigMpt), usd(1), tfSell), Ter(temBAD_OFFER));
+            env.close();
+            BEAST_EXPECT(offersOnAccount(env, alice).empty());
+
+            // Control: a normally-priced offer in the same market still
+            // places, proving the check does not over-reject (and that the
+            // tick-size rounding path still works when withTickSize is set).
+            env(offer(alice, mpt(10'000'000), usd(30)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(offersOnAccount(env, alice).size() == 1);
+        };
+
+        // Without a TickSize: previously placed as a dead, never-crossable
+        // quality-0 entry that still consumed reserve.
+        runScenario(/*withTickSize=*/false);
+        // With a TickSize: previously threw and surfaced as tefEXCEPTION.
+        runScenario(/*withTickSize=*/true);
+    }
+
+    void
+    testZeroRateXRPIOUOffer(FeatureBitset features)
+    {
+        // A rate-0 offer is reachable without MPT: for XRP/IOU the "too
+        // good" underflow path makes getRate() return 0 when a tiny IOU
+        // TakerPays is divided by an XRP TakerGets.
+        //
+        // Without featureMPTokensV2 the offer is accepted and placed, but
+        // rests in the quality-0 book directory (whose index == getBookBase),
+        // which BookTip's strict successor scan never returns -- so it can
+        // never be crossed, even by a willing, better-priced counterparty.
+        // With featureMPTokensV2 the same offer is rejected in preflight with
+        // temBAD_OFFER. (Unverified in this environment -- needs a real run.)
+        testcase("Zero Rate XRP/IOU Offer");
+
+        using namespace jtx;
+
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const usd = gw["USD"];
+
+        // Smallest-magnitude IOU: mantissa kMinValue, exponent kMinOffset
+        // (= 1e-81). divide(tinyUsd, XRP(1000)) underflows below kMinOffset
+        // and canonicalizes to 0, so getRate() returns 0.
+        auto const tinyUsd = STAmount{usd, 1'000'000'000'000'000LL, -96};
+
+        auto setup = [&](Env& env) {
+            env.fund(XRP(100'000), gw, alice, bob);
+            env.close();
+            env(trust(alice, usd(1'000)));
+            env(trust(bob, usd(1'000)));
+            env(pay(gw, bob, usd(100)));
+            env.close();
+        };
+
+        // featureMPTokensV2 disabled: legacy behavior -- placed but inert.
+        {
+            Env env{*this, features - featureMPTokensV2};
+            setup(env);
+
+            // TakerPays = tiny IOU, TakerGets = XRP -> rate 0.
+            BEAST_EXPECT(getRate(XRP(1'000), tinyUsd) == 0);
+            env(offer(alice, tinyUsd, XRP(1'000)), Ter(tesSUCCESS));
+            env.close();
+
+            auto const aliceOffers = offersOnAccount(env, alice);
+            BEAST_EXPECT(aliceOffers.size() == 1);
+            // Placed in the quality-0 book directory.
+            BEAST_EXPECT(getQuality((*aliceOffers.front())[sfBookDirectory]) == 0);
+
+            // A complementary offer that would cross a usable offer at this
+            // (astronomically good) price does NOT cross it, because the
+            // quality-0 directory is never visited: both offers rest.
+            env(offer(bob, XRP(1'000), usd(10)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(offersOnAccount(env, alice).size() == 1);
+            BEAST_EXPECT(offersOnAccount(env, bob).size() == 1);
+        }
+
+        // featureMPTokensV2 enabled: rejected in preflight, nothing placed.
+        {
+            Env env{*this, features};
+            setup(env);
+
+            BEAST_EXPECT(getRate(XRP(1000), tinyUsd) == 0);
+            env(offer(alice, tinyUsd, XRP(1000)), Ter(temBAD_OFFER));
+            env.close();
+            BEAST_EXPECT(offersOnAccount(env, alice).empty());
+        }
+    }
+
+    void
     testAutoCreateReserve(FeatureBitset features)
     {
         // When an offer on the book is partially crossed, the payment engine
@@ -5219,6 +5370,8 @@ public:
         testRmSmallIncreasedQOffersMPT(features);
         testFillOrKill(features);
         testTickSize(features);
+        testMPTOfferZeroRate(features);
+        testZeroRateXRPIOUOffer(features);
         testBookOffersMPTFunding(features);
         testAutoCreateReserve(features);
         testBookBaseMixedAssetCollision(features);
