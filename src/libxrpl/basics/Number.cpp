@@ -56,7 +56,6 @@ to_string(Number::RoundingMode const& round)
 {
     switch (round)
     {
-
         case Number::RoundingMode::ToNearest:
             return "ToNearest";
         case Number::RoundingMode::TowardsZero:
