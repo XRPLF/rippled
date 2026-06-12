@@ -1,7 +1,7 @@
 #include <xrpl/server/State.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/rdb/SociDB.h>
 
