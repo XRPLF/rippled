@@ -14,7 +14,6 @@
 #include <openssl/rand.h>
 #include <utility/mpt_utility.h>
 
-#include <mpt_protocol.h>
 #include <secp256k1.h>
 #include <secp256k1_mpt.h>
 
@@ -218,6 +217,16 @@ homomorphicSubtract(Slice const& a, Slice const& b)
     }
 
     return serializeEcPair(diff);
+}
+
+std::optional<Buffer>
+rerandomizeCiphertext(Slice const& ciphertext, Slice const& pubKeySlice, Slice const& randomness)
+{
+    auto zero = encryptAmount(0, pubKeySlice, randomness);
+    if (!zero)
+        return std::nullopt;
+
+    return homomorphicAdd(ciphertext, *zero);
 }
 
 Buffer

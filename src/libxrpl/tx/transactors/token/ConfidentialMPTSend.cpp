@@ -270,10 +270,11 @@ ConfidentialMPTSend::doApply()
 
     auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     auto sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
+    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
 
     auto const sleDestAcct = view().read(keylet::account(destination));
 
-    if (!sleSenderMPToken || !sleDestinationMPToken || !sleDestAcct)
+    if (!sleSenderMPToken || !sleDestinationMPToken || !sleIssuance || !sleDestAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Deposit preauth authorization was already verified in preclaim.
@@ -285,6 +286,8 @@ ConfidentialMPTSend::doApply()
     auto const senderEc = ctx_.tx[sfSenderEncryptedAmount];
     auto const destEc = ctx_.tx[sfDestinationEncryptedAmount];
     auto const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
+    auto const proof = ctx_.tx[sfZKProof];
+    Slice const sendChallenge{proof.data(), kEcBlindingFactorLength};
 
     auto const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
 
@@ -321,8 +324,13 @@ ConfidentialMPTSend::doApply()
 
     // Add to destination's inbox balance
     {
+        auto rerandomizedDestEc = rerandomizeCiphertext(
+            destEc, (*sleDestinationMPToken)[sfHolderEncryptionKey], sendChallenge);
+        if (!rerandomizedDestEc)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
         auto const curInbox = (*sleDestinationMPToken)[sfConfidentialBalanceInbox];
-        auto newInbox = homomorphicAdd(curInbox, destEc);
+        auto newInbox = homomorphicAdd(curInbox, *rerandomizedDestEc);
         if (!newInbox)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -331,8 +339,13 @@ ConfidentialMPTSend::doApply()
 
     // Add to issuer's balance
     {
+        auto rerandomizedIssuerEc =
+            rerandomizeCiphertext(issuerEc, (*sleIssuance)[sfIssuerEncryptionKey], sendChallenge);
+        if (!rerandomizedIssuerEc)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
         auto const curIssuerEnc = (*sleDestinationMPToken)[sfIssuerEncryptedBalance];
-        auto newIssuerEnc = homomorphicAdd(curIssuerEnc, issuerEc);
+        auto newIssuerEnc = homomorphicAdd(curIssuerEnc, *rerandomizedIssuerEc);
         if (!newIssuerEnc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 

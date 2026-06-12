@@ -201,6 +201,21 @@ std::optional<Buffer>
 homomorphicSubtract(Slice const& a, Slice const& b);
 
 /**
+ * @brief Re-randomizes an ElGamal ciphertext without changing its plaintext.
+ *
+ * Adds Enc(0; randomness) under the supplied public key to the ciphertext.
+ * This is used when a public, deterministic scalar must perturb ciphertext
+ * randomness while preserving ledger reproducibility.
+ *
+ * @param ciphertext The ciphertext to re-randomize (66 bytes).
+ * @param pubKeySlice The ElGamal public key matching the ciphertext recipient.
+ * @param randomness The scalar used as zero-encryption randomness (32 bytes).
+ * @return The re-randomized ciphertext, or std::nullopt on failure.
+ */
+std::optional<Buffer>
+rerandomizeCiphertext(Slice const& ciphertext, Slice const& pubKeySlice, Slice const& randomness);
+
+/**
  * @brief Encrypts an amount using ElGamal encryption.
  *
  * Produces a ciphertext C = (C1, C2) where C1 = r*G and C2 = m*G + r*Pk,
