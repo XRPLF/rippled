@@ -1349,7 +1349,7 @@ class Invariants_test : public beast::unit_test::Suite
             tecINCOMPLETE,
             zeroLP,
             !enforceAMMDelete,
-            "Invariant failed: AMMDelete failed, AMM object deleted on tecINCOMPLETE");
+            "Invariant failed: AMMDelete failed, AMM object deleted when result is not tesSUCCESS");
 
         checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, nonZeroLP, true, "");
         checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, nonZeroLP, true, "");
