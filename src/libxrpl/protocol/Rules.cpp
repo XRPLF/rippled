@@ -7,7 +7,6 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STVector256.h>
 
 #include <memory>
@@ -47,7 +46,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
         bool const enableVaultNumbers =
             !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
         bool const enableCuspRounding320 = !r || r->enabled(fixCleanup3_2_0);
-        bool const enableCuspRounding330 = !r || r->enabled(fixNumberStuff);
+        bool const enableCuspRounding330 = !r || r->enabled(fixCleanup3_3_0);
         XRPL_ASSERT(
             !r ||
                 useRulesGuards(*r) ==
@@ -84,21 +83,18 @@ useRulesGuards(Rules const& rules)
     // with createGuards, and any other callers, and the first set of guards can be created directly
     // at the call site, without using optional.
     return rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol) ||
-        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixNumberStuff);
+        rules.enabled(fixCleanup3_2_0) || rules.enabled(fixCleanup3_3_0);
 }
 
 void
 createGuards(
     Rules const& rules,
-    std::optional<NumberSO>& stNumberSO,
     std::optional<CurrentTransactionRulesGuard>& rulesGuard,
     std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard)
 {
     if (useRulesGuards(rules))
     {
         // raii classes for the current ledger rules.
-        // fixUniversalNumber predates the rulesGuard and should be replaced.
-        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
         rulesGuard.emplace(rules);
     }
     else
