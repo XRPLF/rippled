@@ -4867,7 +4867,7 @@ public:
     }
 
     void
-    testZeroRateXRPIOUOffer(FeatureBitset features)
+    testZeroRateXrpIouOffer(FeatureBitset features)
     {
         // A rate-0 offer is reachable without MPT: for XRP/IOU the "too
         // good" underflow path makes getRate() return 0 when a tiny IOU
@@ -5371,7 +5371,7 @@ public:
         testFillOrKill(features);
         testTickSize(features);
         testMPTOfferZeroRate(features);
-        testZeroRateXRPIOUOffer(features);
+        testZeroRateXrpIouOffer(features);
         testBookOffersMPTFunding(features);
         testAutoCreateReserve(features);
         testBookBaseMixedAssetCollision(features);
