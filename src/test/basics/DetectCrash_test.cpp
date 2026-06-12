@@ -2,10 +2,9 @@
 
 #include <exception>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-struct DetectCrash_test : public beast::unit_test::suite
+struct DetectCrash_test : public beast::unit_test::Suite
 {
     void
     testDetectCrash()
@@ -24,5 +23,4 @@ struct DetectCrash_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_MANUAL(DetectCrash, basics, beast);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

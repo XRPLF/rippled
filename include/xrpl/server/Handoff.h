@@ -21,12 +21,12 @@ struct Handoff
     bool moved = false;
 
     // If response is set, this determines the keep alive
-    bool keep_alive = false;
+    bool keepAlive = false;
 
     // When set, this will be sent back
     std::shared_ptr<Writer> response;
 
-    bool
+    [[nodiscard]] bool
     handled() const
     {
         return moved || response;

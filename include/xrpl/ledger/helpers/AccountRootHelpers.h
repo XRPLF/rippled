@@ -9,7 +9,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
-#include <memory>
 #include <set>
 #include <vector>
 
@@ -36,11 +35,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 
 /** Adjust the owner count up or down. */
 void
-adjustOwnerCount(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    std::int32_t amount,
-    beast::Journal j);
+adjustOwnerCount(ApplyView& view, SLE::ref sle, std::int32_t amount, beast::Journal j);
 
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
  * the fee as fractions of 1 billion. For example, 1% transfer rate
@@ -76,9 +71,7 @@ getPseudoAccountFields();
     - null pointer
 */
 [[nodiscard]] bool
-isPseudoAccount(
-    std::shared_ptr<SLE const> sleAcct,
-    std::set<SField const*> const& pseudoFieldFilter = {});
+isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseudoFieldFilter = {});
 
 /** Convenience overload that reads the account from the view. */
 [[nodiscard]] inline bool
@@ -98,7 +91,7 @@ isPseudoAccount(
  * before using a field. The amendment check is **not** performed in
  * createPseudoAccount.
  */
-[[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
+[[nodiscard]] Expected<SLE::pointer, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField);
 
 /** Checks the destination and tag.

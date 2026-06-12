@@ -1,9 +1,21 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/NodeIdentity.h>
+
+#include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/server/Wallet.h>
+
+#include <boost/program_options/variables_map.hpp>
+
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -29,8 +41,8 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
 
     if (seed)
     {
-        auto secretKey = generateSecretKey(KeyType::secp256k1, *seed);
-        auto publicKey = derivePublicKey(KeyType::secp256k1, secretKey);
+        auto secretKey = generateSecretKey(KeyType::Secp256k1, *seed);
+        auto publicKey = derivePublicKey(KeyType::Secp256k1, secretKey);
 
         return {publicKey, secretKey};
     }

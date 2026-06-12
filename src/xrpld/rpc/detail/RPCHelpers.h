@@ -33,7 +33,7 @@ struct JsonContext;
  * @return A 64-bit unsigned integer representing the start hint for traversal.
  */
 std::uint64_t
-getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
+getStartHint(SLE::const_ref sle, AccountID const& accountID);
 
 /**
  * @brief Tests if a ledger entry (SLE) is owned by the specified account.
@@ -47,10 +47,7 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
  * @return true if the SLE is owned by the account, false otherwise.
  */
 bool
-isRelatedToAccount(
-    ReadView const& ledger,
-    std::shared_ptr<SLE const> const& sle,
-    AccountID const& accountID);
+isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& accountID);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.
@@ -61,7 +58,7 @@ isRelatedToAccount(
  * @return A hash_set containing the parsed AccountID objects.
  */
 hash_set<AccountID>
-parseAccountIds(Json::Value const& jvArray);
+parseAccountIds(json::Value const& jvArray);
 
 /**
  * @brief Retrieves the limit value from a JsonContext or sets a default.
@@ -76,7 +73,7 @@ parseAccountIds(Json::Value const& jvArray);
  * @return An optional JSON value containing an error if one occurred, or
  * std::nullopt on success.
  */
-std::optional<Json::Value>
+std::optional<json::Value>
 readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext const& context);
 
 /**
@@ -91,19 +88,19 @@ readLimitField(unsigned int& limit, Tuning::LimitRange const& range, JsonContext
  * @return An optional Seed if parsing is successful, or std::nullopt otherwise.
  */
 std::optional<Seed>
-getSeedFromRPC(Json::Value const& params, Json::Value& error);
+getSeedFromRPC(json::Value const& params, json::Value& error);
 
 /**
- * @brief Parses a RippleLib seed from RPC parameters.
+ * @brief Parses a XrplLib seed from RPC parameters.
  *
  * Attempts to extract and return a Seed from the provided JSON parameters using
- * RippleLib conventions.
+ * XrplLib conventions.
  *
  * @param params The JSON value containing RPC parameters.
  * @return An optional Seed if parsing is successful, or std::nullopt otherwise.
  */
 std::optional<Seed>
-parseRippleLibSeed(Json::Value const& params);
+parseXrplLibSeed(json::Value const& params);
 
 /**
  * @brief Chooses the ledger entry type based on RPC parameters.
@@ -116,7 +113,7 @@ parseRippleLibSeed(Json::Value const& params);
  * @return A pair consisting of the RPC status and the chosen LedgerEntryType.
  */
 std::pair<RPC::Status, LedgerEntryType>
-chooseLedgerEntryType(Json::Value const& params);
+chooseLedgerEntryType(json::Value const& params);
 
 /**
  * @brief Checks if the type is a valid filtering type for the account_objects
@@ -150,9 +147,18 @@ isAccountObjectsValidType(LedgerEntryType const& type);
  */
 std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
-    Json::Value const& params,
-    Json::Value& error,
-    unsigned int apiVersion = apiVersionIfUnspecified);
+    json::Value const& params,
+    json::Value& error,
+    unsigned int apiVersion = kApiVersionIfUnspecified);
+
+/** Parse subscribe/unsubscribe parameters
+ */
+ErrorCodeI
+parseSubUnsubJson(
+    Asset& asset,
+    json::Value const& jv,
+    json::StaticString const& name,
+    beast::Journal j);
 
 }  // namespace RPC
 
