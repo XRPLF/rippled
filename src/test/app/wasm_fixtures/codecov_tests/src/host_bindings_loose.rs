@@ -19,20 +19,20 @@ pub const FLOAT_ROUNDING_MODES_UPWARD: i32 = 3;
 #[allow(unused)]
 #[link(wasm_import_module = "host_lib")]
 unsafe extern "C" {
-    pub fn get_parent_ledger_hash(out_buff_ptr: i32, out_buff_len: i32) -> i32;
+    pub fn parent_ldgr_hash(out_buff_ptr: i32, out_buff_len: i32) -> i32;
 
-    pub fn cache_ledger_obj(keylet_ptr: i32, keylet_len: i32, cache_num: i32) -> i32;
+    pub fn cache_le(keylet_ptr: i32, keylet_len: i32, cache_num: i32) -> i32;
 
-    pub fn get_tx_nested_array_len(locator_ptr: i32, locator_len: i32) -> i32;
+    pub fn tx_inner_arr_len(locator_ptr: i32, locator_len: i32) -> i32;
 
-    pub fn account_keylet(
+    pub fn accountroot_id(
         account_ptr: i32,
         account_len: i32,
         out_buff_ptr: *mut u8,
         out_buff_len: usize,
     ) -> i32;
 
-    pub fn line_keylet(
+    pub fn trustline_id(
         account1_ptr: *const u8,
         account1_len: usize,
         account2_ptr: *const u8,

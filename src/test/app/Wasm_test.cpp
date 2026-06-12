@@ -179,7 +179,7 @@ struct Wasm_test : public beast::unit_test::Suite
         Env env{*this};
         TestLedgerDataProvider hfs(env);
         ImportVec imports;
-        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", hfs, 33);
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "ldgr_index", hfs, 33);
         auto& engine = WasmEngine::instance();
 
         auto re =
@@ -217,7 +217,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto re = engine.run(
                 allHostFuncWasm, hfs, 1'000'000, escrowFunctionName, {}, imp, env.journal);
 
-            checkResult(re, 1, 27'617);
+            checkResult(re, 1, 27'032);
 
             env.close();
         }
@@ -239,7 +239,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto re = engine.run(
                 allHostFuncWasm, hfs, 1'000'000, escrowFunctionName, {}, imp, env.journal);
 
-            checkResult(re, 1, 70'877);
+            checkResult(re, 1, 68'792);
 
             env.close();
         }
@@ -278,7 +278,7 @@ struct Wasm_test : public beast::unit_test::Suite
         {
             TestHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName, {});
-            checkResult(re, 1, 70'877);
+            checkResult(re, 1, 68'792);
         }
 
         {
@@ -302,7 +302,7 @@ struct Wasm_test : public beast::unit_test::Suite
             TestHostFunctions hfs(env);
             auto re = runEscrowWasm(
                 allHFWasm, hfs, std::numeric_limits<int64_t>::max(), escrowFunctionName, {});
-            checkResult(re, 1, 70'877);
+            checkResult(re, 1, 68'792);
         }
 
         {  // fail because trying to access nonexistent field
@@ -320,7 +320,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
             FieldNotFoundHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName, {});
-            checkResult(re, -201, 29'502);
+            checkResult(re, -201, 28'965);
         }
 
         {  // fail because trying to allocate more than MAX_PAGES memory
@@ -338,7 +338,7 @@ struct Wasm_test : public beast::unit_test::Suite
 
             OversizedFieldHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, 100'000, escrowFunctionName, {});
-            checkResult(re, -201, 29'502);
+            checkResult(re, -201, 28'965);
         }
     }
 
@@ -354,7 +354,7 @@ struct Wasm_test : public beast::unit_test::Suite
         auto const codecovWasm = hexToBytes(kCodecovTestsWasmHex);
         TestHostFunctions hfs(env);
 
-        auto const allowance = 220'169;
+        auto const allowance = 204'624;
         auto re = runEscrowWasm(codecovWasm, hfs, allowance, escrowFunctionName, {});
 
         checkResult(re, 1, allowance);
