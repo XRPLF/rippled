@@ -125,15 +125,23 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
         return ter;
 
-    // Check for freezes, unless sending directly to the issuer
-    if (dstAcct != vaultAsset.getIssuer())
+    if (ctx.view.rules().enabled(fixCleanup3_3_0))
     {
-        // Cannot send a frozen Asset
-        if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
+        if (auto const ret =
+                checkWithdrawFreezes(ctx.view, pseudoAccountID, account, dstAcct, vaultAsset))
             return ret;
-        // Destination account cannot receive if asset is deep frozen
-        if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
-            return ret;
+    }
+    else
+    {  // Check for freezes, unless sending directly to the issuer
+        if (dstAcct != vaultAsset.getIssuer())
+        {
+            // Cannot send a frozen Asset
+            if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
+                return ret;
+            // Destination account cannot receive if asset is deep frozen
+            if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
+                return ret;
+        }
     }
 
     auto const coverAvail = sleBroker->at(sfCoverAvailable);

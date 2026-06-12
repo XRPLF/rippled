@@ -131,6 +131,25 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& 
 [[nodiscard]] TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
+/**
+ * Checks freeze compliance for a pseudo-account withdrawal to a non-issuer destination.
+ *
+ * Returns tesSUCCESS immediately when dstAcct is the asset issuer — redemption
+ * to the issuer bypasses all freeze checks.
+ *
+ * Otherwise checks:
+ *   - The source pseudo-account is not frozen for the asset (checkFrozen).
+ *   - The submitting account is not individually frozen for the asset (checkFrozen).
+ *   - The destination is not deep-frozen for the asset (checkDeepFrozen).
+ */
+[[nodiscard]] TER
+checkWithdrawFreezes(
+    ReadView const& view,
+    AccountID const& sourceAcct,
+    AccountID const& submitterAcct,
+    AccountID const& dstAcct,
+    Asset const& asset);
+
 //------------------------------------------------------------------------------
 //
 // Account balance functions (Asset-based dispatchers)

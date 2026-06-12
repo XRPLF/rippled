@@ -78,13 +78,12 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const& vaultAccount = vault->at(sfAccount);
     auto const& account = ctx.tx[sfAccount];
     auto const& dstAcct = ctx.tx[~sfDestination].value_or(account);
-
-    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     // Post-fixCleanup3_2_0: withdraw is a recovery path that bypasses the
     // lsfMPTCanTransfer flag check, so an issuer cannot trap depositor funds.
     // Other transferability checks (IOU NoRipple, freeze, requireAuth) still
     // apply.
-    auto const waive = fix320Enabled ? WaiveMPTCanTransfer::Yes : WaiveMPTCanTransfer::No;
+    auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
+                                                                 : WaiveMPTCanTransfer::No;
     if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct, waive);
         !isTesSuccess(ter))
     {
@@ -161,28 +160,22 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType); !isTesSuccess(ter))
         return ter;
 
-    // Pre-fixCleanup3_2_0: any freeze on the destination blocked withdrawal
-    // even though frozen accounts can still receive. Post-amendment:
-    // - Frozen pseudo-account (vault) cannot send assets.
-    // - Only deep-frozen destinations (which cannot receive at all) are blocked.
-    if (fix320Enabled)
+    if (ctx.view.rules().enabled(fixCleanup3_3_0))
     {
-        if (dstAcct != vaultAsset.getIssuer())
-        {
-            if (auto const ret = checkFrozen(ctx.view, vaultAccount, vaultAsset))
-                return ret;
-
-            if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
-                return ret;
-
-            // Cannot return shares to the vault, if the underlying asset was frozen for
-            // the submitter
-            if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
-                return ret;
-        }
+        // checkWithdrawFreezes checks the underlying asset on the source
+        // (vault pseudo-account), the submitter, and the destination.
+        // A separate share-level freeze check is unnecessary: vault shares
+        // are issued by the vault pseudo-account, which cannot submit
+        // MPTokenIssuanceSet to individually lock a holder's MPToken.
+        // The only way shares become locked is transitively via the
+        // underlying asset, which checkWithdrawFreezes already covers.
+        if (auto const ret =
+                checkWithdrawFreezes(ctx.view, vaultAccount, account, dstAcct, vaultAsset))
+            return ret;
     }
     else
     {
+        // Cannot withdraw from a Vault an Asset frozen for the destination account
         if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
             return ret;
 
@@ -191,7 +184,6 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
             return ret;
     }
-
     return tesSUCCESS;
 }
 
@@ -277,13 +269,11 @@ VaultWithdraw::doApply()
         return tecPATH_DRY;
     }
 
-    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
-    bool const redeemingToIssuer =
-        view().rules().enabled(fixCleanup3_2_0) && dstAcct == vaultAsset.getIssuer();
-    auto const freezeHandling =
-        redeemingToIssuer ? FreezeHandling::IgnoreFreeze : FreezeHandling::ZeroIfFrozen;
-
-    // Share freeze checks are transitive. We skip them when withdrawing to the issuer alltogether.
+    // Post-fixCleanup3_3_0: preclaim already handles all freeze checks, so they are safe to skip
+    // here
+    auto const freezeHandling = view().rules().enabled(fixCleanup3_3_0)
+        ? FreezeHandling::IgnoreFreeze
+        : FreezeHandling::ZeroIfFrozen;
     if (accountHolds(view(), accountID_, share, freezeHandling, AuthHandling::IgnoreAuth, j_) <
         sharesRedeemed)
     {
@@ -389,6 +379,7 @@ VaultWithdraw::doApply()
 
     associateAsset(*vault, vaultAsset);
 
+    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
     return doWithdraw(
         view(), ctx_.tx, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
 }

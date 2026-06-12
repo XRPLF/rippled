@@ -164,6 +164,34 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& ass
         [&](auto const& issue) { return checkDeepFrozen(view, account, issue); }, asset.value());
 }
 
+TER
+checkWithdrawFreezes(
+    ReadView const& view,
+    AccountID const& sourceAcct,
+    AccountID const& submitterAcct,
+    AccountID const& dstAcct,
+    Asset const& asset)
+{
+    XRPL_ASSERT(
+        isPseudoAccount(view, sourceAcct),
+        "xrpl::checkWithdrawFreezes : source must be a pseudo-account");
+
+    // No matter what, funds can be sent to the issuer
+    if (dstAcct == asset.getIssuer())
+        return tesSUCCESS;
+
+    // The transfer is from Submitter to Destination via Source (pseudo-account)
+    // Both Source and Submitter must not be frozen to allow sending funds
+    if (auto const ret = checkFrozen(view, sourceAcct, asset))
+        return ret;
+
+    if (auto const ret = checkFrozen(view, submitterAcct, asset))
+        return ret;
+
+    // The destination account must not be deep frozen to receive the funds
+    return checkDeepFrozen(view, dstAcct, asset);
+}
+
 //------------------------------------------------------------------------------
 //
 // Account balance functions

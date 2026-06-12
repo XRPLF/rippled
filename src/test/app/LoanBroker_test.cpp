@@ -1785,6 +1785,78 @@ class LoanBroker_test : public beast::unit_test::Suite
     }
 
     void
+    testCoverWithdrawFreezes(FeatureBitset features)
+    {
+        testcase << "LoanBrokerCoverWithdraw - freeze checks (fixCleanup3_3_0)";
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+
+        auto const withFix = features[fixCleanup3_3_0];
+        Env env(*this, features);
+        env.fund(XRP(100'000), issuer, alice);
+        env.close();
+
+        auto const iou = issuer["IOU"];
+
+        env(trust(alice, iou(1'000'000)));
+        env.close();
+        env(pay(issuer, alice, iou(100'000)));
+        env.close();
+
+        Vault const vault{env};
+        auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = iou.asset()});
+        env(tx);
+        env.close();
+
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = iou(10'000)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key));
+        env.close();
+
+        env(coverDeposit(alice, brokerKeylet.key, iou(5'000)));
+        env.close();
+
+        auto const broker = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(broker))
+            return;
+        auto const brokerPseudoID = broker->at(sfAccount);
+        auto const brokerPseudo = Account("BrokerPseudo", brokerPseudoID);
+
+        // Source (broker pseudo-account) frozen: blocked in both pre- and
+        // post-fixCleanup3_3_0.
+        env(trust(issuer, iou(0), brokerPseudo, tfSetFreeze));
+        env.close();
+        env(coverWithdraw(alice, brokerKeylet.key, iou(1)), Ter(tecFROZEN));
+        env.close();
+        env(trust(issuer, iou(0), brokerPseudo, tfClearFreeze));
+        env.close();
+
+        // Pre-fixCleanup3_3_0: only the source and the destination's deep-freeze
+        // are checked. The submitter's (alice's) individual trust-line freeze is
+        // not checked — the withdraw succeeds.
+        // Post-fixCleanup3_3_0 (checkWithdrawFreezes): the submitter's individual
+        // freeze is also checked, so the withdraw is blocked with tecFROZEN.
+        env(trust(issuer, iou(0), alice, tfSetFreeze));
+        env.close();
+        env(coverWithdraw(alice, brokerKeylet.key, iou(1)),
+            Ter(withFix ? TER{tecFROZEN} : TER{tesSUCCESS}));
+        env.close();
+
+        // Sending to the issuer bypasses all freeze checks in both pre- and
+        // post-fixCleanup3_3_0.
+        env(coverWithdraw(alice, brokerKeylet.key, iou(1)), kDestination(issuer), Ter(tesSUCCESS));
+        env.close();
+
+        env(trust(issuer, iou(0), alice, tfClearFreeze));
+        env.close();
+    }
+
+    void
     testRIPD4274IOU()
     {
         using namespace jtx;
@@ -2268,6 +2340,9 @@ public:
 
         testLoanBrokerDeleteFrozenIOU(all_);
         testLoanBrokerDeleteFrozenIOU(all_ - fixCleanup3_2_0);
+
+        testCoverWithdrawFreezes(all_);
+        testCoverWithdrawFreezes(all_ - fixCleanup3_3_0);
 
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.

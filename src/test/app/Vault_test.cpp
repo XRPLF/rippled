@@ -1573,6 +1573,7 @@ class Vault_test : public beast::unit_test::Suite
             bool enableClawback = true;
             bool requireAuth = true;
             int initialXRP = 1000;
+            FeatureBitset features = testableAmendments();
         };
 
         auto testCase = [this](
@@ -1585,7 +1586,7 @@ class Vault_test : public beast::unit_test::Suite
                                 Vault& vault,
                                 MPTTester& mptt)> test,
                             CaseArgs args = {}) {
-            Env env{*this, testableAmendments()};
+            Env env{*this, args.features};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -1671,15 +1672,16 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
         });
 
-        testCase([this](
-                     Env& env,
-                     Account const& issuer,
-                     Account const& owner,
-                     Account const& depositor,
-                     Asset const& asset,
-                     Vault& vault,
-                     MPTTester& mptt) {
+        auto mptGlobalLockBlocksWithdrawal = [this](
+                                                 Env& env,
+                                                 Account const& issuer,
+                                                 Account const& owner,
+                                                 Account const& depositor,
+                                                 Asset const& asset,
+                                                 Vault& vault,
+                                                 MPTTester& mptt) {
             testcase("MPT global lock blocks withdrawal");
+            auto const withFix = env.enabled(fixCleanup3_3_0);
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -1703,28 +1705,33 @@ class Vault_test : public beast::unit_test::Suite
             tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
             env(tx, Ter(tecLOCKED));
 
-            // Clawback is still permitted, even with global lock.
-            tx = vault.clawback(
-                {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(50)});
-            env(tx);
-            env.close();
-
-            // Redemption to the issuer bypasses freeze checks end-to-end:
-            // preclaim's issuer guard skips all three checks, and doApply uses
-            // FreezeHandling::IgnoreFreeze for the accountHolds balance check.
-            tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
+            // Post-fixCleanup3_3_0: checkWithdrawFreezes returns tesSUCCESS immediately
+            // for the issuer destination; IgnoreFreeze in doApply lets the withdrawal proceed.
+            // Pre-fixCleanup3_3_0: checkFrozen(issuer, MPT) returns tecLOCKED because the
+            // global lock check is not bypassed for the issuer in preclaim.
             tx[sfDestination] = issuer.human();
-            env(tx);
+            env(tx, Ter(withFix ? TER{tesSUCCESS} : TER{tecLOCKED}));
+
+            if (!withFix)
+            {
+                // Pre-fix: withdrawal failed, clawback is still permitted even with global lock
+                tx = vault.clawback(
+                    {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(0)});
+                env(tx);
+            }
             env.close();
 
-            // Withdrawal burned remaining depositor shares — MPToken is removed.
+            // Shares MPToken removed (by successful withdrawal post-fix, by clawback pre-fix)
             auto const mptSle = env.le(keylet::mptoken(share, depositor.id()));
             BEAST_EXPECT(mptSle == nullptr);
 
             // Can delete empty vault, even if global lock
             tx = vault.del({.owner = owner, .id = keylet.key});
             env(tx);
-        });
+        };
+        testCase(mptGlobalLockBlocksWithdrawal);
+        testCase(
+            mptGlobalLockBlocksWithdrawal, {.features = testableAmendments() - fixCleanup3_3_0});
 
         testCase([this](
                      Env& env,
@@ -2211,6 +2218,122 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
         });
 
+        // Post-fixCleanup3_3_0: checkWithdrawFreezes checks the underlying
+        // asset on the submitter rather than the share token. For MPT vaults
+        // this is equivalent because vault shares can only be locked
+        // transitively via the underlying (the vault pseudo-account cannot
+        // submit MPTokenIssuanceSet to individually lock a share MPToken).
+        // The tests below verify both the submitter-lock and 3rd-party
+        // destination-lock paths for MPT-backed vaults.
+
+        auto mptIndividualLockOnDepositor = [this](
+                                                Env& env,
+                                                Account const& issuer,
+                                                Account const& owner,
+                                                Account const& depositor,
+                                                Asset const& asset,
+                                                Vault& vault,
+                                                MPTTester& mptt) {
+            testcase("MPT individual lock on depositor blocks withdrawal");
+            auto const withFix = env.enabled(fixCleanup3_3_0);
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
+            env(tx);
+            env.close();
+
+            // Individually lock the depositor's underlying MPToken
+            mptt.set({.account = issuer, .holder = depositor, .flags = tfMPTLock});
+            env.close();
+
+            // Withdrawal to self is blocked.
+            // Pre-fix: checkFrozen(depositor, share) catches it transitively → tecLOCKED.
+            // Post-fix: checkWithdrawFreezes checks the depositor's underlying → tecLOCKED.
+            tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
+            env(tx, Ter{tecLOCKED});
+
+            // Withdrawal to a 3rd party is also blocked.
+            tx[sfDestination] = owner.human();
+            env(tx, Ter{tecLOCKED});
+            env.close();
+
+            // Withdrawal to the issuer: post-fix bypasses all freeze checks,
+            // pre-fix the submitter freeze still blocks.
+            tx[sfDestination] = issuer.human();
+            env(tx, Ter(withFix ? TER{tesSUCCESS} : TER{tecLOCKED}));
+
+            // Drain remaining vault balance so it can be deleted.
+            // Post-fix: 50 withdrawn to issuer above, 50 remain → clawback 50.
+            // Pre-fix: nothing withdrawn, all 100 remain → clawback all.
+            tx = vault.clawback(
+                {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(0)});
+            env(tx);
+            env.close();
+
+            tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx);
+        };
+        testCase(mptIndividualLockOnDepositor);
+        testCase(
+            mptIndividualLockOnDepositor, {.features = testableAmendments() - fixCleanup3_3_0});
+
+        auto mptIndividualLockOn3rdParty = [this](
+                                               Env& env,
+                                               Account const& issuer,
+                                               Account const& owner,
+                                               Account const& depositor,
+                                               Asset const& asset,
+                                               Vault& vault,
+                                               MPTTester& mptt) {
+            testcase("MPT individual lock on 3rd party destination");
+
+            Account const charlie{"charlie"};
+            env.fund(XRP(1000), charlie);
+            env.close();
+            mptt.authorize({.account = charlie});
+            mptt.authorize({.account = issuer, .holder = charlie});
+            env.close();
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
+            env(tx);
+            env.close();
+
+            // Individually lock charlie's underlying MPToken
+            mptt.set({.account = issuer, .holder = charlie, .flags = tfMPTLock});
+            env.close();
+
+            // Withdrawal to self is unaffected
+            tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
+            env(tx);
+            env.close();
+
+            // Withdrawal to locked 3rd party:
+            // For MPTs, isDeepFrozen == isFrozen, so an individually locked
+            // destination is blocked in both pre- and post-fix.
+            auto withdrawToCharlie =
+                vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
+            withdrawToCharlie[sfDestination] = charlie.human();
+            env(withdrawToCharlie, Ter{tecLOCKED});
+            env.close();
+
+            tx = vault.clawback(
+                {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(0)});
+            env(tx);
+            env.close();
+
+            tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx);
+        };
+        testCase(mptIndividualLockOn3rdParty);
+        testCase(mptIndividualLockOn3rdParty, {.features = testableAmendments() - fixCleanup3_3_0});
+
         {
             testcase("MPT shares to a vault");
 
@@ -2646,6 +2769,7 @@ class Vault_test : public beast::unit_test::Suite
             Number initialIOU = 200;
             double transferRate = 1.0;
             bool charlieRipple = true;
+            FeatureBitset features = testableAmendments();
         };
 
         auto testCase = [&, this](
@@ -2659,7 +2783,7 @@ class Vault_test : public beast::unit_test::Suite
                                 PrettyAsset const& asset,
                                 std::function<MPTID(xrpl::Keylet)> issuanceId)> test,
                             CaseArgs args = {}) {
-            Env env{*this, testableAmendments()};
+            Env env{*this, args.features};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
             Account const charlie{"charlie"};
@@ -2751,16 +2875,17 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
         });
 
-        testCase([&, this](
-                     Env& env,
-                     Account const& owner,
-                     Account const& issuer,
-                     Account const& charlie,
-                     auto vaultAccount,
-                     Vault& vault,
-                     PrettyAsset const& asset,
-                     auto issuanceId) {
+        auto iouFrozenTrustLineToVaultAccount = [&, this](
+                                                    Env& env,
+                                                    Account const& owner,
+                                                    Account const& issuer,
+                                                    Account const& charlie,
+                                                    auto vaultAccount,
+                                                    Vault& vault,
+                                                    PrettyAsset const& asset,
+                                                    auto issuanceId) {
             testcase("IOU frozen trust line to vault account");
+            auto const withFix = env.enabled(fixCleanup3_3_0);
 
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
@@ -2798,16 +2923,15 @@ class Vault_test : public beast::unit_test::Suite
             }
 
             {
-                // Post-fixCleanup3_2_0: the frozen pseudo-account is checked
-                // directly as a sender, so the error is tecFROZEN rather than
-                // the transitive tecLOCKED from the share freeze check.
                 auto tx =
                     vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(100)});
-                env(tx, Ter{tecFROZEN});
+                // Pre-fix: shares are transitively locked (vault account trust line frozen).
+                // Post-fix: checkWithdrawFreezes checks vault account's IOU trust line → tecFROZEN.
+                env(tx, Ter(withFix ? TER{tecFROZEN} : TER{tecLOCKED}));
 
                 // also when trying to withdraw to a 3rd party
                 tx[sfDestination] = charlie.human();
-                env(tx, Ter{tecFROZEN});
+                env(tx, Ter(withFix ? TER{tecFROZEN} : TER{tecLOCKED}));
                 env.close();
             }
 
@@ -2829,154 +2953,10 @@ class Vault_test : public beast::unit_test::Suite
 
             env(vault.del({.owner = owner, .id = keylet.key}));
             env.close();
-        });
-
-        {
-            testcase("IOU frozen trust line to vault account: pre-fixCleanup3_2_0");
-
-            // Pre-amendment: there is no direct pseudo-account sender check.
-            // The frozen trust line is caught transitively via the share freeze
-            // (isVaultPseudoAccountFrozen), so withdrawals fail with tecLOCKED
-            // rather than tecFROZEN.
-            Env env{*this, testableAmendments() - fixCleanup3_2_0};
-            Account const owner{"owner"};
-            Account const issuer{"issuer"};
-            Account const charlie{"charlie"};
-            Vault const vault{env};
-            env.fund(XRP(1000), issuer, owner, charlie);
-            env(fset(issuer, asfAllowTrustLineClawback));
-            env.close();
-
-            PrettyAsset const asset = issuer["IOU"];
-            env.trust(asset(1000), owner);
-            env(pay(issuer, owner, asset(200)));
-            env.trust(asset(1000), charlie);
-            env.close();
-
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(100)}));
-            env.close();
-
-            // Freeze the trust line to the vault pseudo-account
-            auto const vaultAcct = Account("vault", env.le(keylet)->at(sfAccount));
-            auto trustSet = [&]() {
-                json::Value jv;
-                jv[jss::Account] = issuer.human();
-                {
-                    auto& ja = jv[jss::LimitAmount] =
-                        asset(0).value().getJson(JsonOptions::Values::None);
-                    ja[jss::issuer] = toBase58(vaultAcct.id());
-                }
-                jv[jss::TransactionType] = jss::TrustSet;
-                jv[jss::Flags] = tfSetFreeze;
-                return jv;
-            }();
-            env(trustSet);
-            env.close();
-
-            {
-                auto t =
-                    vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(50)});
-                // Pre-amendment: caught transitively via share freeze.
-                env(t, Ter{tecLOCKED});
-
-                t[sfDestination] = charlie.human();
-                env(t, Ter{tecLOCKED});
-                env.close();
-            }
-
-            // Clear freeze and clean up
-            trustSet[jss::Flags] = tfClearFreeze;
-            env(trustSet);
-            env.close();
-
-            env(vault.clawback(
-                {.issuer = issuer, .id = keylet.key, .holder = owner, .amount = asset(0)}));
-            env.close();
-
-            env(vault.del({.owner = owner, .id = keylet.key}));
-            env.close();
-        }
-
-        testCase([&, this](
-                     Env& env,
-                     Account const& owner,
-                     Account const& issuer,
-                     Account const& charlie,
-                     auto vaultAccount,
-                     Vault& vault,
-                     PrettyAsset const& asset,
-                     auto issuanceId) {
-            testcase("IOU frozen vault trust line, withdrawal to issuer is exempt");
-
-            // When the vault's trust line is frozen, withdrawals to any
-            // non-issuer destination are blocked by checkFrozen(vaultAccount).
-            // Withdrawals whose destination IS the IOU issuer bypass that
-            // check entirely (redemption path).
-
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(100)}));
-            env.close();
-
-            Asset const share = Asset(issuanceId(keylet));
-
-            // Freeze the trust line to the vault pseudo-account
-            auto trustSet = [&, account = vaultAccount(keylet)]() {
-                json::Value jv;
-                jv[jss::Account] = issuer.human();
-                {
-                    auto& ja = jv[jss::LimitAmount] =
-                        asset(0).value().getJson(JsonOptions::Values::None);
-                    ja[jss::issuer] = toBase58(account);
-                }
-                jv[jss::TransactionType] = jss::TrustSet;
-                jv[jss::Flags] = tfSetFreeze;
-                return jv;
-            }();
-            env(trustSet);
-            env.close();
-
-            {
-                // Non-issuer destinations are blocked
-                auto t =
-                    vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
-                env(t, Ter{tecFROZEN});
-
-                t[sfDestination] = charlie.human();
-                env(t, Ter{tecFROZEN});
-                env.close();
-            }
-
-            {
-                // Withdrawal to the IOU issuer succeeds end-to-end: the issuer
-                // guard skips all preclaim checks, and doApply uses
-                // FreezeHandling::IgnoreFreeze so accountHolds returns the
-                // actual balance rather than zero.
-                auto t =
-                    vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(50)});
-                t[sfDestination] = issuer.human();
-                env(t);
-                env.close();
-            }
-
-            // vault now has 50 assets / owner holds 50'000'000 shares
-            // Clear freeze and drain what remains.
-            trustSet[jss::Flags] = tfClearFreeze;
-            env(trustSet);
-            env.close();
-
-            env(vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = share(50'000'000)}));
-
-            env(vault.del({.owner = owner, .id = keylet.key}));
-            env.close();
-        });
+        };
+        testCase(iouFrozenTrustLineToVaultAccount);
+        testCase(
+            iouFrozenTrustLineToVaultAccount, {.features = testableAmendments() - fixCleanup3_3_0});
 
         testCase(
             [&, this](
@@ -3039,16 +3019,17 @@ class Vault_test : public beast::unit_test::Suite
             },
             CaseArgs{.transferRate = 1.25});
 
-        testCase([&, this](
-                     Env& env,
-                     Account const& owner,
-                     Account const& issuer,
-                     Account const& charlie,
-                     auto,
-                     Vault& vault,
-                     PrettyAsset const& asset,
-                     auto&&...) {
+        auto iouFrozenTrustLineToDepositor = [&, this](
+                                                 Env& env,
+                                                 Account const& owner,
+                                                 Account const& issuer,
+                                                 Account const& charlie,
+                                                 auto,
+                                                 Vault& vault,
+                                                 PrettyAsset const& asset,
+                                                 auto&&...) {
             testcase("IOU frozen trust line to depositor");
+            auto const withFix = env.enabled(fixCleanup3_3_0);
 
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
@@ -3070,16 +3051,15 @@ class Vault_test : public beast::unit_test::Suite
             env(trust(issuer, asset(0), owner, tfSetFreeze));
             env.close();
 
-            // Post-fixCleanup3_2_0: destination check uses checkDeepFrozen; a
-            // regularly-frozen owner can still receive, so withdrawal is not
-            // blocked by the destination check. The share lock (transitive
-            // from the frozen underlying IOU) still prevents withdrawal.
+            // Cannot withdraw
             auto const withdraw =
                 vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
-            env(withdraw, Ter{tecLOCKED});
+            env(withdraw, Ter{tecFROZEN});
 
-            // Cannot withdraw to 3rd party
-            env(withdrawToCharlie, Ter{tecLOCKED});
+            // Cannot withdraw to 3rd party.
+            // Pre-fix: shares are transitively locked (submitter's IOU frozen → share locked).
+            // Post-fix: checkWithdrawFreezes checks submitter's IOU trust line → tecFROZEN.
+            env(withdrawToCharlie, Ter(withFix ? TER{tecFROZEN} : TER{tecLOCKED}));
             env.close();
 
             {
@@ -3099,7 +3079,10 @@ class Vault_test : public beast::unit_test::Suite
 
             env(vault.del({.owner = owner, .id = keylet.key}));
             env.close();
-        });
+        };
+        testCase(iouFrozenTrustLineToDepositor);
+        testCase(
+            iouFrozenTrustLineToDepositor, {.features = testableAmendments() - fixCleanup3_3_0});
 
         testCase([&, this](
                      Env& env,
@@ -3393,16 +3376,17 @@ class Vault_test : public beast::unit_test::Suite
             },
             CaseArgs{.initialXRP = acctReserve + (incReserve * 4) + 1});
 
-        testCase([&, this](
-                     Env& env,
-                     Account const& owner,
-                     Account const& issuer,
-                     Account const& charlie,
-                     auto,
-                     Vault& vault,
-                     PrettyAsset const& asset,
-                     auto&&...) {
+        auto iouFrozenTrustLineTo3rdParty = [&, this](
+                                                Env& env,
+                                                Account const& owner,
+                                                Account const& issuer,
+                                                Account const& charlie,
+                                                auto,
+                                                Vault& vault,
+                                                PrettyAsset const& asset,
+                                                auto&&...) {
             testcase("IOU frozen trust line to 3rd party");
+            auto const withFix = env.enabled(fixCleanup3_3_0);
 
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
@@ -3420,31 +3404,63 @@ class Vault_test : public beast::unit_test::Suite
             }(keylet);
             env(withdrawToCharlie);
 
-            // Freeze the 3rd party (regular freeze only)
+            // Freeze the 3rd party
             env(trust(issuer, asset(0), charlie, tfSetFreeze));
             env.close();
 
-            // Can withdraw to self
+            // Can withdraw
             auto const withdraw =
                 vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
             env(withdraw);
             env.close();
 
-            // Post-fixCleanup3_2_0: a regularly-frozen destination can still
-            // receive, so withdrawal to charlie is not blocked.
-            env(withdrawToCharlie);
+            // Pre-fix: individual freeze on 3rd party blocked withdrawal (tecFROZEN).
+            // Post-fix: only deep freeze blocks; regular individual freeze does not.
+            env(withdrawToCharlie, Ter(withFix ? TER{tesSUCCESS} : TER{tecFROZEN}));
             env.close();
 
-            // Deep-freeze charlie: the destination can neither send nor receive.
-            env(trust(issuer, asset(0), charlie, tfSetDeepFreeze));
+            env(vault.clawback(
+                {.issuer = issuer, .id = keylet.key, .holder = owner, .amount = asset(0)}));
             env.close();
 
-            // Cannot withdraw to deep-frozen 3rd party.
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+        };
+        testCase(iouFrozenTrustLineTo3rdParty);
+        testCase(
+            iouFrozenTrustLineTo3rdParty, {.features = testableAmendments() - fixCleanup3_3_0});
+
+        testCase([&, this](
+                     Env& env,
+                     Account const& owner,
+                     Account const& issuer,
+                     Account const& charlie,
+                     auto,
+                     Vault& vault,
+                     PrettyAsset const& asset,
+                     auto&&...) {
+            testcase("IOU deep-frozen trust line to 3rd party blocks withdrawal");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            // Deep-freeze charlie's trust line
+            env(trust(issuer, asset(0), charlie, tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // Deep freeze on 3rd party blocks withdrawal under fixCleanup3_3_0
+            auto withdrawToCharlie =
+                vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
+            withdrawToCharlie[sfDestination] = charlie.human();
             env(withdrawToCharlie, Ter{tecFROZEN});
             env.close();
 
-            // Clear the freeze so the vault can be cleaned up.
-            env(trust(issuer, asset(0), charlie, tfClearFreeze | tfClearDeepFreeze));
+            // Withdrawal to self (owner) is unaffected
+            env(vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)}));
             env.close();
 
             env(vault.clawback(
@@ -3454,56 +3470,6 @@ class Vault_test : public beast::unit_test::Suite
             env(vault.del({.owner = owner, .id = keylet.key}));
             env.close();
         });
-
-        {
-            testcase("IOU frozen trust line to 3rd party: pre-fixCleanup3_2_0");
-
-            // Pre-amendment: checkFrozen was used for the destination; a
-            // regularly-frozen 3rd party could not receive vault assets.
-            Env env{*this, testableAmendments() - fixCleanup3_2_0};
-            Account const owner{"owner"};
-            Account const issuer{"issuer"};
-            Account const charlie{"charlie"};
-            Vault vault{env};
-            env.fund(XRP(1000), issuer, owner, charlie);
-            env(fset(issuer, asfAllowTrustLineClawback));
-            env.close();
-
-            PrettyAsset const asset = issuer["IOU"];
-            env.trust(asset(1000), owner);
-            env(pay(issuer, owner, asset(200)));
-            env.trust(asset(1000), charlie);
-            env.close();
-
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(100)}));
-            env.close();
-
-            auto const withdrawToCharlie = [&]() {
-                auto t =
-                    vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
-                t[sfDestination] = charlie.human();
-                return t;
-            }();
-            env(withdrawToCharlie);
-
-            // Freeze the 3rd party
-            env(trust(issuer, asset(0), charlie, tfSetFreeze));
-            env.close();
-
-            // Pre-amendment: regular freeze on the destination blocks withdrawal.
-            env(withdrawToCharlie, Ter{tecFROZEN});
-
-            env(vault.clawback(
-                {.issuer = issuer, .id = keylet.key, .holder = owner, .amount = asset(0)}));
-            env.close();
-
-            env(vault.del({.owner = owner, .id = keylet.key}));
-            env.close();
-        }
 
         testCase([&, this](
                      Env& env,
@@ -3527,10 +3493,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             {
-                // Post-fixCleanup3_2_0: checkFrozen(vaultAccount, vaultAsset)
-                // fires first. isFrozen checks lsfGlobalFreeze on the issuer
-                // unconditionally, so the vault pseudo-account (sender) is
-                // blocked before any destination or share check is reached.
+                // Cannot withdraw
                 auto tx =
                     vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
                 env(tx, Ter{tecFROZEN});
@@ -3538,11 +3501,6 @@ class Vault_test : public beast::unit_test::Suite
                 // Cannot withdraw to 3rd party
                 tx[sfDestination] = charlie.human();
                 env(tx, Ter{tecFROZEN});
-                env.close();
-
-                // Withdrawal to the IOU issuer succeeds (redemption path)
-                tx[sfDestination] = issuer.human();
-                env(tx);
                 env.close();
 
                 // Cannot deposit some more
