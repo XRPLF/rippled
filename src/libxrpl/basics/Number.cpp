@@ -319,7 +319,7 @@ private:
         // The result is exact. No rounding is needed. Only used if cuspRoundingFix is Enabled330.
         Exact = -2,
         // Round down. Since we use integer math, that usually means no change is needed.
-        // Exceptions are for when the result is between kMaxRap and kMaxRepUp (round to kMaxRep),
+        // Exceptions are for when the result is between kMaxRep and kMaxRepUp (round to kMaxRep),
         // or after subtraction where _any_ remainder will modify the result. The latter is what
         // distinguishes Exact from Down.
         Down = -1,
@@ -422,7 +422,7 @@ template <class T>
 void
 Number::Guard::pushOverflow(T const& mantissa)
 {
-    XRPL_ASSERT(mantissa <= kMaxRepUp, "xrpl::Number::Guard::doRoundUp : valid mantissa");
+    XRPL_ASSERT(mantissa <= kMaxRepUp, "xrpl::Number::Guard::pushOverflow : valid mantissa");
     if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 && mantissa > kMaxRep &&
         mantissa < kMaxRepUp)
     {
@@ -431,7 +431,7 @@ Number::Guard::pushOverflow(T const& mantissa)
         // if it was a digit that got removed, but don't remove it. This method is future-proof in
         // case the number of mantissa bits ever changes. Effects:
         // * For round to nearest
-        //      * if the mantissa is below the midpoint, it'll round "down" to kMaxRepUp
+        //      * if the mantissa is below the midpoint, it'll round "down" to kMaxRep
         //      * if above the midpoint, it'll round "up" to kMaxRepUp
         //      * if can never be exactly at the midpoint, because kMaxRepUp is always even, and
         //        kMaxRep is always odd, so don't worry about it.
