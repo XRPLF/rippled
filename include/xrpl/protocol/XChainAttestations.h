@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -15,6 +14,7 @@
 #include <boost/container/vector.hpp>
 
 #include <cstddef>
+#include <expected>
 #include <utility>
 #include <vector>
 

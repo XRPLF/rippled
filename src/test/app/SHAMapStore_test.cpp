@@ -9,12 +9,13 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
@@ -54,7 +55,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
     advisoryDelete(std::unique_ptr<Config> cfg)
     {
         cfg = onlineDelete(std::move(cfg));
-        cfg->section(ConfigSection::nodeDatabase()).set("advisory_delete", "1");
+        cfg->section(Sections::kNodeDatabase).set(Keys::kAdvisoryDelete, "1");
         return cfg;
     }
 
@@ -493,13 +494,13 @@ public:
     std::unique_ptr<NodeStore::Backend>
     makeBackendRotating(jtx::Env& env, NodeStoreScheduler& scheduler, std::string path)
     {
-        Section section{env.app().config().section(ConfigSection::nodeDatabase())};
+        Section section{env.app().config().section(Sections::kNodeDatabase)};
         boost::filesystem::path newPath;
 
         if (!BEAST_EXPECT(path.size()))
             return {};
         newPath = path;
-        section.set("path", newPath.string());
+        section.set(Keys::kPath, newPath.string());
 
         auto backend{NodeStore::Manager::instance().makeBackend(
             section,
@@ -523,21 +524,21 @@ public:
         /////////////////////////////////////////////////////////////
         // Create NodeStore with two backends to allow online deletion of data.
         // Normally, SHAMapStoreImp handles all these details.
-        auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
+        auto nscfg = env.app().config().section(Sections::kNodeDatabase);
 
         // Provide default values.
-        if (!nscfg.exists("cache_size"))
+        if (!nscfg.exists(Keys::kCacheSize))
         {
             nscfg.set(
-                "cache_size",
+                Keys::kCacheSize,
                 std::to_string(
                     env.app().config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
         }
 
-        if (!nscfg.exists("cache_age"))
+        if (!nscfg.exists(Keys::kCacheAge))
         {
             nscfg.set(
-                "cache_age",
+                Keys::kCacheAge,
                 std::to_string(
                     env.app().config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
         }

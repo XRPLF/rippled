@@ -4,11 +4,11 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>
 #include <xrpl/server/Server.h>
@@ -33,6 +33,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -133,7 +134,8 @@ public:
         static void
         onRequest(Session& session)
         {
-            session.write(std::string("Hello, world!\n"));
+            using namespace std::string_view_literals;
+            session.write("Hello, world!\n"sv);
             if (beast::rfc2616::isKeepAlive(session.request()))
             {
                 session.complete();
@@ -394,64 +396,62 @@ public:
             Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection("port_rpc");
+                    (*cfg).deprecatedClearSection(Sections::kPortRpc);
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(messages.find("Missing 'ip' in [port_rpc]") != std::string::npos);
+        BEAST_EXPECT(messages.contains("Missing 'ip' in [port_rpc]"));
 
         except([&] {
             Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection("port_rpc");
-                    (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
+                    (*cfg).deprecatedClearSection(Sections::kPortRpc);
+                    (*cfg)[Sections::kPortRpc].set(Keys::kIp, getEnvLocalhostAddr());
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(messages.find("Missing 'port' in [port_rpc]") != std::string::npos);
+        BEAST_EXPECT(messages.contains("Missing 'port' in [port_rpc]"));
 
         except([&] {
             Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection("port_rpc");
-                    (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
-                    (*cfg)["port_rpc"].set("port", "0");
+                    (*cfg).deprecatedClearSection(Sections::kPortRpc);
+                    (*cfg)[Sections::kPortRpc].set(Keys::kIp, getEnvLocalhostAddr());
+                    (*cfg)[Sections::kPortRpc].set(Keys::kPort, "0");
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(
-            messages.find("Invalid value '0' for key 'port' in [port_rpc]") == std::string::npos);
+        BEAST_EXPECT(!messages.contains("Invalid value '0' for key 'port' in [port_rpc]"));
 
         except([&] {
             Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg)["server"].set("port", "0");
+                    (*cfg)[Sections::kServer].set(Keys::kPort, "0");
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(
-            messages.find("Invalid value '0' for key 'port' in [server]") != std::string::npos);
+        BEAST_EXPECT(messages.contains("Invalid value '0' for key 'port' in [server]"));
 
         except([&] {
             Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
-                    (*cfg).deprecatedClearSection("port_rpc");
-                    (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
-                    (*cfg)["port_rpc"].set("port", "8081");
-                    (*cfg)["port_rpc"].set("protocol", "");
+                    (*cfg).deprecatedClearSection(Sections::kPortRpc);
+                    (*cfg)[Sections::kPortRpc].set(Keys::kIp, getEnvLocalhostAddr());
+                    (*cfg)[Sections::kPortRpc].set(Keys::kPort, "8081");
+                    (*cfg)[Sections::kPortRpc].set(Keys::kProtocol, "");
                     return cfg;
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(messages.find("Missing 'protocol' in [port_rpc]") != std::string::npos);
+        BEAST_EXPECT(messages.contains("Missing 'protocol' in [port_rpc]"));
 
         except([&]  // this creates a standard test config without the server
                     // section
@@ -460,27 +460,27 @@ public:
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
-                           cfg->overwrite(ConfigSection::nodeDatabase(), "type", "memory");
-                           cfg->overwrite(ConfigSection::nodeDatabase(), "path", "main");
-                           cfg->deprecatedClearSection(ConfigSection::importNodeDatabase());
-                           cfg->legacy("database_path", "");
+                           cfg->overwrite(Sections::kNodeDatabase, Keys::kType, "memory");
+                           cfg->overwrite(Sections::kNodeDatabase, Keys::kPath, "main");
+                           cfg->deprecatedClearSection(Sections::kImportNodeDatabase);
+                           cfg->legacy(Sections::kDatabasePath, "");
                            cfg->setupControl(true, true, true);
-                           (*cfg)["port_peer"].set("ip", getEnvLocalhostAddr());
-                           (*cfg)["port_peer"].set("port", "8080");
-                           (*cfg)["port_peer"].set("protocol", "peer");
-                           (*cfg)["port_rpc"].set("ip", getEnvLocalhostAddr());
-                           (*cfg)["port_rpc"].set("port", "8081");
-                           (*cfg)["port_rpc"].set("protocol", "http,ws2");
-                           (*cfg)["port_rpc"].set("admin", getEnvLocalhostAddr());
-                           (*cfg)["port_ws"].set("ip", getEnvLocalhostAddr());
-                           (*cfg)["port_ws"].set("port", "8082");
-                           (*cfg)["port_ws"].set("protocol", "ws");
-                           (*cfg)["port_ws"].set("admin", getEnvLocalhostAddr());
+                           (*cfg)[Sections::kPortPeer].set(Keys::kIp, getEnvLocalhostAddr());
+                           (*cfg)[Sections::kPortPeer].set(Keys::kPort, "8080");
+                           (*cfg)[Sections::kPortPeer].set(Keys::kProtocol, "peer");
+                           (*cfg)[Sections::kPortRpc].set(Keys::kIp, getEnvLocalhostAddr());
+                           (*cfg)[Sections::kPortRpc].set(Keys::kPort, "8081");
+                           (*cfg)[Sections::kPortRpc].set(Keys::kProtocol, "http,ws2");
+                           (*cfg)[Sections::kPortRpc].set(Keys::kAdmin, getEnvLocalhostAddr());
+                           (*cfg)[Sections::kPortWs].set(Keys::kIp, getEnvLocalhostAddr());
+                           (*cfg)[Sections::kPortWs].set(Keys::kPort, "8082");
+                           (*cfg)[Sections::kPortWs].set(Keys::kProtocol, "ws");
+                           (*cfg)[Sections::kPortWs].set(Keys::kAdmin, getEnvLocalhostAddr());
                            return cfg;
                        }),
                        std::make_unique<CaptureLogs>(&messages)};
                });
-        BEAST_EXPECT(messages.find("Required section [server] is missing") != std::string::npos);
+        BEAST_EXPECT(messages.contains("Required section [server] is missing"));
 
         except([&]  // this creates a standard test config without some of the
                     // port sections
@@ -489,19 +489,19 @@ public:
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
-                           cfg->overwrite(ConfigSection::nodeDatabase(), "type", "memory");
-                           cfg->overwrite(ConfigSection::nodeDatabase(), "path", "main");
-                           cfg->deprecatedClearSection(ConfigSection::importNodeDatabase());
-                           cfg->legacy("database_path", "");
+                           cfg->overwrite(Sections::kNodeDatabase, Keys::kType, "memory");
+                           cfg->overwrite(Sections::kNodeDatabase, Keys::kPath, "main");
+                           cfg->deprecatedClearSection(Sections::kImportNodeDatabase);
+                           cfg->legacy(Sections::kDatabasePath, "");
                            cfg->setupControl(true, true, true);
-                           (*cfg)["server"].append("port_peer");
-                           (*cfg)["server"].append("port_rpc");
-                           (*cfg)["server"].append("port_ws");
+                           (*cfg)[Sections::kServer].append(Sections::kPortPeer);
+                           (*cfg)[Sections::kServer].append(Sections::kPortRpc);
+                           (*cfg)[Sections::kServer].append(Sections::kPortWs);
                            return cfg;
                        }),
                        std::make_unique<CaptureLogs>(&messages)};
                });
-        BEAST_EXPECT(messages.find("Missing section: [port_peer]") != std::string::npos);
+        BEAST_EXPECT(messages.contains("Missing section: [port_peer]"));
     }
 
     void
