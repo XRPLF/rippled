@@ -617,18 +617,6 @@ MPTTester::checkDomainID(std::optional<uint256> expected) const
     });
 }
 
-// todo: remove this function, which is only for debugging
-[[nodiscard]] bool
-MPTTester::printMPT(Account const& holder_) const
-{
-    return forObject(
-        [&](SLEP const& sle) -> bool {
-            std::cout << "\n" << sle->getJson();
-            return true;
-        },
-        holder_);
-}
-
 [[nodiscard]] bool
 MPTTester::checkMPTokenAmount(Account const& holder_, std::int64_t expectedAmount) const
 {

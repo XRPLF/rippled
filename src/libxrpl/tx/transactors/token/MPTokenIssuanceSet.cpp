@@ -286,9 +286,9 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (mutableFlags)
     {
         if (std::ranges::any_of(mptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
-                bool const canMutate = f.isCannotMutate ? isMutableFlag(f.mutabilityFlag)
-                                                        : !isMutableFlag(f.mutabilityFlag);
-                return canMutate && (*mutableFlags & (f.setFlag | f.clearFlag));
+                bool const mutabilityFlagSet = isMutableFlag(f.mutabilityFlag);
+                bool const cannotMutate = f.isCannotMutate ? mutabilityFlagSet : !mutabilityFlagSet;
+                return cannotMutate && (*mutableFlags & (f.setFlag | f.clearFlag));
             }))
             return tecNO_PERMISSION;
 
@@ -362,7 +362,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     // cannot upload key if there's circulating supply of COA
     if ((ctx.tx.isFieldPresent(sfIssuerEncryptionKey) ||
          ctx.tx.isFieldPresent(sfAuditorEncryptionKey)) &&
-        sleMptIssuance->isFieldPresent(sfConfidentialOutstandingAmount))
+        (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
     {
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
     }

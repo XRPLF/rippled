@@ -528,9 +528,6 @@ public:
 
     operator Asset() const;
 
-    bool
-    printMPT(Account const& holder_) const;
-
     void
     generateKeyPair(Account const& account);
 
