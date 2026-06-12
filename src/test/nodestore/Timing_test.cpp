@@ -1,7 +1,6 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -12,6 +11,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
@@ -661,9 +662,10 @@ public:
             {
                 beast::TempDir const tempDir;
                 Section config = parse(configString);
-                config.set("path", tempDir.path());
+                config.set(Keys::kPath, tempDir.path());
                 std::stringstream ss;
-                ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
+                ss << std::left << setw(10) << get(config, Keys::kType, std::string())
+                   << std::right;
                 for (auto const& test : tests)
                 {
                     ss << " " << setw(w) << toString(doTest(test.second, config, params, journal));
