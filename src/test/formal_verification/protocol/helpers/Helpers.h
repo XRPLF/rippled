@@ -1,17 +1,14 @@
 #pragma once
 
-#include <test/formal_verification/protocol/helpers/Types.h>
+#include <test/formal_verification/protocol/helpers/Converters.h>
 
 #include <xrpl/basics/Number.h>
-#include <xrpl/protocol/STAmount.h>
 
 #include <cstdint>
 #include <sstream>
 #include <string>
 
-namespace xrpl {
-namespace test {
-namespace lean4 {
+namespace xrpl::test::formal_verification {
 
 // Magnitude of an int64 without UB at INT64_MIN.
 inline uint64_t
@@ -46,27 +43,4 @@ format(Number const& n)
     return ss.str();
 }
 
-inline std::string
-format(LeanSTAmountResult const& r)
-{
-    std::stringstream ss;
-    ss << "kind=" << static_cast<int>(r.assetKind) << " "
-       << (r.isNegative ? "-" : "+") << r.mValue << "e" << r.mOffset;
-    return ss.str();
-}
-
-inline std::string
-format(STAmount const& s)
-{
-    std::stringstream ss;
-    int const kind = s.asset().visit(
-        [](Issue const& iss) { return iss.native() ? 0 : 1; },
-        [](MPTIssue const&) { return 2; });
-    ss << "kind=" << kind << " " << (s.negative() ? "-" : "+") << s.mantissa() << "e"
-       << s.exponent();
-    return ss.str();
-}
-
-}  // namespace lean4
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::formal_verification

@@ -20,9 +20,7 @@ int64_t
 lean_number_exponent(lean_object* number);
 }
 
-namespace xrpl {
-namespace test {
-namespace lean4 {
+namespace xrpl::test::formal_verification {
 
 class NumberFFI : public LeanObjectFFI
 {
@@ -70,6 +68,4 @@ toLeanMode(Number::RoundingMode mode)
     throw std::logic_error("toLeanMode: unknown Number::RoundingMode");
 }
 
-}  // namespace lean4
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::formal_verification

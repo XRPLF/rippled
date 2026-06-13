@@ -13,12 +13,12 @@
 extern "C" void
 lean_initialize_runtime_module(void);
 
+// Initializer of the XRPL.FFI.FFI module: pulls in the Model + FFI closure
+// only (libXRPL_XRPLModel.a), not the Properties proof modules
 extern "C" lean_object*
-initialize_XRPL_XRPL(uint8_t builtin, lean_object* w);
+initialize_XRPL_XRPL_FFI_FFI(uint8_t builtin, lean_object* w);
 
-namespace xrpl {
-namespace test {
-namespace lean4 {
+namespace xrpl::test::formal_verification {
 
 // Per-thread RNG; beginCase reseeds it deterministically per case.
 inline std::mt19937_64&
@@ -46,7 +46,7 @@ class LeanSuite : public beast::unit_test::Suite
         static bool ok = false;
         std::call_once(flag, [] {
             lean_initialize_runtime_module();
-            lean_object* res = initialize_XRPL_XRPL(1, lean_io_mk_world());
+            lean_object* res = initialize_XRPL_XRPL_FFI_FFI(1, lean_io_mk_world());
             if (!lean_io_result_is_ok(res))
             {
                 lean_dec(res);
@@ -95,6 +95,4 @@ public:
     }
 };
 
-}  // namespace lean4
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::formal_verification

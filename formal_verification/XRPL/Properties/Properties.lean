@@ -1,4 +1,3 @@
-import XRPL.Properties.Protocol.MPTAmount.MPTAmountCommonProps
 import XRPL.Properties.Protocol.Number.Add.Downward.AlgorithmicFacts
 import XRPL.Properties.Protocol.Number.Add.Downward.BoundProof
 import XRPL.Properties.Protocol.Number.Add.Downward.RoundingBound
@@ -52,7 +51,6 @@ import XRPL.Properties.Protocol.Number.Sub.Downward.RoundingBound
 import XRPL.Properties.Protocol.Number.Sub.ToNearest.RoundingBound
 import XRPL.Properties.Protocol.Number.Sub.TowardsZero.RoundingBound
 import XRPL.Properties.Protocol.Number.Sub.Upward.RoundingBound
-import XRPL.Properties.Protocol.STAmount.STAmountCommonProps
 import XRPL.Properties.Protocol.Number.Common.Int64Lemmas
 import XRPL.Properties.Protocol.Number.Normalize.ToNearest.AlgorithmicFacts
 import XRPL.Properties.Protocol.Number.Normalize.ToNearest.BoundProof

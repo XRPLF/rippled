@@ -1,7 +1,7 @@
-#include <test/formal_verification/protocol/helpers/Generators.h>
-#include <test/formal_verification/protocol/helpers/Helpers.h>
 #include <test/formal_verification/common/LeanSuite.h>
 #include <test/formal_verification/ffi/protocol/NumberFFI.h>
+#include <test/formal_verification/protocol/helpers/Generators.h>
+#include <test/formal_verification/protocol/helpers/Helpers.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test.h>
@@ -12,7 +12,7 @@
 #include <sstream>
 #include <stdexcept>
 
-// Lean Number ops (largeRange, exported by xrpl-lean4/XRPL/FFI.lean).
+// Lean Number ops (largeRange, exported by formal_verification/XRPL/FFI/Protocol/NumberFFI.lean).
 extern "C" {
 lean_object*
 lean_number_mul(uint8_t, uint64_t, uint64_t, uint8_t, uint64_t, uint64_t, uint8_t);
@@ -44,13 +44,13 @@ uint8_t
 lean_number_ge(uint8_t, uint64_t, uint64_t, uint8_t, uint64_t, uint64_t);
 }
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-using namespace lean4;
-
-class LeanNumber_test : public LeanSuite
+class LeanNumber_test : public formal_verification::LeanSuite
 {
+    using Pair = formal_verification::Pair;
+    using LeanNumberResult = formal_verification::LeanNumberResult;
+
     static std::string
     fmtNum(bool neg, uint64_t m, int e)
     {
@@ -72,6 +72,8 @@ class LeanNumber_test : public LeanSuite
         Number const& cpp,
         bool cppThrew)
     {
+        using namespace formal_verification;
+
         if (lean.ok == cppThrew)
         {
             std::stringstream ss;
@@ -127,7 +129,9 @@ class LeanNumber_test : public LeanSuite
         Pair const& b,
         Number::RoundingMode mode)
     {
-        auto lean = LeanNumberResult::from_lean(leanOp(
+        using namespace formal_verification;
+
+        auto lean = LeanNumberResult::fromLean(leanOp(
             a.leanNum.negative,
             a.leanNum.mantissa,
             a.leanNum.exponent,
@@ -151,7 +155,7 @@ class LeanNumber_test : public LeanSuite
     bool
     checkUnary(std::string const& label, LeanUnaryOp leanOp, CppUnaryOp cppOp, Pair const& x)
     {
-        auto lean = LeanNumberResult::from_lean(
+        auto lean = LeanNumberResult::fromLean(
             leanOp(x.leanNum.negative, x.leanNum.mantissa, x.leanNum.exponent));
         bool cppThrew = false;
         Number cpp;
@@ -174,8 +178,10 @@ class LeanNumber_test : public LeanSuite
         int exp,
         Number::RoundingMode mode)
     {
+        using namespace formal_verification;
+
         uint8_t leanMode = toLeanMode(mode);
-        auto lean = LeanNumberResult::from_lean(
+        auto lean = LeanNumberResult::fromLean(
             lean_number_normalize(neg ? 1 : 0, mant, static_cast<uint64_t>(exp), leanMode));
         bool cppThrew = false;
         Number cpp;
@@ -193,9 +199,14 @@ class LeanNumber_test : public LeanSuite
     void
     runFuzzBinOp(LeanBinOp leanOp, char opChar, CppBinOp cppOp)
     {
+        using namespace formal_verification;
+
         NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
         for (auto mode :
-             {Number::RoundingMode::ToNearest, Number::RoundingMode::TowardsZero, Number::RoundingMode::Downward, Number::RoundingMode::Upward})
+             {Number::RoundingMode::ToNearest,
+              Number::RoundingMode::TowardsZero,
+              Number::RoundingMode::Downward,
+              Number::RoundingMode::Upward})
         {
             SaveNumberRoundMode save{Number::setround(mode)};
             runFuzz(100'000, [&] {
@@ -326,36 +337,38 @@ class LeanNumber_test : public LeanSuite
 
 public:
     void
-    test_fuzz_mul()
+    testFuzzMul()
     {
         beginCase("LeanNumber.fuzz_mul", true);
         runFuzzBinOp(lean_number_mul, '*', [](Number const& a, Number const& b) { return a * b; });
     }
 
     void
-    test_fuzz_div()
+    testFuzzDiv()
     {
         beginCase("LeanNumber.fuzz_div", true);
         runFuzzBinOp(lean_number_div, '/', [](Number const& a, Number const& b) { return a / b; });
     }
 
     void
-    test_fuzz_add()
+    testFuzzAdd()
     {
         beginCase("LeanNumber.fuzz_add", true);
         runFuzzBinOp(lean_number_add, '+', [](Number const& a, Number const& b) { return a + b; });
     }
 
     void
-    test_fuzz_sub()
+    testFuzzSub()
     {
         beginCase("LeanNumber.fuzz_sub", true);
         runFuzzBinOp(lean_number_sub, '-', [](Number const& a, Number const& b) { return a - b; });
     }
 
     void
-    test_fuzz_neg()
+    testFuzzNeg()
     {
+        using namespace formal_verification;
+
         beginCase("LeanNumber.fuzz_neg", true);
         NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
         runFuzz(100'000, [&] {
@@ -366,8 +379,10 @@ public:
     }
 
     void
-    test_fuzz_signum()
+    testFuzzSignum()
     {
+        using namespace formal_verification;
+
         beginCase("LeanNumber.fuzz_signum", true);
         NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
 
@@ -385,14 +400,19 @@ public:
     }
 
     void
-    test_fuzz_normalize()
+    testFuzzNormalize()
     {
+        using namespace formal_verification;
+
         beginCase("LeanNumber.fuzz_normalize", true);
         NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
 
         // Test with unnormalized inputs: mantissa outside [10^18, maxRep]
         for (auto mode :
-             {Number::RoundingMode::ToNearest, Number::RoundingMode::TowardsZero, Number::RoundingMode::Downward, Number::RoundingMode::Upward})
+             {Number::RoundingMode::ToNearest,
+              Number::RoundingMode::TowardsZero,
+              Number::RoundingMode::Downward,
+              Number::RoundingMode::Upward})
         {
             SaveNumberRoundMode save{Number::setround(mode)};
             runFuzz(100'000, [&] {
@@ -406,8 +426,10 @@ public:
     }
 
     void
-    test_fuzz_compare()
+    testFuzzCompare()
     {
+        using namespace formal_verification;
+
         beginCase("LeanNumber.fuzz_compare", true);
         NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
         runFuzz(100'000, [&] {
@@ -422,8 +444,10 @@ public:
     }
 
     void
-    test_known_comparison()
+    testKnownComparison()
     {
+        using namespace formal_verification;
+
         beginCase("LeanNumber.known_comparison");
         NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
         auto const minMant = Number::minMantissa();
@@ -431,20 +455,19 @@ public:
 
         checkCompare("equal", makePair(false, minMant, 0), makePair(false, minMant, 0));
         checkCompare("sign", makePair(true, minMant, 0), makePair(false, minMant, 0));
-        checkCompare(
-            "exponent", makePair(false, minMant, 0), makePair(false, minMant, 5));
-        checkCompare(
-            "mantissa", makePair(false, minMant, 0), makePair(false, maxRep, 0));
-        checkCompare(
-            "neg-order", makePair(true, maxRep, 0), makePair(true, minMant, 0));
+        checkCompare("exponent", makePair(false, minMant, 0), makePair(false, minMant, 5));
+        checkCompare("mantissa", makePair(false, minMant, 0), makePair(false, maxRep, 0));
+        checkCompare("neg-order", makePair(true, maxRep, 0), makePair(true, minMant, 0));
         checkCompare("zero-pos", makePair(false, 0, 0), makePair(false, minMant, 0));
         checkCompare("zero-neg", makePair(false, 0, 0), makePair(true, minMant, 0));
         checkCompare("zero-zero", makePair(false, 0, 0), makePair(false, 0, 0));
     }
 
     void
-    test_known_values()
+    testKnownValues()
     {
+        using namespace formal_verification;
+
         beginCase("LeanNumber.known_values");
         NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
         SaveNumberRoundMode save{Number::setround(Number::RoundingMode::ToNearest)};
@@ -487,7 +510,7 @@ public:
         // Self-subtraction cancels to zero (Lean 0e-32768 vs C++ 0e-INT_MIN;
         // compare mantissa only).
         {
-            auto lean = LeanNumberResult::from_lean(lean_number_sub(
+            auto lean = LeanNumberResult::fromLean(lean_number_sub(
                 false, 5'000'000'000'000'000'000ULL, 0, false, 5'000'000'000'000'000'000ULL, 0, 0));
             Number cpp = Number{false, 5'000'000'000'000'000'000ULL, 0, Number::Unchecked{}} -
                 Number{false, 5'000'000'000'000'000'000ULL, 0, Number::Unchecked{}};
@@ -540,7 +563,7 @@ public:
         // constructible via Unchecked) is not caught by that guard and reaches
         // an integer divide-by-zero.
         {
-            auto lean = LeanNumberResult::from_lean(lean_number_div(
+            auto lean = LeanNumberResult::fromLean(lean_number_div(
                 false,
                 1'000'000'000'000'000'000ULL,
                 0,
@@ -564,8 +587,10 @@ public:
     }
 
     void
-    test_extreme_values()
+    testExtremeValues()
     {
+        using namespace formal_verification;
+
         beginCase("LeanNumber.extreme_values");
         NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
         SaveNumberRoundMode save{Number::setround(Number::RoundingMode::ToNearest)};
@@ -573,36 +598,23 @@ public:
         auto const minMant = Number::minMantissa();
         auto const maxRep = Number::kMaxRep;
 
-        compareMul(
-            "maxRep * maxRep", makePair(false, maxRep, 0), makePair(false, maxRep, 0));
-        compareMul(
-            "minMant * minMant",
-            makePair(false, minMant, 0),
-            makePair(false, minMant, 0));
-        compareDiv(
-            "maxRep / minMant",
-            makePair(false, maxRep, 0),
-            makePair(false, minMant, 0));
-        compareDiv(
-            "minMant / maxRep",
-            makePair(false, minMant, 0),
-            makePair(false, maxRep, 0));
-        compareAdd(
-            "maxRep + maxRep", makePair(false, maxRep, 0), makePair(false, maxRep, 0));
+        compareMul("maxRep * maxRep", makePair(false, maxRep, 0), makePair(false, maxRep, 0));
+        compareMul("minMant * minMant", makePair(false, minMant, 0), makePair(false, minMant, 0));
+        compareDiv("maxRep / minMant", makePair(false, maxRep, 0), makePair(false, minMant, 0));
+        compareDiv("minMant / maxRep", makePair(false, minMant, 0), makePair(false, maxRep, 0));
+        compareAdd("maxRep + maxRep", makePair(false, maxRep, 0), makePair(false, maxRep, 0));
 
         // Cancellation to zero (mantissa-only compare).
         {
             auto lean =
-                LeanNumberResult::from_lean(lean_number_add(false, maxRep, 0, true, maxRep, 0, 0));
+                LeanNumberResult::fromLean(lean_number_add(false, maxRep, 0, true, maxRep, 0, 0));
             Number cpp = Number{false, maxRep, 0, Number::Unchecked{}} +
                 Number{true, maxRep, 0, Number::Unchecked{}};
             checkZero("maxRep + (-maxRep)", lean, cpp);
         }
 
         compareAdd(
-            "maxRep + (-(maxRep-1))",
-            makePair(false, maxRep, 0),
-            makePair(true, maxRep - 1, 0));
+            "maxRep + (-(maxRep-1))", makePair(false, maxRep, 0), makePair(true, maxRep - 1, 0));
 
         compareMul(
             "minMant e80 * minMant e-96",
@@ -625,10 +637,7 @@ public:
             "(-maxRep e80) * (-maxRep e80)",
             makePair(true, maxRep, 80),
             makePair(true, maxRep, 80));
-        compareDiv(
-            "(-maxRep) / (-minMant)",
-            makePair(true, maxRep, 0),
-            makePair(true, minMant, 0));
+        compareDiv("(-maxRep) / (-minMant)", makePair(true, maxRep, 0), makePair(true, minMant, 0));
 
         compareNormalize("normalize(1e0)", false, 1, 0);
         compareNormalize("normalize(maxRep e80)", false, maxRep, 80);
@@ -640,7 +649,7 @@ public:
             makePair(false, minMant, 0));
 
         {
-            auto lean = LeanNumberResult::from_lean(lean_number_div(
+            auto lean = LeanNumberResult::fromLean(lean_number_div(
                 false, minMant, static_cast<uint64_t>(-32768), false, maxRep, 0, 0));
             Number cpp = Number{false, minMant, -32768, Number::Unchecked{}} /
                 Number{false, maxRep, 0, Number::Unchecked{}};
@@ -653,8 +662,8 @@ public:
             makePair(false, maxRep, 42));
 
         {
-            auto lean = LeanNumberResult::from_lean(
-                lean_number_add(false, maxRep, 42, true, maxRep, 42, 0));
+            auto lean =
+                LeanNumberResult::fromLean(lean_number_add(false, maxRep, 42, true, maxRep, 42, 0));
             Number cpp = Number{false, maxRep, 42, Number::Unchecked{}} +
                 Number{true, maxRep, 42, Number::Unchecked{}};
             checkZero("maxRep e42 + (-maxRep e42) — self cancel", lean, cpp);
@@ -667,34 +676,29 @@ public:
             makePair(false, minMant, 16384));
 
         compareAdd(
-            "maxRep e0 + (-minMant e0)",
-            makePair(false, maxRep, 0),
-            makePair(true, minMant, 0));
+            "maxRep e0 + (-minMant e0)", makePair(false, maxRep, 0), makePair(true, minMant, 0));
         compareAdd(
-            "minMant e0 + (-maxRep e0)",
-            makePair(false, minMant, 0),
-            makePair(true, maxRep, 0));
+            "minMant e0 + (-maxRep e0)", makePair(false, minMant, 0), makePair(true, maxRep, 0));
     }
 
 private:
     void
     runTests() override
     {
-        test_fuzz_mul();
-        test_fuzz_div();
-        test_fuzz_add();
-        test_fuzz_sub();
-        test_fuzz_neg();
-        test_fuzz_signum();
-        test_fuzz_normalize();
-        test_fuzz_compare();
-        test_known_values();
-        test_known_comparison();
-        test_extreme_values();
+        testFuzzMul();
+        testFuzzDiv();
+        testFuzzAdd();
+        testFuzzSub();
+        testFuzzNeg();
+        testFuzzSignum();
+        testFuzzNormalize();
+        testFuzzCompare();
+        testKnownValues();
+        testKnownComparison();
+        testExtremeValues();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LeanNumber, lean4, xrpl);
+BEAST_DEFINE_TESTSUITE(LeanNumber, formal_verification, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
