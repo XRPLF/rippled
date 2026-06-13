@@ -28,8 +28,8 @@ that requires [elan](https://github.com/leanprover/elan) (it provides the Lean
 version pinned in `lean-toolchain`):
 
 ```bash
-lake exe cache get # fetch prebuilt mathlib artifacts, so mathlib isn't compiled
-lake build         # build everything and check the proofs
+lake exe cache get # download mathlib's prebuilt .olean cache
+lake build         # elaborate every module (this is the proof check)
 ```
 
 `lake build` is the proof check: it passes only if every file elaborates with no
