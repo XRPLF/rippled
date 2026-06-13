@@ -30,6 +30,12 @@ if(tests)
     endif()
 endif()
 
+option(
+    formal_verification_tests
+    "Link the Lean 4 formal verification FFI and build its cross-validation tests (requires tests)"
+    OFF
+)
+
 option(unity "Creates a build using UNITY support in cmake." OFF)
 if(unity)
     if(NOT is_ci)

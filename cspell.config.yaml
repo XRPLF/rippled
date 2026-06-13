@@ -129,6 +129,7 @@ words:
   - hwaddress
   - hwrap
   - ifndef
+  - ilean
   - inequation
   - insuf
   - insuff
@@ -209,6 +210,7 @@ words:
   - nullptr
   - nunl
   - Nyffenegger
+  - olean
   - onlatest
   - ostr
   - pargs
@@ -246,6 +248,7 @@ words:
   - rippled
   - ripplerpc
   - rippletest
+  - ripplex
   - RLUSD
   - rngfill
   - rocksdb

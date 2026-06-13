@@ -1,0 +1,171 @@
+name: Formal verification
+
+# Runs the Lean 4 cross-validation tests and, separately, checks the proofs.
+# The heavy Lean side is baked into a CI image (see the lean-image job).
+# Full picture: docs/formal-verification/README.md.
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/formal-verification.yml"
+      - "cmake/XrplLean4.cmake"
+      - "formal_verification/**"
+      - "src/test/formal_verification/**"
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # Conan writes its generators under build/generators; CMake runs from build/.
+  BUILD_DIR: build
+
+jobs:
+  lean-image:
+    name: Ensure Lean CI image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Compute image tag
+        id: meta
+        run: |
+          # Key the tag on what the image bakes (lean4 toolchain + the mathlib
+          # deps package), not the model or XRPL sources: those build in-job, so
+          # editing the model must not force an image rebuild.
+          tag=$(cat \
+              formal_verification/lean-toolchain \
+              formal_verification/lake-manifest.json \
+              formal_verification/lakefile.toml \
+              formal_verification/deps/conanfile.py \
+              formal_verification/scripts/bundle_lean_deps.sh \
+              formal_verification/docker/Dockerfile \
+              external/lean4/conanfile.py |
+              sha256sum | cut -c1-12)
+          echo "image=ghcr.io/${{ github.repository }}/lean-ci:${tag}" >>"${GITHUB_OUTPUT}"
+
+      - name: Log in to the GitHub Container Registry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build and push the image if it does not exist
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+        run: |
+          if docker manifest inspect "${IMAGE}" >/dev/null 2>&1; then
+              echo "Image ${IMAGE} already exists, skipping build."
+              exit 0
+          fi
+          docker build -f formal_verification/docker/Dockerfile -t "${IMAGE}" .
+          docker push "${IMAGE}"
+
+  # Elaborating the Lean files is the proof check; independent of the tests.
+  check-proofs:
+    name: Check proofs
+    needs: lean-image
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.lean-image.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Restore the primed Lean artifacts
+        run: |
+          rsync -a /opt/lean-cache/.lake/ formal_verification/.lake/
+
+      - name: Build all Lean proofs
+        working-directory: formal_verification
+        run: |
+          lake build
+
+  build-test:
+    name: Build and test
+    needs: lean-image
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.lean-image.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    timeout-minutes: 120
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Get number of processors
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
+        id: nproc
+        with:
+          subtract: 1
+
+      - name: Set compiler environment
+        uses: ./.github/actions/set-compiler-env
+        with:
+          compiler: gcc
+
+      - name: Setup Conan
+        uses: ./.github/actions/setup-conan
+
+      - name: Export the Lean Conan recipes
+        run: |
+          conan export external/lean4
+          conan export formal_verification/deps
+          conan export formal_verification
+
+      # Like the build-deps composite action, plus the formal_verification_tests
+      # option. lean4 and xrpl-lean4-deps come prebuilt from the image's Conan
+      # cache; only the fast xrpl-lean4 model package (re)builds here.
+      - name: Build dependencies
+        run: |
+          conan install \
+              --profile:all ci \
+              --build=missing \
+              --options:host '&:tests=True' \
+              --options:host '&:xrpld=True' \
+              --options:host '&:formal_verification_tests=True' \
+              --settings:all build_type=Release \
+              --conf:all tools.build:jobs=${{ steps.nproc.outputs.nproc }} \
+              .
+
+      - name: Configure CMake
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          cmake \
+              -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+              -DCMAKE_BUILD_TYPE=Release \
+              ..
+
+      - name: Build the binary
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          cmake \
+              --build . \
+              --parallel ${{ steps.nproc.outputs.nproc }} \
+              --target xrpld
+
+      - name: Run the formal verification test suite
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ./xrpld --unittest=formal_verification

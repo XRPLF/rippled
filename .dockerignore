@@ -1,0 +1,4 @@
+# Keep build artifacts out of docker build contexts (they are multi-GB and
+# never belong in an image).
+.build
+.lake/

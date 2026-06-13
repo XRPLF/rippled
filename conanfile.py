@@ -17,6 +17,7 @@ class Xrpl(ConanFile):
         "assertions": [True, False],
         "coverage": [True, False],
         "fPIC": [True, False],
+        "formal_verification_tests": [True, False],
         "jemalloc": [True, False],
         "rocksdb": [True, False],
         "shared": [True, False],
@@ -49,6 +50,7 @@ class Xrpl(ConanFile):
         "assertions": False,
         "coverage": False,
         "fPIC": True,
+        "formal_verification_tests": False,
         "jemalloc": False,
         "rocksdb": True,
         "shared": False,
@@ -135,6 +137,8 @@ class Xrpl(ConanFile):
         self.requires("lz4/1.10.0", force=True)
         self.requires("protobuf/6.33.5", force=True)
         self.requires("sqlite3/3.53.0", force=True)
+        if self.options.formal_verification_tests:
+            self.requires("xrpl-lean4/0.1.0")
         if self.options.jemalloc:
             self.requires("jemalloc/5.3.1")
         if self.options.rocksdb:
@@ -163,6 +167,9 @@ class Xrpl(ConanFile):
         tc.variables["tests"] = self.options.tests
         tc.variables["assert"] = self.options.assertions
         tc.variables["coverage"] = self.options.coverage
+        tc.variables["formal_verification_tests"] = (
+            self.options.formal_verification_tests
+        )
         tc.variables["jemalloc"] = self.options.jemalloc
         tc.variables["rocksdb"] = self.options.rocksdb
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared

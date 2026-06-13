@@ -16,7 +16,7 @@ Release/
 /.venv/
 /build/
 /db/
-/.lake
+.lake/
 /out.txt
 /Testing/
 /tmp/
