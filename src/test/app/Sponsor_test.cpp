@@ -33,6 +33,7 @@
 #include <test/jtx/vault.h>
 #include <test/jtx/xchain_bridge.h>
 
+#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Number.h>
@@ -5968,6 +5969,84 @@ public:
     }
 
     void
+    testTxQueueSponsorReserve()
+    {
+        /* Each queued tfSponsorCreatedAccount payment that creates a new
+           destination raises the source's own future reserve (via
+           sfSponsoringAccountCount). TxQ admission must account for that
+           liability across all of an account's queued creations. Otherwise a
+           source could queue several sequential sponsored creations that are
+           not collectively reserve-safe and would all be admitted as terQUEUED,
+           even though once the earlier ones drain and raise the reserve the
+           later ones can no longer be queue-safe and would fail at execution
+           with tecUNFUNDED_PAYMENT, burning their fee. */
+        testcase("TxQ accounts for sponsor-created-account reserve");
+
+        using namespace jtx;
+
+        // Sponsor is funded for its own reserve, both sponsored accounts, and
+        // `feeUnits` fees. Two creations need two fees, so feeUnits == 1 rejects
+        // the second creation; feeUnits == 2 queues both.
+        auto const runScenario = [this](int feeUnits, TER secondResult) {
+            Env env(
+                *this,
+                makeConfig({{"minimum_txn_in_ledger_standalone", "1"}}),
+                testableAmendments());
+
+            Account const filler("filler");
+            Account const sponsor("sponsor");
+            Account const bob("bob");
+            Account const carol("carol");
+
+            for (auto const& account : {filler, sponsor})
+            {
+                env.fund(XRP(1000), account);
+                env.close();
+            }
+
+            auto const feeDrops = env.current()->fees().base.drops() * 100;
+            auto const feeAmt = drops(feeDrops);
+            adjustAccountXRPBalance(
+                env, sponsor, accountReserve(env, 3) + drops(feeDrops * feeUnits) + drops(2));
+
+            auto& txq = env.app().getTxQ();
+
+            // Fill the open ledger so the sponsor's payments are held in the
+            // queue rather than applied directly.
+            auto const metrics = txq.getMetrics(*env.current());
+            for (std::size_t i = metrics.txInLedger; i <= metrics.txPerLedger; ++i)
+                env(noop(filler));
+
+            auto const sponsorSeq = env.seq(sponsor);
+
+            // The first sponsored creation is reserve-safe on its own.
+            env(pay(sponsor, bob, drops(1)),
+                Seq(sponsorSeq),
+                Txflags(tfSponsorCreatedAccount),
+                Fee(feeAmt),
+                Ter(terQUEUED));
+
+            // The second only queues if the sponsor can cover both creations'
+            // future reserve together.
+            env(pay(sponsor, carol, drops(1)),
+                Seq(sponsorSeq + 1),
+                Txflags(tfSponsorCreatedAccount),
+                Fee(feeAmt),
+                Ter(secondResult));
+
+            std::size_t const expectedQueued = secondResult == terQUEUED ? 2 : 1;
+            BEAST_EXPECT(txq.getAccountTxs(sponsor.id()).size() == expectedQueued);
+        };
+
+        // Not collectively reserve-safe: the second creation is rejected.
+        runScenario(1, telCAN_NOT_QUEUE_BALANCE);
+
+        // Enough headroom for both creations: the second is admitted, proving
+        // the accounting does not over-reject.
+        runScenario(2, terQUEUED);
+    }
+
+    void
     testSponsorReserve(bool cosigning)
     {
         testRequireFlag();
@@ -5992,6 +6071,11 @@ public:
         testVault(cosigning);
         testXChain(cosigning);
         testLending(cosigning);
+
+        // The source is its own sponsor and pays its own fee here, so there is
+        // no co-signer involved; run this case once rather than in both passes.
+        if (!cosigning)
+            testTxQueueSponsorReserve();
     }
 
 protected:

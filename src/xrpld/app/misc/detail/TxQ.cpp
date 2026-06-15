@@ -15,6 +15,7 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -25,6 +26,8 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -1104,6 +1107,50 @@ TxQ::apply(
                 JLOG(j_.trace()) << "Ignoring transaction " << transactionID
                                  << ". Total fees in flight too high.";
                 return {telCAN_NOT_QUEUE_BALANCE, false};
+            }
+
+            /* Account for the future reserve liability of queued sponsored
+               account creations.
+
+               A Payment with tfSponsorCreatedAccount that creates a new
+               destination permanently raises the *source* account's own
+               reserve by one base reserve unit (via sfSponsoringAccountCount)
+               once it executes. Only fresh destinations matter, because doApply()
+               only increments sfSponsoringAccountCount when it actually creates
+               the account. */
+            auto const locksSponsorReserve = [&view](STTx const& candidate) {
+                return candidate.getTxnType() == ttPAYMENT &&
+                    candidate.isFlag(tfSponsorCreatedAccount) &&
+                    !view.exists(keylet::account(candidate.getAccountID(sfDestination)));
+            };
+
+            std::uint32_t sponsorReserveUnits = locksSponsorReserve(pfResult.tx) ? 1 : 0;
+            XRPAmount sponsorFeesAndSpend =
+                pfResult.consequences.fee() + pfResult.consequences.potentialSpend();
+            for (auto iter = txIter->first; iter != txIter->end; ++iter)
+            {
+                // Skip the queued entry the candidate is replacing
+                if (iter->first == txSeqProx)
+                    continue;
+                if (locksSponsorReserve(*iter->second.txn))
+                    ++sponsorReserveUnits;
+                sponsorFeesAndSpend += iter->second.consequences().fee() +
+                    iter->second.consequences().potentialSpend();
+            }
+
+            if (sponsorReserveUnits > 0)
+            {
+                // After paying every queued fee and explicit XRP spend, the
+                // source must still hold its full reserve floor, including the
+                // reserve units added by the queued sponsored account creations.
+                XRPAmount const requiredBalance = accountReserve(view, sleAccount, j) +
+                    (reserve * sponsorReserveUnits) + sponsorFeesAndSpend;
+                if (balance < requiredBalance)
+                {
+                    JLOG(j_.trace()) << "Ignoring transaction " << transactionID
+                                     << ". Insufficient balance to cover future sponsor reserve.";
+                    return {telCAN_NOT_QUEUE_BALANCE, false};
+                }
             }
 
             // Create the test view from the current view.
