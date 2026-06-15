@@ -1,14 +1,10 @@
-# CI image for the formal-verification jobs: the public xrpld CI image plus the
-# pinned Lean toolchain, a primed .lake (mathlib oleans + compiled objects), and a
-# Conan cache with the lean4 toolchain. The Lean library itself builds in-job.
-#
-# Build from the repo root (formal_verification/.lake must be absent; see .dockerignore):
+# CI image for the formal-verification jobs: xrpld CI base + the pinned Lean
+# toolchain, a primed .lake (oleans + compiled objects), and a Conan cache with
+# lean4. Build from the repo root:
 #     docker build -f formal_verification/docker/Dockerfile .
 ARG BASE_IMAGE=ghcr.io/xrplf/xrpld/nix-ubuntu:sha-63ffdc3
 
-# Toolchain stage, shared by builder and final image. CONAN_HOME and
-# XDG_CACHE_HOME live under /opt because GitHub Actions overrides HOME in
-# container jobs, and the jobs must see the caches this image bakes.
+# Toolchain stage (shared). Caches live under /opt because CI overrides HOME.
 FROM ${BASE_IMAGE} AS toolchain
 
 ENV ELAN_HOME=/opt/elan
@@ -31,20 +27,17 @@ RUN curl -sSf https://elan.lean-lang.org/elan-init.sh \
     && elan toolchain install "$(cat /tmp/lean-toolchain)" \
     && elan default "$(cat /tmp/lean-toolchain)"
 
-# Builder stage: prime the lake workspace and the Conan cache, then prune.
 FROM toolchain AS builder
 
-# Prime the lake workspace: fetch the mathlib cache and elaborate the default
-# XRPL target (check-proofs reuses these oleans).
+# Fetch the mathlib cache and elaborate (oleans; check-proofs reuses them).
 COPY formal_verification /opt/lean-cache
 RUN cd /opt/lean-cache \
     && rm -rf .lake \
     && lake exe cache get \
     && lake build
 
-# Compile every dependency's native objects (build-test links them in-job). The
-# :static archive step fails on ARG_MAX, but the .o files are produced. taskset
-# caps parallelism to ~1 job/2 GB so mathlib's compile does not OOM a low-RAM VM.
+# Compile dependency objects (build-test links them); the :static archive fails
+# on ARG_MAX but the .o files remain. taskset caps to ~1 job/2 GB to avoid OOM.
 RUN cd /opt/lean-cache \
     && cap="$(nproc)" \
     && mem_cap="$(awk '/MemTotal/{c=int($2/1024/1024/2); print (c<1)?1:c}' /proc/meminfo)" \
@@ -56,9 +49,7 @@ RUN cd /opt/lean-cache \
         Mathlib:static \
     || true
 
-# Prime the Conan cache for build-test with the lean4 toolchain package (keyed on
-# os/arch only, so the ci profile reuses it). No Lean model package: it builds
-# in-job from the primed .lake.
+# Prime the Conan cache with lean4 (os/arch-keyed, so the ci profile reuses it).
 COPY external/lean4 /opt/lean-recipe
 RUN conan profile detect --exist-ok \
     && lean_ver="$(sed 's|^leanprover/lean4:v||' /tmp/lean-toolchain)" \
@@ -66,13 +57,10 @@ RUN conan profile detect --exist-ok \
     && conan install --requires="lean4/${lean_ver}" --build=missing \
     && conan cache clean "*"
 
-# Drop dependency git history; keep the compiled objects + oleans (build-test
-# links the objects, check-proofs and model elaboration need the oleans).
+# Drop dependency git history (keep the objects + oleans).
 RUN cd /opt/lean-cache && rm -rf .lake/packages/*/.git
 
-# Final image: toolchain + pruned caches. Jobs restore /opt/lean-cache/.lake;
-# build-test resolves lean4 from /opt/conan; /opt/xdg-cache keeps the mathlib
-# download so the build is offline.
+# Final image: toolchain + the baked /opt caches that the jobs restore.
 FROM toolchain
 
 COPY --from=builder /opt/lean-cache /opt/lean-cache
