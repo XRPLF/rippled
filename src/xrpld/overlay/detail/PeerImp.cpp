@@ -69,6 +69,7 @@
 #include <boost/asio/completion_condition.hpp>
 #include <boost/asio/dispatch.hpp>
 #include <boost/asio/error.hpp>
+#include <boost/asio/post.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
@@ -195,7 +196,11 @@ stringIsUInt256Sized(std::string const& pBuffStr)
 void
 PeerImp::run()
 {
-    dispatch(strand_, [self = shared_from_this()]() {
+    // Must use post, not dispatch. Callers (onHandoff, addActive) hold
+    // overlay_.mutex_ and dispatch can run inline on an io_context thread,
+    // which would cause doAccept() -> overlay_.activate() to deadlock on
+    // the same mutex.
+    post(strand_, [self = shared_from_this()]() {
         auto parseLedgerHash = [](std::string_view value) -> std::optional<uint256> {
             if (uint256 ret; ret.parseHex(value))
                 return ret;
