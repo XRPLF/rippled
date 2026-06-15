@@ -144,7 +144,7 @@ namespace {
 // emitted by both linkedSpan() overloads. Custom xrpl attribute — not part
 // of the OTel semantic conventions, so defined here rather than pulled from
 // <opentelemetry/semconv/...>.
-constexpr char const* kLinkTypeKey = "xrpl.link.type";
+constexpr char const* kLinkTypeKey = "link_type";
 constexpr char const* kLinkTypeFollowsFrom = "follows_from";
 
 // Map a TraceCategory to an OTel SpanKind so Tempo's service-graph /
