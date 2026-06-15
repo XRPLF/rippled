@@ -64,6 +64,7 @@
 #include <xrpl/tx/apply.h>
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
