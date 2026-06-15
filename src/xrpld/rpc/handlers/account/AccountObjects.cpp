@@ -204,16 +204,28 @@ getAccountObjects(
                 !typeMatchesFilter(typeFilter.value(), sleNode->getType()))
                 canAppend = false;
 
-            auto const getSponsor = [&sleNode]() -> std::optional<AccountID> {
-                if (sleNode->isFieldPresent(sfSponsor))
-                    return sleNode->getAccountID(sfSponsor);
+            auto const getSponsor = [&account, &sleNode]() -> std::optional<AccountID> {
                 if (sleNode->getType() == ltRIPPLE_STATE)
                 {
-                    if (sleNode->isFieldPresent(sfHighSponsor))
+                    if (sleNode->isFlag(lsfHighReserve) &&
+                        sleNode->getFieldAmount(sfHighLimit).getIssuer() == account &&
+                        sleNode->isFieldPresent(sfHighSponsor))
                         return sleNode->getAccountID(sfHighSponsor);
-                    if (sleNode->isFieldPresent(sfLowSponsor))
+                    if (sleNode->isFlag(lsfLowReserve) &&
+                        sleNode->getFieldAmount(sfLowLimit).getIssuer() == account &&
+                        sleNode->isFieldPresent(sfLowSponsor))
                         return sleNode->getAccountID(sfLowSponsor);
+
+                    return std::nullopt;
                 }
+
+                if (sleNode->getType() == ltSPONSORSHIP &&
+                    sleNode->getAccountID(sfOwner) != account)
+                    return std::nullopt;
+
+                if (sleNode->isFieldPresent(sfSponsor))
+                    return sleNode->getAccountID(sfSponsor);
+
                 return std::nullopt;
             };
             std::optional<AccountID> const sponsor = getSponsor();
