@@ -8,6 +8,8 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <expected>
+
 namespace xrpl {
 
 inline bool
@@ -34,7 +36,7 @@ getTxReserveSponsorAccountID(STTx const& tx)
     return {};
 }
 
-inline Expected<SLE::pointer, TER>
+inline std::expected<SLE::pointer, TER>
 getTxReserveSponsor(ApplyView& view, STTx const& tx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(tx);
@@ -44,13 +46,13 @@ getTxReserveSponsor(ApplyView& view, STTx const& tx)
 
         // already checked in Transactor::checkSponsor
         if (!sle)
-            return Unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);
         return sle;
     }
     return SLE::pointer();
 }
 
-inline Expected<SLE::const_pointer, TER>
+inline std::expected<SLE::const_pointer, TER>
 getTxReserveSponsor(ReadView const& view, STTx const& tx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(tx);
@@ -60,7 +62,7 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
 
         // already checked in Transactor::checkSponsor
         if (!sle)
-            return Unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);
         return sle;
     }
     return SLE::pointer();

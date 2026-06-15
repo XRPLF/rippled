@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -23,6 +22,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <utility>
 
@@ -102,7 +102,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-Expected<MPTID, TER>
+std::expected<MPTID, TER>
 MPTokenIssuanceCreate::create(
     ApplyView& view,
     STTx const& tx,
@@ -111,14 +111,14 @@ MPTokenIssuanceCreate::create(
 {
     auto const acct = view.peek(keylet::account(args.account));
     if (!acct)
-        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+        return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
     SLE::pointer sponsorSle;
     if (!isPseudoAccount(acct))
     {
         auto sle = getTxReserveSponsor(view, tx);
         if (!sle)
-            return Unexpected(sle.error());
+            return std::unexpected(sle.error());
         sponsorSle = std::move(*sle);
     }
 
@@ -127,7 +127,7 @@ MPTokenIssuanceCreate::create(
         if (auto const ret = checkInsufficientReserve(
                 view, tx, acct, *(args.priorBalance), sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
-            return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
+            return std::unexpected(ret);  // tecINSUFFICIENT_RESERVE
     }
 
     auto const mptId = makeMptID(args.sequence, args.account);
@@ -139,7 +139,7 @@ MPTokenIssuanceCreate::create(
             keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
 
         if (!ownerNode)
-            return Unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
+            return std::unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
         auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
@@ -175,10 +175,10 @@ MPTokenIssuanceCreate::create(
             // would dangle the pointer and is a programmer error.
             auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
             if (!sleHolding)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const type = sleHolding->getType();
             if (type != ltMPTOKEN && type != ltRIPPLE_STATE)
-                return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             (*mptIssuance)[sfReferenceHolding] = *args.referenceHolding;
         }
 

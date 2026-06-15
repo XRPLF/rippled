@@ -1,6 +1,5 @@
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -71,7 +70,7 @@ locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
         Keylet(ltNFTOKEN_PAGE, view.succ(first.key, last.key.next()).value_or(last.key)));
 }
 
-static Expected<SLE::pointer, TER>
+static std::expected<SLE::pointer, TER>
 getPageForToken(
     ApplyView& view,
     STTx const& tx,
@@ -100,7 +99,7 @@ getPageForToken(
         view.insert(cp);
 
         if (auto const ret = createCallback(view, tx, cp, owner, sponsorSle); !isTesSuccess(ret))
-            return Unexpected(ret);
+            return std::unexpected(ret);
         return cp;
     }
 
@@ -214,7 +213,7 @@ getPageForToken(
     view.update(cp);
 
     if (auto const ret = createCallback(view, tx, np, owner, sponsorSle); ret != tesSUCCESS)
-        return Unexpected(ret);
+        return std::unexpected(ret);
 
     return (first.key < np->key()) ? np : cp;
 }
@@ -753,7 +752,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
             {
                 Throw<std::runtime_error>(
                     "NFTokenPage directory for " + to_string(owner) +
-                    " cannot be repaired.  Unexpected link problem.");
+                    " cannot be repaired.  std::unexpected link problem.");
             }
             newPrev->at(sfNextPageMin) = nextPage->key();
             view.update(newPrev);
