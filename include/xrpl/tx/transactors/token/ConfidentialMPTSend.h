@@ -34,7 +34,6 @@ class ConfidentialMPTSend : public Transactor
 {
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
-    ;
 
     explicit ConfidentialMPTSend(ApplyContext& ctx) : Transactor(ctx)
     {

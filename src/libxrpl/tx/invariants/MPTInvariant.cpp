@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+
 namespace xrpl {
 
 static constexpr auto kConfidentialMptTxTypes = std::to_array<TxType>({
@@ -454,7 +455,9 @@ ValidMPTPayment::finalize(
         // so ValidMPTPayment's accounting does not apply to them.
         if (std::ranges::find(kConfidentialMptTxTypes, tx.getTxnType()) !=
             kConfidentialMptTxTypes.end())
+        {
             return true;
+        }
 
         bool const invariantPasses = !view.rules().enabled(featureMPTokensV2);
         if (overflow_)
@@ -595,12 +598,8 @@ ValidConfidentialMPToken::visitEntry(
         auto const versionAfter = (*after)[~sfConfidentialBalanceVersion];
 
         if (spendingBefore.has_value() && spendingBefore != spendingAfter)
-        {
             if (versionBefore == versionAfter)
-            {
                 changes_[id].badVersion = true;
-            }
-        }
     }
 }
 

@@ -26,15 +26,26 @@ namespace xrpl {
  */
 struct ConfidentialRecipient
 {
-    Slice publicKey;        ///< The recipient's ElGamal public key (size=xrpl::ecPubKeyLength).
-    Slice encryptedAmount;  ///< The encrypted amount ciphertext
-                            ///< (size=xrpl::ecGamalEncryptedTotalLength).
+    /** @brief The recipient's ElGamal public key (size=xrpl::ecPubKeyLength). */
+    Slice publicKey;
+
+    /**
+     * @brief The encrypted amount ciphertext
+     * (size=xrpl::ecGamalEncryptedTotalLength).
+     */
+    Slice encryptedAmount;
 };
 
-/// Holds two secp256k1 public key components representing an ElGamal ciphertext (C1, C2).
+/**
+ * @brief Holds two secp256k1 public key components representing an ElGamal
+ * ciphertext (C1, C2).
+ */
 struct EcPair
 {
+    /** @brief First ElGamal ciphertext component. */
     secp256k1_pubkey c1;
+
+    /** @brief Second ElGamal ciphertext component. */
     secp256k1_pubkey c2;
 };
 
@@ -209,7 +220,7 @@ homomorphicSubtract(Slice const& a, Slice const& b);
  * @param amt            The plaintext amount to encrypt.
  * @param pubKeySlice    The recipient's ElGamal public key (size=xrpl::ecPubKeyLength).
  * @param blindingFactor The randomness used as blinding factor r
- * (size=xrpl::ecBlindingFactorLength).
+ *                       (size=xrpl::ecBlindingFactorLength).
  * @return The ciphertext (size=xrpl::ecGamalEncryptedTotalLength), or std::nullopt on failure.
  */
 std::optional<Buffer>
@@ -266,7 +277,7 @@ checkEncryptedAmountFormat(STObject const& object);
  *
  * @param amount         The revealed plaintext amount.
  * @param blindingFactor The blinding factor used in all encryptions
- * (size=xrpl::ecBlindingFactorLength).
+ *                       (size=xrpl::ecBlindingFactorLength).
  * @param holder         The holder's public key and encrypted amount.
  * @param issuer         The issuer's public key and encrypted amount.
  * @param auditor        Optional auditor's public key and encrypted amount.
@@ -306,7 +317,7 @@ getConfidentialRecipientCount(bool hasAuditor)
  * @param proof       The zero-knowledge proof bytes (ecClawbackProofLength).
  * @param pubKeySlice The issuer's ElGamal public key (ecPubKeyLength bytes).
  * @param ciphertext  The issuer's encrypted balance on the holder's account
- * (ecGamalEncryptedTotalLength bytes).
+ *                    (ecGamalEncryptedTotalLength bytes).
  * @param contextHash The 256-bit context hash binding the proof.
  * @return tesSUCCESS if the proof is valid, or an error code otherwise.
  */

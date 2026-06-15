@@ -5058,10 +5058,11 @@ class Invariants_test : public beast::unit_test::Suite
             {"MPToken sfConfidentialBalanceVersion not updated when sfConfidentialBalanceSpending "
              "changed"},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                Blob const kChangedConfidentialSpending = {0xBA, 0xDD};
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
                     return false;
-                sleToken->setFieldVL(sfConfidentialBalanceSpending, Blob{0xBA, 0xDD});
+                sleToken->setFieldVL(sfConfidentialBalanceSpending, kChangedConfidentialSpending);
 
                 // DO NOT update sfConfidentialBalanceVersion
                 ac.view().update(sleToken);

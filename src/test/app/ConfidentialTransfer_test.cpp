@@ -217,10 +217,11 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
         mptAlice.generateKeyPair(alice);
         mptAlice.generateKeyPair(auditor);
 
-        mptAlice.set(
-            {.account = alice,
-             .issuerPubKey = mptAlice.getPubKey(alice),
-             .auditorPubKey = mptAlice.getPubKey(auditor)});
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(alice),
+            .auditorPubKey = mptAlice.getPubKey(auditor),
+        });
 
         mptAlice.generateKeyPair(bob);
 
@@ -2911,7 +2912,7 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
             mptAlice.send({
                 .account = bob,
                 .dest = carol,
-                .amt = 0xFFFFFFFFFFFFFFFF,  // Max uint64
+                .amt = std::numeric_limits<std::uint64_t>::max(),
                 .err = tecBAD_PROOF,
             });
 
@@ -5733,15 +5734,16 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
         Buffer const issuerCiphertextB = mptAlice.encryptAmount(alice, amtB, blindingFactorB);
 
         // We attempt to verify the proof pi (for amt 10) against the new ciphertexts (for amt 20).
-        mptAlice.convertBack(
-            {.account = bob,
-             .amt = amtB,
-             .proof = proofA,  // Extracted/Reused proof from Transaction A
-             .holderEncryptedAmt = bobCiphertextB,
-             .issuerEncryptedAmt = issuerCiphertextB,
-             .blindingFactor = blindingFactorB,
-             .pedersenCommitment = pedersenCommitment,
-             .err = tecBAD_PROOF});  // Expected failure
+        mptAlice.convertBack({
+            .account = bob,
+            .amt = amtB,
+            .proof = proofA,  // Extracted/Reused proof from Transaction A
+            .holderEncryptedAmt = bobCiphertextB,
+            .issuerEncryptedAmt = issuerCiphertextB,
+            .blindingFactor = blindingFactorB,
+            .pedersenCommitment = pedersenCommitment,
+            .err = tecBAD_PROOF,  // Expected failure
+        });
     }
 
     // This test simulates a valid proof π and ciphertext are
@@ -5805,15 +5807,16 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
             });
 
         // Submit and verify failure
-        mptAlice.convertBack(
-            {.account = bob,
-             .amt = amt,
-             .proof = oldProof,
-             .holderEncryptedAmt = bobCiphertext,
-             .issuerEncryptedAmt = issuerCiphertext,
-             .blindingFactor = blindingFactor,
-             .pedersenCommitment = pedersenCommitment,
-             .err = tecBAD_PROOF});  // Fails because TransactionContextID differs
+        mptAlice.convertBack({
+            .account = bob,
+            .amt = amt,
+            .proof = oldProof,
+            .holderEncryptedAmt = bobCiphertext,
+            .issuerEncryptedAmt = issuerCiphertext,
+            .blindingFactor = blindingFactor,
+            .pedersenCommitment = pedersenCommitment,
+            .err = tecBAD_PROOF,  // Fails because TransactionContextID differs
+        });
     }
 
     /* This test simulates an attack where the holder ciphertext is modified
@@ -5878,15 +5881,16 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
         // Holder Ciphertext encrypts 11. Issuer Ciphertext encrypts 10.
         // The consistency check (re-encryption of `amt` with `bf`) will match Issuer but FAIL for
         // Holder.
-        mptAlice.convertBack(
-            {.account = bob,
-             .amt = amt,
-             .proof = proof,
-             .holderEncryptedAmt = tamperedHolderCipherText,  // Tampered (11)
-             .issuerEncryptedAmt = issuerCipherText,          // Original (10)
-             .blindingFactor = bf,
-             .pedersenCommitment = pedersenCommitment,
-             .err = tecBAD_PROOF});
+        mptAlice.convertBack({
+            .account = bob,
+            .amt = amt,
+            .proof = proof,
+            .holderEncryptedAmt = tamperedHolderCipherText,  // Tampered (11)
+            .issuerEncryptedAmt = issuerCipherText,          // Original (10)
+            .blindingFactor = bf,
+            .pedersenCommitment = pedersenCommitment,
+            .err = tecBAD_PROOF,
+        });
     }
 
     /* This test verifies that xrpld correctly rejects attempts to
@@ -6922,14 +6926,18 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
                 setup.recipients,
                 setup.blindingFactor,
                 makeContextHash(env, mptAlice, alice, bob, carol, setup.version),
-                {.pedersenCommitment = setup.amountCommitment,
-                 .amt = setup.sendAmount,
-                 .encryptedAmt = setup.senderAmt,
-                 .blindingFactor = setup.amountBlindingFactor},
-                {.pedersenCommitment = setup.balanceCommitment,
-                 .amt = setup.prevSpending,
-                 .encryptedAmt = setup.prevEncryptedSpending,
-                 .blindingFactor = setup.balanceBlindingFactor});
+                {
+                    .pedersenCommitment = setup.amountCommitment,
+                    .amt = setup.sendAmount,
+                    .encryptedAmt = setup.senderAmt,
+                    .blindingFactor = setup.amountBlindingFactor,
+                },
+                {
+                    .pedersenCommitment = setup.balanceCommitment,
+                    .amt = setup.prevSpending,
+                    .encryptedAmt = setup.prevEncryptedSpending,
+                    .blindingFactor = setup.balanceBlindingFactor,
+                });
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
@@ -7263,10 +7271,12 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
                 bob,
                 sendAmount,
                 convertBackCtxHash,
-                {.pedersenCommitment = pedersenCommitment,
-                 .amt = *spendingBalance,
-                 .encryptedAmt = *encryptedSpending,
-                 .blindingFactor = pcBlindingFactor});
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *spendingBalance,
+                    .encryptedAmt = *encryptedSpending,
+                    .blindingFactor = pcBlindingFactor,
+                });
 
             // Resize the convertBack proof to match the expected send proof
             // size so it passes preflight's size check and reaches the actual
@@ -7304,14 +7314,18 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
                 setup.recipients,
                 setup.blindingFactor,
                 wrongCtxHash,
-                {.pedersenCommitment = setup.amountCommitment,
-                 .amt = sendAmount,
-                 .encryptedAmt = setup.senderAmt,
-                 .blindingFactor = setup.amountBlindingFactor},
-                {.pedersenCommitment = setup.balanceCommitment,
-                 .amt = setup.prevSpending,
-                 .encryptedAmt = setup.prevEncryptedSpending,
-                 .blindingFactor = setup.balanceBlindingFactor});
+                {
+                    .pedersenCommitment = setup.amountCommitment,
+                    .amt = sendAmount,
+                    .encryptedAmt = setup.senderAmt,
+                    .blindingFactor = setup.amountBlindingFactor,
+                },
+                {
+                    .pedersenCommitment = setup.balanceCommitment,
+                    .amt = setup.prevSpending,
+                    .encryptedAmt = setup.prevEncryptedSpending,
+                    .blindingFactor = setup.balanceBlindingFactor,
+                });
 
             if (!BEAST_EXPECT(wrongProof.has_value()))
                 return;
@@ -7392,14 +7406,18 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
                 setup.recipients,
                 setup.blindingFactor,
                 ctxHash,
-                {.pedersenCommitment = setup.amountCommitment,
-                 .amt = sendAmount,
-                 .encryptedAmt = setup.senderAmt,
-                 .blindingFactor = setup.amountBlindingFactor},
-                {.pedersenCommitment = setup.balanceCommitment,
-                 .amt = setup.prevSpending,
-                 .encryptedAmt = setup.prevEncryptedSpending,
-                 .blindingFactor = setup.balanceBlindingFactor});
+                {
+                    .pedersenCommitment = setup.amountCommitment,
+                    .amt = sendAmount,
+                    .encryptedAmt = setup.senderAmt,
+                    .blindingFactor = setup.amountBlindingFactor,
+                },
+                {
+                    .pedersenCommitment = setup.balanceCommitment,
+                    .amt = setup.prevSpending,
+                    .encryptedAmt = setup.prevEncryptedSpending,
+                    .blindingFactor = setup.balanceBlindingFactor,
+                });
 
             if (!BEAST_EXPECT(validProof.has_value()))
                 return;

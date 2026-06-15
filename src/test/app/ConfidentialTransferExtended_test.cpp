@@ -567,8 +567,7 @@ class ConfidentialTransferExtendedTest : public ConfidentialTransferTestBase
             auto& mpt = confEnv.mpt;
 
             auto constexpr kCredIdx =
-                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4";
+                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288BE4";
 
             mpt.send({
                 .account = carol,
@@ -678,11 +677,12 @@ class ConfidentialTransferExtendedTest : public ConfidentialTransferTestBase
         {
             std::uint32_t const ticketSeq = env.seq(bob) + 1;
             env(ticket::create(bob, 1));
-            mptAlice.convert(
-                {.account = bob,
-                 .amt = 50,
-                 .holderPubKey = mptAlice.getPubKey(bob),
-                 .ticketSeq = ticketSeq});
+            mptAlice.convert({
+                .account = bob,
+                .amt = 50,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .ticketSeq = ticketSeq,
+            });
             env.require(MptBalance(mptAlice, bob, 50));
         }
 
@@ -1829,17 +1829,22 @@ class ConfidentialTransferExtendedTest : public ConfidentialTransferTestBase
         mptAlice.generateKeyPair(bob);
         mptAlice.generateKeyPair(carol);
         mptAlice.generateKeyPair(auditor);
-        mptAlice.set(
-            {.issuerPubKey = mptAlice.getPubKey(alice),
-             .auditorPubKey = mptAlice.getPubKey(auditor)});
+        mptAlice.set({
+            .issuerPubKey = mptAlice.getPubKey(alice),
+            .auditorPubKey = mptAlice.getPubKey(auditor),
+        });
 
         // Bob delegates Convert and Send permissions to dave.
         env(delegate::set(bob, dave, {"ConfidentialMPTSend", "ConfidentialMPTConvert"}));
         env.close();
 
         // Dave converts on behalf of bob.
-        mptAlice.convert(
-            {.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob), .delegate = dave});
+        mptAlice.convert({
+            .account = bob,
+            .amt = 50,
+            .holderPubKey = mptAlice.getPubKey(bob),
+            .delegate = dave,
+        });
         mptAlice.mergeInbox({.account = bob});
 
         mptAlice.convert({
@@ -2319,17 +2324,18 @@ class ConfidentialTransferExtendedTest : public ConfidentialTransferTestBase
             auto const badProof = mptAlice.getSchnorrProof(bob, badCtxHash);
             BEAST_EXPECT(badProof.has_value());
 
-            mptAlice.convert(
-                {.account = bob,
-                 .amt = amt,
-                 .proof = strHex(*badProof),
-                 .holderPubKey = mptAlice.getPubKey(bob),
-                 .holderEncryptedAmt = holderCt,
-                 .issuerEncryptedAmt = issuerCt,
-                 .blindingFactor = bf,
-                 .delegate = carol,
-                 .ticketSeq = ticketSeq,
-                 .err = tecBAD_PROOF});
+            mptAlice.convert({
+                .account = bob,
+                .amt = amt,
+                .proof = strHex(*badProof),
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .holderEncryptedAmt = holderCt,
+                .issuerEncryptedAmt = issuerCt,
+                .blindingFactor = bf,
+                .delegate = carol,
+                .ticketSeq = ticketSeq,
+                .err = tecBAD_PROOF,
+            });
         }
 
         // Invalid: proof built with account sequence instead of ticket sequence.
@@ -2340,17 +2346,18 @@ class ConfidentialTransferExtendedTest : public ConfidentialTransferTestBase
             auto const badProof = mptAlice.getSchnorrProof(bob, badCtxHash);
             BEAST_EXPECT(badProof.has_value());
 
-            mptAlice.convert(
-                {.account = bob,
-                 .amt = amt,
-                 .proof = strHex(*badProof),
-                 .holderPubKey = mptAlice.getPubKey(bob),
-                 .holderEncryptedAmt = holderCt,
-                 .issuerEncryptedAmt = issuerCt,
-                 .blindingFactor = bf,
-                 .delegate = carol,
-                 .ticketSeq = ticketSeq,
-                 .err = tecBAD_PROOF});
+            mptAlice.convert({
+                .account = bob,
+                .amt = amt,
+                .proof = strHex(*badProof),
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .holderEncryptedAmt = holderCt,
+                .issuerEncryptedAmt = issuerCt,
+                .blindingFactor = bf,
+                .delegate = carol,
+                .ticketSeq = ticketSeq,
+                .err = tecBAD_PROOF,
+            });
         }
 
         // Invalid: ticket sequence is far in the future and hasn't been created yet.
@@ -2388,16 +2395,17 @@ class ConfidentialTransferExtendedTest : public ConfidentialTransferTestBase
             auto const carolTicketSeq = env.seq(carol) + 1;
             env(ticket::create(carol, 1));
 
-            mptAlice.convert(
-                {.account = bob,
-                 .amt = amt,
-                 .holderPubKey = mptAlice.getPubKey(bob),
-                 .holderEncryptedAmt = holderCt,
-                 .issuerEncryptedAmt = issuerCt,
-                 .blindingFactor = bf,
-                 .delegate = carol,
-                 .ticketSeq = carolTicketSeq,
-                 .err = tefNO_TICKET});
+            mptAlice.convert({
+                .account = bob,
+                .amt = amt,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .holderEncryptedAmt = holderCt,
+                .issuerEncryptedAmt = issuerCt,
+                .blindingFactor = bf,
+                .delegate = carol,
+                .ticketSeq = carolTicketSeq,
+                .err = tefNO_TICKET,
+            });
         }
 
         // Invalid: proof bound to a ticket sequence but submitted without a ticket,
@@ -2413,16 +2421,17 @@ class ConfidentialTransferExtendedTest : public ConfidentialTransferTestBase
             BEAST_EXPECT(proof.has_value());
 
             // Submit without ticket.
-            mptAlice.convert(
-                {.account = bob,
-                 .amt = amt,
-                 .proof = strHex(*proof),
-                 .holderPubKey = mptAlice.getPubKey(bob),
-                 .holderEncryptedAmt = holderCt,
-                 .issuerEncryptedAmt = issuerCt,
-                 .blindingFactor = bf,
-                 .delegate = carol,
-                 .err = tecBAD_PROOF});
+            mptAlice.convert({
+                .account = bob,
+                .amt = amt,
+                .proof = strHex(*proof),
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .holderEncryptedAmt = holderCt,
+                .issuerEncryptedAmt = issuerCt,
+                .blindingFactor = bf,
+                .delegate = carol,
+                .err = tecBAD_PROOF,
+            });
         }
     }
 
@@ -2583,6 +2592,9 @@ public:
 };
 // NOLINTEND(misc-const-correctness, bugprone-unchecked-optional-access)
 
+// TEMPORARILY DISABLED: see ConfidentialTransfer_test.cpp. The confidential
+// balance checks still rely on slow brute-force ElGamal decryption in the test
+// harness.
 // BEAST_DEFINE_TESTSUITE(ConfidentialTransferExtended, app, xrpl);
 
 }  // namespace xrpl

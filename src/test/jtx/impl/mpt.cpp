@@ -42,7 +42,6 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
-#include <iostream>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -52,8 +51,7 @@
 #include <vector>
 
 namespace xrpl::test::jtx {
-
-// NOLINTBEGIN(bugprone-unchecked-optional-access)
+namespace {
 
 /**
  * @brief Helper function to convert a PedersenProofParams into the C library struct.
@@ -61,7 +59,7 @@ namespace xrpl::test::jtx {
  * @param params The Pedersen commitment proof parameters.
  * @return The equivalent mpt_pedersen_proof_params for use with the C library.
  */
-static mpt_pedersen_proof_params
+mpt_pedersen_proof_params
 makePedersenParams(PedersenProofParams const& params)
 {
     mpt_pedersen_proof_params res{};
@@ -72,6 +70,10 @@ makePedersenParams(PedersenProofParams const& params)
     std::memcpy(res.blinding_factor, params.blindingFactor.data(), kMPT_BLINDING_FACTOR_SIZE);
     return res;
 }
+
+}  // namespace
+
+// NOLINTBEGIN(bugprone-unchecked-optional-access)
 
 void
 MptFlags::operator()(Env& env) const
@@ -617,18 +619,6 @@ MPTTester::checkDomainID(std::optional<uint256> expected) const
             return expected == sle->getFieldH256(sfDomainID);
         return (!expected.has_value());
     });
-}
-
-// todo: remove this function, which is only for debugging
-[[nodiscard]] bool
-MPTTester::printMPT(Account const& holder) const
-{
-    return forObject(
-        [&](SLEP const& sle) -> bool {
-            std::cout << "\n" << sle->getJson();
-            return true;
-        },
-        holder);
 }
 
 [[nodiscard]] bool
@@ -1492,11 +1482,26 @@ MPTTester::send(MPTConfidentialSend const& arg)
         // If a key is missing, we skip adding the recipient. This intentionally
         // causes proof generation to fail, triggering the dummy proof fallback.
         if (senderPubKey)
-            recipients.push_back({.publicKey = Slice(*senderPubKey), .encryptedAmount = senderAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*senderPubKey),
+                .encryptedAmount = senderAmt,
+            });
+        }
         if (destPubKey)
-            recipients.push_back({.publicKey = Slice(*destPubKey), .encryptedAmount = destAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*destPubKey),
+                .encryptedAmount = destAmt,
+            });
+        }
         if (issuerPubKey)
-            recipients.push_back({.publicKey = Slice(*issuerPubKey), .encryptedAmount = issuerAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*issuerPubKey),
+                .encryptedAmount = issuerAmt,
+            });
+        }
 
         std::optional<Buffer> auditorPubKey;
         if (auditorAmt)
@@ -1507,8 +1512,10 @@ MPTTester::send(MPTConfidentialSend const& arg)
             auditorPubKey = getPubKey(*auditor_);
             if (auditorPubKey)
             {
-                recipients.push_back(
-                    {.publicKey = Slice(*auditorPubKey), .encryptedAmount = *auditorAmt});
+                recipients.push_back({
+                    .publicKey = Slice(*auditorPubKey),
+                    .encryptedAmount = *auditorAmt,
+                });
             }
         }
 
@@ -1529,14 +1536,18 @@ MPTTester::send(MPTConfidentialSend const& arg)
                 recipients,
                 blindingFactor,
                 ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = *arg.amt,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = blindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = *prevSenderSpending,
-                 .encryptedAmt = *prevEncryptedSenderSpending,
-                 .blindingFactor = balanceBlindingFactor});
+                {
+                    .pedersenCommitment = amountCommitment,
+                    .amt = *arg.amt,
+                    .encryptedAmt = senderAmt,
+                    .blindingFactor = blindingFactor,
+                },
+                {
+                    .pedersenCommitment = balanceCommitment,
+                    .amt = *prevSenderSpending,
+                    .encryptedAmt = *prevEncryptedSenderSpending,
+                    .blindingFactor = balanceBlindingFactor,
+                });
         }
 
         if (proof)
@@ -1776,11 +1787,26 @@ MPTTester::sendJV(
         auto const issuerPubKey = getPubKey(issuer_);
 
         if (senderPubKey)
-            recipients.push_back({.publicKey = Slice(*senderPubKey), .encryptedAmount = senderAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*senderPubKey),
+                .encryptedAmount = senderAmt,
+            });
+        }
         if (destPubKey)
-            recipients.push_back({.publicKey = Slice(*destPubKey), .encryptedAmount = destAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*destPubKey),
+                .encryptedAmount = destAmt,
+            });
+        }
         if (issuerPubKey)
-            recipients.push_back({.publicKey = Slice(*issuerPubKey), .encryptedAmount = issuerAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*issuerPubKey),
+                .encryptedAmount = issuerAmt,
+            });
+        }
 
         std::optional<Buffer> auditorPubKey;
         if (auditorAmt)
@@ -1790,8 +1816,10 @@ MPTTester::sendJV(
             auditorPubKey = getPubKey(*auditor_);
             if (auditorPubKey)
             {
-                recipients.push_back(
-                    {.publicKey = Slice(*auditorPubKey), .encryptedAmount = *auditorAmt});
+                recipients.push_back({
+                    .publicKey = Slice(*auditorPubKey),
+                    .encryptedAmount = *auditorAmt,
+                });
             }
         }
 
@@ -1806,14 +1834,18 @@ MPTTester::sendJV(
                 recipients,
                 blindingFactor,
                 ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = *arg.amt,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = blindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = prevSenderSpending,
-                 .encryptedAmt = *prevEncryptedSenderSpending,
-                 .blindingFactor = balanceBlindingFactor});
+                {
+                    .pedersenCommitment = amountCommitment,
+                    .amt = *arg.amt,
+                    .encryptedAmt = senderAmt,
+                    .blindingFactor = blindingFactor,
+                },
+                {
+                    .pedersenCommitment = balanceCommitment,
+                    .amt = prevSenderSpending,
+                    .encryptedAmt = *prevEncryptedSenderSpending,
+                    .blindingFactor = balanceBlindingFactor,
+                });
         }
 
         if (proof)
