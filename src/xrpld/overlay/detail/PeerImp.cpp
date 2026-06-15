@@ -58,7 +58,6 @@
 #include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
-#include <xrpl/server/Handoff.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -68,6 +67,7 @@
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/completion_condition.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/post.hpp>
 #include <boost/asio/strand.hpp>
@@ -392,13 +392,15 @@ PeerImp::removeTxQueue(uint256 const& hash)
 void
 PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 {
-    if ((usage_.charge(fee, context) == Resource::Disposition::Drop) &&
-        usage_.disconnect(pJournal_) && strand_.running_in_this_thread())
-    {
-        // Sever the connection
-        overlay_.incPeerDisconnectCharges();
-        fail("charge: Resources");
-    }
+    dispatch(strand_, [this, self = shared_from_this(), fee, context]() {
+        if (usage_.charge(fee, context) == Resource::Disposition::Drop &&
+            usage_.disconnect(pJournal_))
+        {
+            // Sever the connection.
+            overlay_.incPeerDisconnectCharges();
+            fail("charge: Resources");
+        }
+    });
 }
 
 //------------------------------------------------------------------------------
