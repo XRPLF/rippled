@@ -15,6 +15,7 @@
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 
+XRPL_FIX    (Cleanup3_3_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (Cleanup3_2_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(MPTokensV2,                  Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FIX    (Cleanup3_1_3,                Supported::Yes, VoteBehavior::DefaultYes)
