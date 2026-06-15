@@ -6471,7 +6471,7 @@ class Vault_test : public beast::unit_test::Suite
         Account const issuer{"issuer"};
         Account const holder{"holder"};
         MPTTester mpt{env, issuer, {.holders = {holder}}};
-        mpt.create({.authorize = MPTCreate::AllHolders});
+        mpt.create({.authorize = MPTCreate::allHolders});
 
         auto const tokenKeylet = keylet::mptoken(mpt.issuanceID(), holder.id());
         auto const encryptedBalanceFields = {
@@ -6483,7 +6483,7 @@ class Vault_test : public beast::unit_test::Suite
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             for (auto const field : encryptedBalanceFields)
             {
-                Sandbox sb(&view, tapNONE);
+                Sandbox sb(&view, TapNone);
                 auto const token = sb.peek(tokenKeylet);
                 if (!BEAST_EXPECT(token))
                     return false;
