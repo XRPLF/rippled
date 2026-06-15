@@ -11,12 +11,13 @@
     This side-channel avoids inspecting the Recordable's internals (which vary
     by exporter type — SpanData vs OtlpRecordable).
 
-    The raw flag lives in `detail` and is mutated only through DiscardScope, a
-    RAII guard that sets it on construction and clears it on destruction. This
-    keeps the set/clear lifetime bound to a scope (so the flag cannot leak onto
-    the next span even if End() were to throw) and prevents any class which includes this header
-    from flipping the flag directly. FilteringSpanProcessor reads it through
-    isDiscardingCurrentSpan().
+    The flag is a *private* thread-local member of DiscardScope, mutated only by
+    its constructor and destructor. This gives real access control rather than a
+    naming convention: no code that includes this header can flip the flag
+    directly — it can only enter a DiscardScope (which sets and clears the flag
+    over its own lifetime) and observe the state via DiscardScope::isActive().
+    Binding set/clear to a scope also means the flag cannot leak onto the next
+    span even if End() were to throw.
 
     Kept in a separate header to avoid transitive include bloat: SpanGuard.h
     only needs this signaling, not the full Telemetry.h with BasicConfig/Journal.
@@ -28,6 +29,10 @@
             DiscardScope discardScope;  // flag set for this scope only
             span->End();                // OnEnd() runs synchronously, sees flag
         }                               // flag cleared here, unconditionally
+
+        // In FilteringSpanProcessor::OnEnd():
+        if (DiscardScope::isActive())
+            return;  // drop the span
     @endcode
 
     @note Thread safety: the flag is thread-local, so each thread observes only
@@ -38,19 +43,12 @@
 
 namespace xrpl::telemetry {
 
-namespace detail {
-
-/** Internal thread-local discard flag. Mutate only via DiscardScope; read
-    only via isDiscardingCurrentSpan(). Not intended for direct use. */
-inline thread_local bool gTlDiscardCurrentSpan = false;
-
-}  // namespace detail
-
 /** RAII guard that marks the current thread's span for discard.
 
     Sets the thread-local discard flag on construction and clears it on
     destruction, so a span ended within the guard's scope is dropped by
     FilteringSpanProcessor::OnEnd() while the flag stays confined to that scope.
+    The flag is private and mutated only here, so no other code can set it.
     Non-copyable and non-movable — its sole purpose is the scoped flag lifetime.
 */
 class DiscardScope
@@ -58,12 +56,12 @@ class DiscardScope
 public:
     DiscardScope() noexcept
     {
-        detail::gTlDiscardCurrentSpan = true;
+        discarding = true;
     }
 
     ~DiscardScope()
     {
-        detail::gTlDiscardCurrentSpan = false;
+        discarding = false;
     }
 
     DiscardScope(DiscardScope const&) = delete;
@@ -72,15 +70,20 @@ public:
     DiscardScope(DiscardScope&&) = delete;
     DiscardScope&
     operator=(DiscardScope&&) = delete;
-};
 
-/** @return true if the current thread is inside a DiscardScope, i.e. the span
-    ending now should be dropped rather than exported. Read by
-    FilteringSpanProcessor::OnEnd(). */
-[[nodiscard]] inline bool
-isDiscardingCurrentSpan() noexcept
-{
-    return detail::gTlDiscardCurrentSpan;
-}
+    /** @return true if the current thread is inside a DiscardScope, i.e. the
+        span ending now should be dropped rather than exported. Read by
+        FilteringSpanProcessor::OnEnd(). */
+    [[nodiscard]] static bool
+    isActive() noexcept
+    {
+        return discarding;
+    }
+
+private:
+    /** Thread-local discard flag. Private, so only this class's ctor/dtor can
+        mutate it; observers use isActive(). One instance per thread. */
+    inline static thread_local bool discarding = false;
+};
 
 }  // namespace xrpl::telemetry

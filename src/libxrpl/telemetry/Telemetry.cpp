@@ -62,7 +62,7 @@ namespace resource = opentelemetry::sdk::resource;
 /** SpanProcessor decorator that drops discarded spans.
 
     Wraps a delegate processor (typically BatchSpanProcessor). In OnEnd(),
-    calls isDiscardingCurrentSpan(). If the calling thread is inside a
+    calls DiscardScope::isActive(). If the calling thread is inside a
     DiscardScope (entered by SpanGuard::discard()), the span is silently
     dropped — never entering the batch queue, never sent over the network,
     never stored.
@@ -119,7 +119,7 @@ public:
     void
     OnEnd(std::unique_ptr<trace_sdk::Recordable>&& span) noexcept override
     {
-        if (isDiscardingCurrentSpan())
+        if (DiscardScope::isActive())
         {
             // SpanGuard::discard() is inside a DiscardScope on this thread,
             // which it entered just before calling Span::End() — and End()
