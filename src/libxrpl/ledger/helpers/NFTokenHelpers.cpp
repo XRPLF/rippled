@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <functional>
 #include <iterator>
 #include <memory>
