@@ -65,9 +65,9 @@ namespace jtx {
 std::unique_ptr<Config>
 online_delete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval)
 {
-    cfg->ledgerHistory = kDeleteInterval;
+    cfg->ledgerHistory = deleteInterval;
     auto& section = cfg->section(Sections::kNodeDatabase);
-    section.set(Keys::kOnlineDelete, std::to_string(kDeleteInterval));
+    section.set(Keys::kOnlineDelete, std::to_string(deleteInterval));
     return cfg;
 }
 
