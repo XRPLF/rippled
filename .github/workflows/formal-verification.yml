@@ -136,6 +136,7 @@ jobs:
               --options:host '&:formal_verification=True' \
               --settings:all build_type=Release \
               --conf:all tools.build:jobs=${{ steps.nproc.outputs.nproc }} \
+              --lockfile-partial \
               .
 
       - name: Configure CMake

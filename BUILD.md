@@ -548,10 +548,11 @@ See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 ## Formal verification
 
 Build with the `formal_verification` option (needs `xrpld` and `tests`), then
-run the Lean 4 cross-validation suite:
+run the Lean 4 cross-validation suite. `--lockfile-partial` lets Conan add the
+`lean4` toolchain, which is opt-in and not pinned in `conan.lock`:
 
 ```bash
-conan install .. --output-folder . --build missing --settings build_type=Release -o '&:formal_verification=True'
+conan install .. --output-folder . --build missing --settings build_type=Release -o '&:formal_verification=True' --lockfile-partial
 cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON -Dformal_verification=ON ..
 cmake --build . --target xrpld && ./xrpld --unittest=formal_verification
 ```
