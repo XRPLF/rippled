@@ -18,29 +18,27 @@ complementary things:
    the last place of the exact result").
 
 2. **Cross-validate the model against the real C++.** A proof is only
-   meaningful if the Lean model actually matches the shipping C++. So we compile
-   the Lean model to a native library, link it into `xrpld`'s test binary, and
-   run **millions of randomized inputs through both the Lean function and the
-   C++ function**, asserting they agree field-for-field.
+   meaningful if the Lean model actually matches the shipping C++. So we run
+   **random inputs through both and check they agree**.
 
 The two halves reinforce each other. The proofs tell us the _modelled_
-algorithm is correct; the cross-validation tells us the model _is_ the C++. A
-divergence in either is a real finding. When upstream `rippled` fixed a `Number`
-comparison bug (#7406), our cross-validation suite flagged the mismatch within
-seconds, because the Lean model still encoded the old behavior.
+algorithm is correct and the cross-validation tells us the Lean model faithfully
+represents the one from C++. A divergence in either is a real finding. When
+upstream `rippled` fixed a `Number` comparison bug (#7406), our cross-validation
+suite flagged the mismatch, because the Lean model still had the old behavior.
 
 ```
-        ┌────────────────────────┐         proves           ┌──────────────────┐
-        │  Lean model of Number  │ ───────────────────────▶ │  447 theorems    │
+        ┌────────────────────────┐         proves            ┌──────────────────┐
+        │  Lean model of Number  │ ───────────────────────▶  │    theorems      │
         │  (operator_mul, …)     │   "rounding is correct    │  (the Properties │
         │                        │    for all inputs"        │   modules)       │
         └───────────┬────────────┘                           └──────────────────┘
                     │ @[export] compiled to a C symbol
                     ▼
         ┌────────────────────────┐    fuzz: same inputs     ┌──────────────────┐
-        │  lean_number_mul(...)   │ ◀──── 2.4M cases ──────▶ │  C++ Number::    │
-        │  (native, in xrpld)     │    assert fields equal   │  operator*       │
-        └────────────────────────┘                           └──────────────────┘
+        │  lean_number_mul(...)  │ ◀─ assert fields equal ─▶│  C++ Number::    │
+        │  (native, in xrpld)    │                          │  operator*       │
+        └────────────────────────┘                          └──────────────────┘
 ```
 
 ---
@@ -64,20 +62,18 @@ seconds, because the Lean model still encoded the old behavior.
 ```
 formal_verification/                  the Lean project (a lake package)
 ├── XRPL/
-│   ├── Model/Protocol/Number.lean     the Lean model of C++ Number (the algorithm)
+│   ├── Model/Protocol/Number.lean      the Lean model of C++ Number (the algorithm)
 │   ├── FFI/
 │   │   ├── CommonFFI.lean              shared encode/decode + the FFI result structs
 │   │   └── Protocol/NumberFFI.lean     the @[export] wrappers C++ calls
-│   └── Properties/…                    447 theorems about the model
+│   └── Properties/…                    theorems about the model
 ├── lakefile.toml                       lake build config (defines the XRPL + XRPLModel libs)
 ├── lean-toolchain                      pins the Lean version (leanprover/lean4:v4.28.0)
-├── conanfile.py                        Conan recipe: the model library  (xrpl-lean4)
-├── deps/conanfile.py                   Conan recipe: the mathlib objects (xrpl-lean4-deps)
-└── scripts/bundle_lean_deps.sh         bundles mathlib's native objects into one archive
+└── scripts/build_lean.sh               compiles + links the model + mathlib into shared libs
 
-external/lean4/conanfile.py             Conan recipe: the Lean toolchain  (lean4)
+external/lean4/conanfile.py             Conan recipe: the Lean toolchain (lean4)
 
-src/test/formal_verification/          the C++ cross-validation tests
+src/test/formal_verification/           the C++ cross-validation tests
 ├── common/LeanSuite.h                  base test suite: Lean runtime init + threading guard
 ├── ffi/
 │   ├── LeanObjectFFI.h                 the memory-management base class (the key abstraction)
@@ -90,29 +86,26 @@ cmake/XrplLean4.cmake                    links the Lean libraries into xrpld (ga
 ```
 
 The Lean side and the C++ side are deliberately separate trees. The Lean side
-is the source of truth for the model and proofs; the C++ side only _consumes_
+is the source of truth for the model and proofs and the C++ side only _consumes_
 the compiled exports.
 
 ---
 
 ## The Lean model: translating C++ into something we can prove about
 
-A model is a direct translation of the C++ algorithm. We keep the translation
-honest by annotating each piece with the C++ source location it mirrors, so a
-reviewer can diff the two by eye:
+A model is a direct translation of the C++ algorithm:
 
 ```lean
 -- formal_verification/XRPL/Model/Protocol/Number.lean
 
--- Number.h:304-308
 inductive rounding_mode where
   | to_nearest | towards_zero | downward | upward
   deriving DecidableEq, Repr
 
 structure Number where
-  negative_ : Bool      -- sign-magnitude: a separate sign bool,
-  mantissa_ : UInt64    -- an unsigned magnitude,
-  exponent_ : Int       -- and a base-10 exponent.
+  negative_ : Bool
+  mantissa_ : UInt64
+  exponent_ : Int
   deriving DecidableEq, Repr
 ```
 
@@ -127,7 +120,7 @@ def Number.operator_mul (x y : Number) (mode : rounding_mode) : Except String Nu
   if x.operator_eq Number.zero then return x
   else if y.operator_eq Number.zero then return y
   else
-    let zn := x.negative_ != y.negative_              -- result sign
+    let zn := x.negative_ != y.negative_                         -- result sign
     let zm128 := toUInt128 x.mantissa_ * toUInt128 y.mantissa_   -- 128-bit product
     let ze := x.exponent_ + y.exponent_
     let g := if zn then Guard.new.set_negative else Guard.new
@@ -139,18 +132,17 @@ def Number.operator_mul (x y : Number) (mode : rounding_mode) : Except String Nu
 
 Two things to notice:
 
-- The result type is `Except String Number`. The C++ throws `std::overflow_error`
-  on overflow; the Lean model returns an error string. This pairing matters
-  later: the C++ test treats a Lean error and a C++ throw as the same outcome.
+- The result type is `Except String Number`. The C++ throws
+  `std::overflow_error` on overflow; the Lean model returns an error string.
+  This pairing matters later: the C++ test treats a Lean error and a C++ throw
+  as the same outcome.
 - `Number` uses **sign-magnitude** representation (a `Bool` sign plus an
-  unsigned `UInt64` magnitude), exactly like the C++ class. The external
-  `mantissa()` view folds the sign back into a signed integer, a detail the
-  cross-validation has to account for (see the worked example).
+  unsigned `UInt64` magnitude), exactly like the C++ class.
 
 ### What we prove
 
 Once the algorithm is in Lean, we prove properties about it. There are
-**447 theorems and lemmas** under `XRPL/Properties/`. They range from small
+**theorems and lemmas** under `XRPL/Properties/`. They range from small
 accessor facts to the headline rounding bounds. A representative one:
 
 ```lean
@@ -167,8 +159,7 @@ lemma Number.mantissa_toInt (n : Number) :
 ```
 
 Proving these is the work; `lake build` _is_ the check. If every file compiles
-with no `sorry` and only standard axioms, the proofs are sound. Lean's type
-checker is the verifier.
+with no `sorry` and only standard axioms, the proofs are sound.
 
 ---
 
@@ -181,7 +172,7 @@ C ABI, and C++ works with them through those handles.
 ### Building and reading a value
 
 `lean_number_build` constructs a `Number` from its fields and hands back the
-handle; `lean_number_mantissa` / `_negative` / `_exponent` read it back out.
+handle and `lean_number_mantissa` / `_negative` / `_exponent` read it back out.
 
 ```lean
 -- formal_verification/XRPL/FFI/Protocol/NumberFFI.lean
@@ -194,7 +185,8 @@ def lean_number_build (negative : UInt8) (mantissa : UInt64) (exponent : Int64) 
 def lean_number_mantissa (n : Number) : UInt64 := n.mantissa_
 ```
 
-On the C++ side, `NumberFFI` wraps the handle and exposes it as a plain `Number`:
+On the C++ side, `NumberFFI` wraps the handle and exposes it as a plain
+`Number`:
 
 ```cpp
 // src/test/formal_verification/ffi/protocol/NumberFFI.h
@@ -287,8 +279,7 @@ public:
     lean_object* borrow() const noexcept { lean_inc(o_); return o_; }// pass to a Lean call (it consumes a ref)
     lean_object* give()         noexcept { auto t = o_; o_ = nullptr; return t; } // transfer ownership out
 
-    ~LeanObjectFFI() { if (o_) lean_dec(o_); }                       // RAII: freed automatically
-    // move-only: copying a handle would double-free
+    ~LeanObjectFFI() { if (o_) lean_dec(o_); }                       // freed automatically
 };
 ```
 
@@ -366,130 +357,131 @@ the build section).
 
 ## The build process
 
-The Lean side is heavy: it depends on `mathlib`, thousands of files that are slow
-to compile. To keep that cost out of every build, the Lean build is packaged with
-**Conan** (the dependency manager `rippled` already uses) as three packages,
-split by how often each changes:
+The Lean side is heavy: it depends on `mathlib`, thousands of files that are
+slow to compile. The strategy is to do that compile **once** and keep it warm,
+with no Conan packaging of the Lean code at all, only the Lean toolchain comes
+from Conan:
 
-| Conan package     | Recipe                      | Produces                                                | Rebuilds when                   |
-| ----------------- | --------------------------- | ------------------------------------------------------- | ------------------------------- |
-| `lean4`           | `external/lean4/`           | the Lean toolchain (compiler, `lake`, runtime, headers) | the pinned Lean version changes |
-| `xrpl-lean4-deps` | `formal_verification/deps/` | `libLeanDeps.a`, mathlib's compiled native objects      | the mathlib pin changes         |
-| `xrpl-lean4`      | `formal_verification/`      | `libXRPL_XRPLModel.a`, our model + FFI exports          | the Lean **model** changes      |
+| Conan package | Recipe            | Provides                                              | Rebuilds when                   |
+| ------------- | ----------------- | ----------------------------------------------------- | ------------------------------- |
+| `lean4`       | `external/lean4/` | the Lean toolchain (`lean`, `lake`, runtime, headers) | the pinned Lean version changes |
 
-### Why three packages, not one
+Everything else (mathlib's native objects and our model) is built **in-tree** by
+CMake when `formal_verification=ON`. `conan install` runs **once** (for the
+toolchain and `rippled`'s own dependencies) and after that, editing a `.lean`
+file and running `cmake --build` rebuilds only what changed.
 
-The split exists for one reason: **editing the model must not recompile
-mathlib.** That falls out of how each package is keyed:
+### How the build stays fast
 
-- **`xrpl-lean4-deps` is keyed only on the dependency pins**
-  (`lakefile.toml`, `lake-manifest.json`, `lean-toolchain`). It does _not_
-  include the `XRPL/` model sources, so editing the model leaves it untouched,
-  served straight from the Conan cache.
-- **`xrpl-lean4` is keyed on the model sources.** Editing the model rebuilds
-  only this package, which just runs:
-
-  ```bash
-  lake build XRPLModel:static
-  ```
-
-- The fast path is therefore a property of the **dependency graph**, not of
-  incremental-build luck, so it holds in CI too, where there is no warm build
-  folder to rely on.
-
-One subtlety the split has to handle: `lake exe cache get` downloads mathlib's
-_elaboration_ artifacts but **never the native object files**, so the `.o` files
-are compiled locally and merged into one archive by
-`scripts/bundle_lean_deps.sh`:
+`lake exe cache get` downloads mathlib's _elaboration_ artifacts (`.olean`) but
+**never the native object files**, so the objects are compiled locally (the slow
+step). `scripts/build_lean.sh` (run by the `formal_verification` target) does
+that once and links the model and the dependency objects into one shared
+library:
 
 ```bash
-lake exe cache get        # fetch mathlib's .olean / .c (no native objects)
-lake build Mathlib:static # compile the dependency .o files locally
-# then bundle the ~7,600 objects into libLeanDeps.a
+lake exe cache get          # fetch mathlib's .olean (no native objects)
+lake build Mathlib:static   # compile the ~8,000 dependency .o files (slow, once)
+lake build XRPLModel:static # compile the model (fast)
+# link the model + dependency objects into libXRPLModel.{dylib,so}  <- the linker, not `ar`
 ```
 
-The bundle feeds the object list to `ar` through a file rather than a command
-line, for two reasons:
+Two properties keep edits cheap:
 
-- the command line would otherwise exceed the OS argument-length limit, and
-- some mathlib module names contain characters (an apostrophe in
-  `LinearCombination'`) that the archiver's other input modes mishandle.
+- **lake is incremental** so editing the model rebuilds only the changed model
+  modules; mathlib is never rebuilt.
+- **the dependency objects are compiled once** so `build_lean.sh` compiles
+  them only if absent, so a model edit just rebuilds the model and relinks
+  the one library.
 
-All of this runs **inside the Conan cache**, so a checkout never contains a
-`.lake/` directory. You only need Lean and `elan` installed to work on the model
-itself, not to build `xrpld`.
+We link the objects into a **shared** library ourselves
+(`clang -dynamiclib` / `gcc -shared`), passing the ~8,000 object paths in a file
+instead of on the command line. That file is the key: 8,000 paths on one command
+line overflow the OS limit (`ARG_MAX`), which is why both `ar` and lake's own
+`:shared` facet fail on mathlib, so we do the link by hand.
+
+The Lean build writes into the build directory (`.lake` is symlinked under it),
+so a checkout never accumulates a `.lake/` directory and `rm -rf .build` cleans
+everything. Building `xrpld` needs no Lean toolchain installed, Conan provides
+it.
 
 ### Wiring into xrpld
 
-Everything is gated behind one option, `formal_verification_tests` (default
+Everything is gated behind one option, `formal_verification` (default
 **off**, so a normal `rippled` build is completely unaffected):
 
 ```cmake
 # cmake/XrplLean4.cmake  (included from XrplCore.cmake)
 
-if(NOT formal_verification_tests)
+if(NOT formal_verification)
     return()
 endif()
 
-find_package(xrpl-lean4 REQUIRED)                 # pulls deps + lean4 transitively
-target_link_libraries(xrpld xrpl-lean4::xrpl-lean4)
+# Build the Lean library (build_lean.sh), make xrpld depend on it, and link it in
+# with an @rpath into the build tree (lean4::lean4 adds lean.h + the runtime).
+add_custom_target(formal_verification COMMAND ... scripts/build_lean.sh)
+add_dependencies(xrpld formal_verification)
+target_link_libraries(xrpld ${lean_lib} lean4::lean4)
 ```
 
-When the option is off, the test sources under `src/test/formal_verification/`
-are also excluded from xrpld's source glob, so the feature has zero footprint in
-a default build.
+Because xrpld depends on the `formal_verification` target, a single
+`cmake --build --target xrpld` builds the Lean library first, then links xrpld
+against it. That one command is the whole build.
+
+`formal_verification` is just the build step xrpld depends on, not a target you
+normally invoke on its own. When the `formal_verification` option is off,
+`XrplLean4.cmake` returns early and the test sources under
+`src/test/formal_verification/` are dropped from xrpld's source glob, so the
+feature has zero footprint in a default build.
 
 ---
 
 ## Building and running the tests
 
-From a fresh checkout (only `conan` + `cmake` + a compiler needed; the recipes
-provide Lean, `lake`, mathlib, and gmp):
+From a fresh checkout (only `conan` + `cmake` + a compiler needed; the `lean4`
+recipe provides Lean, `lake`, and the runtime, and Conan provides `gmp`):
 
 ```bash
 mkdir .build && cd .build
 
-# 1. Register the three local Lean recipes in the Conan cache (once per machine).
+# 1. Register the lean4 toolchain recipe in the Conan cache (once per machine).
 conan export ../external/lean4
-conan export ../formal_verification/deps
-conan export ../formal_verification
 
-# 2. Resolve + build dependencies. First run builds mathlib objects (slow,
-#    cached afterwards); later runs reuse them.
+# 2. Resolve + build dependencies. Runs once and pulls the lean4 toolchain + gmp.
 conan install .. --output-folder . --build missing --settings build_type=Release \
-    --options:host '&:xrpld=True' \
-    --options:host '&:tests=True' \
-    --options:host '&:formal_verification_tests=True'
+    -o '&:formal_verification=True'
 
-# 3. Configure and build xrpld (the test sources compile into it).
+# 3. Configure, then build. The formal_verification target compiles mathlib once
+#    (slow first time) and links the Lean shared libraries. lake keeps later
+#    builds incremental.
 cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-    -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON -Dformal_verification_tests=ON ..
-cmake --build . --target xrpld --parallel 8
+    -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON -Dformal_verification=ON ..
+cmake --build . --parallel N
 
 # 4. Run the cross-validation suite.
 ./xrpld --unittest=formal_verification
 ```
 
-`-o '&:formal_verification_tests=True'` is the load-bearing flag: it tells Conan
-to pull the Lean packages into the dependency graph; the matching
-`-Dformal_verification_tests=ON` tells CMake to link them in.
+`-o '&:formal_verification=True'` is the load-bearing flag: it pulls the
+`lean4` toolchain into the graph, and the matching `-Dformal_verification=ON`
+tells CMake to build + link the Lean side.
 
-**Skipping step 1.** The three `conan export` lines just register the recipes in
-your local cache. Publish them to a Conan remote (for example `conan.ripplex.io`,
-which `rippled` already uses for its other dependencies) and step 1 disappears:
-`conan install` resolves the three packages from the remote, downloading a
-prebuilt `xrpl-lean4-deps` instead of compiling mathlib locally. A fresh checkout
-then runs only steps 2 to 4.
+**The fast loop.** After the first build, editing a `.lean` file needs only
+`cmake --build . --target xrpld && ./xrpld --unittest=formal_verification` so no
+`conan` step, because the Lean libraries build in-tree and lake is incremental.
+
+**The one-time mathlib compile.** The first build compiles mathlib, which takes
+a couple of minutes. Starting from a pre-built `.lake` cache skips it.
 
 ### Two independent signals
 
 The proofs and the cross-validation are checked separately, because they answer
 different questions:
 
-| Question                        | How                                                   | Where                 |
-| ------------------------------- | ----------------------------------------------------- | --------------------- |
-| "Are the proofs sound?"         | `cd formal_verification && lake build` (needs `elan`) | CI job `check-proofs` |
-| "Does the model match the C++?" | `./xrpld --unittest=formal_verification`              | CI job `build-test`   |
+| Question                        | How                                                               |
+| ------------------------------- | ----------------------------------------------------------------- |
+| "Are the proofs sound?"         | `cd formal_verification && lake build` (needs the Lean toolchain) |
+| "Does the model match the C++?" | `./xrpld --unittest=formal_verification`                          |
 
 Keeping them independent means that when the model is updated to track an
 upstream C++ change, the cross-validation can go green immediately while the
@@ -560,49 +552,11 @@ bool checkBinOp(std::string const& label, LeanBinOp leanOp, CppBinOp cppOp,
 
 The whole suite runs about **2.4 million checks in roughly 13 seconds**.
 
-### Three honest quirks the comparison has to handle
-
-Real cross-validation runs into representation mismatches that are _not_ bugs.
-The test encodes them explicitly rather than hiding them:
-
-- **Error vs exception.** The Lean model returns `status = 1` where the C++
-  throws `std::overflow_error`. `checkResult` treats "Lean errored" and "C++
-  threw" as the same outcome: overflow must show up on _both_ sides, or it is a
-  mismatch.
-
-- **Two zeros.** Lean represents zero with exponent `-32768`; C++ uses
-  `INT_MIN`. For results that cancel to zero, comparing the exponent would
-  falsely fail, so a dedicated `checkZero` compares only the mantissa.
-
-- **Sign-magnitude vs signed mantissa.** Lean keeps `(negative, magnitude)`
-  separately; C++'s `mantissa()` returns a signed value. `fieldsEqual` folds one
-  into the other before comparing.
-
-Beyond the fuzzer there are hand-written `known_values`, `known_comparison`, and
-`extreme_values` cases that pin down specific edges: the mantissa cusp at
-`maxRep`, near-overflow exponents, self-cancellation, division by the canonical
-zero. These are the inputs a uniform random generator would essentially never
-hit.
-
 ### What a failure looks like
 
 This is not hypothetical. Upstream commit #7406 fixed `Number`'s comparison for
-two negative operands. When it landed here, the Lean model still encoded the old
-behavior, and the suite reported about 616 failures, every one a `<`/`<=`/`>`/`>=`
-between two negatives. The fix belongs upstream in the model; until then, the red
-is the suite correctly reporting that the model and the C++ disagree.
-
----
-
-## Design decisions, in one place
-
-| Decision                                                       | Why                                                                                                                                                                                             |
-| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Model the C++ in Lean, then prove + cross-validate**         | Proofs cover all inputs but only of the _model_; cross-validation confirms the model _is_ the C++. Together they are far stronger than either alone.                                            |
-| **Values cross the FFI as scalars or object handles**          | Each type crosses in whichever shape fits: a small flat value as scalars, a value read back through getters as a handle. C++ never depends on Lean's internal object layout.                    |
-| **Memory management in `LeanObjectFFI`**                       | Reference counting is the easiest thing to get wrong across an FFI. Confining it to one RAII base class means test authors call functions and handle plain values, never `lean_inc`/`lean_dec`. |
-| **Initialize via `…FFI_FFI`, not the root module**             | Links and runs the tests against the model alone, independent of proof state.                                                                                                                   |
-| **Three Conan packages (toolchain / mathlib objects / model)** | Editing the model must not recompile mathlib. The split makes the fast path a property of the dependency graph, locally and in CI.                                                              |
-| **Lean build runs inside the Conan cache**                     | No `.lake/` in the checkout; building `xrpld` needs no Lean toolchain installed.                                                                                                                |
-| **One default-off option, tests glob-excluded when off**       | The feature has zero footprint on a normal `rippled` build.                                                                                                                                     |
-| **Proofs and cross-validation as separate CI signals**         | They answer different questions and can be green or red independently, for example while a model is re-synced to an upstream C++ fix.                                                           |
+two negative operands. When it landed here, the Lean model still had the old
+behavior, and the suite reported about 616 failures, every one a
+`<`/`<=`/`>`/`>=` between two negatives. The fix belongs upstream in the model
+and until then, the red is the suite correctly reporting that the model and
+the C++ disagree.

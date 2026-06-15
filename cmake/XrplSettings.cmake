@@ -31,7 +31,7 @@ if(tests)
 endif()
 
 option(
-    formal_verification_tests
+    formal_verification
     "Link the Lean 4 formal verification FFI and build its cross-validation tests (requires tests)"
     OFF
 )

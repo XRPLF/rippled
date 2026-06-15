@@ -2,15 +2,9 @@ name: Formal verification
 
 # Runs the Lean 4 cross-validation tests and, separately, checks the proofs.
 # The heavy Lean side is baked into a CI image (see the lean-image job).
-# Full picture: docs/formal-verification/README.md.
 
 on:
   pull_request:
-    paths:
-      - ".github/workflows/formal-verification.yml"
-      - "cmake/XrplLean4.cmake"
-      - "formal_verification/**"
-      - "src/test/formal_verification/**"
   push:
     branches:
       - develop
@@ -43,20 +37,14 @@ jobs:
 
       - name: Compute image tag
         id: meta
+        # Tag = lean version + a content hash of only what the image bakes
+        # (toolchain pin, dep revs, build recipe), never the model/XRPL sources,
+        # so editing the model never rebuilds the image.
+        env:
+          INPUTS_HASH: ${{ hashFiles('formal_verification/lean-toolchain', 'formal_verification/lake-manifest.json', 'formal_verification/lakefile.toml', 'formal_verification/scripts/build_lean.sh', 'formal_verification/docker/Dockerfile', 'external/lean4/conanfile.py') }}
         run: |
-          # Key the tag on what the image bakes (lean4 toolchain + the mathlib
-          # deps package), not the model or XRPL sources: those build in-job, so
-          # editing the model must not force an image rebuild.
-          tag=$(cat \
-              formal_verification/lean-toolchain \
-              formal_verification/lake-manifest.json \
-              formal_verification/lakefile.toml \
-              formal_verification/deps/conanfile.py \
-              formal_verification/scripts/bundle_lean_deps.sh \
-              formal_verification/docker/Dockerfile \
-              external/lean4/conanfile.py |
-              sha256sum | cut -c1-12)
-          echo "image=ghcr.io/${{ github.repository }}/lean-ci:${tag}" >>"${GITHUB_OUTPUT}"
+          lean="$(sed 's|.*:v||' formal_verification/lean-toolchain)"
+          echo "image=ghcr.io/${{ github.repository }}/lean-ci:v${lean}-${INPUTS_HASH:0:12}" >>"${GITHUB_OUTPUT}"
 
       - name: Log in to the GitHub Container Registry
         env:
@@ -75,7 +63,7 @@ jobs:
           docker build -f formal_verification/docker/Dockerfile -t "${IMAGE}" .
           docker push "${IMAGE}"
 
-  # Elaborating the Lean files is the proof check; independent of the tests.
+  # Elaborating the Lean files is the proof check, independent of the tests.
   check-proofs:
     name: Check proofs
     needs: lean-image
@@ -127,15 +115,17 @@ jobs:
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
 
-      - name: Export the Lean Conan recipes
+      - name: Restore the primed Lean artifacts
+        run: |
+          rsync -a /opt/lean-cache/.lake/ formal_verification/.lake/
+
+      - name: Export the lean4 Conan recipe
         run: |
           conan export external/lean4
-          conan export formal_verification/deps
-          conan export formal_verification
 
-      # Like the build-deps composite action, plus the formal_verification_tests
-      # option. lean4 and xrpl-lean4-deps come prebuilt from the image's Conan
-      # cache; only the fast xrpl-lean4 model package (re)builds here.
+      # build-deps + the formal_verification option. lean4 is prebuilt in the
+      # image's Conan cache; the Lean library builds in-tree from the restored
+      # .lake, so mathlib is never recompiled.
       - name: Build dependencies
         run: |
           conan install \
@@ -143,7 +133,7 @@ jobs:
               --build=missing \
               --options:host '&:tests=True' \
               --options:host '&:xrpld=True' \
-              --options:host '&:formal_verification_tests=True' \
+              --options:host '&:formal_verification=True' \
               --settings:all build_type=Release \
               --conf:all tools.build:jobs=${{ steps.nproc.outputs.nproc }} \
               .
@@ -168,4 +158,7 @@ jobs:
       - name: Run the formal verification test suite
         working-directory: ${{ env.BUILD_DIR }}
         run: |
+          # xrpld's build rpath resolves the Lean dylibs; conanrun.sh adds the
+          # Lean runtime to the library path as a belt-and-suspenders fallback.
+          [ -f generators/conanrun.sh ] && . generators/conanrun.sh
           ./xrpld --unittest=formal_verification

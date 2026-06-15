@@ -27,6 +27,7 @@ ignoreRegExpList:
   - /\[[A-Za-z0-9-]+\]\(https:\/\/github.com\/[A-Za-z0-9-]+\)/g # Github usernames
   - /-[DWw][a-zA-Z0-9_-]+=/g # compile flags
   - /[\['"`]-[DWw][a-zA-Z0-9_-]+['"`\]]/g # compile flags
+  - /-l[A-Za-z][a-zA-Z0-9_]*/g # linker -l flags
   - ABCDEFGHIJKLMNOPQRSTUVWXYZ
   - ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 overrides:
@@ -129,7 +130,6 @@ words:
   - hwaddress
   - hwrap
   - ifndef
-  - ilean
   - inequation
   - insuf
   - insuff
@@ -248,7 +248,6 @@ words:
   - rippled
   - ripplerpc
   - rippletest
-  - ripplex
   - RLUSD
   - rngfill
   - rocksdb
@@ -348,3 +347,5 @@ words:
   - xxhash
   - xxhasher
   - CGNAT
+  - soname
+  - xcrun

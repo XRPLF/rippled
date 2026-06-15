@@ -14,10 +14,9 @@ fit together, see
 ## Building
 
 Nothing here is built by hand for normal use. The C++ cross-validation tests
-link this model into `xrpld` through three Conan packages (`lean4`,
-`xrpl-lean4-deps`, `xrpl-lean4`), gated by the `formal_verification_tests`
-option. That path runs `lake` inside the Conan cache, so it needs no Lean or
-elan install. See
+compile this model in-tree and link it into `xrpld`, gated by the
+`formal_verification` option; the Lean toolchain comes from the one `lean4`
+Conan package, so it needs no separate Lean or elan install. See
 [docs/formal-verification/README.md](../docs/formal-verification/README.md) for
 the commands.
 

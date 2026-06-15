@@ -1,12 +1,8 @@
-# CI image for the formal-verification jobs: a public xrpld CI image extended
-# with the pinned Lean toolchain, a primed lake workspace (for check-proofs),
-# and a Conan cache holding lean4 + xrpl-lean4-deps (the slow mathlib objects,
-# for build-test). The fast xrpl-lean4 model builds in-job, not here. The image
-# tag (see the workflow) hashes the dependency pins and recipes, so it rebuilds
-# only on a mathlib/toolchain change, not on model edits.
+# CI image for the formal-verification jobs: the public xrpld CI image plus the
+# pinned Lean toolchain, a primed .lake (mathlib oleans + compiled objects), and a
+# Conan cache with the lean4 toolchain. The Lean library itself builds in-job.
 #
-# Build from the repo root; formal_verification/.lake must be absent (see
-# .dockerignore):
+# Build from the repo root (formal_verification/.lake must be absent; see .dockerignore):
 #     docker build -f formal_verification/docker/Dockerfile .
 ARG BASE_IMAGE=ghcr.io/xrplf/xrpld/nix-ubuntu:sha-63ffdc3
 
@@ -38,42 +34,45 @@ RUN curl -sSf https://elan.lean-lang.org/elan-init.sh \
 # Builder stage: prime the lake workspace and the Conan cache, then prune.
 FROM toolchain AS builder
 
-# Prime the lake workspace for check-proofs: fetch the mathlib cache and
-# elaborate the default XRPL target. check-proofs copies this into its checkout.
+# Prime the lake workspace: fetch the mathlib cache and elaborate the default
+# XRPL target (check-proofs reuses these oleans).
 COPY formal_verification /opt/lean-cache
 RUN cd /opt/lean-cache \
     && rm -rf .lake \
     && lake exe cache get \
     && lake build
 
-# Prime the Conan cache for build-test: build lean4 and xrpl-lean4-deps (the
-# slow, stable mathlib objects), then keep only the package binaries. The
-# xrpl-lean4 model is built in-job, not here.
-#
-# lake has no parallelism knob and otherwise compiles mathlib's ~16k C files on
-# every core, OOM-killing the build on low-RAM-per-core machines. taskset caps
-# the visible cores (lake reads CPU affinity) to ~1 job per 2 GB. No-op on CI's
-# 4-core/16 GB runners; throttles down on a high-core, low-RAM VM.
-COPY external/lean4 /opt/lean-recipe
-RUN conan profile detect --exist-ok \
-    && conan export --version "$(sed 's|^leanprover/lean4:v||' /tmp/lean-toolchain)" /opt/lean-recipe \
-    && conan export /opt/lean-cache/deps \
+# Compile every dependency's native objects (build-test links them in-job). The
+# :static archive step fails on ARG_MAX, but the .o files are produced. taskset
+# caps parallelism to ~1 job/2 GB so mathlib's compile does not OOM a low-RAM VM.
+RUN cd /opt/lean-cache \
     && cap="$(nproc)" \
     && mem_cap="$(awk '/MemTotal/{c=int($2/1024/1024/2); print (c<1)?1:c}' /proc/meminfo)" \
     && if [ "$mem_cap" -lt "$cap" ]; then cap="$mem_cap"; fi \
-    && echo "Building xrpl-lean4-deps with ${cap} parallel job(s)" \
-    && taskset -c "0-$((cap - 1))" \
-        conan install --requires=xrpl-lean4-deps/0.1.0 --build=missing \
+    && echo "Compiling Lean dependency objects with ${cap} parallel job(s)" \
+    && taskset -c "0-$((cap - 1))" lake build \
+        ProofWidgets:static ImportGraph:static LeanSearchClient:static \
+        Plausible:static Aesop:static Qq:static Cli:static Batteries:static \
+        Mathlib:static \
+    || true
+
+# Prime the Conan cache for build-test with the lean4 toolchain package (keyed on
+# os/arch only, so the ci profile reuses it). No Lean model package: it builds
+# in-job from the primed .lake.
+COPY external/lean4 /opt/lean-recipe
+RUN conan profile detect --exist-ok \
+    && lean_ver="$(sed 's|^leanprover/lean4:v||' /tmp/lean-toolchain)" \
+    && conan export --version "${lean_ver}" /opt/lean-recipe \
+    && conan install --requires="lean4/${lean_ver}" --build=missing \
     && conan cache clean "*"
 
-# Drop what no job reads again: dependency git history and generated C objects.
-RUN cd /opt/lean-cache \
-    && rm -rf .lake/packages/*/.git .lake/packages/*/.lake/build/ir \
-    && find .lake/packages -name "lib*.a" -delete
+# Drop dependency git history; keep the compiled objects + oleans (build-test
+# links the objects, check-proofs and model elaboration need the oleans).
+RUN cd /opt/lean-cache && rm -rf .lake/packages/*/.git
 
-# Final image: toolchain + the pruned caches. check-proofs uses /opt/lean-cache;
-# build-test resolves lean4 + xrpl-lean4-deps from /opt/conan and builds the
-# model in-job; /opt/xdg-cache keeps the mathlib download so that build is offline.
+# Final image: toolchain + pruned caches. Jobs restore /opt/lean-cache/.lake;
+# build-test resolves lean4 from /opt/conan; /opt/xdg-cache keeps the mathlib
+# download so the build is offline.
 FROM toolchain
 
 COPY --from=builder /opt/lean-cache /opt/lean-cache

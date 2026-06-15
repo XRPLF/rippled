@@ -273,8 +273,8 @@ if(xrpld)
             "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
         )
         # The Lean cross-validation tests need the Lean FFI symbols, which
-        # are only linked when formal_verification_tests is enabled.
-        if(NOT formal_verification_tests)
+        # are only linked when formal_verification is enabled.
+        if(NOT formal_verification)
             list(FILTER sources EXCLUDE REGEX "/src/test/formal_verification/")
         endif()
         target_sources(xrpld PRIVATE ${sources})

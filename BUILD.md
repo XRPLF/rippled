@@ -545,6 +545,19 @@ You can then build and test as usual, with the generated `xrpld` binary containi
 
 See [Sanitizers docs](./docs/build/sanitizers.md) for more details.
 
+## Formal verification
+
+Build with the `formal_verification` option (needs `xrpld` and `tests`), then
+run the Lean 4 cross-validation suite:
+
+```bash
+conan install .. --output-folder . --build missing --settings build_type=Release -o '&:formal_verification=True'
+cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON -Dformal_verification=ON ..
+cmake --build . --target xrpld && ./xrpld --unittest=formal_verification
+```
+
+See [formal verification docs](./docs/formal-verification/README.md) for more details.
+
 ## Options
 
 | Option     | Default Value | Description                                                    |
