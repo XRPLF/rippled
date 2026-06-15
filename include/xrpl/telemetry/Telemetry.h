@@ -166,7 +166,7 @@ public:
             delegated to the collector's tail sampling; for node-local post-hoc
             dropping see SpanGuard::discard().
         */
-        double const samplingRatio = 1.0;
+        static constexpr double samplingRatio = 1.0;
 
         /** Maximum number of spans per batch export. */
         std::uint32_t batchSize = 512;
