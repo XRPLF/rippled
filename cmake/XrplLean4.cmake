@@ -62,8 +62,8 @@ add_custom_target(
     BYPRODUCTS ${lean_lib}
     COMMAND
         ${CMAKE_COMMAND} -E env LEAN_BINDIR=${LEAN_BINDIR}
-        LEAN_LIBDIR=${LEAN_LIBDIR} GMP_LIBDIR=${GMP_LIBDIR} sh
-        ${lean_src}/scripts/build_lean.sh
+        LEAN_LIBDIR=${LEAN_LIBDIR} GMP_LIBDIR=${GMP_LIBDIR}
+        SDKROOT=${CMAKE_OSX_SYSROOT} sh ${lean_src}/scripts/build_lean.sh
     WORKING_DIRECTORY ${lean_src}
     COMMENT "Building the Lean formal-verification library"
     VERBATIM

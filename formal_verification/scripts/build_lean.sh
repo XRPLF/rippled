@@ -40,7 +40,7 @@ if [ "${objects}" -lt 7000 ]; then
 fi
 echo "build_lean.sh: linking libXRPLModel.${suffix} (model + ${objects} objects)"
 if [ "${suffix}" = dylib ]; then
-    "${cc}" -dynamiclib -isysroot "${SDKROOT:-$(xcrun --show-sdk-path)}" \
+    "${cc}" -dynamiclib -isysroot "${SDKROOT}" \
         -install_name "@rpath/libXRPLModel.${suffix}" -o "${lib}" \
         -Wl,-force_load,"${archive}" -filelist "${raw}" \
         -L"${LEAN_LIBDIR}" -lleanshared -lLake_shared -L"${GMP_LIBDIR}" -lgmp

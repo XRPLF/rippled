@@ -272,6 +272,7 @@ words:
   - sles
   - soci
   - socidb
+  - soname
   - SRPMS
   - sslws
   - statsd
@@ -347,5 +348,3 @@ words:
   - xxhash
   - xxhasher
   - CGNAT
-  - soname
-  - xcrun
