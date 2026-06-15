@@ -52,52 +52,50 @@ include(default)
 {% endif %}
 
 {# Frame pointer required for meaningful stack traces; -O1 for reasonable performance #}
-{% set compile_flags = ["-fno-omit-frame-pointer", "-O1"] %}
+{% set sanitizer_compiler_flags = ["-fno-omit-frame-pointer", "-O1"] %}
 
 {% if compiler == "gcc" %}
     {# Suppress false positive warnings with GCC #}
-    {% set _ = compile_flags.append("-Wno-stringop-overflow") %}
+    {% set _ = sanitizer_compiler_flags.append("-Wno-stringop-overflow") %}
 
     {% set relocation_flags = [] %}
 
     {% if arch == "x86_64" and enable_asan %}
         {# Large code model prevents relocation errors in instrumented ASAN binaries #}
-        {% set _ = compile_flags.append("-mcmodel=large") %}
+        {% set _ = sanitizer_compiler_flags.append("-mcmodel=large") %}
         {% set _ = relocation_flags.append("-mcmodel=large") %}
     {% elif enable_tsan %}
         {# GCC doesn't support atomic_thread_fence with TSAN; suppress warnings #}
-        {% set _ = compile_flags.append("-Wno-tsan") %}
+        {% set _ = sanitizer_compiler_flags.append("-Wno-tsan") %}
         {% if arch == "x86_64" %}
             {# Medium code model for TSAN; large is incompatible #}
-            {% set _ = compile_flags.append("-mcmodel=medium") %}
+            {% set _ = sanitizer_compiler_flags.append("-mcmodel=medium") %}
             {% set _ = relocation_flags.append("-mcmodel=medium") %}
         {% endif %}
     {% endif %}
 
     {% set fsanitize = "-fsanitize=" ~ ",".join(sanitizer_types) %}
-    {% set _ = compile_flags.append(fsanitize) %}
+    {% set _ = sanitizer_compiler_flags.append(fsanitize) %}
     {% set _ = relocation_flags.append(fsanitize) %}
 
-    {% set sanitizer_compiler_flags = " ".join(compile_flags) %}
-    {% set sanitizer_linker_flags = " ".join(relocation_flags) %}
+    {% set sanitizer_linker_flags = relocation_flags %}
 {% elif compiler == "clang" or compiler == "apple-clang" %}
     {% set fsanitize = "-fsanitize=" ~ ",".join(sanitizer_types) %}
-    {% set _ = compile_flags.append(fsanitize) %}
+    {% set _ = sanitizer_compiler_flags.append(fsanitize) %}
 
-    {% set sanitizer_compiler_flags = " ".join(compile_flags) %}
-    {% set sanitizer_linker_flags = fsanitize %}
+    {% set sanitizer_linker_flags = [fsanitize] %}
 {% endif %}
 
 [conf]
 tools.build:defines+={{defines}}
-tools.build:cxxflags+=['{{sanitizer_compiler_flags}}']
-tools.build:sharedlinkflags+=['{{sanitizer_linker_flags}}']
-tools.build:exelinkflags+=['{{sanitizer_linker_flags}}']
+tools.build:cxxflags+={{sanitizer_compiler_flags}}
+tools.build:sharedlinkflags+={{sanitizer_linker_flags}}
+tools.build:exelinkflags+={{sanitizer_linker_flags}}
 
 tools.info.package_id:confs+=["tools.build:cxxflags", "tools.build:exelinkflags", "tools.build:sharedlinkflags", "tools.build:defines"]
 
 # &: means "apply only to the consumer/root package"
-&:tools.cmake.cmaketoolchain:extra_variables={"SANITIZERS": "{{sanitizers}}", "SANITIZERS_COMPILER_FLAGS": "{{sanitizer_compiler_flags}}", "SANITIZERS_LINKER_FLAGS": "{{sanitizer_linker_flags}}"}
+&:tools.cmake.cmaketoolchain:extra_variables={"SANITIZERS": "{{sanitizers}}", "SANITIZERS_COMPILER_FLAGS": "{{sanitizer_compiler_flags | join(' ')}}", "SANITIZERS_LINKER_FLAGS": "{{sanitizer_linker_flags | join(' ')}}"}
 
 [options]
 {% if enable_asan %}
