@@ -818,6 +818,56 @@ class Simulate_test : public beast::unit_test::Suite
     }
 
     void
+    testSuccessfulSponsoredTransactionMultisigned()
+    {
+        testcase("Successful sponsored multi-signed transaction");
+
+        using namespace jtx;
+        Env env(*this);
+        static auto const kNewDomain = "123ABC";
+        Account const sponsor("sponsor");
+        Account const signer("signer");
+        env.fund(XRP(10000), sponsor, signer);
+        env.close();
+
+        env(signers(sponsor, 1, {{signer, 1}}));
+        env.close();
+
+        auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const result = resp[jss::result];
+            auto const expectedFee = env.current()->fees().base * 2;
+            checkBasicReturnValidity(result, tx, env.seq(env.master), expectedFee);
+
+            BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+            BEAST_EXPECT(result[jss::engine_result_code] == 0);
+            BEAST_EXPECT(
+                result[jss::engine_result_message] ==
+                "The simulated transaction would have been applied.");
+
+            if (BEAST_EXPECT(result.isMember(jss::meta) || result.isMember(jss::meta_blob)))
+            {
+                json::Value const metadata = getJsonMetadata(result);
+                BEAST_EXPECT(metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+            }
+        };
+
+        json::Value tx;
+        tx[jss::Account] = env.master.human();
+        tx[jss::TransactionType] = jss::AccountSet;
+        tx[sfDomain] = kNewDomain;
+        tx[sfSponsor.jsonName] = sponsor.human();
+        tx[sfSponsorFlags.jsonName] = spfSponsorFee;
+        tx[sfSponsorSignature.jsonName] = json::ValueType::Object;
+        tx[sfSponsorSignature.jsonName][sfSigners.jsonName] = json::ValueType::Array;
+
+        json::Value signerObj;
+        signerObj[sfSigner][jss::Account] = signer.human();
+        tx[sfSponsorSignature.jsonName][sfSigners.jsonName].append(signerObj);
+
+        testTx(env, tx, validateOutput, false);
+    }
+
+    void
     testTransactionSigningFailure()
     {
         testcase("Transaction with a key-related failure");
@@ -1249,6 +1299,7 @@ public:
         testTransactionNonTecFailure();
         testTransactionTecFailure();
         testSuccessfulTransactionMultisigned();
+        testSuccessfulSponsoredTransactionMultisigned();
         testTransactionSigningFailure();
         testInvalidSingleAndMultiSigningTransaction();
         testMultisignedBadPubKey();

@@ -131,23 +131,6 @@ autofillSignature(json::Value& sigObject)
 static std::optional<json::Value>
 autofillTx(json::Value& txJson, RPC::JsonContext& context)
 {
-    if (!txJson.isMember(jss::Fee))
-    {
-        // autofill Fee
-        // Must happen after all the other autofills happen
-        // Error handling/messaging works better that way
-        auto feeOrError = RPC::getCurrentNetworkFee(
-            context.role,
-            context.app.config(),
-            context.app.getFeeTrack(),
-            context.app.getTxQ(),
-            context.app,
-            txJson);
-        if (feeOrError.isMember(jss::error))
-            return feeOrError;
-        txJson[jss::Fee] = feeOrError;
-    }
-
     if (auto error = autofillSignature(txJson))
         return error;
 
@@ -170,6 +153,23 @@ autofillTx(json::Value& txJson, RPC::JsonContext& context)
         auto const networkId = context.app.getNetworkIDService().getNetworkID();
         if (networkId > 1024)
             txJson[jss::NetworkID] = to_string(networkId);
+    }
+
+    if (!txJson.isMember(jss::Fee))
+    {
+        // autofill Fee
+        // Must happen after all the other autofills happen
+        // Error handling/messaging works better that way
+        auto feeOrError = RPC::getCurrentNetworkFee(
+            context.role,
+            context.app.config(),
+            context.app.getFeeTrack(),
+            context.app.getTxQ(),
+            context.app,
+            txJson);
+        if (feeOrError.isMember(jss::error))
+            return feeOrError;
+        txJson[jss::Fee] = feeOrError;
     }
 
     return std::nullopt;
