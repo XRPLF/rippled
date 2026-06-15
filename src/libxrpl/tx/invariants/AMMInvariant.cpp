@@ -221,8 +221,7 @@ ValidAMM::generalInvariant(
     auto const poolProductMean = root2(amount * amount2);
     bool const nonNegativeBalances =
         validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed);
-    auto const precisionLoss = checkAMMPrecisionLoss(
-        view, *ammAccount_, tx[sfAsset], tx[sfAsset2], *lptAMMBalanceAfter_, j);
+    auto const precisionLoss = checkAMMPrecisionLoss(poolProductMean, *lptAMMBalanceAfter_);
     if (!nonNegativeBalances || !isTesSuccess(precisionLoss))
     {
         JLOG(j.error()) << "Invariant failed: AMM " << tx.getTxnType() << " "

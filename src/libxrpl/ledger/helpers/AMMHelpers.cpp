@@ -434,6 +434,21 @@ ammPoolHolds(
 }
 
 TER
+checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance)
+{
+    if (newLPTokenBalance <= beast::kZero)
+        return tesSUCCESS;
+    if (poolProductMean >= newLPTokenBalance)
+        return tesSUCCESS;
+    // Strong check failed. Allow the same relative tolerance as the invariant
+    // checker's weak check. Only return tecPRECISION_LOSS when both fail.
+    if (withinRelativeDistance(
+            poolProductMean, Number{newLPTokenBalance}, kAMMInvariantRelativeTolerance))
+        return tesSUCCESS;
+    return tecPRECISION_LOSS;
+}
+
+TER
 checkAMMPrecisionLoss(
     ReadView const& view,
     AccountID const& ammAccountID,
@@ -452,15 +467,7 @@ checkAMMPrecisionLoss(
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         j);
-    auto const poolProductMean = root2(amount * amount2);
-    if (poolProductMean >= newLPTokenBalance)
-        return tesSUCCESS;
-    // Strong check failed. Allow the same relative tolerance as the invariant
-    // checker's weak check. Only return tecPRECISION_LOSS when both fail.
-    if (withinRelativeDistance(
-            poolProductMean, Number{newLPTokenBalance}, kAMMInvariantRelativeTolerance))
-        return tesSUCCESS;
-    return tecPRECISION_LOSS;
+    return checkAMMPrecisionLoss(root2(amount * amount2), newLPTokenBalance);
 }
 
 std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>

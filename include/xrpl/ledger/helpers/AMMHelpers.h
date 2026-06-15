@@ -740,6 +740,14 @@ ammPoolHolds(
     AuthHandling authHandling,
     beast::Journal const j);
 
+/** Check AMM pool product invariant after deposit or withdraw from an already
+ * calculated pool product mean.
+ * Returns tecPRECISION_LOSS if poolProductMean < newLPTokenBalance,
+ * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
+ */
+TER
+checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance);
+
 /** Check AMM pool product invariant after deposit or withdraw.
  * Returns tecPRECISION_LOSS if sqrt(asset1 * asset2) < newLPTokenBalance,
  * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
