@@ -8,12 +8,10 @@ ELAN_INIT_URL = "https://elan.lean-lang.org/elan-init.sh"
 
 
 class Lean(ConanFile):
-    """The Lean 4 toolchain (lean, lake, headers, runtime), installed via elan.
+    """Lean 4 toolchain (lean, lake, headers, runtime), installed via elan.
 
-    Used both as a tool requirement (lake/lean on PATH) and a host requirement
-    (lean.h, libLake.a, libleanshared for linking into xrpld). The version
-    defaults to the one pinned in formal_verification/lean-toolchain; pass
-    --version when exporting outside the repo layout (e.g. the CI image).
+    Version defaults from formal_verification/lean-toolchain, pass --version
+    when exporting outside the repo layout (e.g. the CI image).
     """
 
     name = "lean4"
