@@ -2271,7 +2271,7 @@ public:
             constexpr auto kMaxRep = Number::kMaxRep;
 
             // Both ToNearest and Downward should round to `below`
-            auto const actual = static_cast<std::uint64_t>(kMaxRep) + 1;
+            auto constexpr actual = static_cast<std::uint64_t>(kMaxRep) + 1;
             Number const below{static_cast<std::int64_t>(kMaxRep), 0};
             Number const above{
                 false, static_cast<std::uint64_t>(kMaxRep) + 3, 0, Number::Normalized{}};
