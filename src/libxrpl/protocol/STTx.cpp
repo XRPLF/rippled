@@ -297,7 +297,7 @@ STTx::checkBatchSign(Rules const& rules) const
             return std::unexpected("Not a batch transaction.");
         }
         if (!isFieldPresent(sfBatchSigners))
-            return Unexpected("Missing BatchSigners field.");
+            return std::unexpected("Missing BatchSigners field.");
         STArray const& signers{getFieldArray(sfBatchSigners)};
         for (auto const& signer : signers)
         {
@@ -312,7 +312,7 @@ STTx::checkBatchSign(Rules const& rules) const
     }
     catch (std::exception const& e)
     {
-        return Unexpected(std::string("Internal batch signature check failure: ") + e.what());
+        return std::unexpected(std::string("Internal batch signature check failure: ") + e.what());
     }
 }
 
@@ -567,7 +567,7 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 void
 STTx::buildBatchTxnIds()
 {
-    if (tx_type_ != ttBATCH || !isFieldPresent(sfRawTransactions))
+    if (getTxnType() != ttBATCH || !isFieldPresent(sfRawTransactions))
         return;
 
     auto const& raw = getFieldArray(sfRawTransactions);
