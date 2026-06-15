@@ -229,25 +229,27 @@ SHAMapInnerNode::sizeForWire() const
 }
 
 void
-SHAMapInnerNode::serializeForWire(Serializer& s) const
+SHAMapInnerNode::serializeForWire(std::uint8_t* out) const
 {
     XRPL_ASSERT(!isEmpty(), "xrpl::SHAMapInnerNode::serializeForWire : is non-empty");
 
-    // If the node is sparse, then only send non-empty branches:
     if (getBranchCount() < kCompressedThreshold)
     {
-        // compressed node
         auto hashes = hashesAndChildren_.getHashes();
         iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-            s.addBitString(hashes[indexNum].asUInt256());
-            s.add8(branchNum);
+            std::memcpy(out, hashes[indexNum].asUInt256().data(), uint256::kBytes);
+            out += uint256::kBytes;
+            *out++ = static_cast<std::uint8_t>(branchNum);
         });
-        s.add8(kWireTypeCompressedInner);
+        *out = kWireTypeCompressedInner;
     }
     else
     {
-        iterChildren([&](SHAMapHash const& hh) { s.addBitString(hh.asUInt256()); });
-        s.add8(kWireTypeInner);
+        iterChildren([&](SHAMapHash const& hh) {
+            std::memcpy(out, hh.asUInt256().data(), uint256::kBytes);
+            out += uint256::kBytes;
+        });
+        *out = kWireTypeInner;
     }
 }
 

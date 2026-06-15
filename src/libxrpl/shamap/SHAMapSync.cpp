@@ -454,20 +454,20 @@ SHAMap::getNodeFat(
         std::tie(node, nodeID, depth) = stack.top();
         stack.pop();
 
-        Serializer s(node->sizeForWire());
-        node->serializeForWire(s);
-        data.emplace_back(nodeID, std::move(s.modData()));
+        // Add this node to the reply.
+        Blob nodeData(node->sizeForWire());
+        node->serializeForWire(nodeData.data());
+        data.emplace_back(nodeID, std::move(nodeData));
 
         if (node->isInner())
         {
-            // We descend inner nodes with only a single child
-            // without decrementing the depth
+            // We descend inner nodes with only a single child without decrementing the depth.
             auto inner = safeDowncast<SHAMapInnerNode*>(node);
             int const bc = inner->getBranchCount();
 
             if ((depth > 0) || (bc == 1))
             {
-                // We need to process this node's children
+                // We need to process this node's children.
                 for (int i = 0; i < 16; ++i)
                 {
                     if (!inner->isEmptyBranch(i))
@@ -477,16 +477,16 @@ SHAMap::getNodeFat(
 
                         if (childNode->isInner() && ((depth > 1) || (bc == 1)))
                         {
-                            // If there's more than one child, reduce the depth
-                            // If only one child, follow the chain
+                            // If there's more than one child, reduce the depth. If there's only one
+                            // child, follow the chain.
                             stack.emplace(childNode, childID, (bc > 1) ? (depth - 1) : depth);
                         }
                         else if (childNode->isInner() || fatLeaves)
                         {
-                            // Just include this node
-                            Serializer cs(childNode->sizeForWire());
-                            childNode->serializeForWire(cs);
-                            data.emplace_back(childID, std::move(cs.modData()));
+                            // Just include this node.
+                            Blob childData(childNode->sizeForWire());
+                            childNode->serializeForWire(childData.data());
+                            data.emplace_back(childID, std::move(childData));
                         }
                     }
                 }
@@ -500,7 +500,10 @@ SHAMap::getNodeFat(
 void
 SHAMap::serializeRoot(Serializer& s) const
 {
-    root_->serializeForWire(s);
+    auto const n = root_->sizeForWire();
+    auto const offset = s.size();
+    s.resize(offset + n);
+    root_->serializeForWire(static_cast<std::uint8_t*>(s.getDataPtr()) + offset);
 }
 
 SHAMapAddNode
@@ -791,9 +794,9 @@ SHAMap::getProofPath(uint256 const& key) const
     path.reserve(stack.size());
     while (!stack.empty())
     {
-        Serializer s(stack.top().first->sizeForWire());
-        stack.top().first->serializeForWire(s);
-        path.emplace_back(std::move(s.modData()));
+        Blob nodeData(stack.top().first->sizeForWire());
+        stack.top().first->serializeForWire(nodeData.data());
+        path.emplace_back(std::move(nodeData));
         stack.pop();
     }
 

@@ -159,7 +159,7 @@ public:
     sizeForWire() const override;
 
     void
-    serializeForWire(Serializer&) const override;
+    serializeForWire(std::uint8_t* out) const override;
 
     void
     serializeWithPrefix(Serializer&) const override;

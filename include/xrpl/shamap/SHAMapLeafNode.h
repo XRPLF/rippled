@@ -40,6 +40,9 @@ public:
     sizeForWire() const override = 0;
 
     void
+    serializeForWire(std::uint8_t* out) const override = 0;
+
+    void
     invariants(bool isRoot = false) const final;
 
 public:

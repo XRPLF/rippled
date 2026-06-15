@@ -51,10 +51,12 @@ public:
     }
 
     void
-    serializeForWire(Serializer& s) const final
+    serializeForWire(std::uint8_t* out) const final
     {
-        s.addRaw(item_->slice());
-        s.add8(kWireTypeTransaction);
+        auto const sz = item_->size();
+        std::memcpy(out, item_->data(), sz);
+        out += sz;
+        *out = kWireTypeTransaction;
     }
 
     void

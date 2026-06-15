@@ -146,9 +146,9 @@ public:
     virtual std::size_t
     sizeForWire() const = 0;
 
-    /** Serialize the node in a format appropriate for sending over the wire */
+    /** Serialize the node into @p out, which must point to at least sizeForWire() bytes. */
     virtual void
-    serializeForWire(Serializer&) const = 0;
+    serializeForWire(std::uint8_t* out) const = 0;
 
     /** Serialize the node in a format appropriate for hashing */
     virtual void

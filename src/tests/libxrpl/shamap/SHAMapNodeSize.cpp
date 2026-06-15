@@ -1,8 +1,8 @@
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMapAccountStateLeafNode.h>
 #include <xrpl/shamap/SHAMapInnerNode.h>
 #include <xrpl/shamap/SHAMapItem.h>
@@ -41,9 +41,10 @@ TEST(SHAMapNodeSize, InnerNode)
     for (unsigned int n = 1; n <= SHAMapInnerNode::kBranchFactor; ++n)
     {
         auto const node = makeInnerWithBranches(n);
-        Serializer s(node->sizeForWire());
-        node->serializeForWire(s);
-        EXPECT_EQ(node->sizeForWire(), s.size()) << "branch count: " << n;
+        auto const sz = node->sizeForWire();
+        Blob buf(sz);
+        node->serializeForWire(buf.data());
+        EXPECT_EQ(sz, buf.size()) << "branch count: " << n;
     }
 }
 
@@ -57,26 +58,16 @@ TEST(SHAMapNodeSize, LeafNodes)
         Slice const data(payload.data(), payload.size());
         auto item = makeShamapitem(key, data);
 
-        {
-            auto const tx = intr_ptr::makeShared<SHAMapTxLeafNode>(item, 1);
-            Serializer s(tx->sizeForWire());
-            tx->serializeForWire(s);
-            EXPECT_EQ(tx->sizeForWire(), s.size()) << "payload: " << payloadSize;
-        }
+        auto const checkNode = [&](auto const& node) {
+            auto const sz = node->sizeForWire();
+            Blob buf(sz);
+            node->serializeForWire(buf.data());
+            EXPECT_EQ(sz, buf.size()) << "payload: " << payloadSize;
+        };
 
-        {
-            auto const txMeta = intr_ptr::makeShared<SHAMapTxPlusMetaLeafNode>(item, 1);
-            Serializer s(txMeta->sizeForWire());
-            txMeta->serializeForWire(s);
-            EXPECT_EQ(txMeta->sizeForWire(), s.size()) << "payload: " << payloadSize;
-        }
-
-        {
-            auto const acct = intr_ptr::makeShared<SHAMapAccountStateLeafNode>(item, 1);
-            Serializer s(acct->sizeForWire());
-            acct->serializeForWire(s);
-            EXPECT_EQ(acct->sizeForWire(), s.size()) << "payload: " << payloadSize;
-        }
+        checkNode(intr_ptr::makeShared<SHAMapTxLeafNode>(item, 1));
+        checkNode(intr_ptr::makeShared<SHAMapTxPlusMetaLeafNode>(item, 1));
+        checkNode(intr_ptr::makeShared<SHAMapAccountStateLeafNode>(item, 1));
     }
 }
 
