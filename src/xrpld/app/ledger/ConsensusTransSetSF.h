@@ -28,12 +28,12 @@ public:
         Blob&& nodeData,
         SHAMapNodeType type) const override;
 
-    std::optional<Blob>
+    [[nodiscard]] std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const override;
 
 private:
     Application& app_;
-    NodeCache& m_nodeCache;
+    NodeCache& nodeCache_;
     beast::Journal const j_;
 };
 

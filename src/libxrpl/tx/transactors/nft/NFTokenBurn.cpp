@@ -13,8 +13,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstddef>
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
@@ -40,7 +38,7 @@ NFTokenBurn::preclaim(PreclaimContext const& ctx)
     // do so if the token is marked as burnable.
     if (auto const account = ctx.tx[sfAccount]; owner != account)
     {
-        if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::flagBurnable) == 0)
+        if ((nft::getFlags(ctx.tx[sfNFTokenID]) & nft::kFlagBurnable) == 0)
             return tecNO_PERMISSION;
 
         if (auto const issuer = nft::getIssuer(ctx.tx[sfNFTokenID]); issuer != account)
@@ -72,7 +70,7 @@ NFTokenBurn::doApply()
 
     if (auto issuer = view().peek(keylet::account(nft::getIssuer(ctx_.tx[sfNFTokenID]))))
     {
-        (*issuer)[~sfBurnedNFTokens] = (*issuer)[~sfBurnedNFTokens].value_or(0) + 1;
+        (*issuer)[~sfBurnedNFTokens] = (*issuer)[~sfBurnedNFTokens].valueOr(0) + 1;
         view().update(issuer);
     }
 
@@ -81,30 +79,29 @@ NFTokenBurn::doApply()
     // the number of buy offers, we prioritize the deletion of sell
     // offers in order to clean up sell offer directory
     std::size_t const deletedSellOffers = nft::removeTokenOffersWithLimit(
-        view(), keylet::nft_sells(ctx_.tx[sfNFTokenID]), maxDeletableTokenOfferEntries);
+        view(), keylet::nftSells(ctx_.tx[sfNFTokenID]), kMaxDeletableTokenOfferEntries);
 
-    if (maxDeletableTokenOfferEntries > deletedSellOffers)
+    if (kMaxDeletableTokenOfferEntries > deletedSellOffers)
     {
         nft::removeTokenOffersWithLimit(
             view(),
-            keylet::nft_buys(ctx_.tx[sfNFTokenID]),
-            maxDeletableTokenOfferEntries - deletedSellOffers);
+            keylet::nftBuys(ctx_.tx[sfNFTokenID]),
+            kMaxDeletableTokenOfferEntries - deletedSellOffers);
     }
 
     return tesSUCCESS;
 }
 
 void
-NFTokenBurn::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+NFTokenBurn::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
+    // No transaction-specific invariants yet (future work).
 }
 
 bool
 NFTokenBurn::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
 {
+    // No transaction-specific invariants yet (future work).
     return true;
 }
 

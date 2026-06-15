@@ -3,7 +3,7 @@
 
 namespace xrpl {
 
-class BuildInfo_test : public beast::unit_test::suite
+class BuildInfo_test : public beast::unit_test::Suite
 {
 public:
     void

@@ -19,9 +19,9 @@ class ConfidentialMPTMergeInboxBuilder;
  * @brief Transaction: ConfidentialMPTMergeInbox
  *
  * Type: ttCONFIDENTIAL_MPT_MERGE_INBOX (86)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTMergeInboxBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -63,7 +63,7 @@ public:
  * @brief Builder for ConfidentialMPTMergeInbox transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ConfidentialMPTMergeInboxBuilder : public TransactionBuilderBase<ConfidentialMPTMergeInboxBuilder>
@@ -102,7 +102,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTMergeInboxBuilder&

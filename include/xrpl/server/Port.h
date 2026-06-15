@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 
 #include <boost/asio/ip/address.hpp>
@@ -14,12 +13,15 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <vector>
 
 namespace boost::asio::ssl {
-class context;
+class context;  // NOLINT(readability-identifier-naming) -- external library name
 }  // namespace boost::asio::ssl
 
 namespace xrpl {
+
+class Section;
 
 /** Configuration information for a Server listening port. */
 struct Port
@@ -30,19 +32,19 @@ struct Port
     boost::asio::ip::address ip;
     std::uint16_t port = 0;
     std::set<std::string, boost::beast::iless> protocol;
-    std::vector<boost::asio::ip::network_v4> admin_nets_v4;
-    std::vector<boost::asio::ip::network_v6> admin_nets_v6;
-    std::vector<boost::asio::ip::network_v4> secure_gateway_nets_v4;
-    std::vector<boost::asio::ip::network_v6> secure_gateway_nets_v6;
+    std::vector<boost::asio::ip::network_v4> adminNetsV4;
+    std::vector<boost::asio::ip::network_v6> adminNetsV6;
+    std::vector<boost::asio::ip::network_v4> secureGatewayNetsV4;
+    std::vector<boost::asio::ip::network_v6> secureGatewayNetsV6;
     std::string user;
     std::string password;
-    std::string admin_user;
-    std::string admin_password;
-    std::string ssl_key;
-    std::string ssl_cert;
-    std::string ssl_chain;
-    std::string ssl_ciphers;
-    boost::beast::websocket::permessage_deflate pmd_options;
+    std::string adminUser;
+    std::string adminPassword;
+    std::string sslKey;
+    std::string sslCert;
+    std::string sslChain;
+    std::string sslCiphers;
+    boost::beast::websocket::permessage_deflate pmdOptions;
     std::shared_ptr<boost::asio::ssl::context> context;
 
     // How many incoming connections are allowed on this
@@ -50,18 +52,18 @@ struct Port
     int limit = 0;
 
     // Websocket disconnects if send queue exceeds this limit
-    std::uint16_t ws_queue_limit{};
+    std::uint16_t wsQueueLimit{};
 
     // Returns `true` if any websocket protocols are specified
-    bool
+    [[nodiscard]] bool
     websockets() const;
 
     // Returns `true` if any secure protocols are specified
-    bool
+    [[nodiscard]] bool
     secure() const;
 
     // Returns a string containing the list of protocols
-    std::string
+    [[nodiscard]] std::string
     protocols() const;
 };
 
@@ -78,25 +80,25 @@ struct ParsedPort
     std::set<std::string, boost::beast::iless> protocol;
     std::string user;
     std::string password;
-    std::string admin_user;
-    std::string admin_password;
-    std::string ssl_key;
-    std::string ssl_cert;
-    std::string ssl_chain;
-    std::string ssl_ciphers;
-    boost::beast::websocket::permessage_deflate pmd_options;
+    std::string adminUser;
+    std::string adminPassword;
+    std::string sslKey;
+    std::string sslCert;
+    std::string sslChain;
+    std::string sslCiphers;
+    boost::beast::websocket::permessage_deflate pmdOptions;
     int limit = 0;
-    std::uint16_t ws_queue_limit{};
+    std::uint16_t wsQueueLimit{};
 
     std::optional<boost::asio::ip::address> ip;
     std::optional<std::uint16_t> port;
-    std::vector<boost::asio::ip::network_v4> admin_nets_v4;
-    std::vector<boost::asio::ip::network_v6> admin_nets_v6;
-    std::vector<boost::asio::ip::network_v4> secure_gateway_nets_v4;
-    std::vector<boost::asio::ip::network_v6> secure_gateway_nets_v6;
+    std::vector<boost::asio::ip::network_v4> adminNetsV4;
+    std::vector<boost::asio::ip::network_v6> adminNetsV6;
+    std::vector<boost::asio::ip::network_v4> secureGatewayNetsV4;
+    std::vector<boost::asio::ip::network_v6> secureGatewayNetsV6;
 };
 
 void
-parse_Port(ParsedPort& port, Section const& section, std::ostream& log);
+parsePort(ParsedPort& port, Section const& section, std::ostream& log);
 
 }  // namespace xrpl

@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -48,19 +49,19 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     // Check the length of the encrypted amounts
-    if (ctx.tx[sfSenderEncryptedAmount].length() != ecGamalEncryptedTotalLength ||
-        ctx.tx[sfDestinationEncryptedAmount].length() != ecGamalEncryptedTotalLength ||
-        ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+    if (ctx.tx[sfSenderEncryptedAmount].length() != kEcGamalEncryptedTotalLength ||
+        ctx.tx[sfDestinationEncryptedAmount].length() != kEcGamalEncryptedTotalLength ||
+        ctx.tx[sfIssuerEncryptedAmount].length() != kEcGamalEncryptedTotalLength)
     {
         return temBAD_CIPHERTEXT;
     }
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
-    if (hasAuditor && ctx.tx[sfAuditorEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+    if (hasAuditor && ctx.tx[sfAuditorEncryptedAmount].length() != kEcGamalEncryptedTotalLength)
         return temBAD_CIPHERTEXT;
 
     // Check the length of the ZKProof (fixed size regardless of recipient count)
-    if (ctx.tx[sfZKProof].length() != ecSendProofLength)
+    if (ctx.tx[sfZKProof].length() != kEcSendProofLength)
         return temMALFORMED;
 
     // Check the Pedersen commitments are valid
@@ -86,6 +87,15 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
         return err;
 
     return tesSUCCESS;
+}
+
+XRPAmount
+ConfidentialMPTSend::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
+    // We charge kConfidentialFeeMultiplier extra base fees so the total is
+    // 10 * baseFee + (signerCount * baseFee).
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
 }
 
 TER
@@ -167,6 +177,12 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
         return tecNO_PERMISSION;
 
+    // Sanity check: transfer rate must be 0 for confidential MPTs.
+    // This is unreachable since it is already enforced during MPTokenIssuanceCreate and
+    // MPTokenIssuanceSet.
+    if ((*sleIssuance)[~sfTransferFee].value_or(0) > 0)
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+
     // Check if issuance has issuer ElGamal public key
     if (!sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
@@ -237,6 +253,12 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(err))
         return err;
 
+    // Check deposit preauth before the expensive ZK proof verification.
+    // Uses read-only view.
+    if (auto const err = checkDepositPreauth(ctx.tx, ctx.view, account, destination, sleDst, ctx.j);
+        !isTesSuccess(err))
+        return err;
+
     return verifySendProofs(ctx, sleSenderMPToken, sleDestinationMPToken, sleIssuance);
 }
 
@@ -246,7 +268,7 @@ ConfidentialMPTSend::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const destination = ctx_.tx[sfDestination];
 
-    auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, account_));
+    auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     auto sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
 
     auto const sleDestAcct = view().read(keylet::account(destination));
@@ -254,8 +276,9 @@ ConfidentialMPTSend::doApply()
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleDestAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (auto err = verifyDepositPreauth(
-            ctx_.tx, ctx_.view(), account_, destination, sleDestAcct, ctx_.journal);
+    // Deposit preauth authorization was already verified in preclaim.
+    // Remove any expired credentials.
+    if (auto err = cleanupExpiredCredentials(ctx_.tx, ctx_.view(), ctx_.journal);
         !isTesSuccess(err))
         return err;
 

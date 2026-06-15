@@ -18,7 +18,7 @@
 namespace xrpl {
 namespace detail {
 
-struct epsilon_multiple
+struct EpsilonMultiple
 {
     std::size_t n;
 };
@@ -55,7 +55,7 @@ struct None
 // This value is also defined in SystemParameters.h. It's
 // duplicated here to catch any possible future errors that
 // could change that value (however unlikely).
-constexpr XRPAmount dropsPerXRP{1'000'000};
+constexpr XRPAmount kJtxDropsPerXrp{1'000'000};
 
 /** Represents an XRP, IOU, or MPT quantity
     This customizes the string conversion and supports
@@ -103,25 +103,25 @@ public:
     {
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     value() const
     {
         return amount_;
     }
 
-    Number
+    [[nodiscard]] Number
     number() const
     {
         return amount_;
     }
 
-    int
+    [[nodiscard]] int
     signum() const
     {
         return amount_.signum();
@@ -134,9 +134,9 @@ public:
 
     operator AnyAmount() const;
 
-    operator Json::Value() const
+    operator json::Value() const
     {
-        return to_json(value());
+        return toJson(value());
     }
 };
 
@@ -172,7 +172,7 @@ public:
     {
     }
 
-    Asset const&
+    [[nodiscard]] Asset const&
     raw() const
     {
         return asset_;
@@ -183,20 +183,20 @@ public:
         return asset_;
     }
 
-    operator Json::Value() const
+    operator json::Value() const
     {
-        return to_json(asset_);
+        return toJson(asset_);
     }
 
     template <std::integral T>
     PrettyAmount
-    operator()(T v, Number::rounding_mode rounding = Number::getround()) const
+    operator()(T v, Number::RoundingMode rounding = Number::getround()) const
     {
         return operator()(Number(v), rounding);
     }
 
     PrettyAmount
-    operator()(Number v, Number::rounding_mode rounding = Number::getround()) const
+    operator()(Number v, Number::RoundingMode rounding = Number::getround()) const
     {
         NumberRoundModeGuard const mg(rounding);
         STAmount const amount{asset_, v * scale_};
@@ -204,25 +204,25 @@ public:
     }
 
     None
-    operator()(none_t) const
+    operator()(NoneT) const
     {
         return {asset_};
     }
 
-    bool
+    [[nodiscard]] bool
     integral() const
     {
         return asset_.integral();
     }
 
-    bool
+    [[nodiscard]] bool
     native() const
     {
         return asset_.native();
     }
 
     template <ValidIssueType TIss>
-    bool
+    [[nodiscard]] bool
     holds() const
     {
         return asset_.holds<TIss>();
@@ -235,14 +235,14 @@ struct BookSpec
 {
     xrpl::Asset asset;
 
-    BookSpec(xrpl::Asset const& asset_) : asset(asset_)
+    BookSpec(xrpl::Asset const& asset) : asset(asset)
     {
     }
 };
 
 //------------------------------------------------------------------------------
 
-struct XRP_t
+struct XrpT
 {
     /** Implicit conversion to Issue.
 
@@ -275,7 +275,7 @@ struct XRP_t
     operator()(T v) const
     {
         using TOut = std::conditional_t<std::is_signed_v<T>, std::int64_t, std::uint64_t>;
-        return {TOut{v} * dropsPerXRP};
+        return {TOut{v} * kJtxDropsPerXrp};
     }
 
     /** Returns an amount of XRP as PrettyAmount,
@@ -286,7 +286,7 @@ struct XRP_t
     PrettyAmount
     operator()(Number v) const
     {
-        auto const c = dropsPerXRP.drops();
+        auto const c = kJtxDropsPerXrp.drops();
         auto const d = std::int64_t(v * c);
         if (Number(d) / c != v)
             Throw<std::domain_error>("unrepresentable");
@@ -296,7 +296,7 @@ struct XRP_t
     PrettyAmount
     operator()(double v) const
     {
-        auto const c = dropsPerXRP.drops();
+        auto const c = kJtxDropsPerXrp.drops();
         if (v >= 0)
         {
             auto const d = std::uint64_t(std::round(v * c));
@@ -313,13 +313,13 @@ struct XRP_t
 
     /** Returns None-of-XRP */
     None
-    operator()(none_t) const
+    operator()(NoneT) const
     {
         return {xrpIssue()};
     }
 
     friend BookSpec
-    operator~(XRP_t const&)
+    operator~(XrpT const&)
     {
         return BookSpec(Issue{xrpCurrency(), xrpAccount()});
     }
@@ -331,7 +331,7 @@ struct XRP_t
         XRP         Converts to the XRP Issue
         XRP(10)     Returns STAmount of 10 XRP
 */
-extern XRP_t const XRP;
+extern XrpT const XRP;  // NOLINT(readability-identifier-naming)
 
 /** Returns an XRP PrettyAmount, which is trivially convertible to STAmount.
 
@@ -359,18 +359,18 @@ drops(XRPAmount i)
 //------------------------------------------------------------------------------
 
 // The smallest possible IOU STAmount
-struct epsilon_t
+struct EpsilonT
 {
-    epsilon_t() = default;
+    EpsilonT() = default;
 
-    detail::epsilon_multiple
+    detail::EpsilonMultiple
     operator()(std::size_t n) const
     {
         return {n};
     }
 };
 
-static epsilon_t const epsilon;
+static EpsilonT const kEpsilon;
 
 /** Converts to IOU Issue or STAmount.
 
@@ -385,22 +385,22 @@ public:
     Account account;
     xrpl::Currency currency;
 
-    IOU(Account account_, xrpl::Currency const& currency_)
-        : account(std::move(account_)), currency(currency_)
+    IOU(Account account, xrpl::Currency const& currency)
+        : account(std::move(account)), currency(currency)
     {
     }
 
-    Issue
+    [[nodiscard]] Issue
     issue() const
     {
         return {currency, account.id()};
     }
-    Asset
+    [[nodiscard]] Asset
     asset() const
     {
         return issue();
     }
-    bool
+    [[nodiscard]] bool
     integral() const
     {
         return issue().integral();
@@ -436,16 +436,16 @@ public:
     }
 
     PrettyAmount
-    operator()(epsilon_t) const;
+    operator()(EpsilonT) const;
     PrettyAmount
-    operator()(detail::epsilon_multiple) const;
+    operator()(detail::EpsilonMultiple) const;
 
     // VFALCO TODO
     // STAmount operator()(char const* s) const;
 
     /** Returns None-of-Issue */
     None
-    operator()(none_t) const
+    operator()(NoneT) const
     {
         return {issue()};
     }
@@ -475,7 +475,7 @@ public:
     std::string name;
     xrpl::MPTID issuanceID;
 
-    MPT(std::string n, xrpl::MPTID const& issuanceID_) : name(std::move(n)), issuanceID(issuanceID_)
+    MPT(std::string n, xrpl::MPTID const& issuanceID) : name(std::move(n)), issuanceID(issuanceID)
     {
     }
     MPT(std::string n = "") : name(std::move(n)), issuanceID(noMPT())
@@ -488,7 +488,7 @@ public:
     {
     }
 
-    xrpl::MPTID const&
+    [[nodiscard]] xrpl::MPTID const&
     mpt() const
     {
         return issuanceID;
@@ -496,12 +496,12 @@ public:
 
     /** Explicit conversion to MPTIssue or asset.
      */
-    xrpl::MPTIssue
+    [[nodiscard]] xrpl::MPTIssue
     mptIssue() const
     {
         return MPTIssue{issuanceID};
     }
-    Asset
+    [[nodiscard]] Asset
     asset() const
     {
         return mptIssue();
@@ -544,13 +544,13 @@ public:
     }
 
     PrettyAmount
-    operator()(epsilon_t) const;
+    operator()(EpsilonT) const;
     PrettyAmount
-    operator()(detail::epsilon_multiple) const;
+    operator()(detail::EpsilonMultiple) const;
 
     /** Returns None-of-Issue */
     None
-    operator()(none_t) const
+    operator()(NoneT) const
     {
         return {noMPT()};
     }
@@ -567,7 +567,7 @@ operator<<(std::ostream& os, MPT const& mpt);
 
 //------------------------------------------------------------------------------
 
-struct any_t
+struct AnyT
 {
     inline AnyAmount
     operator()(STAmount const& sta) const;
@@ -576,7 +576,7 @@ struct any_t
 /** Amount specifier with an option for any issuer. */
 struct AnyAmount
 {
-    bool is_any;
+    bool isAny;
     STAmount value;
 
     AnyAmount() = delete;
@@ -584,11 +584,11 @@ struct AnyAmount
     AnyAmount&
     operator=(AnyAmount const&) = default;
 
-    AnyAmount(STAmount amount) : is_any(false), value(std::move(amount))
+    AnyAmount(STAmount amount) : isAny(false), value(std::move(amount))
     {
     }
 
-    AnyAmount(STAmount amount, any_t const*) : is_any(true), value(std::move(amount))
+    AnyAmount(STAmount amount, AnyT const*) : isAny(true), value(std::move(amount))
     {
     }
 
@@ -596,14 +596,14 @@ struct AnyAmount
     void
     to(AccountID const& id)
     {
-        if (!is_any)
+        if (!isAny)
             return;
         value.get<Issue>().account = id;
     }
 };
 
 inline AnyAmount
-any_t::operator()(STAmount const& sta) const
+AnyT::operator()(STAmount const& sta) const
 {
     return AnyAmount(sta, this);
 }
@@ -611,7 +611,7 @@ any_t::operator()(STAmount const& sta) const
 /** Returns an amount representing "any issuer"
     @note With respect to what the recipient will accept
 */
-extern any_t const any;
+extern AnyT const kAny;
 
 }  // namespace test::jtx
 

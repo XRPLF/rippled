@@ -1,6 +1,6 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
@@ -12,8 +12,6 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 
 namespace xrpl::NodeStore {
 
@@ -49,13 +47,7 @@ public:
     Status
     fetch(uint256 const&, std::shared_ptr<NodeObject>*) override
     {
-        return notFound;
-    }
-
-    std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256> const& hashes) override
-    {
-        return {};
+        return Status::NotFound;
     }
 
     void
@@ -74,7 +66,7 @@ public:
     }
 
     void
-    for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override
+    forEach(std::function<void(std::shared_ptr<NodeObject>)> f) override
     {
     }
 
@@ -90,7 +82,7 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need */
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
@@ -112,7 +104,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "none";
@@ -128,7 +120,7 @@ public:
 void
 registerNullFactory(Manager& manager)
 {
-    static NullFactory const instance{manager};
+    static NullFactory const kInstance{manager};
 }
 
 }  // namespace xrpl::NodeStore

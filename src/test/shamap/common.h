@@ -1,6 +1,8 @@
 #pragma once
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/shamap/Family.h>
@@ -33,9 +35,9 @@ public:
         , j_(j)
     {
         Section testSection;
-        testSection.set("type", "memory");
-        testSection.set("path", "SHAMap_test");
-        db_ = NodeStore::Manager::instance().make_Database(
+        testSection.set(Keys::kType, "memory");
+        testSection.set(Keys::kPath, "SHAMap_test");
+        db_ = NodeStore::Manager::instance().makeDatabase(
             megabytes(4), scheduler_, 1, testSection, j);
     }
 
@@ -45,7 +47,7 @@ public:
         return *db_;
     }
 
-    NodeStore::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return *db_;
@@ -91,11 +93,11 @@ public:
     void
     reset() override
     {
-        fbCache_->reset();
-        tnCache_->reset();
+        (*fbCache_).reset();
+        (*tnCache_).reset();
     }
 
-    beast::manual_clock<std::chrono::steady_clock>
+    beast::ManualClock<std::chrono::steady_clock>
     clock()
     {
         return clock_;

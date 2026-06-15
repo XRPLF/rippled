@@ -1,11 +1,12 @@
 #include <xrpl/server/Port.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -26,8 +27,8 @@ namespace xrpl {
 bool
 Port::secure() const
 {
-    return protocol.count("peer") > 0 || protocol.count("https") > 0 || protocol.count("wss") > 0 ||
-        protocol.count("wss2") > 0;
+    return protocol.contains("peer") || protocol.contains("https") || protocol.contains("wss") ||
+        protocol.contains("wss2");
 }
 
 std::string
@@ -44,30 +45,30 @@ operator<<(std::ostream& os, Port const& p)
 {
     os << "'" << p.name << "' (ip=" << p.ip << ":" << p.port << ", ";
 
-    if (!p.admin_nets_v4.empty() || !p.admin_nets_v6.empty())
+    if (!p.adminNetsV4.empty() || !p.adminNetsV6.empty())
     {
         os << "admin nets:";
-        for (auto const& net : p.admin_nets_v4)
+        for (auto const& net : p.adminNetsV4)
         {
             os << net.to_string();
             os << ", ";
         }
-        for (auto const& net : p.admin_nets_v6)
+        for (auto const& net : p.adminNetsV6)
         {
             os << net.to_string();
             os << ", ";
         }
     }
 
-    if (!p.secure_gateway_nets_v4.empty() || !p.secure_gateway_nets_v6.empty())
+    if (!p.secureGatewayNetsV4.empty() || !p.secureGatewayNetsV6.empty())
     {
         os << "secure_gateway nets:";
-        for (auto const& net : p.secure_gateway_nets_v4)
+        for (auto const& net : p.secureGatewayNetsV4)
         {
             os << net.to_string();
             os << ", ";
         }
-        for (auto const& net : p.secure_gateway_nets_v6)
+        for (auto const& net : p.secureGatewayNetsV6)
         {
             os << net.to_string();
             os << ", ";
@@ -106,10 +107,10 @@ populate(
         {
             // First, check to see if 0.0.0.0 or ipv6 equivalent was configured,
             // which means all IP addresses.
-            auto const addr = beast::IP::Endpoint::from_string_checked(ip);
+            auto const addr = beast::IP::Endpoint::fromStringChecked(ip);
             if (addr)
             {
-                if (is_unspecified(*addr))
+                if (isUnspecified(*addr))
                 {
                     nets4.push_back(boost::asio::ip::make_network_v4("0.0.0.0/0"));
                     nets6.push_back(boost::asio::ip::make_network_v6("::/0"));
@@ -121,8 +122,8 @@ populate(
                 // be unset). We need this to be a subnet, so append
                 // the number of network bits to make a subnet of 1,
                 // depending on type.
-                v4 = addr->is_v4();
-                std::string addressString = addr->to_string();
+                v4 = addr->isV4();
+                std::string addressString = addr->toString();
                 if (v4)
                 {
                     addressString += "/32";
@@ -191,11 +192,11 @@ populate(
 }
 
 void
-parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
+parsePort(ParsedPort& port, Section const& section, std::ostream& log)
 {
     port.name = section.name();
     {
-        auto const optResult = section.get("ip");
+        auto const optResult = section.get(Keys::kIp);
         if (optResult)
         {
             try
@@ -206,13 +207,13 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
             {
                 log << "Invalid value '" << *optResult << "' for key 'ip' in [" << section.name()
                     << "]";
-                Rethrow();
+                rethrow();
             }
         }
     }
 
     {
-        auto const optResult = section.get("port");
+        auto const optResult = section.get(Keys::kPort);
         if (optResult)
         {
             try
@@ -227,86 +228,86 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
             {
                 log << "Invalid value '" << *optResult << "' for key "
                     << "'port' in [" << section.name() << "]";
-                Rethrow();
+                rethrow();
             }
         }
     }
 
     {
-        auto const optResult = section.get("protocol");
+        auto const optResult = section.get(Keys::kProtocol);
         if (optResult)
         {
-            for (auto const& s : beast::rfc2616::split_commas(optResult->begin(), optResult->end()))
+            for (auto const& s : beast::rfc2616::splitCommas(optResult->begin(), optResult->end()))
                 port.protocol.insert(s);
         }
     }
 
     {
-        auto const lim = get(section, "limit", "unlimited");
+        auto const lim = get(section, Keys::kLimit, "unlimited");
 
         if (!boost::iequals(lim, "unlimited"))
         {
             try
             {
-                port.limit = safe_cast<int>(beast::lexicalCastThrow<std::uint16_t>(lim));
+                port.limit = safeCast<int>(beast::lexicalCastThrow<std::uint16_t>(lim));
             }
             catch (std::exception const&)
             {
                 log << "Invalid value '" << lim << "' for key "
                     << "'limit' in [" << section.name() << "]";
-                Rethrow();
+                rethrow();
             }
         }
     }
 
     {
-        auto const optResult = section.get("send_queue_limit");
+        auto const optResult = section.get(Keys::kSendQueueLimit);
         if (optResult)
         {
             try
             {
-                port.ws_queue_limit = beast::lexicalCastThrow<std::uint16_t>(*optResult);
+                port.wsQueueLimit = beast::lexicalCastThrow<std::uint16_t>(*optResult);
 
                 // Queue must be greater than 0
-                if (port.ws_queue_limit == 0)
+                if (port.wsQueueLimit == 0)
                     Throw<std::exception>();
             }
             catch (std::exception const&)
             {
                 log << "Invalid value '" << *optResult << "' for key "
                     << "'send_queue_limit' in [" << section.name() << "]";
-                Rethrow();
+                rethrow();
             }
         }
         else
         {
             // Default Websocket send queue size limit
-            port.ws_queue_limit = 100;
+            port.wsQueueLimit = 100;
         }
     }
 
-    populate(section, "admin", log, port.admin_nets_v4, port.admin_nets_v6);
+    populate(section, Keys::kAdmin, log, port.adminNetsV4, port.adminNetsV6);
     populate(
-        section, "secure_gateway", log, port.secure_gateway_nets_v4, port.secure_gateway_nets_v6);
+        section, Keys::kSecureGateway, log, port.secureGatewayNetsV4, port.secureGatewayNetsV6);
 
-    set(port.user, "user", section);
-    set(port.password, "password", section);
-    set(port.admin_user, "admin_user", section);
-    set(port.admin_password, "admin_password", section);
-    set(port.ssl_key, "ssl_key", section);
-    set(port.ssl_cert, "ssl_cert", section);
-    set(port.ssl_chain, "ssl_chain", section);
-    set(port.ssl_ciphers, "ssl_ciphers", section);
+    set(port.user, Keys::kUser, section);
+    set(port.password, Keys::kPassword, section);
+    set(port.adminUser, Keys::kAdminUser, section);
+    set(port.adminPassword, Keys::kAdminPassword, section);
+    set(port.sslKey, Keys::kSslKey, section);
+    set(port.sslCert, Keys::kSslCert, section);
+    set(port.sslChain, Keys::kSslChain, section);
+    set(port.sslCiphers, Keys::kSslCiphers, section);
 
-    port.pmd_options.server_enable = section.value_or("permessage_deflate", true);
-    port.pmd_options.client_max_window_bits = section.value_or("client_max_window_bits", 15);
-    port.pmd_options.server_max_window_bits = section.value_or("server_max_window_bits", 15);
-    port.pmd_options.client_no_context_takeover =
-        section.value_or("client_no_context_takeover", false);
-    port.pmd_options.server_no_context_takeover =
-        section.value_or("server_no_context_takeover", false);
-    port.pmd_options.compLevel = section.value_or("compress_level", 8);
-    port.pmd_options.memLevel = section.value_or("memory_level", 4);
+    port.pmdOptions.server_enable = section.valueOr(Keys::kPermessageDeflate, true);
+    port.pmdOptions.client_max_window_bits = section.valueOr(Keys::kClientMaxWindowBits, 15);
+    port.pmdOptions.server_max_window_bits = section.valueOr(Keys::kServerMaxWindowBits, 15);
+    port.pmdOptions.client_no_context_takeover =
+        section.valueOr(Keys::kClientNoContextTakeover, false);
+    port.pmdOptions.server_no_context_takeover =
+        section.valueOr(Keys::kServerNoContextTakeover, false);
+    port.pmdOptions.compLevel = section.valueOr(Keys::kCompressLevel, 8);
+    port.pmdOptions.memLevel = section.valueOr(Keys::kMemoryLevel, 4);
 }
 
 }  // namespace xrpl

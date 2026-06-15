@@ -1,5 +1,6 @@
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -32,7 +33,7 @@
 
 namespace xrpl {
 
-static auto checkpointPageCount = 1000;
+static auto gCheckpointPageCount = 1000;
 
 namespace detail {
 
@@ -53,13 +54,13 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
 std::string
 getSociInit(BasicConfig const& config, std::string const& dbName)
 {
-    auto const& section = config.section("sqdb");
-    auto const backendName = get(section, "backend", "sqlite");
+    auto const& section = config.section(Sections::kSqdb);
+    auto const backendName = get(section, Keys::kBackend, "sqlite");
 
     if (backendName != "sqlite")
         Throw<std::runtime_error>("Unsupported soci backend: " + backendName);
 
-    auto const path = config.legacy("database_path");
+    auto const path = config.legacy(Sections::kDatabasePath);
     auto const ext = dbName == "validators" || dbName == "peerfinder" ? ".sqlite" : ".db";
     return detail::getSociSqliteInit(dbName, path, ext);
 }
@@ -238,7 +239,7 @@ public:
     schedule() override
     {
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             if (running_)
                 return;
             running_ = true;
@@ -246,7 +247,7 @@ public:
 
         // If the Job is not added to the JobQueue then we're not running_.
         if (!jobQueue_.addJob(
-                jtWAL,
+                JtWal,
                 "WAL",
                 // If the owning DatabaseCon is destroyed, no need to checkpoint
                 // or keep the checkpointer alive so use a weak_ptr to this.
@@ -258,7 +259,7 @@ public:
                         self->checkpoint();
                 }))
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             running_ = false;
         }
     }
@@ -286,7 +287,7 @@ public:
             JLOG(j_.trace()) << "WAL(" << fname << "): frames=" << log << ", written=" << ckpt;
         }
 
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         running_ = false;
     }
 
@@ -305,7 +306,7 @@ protected:
     static int
     sqliteWALHook(void* cpId, sqlite_api::sqlite3* conn, char const* dbName, int walSize)
     {
-        if (walSize >= checkpointPageCount)
+        if (walSize >= gCheckpointPageCount)
         {
             if (auto checkpointer = checkpointerFromId(reinterpret_cast<std::uintptr_t>(cpId)))
             {

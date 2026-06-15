@@ -8,7 +8,7 @@
 namespace xrpl::test::jtx {
 
 /** Delete account.  If successful transfer remaining XRP to dest. */
-Json::Value
+json::Value
 acctdelete(Account const& account, Account const& dest);
 
 // Close the ledger until the ledger sequence is large enough to close

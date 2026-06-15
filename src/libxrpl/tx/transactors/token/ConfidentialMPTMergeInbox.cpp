@@ -2,11 +2,13 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -29,6 +31,15 @@ ConfidentialMPTMergeInbox::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     return tesSUCCESS;
+}
+
+XRPAmount
+ConfidentialMPTMergeInbox::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
+    // We charge kConfidentialFeeMultiplier extra base fees so the total is
+    // 10 * baseFee + (signerCount * baseFee).
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
 }
 
 TER
@@ -75,7 +86,7 @@ TER
 ConfidentialMPTMergeInbox::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, account_));
+    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -100,7 +111,7 @@ ConfidentialMPTMergeInbox::doApply()
     // Reset inbox to encrypted zero. Must use canonical zero encryption
     // (deterministic ciphertext) so the ledger state is reproducible.
     auto zeroEncryption =
-        encryptCanonicalZeroAmount((*sleMptoken)[sfHolderEncryptionKey], account_, mptIssuanceID);
+        encryptCanonicalZeroAmount((*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
     if (!zeroEncryption)
         return tecINTERNAL;  // LCOV_EXCL_LINE

@@ -33,7 +33,7 @@ public:
      * @brief Construct a MPTokenIssuance ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit MPTokenIssuance(std::shared_ptr<SLE const> sle)
+    explicit MPTokenIssuance(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -46,7 +46,7 @@ public:
     // Ledger entry-specific field getters
 
     /**
-     * @brief Get sfIssuer (soeREQUIRED)
+     * @brief Get sfIssuer (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -57,7 +57,7 @@ public:
     }
 
     /**
-     * @brief Get sfSequence (soeREQUIRED)
+     * @brief Get sfSequence (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -68,7 +68,7 @@ public:
     }
 
     /**
-     * @brief Get sfTransferFee (soeDEFAULT)
+     * @brief Get sfTransferFee (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -92,7 +92,7 @@ public:
     }
 
     /**
-     * @brief Get sfOwnerNode (soeREQUIRED)
+     * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -103,7 +103,7 @@ public:
     }
 
     /**
-     * @brief Get sfAssetScale (soeDEFAULT)
+     * @brief Get sfAssetScale (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -127,7 +127,7 @@ public:
     }
 
     /**
-     * @brief Get sfMaximumAmount (soeOPTIONAL)
+     * @brief Get sfMaximumAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -151,7 +151,7 @@ public:
     }
 
     /**
-     * @brief Get sfOutstandingAmount (soeREQUIRED)
+     * @brief Get sfOutstandingAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -162,7 +162,7 @@ public:
     }
 
     /**
-     * @brief Get sfLockedAmount (soeOPTIONAL)
+     * @brief Get sfLockedAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -186,7 +186,7 @@ public:
     }
 
     /**
-     * @brief Get sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Get sfMPTokenMetadata (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -210,7 +210,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnID (soeREQUIRED)
+     * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -221,7 +221,7 @@ public:
     }
 
     /**
-     * @brief Get sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Get sfPreviousTxnLgrSeq (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -232,7 +232,7 @@ public:
     }
 
     /**
-     * @brief Get sfDomainID (soeOPTIONAL)
+     * @brief Get sfDomainID (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -256,7 +256,7 @@ public:
     }
 
     /**
-     * @brief Get sfMutableFlags (soeDEFAULT)
+     * @brief Get sfMutableFlags (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -280,7 +280,31 @@ public:
     }
 
     /**
-     * @brief Get sfIssuerEncryptionKey (soeOPTIONAL)
+     * @brief Get sfReferenceHolding (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getReferenceHolding() const
+    {
+        if (hasReferenceHolding())
+            return this->sle_->at(sfReferenceHolding);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfReferenceHolding is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasReferenceHolding() const
+    {
+        return this->sle_->isFieldPresent(sfReferenceHolding);
+    }
+
+    /**
+     * @brief Get sfIssuerEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -304,7 +328,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuditorEncryptionKey (soeOPTIONAL)
+     * @brief Get sfAuditorEncryptionKey (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -328,7 +352,7 @@ public:
     }
 
     /**
-     * @brief Get sfConfidentialOutstandingAmount (soeDEFAULT)
+     * @brief Get sfConfidentialOutstandingAmount (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -356,7 +380,7 @@ public:
  * @brief Builder for MPTokenIssuance ledger entries.
  *
  * Provides a fluent interface for constructing ledger entries with method chaining.
- * Uses Json::Value internally for flexible ledger entry construction.
+ * Uses STObject internally for flexible ledger entry construction.
  * Inherits common field setters from LedgerEntryBuilderBase.
  */
 class MPTokenIssuanceBuilder : public LedgerEntryBuilderBase<MPTokenIssuanceBuilder>
@@ -387,7 +411,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    MPTokenIssuanceBuilder(std::shared_ptr<SLE const> sle)
+    MPTokenIssuanceBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE)
         {
@@ -399,7 +423,7 @@ public:
     /** @brief Ledger entry-specific field setters */
 
     /**
-     * @brief Set sfIssuer (soeREQUIRED)
+     * @brief Set sfIssuer (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -410,7 +434,7 @@ public:
     }
 
     /**
-     * @brief Set sfSequence (soeREQUIRED)
+     * @brief Set sfSequence (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -421,7 +445,7 @@ public:
     }
 
     /**
-     * @brief Set sfTransferFee (soeDEFAULT)
+     * @brief Set sfTransferFee (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -432,7 +456,7 @@ public:
     }
 
     /**
-     * @brief Set sfOwnerNode (soeREQUIRED)
+     * @brief Set sfOwnerNode (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -443,7 +467,7 @@ public:
     }
 
     /**
-     * @brief Set sfAssetScale (soeDEFAULT)
+     * @brief Set sfAssetScale (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -454,7 +478,7 @@ public:
     }
 
     /**
-     * @brief Set sfMaximumAmount (soeOPTIONAL)
+     * @brief Set sfMaximumAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -465,7 +489,7 @@ public:
     }
 
     /**
-     * @brief Set sfOutstandingAmount (soeREQUIRED)
+     * @brief Set sfOutstandingAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -476,7 +500,7 @@ public:
     }
 
     /**
-     * @brief Set sfLockedAmount (soeOPTIONAL)
+     * @brief Set sfLockedAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -487,7 +511,7 @@ public:
     }
 
     /**
-     * @brief Set sfMPTokenMetadata (soeOPTIONAL)
+     * @brief Set sfMPTokenMetadata (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -498,7 +522,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnID (soeREQUIRED)
+     * @brief Set sfPreviousTxnID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -509,7 +533,7 @@ public:
     }
 
     /**
-     * @brief Set sfPreviousTxnLgrSeq (soeREQUIRED)
+     * @brief Set sfPreviousTxnLgrSeq (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -520,7 +544,7 @@ public:
     }
 
     /**
-     * @brief Set sfDomainID (soeOPTIONAL)
+     * @brief Set sfDomainID (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -531,7 +555,7 @@ public:
     }
 
     /**
-     * @brief Set sfMutableFlags (soeDEFAULT)
+     * @brief Set sfMutableFlags (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -542,7 +566,18 @@ public:
     }
 
     /**
-     * @brief Set sfIssuerEncryptionKey (soeOPTIONAL)
+     * @brief Set sfReferenceHolding (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setReferenceHolding(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfReferenceHolding] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfIssuerEncryptionKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -553,7 +588,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuditorEncryptionKey (soeOPTIONAL)
+     * @brief Set sfAuditorEncryptionKey (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
@@ -564,7 +599,7 @@ public:
     }
 
     /**
-     * @brief Set sfConfidentialOutstandingAmount (soeDEFAULT)
+     * @brief Set sfConfidentialOutstandingAmount (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&

@@ -44,7 +44,7 @@ public:
 
         /** Retrieve the name of the format.
          */
-        std::string const&
+        [[nodiscard]] std::string const&
         getName() const
         {
             return name_;
@@ -52,13 +52,13 @@ public:
 
         /** Retrieve the transaction type this format represents.
          */
-        KeyType
+        [[nodiscard]] KeyType
         getType() const
         {
             return type_;
         }
 
-        SOTemplate const&
+        [[nodiscard]] SOTemplate const&
         getSOTemplate() const
         {
             return soTemplate_;
@@ -75,7 +75,7 @@ public:
         Derived classes will load the object with all the known formats.
     */
 private:
-    KnownFormats() : name_(beast::type_name<Derived>())
+    KnownFormats() : name_(beast::typeName<Derived>())
     {
     }
 
@@ -96,7 +96,7 @@ public:
         @param  name The name of the type.
         @return      The type.
     */
-    KeyType
+    [[nodiscard]] KeyType
     findTypeByName(std::string const& name) const
     {
         if (auto const result = findByName(name))
@@ -108,7 +108,7 @@ public:
 
     /** Retrieve a format based on its type.
      */
-    Item const*
+    [[nodiscard]] Item const*
     findByType(KeyType type) const
     {
         auto const itr = types_.find(type);
@@ -118,13 +118,13 @@ public:
     }
 
     // begin() and end() are provided for testing purposes.
-    typename std::forward_list<Item>::const_iterator
+    [[nodiscard]] typename std::forward_list<Item>::const_iterator
     begin() const
     {
         return formats_.begin();
     }
 
-    typename std::forward_list<Item>::const_iterator
+    [[nodiscard]] typename std::forward_list<Item>::const_iterator
     end() const
     {
         return formats_.end();
@@ -133,7 +133,7 @@ public:
 protected:
     /** Retrieve a format based on its name.
      */
-    Item const*
+    [[nodiscard]] Item const*
     findByName(std::string const& name) const
     {
         auto const itr = names_.find(name);
@@ -159,7 +159,7 @@ protected:
     {
         if (auto const item = findByType(type))
         {
-            LogicError(
+            logicError(
                 std::string("Duplicate key for item '") + name + "': already maps to " +
                 item->getName());
         }

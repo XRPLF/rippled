@@ -10,8 +10,22 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
+
+// The mpt-crypto library's <mpt_protocol.h> (pulled in transitively via
+// ConfidentialTransfer.h -> <secp256k1_mpt.h>) defines ttCONFIDENTIAL_MPT_* as
+// preprocessor macros that collide with xrpld's TxType enumerators of the
+// same name, rewriting e.g. `ttCONFIDENTIAL_MPT_SEND` into the bare integer
+// `88` at every use site. Tests only use the TxType enum, so drop the macros.
+// TODO: remove once mpt-crypto renames these macros (e.g. kMPT_TT_*).
+#undef ttCONFIDENTIAL_MPT_CONVERT
+#undef ttCONFIDENTIAL_MPT_MERGE_INBOX
+#undef ttCONFIDENTIAL_MPT_CONVERT_BACK
+#undef ttCONFIDENTIAL_MPT_SEND
+#undef ttCONFIDENTIAL_MPT_CLAWBACK
+
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 
@@ -19,7 +33,7 @@ namespace xrpl::test::jtx {
 
 class MPTTester;
 
-auto const MPTDEXFlags = tfMPTCanTrade | tfMPTCanTransfer;
+auto const kMptDexFlags = tfMPTCanTrade | tfMPTCanTransfer;
 
 /*Helper lambda to create a zero-initialized buffer.
 WHY THIS IS NEEDED: In C++, xrpl::Buffer(size) allocates uninitialized heap memory.
@@ -30,7 +44,7 @@ When testing malformed cryptography paths, passing uninitialized memory might
 accidentally supply a valid curve point, causing the ledger's preflight checks
 to falsely succeed and return tecBAD_PROOF instead of the expected temMALFORMED.
 Explicitly zeroing the buffer guarantees it fails structural validation. */
-static auto makeZeroBuffer = [](size_t size) {
+static auto gMakeZeroBuffer = [](size_t size) {
     Buffer b(size);
     if (size > 0)
         std::memset(b.data(), 0, size);
@@ -38,7 +52,7 @@ static auto makeZeroBuffer = [](size_t size) {
 };
 
 // Check flags settings on MPT create
-class mptflags
+class MptFlags
 {
 private:
     MPTTester& tester_;
@@ -46,7 +60,7 @@ private:
     std::optional<Account> holder_;
 
 public:
-    mptflags(
+    MptFlags(
         MPTTester& tester,
         std::uint32_t flags,
         std::optional<Account> const& holder = std::nullopt)
@@ -59,7 +73,7 @@ public:
 };
 
 // Check mptissuance or mptoken amount balances on payment
-class mptbalance
+class MptBalance
 {
 private:
     MPTTester const& tester_;
@@ -67,7 +81,7 @@ private:
     std::int64_t const amount_;
 
 public:
-    mptbalance(MPTTester& tester, Account const& account, std::int64_t amount)
+    MptBalance(MPTTester& tester, Account const& account, std::int64_t amount)
         : tester_(tester), account_(account), amount_(amount)
     {
     }
@@ -76,13 +90,13 @@ public:
     operator()(Env& env) const;
 };
 
-class requireAny
+class RequireAny
 {
 private:
     std::function<bool()> cb_;
 
 public:
-    requireAny(std::function<bool()> const& cb) : cb_(cb)
+    RequireAny(std::function<bool()> const& cb) : cb_(cb)
     {
     }
 
@@ -94,7 +108,7 @@ using Holders = std::vector<Account>;
 
 struct MPTCreate
 {
-    static inline std::vector<Account> AllHolders = {};
+    static inline std::vector<Account> allHolders = {};
     std::optional<Account> issuer = std::nullopt;
     std::optional<std::uint64_t> maxAmt = std::nullopt;
     std::optional<std::uint8_t> assetScale = std::nullopt;
@@ -126,7 +140,7 @@ struct MPTInit
     // create MPTIssuanceID if seated and follow rules for MPTCreate args
     std::optional<MPTCreate> create = std::nullopt;
 };
-static MPTInit const mptInitNoFund{.fund = false};
+static MPTInit const kMptInitNoFund{.fund = false};
 
 struct MPTInitDef
 {
@@ -136,7 +150,7 @@ struct MPTInitDef
     std::optional<Account> auditor = std::nullopt;
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
-    std::uint32_t flags = MPTDEXFlags;
+    std::uint32_t flags = kMptDexFlags;
     std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
@@ -208,6 +222,7 @@ struct MPTConvert
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -220,6 +235,7 @@ struct MPTMergeInbox
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -247,6 +263,7 @@ struct MPTConfidentialSend
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -268,6 +285,7 @@ struct MPTConvertBack
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -283,6 +301,7 @@ struct MPTConfidentialClawback
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -345,15 +364,16 @@ class MPTTester
     std::optional<Account> const auditor_;
     std::optional<MPTID> id_;
     bool close_;
-    std::unordered_map<AccountID, Buffer> pubKeys;
-    std::unordered_map<AccountID, Buffer> privKeys;
+    std::unordered_map<AccountID, Buffer> pubKeys_;
+    std::unordered_map<AccountID, Buffer> privKeys_;
 
 public:
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum EncryptedBalanceType {
-        ISSUER_ENCRYPTED_BALANCE,
-        HOLDER_ENCRYPTED_INBOX,
-        HOLDER_ENCRYPTED_SPENDING,
-        AUDITOR_ENCRYPTED_BALANCE,
+        IssuerEncryptedBalance,
+        HolderEncryptedInbox,
+        HolderEncryptedSpending,
+        AuditorEncryptedBalance,
     };
 
     MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
@@ -369,19 +389,19 @@ public:
     void
     create(MPTCreate const& arg = MPTCreate{});
 
-    static Json::Value
+    static json::Value
     createJV(MPTCreate const& arg = MPTCreate{});
 
     void
     destroy(MPTDestroy const& arg = MPTDestroy{});
 
-    static Json::Value
+    static json::Value
     destroyJV(MPTDestroy const& arg = MPTDestroy{});
 
     void
     authorize(MPTAuthorize const& arg = MPTAuthorize{});
 
-    static Json::Value
+    static json::Value
     authorizeJV(MPTAuthorize const& arg = MPTAuthorize{});
 
     void
@@ -390,7 +410,7 @@ public:
     void
     set(MPTSet const& set = {});
 
-    static Json::Value
+    static json::Value
     setJV(MPTSet const& set = {});
 
     void
@@ -398,13 +418,13 @@ public:
 
     // Build a confidential convert JV without submitting.  'seq' is the inner
     // transaction sequence used in the Schnorr proof context hash.
-    Json::Value
+    json::Value
     convertJV(MPTConvert const& arg, std::uint32_t seq);
 
     void
     mergeInbox(MPTMergeInbox const& arg = MPTMergeInbox{});
 
-    Json::Value
+    [[nodiscard]] json::Value
     mergeInboxJV(MPTMergeInbox const& arg = MPTMergeInbox{}) const;
 
     void
@@ -414,7 +434,7 @@ public:
     // proof parameters are taken from it instead of the ledger, enabling
     // correct proof generation for a second (or later) send from the same
     // account inside a single batch.
-    Json::Value
+    json::Value
     sendJV(
         MPTConfidentialSend const& arg,
         std::uint32_t seq,
@@ -431,8 +451,8 @@ public:
     //   jv1   = sendJV({bob->carol, 100}, seq1)
     //   chain = chainAfterSend(bob, 100, jv1)  // projected balance after jv1 = 100
     //   jv2   = sendJV({bob->dave,   50}, seq2, chain)
-    ConfidentialSendChainState
-    chainAfterSend(Account const& sender, std::uint64_t sendAmt, Json::Value const& jv) const;
+    [[nodiscard]] ConfidentialSendChainState
+    chainAfterSend(Account const& sender, std::uint64_t sendAmt, json::Value const& jv) const;
 
     void
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
@@ -441,7 +461,7 @@ public:
     // inner transaction sequence used in the proof context hash.  Reads the
     // current encrypted spending balance and version from the ledger, so call
     // this before the batch is submitted.
-    Json::Value
+    json::Value
     convertBackJV(MPTConvertBack const& arg, std::uint32_t seq);
 
     void
@@ -475,13 +495,12 @@ public:
     [[nodiscard]] bool
     isTransferFeePresent() const;
 
-    Account const&
+    [[nodiscard]] Account const&
     issuer() const
     {
         return issuer_;
     }
-
-    Account const&
+    [[nodiscard]] Account const&
     holder(std::string const& h) const;
 
     void
@@ -498,27 +517,26 @@ public:
         std::int64_t amount,
         std::optional<TER> err = std::nullopt);
 
-    PrettyAmount
+    [[nodiscard]] PrettyAmount
     mpt(std::int64_t amount) const;
 
-    MPTID const&
+    [[nodiscard]] MPTID const&
     issuanceID() const
     {
         if (!env_.test.BEAST_EXPECT(id_))
             Throw<std::logic_error>("Uninitialized issuanceID");
-        return *id_;
+        return *id_;  // NOLINT(bugprone-unchecked-optional-access)
     }
 
-    std::int64_t
+    [[nodiscard]] std::int64_t
     getBalance(Account const& account) const;
 
-    std::int64_t
+    [[nodiscard]] std::int64_t
     getIssuanceConfidentialBalance() const;
 
-    std::optional<Buffer>
-    getEncryptedBalance(
-        Account const& account,
-        EncryptedBalanceType option = HOLDER_ENCRYPTED_INBOX) const;
+    [[nodiscard]] std::optional<Buffer>
+    getEncryptedBalance(Account const& account, EncryptedBalanceType option = HolderEncryptedInbox)
+        const;
 
     MPT
     operator[](std::string const& name) const;
@@ -528,38 +546,41 @@ public:
 
     operator Asset() const;
 
+    [[nodiscard]] bool
+    printMPT(Account const& holder) const;
+
     void
     generateKeyPair(Account const& account);
 
-    std::optional<Buffer>
+    [[nodiscard]] std::optional<Buffer>
     getPubKey(Account const& account) const;
 
-    std::optional<Buffer>
+    [[nodiscard]] std::optional<Buffer>
     getPrivKey(Account const& account) const;
 
-    Buffer
+    [[nodiscard]] Buffer
     encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor) const;
 
-    std::optional<uint64_t>
+    [[nodiscard]] std::optional<uint64_t>
     decryptAmount(Account const& account, Buffer const& amt) const;
 
-    std::optional<uint64_t>
+    [[nodiscard]] std::optional<uint64_t>
     getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const;
 
-    std::int64_t
+    [[nodiscard]] std::optional<std::int64_t>
     getIssuanceOutstandingBalance() const;
 
-    std::optional<Buffer>
+    [[nodiscard]] std::optional<Buffer>
     getClawbackProof(
         Account const& holder,
         std::uint64_t amount,
         Buffer const& privateKey,
         uint256 const& txHash) const;
 
-    std::optional<Buffer>
+    [[nodiscard]] std::optional<Buffer>
     getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
 
-    std::optional<Buffer>
+    [[nodiscard]] std::optional<Buffer>
     getConfidentialSendProof(
         Account const& sender,
         std::uint64_t const amount,
@@ -569,14 +590,14 @@ public:
         PedersenProofParams const& amountParams,
         PedersenProofParams const& balanceParams) const;
 
-    Buffer
+    [[nodiscard]] Buffer
     getConvertBackProof(
         Account const& holder,
         std::uint64_t const amount,
         uint256 const& contextHash,
         PedersenProofParams const& pcParams) const;
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getMPTokenVersion(Account const account) const;
 
     static Buffer
@@ -597,10 +618,16 @@ private:
 
     template <typename A>
     TER
-    submit(A const& arg, Json::Value const& jv)
+    submit(A const& arg, json::Value jv)
     {
-        auto const expectedFlags = txflags(arg.flags.value_or(0));
-        auto const expectedTer = ter(arg.err.value_or(tesSUCCESS));
+        auto const expectedFlags = Txflags(arg.flags.value_or(0));
+        auto const expectedTer = Ter(arg.err.value_or(tesSUCCESS));
+
+        if constexpr (requires { arg.fee; })
+        {
+            if (arg.fee)
+                jv[jss::Fee] = to_string(*arg.fee);
+        }
 
         std::optional<std::uint32_t> ticketSeq;
         if constexpr (requires { arg.ticketSeq; })
@@ -620,20 +647,20 @@ private:
                 jv,
                 expectedFlags,
                 expectedTer,
-                ticket::use(*ticketSeq),
-                delegate::as(*delegateAcct));
+                ticket::Use(*ticketSeq),
+                delegate::As(*delegateAcct));
         }
         else if (ticketSeq)
         {
-            env_(jv, expectedFlags, expectedTer, ticket::use(*ticketSeq));
+            env_(jv, expectedFlags, expectedTer, ticket::Use(*ticketSeq));
         }
         else if (delegateAcct)
         {
-            env_(jv, expectedFlags, expectedTer, delegate::as(*delegateAcct));
+            env_(jv, expectedFlags, expectedTer, delegate::As(*delegateAcct));
         }
         else if (dstTag)
         {
-            env_(jv, expectedFlags, expectedTer, dtag(*dstTag));
+            env_(jv, expectedFlags, expectedTer, Dtag(*dstTag));
         }
         else
         {
@@ -643,11 +670,11 @@ private:
         if (close_)
             env_.close();
         if (arg.ownerCount)
-            env_.require(owners(issuer_, *arg.ownerCount));
+            env_.require(Owners(issuer_, *arg.ownerCount));
         if (arg.holderCount)
         {
             for (auto const& it : holders_)
-                env_.require(owners(it.second, *arg.holderCount));
+                env_.require(Owners(it.second, *arg.holderCount));
         }
         return err;
     }
@@ -655,14 +682,14 @@ private:
     static std::unordered_map<std::string, Account>
     makeHolders(std::vector<Account> const& holders);
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getFlags(std::optional<Account> const& holder) const;
 
     template <typename T>
     void
     fillConversionCiphertexts(
         T const& arg,
-        Json::Value& jv,
+        json::Value& jv,
         Buffer& holderCiphertext,
         Buffer& issuerCiphertext,
         std::optional<Buffer>& auditorCiphertext,

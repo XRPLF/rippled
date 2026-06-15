@@ -19,9 +19,9 @@ class ConfidentialMPTSendBuilder;
  * @brief Transaction: ConfidentialMPTSend
  *
  * Type: ttCONFIDENTIAL_MPT_SEND (88)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTSendBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestination (soeREQUIRED)
+     * @brief Get sfDestination (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @brief Get sfDestinationTag (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -96,7 +96,7 @@ public:
     }
 
     /**
-     * @brief Get sfSenderEncryptedAmount (soeREQUIRED)
+     * @brief Get sfSenderEncryptedAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -107,7 +107,7 @@ public:
     }
 
     /**
-     * @brief Get sfDestinationEncryptedAmount (soeREQUIRED)
+     * @brief Get sfDestinationEncryptedAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -118,7 +118,7 @@ public:
     }
 
     /**
-     * @brief Get sfIssuerEncryptedAmount (soeREQUIRED)
+     * @brief Get sfIssuerEncryptedAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -129,7 +129,7 @@ public:
     }
 
     /**
-     * @brief Get sfAuditorEncryptedAmount (soeOPTIONAL)
+     * @brief Get sfAuditorEncryptedAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -155,7 +155,7 @@ public:
     }
 
     /**
-     * @brief Get sfZKProof (soeREQUIRED)
+     * @brief Get sfZKProof (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -166,7 +166,7 @@ public:
     }
 
     /**
-     * @brief Get sfAmountCommitment (soeREQUIRED)
+     * @brief Get sfAmountCommitment (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -177,7 +177,7 @@ public:
     }
 
     /**
-     * @brief Get sfBalanceCommitment (soeREQUIRED)
+     * @brief Get sfBalanceCommitment (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -188,7 +188,7 @@ public:
     }
 
     /**
-     * @brief Get sfCredentialIDs (soeOPTIONAL)
+     * @brief Get sfCredentialIDs (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -218,7 +218,7 @@ public:
  * @brief Builder for ConfidentialMPTSend transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ConfidentialMPTSendBuilder : public TransactionBuilderBase<ConfidentialMPTSendBuilder>
@@ -271,7 +271,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
@@ -282,7 +282,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestination (soeREQUIRED)
+     * @brief Set sfDestination (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
@@ -293,7 +293,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @brief Set sfDestinationTag (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
@@ -304,7 +304,7 @@ public:
     }
 
     /**
-     * @brief Set sfSenderEncryptedAmount (soeREQUIRED)
+     * @brief Set sfSenderEncryptedAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
@@ -315,7 +315,7 @@ public:
     }
 
     /**
-     * @brief Set sfDestinationEncryptedAmount (soeREQUIRED)
+     * @brief Set sfDestinationEncryptedAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
@@ -326,7 +326,7 @@ public:
     }
 
     /**
-     * @brief Set sfIssuerEncryptedAmount (soeREQUIRED)
+     * @brief Set sfIssuerEncryptedAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
@@ -337,7 +337,7 @@ public:
     }
 
     /**
-     * @brief Set sfAuditorEncryptedAmount (soeOPTIONAL)
+     * @brief Set sfAuditorEncryptedAmount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
@@ -348,7 +348,7 @@ public:
     }
 
     /**
-     * @brief Set sfZKProof (soeREQUIRED)
+     * @brief Set sfZKProof (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
@@ -359,7 +359,7 @@ public:
     }
 
     /**
-     * @brief Set sfAmountCommitment (soeREQUIRED)
+     * @brief Set sfAmountCommitment (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
@@ -370,7 +370,7 @@ public:
     }
 
     /**
-     * @brief Set sfBalanceCommitment (soeREQUIRED)
+     * @brief Set sfBalanceCommitment (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&
@@ -381,7 +381,7 @@ public:
     }
 
     /**
-     * @brief Set sfCredentialIDs (soeOPTIONAL)
+     * @brief Set sfCredentialIDs (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTSendBuilder&

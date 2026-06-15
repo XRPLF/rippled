@@ -1,12 +1,15 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -29,7 +32,7 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
 
-    if (ctx.tx[sfMPTAmount] > maxMPTokenAmount)
+    if (ctx.tx[sfMPTAmount] > kMaxMpTokenAmount)
         return temBAD_AMOUNT;
 
     if (ctx.tx.isFieldPresent(sfHolderEncryptionKey))
@@ -43,7 +46,7 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // verify schnorr proof length when registering holder ec public key
-        if (ctx.tx[sfZKProof].size() != ecSchnorrProofLength)
+        if (ctx.tx[sfZKProof].size() != kEcSchnorrProofLength)
             return temMALFORMED;
     }
     else
@@ -60,6 +63,15 @@ ConfidentialMPTConvert::preflight(PreflightContext const& ctx)
         return res;
 
     return tesSUCCESS;
+}
+
+XRPAmount
+ConfidentialMPTConvert::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
+    // We charge kConfidentialFeeMultiplier extra base fees so the total is
+    // 10 * baseFee + (signerCount * baseFee).
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
 }
 
 TER
@@ -100,7 +112,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     auto const mptIssue = MPTIssue{issuanceID};
 
     // Explicit freeze and auth checks are required because accountHolds
-    // with fhZERO_IF_FROZEN/ahZERO_IF_UNAUTHORIZED only implicitly rejects
+    // with ZeroIfFrozen/ZeroIfUnauthorized only implicitly rejects
     // non-zero amounts. A zero-amount convert would bypass those implicit
     // checks, allowing frozen or unauthorized accounts to register ElGamal
     // keys and initialize confidential balance fields.
@@ -119,8 +131,8 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             mptIssue,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            FreezeHandling::ZeroIfFrozen,
+            AuthHandling::ZeroIfUnauthorized,
             ctx.j) < mptAmount)
     {
         return tecINSUFFICIENT_FUNDS;
@@ -193,7 +205,7 @@ ConfidentialMPTConvert::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, account_));
+    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -202,15 +214,15 @@ ConfidentialMPTConvert::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const amtToConvert = ctx_.tx[sfMPTAmount];
-    auto const amt = (*sleMptoken)[~sfMPTAmount].value_or(0);
+    auto const amt = (*sleMptoken)[~sfMPTAmount].valueOr(0);
 
     if (ctx_.tx.isFieldPresent(sfHolderEncryptionKey))
         (*sleMptoken)[sfHolderEncryptionKey] = ctx_.tx[sfHolderEncryptionKey];
 
     // Converting decreases regular balance and increases confidential outstanding.
     // The confidential outstanding tracks total tokens in confidential form globally.
-    auto const currentCOA = (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
-    if (amtToConvert > maxMPTokenAmount - currentCOA)
+    auto const currentCOA = (*sleIssuance)[~sfConfidentialOutstandingAmount].valueOr(0);
+    if (amtToConvert > kMaxMpTokenAmount - currentCOA)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     (*sleMptoken)[sfMPTAmount] = amt - amtToConvert;
@@ -275,7 +287,7 @@ ConfidentialMPTConvert::doApply()
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.
         auto zeroBalance = encryptCanonicalZeroAmount(
-            (*sleMptoken)[sfHolderEncryptionKey], account_, mptIssuanceID);
+            (*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
         if (!zeroBalance)
             return tecINTERNAL;  // LCOV_EXCL_LINE

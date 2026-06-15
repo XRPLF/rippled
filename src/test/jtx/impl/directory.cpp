@@ -2,7 +2,6 @@
 
 #include <test/jtx/Env.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -15,6 +14,7 @@
 #include <xrpl/protocol/SField.h>
 
 #include <cstdint>
+#include <expected>
 #include <functional>
 #include <memory>
 
@@ -26,17 +26,17 @@ bumpLastPage(
     Env& env,
     std::uint64_t newLastPage,
     Keylet directory,
-    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> Expected<void, Error>
+    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> std::expected<void, Error>
 {
-    Expected<void, Error> res{};
+    std::expected<void, Error> res{};
     env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
-        Sandbox sb(&view, tapNONE);
+        Sandbox sb(&view, TapNone);
 
         // Find the root page
         auto sleRoot = sb.peek(directory);
         if (!sleRoot)
         {
-            res = Unexpected<Error>(DirectoryRootNotFound);
+            res = std::unexpected<Error>(Error::DirectoryRootNotFound);
             return false;
         }
 
@@ -44,26 +44,26 @@ bumpLastPage(
         auto const lastIndex = sleRoot->getFieldU64(sfIndexPrevious);
         if (lastIndex == 0)
         {
-            res = Unexpected<Error>(DirectoryTooSmall);
+            res = std::unexpected<Error>(Error::DirectoryTooSmall);
             return false;
         }
 
         if (sb.exists(keylet::page(directory, newLastPage)))
         {
-            res = Unexpected<Error>(DirectoryPageDuplicate);
+            res = std::unexpected<Error>(Error::DirectoryPageDuplicate);
             return false;
         }
 
         if (lastIndex >= newLastPage)
         {
-            res = Unexpected<Error>(InvalidLastPage);
+            res = std::unexpected<Error>(Error::InvalidLastPage);
             return false;
         }
 
         auto slePage = sb.peek(keylet::page(directory, lastIndex));
         if (!slePage)
         {
-            res = Unexpected<Error>(DirectoryPageNotFound);
+            res = std::unexpected<Error>(Error::DirectoryPageNotFound);
             return false;
         }
 
@@ -85,7 +85,7 @@ bumpLastPage(
 
         // Adjust root previous and previous node's next
         sleRoot->setFieldU64(sfIndexPrevious, newLastPage);
-        if (prevIndex.value_or(0) == 0)
+        if (prevIndex.valueOr(0) == 0)
         {
             sleRoot->setFieldU64(sfIndexNext, newLastPage);
         }
@@ -94,7 +94,7 @@ bumpLastPage(
             auto slePrev = sb.peek(keylet::page(directory, *prevIndex));
             if (!slePrev)
             {
-                res = Unexpected<Error>(DirectoryPageNotFound);
+                res = std::unexpected<Error>(Error::DirectoryPageNotFound);
                 return false;
             }
             slePrev->setFieldU64(sfIndexNext, newLastPage);
@@ -109,7 +109,7 @@ bumpLastPage(
             {
                 if (!adjust(sb, key, newLastPage))
                 {
-                    res = Unexpected<Error>(AdjustmentError);
+                    res = std::unexpected<Error>(Error::AdjustmentError);
                     return false;
                 }
             }

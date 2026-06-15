@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
@@ -52,8 +53,7 @@ incrementConfidentialVersion(STObject& mptoken)
     // Retrieve current version and increment.
     // Unsigned integer overflow is defined behavior in C++ (wraps to 0),
     // which is acceptable here.
-    mptoken[sfConfidentialBalanceVersion] =
-        mptoken[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
+    mptoken[sfConfidentialBalanceVersion] = mptoken[~sfConfidentialBalanceVersion].valueOr(0u) + 1u;
 }
 
 /**

@@ -31,7 +31,7 @@
 
 namespace xrpl::test {
 
-class Consensus_test : public beast::unit_test::suite
+class Consensus_test : public beast::unit_test::Suite
 {
     SuiteJournal journal_;
 
@@ -453,7 +453,7 @@ public:
 
         // Vary the time it takes to process validations to exercise detecting
         // the wrong LCL at different phases of consensus
-        for (auto validationDelay : {0ms, parms.ledgerMIN_CLOSE})
+        for (auto validationDelay : {0ms, parms.ledgerMinClose})
         {
             // Consider 10 peers:
             // 0 1         2 3 4       5 6 7 8 9
@@ -492,7 +492,7 @@ public:
             CollectByNode<JumpCollector> jumps;
             sim.collectors.add(jumps);
 
-            BEAST_EXPECT(sim.trustGraph.canFork(parms.minCONSENSUS_PCT / 100.));
+            BEAST_EXPECT(sim.trustGraph.canFork(parms.minConsensusPct / 100.));
 
             // initial round to set prior state
             sim.run(1);
@@ -637,7 +637,7 @@ public:
         slow.connect(network, round<milliseconds>(1.1 * parms.ledgerGRANULARITY));
 
         // Run to the ledger *prior* to decreasing the resolution
-        sim.run(increaseLedgerTimeResolutionEvery - 2);
+        sim.run(kIncreaseLedgerTimeResolutionEvery - 2);
 
         // In order to create the discrepancy, we want a case where if
         //   X = effCloseTime(closeTime, resolution, parentCloseTime)
@@ -664,7 +664,7 @@ public:
             when += 1s;
         // Advance the clock without consensus running (IS THIS WHAT
         // PREVENTS IT IN PRACTICE?)
-        sim.scheduler.step_for(NetClock::time_point{when} - network[0]->now());
+        sim.scheduler.stepFor(NetClock::time_point{when} - network[0]->now());
 
         // Run one more ledger with 30s resolution
         sim.run(1);
@@ -1039,7 +1039,7 @@ public:
 #if 0
         // Have all beast::journal output printed to stdout
         for (Peer* p : network)
-            p->sink.threshold(beast::severities::kAll);
+            p->sink.threshold(beast::Severity::All);
 
         // Print ledger accept and fully validated events to stdout
         StreamCollector sc{std::cout};
@@ -1086,7 +1086,7 @@ public:
         ConsensusParms const p;
         std::size_t peersUnchanged = 0;
 
-        auto logs = std::make_unique<Logs>(beast::severities::kError);
+        auto logs = std::make_unique<Logs>(beast::Severity::Error);
         auto j = logs->journal("Test");
         auto clog = std::make_unique<std::stringstream>();
 
@@ -1100,10 +1100,10 @@ public:
             Dispute proposingFalse{txFalse.id(), false, numPeers, journal_};
             Dispute followingTrue{txFollowingTrue.id(), true, numPeers, journal_};
             Dispute followingFalse{txFollowingFalse.id(), false, numPeers, journal_};
-            BEAST_EXPECT(proposingTrue.ID() == 99);
-            BEAST_EXPECT(proposingFalse.ID() == 98);
-            BEAST_EXPECT(followingTrue.ID() == 97);
-            BEAST_EXPECT(followingFalse.ID() == 96);
+            BEAST_EXPECT(proposingTrue.id() == 99);
+            BEAST_EXPECT(proposingFalse.id() == 98);
+            BEAST_EXPECT(followingTrue.id() == 97);
+            BEAST_EXPECT(followingFalse.id() == 96);
 
             // Create an even split in the peer votes
             for (int i = 0; i < numPeers; ++i)
@@ -1296,14 +1296,11 @@ public:
                 auto const s = clog->str();
                 expect(s.find("stalled"), s, __FILE__, line);
                 expect(s.starts_with("Transaction "s + std::to_string(txid)), s, __FILE__, line);
-                expect(s.find("voting "s + (ourVote ? "YES" : "NO")) != s.npos, s, __FILE__, line);
+                expect(s.contains("voting "s + (ourVote ? "YES" : "NO")), s, __FILE__, line);
                 expect(
-                    s.find("for "s + std::to_string(ourTime) + " rounds."s) != s.npos,
-                    s,
-                    __FILE__,
-                    line);
+                    s.contains("for "s + std::to_string(ourTime) + " rounds."s), s, __FILE__, line);
                 expect(
-                    s.find("votes in "s + std::to_string(peerTime) + " rounds.") != s.npos,
+                    s.contains("votes in "s + std::to_string(peerTime) + " rounds."),
                     s,
                     __FILE__,
                     line);

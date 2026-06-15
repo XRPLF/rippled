@@ -33,7 +33,8 @@ namespace xrpl {
 class ConfidentialMPTSend : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+    ;
 
     explicit ConfidentialMPTSend(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -44,6 +45,9 @@ public:
 
     static NotTEC
     preflight(PreflightContext const& ctx);
+
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
     static TER
     preclaim(PreclaimContext const& ctx);

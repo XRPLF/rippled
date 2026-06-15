@@ -21,7 +21,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testConfidentialMPTSend"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testConfidentialMPTSend"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -156,7 +156,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testConfidentialMPTSendFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testConfidentialMPTSendFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -288,7 +288,7 @@ TEST(TransactionsConfidentialMPTSendTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -302,7 +302,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -316,7 +316,7 @@ TEST(TransactionsConfidentialMPTSendTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testConfidentialMPTSendNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testConfidentialMPTSendNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);

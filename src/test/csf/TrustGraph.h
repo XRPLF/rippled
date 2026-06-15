@@ -67,7 +67,7 @@ public:
     }
 
     //< Whether from trusts to
-    bool
+    [[nodiscard]] bool
     trusts(Peer const& from, Peer const& to) const
     {
         return graph_.connected(from, to);
@@ -79,7 +79,7 @@ public:
         @return boost transformed range over nodes `a` trusts, i.e. the nodes
                 in its UNL
     */
-    auto
+    [[nodiscard]] auto
     trustedPeers(Peer const& a) const
     {
         return graph_.outVertices(a);
@@ -96,7 +96,7 @@ public:
     };
 
     //< Return nodes that fail the white-paper no-forking condition
-    std::vector<ForkInfo>
+    [[nodiscard]] std::vector<ForkInfo>
     forkablePairs(double quorum) const
     {
         // Check the forking condition by looking at intersection
@@ -138,7 +138,7 @@ public:
     /** Check whether this trust graph satisfies the whitepaper no-forking
         condition
     */
-    bool
+    [[nodiscard]] bool
     canFork(double quorum) const
     {
         return !forkablePairs(quorum).empty();

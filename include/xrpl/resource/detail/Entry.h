@@ -9,7 +9,7 @@
 
 namespace xrpl::Resource {
 
-using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
 // An entry in the table
 // VFALCO DEPRECATED using boost::intrusive list
@@ -21,12 +21,12 @@ struct Entry : public beast::List<Entry>::Node
        @param now Construction time of Entry.
     */
     explicit Entry(clock_type::time_point const now)
-        : refcount(0), local_balance(now), remote_balance(0)
+        : refcount(0), localBalance(now), remoteBalance(0)
     {
     }
 
-    std::string
-    to_string() const
+    [[nodiscard]] std::string
+    toString() const
     {
         return getFingerprint(key->address, publicKey);
     }
@@ -36,17 +36,17 @@ struct Entry : public beast::List<Entry>::Node
      * resource limits applied--it is still possible for certain RPC commands
      * to be forbidden, but that depends on Role.
      */
-    bool
+    [[nodiscard]] bool
     isUnlimited() const
     {
-        return key->kind == kindUnlimited;
+        return key->kind == Kind::Unlimited;
     }
 
     // Balance including remote contributions
     int
     balance(clock_type::time_point const now)
     {
-        return local_balance.value(now) + remote_balance;
+        return localBalance.value(now) + remoteBalance;
     }
 
     // Add a charge and return normalized balance
@@ -54,7 +54,7 @@ struct Entry : public beast::List<Entry>::Node
     int
     add(int charge, clock_type::time_point const now)
     {
-        return local_balance.add(charge, now) + remote_balance;
+        return localBalance.add(charge, now) + remoteBalance;
     }
 
     // The public key of the peer
@@ -67,10 +67,10 @@ struct Entry : public beast::List<Entry>::Node
     int refcount;
 
     // Exponentially decaying balance of resource consumption
-    DecayingSample<decayWindowSeconds, clock_type> local_balance;
+    DecayingSample<kDecayWindowSeconds, clock_type> localBalance;
 
     // Normalized balance contribution from imports
-    int remote_balance;
+    int remoteBalance;
 
     // Time of the last warning
     clock_type::time_point lastWarningTime;
@@ -82,7 +82,7 @@ struct Entry : public beast::List<Entry>::Node
 inline std::ostream&
 operator<<(std::ostream& os, Entry const& v)
 {
-    os << v.to_string();
+    os << v.toString();
     return os;
 }
 

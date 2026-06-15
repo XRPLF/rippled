@@ -118,7 +118,7 @@ private:
                 peers_.insert(peer);
         }
 
-        HashRouterFlags
+        [[nodiscard]] HashRouterFlags
         getFlags(void) const
         {
             return flags_;
@@ -138,7 +138,7 @@ private:
         }
 
         /** Return seated relay time point if the message has been relayed */
-        std::optional<Stopwatch::time_point>
+        [[nodiscard]] std::optional<Stopwatch::time_point>
         relayed() const
         {
             return relayed_;
@@ -212,7 +212,7 @@ public:
         uint256 const& key,
         PeerShortID peer,
         HashRouterFlags& flags,
-        std::chrono::seconds tx_interval);
+        std::chrono::seconds txInterval);
 
     /** Set the flags on a hash.
 
@@ -250,7 +250,7 @@ private:
     Setup const setup_;
 
     // Stores all suppressed hashes and their expiration time
-    beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type, hardened_hash<strong_hash>>
+    beast::aged_unordered_map<uint256, Entry, Stopwatch::clock_type, HardenedHash<strong_hash>>
         suppressionMap_;
 };
 

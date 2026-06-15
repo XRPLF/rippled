@@ -2,12 +2,14 @@
 
 #include <xrpl/tx/Transactor.h>
 
+#include <expected>
+
 namespace xrpl {
 
 class VaultClawback : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit VaultClawback(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -23,10 +25,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -37,10 +36,10 @@ public:
         beast::Journal const& j) override;
 
 private:
-    Expected<std::pair<STAmount, STAmount>, TER>
+    std::expected<std::pair<STAmount, STAmount>, TER>
     assetsToClawback(
-        std::shared_ptr<SLE> const& vault,
-        std::shared_ptr<SLE const> const& sleShareIssuance,
+        SLE::ref vault,
+        SLE::const_ref sleShareIssuance,
         AccountID const& holder,
         STAmount const& clawbackAmount);
 };

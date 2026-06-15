@@ -7,8 +7,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -56,7 +54,7 @@ struct UnknownTxnType : std::exception
 // throw an "UnknownTxnType" exception on error
 template <class F>
 auto
-with_txn_type(Rules const& rules, TxType txnType, F&& f)
+withTxnType(Rules const& rules, TxType txnType, F&& f)
 {
     // These global updates really should have been for every Transaction
     // step: preflight, preclaim, calculateBaseFee, and doApply. Unfortunately,
@@ -66,26 +64,14 @@ with_txn_type(Rules const& rules, TxType txnType, F&& f)
     // so these need to be more global.
     //
     // To prevent unintentional side effects on existing checks, they will be
-    // set for every operation only once SingleAssetVault (or later
-    // LendingProtocol) are enabled.
+    // set for every operation only once at least one of the relevant amendments
+    // are enabled.
     //
     // See also Transactor::operator().
     //
-    std::optional<NumberSO> stNumberSO;
     std::optional<CurrentTransactionRulesGuard> rulesGuard;
     std::optional<NumberMantissaScaleGuard> mantissaScaleGuard;
-    if (rules.enabled(featureSingleAssetVault) || rules.enabled(featureLendingProtocol))
-    {
-        // raii classes for the current ledger rules.
-        // fixUniversalNumber predates the rulesGuard and should be replaced.
-        stNumberSO.emplace(rules.enabled(fixUniversalNumber));
-        rulesGuard.emplace(rules);
-    }
-    else
-    {
-        // Without those features enabled, always use the old number rules.
-        mantissaScaleGuard.emplace(MantissaRange::small);
-    }
+    createGuards(rules, rulesGuard, mantissaScaleGuard);
 
     switch (txnType)
     {
@@ -106,51 +92,51 @@ with_txn_type(Rules const& rules, TxType txnType, F&& f)
 }
 }  // namespace
 
-// Templates so preflight does the right thing with T::ConsequencesFactory.
+// Templates so preflight does the right thing with T::kConsequencesFactory.
 //
 // This could be done more easily using if constexpr, but Visual Studio
 // 2017 doesn't handle if constexpr correctly.  So once we're no longer
 // building with Visual Studio 2017 we can consider replacing the four
 // templates with a single template function that uses if constexpr.
 //
-// For Transactor::Normal
+// For ConsequencesFactoryType::Normal
 //
 
 template <class T>
-    requires(T::ConsequencesFactory == Transactor::Normal)
+    requires(T::kConsequencesFactory == Transactor::ConsequencesFactoryType::Normal)
 TxConsequences
-consequences_helper(PreflightContext const& ctx)
+consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
 
-// For Transactor::Blocker
+// For ConsequencesFactoryType::Blocker
 template <class T>
-    requires(T::ConsequencesFactory == Transactor::Blocker)
+    requires(T::kConsequencesFactory == Transactor::ConsequencesFactoryType::Blocker)
 TxConsequences
-consequences_helper(PreflightContext const& ctx)
+consequencesHelper(PreflightContext const& ctx)
 {
-    return TxConsequences(ctx.tx, TxConsequences::blocker);
+    return TxConsequences(ctx.tx, TxConsequences::Category::Blocker);
 };
 
-// For Transactor::Custom
+// For ConsequencesFactoryType::Custom
 template <class T>
-    requires(T::ConsequencesFactory == Transactor::Custom)
+    requires(T::kConsequencesFactory == Transactor::ConsequencesFactoryType::Custom)
 TxConsequences
-consequences_helper(PreflightContext const& ctx)
+consequencesHelper(PreflightContext const& ctx)
 {
     return T::makeTxConsequences(ctx);
 };
 
 static std::pair<NotTEC, TxConsequences>
-invoke_preflight(PreflightContext const& ctx)
+invokePreflight(PreflightContext const& ctx)
 {
     try
     {
-        return with_txn_type(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
             auto const tec = Transactor::invokePreflight<T>(ctx);
             return std::make_pair(
-                tec, isTesSuccess(tec) ? consequences_helper<T>(ctx) : TxConsequences{tec});
+                tec, isTesSuccess(tec) ? consequencesHelper<T>(ctx) : TxConsequences{tec});
         });
     }
     catch (UnknownTxnType const& e)
@@ -158,20 +144,20 @@ invoke_preflight(PreflightContext const& ctx)
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preflight: " << e.txnType;
-        UNREACHABLE("xrpl::invoke_preflight : unknown transaction type");
+        UNREACHABLE("xrpl::invokePreflight : unknown transaction type");
         return {temUNKNOWN, TxConsequences{temUNKNOWN}};
         // LCOV_EXCL_STOP
     }
 }
 
 static TER
-invoke_preclaim(PreclaimContext const& ctx)
+invokePreclaim(PreclaimContext const& ctx)
 {
     try
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return with_txn_type(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+        return withTxnType(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
             // preclaim functionality is divided into two sections:
             // 1. Up to and including the signature check: returns NotTEC.
             //    All transaction checks before and including checkSign
@@ -186,7 +172,7 @@ invoke_preclaim(PreclaimContext const& ctx)
             // a flagged a failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
 
-            if (id != beast::zero)
+            if (id != beast::kZero)
             {
                 if (NotTEC const preSigResult = [&]() -> NotTEC {
                         if (NotTEC const result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
@@ -217,7 +203,7 @@ invoke_preclaim(PreclaimContext const& ctx)
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.j.fatal()) << "Unknown transaction type in preclaim: " << e.txnType;
-        UNREACHABLE("xrpl::invoke_preclaim : unknown transaction type");
+        UNREACHABLE("xrpl::invokePreclaim : unknown transaction type");
         return temUNKNOWN;
         // LCOV_EXCL_STOP
     }
@@ -240,11 +226,11 @@ invoke_preclaim(PreclaimContext const& ctx)
  * logs an error and returns an XRPAmount of zero.
  */
 static XRPAmount
-invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
+invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
 {
     try
     {
-        return with_txn_type(view.rules(), tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T>() {
             return T::calculateBaseFee(view, tx);
         });
     }
@@ -259,8 +245,8 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
 
 TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
-    , fee_(beast::zero)
-    , potentialSpend_(beast::zero)
+    , fee_(beast::kZero)
+    , potentialSpend_(beast::kZero)
     , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
@@ -270,8 +256,8 @@ TxConsequences::TxConsequences(NotTEC pfResult)
 
 TxConsequences::TxConsequences(STTx const& tx)
     : isBlocker_(false)
-    , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::zero)
-    , potentialSpend_(beast::zero)
+    , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::kZero)
+    , potentialSpend_(beast::kZero)
     , seqProx_(tx.getSeqProxy())
     , sequencesConsumed_(tx.getSeqProxy().isSeq() ? 1 : 0)
 {
@@ -279,7 +265,7 @@ TxConsequences::TxConsequences(STTx const& tx)
 
 TxConsequences::TxConsequences(STTx const& tx, Category category) : TxConsequences(tx)
 {
-    isBlocker_ = (category == blocker);
+    isBlocker_ = (category == TxConsequences::Category::Blocker);
 }
 
 TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend) : TxConsequences(tx)
@@ -293,11 +279,11 @@ TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed) 
 }
 
 static ApplyResult
-invoke_apply(ApplyContext& ctx)
+invokeApply(ApplyContext& ctx)
 {
     try
     {
-        return with_txn_type(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
             T p(ctx);
             return p();
         });
@@ -307,7 +293,7 @@ invoke_apply(ApplyContext& ctx)
         // Should never happen
         // LCOV_EXCL_START
         JLOG(ctx.journal.fatal()) << "Unknown transaction type in apply: " << e.txnType;
-        UNREACHABLE("xrpl::invoke_apply : unknown transaction type");
+        UNREACHABLE("xrpl::invokeApply : unknown transaction type");
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }
@@ -319,7 +305,7 @@ invoke_apply(ApplyContext& ctx)
 std::unique_ptr<Transactor>
 makeTransactor(ApplyContext& ctx)
 {
-    return with_txn_type(
+    return withTxnType(
         ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() -> std::unique_ptr<Transactor> {
             return std::make_unique<T>(ctx);
         });
@@ -336,7 +322,7 @@ preflight(
     PreflightContext const pfCtx(registry, tx, rules, flags, j);
     try
     {
-        return {pfCtx, invoke_preflight(pfCtx)};
+        return {pfCtx, invokePreflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
@@ -357,7 +343,7 @@ preflight(
     PreflightContext const pfCtx(registry, tx, parentBatchId, rules, flags, j);
     try
     {
-        return {pfCtx, invoke_preflight(pfCtx)};
+        return {pfCtx, invokePreflight(pfCtx)};
     }
     catch (std::exception const& e)
     {
@@ -417,7 +403,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     {
         if (!isTesSuccess(ctx->preflightResult))
             return {*ctx, ctx->preflightResult};
-        return {*ctx, invoke_preclaim(*ctx)};
+        return {*ctx, invokePreclaim(*ctx)};
     }
     catch (std::exception const& e)
     {
@@ -429,7 +415,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
 XRPAmount
 calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    return invoke_calculateBaseFee(view, tx);
+    return invokeCalculateBaseFee(view, tx);
 }
 
 XRPAmount
@@ -460,7 +446,7 @@ doApply(PreclaimResult const& preclaimResult, ServiceRegistry& registry, OpenVie
             calculateBaseFee(view, preclaimResult.tx),
             preclaimResult.flags,
             preclaimResult.j);
-        return invoke_apply(ctx);
+        return invokeApply(ctx);
     }
     catch (std::exception const& e)
     {

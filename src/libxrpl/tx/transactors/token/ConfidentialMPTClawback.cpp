@@ -2,12 +2,14 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -35,14 +37,23 @@ ConfidentialMPTClawback::preflight(PreflightContext const& ctx)
 
     // Check invalid claw amount
     auto const clawAmount = ctx.tx[sfMPTAmount];
-    if (clawAmount == 0 || clawAmount > maxMPTokenAmount)
+    if (clawAmount == 0 || clawAmount > kMaxMpTokenAmount)
         return temBAD_AMOUNT;
 
     // Verify proof length
-    if (ctx.tx[sfZKProof].length() != ecClawbackProofLength)
+    if (ctx.tx[sfZKProof].length() != kEcClawbackProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;
+}
+
+XRPAmount
+ConfidentialMPTClawback::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
+    // We charge kConfidentialFeeMultiplier extra base fees so the total is
+    // 10 * baseFee + (signerCount * baseFee).
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
 }
 
 TER

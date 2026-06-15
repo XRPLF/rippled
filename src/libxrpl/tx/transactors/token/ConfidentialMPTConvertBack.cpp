@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -30,7 +31,7 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
     if (MPTIssue(ctx.tx[sfMPTokenIssuanceID]).getIssuer() == ctx.tx[sfAccount])
         return temMALFORMED;
 
-    if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > maxMPTokenAmount)
+    if (ctx.tx[sfMPTAmount] == 0 || ctx.tx[sfMPTAmount] > kMaxMpTokenAmount)
         return temBAD_AMOUNT;
 
     if (!isValidCompressedECPoint(ctx.tx[sfBalanceCommitment]))
@@ -42,10 +43,19 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
         return res;
 
     // ConvertBack proof = compact sigma proof (128 bytes) + single bulletproof (688 bytes)
-    if (ctx.tx[sfZKProof].size() != ecConvertBackProofLength)
+    if (ctx.tx[sfZKProof].size() != kEcConvertBackProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;
+}
+
+XRPAmount
+ConfidentialMPTConvertBack::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
+    // We charge kConfidentialFeeMultiplier extra base fees so the total is
+    // 10 * baseFee + (signerCount * baseFee).
+    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
 }
 
 /**
@@ -165,11 +175,17 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
-        !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
+    if (!sleMptoken->isFieldPresent(sfHolderEncryptionKey) ||
+        !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
+        !sleMptoken->isFieldPresent(sfIssuerEncryptedBalance))
     {
         return tecNO_PERMISSION;
     }
+
+    // Sanity check: holder's MPToken must have auditor balance field if auditing
+    // is enabled
+    if (requiresAuditor && !sleMptoken->isFieldPresent(sfAuditorEncryptedBalance))
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // if the total circulating confidential balance is smaller than what the
     // holder is trying to convert back, we know for sure this txn should
@@ -197,7 +213,7 @@ ConfidentialMPTConvertBack::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, account_));
+    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -206,15 +222,15 @@ ConfidentialMPTConvertBack::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const amtToConvertBack = ctx_.tx[sfMPTAmount];
-    auto const amt = (*sleMptoken)[~sfMPTAmount].value_or(0);
+    auto const amt = (*sleMptoken)[~sfMPTAmount].valueOr(0);
 
     // Converting back increases regular balance and decreases confidential
     // outstanding. This is the inverse of Convert.
-    if (amt > maxMPTokenAmount - amtToConvertBack)
+    if (amt > kMaxMpTokenAmount - amtToConvertBack)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleMptoken)[sfMPTAmount] = amt + amtToConvertBack;
 
-    auto const coa = (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
+    auto const coa = (*sleIssuance)[~sfConfidentialOutstandingAmount].valueOr(0);
     if (coa < amtToConvertBack)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleIssuance)[sfConfidentialOutstandingAmount] = coa - amtToConvertBack;

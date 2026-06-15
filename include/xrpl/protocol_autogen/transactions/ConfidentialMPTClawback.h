@@ -19,9 +19,9 @@ class ConfidentialMPTClawbackBuilder;
  * @brief Transaction: ConfidentialMPTClawback
  *
  * Type: ttCONFIDENTIAL_MPT_CLAWBACK (89)
- * Delegable: Delegation::delegable
+ * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
- * Privileges: noPriv
+ * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTClawbackBuilder to construct new transactions.
@@ -48,7 +48,7 @@ public:
     // Transaction-specific field getters
 
     /**
-     * @brief Get sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Get sfMPTokenIssuanceID (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -59,7 +59,7 @@ public:
     }
 
     /**
-     * @brief Get sfHolder (soeREQUIRED)
+     * @brief Get sfHolder (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -70,7 +70,7 @@ public:
     }
 
     /**
-     * @brief Get sfMPTAmount (soeREQUIRED)
+     * @brief Get sfMPTAmount (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -81,7 +81,7 @@ public:
     }
 
     /**
-     * @brief Get sfZKProof (soeREQUIRED)
+     * @brief Get sfZKProof (SoeRequired)
      * @return The field value.
      */
     [[nodiscard]]
@@ -96,7 +96,7 @@ public:
  * @brief Builder for ConfidentialMPTClawback transactions.
  *
  * Provides a fluent interface for constructing transactions with method chaining.
- * Uses Json::Value internally for flexible transaction construction.
+ * Uses STObject internally for flexible transaction construction.
  * Inherits common field setters from TransactionBuilderBase.
  */
 class ConfidentialMPTClawbackBuilder : public TransactionBuilderBase<ConfidentialMPTClawbackBuilder>
@@ -141,7 +141,7 @@ public:
     /** @brief Transaction-specific field setters */
 
     /**
-     * @brief Set sfMPTokenIssuanceID (soeREQUIRED)
+     * @brief Set sfMPTokenIssuanceID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTClawbackBuilder&
@@ -152,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Set sfHolder (soeREQUIRED)
+     * @brief Set sfHolder (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTClawbackBuilder&
@@ -163,7 +163,7 @@ public:
     }
 
     /**
-     * @brief Set sfMPTAmount (soeREQUIRED)
+     * @brief Set sfMPTAmount (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTClawbackBuilder&
@@ -174,7 +174,7 @@ public:
     }
 
     /**
-     * @brief Set sfZKProof (soeREQUIRED)
+     * @brief Set sfZKProof (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTClawbackBuilder&
