@@ -440,7 +440,7 @@ checkAMMPrecisionLoss(
     Asset const& asset1,
     Asset const& asset2,
     STAmount const& newLPTokenBalance,
-    beast::Journal j)
+    beast::Journal const j)
 {
     if (newLPTokenBalance <= beast::kZero)
         return tesSUCCESS;

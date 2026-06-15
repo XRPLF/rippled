@@ -751,7 +751,7 @@ checkAMMPrecisionLoss(
     Asset const& asset1,
     Asset const& asset2,
     STAmount const& newLPTokenBalance,
-    beast::Journal j);
+    beast::Journal const j);
 
 /** Get AMM pool and LP token balances. If both optIssue are
  * provided then they are used as the AMM token pair issues.
