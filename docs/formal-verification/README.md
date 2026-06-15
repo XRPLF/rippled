@@ -449,7 +449,7 @@ conan export ../external/lean4
 
 # 2. Resolve + build dependencies. Runs once and pulls the lean4 toolchain + gmp.
 conan install .. --output-folder . --build missing --settings build_type=Release \
-    -o '&:formal_verification=True'
+    -o '&:formal_verification=True' --lockfile-partial
 
 # 3. Configure, then build. The formal_verification target compiles mathlib once
 #    (slow first time) and links the Lean shared libraries. lake keeps later
@@ -464,7 +464,8 @@ cmake --build . --parallel N
 
 `-o '&:formal_verification=True'` is the load-bearing flag: it pulls the
 `lean4` toolchain into the graph, and the matching `-Dformal_verification=ON`
-tells CMake to build + link the Lean side.
+tells CMake to build + link the Lean side. `--lockfile-partial` lets Conan add
+`lean4` and `gmp`, which are opt-in and not pinned in `conan.lock`.
 
 **The fast loop.** After the first build, editing a `.lean` file needs only
 `cmake --build . --target xrpld && ./xrpld --unittest=formal_verification` so no
