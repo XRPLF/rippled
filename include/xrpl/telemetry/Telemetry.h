@@ -88,6 +88,13 @@
 
 namespace xrpl::telemetry {
 
+#ifdef XRPL_ENABLE_TELEMETRY
+/** OTel instrumentation scope (tracer) name. Identifies this library as the
+    source of spans; distinct from the `service.name` resource attribute
+    (Setup::serviceName), which is config-overridable. */
+inline constexpr std::string_view kTracerName{"xrpld"};
+#endif
+
 class Telemetry
 {
     /** Global singleton pointer, set by start()/stop() in the active
@@ -165,7 +172,7 @@ public:
         std::uint32_t batchSize = 512;
 
         /** Delay between batch exports. */
-        std::chrono::milliseconds batchDelay{5000};
+        std::chrono::milliseconds batchDelay = std::chrono::milliseconds{5000};
 
         /** Maximum number of spans queued before dropping. */
         std::uint32_t maxQueueSize = 2048;
@@ -255,7 +262,7 @@ public:
         @return A shared pointer to the Tracer.
     */
     virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
-    getTracer(std::string_view name = "xrpld") = 0;
+    getTracer(std::string_view name = kTracerName) = 0;
 
     /** Start a new span on the current thread's context.
 
