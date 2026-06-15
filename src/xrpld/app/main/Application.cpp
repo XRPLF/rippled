@@ -326,7 +326,7 @@ public:
                   [this] { signalStop("PerfLog"); }))
         , telemetry_(
               telemetry::makeTelemetry(
-                  telemetry::setupTelemetry(
+                  telemetry::makeTelemetrySetup(
                       config_->section("telemetry"),
                       "",  // Updated later via setServiceInstanceId()
                       BuildInfo::getVersionString(),

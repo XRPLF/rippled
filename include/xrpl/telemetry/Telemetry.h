@@ -322,7 +322,7 @@ makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
     @return A populated Setup struct with defaults for missing values.
 */
 Telemetry::Setup
-setupTelemetry(
+makeTelemetrySetup(
     Section const& section,
     std::string const& nodePublicKey,
     std::string const& version,
