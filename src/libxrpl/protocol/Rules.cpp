@@ -41,17 +41,15 @@ setCurrentTransactionRules(std::optional<Rules> r)
 
     // Declare the range this way to keep clang-tidy from complaining
     auto const range = [&r]() {
-        // If any new conditions with new amendments are added, those amendments must also be added
-        // to useRulesGuards.
+        // If any new conditions with new amendments are added to "enableVaultNumbers", those
+        // amendments must also be added to useRulesGuards.
         bool const enableVaultNumbers =
             !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+        XRPL_ASSERT(
+            !r || !enableVaultNumbers || useRulesGuards(*r),
+            "setCurrentTransactionRules : rule decisions match");
         bool const enableCuspRounding320 = !r || r->enabled(fixCleanup3_2_0);
         bool const enableCuspRounding330 = !r || r->enabled(fixCleanup3_3_0);
-        XRPL_ASSERT(
-            !r ||
-                useRulesGuards(*r) ==
-                    (enableVaultNumbers || enableCuspRounding320 || enableCuspRounding330),
-            "setCurrentTransactionRules : rule decisions match");
 
         if (enableVaultNumbers)
         {
@@ -76,8 +74,8 @@ bool
 useRulesGuards(Rules const& rules)
 {
     // The list of amendments used here - to decide whether to create a RulesGuard - must be a
-    // superset of the list used to figure out which mantissa scale to use in
-    // setCurrentTransactionRules. Additional amendments can be added if desired.
+    // superset of the list used to determine "enableVaultNumbers" in setCurrentTransactionRules.
+    // Additional amendments can be added if desired.
     //
     // As soon as any one of these amendments is retired, this whole function can be removed, along
     // with createGuards, and any other callers, and the first set of guards can be created directly
