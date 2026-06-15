@@ -23,12 +23,12 @@
 #include <xrpl/telemetry/SpanGuard.h>
 
 #include <xrpl/telemetry/DiscardFlag.h>
-#include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <opentelemetry/context/context.h>
 #include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/semconv/exception_attributes.h>
 #include <opentelemetry/trace/context.h>
 #include <opentelemetry/trace/scope.h>
 #include <opentelemetry/trace/span.h>
@@ -37,6 +37,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -139,6 +140,13 @@ isCategoryEnabled(Telemetry const& tel, TraceCategory cat)
 
 namespace {
 
+// Span-link attribute marking a "follows-from" (causal, non-parent) link,
+// emitted by both linkedSpan() overloads. Custom xrpl attribute — not part
+// of the OTel semantic conventions, so defined here rather than pulled from
+// <opentelemetry/semconv/...>.
+constexpr char const* kLinkTypeKey = "xrpl.link.type";
+constexpr char const* kLinkTypeFollowsFrom = "follows_from";
+
 // Map a TraceCategory to an OTel SpanKind so Tempo's service-graph /
 // RED metrics see the correct direction. RPC spans are emitted at the
 // server entry point (handler dispatch), Peer spans at inbound-message
@@ -169,7 +177,7 @@ SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view nam
     auto* tel = Telemetry::getInstance();
     if ((tel == nullptr) || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
-    auto fullName = std::string(prefix) + "." + std::string(name);
+    auto fullName = std::format("{}.{}", prefix, name);
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName, categoryToSpanKind(cat))));
 }
 
@@ -207,24 +215,18 @@ SpanGuard::linkedSpan(std::string_view name) const
     if ((tel == nullptr) || !tel->isEnabled())
         return {};
 
-    auto tracer = tel->getTracer("xrpld");
+    auto tracer = tel->getTracer();
     auto spanCtx = impl_->span->GetContext();
 
     // Mark as root span so it starts a new trace sub-tree rather than
     // inheriting the current thread's active span as parent.
     otel_trace::StartSpanOptions opts;
-    opentelemetry::context::Context rootCtx;
-    rootCtx = rootCtx.SetValue(otel_trace::kIsRootSpanKey, true);
-    opts.parent = rootCtx;
+    opts.parent = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
 
     // LCOV_EXCL_START
     return SpanGuard(
         std::make_unique<Impl>(tracer->StartSpan(
-            std::string(name),
-            {},
-            {{spanCtx, {{std::string(attr::linkType), std::string(attr_val::followsFrom)}}}},
-            opts)));
-    // LCOV_EXCL_STOP
+            std::string(name), {}, {{spanCtx, {{kLinkTypeKey, kLinkTypeFollowsFrom}}}}, opts)));
 }
 
 SpanGuard
@@ -236,7 +238,7 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
     if ((tel == nullptr) || !tel->isEnabled())
         return {};
 
-    auto tracer = tel->getTracer("xrpld");
+    auto tracer = tel->getTracer();
 
     // Extract the span from the captured context to get its SpanContext.
     auto linkSpan = otel_trace::GetSpan(linkCtx.impl_->ctx);
@@ -246,17 +248,14 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
     // Mark as root span so it starts a new trace sub-tree rather than
     // inheriting the current thread's active span as parent.
     otel_trace::StartSpanOptions opts;
-    opentelemetry::context::Context rootCtx;
-    rootCtx = rootCtx.SetValue(otel_trace::kIsRootSpanKey, true);
-    opts.parent = rootCtx;
+    opts.parent = opentelemetry::context::Context{otel_trace::kIsRootSpanKey, true};
 
     // LCOV_EXCL_START
     return SpanGuard(
         std::make_unique<Impl>(tracer->StartSpan(
             std::string(name),
             {},
-            {{linkSpan->GetContext(),
-              {{std::string(attr::linkType), std::string(attr_val::followsFrom)}}}},
+            {{linkSpan->GetContext(), {{kLinkTypeKey, kLinkTypeFollowsFrom}}}},
             opts)));
     // LCOV_EXCL_STOP
 }
@@ -269,7 +268,7 @@ SpanGuard::captureContext() const
     if (!impl_)
         return {};
     auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
-    return SpanContext(std::make_shared<SpanContext::Impl>(ctx));
+    return SpanContext(std::make_shared<SpanContext::Impl>(std::move(ctx)));
 }
 
 // ===== Attribute setters ===================================================
@@ -340,9 +339,13 @@ SpanGuard::recordException(std::exception const& e)
 {
     if (!impl_)
         return;
+    namespace semconv_exc = opentelemetry::semconv::exception;
+    // Event name "exception" and the attribute keys follow the OTel semantic
+    // conventions; the keys come from semconv constants rather than literals.
     impl_->span->AddEvent(
         "exception",
-        {{"exception.type", typeid(e).name()}, {"exception.message", std::string(e.what())}});
+        {{semconv_exc::kExceptionType, typeid(e).name()},
+         {semconv_exc::kExceptionMessage, std::string(e.what())}});
     impl_->span->SetStatus(otel_trace::StatusCode::kError, e.what());
 }
 
@@ -351,16 +354,19 @@ SpanGuard::discard()
 {
     if (impl_)
     {
-        gTlDiscardCurrentSpan = true;
-        impl_->span->End();
-        // Clear here so discard() owns the flag's whole lifetime
-        // (set -> End -> clear) in one scope, rather than relying on
-        // FilteringSpanProcessor::OnEnd() to clear it. Today every valid guard
-        // wraps a recording span (head sampling is 1.0), so OnEnd() always runs
-        // and clearing here is equivalent — but colocating set and clear keeps
-        // the flag leak-proof if a later phase can hand back a non-recording
-        // span (e.g. honoring a non-sampled remote parent during propagation).
-        gTlDiscardCurrentSpan = false;
+        {
+            // DiscardScope owns the flag's whole lifetime: it sets the flag,
+            // and clears it on scope exit — even if End() were to throw. The
+            // SDK invokes FilteringSpanProcessor::OnEnd() synchronously from
+            // End() on this thread, so the flag is observed while still set.
+            // Today every valid guard wraps a recording span (head sampling is
+            // 1.0), so OnEnd() always runs — but scoping set/clear keeps the
+            // flag leak-proof if a later phase can hand back a non-recording
+            // span (e.g. honoring a non-sampled remote parent during
+            // propagation), so it can never spill onto the next span.
+            DiscardScope const discardScope;
+            impl_->span->End();
+        }
         impl_->span = nullptr;  // prevent ~Impl from calling End() again
         impl_.reset();
     }
