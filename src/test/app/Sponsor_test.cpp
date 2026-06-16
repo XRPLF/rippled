@@ -3042,12 +3042,11 @@ public:
         auto const usd = issuer["usd"];
         auto const lineKeylet = keylet::line(alice, issuer, usd.currency);
 
-        // Sponsor funded for exactly its base reserve: zero owner-object
-        // headroom, so it cannot cover one trust line's reserve increment.
+        // Sponsor funded for exactly its base reserve
         adjustAccountXRPBalance(env, sponsor, reserve(env, 0));
 
         // alice's ownerCount is 0, so an unsponsored first trust line would be
-        // free; but because it is sponsored the reserve check is enforced
+        // free; but because it is sponsored, the reserve check is enforced
         // against the sponsor, which is one increment short.
         env(trust(alice, usd(100)),
             sponsor::As(sponsor, spfSponsorReserve),
@@ -3058,7 +3057,7 @@ public:
         BEAST_EXPECT(!env.le(lineKeylet));
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
-        // Give the sponsor exactly one owner-reserve increment; the same
+        // Give the sponsor has exactly one owner-reserve increment; the same
         // sponsored first trust line now succeeds and the sponsor pays for it.
         adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
 
@@ -3076,15 +3075,8 @@ public:
     void
     testCoSignReserveBoundedBySponsorshipBudget()
     {
-        // When a Sponsorship object exists between a sponsor and sponsee, its
-        // ReserveCount is the authoritative reserve budget -- even for a
-        // co-signed reserve sponsorship (cf. testPreFundAndCosign,
-        // "pre-funded value is used").  A fee-only Sponsorship has
-        // ReserveCount == 0, so a co-signed reserve sponsorship through it is
-        // bounded by 0 and must fail with tecINSUFFICIENT_RESERVE.  Per the
-        // team decision there is NO fallback from an exhausted (or zero)
-        // ReserveCount budget to the sponsor's main balance, even though the
-        // sponsor here has ample XRP.
+        // sponsor co-signs, so a fee-only object (ReserveCount == 0) makes a co-signed
+        // reserve sponsorship fail -- with no fallback to the sponsor's balance.
         testcase("Co-signed reserve sponsorship is bounded by Sponsorship budget");
         using namespace test::jtx;
 
@@ -3100,9 +3092,9 @@ public:
         env.close();
         BEAST_EXPECT(env.le(keylet::sponsor(sponsor, sponsee)));
 
-        // Sponsee creates a DID with the sponsor co-signing the reserve.  The
-        // fee-only Sponsorship's ReserveCount (0) is the budget, so this fails
-        // with tecINSUFFICIENT_RESERVE -- no fallback to the sponsor's balance.
+        // Sponsee creates a DID with the sponsor co-signing the reserve. The
+        // fee-only Sponsorship's has ReserveCount (0), so this fails
+        // with tecINSUFFICIENT_RESERVE
         env(did::set(sponsee),
             did::Uri("uri"),
             sponsor::As(sponsor, spfSponsorReserve),
@@ -3115,7 +3107,7 @@ public:
         BEAST_EXPECT(sponsoredOwnerCount(env, sponsee) == 0);
 
         // Bumping the Sponsorship's ReserveCount budget makes the same
-        // co-signed reserve sponsorship succeed -- the budget is what gates it.
+        // co-signed reserve sponsorship succeed, the budget is what gates it.
         env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(sponsee));
         env.close();
 
