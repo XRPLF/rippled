@@ -11,6 +11,7 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -18,6 +19,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -28,10 +30,15 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
 
 #include <openssl/evp.h>
+#include <utility/mpt_utility.h>
+
+#include <secp256k1.h>
+#include <secp256k1_mpt.h>
 
 #include <algorithm>
 #include <array>
@@ -43,6 +50,7 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -7891,7 +7899,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // Bob's first spending balance.
         auto getCanonicalZeroBlindingFactor = [](AccountID const& account, MPTID const& mptID) {
             Buffer scalar(kEcBlindingFactorLength);
-            std::array<unsigned char, 51> hashInput;
+            std::array<unsigned char, 51> hashInput{};
             std::memcpy(hashInput.data(), "EncZero", 7);
             std::memcpy(hashInput.data() + 7, account.data(), account.size());
             std::memcpy(hashInput.data() + 27, mptID.data(), mptID.size());

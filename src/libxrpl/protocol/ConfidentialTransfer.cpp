@@ -14,6 +14,7 @@
 #include <openssl/rand.h>
 #include <utility/mpt_utility.h>
 
+#include <mpt_protocol.h>
 #include <secp256k1.h>
 #include <secp256k1_mpt.h>
 
