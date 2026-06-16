@@ -392,8 +392,8 @@ Each operator is tested by the shape that fits where it can break.
 | Operator | Test case targets |
 |----------|-----------------------|
 | `mul`, `div` | where the result lands: the exponent at the under/overflow edges, the mantissa at the cusp |
-| `add`, `sub` | cancellation and the cusp. These carry the known, still-open `operator+` rounding bugs |
-| `neg`, `signum` | input edges only. They are exact, so nothing rounds |
+| `add`, `sub` | cancellation and the cusp |
+| `neg`, `signum` | input edges only |
 | `normalize` | its input, including un-normalized values no other operator accepts |
 | `to_rep` | rounding to an integer, the only operator that does so |
 | `eq` `ne` `lt` `le` `gt` `ge` | sign and exponent ordering |
