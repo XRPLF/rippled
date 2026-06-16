@@ -408,7 +408,7 @@ SponsorshipTransfer::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const setSponsorFieldU32 = [](auto const& sle, auto const& field, auto const& delta) {
-        int64_t const newValue = sle->getFieldU32(field) + delta;
+        int64_t const newValue = static_cast<int64_t>(sle->getFieldU32(field)) + delta;
 
         if (newValue < 0 || newValue > std::numeric_limits<std::uint32_t>::max())
         {
