@@ -601,6 +601,7 @@ main
         // which escaped as an uncaught terminate at startup. Catch
         // std::exception so a regression fails the test rather than aborting
         // the test binary. See issue #7545.
+        error.clear();
         try
         {
             c.loadFromString(R"xrpldConfig(
