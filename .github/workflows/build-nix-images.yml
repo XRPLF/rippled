@@ -9,12 +9,20 @@ on:
       - "flake.nix"
       - "flake.lock"
       - "nix/**"
+      - "!nix/docker/README.md"
+      - "!nix/devshell.nix"
+      - "bin/check-tools.sh"
+      - "bin/install-sanitizer-libs.sh"
   pull_request:
     paths:
       - ".github/workflows/build-nix-images.yml"
       - "flake.nix"
       - "flake.lock"
       - "nix/**"
+      - "!nix/docker/README.md"
+      - "!nix/devshell.nix"
+      - "bin/check-tools.sh"
+      - "bin/install-sanitizer-libs.sh"
   workflow_dispatch:
 
 concurrency:
