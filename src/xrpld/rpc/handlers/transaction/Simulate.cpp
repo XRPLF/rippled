@@ -136,7 +136,11 @@ autofillTx(json::Value& txJson, RPC::JsonContext& context)
 
     if (txJson.isMember(sfSponsorSignature.jsonName))
     {
-        if (auto error = autofillSignature(txJson[sfSponsorSignature.jsonName]))
+        auto& sponsorSignature = txJson[sfSponsorSignature.jsonName];
+        if (!sponsorSignature.isObject())
+            return RPC::objectFieldError("tx.SponsorSignature");
+
+        if (auto error = autofillSignature(sponsorSignature))
             return error;
     }
 
