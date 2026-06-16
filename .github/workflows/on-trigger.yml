@@ -24,6 +24,7 @@ on:
       - ".github/workflows/reusable-package.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
       - ".github/workflows/reusable-test.yml"
+      - ".github/workflows/reusable-test-conan-package.yml"
       - ".github/workflows/reusable-upload-recipe.yml"
       - ".clang-tidy"
       - ".codecov.yml"
@@ -34,6 +35,7 @@ on:
       - "include/**"
       - "src/**"
       - "tests/**"
+      - "validator-keys-tool/**"
       - "CMakeLists.txt"
       - "conanfile.py"
       - "conan.lock"
@@ -91,8 +93,13 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  test-conan-package:
+    uses: ./.github/workflows/reusable-test-conan-package.yml
+
   upload-recipe:
-    needs: build-test
+    needs:
+      - build-test
+      - test-conan-package
     # Only run when pushing to the develop branch.
     if: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
     uses: ./.github/workflows/reusable-upload-recipe.yml

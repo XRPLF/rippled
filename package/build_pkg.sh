@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build an RPM or Debian package from a pre-built xrpld binary.
+# Build an RPM or Debian package from pre-built xrpld and validator-keys
+# binaries.
 #
 # Flags override env vars; env vars override defaults. Env vars are intended
 # for CMake/systemd/CI integration; flags are for explicit invocation.
@@ -12,7 +13,7 @@ Usage: build_pkg.sh [options]
 
 Options (each can also be set via the env var shown):
   --src-dir DIR             repo root                  [SRC_DIR;           default: $PWD]
-  --build-dir DIR           directory holding xrpld    [BUILD_DIR;         default: $PWD/build]
+  --build-dir DIR           directory holding binaries [BUILD_DIR;         default: $PWD/build]
   --pkg-version STR         version, e.g. 3.2.0-b1     [PKG_VERSION;       default: parsed from xrpld --version]
   --pkg-release N           package release number     [PKG_RELEASE;       default: 1]
   --source-date-epoch SECS  reproducibility timestamp  [SOURCE_DATE_EPOCH; default: latest git commit ctime]
@@ -134,6 +135,7 @@ stage_common() {
     mkdir -p "${dest}"
 
     cp "${BUILD_DIR}/xrpld" "${dest}/xrpld"
+    cp "${BUILD_DIR}/validator-keys" "${dest}/validator-keys"
     cp "${SRC_DIR}/cfg/xrpld-example.cfg" "${dest}/xrpld.cfg"
     cp "${SRC_DIR}/cfg/validators-example.txt" "${dest}/validators.txt"
     cp "${SRC_DIR}/LICENSE.md" "${dest}/LICENSE.md"

@@ -77,8 +77,8 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: ${{ env.BUILD_DIR }}
 
-      - name: Make binary executable
-        run: chmod +x "${BUILD_DIR}/xrpld"
+      - name: Make binaries executable
+        run: chmod +x "${BUILD_DIR}/xrpld" "${BUILD_DIR}/validator-keys"
 
       - name: Build package
         env:

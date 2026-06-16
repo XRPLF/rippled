@@ -1,6 +1,7 @@
 # Linux Packaging
 
-This directory contains all files needed to build RPM and Debian packages for `xrpld`.
+This directory contains all files needed to build RPM and Debian packages for
+`xrpld`. The packages also include the `validator-keys` utility.
 
 ## Directory layout
 
@@ -48,16 +49,17 @@ To print the exact image tags for the current `linux.json`:
 Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
 `reusable-strategy-matrix.yml` with `mode: packaging` to generate the matrix of
 `{artifact_name, os}` entries, then fan out to
-`reusable-package.yml` per entry. That workflow downloads the pre-built `xrpld`
-binary artifact, detects the package format from the container, and calls
-`build_pkg.sh` directly — no CMake configure or build step is needed inside
-the packaging job.
+`reusable-package.yml` per entry. That workflow downloads the pre-built binary
+artifact containing `xrpld` and `validator-keys`, detects the package format
+from the container, and calls `build_pkg.sh` directly — no CMake configure or
+build step is needed inside the packaging job.
 
 ### Locally (mirrors CI)
 
-With an `xrpld` binary already built at `build/xrpld`, run the packaging step
-inside the same container CI uses. The image tag is derived from `linux.json`
-so you don't need to hardcode a SHA.
+With `xrpld` and `validator-keys` binaries already built at `build/xrpld` and
+`build/validator-keys`, run the packaging step inside the same container CI
+uses. The image tag is derived from `linux.json` so you don't need to hardcode a
+SHA.
 
 ```bash
 # From the repo root. Pick any image flagged with `"package": true` in
@@ -91,6 +93,7 @@ needed, but the host toolchain replaces the pinned CI image:
 ```bash
 cmake \
     -Dxrpld=ON \
+    -Dvalidator_keys=ON \
     -Dxrpld_version=2.4.0-local \
     -Dtests=OFF \
     ..
@@ -110,13 +113,13 @@ to FHS-standard paths (`/usr/bin`, `/etc/xrpld`, etc.) regardless of
 environment variable. Flags override env vars; env vars override the built-in
 defaults. Run `./package/build_pkg.sh --help` for the same table:
 
-| Flag                       | Env var             | Default                       | Purpose                             |
-| -------------------------- | ------------------- | ----------------------------- | ----------------------------------- |
-| `--src-dir DIR`            | `SRC_DIR`           | `$PWD`                        | repo root                           |
-| `--build-dir DIR`          | `BUILD_DIR`         | `$PWD/build`                  | directory holding pre-built `xrpld` |
-| `--pkg-version STR`        | `PKG_VERSION`       | parsed from `xrpld --version` | version string, e.g. `3.2.0-b1`     |
-| `--pkg-release N`          | `PKG_RELEASE`       | `1`                           | package release number              |
-| `--source-date-epoch SECS` | `SOURCE_DATE_EPOCH` | latest git commit ctime       | reproducibility timestamp           |
+| Flag                       | Env var             | Default                       | Purpose                              |
+| -------------------------- | ------------------- | ----------------------------- | ------------------------------------ |
+| `--src-dir DIR`            | `SRC_DIR`           | `$PWD`                        | repo root                            |
+| `--build-dir DIR`          | `BUILD_DIR`         | `$PWD/build`                  | directory holding pre-built binaries |
+| `--pkg-version STR`        | `PKG_VERSION`       | parsed from `xrpld --version` | version string, e.g. `3.2.0-b1`      |
+| `--pkg-release N`          | `PKG_RELEASE`       | `1`                           | package release number               |
+| `--source-date-epoch SECS` | `SOURCE_DATE_EPOCH` | latest git commit ctime       | reproducibility timestamp            |
 
 The package format (`deb` or `rpm`) is inferred from the host's package
 manager (`apt-get` -> deb, `dnf`/`yum` -> rpm). Hosts without one of those
@@ -141,7 +144,7 @@ into the staging area, and invokes the platform build tool.
 ### DEB
 
 1. Creates a staging source tree at `debbuild/source/` inside the build directory.
-2. Stages the binary, configs, `README.md`, and `LICENSE.md`.
+2. Stages the binaries, configs, `README.md`, and `LICENSE.md`.
 3. Copies `package/debian/` control files into `debbuild/source/debian/`.
 4. Copies shared service/sysusers/tmpfiles into `debian/` where `dh_installsystemd`, `dh_installsysusers`, and `dh_installtmpfiles` pick them up automatically.
 5. Generates a minimal `debian/changelog` (pre-release versions use `~` instead of `-`).

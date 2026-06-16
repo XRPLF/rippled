@@ -16,8 +16,13 @@ defaults:
     shell: bash
 
 jobs:
+  test-conan-package:
+    if: ${{ github.repository == 'XRPLF/rippled' }}
+    uses: ./.github/workflows/reusable-test-conan-package.yml
+
   upload-recipe:
     if: ${{ github.repository == 'XRPLF/rippled' }}
+    needs: test-conan-package
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
       remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}

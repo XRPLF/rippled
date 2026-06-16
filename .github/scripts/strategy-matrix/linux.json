@@ -50,7 +50,8 @@
       {
         "compiler": ["gcc"],
         "build_type": ["Release"],
-        "arch": ["amd64"]
+        "arch": ["amd64"],
+        "extra_cmake_args": "-Dvalidator_keys=ON"
       }
     ],
 
@@ -58,7 +59,8 @@
       {
         "compiler": ["gcc"],
         "build_type": ["Release"],
-        "arch": ["amd64"]
+        "arch": ["amd64"],
+        "extra_cmake_args": "-Dvalidator_keys=ON"
       }
     ]
   },

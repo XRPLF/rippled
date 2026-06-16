@@ -67,6 +67,7 @@ jobs:
             .github/workflows/reusable-package.yml
             .github/workflows/reusable-strategy-matrix.yml
             .github/workflows/reusable-test.yml
+            .github/workflows/reusable-test-conan-package.yml
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
@@ -77,6 +78,7 @@ jobs:
             include/**
             src/**
             tests/**
+            validator-keys-tool/**
             CMakeLists.txt
             conanfile.py
             conan.lock
@@ -145,10 +147,16 @@ jobs:
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-package.yml
 
+  test-conan-package:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-test-conan-package.yml
+
   upload-recipe:
     needs:
       - should-run
       - build-test
+      - test-conan-package
     # Only run when committing to a PR that targets a release branch.
     if: ${{ github.repository == 'XRPLF/rippled' && needs.should-run.outputs.go == 'true' && github.event_name == 'pull_request' && startsWith(github.event.pull_request.base.ref, 'release') }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
@@ -180,6 +188,7 @@ jobs:
       - clang-tidy
       - build-test
       - package
+      - test-conan-package
       - upload-recipe
       - notify-clio
     runs-on: ubuntu-latest
