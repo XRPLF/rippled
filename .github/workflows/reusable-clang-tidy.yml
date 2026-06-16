@@ -36,7 +36,7 @@ jobs:
     needs: [determine-files]
     if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.cpp_changed_files != '' || needs.determine-files.outputs.clang_tidy_config_changed == 'true') }}
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-63ffdc3"
+    container: "ghcr.io/xrplf/xrpld/nix-debian:sha-fe4c8ae"
     permissions:
       contents: read
       issues: write
