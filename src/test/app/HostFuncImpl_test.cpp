@@ -6114,7 +6114,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         {
             WasmValVec params(2), result(1);
 
-            auto* trap = ww(&import.at("get_ledger_sqn"), params, result, 0, sizeof(std::uint32_t));
+            auto* trap = ww(&import.at("ldgr_index"), params, result, 0, sizeof(std::uint32_t));
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
@@ -6124,7 +6124,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         // Next call should hit OutOfTransferLimit
         {
             WasmValVec params(2), result(1);
-            auto* trap = ww(&import.at("get_ledger_sqn"), params, result, 0, sizeof(std::uint32_t));
+            auto* trap = ww(&import.at("ldgr_index"), params, result, 0, sizeof(std::uint32_t));
 
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
@@ -6136,7 +6136,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             WasmValVec params(2), result(1);
             wasm_byte_vec_t errorMessage WASM_EMPTY_VEC;
 
-            auto* trap = ww(&import.at("get_ledger_sqn"), params, result, 0, sizeof(std::uint32_t));
+            auto* trap = ww(&import.at("ldgr_index"), params, result, 0, sizeof(std::uint32_t));
 
             if (BEAST_EXPECT(trap))
             {
@@ -6159,7 +6159,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         {
             WasmValVec params(4), result(1);
             auto* trap =
-                ww(&import.at("account_keylet"), params, result, 0, AccountID::size(), 100, 32);
+                ww(&import.at("accountroot_id"), params, result, 0, AccountID::size(), 100, 32);
             BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
                 BEAST_EXPECT(
                     result[0].of.i32 == hfErrorToInt(HostFunctionError::OutOfTransferLimit));
@@ -6188,7 +6188,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         {
             WasmValVec params(2), result(1);
             wasm_byte_vec_t errorMessage WASM_EMPTY_VEC;
-            auto* trap = ww(&import.at("get_parent_ledger_hash"), params, result, 500, 32);
+            auto* trap = ww(&import.at("parent_ldgr_hash"), params, result, 500, 32);
 
             // This should trap because the transfer limit went negative
             if (BEAST_EXPECT(trap))
