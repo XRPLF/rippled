@@ -5,6 +5,7 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/Manager.h>
 
+#include <chrono>
 #include <optional>
 
 namespace xrpl {
@@ -27,8 +28,8 @@ public:
     virtual void
     start() = 0;
 
-    virtual void
-    rendezvous() const = 0;
+    virtual bool
+    rendezvous(std::optional<std::chrono::milliseconds> const& timeout = {}) const = 0;
 
     virtual void
     stop() = 0;

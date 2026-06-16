@@ -1577,23 +1577,14 @@ LedgerMaster::getCompleteLedgers() const
 std::size_t
 LedgerMaster::missingFromCompleteLedgerRange(LedgerIndex first, LedgerIndex last) const
 {
-    // Make a copy of the range to avoid holding the lock
-    auto const range = [&] {
+    RangeSet<LedgerIndex> const target{range(first, last)};
+
+    auto const missing = [&target, this] {
         std::scoped_lock const sl(completeLock_);
-        return completeLedgers_;
+        return target - completeLedgers_;
     }();
 
-    std::size_t missing = 0;
-
-    for (LedgerIndex idx = first; idx <= last; ++idx)
-    {
-        if (!boost::icl::contains(range, idx))
-        {
-            ++missing;
-        }
-    }
-
-    return missing;
+    return boost::icl::size(missing);
 }
 
 std::optional<NetClock::time_point>

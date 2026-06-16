@@ -664,9 +664,13 @@ public:
                 // current ledger from LedgerMaster.
                 std::this_thread::sleep_for(100ms);
                 LedgerIndex const deleteSeq = maxSeq;
-                while (!lm.haveLedger(deleteSeq))
                 {
-                    std::this_thread::sleep_for(100ms);
+                    std::size_t iterations = 30;
+                    while (!lm.haveLedger(deleteSeq) && --iterations > 0)
+                    {
+                        std::this_thread::sleep_for(100ms);
+                    }
+                    BEAST_EXPECTS(iterations > 25, to_string(iterations));
                 }
                 lm.clearLedger(deleteSeq);
 
@@ -716,7 +720,6 @@ public:
                 for (int l = 0; l < 5; ++l)
                 {
                     env.close();
-                    // DO NOT CALL rendezvous()! You'll end up with a deadlock.
                     ++maxSeq;
                     // Nothing has changed
                     BEAST_EXPECTS(
@@ -728,7 +731,9 @@ public:
                             "Complete Ledgers",
                             expectedRange(minSeq, deleteSeq, maxSeq),
                             lm.getCompleteLedgers()));
-                    std::this_thread::sleep_for(1s);
+                    // The Store is "stuck" in healthWait() and won't finish the run() loop until
+                    // it's backfilled
+                    BEAST_EXPECT(!store.rendezvous(100ms));
                 }
 
                 // Put the missing ledger back in LedgerMaster

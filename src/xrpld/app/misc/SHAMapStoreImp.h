@@ -150,8 +150,8 @@ public:
     void
     onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) override;
 
-    void
-    rendezvous() const override;
+    bool
+    rendezvous(std::optional<std::chrono::milliseconds> const& timeout = {}) const override;
     int
     fdRequired() const override;
 
@@ -213,8 +213,6 @@ private:
     enum class HealthResult { Stopping, KeepGoing };
     [[nodiscard]] HealthResult
     healthWait();
-    bool
-    hasCompleteRange(LedgerIndex first, LedgerIndex last);
 
 public:
     void

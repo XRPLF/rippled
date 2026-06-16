@@ -233,14 +233,20 @@ SHAMapStoreImp::onLedgerClosed(std::shared_ptr<Ledger const> const& ledger)
     cond_.notify_one();
 }
 
-void
-SHAMapStoreImp::rendezvous() const
+bool
+SHAMapStoreImp::rendezvous(std::optional<std::chrono::milliseconds> const& timeout) const
 {
     if (!working_)
-        return;
+        return true;
+
+    auto notWorking = [&] { return !working_; };
 
     std::unique_lock<std::mutex> lock(mutex_);
-    rendezvous_.wait(lock, [&] { return !working_; });
+    if (timeout)
+        return rendezvous_.wait_for(lock, *timeout, notWorking);
+    else
+        rendezvous_.wait(lock, notWorking);
+    return true;
 }
 
 int
@@ -641,8 +647,9 @@ SHAMapStoreImp::healthWait()
     OperatingMode mode = netOPs_->getOperatingMode();
     std::unique_lock lock(mutex_);
 
-    auto numMissing =
-        ledgerMaster_->missingFromCompleteLedgerRange(lastGoodValidatedLedger_, index);
+    auto numMissing = lastGoodValidatedLedger_ == 0
+        ? 0
+        : ledgerMaster_->missingFromCompleteLedgerRange(lastGoodValidatedLedger_, index);
     while (!stop_ && (mode != OperatingMode::FULL || age > ageThreshold_ || numMissing > 0))
     {
         // this value shouldn't change, so grab it while we have the
