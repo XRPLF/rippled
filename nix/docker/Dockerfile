@@ -71,7 +71,7 @@ if [ ! -e "${target}" ]; then
 fi
 EOF
 
-COPY nix/docker/check-tools.sh /tmp/check-tools.sh
+COPY bin/check-tools.sh /tmp/check-tools.sh
 RUN /tmp/check-tools.sh
 
 # Sanity-check that the g++/clang++ are able to build binaries, including sanitizer-instrumented ones.
@@ -93,7 +93,7 @@ RUN if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then \
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 # Sanity-check that the built binaries run correctly in the vanilla base image, with the necessary sanitizer runtime libraries installed.
-COPY nix/docker/install-sanitizer-libs.sh /tmp/install-sanitizer-libs.sh
+COPY bin/install-sanitizer-libs.sh /tmp/install-sanitizer-libs.sh
 COPY nix/docker/test_files/run-test-binaries.sh /tmp/run-test-binaries.sh
 COPY --from=final /tmp/bins /tmp/bins
 
