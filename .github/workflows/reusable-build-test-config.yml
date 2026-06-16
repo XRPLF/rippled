@@ -164,6 +164,27 @@ jobs:
               ${CMAKE_ARGS} \
               ..
 
+      # Export the sanitizer options before any instrumented binary runs. The
+      # protocol code-gen and build steps below invoke instrumented dependency
+      # tools (protoc, grpc), so setting UBSAN_OPTIONS here lets the UBSan
+      # suppression list silence their diagnostics too, not just at test time.
+      # GITHUB_WORKSPACE (not the github.workspace context) is used so the path
+      # resolves correctly inside the container job.
+      - name: Set sanitizer options
+        if: ${{ !inputs.build_only && env.SANITIZERS_ENABLED == 'true' }}
+        env:
+          CONFIG_NAME: ${{ inputs.config_name }}
+        run: |
+          SUPP="${GITHUB_WORKSPACE}/sanitizers/suppressions"
+          ASAN_OPTS="include=${SUPP}/runtime-asan-options.txt:suppressions=${SUPP}/asan.supp"
+          if [[ "${CONFIG_NAME}" == *gcc* ]]; then
+              ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
+          fi
+          echo "ASAN_OPTIONS=${ASAN_OPTS}" >>${GITHUB_ENV}
+          echo "TSAN_OPTIONS=include=${SUPP}/runtime-tsan-options.txt:suppressions=${SUPP}/tsan.supp" >>${GITHUB_ENV}
+          echo "UBSAN_OPTIONS=include=${SUPP}/runtime-ubsan-options.txt:suppressions=${SUPP}/ubsan.supp" >>${GITHUB_ENV}
+          echo "LSAN_OPTIONS=include=${SUPP}/runtime-lsan-options.txt:suppressions=${SUPP}/lsan.supp" >>${GITHUB_ENV}
+
       - name: Check protocol autogen files are up-to-date
         working-directory: ${{ env.BUILD_DIR }}
         env:
@@ -278,20 +299,6 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           ./xrpld --version | grep libvoidstar
-
-      - name: Set sanitizer options
-        if: ${{ !inputs.build_only && env.SANITIZERS_ENABLED == 'true' }}
-        env:
-          CONFIG_NAME: ${{ inputs.config_name }}
-        run: |
-          ASAN_OPTS="include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-asan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/asan.supp"
-          if [[ "${CONFIG_NAME}" == *gcc* ]]; then
-              ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
-          fi
-          echo "ASAN_OPTIONS=${ASAN_OPTS}" >>${GITHUB_ENV}
-          echo "TSAN_OPTIONS=include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-tsan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/tsan.supp" >>${GITHUB_ENV}
-          echo "UBSAN_OPTIONS=include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-ubsan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/ubsan.supp" >>${GITHUB_ENV}
-          echo "LSAN_OPTIONS=include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-lsan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/lsan.supp" >>${GITHUB_ENV}
 
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
