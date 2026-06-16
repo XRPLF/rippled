@@ -6,6 +6,7 @@ ccache --version
 clang --version
 clang++ --version
 clang-format --version
+ClangBuildAnalyzer --version
 cmake --version
 conan --version
 curl --version
