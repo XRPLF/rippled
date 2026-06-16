@@ -45,6 +45,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -299,6 +300,9 @@ checkPayment(
                 return rpcError(RpcTooBusy);
 
             STPathSet result;
+            bool const sponsorCreatedAccount = txJson.isMember(jss::Flags) &&
+                txJson[jss::Flags].isUInt() &&
+                ((txJson[jss::Flags].asUInt() & tfSponsorCreatedAccount) != 0u);
 
             if (auto ledger = app.getOpenLedger().current())
             {
@@ -311,6 +315,7 @@ checkPayment(
                     amount,
                     std::nullopt,
                     domain,
+                    sponsorCreatedAccount,
                     app);
                 if (pf.findPaths(app.config().pathSearchOld))
                 {

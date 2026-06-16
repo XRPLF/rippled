@@ -134,6 +134,7 @@ private:
     std::optional<AccountID> raDstAccount_;
     STAmount saDstAmount_;
     std::optional<STAmount> saSendMax_;
+    bool sponsorCreatedAccount_{false};
 
     std::set<Asset> sciSourceAssets_;
     std::map<Asset, STPathSet> context_;

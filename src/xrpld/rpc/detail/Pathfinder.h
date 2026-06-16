@@ -31,6 +31,7 @@ public:
         STAmount const& dstAmount,
         std::optional<STAmount> const& srcAmount,
         std::optional<uint256> const& domain,
+        bool sponsorCreatedAccount,
         Application& app);
     Pathfinder(Pathfinder const&) = delete;
     Pathfinder&
@@ -180,6 +181,7 @@ private:
     STAmount remainingAmount_;
     bool convertAll_;
     std::optional<uint256> domain_;
+    bool sponsorCreatedAccount_;
 
     std::shared_ptr<ReadView const> ledger_;
     std::unique_ptr<LoadEvent> loadEvent_;
