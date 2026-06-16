@@ -33,5 +33,6 @@ in
     python3
     runClangTidy
     vim
+    zip
   ];
 }
