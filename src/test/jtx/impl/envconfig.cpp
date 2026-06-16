@@ -63,7 +63,7 @@ setupConfigForUnitTests(Config& cfg)
 namespace jtx {
 
 std::unique_ptr<Config>
-online_delete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval)
+onlineDelete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval)
 {
     cfg->ledgerHistory = deleteInterval;
     auto& section = cfg->section(Sections::kNodeDatabase);

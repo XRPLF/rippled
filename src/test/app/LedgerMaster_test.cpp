@@ -129,7 +129,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
         auto const deleteInterval = 8;
 
         Env env{*this, envconfig([](auto cfg) {
-                    return online_delete(std::move(cfg), deleteInterval);
+                    return onlineDelete(std::move(cfg), deleteInterval);
                 })};
 
         auto const alice = Account("alice");

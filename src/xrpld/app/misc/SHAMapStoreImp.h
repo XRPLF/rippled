@@ -94,7 +94,7 @@ private:
     /// available during an online_delete healthWait() call, sleep
     /// the thread for this time, and continue checking until recovery.
     /// See also: "recovery_wait_seconds" in xrpld-example.cfg
-    std::chrono::seconds recoveryWaitTime_{1};
+    std::chrono::seconds recoveryWaitTime_{2};
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of run() or before

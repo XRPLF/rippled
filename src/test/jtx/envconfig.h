@@ -60,7 +60,7 @@ envconfig(F&& modfunc, Args&&... args)
 ///
 /// @return unique_ptr to Config instance
 std::unique_ptr<Config>
-online_delete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval = 8);
+onlineDelete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval = 8);
 
 /// @brief adjust config so no admin ports are enabled
 ///

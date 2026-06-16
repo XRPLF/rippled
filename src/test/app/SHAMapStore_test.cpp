@@ -47,8 +47,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
     static auto
     onlineDelete(std::unique_ptr<Config> cfg)
     {
-        using namespace jtx;
-        return online_delete(std::move(cfg), kDeleteInterval);
+        return jtx::onlineDelete(std::move(cfg), kDeleteInterval);
     }
 
     static auto

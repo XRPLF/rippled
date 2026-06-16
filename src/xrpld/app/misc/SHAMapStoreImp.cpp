@@ -8,6 +8,7 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -317,9 +318,8 @@ SHAMapStoreImp::run()
         bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
             canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::KeepGoing;
 
-        JLOG(journal_.debug()) << "run: Setting lastGoodValidatedLedger_ to " << validatedSeq;
-
         {
+            JLOG(journal_.debug()) << "run: Setting lastGoodValidatedLedger_ to " << validatedSeq;
             // Note that this is set after the healthWait() check, so that we
             // don't start the rotation until the validated ledger is fully
             // processed. It is not guaranteed to be done at this point. It also
@@ -647,36 +647,32 @@ SHAMapStoreImp::healthWait()
     OperatingMode mode = netOPs_->getOperatingMode();
     std::unique_lock lock(mutex_);
 
+    auto const waitTime = recoveryWaitTime_;
+    auto const ageThreshold = ageThreshold_;
     auto numMissing = lastGoodValidatedLedger_ == 0
         ? 0
         : ledgerMaster_->missingFromCompleteLedgerRange(lastGoodValidatedLedger_, index);
-    while (!stop_ && (mode != OperatingMode::FULL || age > ageThreshold_ || numMissing > 0))
+    while (!stop_ && (mode != OperatingMode::FULL || age > ageThreshold || numMissing > 0))
     {
         // this value shouldn't change, so grab it while we have the
         // lock
         auto const lowerBound = lastGoodValidatedLedger_;
 
-        lock.unlock();
+        ScopeUnlock unlock(lock);
 
         auto const stream =
-            mode != OperatingMode::FULL || age > ageThreshold_ ? journal_.warn() : journal_.info();
-        JLOG(stream) << "Waiting " << recoveryWaitTime_.count()
-                     << "s for node to stabilize. state: "
+            mode != OperatingMode::FULL || age > ageThreshold ? journal_.warn() : journal_.info();
+        JLOG(stream) << "Waiting " << waitTime.count() << "s for node to stabilize. state: "
                      << app_.getOPs().strOperatingMode(mode, false) << ". age " << age.count()
                      << "s. Missing ledgers: " << numMissing << ".  Expect: " << lowerBound << "-"
                      << index << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
-        std::this_thread::sleep_for(recoveryWaitTime_);
+        std::this_thread::sleep_for(waitTime);
         index = ledgerMaster_->getValidLedgerIndex();
         age = ledgerMaster_->getValidatedLedgerAge();
         mode = netOPs_->getOperatingMode();
         numMissing =
             lowerBound == 0 ? 0 : ledgerMaster_->missingFromCompleteLedgerRange(lowerBound, index);
-
-        lock.lock();
     }
-
-    JLOG(journal_.debug()) << "healthWait: Setting lastGoodValidatedLedger_ to " << index;
-    lastGoodValidatedLedger_ = index;
 
     return stop_ ? HealthResult::Stopping : HealthResult::KeepGoing;
 }
