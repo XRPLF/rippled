@@ -5456,7 +5456,8 @@ public:
         Account const sponsor("sponsor");
 
         {
-            // Delete Sponsor/Sponsee Account with ltSponsorship (tecHAS_OBLIGATIONS)
+            // A Sponsorship object blocks deletion of the sponsor,
+            // but NOT of the sponsee.
             Env env{*this, testableAmendments()};
             env.fund(XRP(1000000), alice, bob, sponsor);
             env.close();
@@ -5467,20 +5468,35 @@ public:
                 Ter(tesSUCCESS));
             env.close();
 
-            incLgrSeqForAccDel(env, sponsor);
-
             auto const keylet = keylet::sponsor(sponsor, alice);
-            auto const sponsorObj = env.le(keylet);
-            BEAST_EXPECT(sponsorObj);
+            BEAST_EXPECT(env.le(keylet));
+            BEAST_EXPECT(ownerCount(env, sponsor) == 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
 
-            // AccountDelete
+            // sponsor's sequence is the higher one, so a single call readies
+            // both accounts for deletion
+            incLgrSeqForAccDel(env, sponsor);
             auto const requiredFee = drops(env.current()->fees().increment);
-            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
+
+            // sponsor cannot be deleted while the Sponsorship exists
             env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
+            env.close();
+
+            // sponsee can be deleted
+            auto const sponsorBalBefore = env.balance(sponsor);
+            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet));
+            BEAST_EXPECT(!env.le(keylet::account(alice)));
+            BEAST_EXPECT(ownerCount(env, sponsor) == 0);
+
+            // FeeAmount is returned to the sponsor
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalBefore + XRP(100));
         }
 
         {
-            // Delete SponsoredAccount
+            // Deleting SponsoredAccount, whose account reserve is paid by a sponsor.
             Env env{*this, testableAmendments()};
             env.memoize(alice);
             env.fund(XRP(1000000), bob, sponsor);
