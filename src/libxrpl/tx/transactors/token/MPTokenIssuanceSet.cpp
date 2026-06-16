@@ -168,6 +168,10 @@ MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
     if (tx.isFlag(tfMPTUnlock) && !granularPermissions.contains(MPTokenIssuanceUnlock))
         return terNO_DELEGATE_PERMISSION;
 
+    if (tx.isFieldPresent(sfMutableFlags) || tx.isFieldPresent(sfMPTokenMetadata) ||
+        tx[~sfTransferFee] || tx.isFieldPresent(sfDomainID))
+        return terNO_DELEGATE_PERMISSION;
+
     return tesSUCCESS;
 }
 
