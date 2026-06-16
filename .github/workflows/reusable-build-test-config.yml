@@ -121,6 +121,11 @@ jobs:
         if: ${{ inputs.ccache_enabled && runner.debug == '1' }}
         run: echo "CCACHE_LOGFILE=${{ runner.temp }}/ccache.log" >>"${GITHUB_ENV}"
 
+      - name: Check tools
+        env:
+          CHECK_TOOLS_SKIP_CLONE: "1"
+        run: ./bin/check-tools.sh
+
       - name: Print build environment
         uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
 
