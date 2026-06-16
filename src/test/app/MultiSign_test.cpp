@@ -1121,8 +1121,8 @@ public:
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception].asString().find(
-                    "Invalid signature on account r") != std::string::npos);
+                info[jss::result][jss::error_exception].asString().contains(
+                    "Invalid signature on account r"));
         }
         {
             // Multisign with an empty signers array should fail.

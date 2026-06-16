@@ -801,7 +801,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
-        BEAST_EXPECT(resp.body().find("connectivity is working.") != std::string::npos);
+        BEAST_EXPECT(resp.body().contains("connectivity is working."));
 
         // mark the Network as having an Amendment Warning, but won't fail
         env.app().getOPs().setAmendmentWarned();
@@ -846,7 +846,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
-        BEAST_EXPECT(resp.body().find("connectivity is working.") != std::string::npos);
+        BEAST_EXPECT(resp.body().contains("connectivity is working."));
 
         // with ELB_SUPPORT, status still does not indicate a problem
         env.app().config().elbSupport = true;
@@ -866,7 +866,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
-        BEAST_EXPECT(resp.body().find("connectivity is working.") != std::string::npos);
+        BEAST_EXPECT(resp.body().contains("connectivity is working."));
     }
 
     void
@@ -929,7 +929,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
-        BEAST_EXPECT(resp.body().find("connectivity is working.") != std::string::npos);
+        BEAST_EXPECT(resp.body().contains("connectivity is working."));
 
         // mark the Network as Amendment Blocked, but still won't fail until
         // ELB is enabled (next step)
@@ -977,7 +977,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
-        BEAST_EXPECT(resp.body().find("connectivity is working.") != std::string::npos);
+        BEAST_EXPECT(resp.body().contains("connectivity is working."));
 
         env.app().config().elbSupport = true;
 
@@ -996,8 +996,8 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         BEAST_EXPECT(resp.result() == boost::beast::http::status::internal_server_error);
-        BEAST_EXPECT(resp.body().find("cannot accept clients:") != std::string::npos);
-        BEAST_EXPECT(resp.body().find("Server version too old") != std::string::npos);
+        BEAST_EXPECT(resp.body().contains("cannot accept clients:"));
+        BEAST_EXPECT(resp.body().contains("Server version too old"));
     }
 
     void
