@@ -76,7 +76,7 @@ TEST(SHAMapNodeSize, InnerNode)
             // [32-byte hash][1-byte branch index], so verify each branch index byte.
             for (unsigned int i = 0; i < n; ++i)
             {
-                EXPECT_EQ(buf[i * (uint256::kBytes + 1) + uint256::kBytes], i)
+                EXPECT_EQ(buf[(i * (uint256::kBytes + 1)) + uint256::kBytes], i)
                     << "branch count: " << n;
             }
         }
