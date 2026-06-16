@@ -423,11 +423,11 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // tfInnerBatchTxn flag on top-level transaction
             json::Value params;
-            json::Value tx_json{json::ValueType::Object};
-            tx_json[jss::TransactionType] = jss::AccountSet;
-            tx_json[jss::Account] = env.master.human();
-            tx_json[jss::Flags] = tfInnerBatchTxn;
-            params[jss::tx_json] = tx_json;
+            json::Value txJson{json::ValueType::Object};
+            txJson[jss::TransactionType] = jss::AccountSet;
+            txJson[jss::Account] = env.master.human();
+            txJson[jss::Flags] = tfInnerBatchTxn;
+            params[jss::tx_json] = txJson;
 
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(

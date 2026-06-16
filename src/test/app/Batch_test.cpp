@@ -47,6 +47,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -62,6 +63,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/transactors/payment/Payment.h>
 #include <xrpl/tx/transactors/system/Batch.h>
@@ -71,7 +73,6 @@
 #include <map>
 #include <memory>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -433,7 +434,7 @@ class Batch_test : public beast::unit_test::Suite
         // temINVALID_INNER_BATCH: tfInnerBatchTxn set but no parentBatchId.
         {
             auto jtx = env.jt(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn));
-            PreflightContext pfCtx(
+            PreflightContext const pfCtx(
                 env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
             BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
@@ -443,7 +444,7 @@ class Batch_test : public beast::unit_test::Suite
         // set.
         {
             auto jtx = env.jt(pay(alice, bob, XRP(1)));
-            PreflightContext pfCtx(
+            PreflightContext const pfCtx(
                 env.app(), *jtx.stx, uint256{1}, env.current()->rules(), TapBatch, env.journal);
             auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
             BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
@@ -998,8 +999,8 @@ class Batch_test : public beast::unit_test::Suite
 
         // Inner OfferCreate with MPT TakerPays. Valid under featureMPTokensV2.
         {
-            MPTIssue issue(makeMptID(1, alice));
-            STAmount mptAmt{issue, UINT64_C(100)};
+            MPTIssue const issue(makeMptID(1, alice));
+            STAmount const mptAmt{issue, UINT64_C(100)};
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const seq = env.seq(alice);
