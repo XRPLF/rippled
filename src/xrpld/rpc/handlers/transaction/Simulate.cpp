@@ -360,8 +360,7 @@ doSimulate(RPC::JsonContext& context)
     if (stTx->isFlag(tfInnerBatchTxn))
     {
         return RPC::makeError(
-            RpcInvalidParams,
-            "tfInnerBatchTxn flag is not allowed on top-level transactions.");
+            RpcInvalidParams, "tfInnerBatchTxn flag is not allowed on top-level transactions.");
     }
 
     std::string reason;
