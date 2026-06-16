@@ -140,7 +140,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
         LedgerIndex minSeq = 2;
         LedgerIndex maxSeq = env.closed()->header().seq;
         auto& store = env.app().getSHAMapStore();
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
         LedgerIndex lastRotated = store.getLastRotated();
         BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
@@ -159,7 +159,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
                 env(noop(alice));
             }
             env.close();
-            store.rendezvous();
+            BEAST_EXPECT(store.rendezvous());
 
             ++maxSeq;
 

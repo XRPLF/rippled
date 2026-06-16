@@ -244,9 +244,10 @@ SHAMapStoreImp::rendezvous(std::optional<std::chrono::milliseconds> const& timeo
 
     std::unique_lock<std::mutex> lock(mutex_);
     if (timeout)
+    {
         return rendezvous_.wait_for(lock, *timeout, notWorking);
-    else
-        rendezvous_.wait(lock, notWorking);
+    }
+    rendezvous_.wait(lock, notWorking);
     return true;
 }
 
@@ -658,7 +659,7 @@ SHAMapStoreImp::healthWait()
         // lock
         auto const lowerBound = lastGoodValidatedLedger_;
 
-        ScopeUnlock unlock(lock);
+        ScopeUnlock const unlock(lock);
 
         auto const stream =
             mode != OperatingMode::FULL || age > ageThreshold ? journal_.warn() : journal_.info();

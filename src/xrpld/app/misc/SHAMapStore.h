@@ -28,7 +28,7 @@ public:
     virtual void
     start() = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     rendezvous(std::optional<std::chrono::milliseconds> const& timeout = {}) const = 0;
 
     virtual void

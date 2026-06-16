@@ -28,6 +28,7 @@
 #include <boost/filesystem/path.hpp>
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -145,11 +146,11 @@ class SHAMapStore_test : public beast::unit_test::Suite
         auto& store = env.app().getSHAMapStore();
 
         int ledgerSeq = 3;
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
         BEAST_EXPECT(!store.getLastRotated());
 
         env.close();
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         auto ledger = env.rpc("ledger", "validated");
         BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++)));
@@ -229,7 +230,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(kDeleteInterval + 4)));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(store.getLastRotated() == kDeleteInterval + 3);
         lastRotated = store.getLastRotated();
@@ -256,7 +257,7 @@ public:
                 !getHash(ledgers[i]).empty());
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(store.getLastRotated() == kDeleteInterval + lastRotated);
 
@@ -294,7 +295,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         // The database will always have back to ledger 2,
         // regardless of lastRotated.
@@ -309,7 +310,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
         BEAST_EXPECT(lastRotated != store.getLastRotated());
@@ -325,7 +326,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, kDeleteInterval + 1, lastRotated);
         BEAST_EXPECT(lastRotated != store.getLastRotated());
@@ -364,7 +365,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - 2, 2);
         BEAST_EXPECT(lastRotated == store.getLastRotated());
@@ -374,7 +375,7 @@ public:
         BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + (kDeleteInterval / 2));
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - 2, 2);
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
@@ -387,7 +388,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
@@ -403,7 +404,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
@@ -415,7 +416,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - firstBatch, firstBatch);
 
@@ -437,7 +438,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
@@ -449,7 +450,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
@@ -470,7 +471,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
@@ -482,7 +483,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
@@ -632,7 +633,7 @@ public:
         LedgerIndex minSeq = 2;
         LedgerIndex maxSeq = env.closed()->header().seq;
         auto& store = env.app().getSHAMapStore();
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
         LedgerIndex lastRotated = store.getLastRotated();
         BEAST_EXPECTS(maxSeq == 3, std::to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
@@ -651,7 +652,7 @@ public:
                 env(noop(alice));
             }
             env.close();
-            store.rendezvous();
+            BEAST_EXPECT(store.rendezvous());
 
             ++maxSeq;
 
@@ -739,7 +740,7 @@ public:
                 lm.setLedgerRangePresent(deleteSeq, deleteSeq);
 
                 // Wait for the rotation to finish
-                store.rendezvous();
+                BEAST_EXPECT(store.rendezvous());
 
                 minSeq = lastRotated;
                 lastRotated = deleteSeq + 1;

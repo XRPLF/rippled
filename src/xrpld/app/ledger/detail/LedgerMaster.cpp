@@ -56,6 +56,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <boost/icl/concept/interval_associator.hpp>
 #include <boost/icl/concept/interval_set.hpp>
 
 #include <xrpl.pb.h>
