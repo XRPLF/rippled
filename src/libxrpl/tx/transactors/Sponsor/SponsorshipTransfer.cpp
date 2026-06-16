@@ -20,6 +20,7 @@
 
 #include <bit>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 
@@ -367,7 +368,7 @@ reduceReserveCount(
     ApplyView& view,
     AccountID const& account,
     AccountID const& sponsor,
-    int32_t delta)
+    int64_t delta)
 {
     if (delta == 0)
         return tesSUCCESS;
@@ -379,8 +380,8 @@ reduceReserveCount(
     if (!sponsorSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const reserveCount = sponsorSle->getFieldU32(sfReserveCount);
-    int32_t const afterReserveCount = reserveCount + delta;
+    int64_t const reserveCount = sponsorSle->getFieldU32(sfReserveCount);
+    int64_t const afterReserveCount = reserveCount + delta;
 
     if (afterReserveCount < 0)
     {
@@ -407,9 +408,9 @@ SponsorshipTransfer::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const setSponsorFieldU32 = [](auto const& sle, auto const& field, auto const& delta) {
-        int32_t const newValue = static_cast<int32_t>(sle->getFieldU32(field)) + delta;
+        int64_t const newValue = sle->getFieldU32(field) + delta;
 
-        if (newValue < 0)
+        if (newValue < 0 || newValue > std::numeric_limits<std::uint32_t>::max())
         {
             UNREACHABLE("xrpl::SponsorshipTransfer::doApply : Invalid sponsor field value");
             return;
@@ -435,7 +436,7 @@ SponsorshipTransfer::doApply()
         if (!ownerSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const ownerCountDelta = getLedgerEntryOwnerCount(objSle);
+        std::int64_t const ownerCountDelta = getLedgerEntryOwnerCount(objSle);
 
         auto const& sponsorField = getLedgerEntrySponsorField(objSle, *ownerAccountID);
 
