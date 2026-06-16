@@ -9,6 +9,7 @@ in
 {
   commonPackages = with pkgs; [
     ccache
+    clangbuildanalyzer
     cmake
     conan
     curlMinimal # needed for codecov/codecov-action
@@ -32,5 +33,6 @@ in
     python3
     runClangTidy
     vim
+    zip
   ];
 }
