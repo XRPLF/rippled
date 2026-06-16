@@ -1127,8 +1127,8 @@ TxQ::apply(
             std::uint32_t sponsorReserveUnits = locksSponsorReserve(pfResult.tx) ? 1 : 0;
             XRPAmount sponsorFeesAndSpend =
                 pfResult.consequences.fee() + pfResult.consequences.potentialSpend();
-            // NOLINTBEGIN(bugprone-unchecked-optional-access) requiresMultiTxn
-            // implies txIter is set
+            // NOLINTBEGIN(bugprone-unchecked-optional-access)
+            // requiresMultiTxn implies txIter is set
             for (auto iter = txIter->first; iter != txIter->end; ++iter)
             {
                 // Skip the queued entry the candidate is replacing

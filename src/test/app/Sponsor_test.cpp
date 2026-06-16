@@ -5985,9 +5985,11 @@ public:
 
         using namespace jtx;
 
-        // Sponsor is funded for its own reserve, both sponsored accounts, and
-        // `feeUnits` fees. Two creations need two fees, so feeUnits == 1 rejects
-        // the second creation; feeUnits == 2 queues both.
+        // The sponsor is always funded for 3 reserves (itself + the two accounts it
+        // will sponsor) and the two 1-drop deliveries; `feeUnits` tunes how many tx
+        // fees it can also cover. Two creations need two fees in flight, so
+        // feeUnits == 1 is one fee short and the second creation is rejected, while
+        // feeUnits == 2 covers both and both queue.
         auto const runScenario = [this](int feeUnits, TER secondResult) {
             Env env(
                 *this,
@@ -6039,11 +6041,9 @@ public:
             BEAST_EXPECT(txq.getAccountTxs(sponsor.id()).size() == expectedQueued);
         };
 
-        // Not collectively reserve-safe: the second creation is rejected.
         runScenario(1, telCAN_NOT_QUEUE_BALANCE);
 
-        // Enough headroom for both creations: the second is admitted, proving
-        // the accounting does not over-reject.
+        // Enough funds for both: the second is admitted
         runScenario(2, terQUEUED);
     }
 
