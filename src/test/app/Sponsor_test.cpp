@@ -5470,8 +5470,11 @@ public:
 
             auto const keylet = keylet::sponsor(sponsor, alice);
             BEAST_EXPECT(env.le(keylet));
+            // sponsor pays its own reserve here, so there is no SponsoredOwnerCount.
             BEAST_EXPECT(ownerCount(env, sponsor) == 1);
             BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
             // sponsor's sequence is the higher one, so a single call readies
             // both accounts for deletion
@@ -5489,9 +5492,54 @@ public:
 
             BEAST_EXPECT(!env.le(keylet));
             BEAST_EXPECT(!env.le(keylet::account(alice)));
+            // deleting sponsee makes those counts zero.
             BEAST_EXPECT(ownerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
             // FeeAmount is returned to the sponsor
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalBefore + XRP(100));
+        }
+
+        {
+            // The SponsorshipSet transaction itself
+            // is sponsored by a 3rd counterparty. Test deleting sponsee.
+            Env env{*this, testableAmendments()};
+            Account const counterparty("counterparty");
+            env.fund(XRP(1000000), alice, bob, sponsor, counterparty);
+            env.close();
+
+            // sponsor creates a Sponsorship for alice; the SponsorshipSet tx is
+            // itself reserve-sponsored by counterparty, so the object's reserve is counterparty's.
+            env(sponsor::set(sponsor, 0, 100, XRP(100)),
+                sponsor::SponseeAcc(alice),
+                sponsor::As(counterparty, spfSponsorReserve),
+                Sig(sfSponsorSignature, counterparty),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const keylet = keylet::sponsor(sponsor, alice);
+            auto const obj = env.le(keylet);
+            BEAST_EXPECT(obj);
+            BEAST_EXPECT(
+                obj->isFieldPresent(sfSponsor) &&
+                obj->getAccountID(sfSponsor) == counterparty.id());
+            // sponsor owns the object; its reserve is sponsored by counterparty.
+            BEAST_EXPECT(ownerCount(env, sponsor) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, counterparty) == 1);
+
+            auto const sponsorBalBefore = env.balance(sponsor);
+            incLgrSeqForAccDel(env, alice);
+            auto const requiredFee = drops(env.current()->fees().increment);
+            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet));
+            // deleting sponsee makes those counts zero.
+            BEAST_EXPECT(ownerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, counterparty) == 0);
             BEAST_EXPECT(env.balance(sponsor) == sponsorBalBefore + XRP(100));
         }
 
