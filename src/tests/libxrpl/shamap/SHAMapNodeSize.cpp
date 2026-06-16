@@ -57,7 +57,9 @@ TEST(SHAMapNodeSize, InnerNode)
         auto const sz = node->sizeForWire();
 
         if (auto it = kSizeCheckpoints.find(n); it != kSizeCheckpoints.end())
+        {
             EXPECT_EQ(sz, it->second) << "branch count: " << n;
+        }
 
         // Sentinel byte catches overruns in serializeForWire() independently of sizeForWire().
         Blob buf(sz + 1, 0xCD);
@@ -73,8 +75,10 @@ TEST(SHAMapNodeSize, InnerNode)
             // makeInnerWithBranches populates branches 0..n-1 in order. Each compressed entry is
             // [32-byte hash][1-byte branch index], so verify each branch index byte.
             for (unsigned int i = 0; i < n; ++i)
+            {
                 EXPECT_EQ(buf[i * (uint256::kBytes + 1) + uint256::kBytes], i)
                     << "branch count: " << n;
+            }
         }
     }
 }
