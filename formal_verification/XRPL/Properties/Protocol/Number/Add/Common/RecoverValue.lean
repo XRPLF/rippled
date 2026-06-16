@@ -3,69 +3,35 @@ import Mathlib.Tactic
 import XRPL.Model.Protocol.Number
 import XRPL.Properties.Protocol.Number.Add.Common.AlignDown
 import XRPL.Properties.Protocol.Number.Add.Common.RecoverBasic
-import XRPL.Properties.Protocol.Number.Rounding.Guard
-import XRPL.Properties.Protocol.Number.Rounding.ScaleDown
+import XRPL.Properties.Protocol.Number.Common.Rounding.Guard
+import XRPL.Properties.Protocol.Number.Common.Rounding.ScaleDown
 
-set_option linter.style.longLine false
-set_option linter.style.emptyLine false
 
 namespace XRPL.Model.Protocol
 
 
-/-! ## Value preservation across the `recover` loop
+/-! ## Value preservation across the `recover` loop -/
 
-The downstream different-sign branch needs the algebraic invariant that
-`recover` preserves the exact rational value being represented by
-the triple `(m, e, g)`. Concretely, if we interpret the residual as
-`(m - f_g) * 10 ^ e` — the "diff-sign" reading where `f_g` is the
-rational fraction captured by the guard `g` — then this value is the
-same at the input and output of `recover`, for some witness fraction
-`x_after` describing the output guard's hidden tail.
-
-The lemma takes the hidden fraction `x` of the input guard as an
-arbitrary real parameter (this is the universally-quantified part of
-`represents g f_g`), and produces the corresponding `x_after` of the
-output guard. Because `Guard.pop` widens the hidden-fraction bound by a
-factor of 10 each step, downstream callers should bound `x_after`
-manually (using `represents_pop` or by tracking it through the steps);
-this lemma asserts only the algebraic value equation, which is what is
-needed for the rounding-bound calculus.
-
-Preconditions:
-
-* `1 ≤ m.toNat` — the mantissa is positive (preserved across each
-  recover step, since each step replaces `m` by `m * 10 - d` with
-  `d ≤ 9`, giving `≥ 10 - 9 = 1`). This is needed to ensure the
-  `UInt64` subtraction `m * 10 - d` does not underflow.
-* `allNibblesAtMost9 g.digits_` — the guard is well-formed (preserved
-  by `Guard.pop`, see `allNibblesAtMost9_pop`). This is needed to
-  bound the popped digit by `9`.
-
-The output `x_after` is *not* constrained by this lemma to satisfy any
-`represents` bound; the algebraic equation alone is sufficient for the
-diff-sign branch's value-preservation calculus. -/
 theorem recover_value_preserved
-    (m : UInt64) (e : Int) (g : Guard) (fuel : ℕ)
+    (upperLimit m : UInt128) (hUL : upperLimit.toNat * 10 < 2 ^ 128)
+    (e : Int) (g : Guard) (fuel : ℕ)
     (hm_pos : 1 ≤ m.toNat)
     (hall : allNibblesAtMost9 g.digits_)
     (x : ℚ) :
     ∃ x_after : ℚ,
       ((m.toNat : ℚ)
           - ((decimalValue g.digits_ : ℚ) / 10 ^ 16 + x)) * (10 : ℚ) ^ e
-        = (((Number.operator_add.recover m e g fuel).1.toNat : ℚ)
-            - ((decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ)
+        = (((Number.operator_add.recover upperLimit m e g fuel).1.toNat : ℚ)
+            - ((decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ)
                   / 10 ^ 16 + x_after))
-          * (10 : ℚ) ^ ((Number.operator_add.recover m e g fuel).2.1) := by
-  induction m, e, g, fuel using Number.operator_add.recover.induct
+          * (10 : ℚ) ^ ((Number.operator_add.recover upperLimit m e g fuel).2.1) := by
+  induction m, e, g, fuel using Number.operator_add.recover.induct (upperLimit := upperLimit)
     generalizing x with
   | case1 m e g =>
     refine ⟨x, ?_⟩
     rw [recover_noop_zero]
   | case2 m e g fuel hcond g' d hpop IH =>
-    rw [Bool.and_eq_true] at hcond
-    obtain ⟨hc1, hc2⟩ := hcond
-    have h1 := of_decide_eq_true hc1
-    have h2 := of_decide_eq_true hc2
+    obtain ⟨h1, h2⟩ := hcond
     rw [recover_step h1 h2]
     have hpop1 : g.pop.1 = g' := by rw [hpop]
     have hpop2 : g.pop.2 = d := by rw [hpop]
@@ -73,14 +39,14 @@ theorem recover_value_preserved
     -- Step parameters: digit bound, no-underflow, no-overflow, etc.
     have hd_le_9 : d.toNat ≤ 9 := by
       rw [← hpop2]; exact pop_digit_le_9 g hall
-    have hd_le_mt : d ≤ m * 10 := by
+    have hd_le_mt : toUInt128 d ≤ m * 10 := by
       rw [← hpop2]
-      exact pop_digit_le_mul_ten_of_pos hm_pos h1 (pop_digit_le_9 g hall)
-    have hm_new_nat : (m * 10 - d).toNat = m.toNat * 10 - d.toNat :=
-      recover_step_mantissa_nat h1 hd_le_mt
+      exact pop_digit_le_mul_ten_of_pos128 hUL hm_pos h1 (pop_digit_le_9 g hall)
+    have hm_new_nat : (m * 10 - toUInt128 d).toNat = m.toNat * 10 - d.toNat :=
+      recover_step_mantissa_nat128 hUL h1 hd_le_mt
     have hm10ge : 10 ≤ m.toNat * 10 := by nlinarith
     -- Preserved invariant: new mantissa is still ≥ 1
-    have hm_new_pos : 1 ≤ (m * 10 - d).toNat := by
+    have hm_new_pos : 1 ≤ (m * 10 - toUInt128 d).toNat := by
       rw [hm_new_nat]; omega
     -- `pop` preserves nibble-validity
     have hall_eq : allNibblesAtMost9 g'.digits_ := by
@@ -97,7 +63,7 @@ theorem recover_value_preserved
         exact_mod_cast pop_digit_eq_nibble_15 g
       rw [hpop2] at hd_eq
       linarith
-    have h_mnew_q : ((m * 10 - d).toNat : ℚ) = (m.toNat : ℚ) * 10 - (d.toNat : ℚ) := by
+    have h_mnew_q : ((m * 10 - toUInt128 d).toNat : ℚ) = (m.toNat : ℚ) * 10 - (d.toNat : ℚ) := by
       rw [hm_new_nat]
       have hle : d.toNat ≤ m.toNat * 10 := by omega
       rw [Nat.cast_sub hle]
@@ -113,11 +79,7 @@ theorem recover_value_preserved
     ring
   | case3 m e g fuel hcond =>
     refine ⟨x, ?_⟩
-    have hprop : ¬ (m < largeRange.min ∧ m * 10 ≤ maxRep) := by
-      intro ⟨hm1, hm2⟩
-      apply hcond
-      rw [Bool.and_eq_true]
-      exact ⟨decide_eq_true hm1, decide_eq_true hm2⟩
+    have hprop : ¬ (m < upperLimit ∧ ¬ g.empty) := hcond
     rw [recover_noop_exit hprop]
 
 /-- Strengthened clone of `recover_value_preserved`: when the input guard
@@ -134,26 +96,24 @@ came from a guard with `xbit_ = false`, hence hidden fraction `0`, so
 `represents_pop_of_xbit_false` applies and the fresh guard again has
 `xbit_ = false` — re-establishing `hdich` vacuously for the recursive call. -/
 theorem recover_preserves_represents
-    (m : UInt64) (e : Int) (g : Guard) (fuel : ℕ)
+    (upperLimit m : UInt128) (hUL : upperLimit.toNat * 10 < 2 ^ 128)
+    (e : Int) (g : Guard) (fuel : ℕ)
     (hm_pos : 1 ≤ m.toNat)
     {f_g : ℚ} (hrep : represents g f_g)
     (hdich : g.xbit_ = true →
-      ¬ (m < largeRange.min ∧ m * 10 ≤ maxRep)) :
+      ¬ (m < upperLimit ∧ ¬ g.empty)) :
     ∃ f_exit : ℚ,
-      represents (Number.operator_add.recover m e g fuel).2.2 f_exit ∧
+      represents (Number.operator_add.recover upperLimit m e g fuel).2.2 f_exit ∧
       ((m.toNat : ℚ) - f_g) * (10 : ℚ) ^ e
-        = (((Number.operator_add.recover m e g fuel).1.toNat : ℚ) - f_exit)
-            * (10 : ℚ) ^ ((Number.operator_add.recover m e g fuel).2.1) := by
-  induction m, e, g, fuel using Number.operator_add.recover.induct
+        = (((Number.operator_add.recover upperLimit m e g fuel).1.toNat : ℚ) - f_exit)
+            * (10 : ℚ) ^ ((Number.operator_add.recover upperLimit m e g fuel).2.1) := by
+  induction m, e, g, fuel using Number.operator_add.recover.induct (upperLimit := upperLimit)
     generalizing f_g with
   | case1 m e g =>
     refine ⟨f_g, hrep, ?_⟩
     rw [recover_noop_zero]
   | case2 m e g fuel hcond g' d hpop IH =>
-    rw [Bool.and_eq_true] at hcond
-    obtain ⟨hc1, hc2⟩ := hcond
-    have h1 := of_decide_eq_true hc1
-    have h2 := of_decide_eq_true hc2
+    obtain ⟨h1, h2⟩ := hcond
     -- nibble-validity of `g` (from `represents`)
     obtain ⟨_, _, _, _, _, hall⟩ := id hrep
     -- The pop happens, so `xbit_` must be false (contrapositive of `hdich`).
@@ -171,13 +131,13 @@ theorem recover_preserves_represents
     -- Step parameters: digit bound, no-underflow, no-overflow.
     have hd_le_9 : d.toNat ≤ 9 := by
       rw [← hpop2]; exact pop_digit_le_9 g hall
-    have hd_le_mt : d ≤ m * 10 := by
+    have hd_le_mt : toUInt128 d ≤ m * 10 := by
       rw [← hpop2]
-      exact pop_digit_le_mul_ten_of_pos hm_pos h1 (pop_digit_le_9 g hall)
-    have hm_new_nat : (m * 10 - d).toNat = m.toNat * 10 - d.toNat :=
-      recover_step_mantissa_nat h1 hd_le_mt
+      exact pop_digit_le_mul_ten_of_pos128 hUL hm_pos h1 (pop_digit_le_9 g hall)
+    have hm_new_nat : (m * 10 - toUInt128 d).toNat = m.toNat * 10 - d.toNat :=
+      recover_step_mantissa_nat128 hUL h1 hd_le_mt
     have hm10ge : 10 ≤ m.toNat * 10 := by nlinarith
-    have hm_new_pos : 1 ≤ (m * 10 - d).toNat := by
+    have hm_new_pos : 1 ≤ (m * 10 - toUInt128 d).toNat := by
       rw [hm_new_nat]; omega
     -- The popped guard represents `10 * f_g - d` with hidden fraction 0.
     have hrep_pop : represents g.pop.1 (10 * f_g - (g.pop.2.toNat : ℚ)) :=
@@ -189,7 +149,7 @@ theorem recover_preserves_represents
       rw [hpop1] at this
       rw [this, hxbit_false]
     have hdich' : g'.xbit_ = true →
-        ¬ ((m * 10 - d) < largeRange.min ∧ (m * 10 - d) * 10 ≤ maxRep) := by
+        ¬ ((m * 10 - toUInt128 d) < upperLimit ∧ ¬ g'.empty) := by
       intro hxt
       rw [hg'_xbit] at hxt
       exact absurd hxt (by decide)
@@ -198,7 +158,7 @@ theorem recover_preserves_represents
     refine ⟨f_exit, hrep_exit, ?_⟩
     rw [← hIH_eq]
     -- One-step value algebra: `(m - f_g) * 10^e = ((m*10-d) - (10 f_g - d)) * 10^(e-1)`.
-    have h_mnew_q : ((m * 10 - d).toNat : ℚ) = (m.toNat : ℚ) * 10 - (d.toNat : ℚ) := by
+    have h_mnew_q : ((m * 10 - toUInt128 d).toNat : ℚ) = (m.toNat : ℚ) * 10 - (d.toNat : ℚ) := by
       rw [hm_new_nat]
       have hle : d.toNat ≤ m.toNat * 10 := by omega
       rw [Nat.cast_sub hle]
@@ -212,18 +172,97 @@ theorem recover_preserves_represents
     ring
   | case3 m e g fuel hcond =>
     refine ⟨f_g, ?_, ?_⟩
-    · have hprop : ¬ (m < largeRange.min ∧ m * 10 ≤ maxRep) := by
-        intro ⟨hm1, hm2⟩
-        apply hcond
-        rw [Bool.and_eq_true]
-        exact ⟨decide_eq_true hm1, decide_eq_true hm2⟩
+    · have hprop : ¬ (m < upperLimit ∧ ¬ g.empty) := hcond
       rw [recover_noop_exit hprop]; exact hrep
-    · have hprop : ¬ (m < largeRange.min ∧ m * 10 ≤ maxRep) := by
-        intro ⟨hm1, hm2⟩
-        apply hcond
-        rw [Bool.and_eq_true]
-        exact ⟨decide_eq_true hm1, decide_eq_true hm2⟩
+    · have hprop : ¬ (m < upperLimit ∧ ¬ g.empty) := hcond
       rw [recover_noop_exit hprop]
+
+/-- A guard that is empty and `represents f` forces `f = 0`. -/
+lemma represents_zero_of_empty {g : Guard} {f : ℚ}
+    (hrep : represents g f) (hempty : g.empty = true) : f = 0 := by
+  obtain ⟨hd, hx⟩ : g.digits_ = 0 ∧ g.xbit_ = false := by
+    have h : (g.digits_ == 0 && !g.xbit_) = true := hempty
+    rw [Bool.and_eq_true] at h
+    exact ⟨beq_iff_eq.mp h.1, by simpa using h.2⟩
+  exact represents_eq_zero_of_digits_zero_xbit_false hd hx hrep
+
+/-- On the empty-exit path the recover residue is consumed exactly: if the output
+guard is empty, the diff-sign value `(m - f) * 10^e` equals the output
+`m_out * 10^e_out` with no residue. (The guard's `xbit_` is invariant under
+`pop`, so an empty output forces `xbit_ = false` throughout the run, and the
+tight `represents` chain threads through every pop.) -/
+theorem recover_exact_of_empty
+    (upperLimit m : UInt128) (hUL : upperLimit.toNat * 10 < 2 ^ 128)
+    (e : Int) (g : Guard) (fuel : ℕ)
+    (hm_pos : 1 ≤ m.toNat)
+    {f : ℚ} (hrep : represents g f)
+    (hempty : (Number.operator_add.recover upperLimit m e g fuel).2.2.empty = true) :
+    ((m.toNat : ℚ) - f) * (10 : ℚ) ^ e
+      = ((Number.operator_add.recover upperLimit m e g fuel).1.toNat : ℚ)
+          * (10 : ℚ) ^ ((Number.operator_add.recover upperLimit m e g fuel).2.1) := by
+  induction m, e, g, fuel using Number.operator_add.recover.induct (upperLimit := upperLimit)
+    generalizing f with
+  | case1 m e g =>
+    rw [recover_noop_zero] at hempty ⊢
+    rw [represents_zero_of_empty hrep hempty]
+    ring
+  | case2 m e g fuel hcond g' d hpop IH =>
+    obtain ⟨h1, h2⟩ := hcond
+    rw [recover_step h1 h2] at hempty ⊢
+    have hpop1 : g.pop.1 = g' := by rw [hpop]
+    have hpop2 : g.pop.2 = d := by rw [hpop]
+    rw [hpop1, hpop2] at hempty ⊢
+    -- nibble-validity of `g` (from `represents`)
+    obtain ⟨_, _, _, _, _, hall⟩ := id hrep
+    -- An empty output forces `xbit_ = false` at the input (pop preserves xbit).
+    have hxbit_false : g.xbit_ = false := by
+      have hx := recover_xbit upperLimit (m * 10 - toUInt128 d) (e - 1) g' fuel
+      have hout_xbit : (Number.operator_add.recover upperLimit (m * 10 - toUInt128 d)
+          (e - 1) g' fuel).2.2.xbit_ = false := by
+        have h : ((Number.operator_add.recover upperLimit (m * 10 - toUInt128 d)
+            (e - 1) g' fuel).2.2.digits_ == 0
+            && !(Number.operator_add.recover upperLimit (m * 10 - toUInt128 d)
+                  (e - 1) g' fuel).2.2.xbit_) = true := hempty
+        rw [Bool.and_eq_true] at h
+        simpa using h.2
+      rw [hx] at hout_xbit
+      have hpop_xbit : g'.xbit_ = g.xbit_ := by rw [← hpop1]; rfl
+      rw [hpop_xbit] at hout_xbit
+      exact hout_xbit
+    -- Step parameters: digit bound, no-underflow, no-overflow.
+    have hd_le_9 : d.toNat ≤ 9 := by
+      rw [← hpop2]; exact pop_digit_le_9 g hall
+    have hd_le_mt : toUInt128 d ≤ m * 10 := by
+      rw [← hpop2]
+      exact pop_digit_le_mul_ten_of_pos128 hUL hm_pos h1 (pop_digit_le_9 g hall)
+    have hm_new_nat : (m * 10 - toUInt128 d).toNat = m.toNat * 10 - d.toNat :=
+      recover_step_mantissa_nat128 hUL h1 hd_le_mt
+    have hm10ge : 10 ≤ m.toNat * 10 := by nlinarith
+    have hm_new_pos : 1 ≤ (m * 10 - toUInt128 d).toNat := by
+      rw [hm_new_nat]; omega
+    -- The popped guard represents `10 * f - d`.
+    have hrep_pop : represents g.pop.1 (10 * f - (g.pop.2.toNat : ℚ)) :=
+      represents_pop_of_xbit_false hrep hxbit_false
+    rw [hpop1, hpop2] at hrep_pop
+    -- Apply IH at the popped state.
+    have hIH_eq := IH hm_new_pos hrep_pop hempty
+    rw [← hIH_eq]
+    -- One-step value algebra.
+    have h_mnew_q : ((m * 10 - toUInt128 d).toNat : ℚ) = (m.toNat : ℚ) * 10 - (d.toNat : ℚ) := by
+      rw [hm_new_nat]
+      have hle : d.toNat ≤ m.toNat * 10 := by omega
+      rw [Nat.cast_sub hle]
+      push_cast; ring
+    rw [h_mnew_q]
+    have he_pow : (10 : ℚ) ^ e = (10 : ℚ) ^ (e - 1) * 10 := by
+      rw [show e = (e - 1) + 1 from by ring, zpow_add₀ (by norm_num : (10 : ℚ) ≠ 0)]
+      simp
+    rw [he_pow]
+    ring
+  | case3 m e g fuel hcond =>
+    rw [recover_noop_exit hcond] at hempty ⊢
+    rw [represents_zero_of_empty hrep hempty]
+    ring
 
 /-- Convenient corollary of `recover_value_preserved`, packaged for the
 `represents`-based reasoning that downstream diff-sign proofs use. Given
@@ -232,16 +271,17 @@ real, not constrained to lie in `[0, 1)`) such that the diff-sign
 combined value `(m.toNat - f_g) * 10 ^ e` equals the corresponding
 combined value at the recover output. -/
 theorem recover_value_preserved_of_represents
-    {m : UInt64} {e : Int} {g : Guard} {fuel : ℕ}
+    {upperLimit m : UInt128} (hUL : upperLimit.toNat * 10 < 2 ^ 128)
+    {e : Int} {g : Guard} {fuel : ℕ}
     (hm_pos : 1 ≤ m.toNat)
     {f_g : ℚ} (hg : represents g f_g) :
     ∃ f_g_after : ℚ,
       ((m.toNat : ℚ) - f_g) * (10 : ℚ) ^ e
-        = (((Number.operator_add.recover m e g fuel).1.toNat : ℚ) - f_g_after)
-          * (10 : ℚ) ^ ((Number.operator_add.recover m e g fuel).2.1) := by
+        = (((Number.operator_add.recover upperLimit m e g fuel).1.toNat : ℚ) - f_g_after)
+          * (10 : ℚ) ^ ((Number.operator_add.recover upperLimit m e g fuel).2.1) := by
   obtain ⟨x, _, _, hf, _, hall⟩ := hg
-  obtain ⟨x_after, heq⟩ := recover_value_preserved m e g fuel hm_pos hall x
-  refine ⟨(decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16
+  obtain ⟨x_after, heq⟩ := recover_value_preserved upperLimit m hUL e g fuel hm_pos hall x
+  refine ⟨(decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16
             + x_after, ?_⟩
   rw [hf]
   exact heq
@@ -290,21 +330,22 @@ unit-interval slack is only useful when `fuel ≤ 16`; in practice the
 recover loop's exit condition (mantissa large enough) ensures it stops
 well before fuel exhaustion. -/
 theorem recover_value_preserved_bounded
-    (m : UInt64) (e : Int) (g : Guard) (fuel : ℕ)
+    (upperLimit m : UInt128) (hUL : upperLimit.toNat * 10 < 2 ^ 128)
+    (e : Int) (g : Guard) (fuel : ℕ)
     (hm_pos : 1 ≤ m.toNat)
     (hall : allNibblesAtMost9 g.digits_)
     (x B : ℚ) (hB_pos : 0 < B)
     (hx_nn : 0 ≤ x) (hx_lt : x < B) :
     ∃ x_after : ℚ,
       0 ≤ x_after ∧ x_after < (10 : ℚ) ^ fuel * B ∧
-      allNibblesAtMost9 (Number.operator_add.recover m e g fuel).2.2.digits_ ∧
+      allNibblesAtMost9 (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ ∧
       ((m.toNat : ℚ)
           - ((decimalValue g.digits_ : ℚ) / 10 ^ 16 + x)) * (10 : ℚ) ^ e
-        = (((Number.operator_add.recover m e g fuel).1.toNat : ℚ)
-            - ((decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ)
+        = (((Number.operator_add.recover upperLimit m e g fuel).1.toNat : ℚ)
+            - ((decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ)
                   / 10 ^ 16 + x_after))
-          * (10 : ℚ) ^ ((Number.operator_add.recover m e g fuel).2.1) := by
-  induction m, e, g, fuel using Number.operator_add.recover.induct
+          * (10 : ℚ) ^ ((Number.operator_add.recover upperLimit m e g fuel).2.1) := by
+  induction m, e, g, fuel using Number.operator_add.recover.induct (upperLimit := upperLimit)
     generalizing x B with
   | case1 m e g =>
     refine ⟨x, hx_nn, ?_, ?_, ?_⟩
@@ -313,10 +354,7 @@ theorem recover_value_preserved_bounded
     · rw [recover_noop_zero]; exact hall
     · rw [recover_noop_zero]
   | case2 m e g fuel hcond g' d hpop IH =>
-    rw [Bool.and_eq_true] at hcond
-    obtain ⟨hc1, hc2⟩ := hcond
-    have h1 := of_decide_eq_true hc1
-    have h2 := of_decide_eq_true hc2
+    obtain ⟨h1, h2⟩ := hcond
     rw [recover_step h1 h2]
     have hpop1 : g.pop.1 = g' := by rw [hpop]
     have hpop2 : g.pop.2 = d := by rw [hpop]
@@ -324,13 +362,13 @@ theorem recover_value_preserved_bounded
     -- Step parameters
     have hd_le_9 : d.toNat ≤ 9 := by
       rw [← hpop2]; exact pop_digit_le_9 g hall
-    have hd_le_mt : d ≤ m * 10 := by
+    have hd_le_mt : toUInt128 d ≤ m * 10 := by
       rw [← hpop2]
-      exact pop_digit_le_mul_ten_of_pos hm_pos h1 (pop_digit_le_9 g hall)
-    have hm_new_nat : (m * 10 - d).toNat = m.toNat * 10 - d.toNat :=
-      recover_step_mantissa_nat h1 hd_le_mt
+      exact pop_digit_le_mul_ten_of_pos128 hUL hm_pos h1 (pop_digit_le_9 g hall)
+    have hm_new_nat : (m * 10 - toUInt128 d).toNat = m.toNat * 10 - d.toNat :=
+      recover_step_mantissa_nat128 hUL h1 hd_le_mt
     have hm10ge : 10 ≤ m.toNat * 10 := by nlinarith
-    have hm_new_pos : 1 ≤ (m * 10 - d).toNat := by
+    have hm_new_pos : 1 ≤ (m * 10 - toUInt128 d).toNat := by
       rw [hm_new_nat]; omega
     have hall_eq : allNibblesAtMost9 g'.digits_ := by
       rw [← hpop1]; exact allNibblesAtMost9_pop g hall
@@ -358,7 +396,7 @@ theorem recover_value_preserved_bounded
           exact_mod_cast pop_digit_eq_nibble_15 g
         rw [hpop2] at hd_eq
         linarith
-      have h_mnew_q : ((m * 10 - d).toNat : ℚ) = (m.toNat : ℚ) * 10 - (d.toNat : ℚ) := by
+      have h_mnew_q : ((m * 10 - toUInt128 d).toNat : ℚ) = (m.toNat : ℚ) * 10 - (d.toNat : ℚ) := by
         rw [hm_new_nat]
         have hle : d.toNat ≤ m.toNat * 10 := by omega
         rw [Nat.cast_sub hle]
@@ -379,21 +417,13 @@ theorem recover_value_preserved_bounded
         one_le_pow₀ (by norm_num : (1 : ℚ) ≤ 10)
       change x < (10 : ℚ) ^ (fuel + 1) * B
       nlinarith
-    · have hprop : ¬ (m < largeRange.min ∧ m * 10 ≤ maxRep) := by
-        intro ⟨hm1, hm2⟩
-        apply hcond
-        rw [Bool.and_eq_true]
-        exact ⟨decide_eq_true hm1, decide_eq_true hm2⟩
+    · have hprop : ¬ (m < upperLimit ∧ ¬ g.empty) := hcond
       rw [recover_noop_exit hprop]; exact hall
-    · have hprop : ¬ (m < largeRange.min ∧ m * 10 ≤ maxRep) := by
-        intro ⟨hm1, hm2⟩
-        apply hcond
-        rw [Bool.and_eq_true]
-        exact ⟨decide_eq_true hm1, decide_eq_true hm2⟩
+    · have hprop : ¬ (m < upperLimit ∧ ¬ g.empty) := hcond
       rw [recover_noop_exit hprop]
 
 set_option maxHeartbeats 800000 in
--- repeated `Number.operator_add.recover m e g fuel` terms are expensive to elaborate
+-- repeated `Number.operator_add.recover upperLimit m e g fuel` terms are expensive to elaborate
 /-- Public corollary: `recover_value_in_unit_interval`.
 
 After `recover m e g fuel` (with `1 ≤ m.toNat` and `g` representing
@@ -406,39 +436,40 @@ hidden-fraction bound under `fuel` consecutive `Guard.pop` operations.
 For the downstream diff-sign bound proof, this slack is absorbed
 into the residue tolerance. -/
 theorem recover_value_in_unit_interval
-    {m : UInt64} {e : Int} {g : Guard} {fuel : ℕ}
+    {upperLimit m : UInt128} (hUL : upperLimit.toNat * 10 < 2 ^ 128)
+    {e : Int} {g : Guard} {fuel : ℕ}
     (hm_pos : 1 ≤ m.toNat)
     {f_g : ℚ} (hg : represents g f_g) :
     ∃ f_g_after : ℚ,
       0 ≤ f_g_after ∧
       f_g_after < 1 + (10 : ℚ) ^ fuel / 10 ^ 16 ∧
       ((m.toNat : ℚ) - f_g) * (10 : ℚ) ^ e
-        = (((Number.operator_add.recover m e g fuel).1.toNat : ℚ) - f_g_after)
-          * (10 : ℚ) ^ ((Number.operator_add.recover m e g fuel).2.1) := by
+        = (((Number.operator_add.recover upperLimit m e g fuel).1.toNat : ℚ) - f_g_after)
+          * (10 : ℚ) ^ ((Number.operator_add.recover upperLimit m e g fuel).2.1) := by
   obtain ⟨x, hx_nn, hx_lt, hf_eq, _, hall⟩ := hg
   -- Initial bound B = 1/10^16.
   have hB_pos : (0 : ℚ) < 1 / 10 ^ 16 := by positivity
   obtain ⟨x_after, hxa_nn, hxa_lt, hall_after, heq⟩ :=
-    recover_value_preserved_bounded m e g fuel hm_pos hall x (1 / 10 ^ 16) hB_pos hx_nn hx_lt
-  refine ⟨(decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16
+    recover_value_preserved_bounded upperLimit m hUL e g fuel hm_pos hall x (1 / 10 ^ 16) hB_pos hx_nn hx_lt
+  refine ⟨(decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16
           + x_after, ?_, ?_, ?_⟩
   · -- 0 ≤ residue
     have h16_pos : (0 : ℚ) < 10 ^ 16 := by positivity
     have h_dv_nn :
-        (0 : ℚ) ≤ (decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16 := by
+        (0 : ℚ) ≤ (decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16 := by
       apply div_nonneg
       · exact_mod_cast Nat.zero_le _
       · linarith
     linarith
   · -- residue < 1 + 10^fuel / 10^16
     have h16_pos : (0 : ℚ) < 10 ^ 16 := by positivity
-    have h_nat : decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ < 10 ^ 16 :=
+    have h_nat : decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ < 10 ^ 16 :=
       decimalValue_lt_pow_16 hall_after
     have h_q :
-        (decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ) < (10 : ℚ) ^ 16 := by
+        (decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) < (10 : ℚ) ^ 16 := by
       exact_mod_cast h_nat
     have h_dv_lt :
-        (decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16 < 1 := by
+        (decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16 < 1 := by
       rw [div_lt_iff₀ h16_pos]; linarith
     have h_xa_eq : (10 : ℚ) ^ fuel * (1 / 10 ^ 16) = (10 : ℚ) ^ fuel / 10 ^ 16 := by ring
     rw [h_xa_eq] at hxa_lt
@@ -480,36 +511,35 @@ exits early (case3), `k = 0` reflects that the bound did not widen at
 all. When the loop runs (case2), `k` increases by 1 each step, matching
 the widening of the bound by factor 10. -/
 theorem recover_value_preserved_tight
-    (m : UInt64) (e : Int) (g : Guard) (fuel : ℕ)
+    (upperLimit m : UInt128) (hUL : upperLimit.toNat * 10 < 2 ^ 128)
+    (e : Int) (g : Guard) (fuel : ℕ)
     (hm_pos : 1 ≤ m.toNat)
     (hall : allNibblesAtMost9 g.digits_)
     (x B : ℚ) (hB_pos : 0 < B)
     (hx_nn : 0 ≤ x) (hx_lt : x < B) :
     ∃ x_after : ℚ, ∃ k : ℕ,
       k ≤ fuel ∧
-      (Number.operator_add.recover m e g fuel).2.1 = e - k ∧
+      (Number.operator_add.recover upperLimit m e g fuel).2.1 = e - k ∧
       0 ≤ x_after ∧ x_after < (10 : ℚ) ^ k * B ∧
-      allNibblesAtMost9 (Number.operator_add.recover m e g fuel).2.2.digits_ ∧
+      (0 < x → 0 < x_after) ∧
+      allNibblesAtMost9 (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ ∧
       ((m.toNat : ℚ)
           - ((decimalValue g.digits_ : ℚ) / 10 ^ 16 + x)) * (10 : ℚ) ^ e
-        = (((Number.operator_add.recover m e g fuel).1.toNat : ℚ)
-            - ((decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ)
+        = (((Number.operator_add.recover upperLimit m e g fuel).1.toNat : ℚ)
+            - ((decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ)
                   / 10 ^ 16 + x_after))
-          * (10 : ℚ) ^ ((Number.operator_add.recover m e g fuel).2.1) := by
-  induction m, e, g, fuel using Number.operator_add.recover.induct
+          * (10 : ℚ) ^ ((Number.operator_add.recover upperLimit m e g fuel).2.1) := by
+  induction m, e, g, fuel using Number.operator_add.recover.induct (upperLimit := upperLimit)
     generalizing x B with
   | case1 m e g =>
     -- fuel = 0: recover is a no-op, k = 0.
-    refine ⟨x, 0, le_refl _, ?_, hx_nn, ?_, ?_, ?_⟩
+    refine ⟨x, 0, le_refl _, ?_, hx_nn, ?_, fun h => h, ?_, ?_⟩
     · rw [recover_noop_zero]; push_cast; ring
     · rw [pow_zero, one_mul]; exact hx_lt
     · rw [recover_noop_zero]; exact hall
     · rw [recover_noop_zero]
   | case2 m e g fuel hcond g' d hpop IH =>
-    rw [Bool.and_eq_true] at hcond
-    obtain ⟨hc1, hc2⟩ := hcond
-    have h1 := of_decide_eq_true hc1
-    have h2 := of_decide_eq_true hc2
+    obtain ⟨h1, h2⟩ := hcond
     rw [recover_step h1 h2]
     have hpop1 : g.pop.1 = g' := by rw [hpop]
     have hpop2 : g.pop.2 = d := by rw [hpop]
@@ -517,22 +547,23 @@ theorem recover_value_preserved_tight
     -- Step parameters
     have hd_le_9 : d.toNat ≤ 9 := by
       rw [← hpop2]; exact pop_digit_le_9 g hall
-    have hd_le_mt : d ≤ m * 10 := by
+    have hd_le_mt : toUInt128 d ≤ m * 10 := by
       rw [← hpop2]
-      exact pop_digit_le_mul_ten_of_pos hm_pos h1 (pop_digit_le_9 g hall)
-    have hm_new_nat : (m * 10 - d).toNat = m.toNat * 10 - d.toNat :=
-      recover_step_mantissa_nat h1 hd_le_mt
+      exact pop_digit_le_mul_ten_of_pos128 hUL hm_pos h1 (pop_digit_le_9 g hall)
+    have hm_new_nat : (m * 10 - toUInt128 d).toNat = m.toNat * 10 - d.toNat :=
+      recover_step_mantissa_nat128 hUL h1 hd_le_mt
     have hm10ge : 10 ≤ m.toNat * 10 := by nlinarith
-    have hm_new_pos : 1 ≤ (m * 10 - d).toNat := by
+    have hm_new_pos : 1 ≤ (m * 10 - toUInt128 d).toNat := by
       rw [hm_new_nat]; omega
     have hall_eq : allNibblesAtMost9 g'.digits_ := by
       rw [← hpop1]; exact allNibblesAtMost9_pop g hall
     have h10x_nn : 0 ≤ 10 * x := by linarith
     have h10B_pos : 0 < 10 * B := by linarith
     have h10x_lt : 10 * x < 10 * B := by linarith
-    obtain ⟨x_after, k', hk'_le, hk'_eq, hxa_nn, hxa_lt, hall_after, heq_IH⟩ :=
+    obtain ⟨x_after, k', hk'_le, hk'_eq, hxa_nn, hxa_lt, hxa_pos, hall_after, heq_IH⟩ :=
       IH hm_new_pos hall_eq (10 * x) (10 * B) h10B_pos h10x_nn h10x_lt
-    refine ⟨x_after, k' + 1, by omega, ?_, hxa_nn, ?_, hall_after, ?_⟩
+    refine ⟨x_after, k' + 1, by omega, ?_, hxa_nn, ?_,
+      fun hx => hxa_pos (by linarith), hall_after, ?_⟩
     · -- e_out = (e - 1) - k' = e - (k' + 1)
       rw [hk'_eq]; push_cast; ring
     · -- 10^k' * (10 * B) = 10^(k' + 1) * B
@@ -548,7 +579,7 @@ theorem recover_value_preserved_tight
           exact_mod_cast pop_digit_eq_nibble_15 g
         rw [hpop2] at hd_eq
         linarith
-      have h_mnew_q : ((m * 10 - d).toNat : ℚ) = (m.toNat : ℚ) * 10 - (d.toNat : ℚ) := by
+      have h_mnew_q : ((m * 10 - toUInt128 d).toNat : ℚ) = (m.toNat : ℚ) * 10 - (d.toNat : ℚ) := by
         rw [hm_new_nat]
         have hle : d.toNat ≤ m.toNat * 10 := by omega
         rw [Nat.cast_sub hle]
@@ -562,19 +593,91 @@ theorem recover_value_preserved_tight
       ring
   | case3 m e g fuel hcond =>
     -- Exit at the start: k = 0, bound is x < B = 10^0 * B.
-    have hprop : ¬ (m < largeRange.min ∧ m * 10 ≤ maxRep) := by
-      intro ⟨hm1, hm2⟩
-      apply hcond
-      rw [Bool.and_eq_true]
-      exact ⟨decide_eq_true hm1, decide_eq_true hm2⟩
-    refine ⟨x, 0, Nat.zero_le _, ?_, hx_nn, ?_, ?_, ?_⟩
+    have hprop : ¬ (m < upperLimit ∧ ¬ g.empty) := hcond
+    refine ⟨x, 0, Nat.zero_le _, ?_, hx_nn, ?_, fun h => h, ?_, ?_⟩
     · rw [recover_noop_exit hprop]; push_cast; ring
     · rw [pow_zero, one_mul]; exact hx_lt
     · rw [recover_noop_exit hprop]; exact hall
     · rw [recover_noop_exit hprop]
 
-set_option maxHeartbeats 800000 in
--- repeated `Number.operator_add.recover m e g fuel` terms are expensive to elaborate
+/-- After `k = e - e_out` pops, the surviving guard's decimal value is
+divisible by `10^k`: each pop shifts the packed digits up one decimal place,
+leaving zeros in the bottom positions. Threaded with a starting offset `J`
+(`10^J ∣ dv` on entry) so the induction closes; instantiate with `J = 0`.
+
+This is the digit-exactness fact behind the strict residue bound: combined
+with `decimalValue < 10^16` it caps the decimal part at `1 - 10^k/10^16`,
+exactly absorbing the hidden fraction's `10^k` growth. -/
+theorem recover_decimalValue_dvd
+    (upperLimit m : UInt128) (hUL : upperLimit.toNat * 10 < 2 ^ 128)
+    (e : Int) (g : Guard) (fuel : ℕ)
+    (hm_pos : 1 ≤ m.toNat)
+    (hall : allNibblesAtMost9 g.digits_)
+    (J : ℕ) (hdvd : 10 ^ J ∣ decimalValue g.digits_) :
+    ∃ k : ℕ,
+      (Number.operator_add.recover upperLimit m e g fuel).2.1 = e - k ∧
+      10 ^ (J + k) ∣ decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ := by
+  induction m, e, g, fuel using Number.operator_add.recover.induct (upperLimit := upperLimit)
+    generalizing J with
+  | case1 m e g =>
+    refine ⟨0, ?_, ?_⟩
+    · rw [recover_noop_zero]; push_cast; ring
+    · rw [recover_noop_zero, Nat.add_zero]; exact hdvd
+  | case2 m e g fuel hcond g' d hpop IH =>
+    obtain ⟨h1, h2⟩ := hcond
+    rw [recover_step h1 h2]
+    have hpop1 : g.pop.1 = g' := by rw [hpop]
+    have hpop2 : g.pop.2 = d := by rw [hpop]
+    rw [hpop1, hpop2]
+    have hd_le_mt : toUInt128 d ≤ m * 10 := by
+      rw [← hpop2]
+      exact pop_digit_le_mul_ten_of_pos128 hUL hm_pos h1 (pop_digit_le_9 g hall)
+    have hm_new_nat : (m * 10 - toUInt128 d).toNat = m.toNat * 10 - d.toNat :=
+      recover_step_mantissa_nat128 hUL h1 hd_le_mt
+    have hd_le_9 : d.toNat ≤ 9 := by
+      rw [← hpop2]; exact pop_digit_le_9 g hall
+    have hm10ge : 10 ≤ m.toNat * 10 := by nlinarith
+    have hm_new_pos : 1 ≤ (m * 10 - toUInt128 d).toNat := by
+      rw [hm_new_nat]; omega
+    have hall_eq : allNibblesAtMost9 g'.digits_ := by
+      rw [← hpop1]; exact allNibblesAtMost9_pop g hall
+    -- The popped guard's decimal value gains one more factor of 10.
+    have hdvd' : 10 ^ (J + 1) ∣ decimalValue g'.digits_ := by
+      have heq := decimalValue_pop_eq g
+      rw [hpop1] at heq
+      by_cases hJ : J ≤ 15
+      · have h10dv : 10 ^ (J + 1) ∣ 10 * decimalValue g.digits_ := by
+          obtain ⟨c, hc⟩ := hdvd
+          exact ⟨c, by rw [hc, pow_succ]; ring⟩
+        have hd16 : 10 ^ (J + 1) ∣ nibble g.digits_ 15 * 10 ^ 16 :=
+          Dvd.dvd.mul_left (pow_dvd_pow 10 (by omega)) _
+        have hsub : decimalValue g'.digits_
+            = 10 * decimalValue g.digits_ - nibble g.digits_ 15 * 10 ^ 16 := by omega
+        rw [hsub]
+        exact Nat.dvd_sub h10dv hd16
+      · push_neg at hJ
+        have hlt : decimalValue g.digits_ < 10 ^ 16 := decimalValue_lt_pow_16 hall
+        have hdv0 : decimalValue g.digits_ = 0 := by
+          rcases Nat.eq_zero_or_pos (decimalValue g.digits_) with h | h
+          · exact h
+          · have hge : 10 ^ J ≤ decimalValue g.digits_ := Nat.le_of_dvd h hdvd
+            have h16J : (10 : ℕ) ^ 16 ≤ 10 ^ J := Nat.pow_le_pow_right (by norm_num) (by omega)
+            omega
+        have hdv'0 : decimalValue g'.digits_ = 0 := by omega
+        rw [hdv'0]
+        exact dvd_zero _
+    obtain ⟨k', hk'_eq, hk'_dvd⟩ := IH hm_new_pos hall_eq (J + 1) hdvd'
+    refine ⟨k' + 1, ?_, ?_⟩
+    · rw [hk'_eq]; push_cast; ring
+    · rw [show J + (k' + 1) = J + 1 + k' from by ring]; exact hk'_dvd
+  | case3 m e g fuel hcond =>
+    have hprop : ¬ (m < upperLimit ∧ ¬ g.empty) := hcond
+    refine ⟨0, ?_, ?_⟩
+    · rw [recover_noop_exit hprop]; push_cast; ring
+    · rw [recover_noop_exit hprop, Nat.add_zero]; exact hdvd
+
+set_option maxHeartbeats 1600000 in
+-- repeated `Number.operator_add.recover upperLimit m e g fuel` terms are expensive to elaborate
 /-- Public corollary: `recover_value_in_unit_interval_at_exit`.
 
 Strengthens `recover_value_in_unit_interval` along two axes:
@@ -590,57 +693,113 @@ mantissa, allowing downstream callers to combine this lemma with the
 mantissa-bound preservation analysis to derive `k ≤ 18` and hence a
 concrete `1 + 10^18 / 10^16 = 101` upper bound when needed.
 
-The strict `f_g_after < 1` form is *not* attainable in this generality:
-when the input guard's hidden fraction `x_in` is positive (i.e., `xbit_ =
-true`), the residue can be at most `10^k / 10^16` above 1 in edge cases.
-Downstream proofs absorb this slack via the standard `doRoundDown`
-tolerance. -/
+The unconditional strict `f_g_after < 1` form is *not* attainable for large
+`k`: when the input guard's hidden fraction `x_in` is positive (i.e.,
+`xbit_ = true`), its bound grows by `10^k`. But for `k ≤ 16` pops the
+digit-exactness fact `recover_decimalValue_dvd` caps the decimal part at
+`1 - 10^k/10^16`, exactly absorbing that growth — packaged here as the
+conditional conjunct `k ≤ 16 → f_g_after < 1`. -/
 theorem recover_value_in_unit_interval_at_exit
-    (m : UInt64) (e : Int) (g : Guard) (f_g : ℚ) (fuel : ℕ)
+    (upperLimit m : UInt128) (hUL : upperLimit.toNat * 10 < 2 ^ 128)
+    (e : Int) (g : Guard) (f_g : ℚ) (fuel : ℕ)
     (_hf_g_nn : 0 ≤ f_g) (_hf_g_lt : f_g < 1)
     (hrep : represents g f_g)
     (hm_pos : 1 ≤ m.toNat) :
-    let result := Number.operator_add.recover m e g fuel
+    let result := Number.operator_add.recover upperLimit m e g fuel
     ∃ f_g_after : ℚ, ∃ k : ℕ,
       k ≤ fuel ∧
       result.2.1 = e - k ∧
       0 ≤ f_g_after ∧
       f_g_after < 1 + (10 : ℚ) ^ k / 10 ^ 16 ∧
+      (k ≤ 16 → f_g_after < 1) ∧
+      (g.xbit_ = true → 0 < f_g_after) ∧
       ((m.toNat : ℚ) - f_g) * (10 : ℚ) ^ e
         = ((result.1.toNat : ℚ) - f_g_after) * (10 : ℚ) ^ result.2.1
-      ∧ ((¬ (result.1 < largeRange.min ∧ result.1 * 10 ≤ maxRep))
+      ∧ ((¬ (result.1 < upperLimit ∧ ¬ result.2.2.empty))
          ∨ k = fuel) := by
-  obtain ⟨x, hx_nn, hx_lt, hf_eq, _, hall⟩ := hrep
+  obtain ⟨x, hx_nn, hx_lt, hf_eq, hxbit_iff, hall⟩ := hrep
   have hB_pos : (0 : ℚ) < 1 / 10 ^ 16 := by positivity
-  obtain ⟨x_after, k, hk_le, hk_eq, hxa_nn, hxa_lt, hall_after, heq⟩ :=
-    recover_value_preserved_tight m e g fuel hm_pos hall x (1 / 10 ^ 16) hB_pos hx_nn hx_lt
-  refine ⟨(decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16
-            + x_after, k, hk_le, hk_eq, ?_, ?_, ?_, ?_⟩
+  obtain ⟨x_after, k, hk_le, hk_eq, hxa_nn, hxa_lt, hxa_pos, hall_after, heq⟩ :=
+    recover_value_preserved_tight upperLimit m hUL e g fuel hm_pos hall x (1 / 10 ^ 16) hB_pos hx_nn hx_lt
+  obtain ⟨k₂, hk₂_eq, hk₂_dvd⟩ :=
+    recover_decimalValue_dvd upperLimit m hUL e g fuel hm_pos hall 0
+      (by rw [pow_zero]; exact one_dvd _)
+  have hkk : k₂ = k := by
+    rw [hk_eq] at hk₂_eq
+    omega
+  rw [Nat.zero_add, hkk] at hk₂_dvd
+  refine ⟨(decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16
+            + x_after, k, hk_le, hk_eq, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · -- 0 ≤ residue
     have h16_pos : (0 : ℚ) < 10 ^ 16 := by positivity
     have h_dv_nn :
-        (0 : ℚ) ≤ (decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16 := by
+        (0 : ℚ) ≤ (decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16 := by
       apply div_nonneg
       · exact_mod_cast Nat.zero_le _
       · linarith
     linarith
   · -- residue < 1 + 10^k / 10^16.
     have h16_pos : (0 : ℚ) < 10 ^ 16 := by positivity
-    have h_nat : decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ < 10 ^ 16 :=
+    have h_nat : decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ < 10 ^ 16 :=
       decimalValue_lt_pow_16 hall_after
     have h_q :
-        (decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ) < (10 : ℚ) ^ 16 := by
+        (decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) < (10 : ℚ) ^ 16 := by
       exact_mod_cast h_nat
     have h_dv_lt :
-        (decimalValue (Number.operator_add.recover m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16 < 1 := by
+        (decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16 < 1 := by
       rw [div_lt_iff₀ h16_pos]; linarith
     have h_xa_eq : (10 : ℚ) ^ k * (1 / 10 ^ 16) = (10 : ℚ) ^ k / 10 ^ 16 := by ring
     rw [h_xa_eq] at hxa_lt
     linarith
+  · -- k ≤ 16 → residue < 1: the bottom k decimal digits are zeros, capping the
+    -- decimal part at 1 - 10^k/10^16, which absorbs the hidden fraction's growth.
+    intro hk16
+    obtain ⟨c, hc⟩ := hk₂_dvd
+    have hlt_nat : decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ < 10 ^ 16 :=
+      decimalValue_lt_pow_16 hall_after
+    have hsplit : (10 : ℕ) ^ 16 = 10 ^ k * 10 ^ (16 - k) := by
+      rw [← pow_add]; congr 1; omega
+    have hc_lt : c < 10 ^ (16 - k) := by
+      by_contra hge
+      push_neg at hge
+      have h2 := Nat.mul_le_mul_left (10 ^ k) hge
+      omega
+    have hdv_add : decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_
+        + 10 ^ k ≤ 10 ^ 16 := by
+      have h3 := Nat.mul_le_mul_left (10 ^ k) (by omega : c + 1 ≤ 10 ^ (16 - k))
+      rw [Nat.mul_add, mul_one] at h3
+      omega
+    have h16_pos : (0 : ℚ) < 10 ^ 16 := by positivity
+    have hdv_q :
+        (decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ)
+          + (10 : ℚ) ^ k ≤ 10 ^ 16 := by
+      have hcast : ((decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_
+          + 10 ^ k : ℕ) : ℚ) ≤ ((10 ^ 16 : ℕ) : ℚ) := by
+        exact_mod_cast hdv_add
+      push_cast at hcast
+      linarith
+    have h_xa_eq : (10 : ℚ) ^ k * (1 / 10 ^ 16) = (10 : ℚ) ^ k / 10 ^ 16 := by ring
+    rw [h_xa_eq] at hxa_lt
+    have hsum_le :
+        (decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16
+          + (10 : ℚ) ^ k / 10 ^ 16 ≤ 1 := by
+      rw [← add_div, div_le_one h16_pos]
+      exact hdv_q
+    linarith
+  · -- xbit → positive residue (the hidden fraction threads positively).
+    intro hxb
+    have hx_pos : 0 < x := hxbit_iff.mp hxb
+    have h16_pos : (0 : ℚ) < 10 ^ 16 := by positivity
+    have h_dv_nn :
+        (0 : ℚ) ≤ (decimalValue (Number.operator_add.recover upperLimit m e g fuel).2.2.digits_ : ℚ) / 10 ^ 16 := by
+      apply div_nonneg
+      · exact_mod_cast Nat.zero_le _
+      · linarith
+    linarith [hxa_pos hx_pos]
   · rw [hf_eq]
     exact heq
   · -- Exit characterization
-    rcases recover_output_exits_or_fuel_exhausted m e g fuel with hexit | hfeq
+    rcases recover_output_exits_or_fuel_exhausted upperLimit m e g fuel with hexit | hfeq
     · left; exact hexit
     · right
       -- hfeq : result.2.1 = e - fuel
@@ -673,195 +832,5 @@ because:
 * In the all-zero case, m_out = 0, but the left side is bounded by
   `10^k * (slightly more than B)` since the captured digits get exhausted.
 * In the underflow case, m_out ≥ 2^64 - 9 dominates the left side easily. -/
-
-set_option maxHeartbeats 8000000 in
--- heavy induction over recover with branch reindexing and case split on popped digit
-private theorem recover_from_zero_aux
-    (e : Int) (g : Guard) (fuel : ℕ)
-    (hall : allNibblesAtMost9 g.digits_)
-    (x B : ℚ) (hB_pos : 0 < B) (hx_nn : 0 ≤ x) (hx_lt : x < B) :
-    ∃ k : ℕ, k ≤ fuel ∧
-      (Number.operator_add.recover 0 e g fuel).2.1 = e - k ∧
-      ((decimalValue g.digits_ : ℚ) / 10 ^ 16 + x) * (10 : ℚ) ^ k
-        ≤ ((Number.operator_add.recover 0 e g fuel).1.toNat : ℚ) + 1
-          + (10 : ℚ) ^ k * B := by
-  induction fuel generalizing e g x B with
-  | zero =>
-    refine ⟨0, le_refl _, ?_, ?_⟩
-    · rw [recover_noop_zero]; push_cast; ring
-    · rw [recover_noop_zero]
-      simp only [pow_zero, mul_one, one_mul]
-      have h16_pos : (0 : ℚ) < 10 ^ 16 := by positivity
-      have hdv_q : (decimalValue g.digits_ : ℚ) < (10 : ℚ) ^ 16 := by
-        exact_mod_cast decimalValue_lt_pow_16 hall
-      have h_dv_lt : (decimalValue g.digits_ : ℚ) / 10 ^ 16 < 1 := by
-        rw [div_lt_iff₀ h16_pos]; linarith
-      have h_dv_nn : (0 : ℚ) ≤ (decimalValue g.digits_ : ℚ) / 10 ^ 16 := by positivity
-      have h_zero_nat : ((0 : UInt64).toNat : ℚ) = 0 := by norm_num
-      rw [h_zero_nat]
-      linarith
-  | succ n ih =>
-    -- At m = 0, the loop entry condition always holds.
-    have h_zero_lt_lr : (0 : UInt64) < largeRange.min := by
-      rw [UInt64.lt_iff_toNat_lt, largeRange_min_toNat]
-      have h_z : (0 : UInt64).toNat = 0 := rfl
-      rw [h_z]; norm_num
-    have h_zero_mul_le : (0 : UInt64) * 10 ≤ maxRep := by
-      rw [UInt64.le_iff_toNat_le]
-      have h_z : ((0 : UInt64) * 10).toNat = 0 := by decide
-      rw [h_z]; exact Nat.zero_le _
-    have hrec_step : Number.operator_add.recover 0 e g (n + 1)
-        = Number.operator_add.recover (0 * 10 - g.pop.2) (e - 1) g.pop.1 n :=
-      recover_step h_zero_lt_lr h_zero_mul_le
-    set d : UInt64 := g.pop.2 with hd_def
-    have hd_le_9 : d.toNat ≤ 9 := by rw [hd_def]; exact pop_digit_le_9 g hall
-    have h_zero_mul : ((0 : UInt64) * 10).toNat = 0 := by decide
-    -- Case split on d.toNat
-    by_cases hd_zero : d.toNat = 0
-    · -- Case A: d = 0. m_new = 0, loop continues. Apply IH.
-      have hd_uint_zero : d = 0 := by
-        apply UInt64.toNat_inj.mp; rw [hd_zero]; rfl
-      have h_sub_zero : (0 : UInt64) * 10 - d = 0 := by
-        rw [hd_uint_zero]; rfl
-      rw [h_sub_zero] at hrec_step
-      -- New guard g.pop.1, well-formed
-      have hall_pop : allNibblesAtMost9 g.pop.1.digits_ := allNibblesAtMost9_pop g hall
-      -- New x bound for inductive call: x' = 10 * x, B' = 10 * B
-      have h10B_pos : 0 < 10 * B := by linarith
-      have h10x_nn : 0 ≤ 10 * x := by linarith
-      have h10x_lt : 10 * x < 10 * B := by linarith
-      obtain ⟨k', hk'_le, hk'_eq, hbound⟩ :=
-        ih (e - 1) g.pop.1 hall_pop (10 * x) (10 * B) h10B_pos h10x_nn h10x_lt
-      refine ⟨k' + 1, by omega, ?_, ?_⟩
-      · rw [hrec_step, hk'_eq]; push_cast; ring
-      · rw [hrec_step]
-        -- Goal: (dv g/10^16 + x) * 10^(k'+1)
-        --        ≤ (recover ... ).1.toNat + 1 + 10^(k'+1) * B
-        -- From IH: (dv g.pop.1/10^16 + 10x) * 10^k' ≤ result.1.toNat + 1 + 10^k' * (10B)
-        -- Use decimalValue_pop_rat: dv g.pop.1 = 10 * dv g - nibble15 * 10^16
-        -- With d = nibble15 = 0: dv g.pop.1 = 10 * dv g
-        have h_dv_pop : (decimalValue g.pop.1.digits_ : ℚ)
-            = 10 * (decimalValue g.digits_ : ℚ) := by
-          rw [decimalValue_pop_rat g]
-          have hnib_eq : nibble g.digits_ 15 = 0 := by
-            have := pop_digit_eq_nibble_15 g
-            rw [hd_def] at hd_zero
-            omega
-          rw [hnib_eq]
-          push_cast; ring
-        -- LHS rewrite: (dv g/10^16 + x) * 10^(k'+1)
-        --            = (10 * dv g / 10^16 + 10 * x) * 10^k'
-        --            = (dv g.pop.1 / 10^16 + 10 * x) * 10^k'
-        have h_lhs_eq : ((decimalValue g.digits_ : ℚ) / 10 ^ 16 + x) * (10 : ℚ) ^ (k' + 1)
-            = ((decimalValue g.pop.1.digits_ : ℚ) / 10 ^ 16 + 10 * x) * (10 : ℚ) ^ k' := by
-          rw [h_dv_pop]
-          rw [pow_succ]; ring
-        -- RHS rewrite: 10^(k'+1) * B = 10^k' * (10 * B)
-        have h_rhs_eq : (10 : ℚ) ^ (k' + 1) * B = (10 : ℚ) ^ k' * (10 * B) := by
-          rw [pow_succ]; ring
-        rw [h_lhs_eq, h_rhs_eq]
-        exact hbound
-    · -- Case B: d ≥ 1. m_new = 2^64 - d. Loop exits at next iter. k = 1.
-      have hd_pos : 1 ≤ d.toNat := by omega
-      -- (0 * 10 - d).toNat = 2^64 - d.toNat
-      have h_sub_toNat : ((0 : UInt64) * 10 - d).toNat = 2 ^ 64 - d.toNat := by
-        rw [UInt64.toNat_sub]
-        rw [h_zero_mul]
-        have hd_lt : d.toNat < 2 ^ 64 := UInt64.toNat_lt_size d
-        -- (2^64 - d.toNat + 0) % 2^64 = 2^64 - d.toNat (since 2^64 - d.toNat < 2^64 for d ≥ 1)
-        have h_pos_diff : 2 ^ 64 - d.toNat < 2 ^ 64 := by omega
-        have h_simp : 2 ^ 64 - d.toNat + 0 = 2 ^ 64 - d.toNat := by omega
-        rw [h_simp]
-        exact Nat.mod_eq_of_lt h_pos_diff
-      -- m_new doesn't satisfy entry condition: m_new ≥ largeRange.min
-      have h_m_new_ge : largeRange.min.toNat ≤ ((0 : UInt64) * 10 - d).toNat := by
-        rw [h_sub_toNat, largeRange_min_toNat]
-        have h1 : (10 : ℕ) ^ 18 + 9 ≤ 2 ^ 64 := by decide
-        omega
-      have h_m_new_ge_uint : largeRange.min ≤ (0 : UInt64) * 10 - d :=
-        UInt64.le_iff_toNat_le.mpr h_m_new_ge
-      have h_not_lt : ¬ ((0 : UInt64) * 10 - d) < largeRange.min := by
-        intro hlt
-        have := UInt64.lt_iff_toNat_lt.mp hlt
-        have hge := UInt64.le_iff_toNat_le.mp h_m_new_ge_uint
-        omega
-      have h_exit : ¬ ((0 : UInt64) * 10 - d < largeRange.min
-            ∧ ((0 : UInt64) * 10 - d) * 10 ≤ maxRep) := fun ⟨h1, _⟩ => h_not_lt h1
-      have h_inner : Number.operator_add.recover ((0 : UInt64) * 10 - d) (e - 1) g.pop.1 n
-          = ((0 : UInt64) * 10 - d, e - 1, g.pop.1) := recover_exit_idemp h_exit
-      rw [hrec_step, h_inner]
-      refine ⟨1, by omega, ?_, ?_⟩
-      · push_cast; ring
-      · -- Goal: (dv g/10^16 + x) * 10^1 ≤ (2^64 - d).toNat + 1 + 10^1 * B
-        -- Clear UInt64-typed hypotheses that confuse linarith.
-        clear h_not_lt h_exit h_m_new_ge_uint h_zero_lt_lr h_zero_mul_le
-        have h16_pos : (0 : ℚ) < 10 ^ 16 := by positivity
-        have hdv_q : (decimalValue g.digits_ : ℚ) < (10 : ℚ) ^ 16 := by
-          exact_mod_cast decimalValue_lt_pow_16 hall
-        have h_dv_lt : (decimalValue g.digits_ : ℚ) / 10 ^ 16 < 1 := by
-          rw [div_lt_iff₀ h16_pos]; linarith
-        have h_dv_nn : (0 : ℚ) ≤ (decimalValue g.digits_ : ℚ) / 10 ^ 16 := by positivity
-        have h_lhs_lt : ((decimalValue g.digits_ : ℚ) / 10 ^ 16 + x) * (10 : ℚ) ^ 1
-            < 10 * (1 + B) := by
-          rw [pow_one]
-          have h_sum_lt : (decimalValue g.digits_ : ℚ) / 10 ^ 16 + x < 1 + B := by linarith
-          nlinarith
-        -- 2^64 - d ≥ 2^64 - 9
-        have h_m_new_q : (((0 : UInt64) * 10 - d).toNat : ℚ) ≥ (2 : ℚ) ^ 64 - 9 := by
-          rw [h_sub_toNat]
-          have hd_le_pow : d.toNat ≤ 2 ^ 64 := by
-            have := UInt64.toNat_lt_size d
-            omega
-          have hcastL : (((2 ^ 64 - d.toNat : ℕ)) : ℚ)
-              = ((2 ^ 64 : ℕ) : ℚ) - (d.toNat : ℚ) := by
-            rw [Nat.cast_sub hd_le_pow]
-          rw [hcastL]
-          have h_pow_cast : ((2 ^ 64 : ℕ) : ℚ) = (2 : ℚ) ^ 64 := by push_cast; rfl
-          rw [h_pow_cast]
-          have hd_q : (d.toNat : ℚ) ≤ 9 := by exact_mod_cast hd_le_9
-          linarith
-        have h_pow_one : (10 : ℚ) ^ 1 = 10 := by norm_num
-        rw [h_pow_one]
-        nlinarith [h_lhs_lt, h_m_new_q]
-
-/-! ## Public corollary: bound on `f_aln * 10^k` from `m = 0` recover
-
-This is the key lemma used by the degenerate case of `DiffSignCombined`.
-Given that `g` represents `f_aln ∈ [0, 1)`, after running `recover 0 e g fuel`,
-the value `f_aln * 10^k` is bounded relative to the output mantissa.
-
-The bound combines two cases:
-* When all popped digits are zero (m_out = 0), f_aln must have been small
-  (its captured-digit window was all zeros).
-* When some popped digit was non-zero, m_out is close to 2^64 (UInt64 underflow),
-  dominating any small slack from f_aln * 10^k.
-
-The tight uniform statement is:
-
-  f_aln * 10^k ≤ m_out + 1 + 10^fuel / 10^16. -/
-
-theorem recover_from_zero_value_bound
-    (e : Int) (g : Guard) (fuel : ℕ) (f_aln : ℚ)
-    (hrep : represents g f_aln) :
-    let result := Number.operator_add.recover 0 e g fuel
-    ∃ k : ℕ, k ≤ fuel ∧
-      result.2.1 = e - k ∧
-      f_aln * (10 : ℚ) ^ k
-        ≤ (result.1.toNat : ℚ) + 1 + (10 : ℚ) ^ fuel / 10 ^ 16 := by
-  obtain ⟨x, hx_nn, hx_lt, hf_eq, _, hall⟩ := hrep
-  have hB_pos : (0 : ℚ) < 1 / 10 ^ 16 := by positivity
-  obtain ⟨k, hk_le, hk_eq, hbound⟩ :=
-    recover_from_zero_aux e g fuel hall x (1 / 10 ^ 16) hB_pos hx_nn hx_lt
-  refine ⟨k, hk_le, hk_eq, ?_⟩
-  rw [hf_eq]
-  -- hbound: (dv/10^16 + x) * 10^k ≤ result.1.toNat + 1 + 10^k * (1/10^16)
-  -- want:   (dv/10^16 + x) * 10^k ≤ result.1.toNat + 1 + 10^fuel / 10^16
-  have h_10k_le : (10 : ℚ) ^ k ≤ (10 : ℚ) ^ fuel :=
-    pow_le_pow_right₀ (by norm_num : (1 : ℚ) ≤ 10) hk_le
-  have h_10k_div : (10 : ℚ) ^ k * (1 / 10 ^ 16) = (10 : ℚ) ^ k / 10 ^ 16 := by ring
-  have h_le : (10 : ℚ) ^ k / 10 ^ 16 ≤ (10 : ℚ) ^ fuel / 10 ^ 16 := by
-    apply div_le_div_of_nonneg_right h_10k_le (by positivity)
-  rw [h_10k_div] at hbound
-  linarith
 
 end XRPL.Model.Protocol

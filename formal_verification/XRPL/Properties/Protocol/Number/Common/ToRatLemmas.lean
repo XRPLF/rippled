@@ -1,9 +1,8 @@
 import Mathlib.Tactic
 
 import XRPL.Model.Protocol.Number
+import XRPL.Properties.Protocol.Number.Common.Constants
 
-set_option linter.style.longLine false
-set_option linter.style.emptyLine false
 
 namespace XRPL.Model.Protocol
 
@@ -11,7 +10,7 @@ namespace XRPL.Model.Protocol
 
 These are the basic facts about how `Number.toRat` interacts with sign,
 absolute value, and multiplication. They're used to reduce the signed
-rational arithmetic in `operator_mul_rounding_bound` to non-negative
+rational arithmetic in `operator_mul_rounding_bound_to_nearest` to non-negative
 mantissa arithmetic over `ℚ`. -/
 
 /-- `Number.zero.toRat = 0`. Manually splits to avoid exposing `10^2147483648`
@@ -35,6 +34,29 @@ lemma Number.isNormalized.mantissaBounds {n : Number}
   rcases h with h_zero | ⟨hmin, hmax, _, _, _⟩
   · exfalso; apply hne; rw [h_zero]; rfl
   · exact ⟨hmin, hmax⟩
+
+/-- The normalized mantissa `.toNat` bounds `[10^18, 10^19)`, derived from the
+`UInt64` `mantissaBounds` pair. Absorbs the recurring `UInt64.le_iff_toNat_le …
+rw [largeRange_min_val/max_val]` extraction blocks. -/
+lemma mantissaBounds_nat_of {n : Number}
+    (hb : largeRange.min ≤ n.mantissa_ ∧ n.mantissa_ ≤ largeRange.max) :
+    10 ^ 18 ≤ n.mantissa_.toNat ∧ n.mantissa_.toNat < 10 ^ 19 := by
+  obtain ⟨hlo, hhi⟩ := hb
+  rw [UInt64.le_iff_toNat_le, largeRange_min_val] at hlo
+  rw [UInt64.le_iff_toNat_le, largeRange_max_val] at hhi
+  exact ⟨hlo, by omega⟩
+
+/-- Direct `.toNat` mantissa bounds from `isNormalized` + nonzero mantissa. -/
+lemma Number.isNormalized.mantissaBounds_nat {n : Number}
+    (h : n.isNormalized) (hne : n.mantissa_ ≠ 0) :
+    10 ^ 18 ≤ n.mantissa_.toNat ∧ n.mantissa_.toNat < 10 ^ 19 :=
+  mantissaBounds_nat_of (h.mantissaBounds hne)
+
+/-- A normalized mantissa is positive (`.toNat`), from the `mantissaBounds` pair. -/
+lemma mantissa_toNat_pos_of_bounds {n : Number}
+    (hb : largeRange.min ≤ n.mantissa_ ∧ n.mantissa_ ≤ largeRange.max) :
+    0 < n.mantissa_.toNat := by
+  have := (mantissaBounds_nat_of hb).1; omega
 
 /-- `|n.toRat| = n.mantissa_.toNat * 10^n.exponent_`. -/
 lemma abs_toRat_eq (n : Number) :
@@ -184,44 +206,40 @@ lemma Number.toRat_eq_zero_iff {n : Number} :
     simp only [hm, Nat.cast_zero]
     split_ifs <;> simp
 
-/-- Sign of the quotient: same signs => nonneg, different signs => nonpos. -/
-lemma toRat_div_sign (x y : Number) (hy_ne : y.toRat ≠ 0) :
-    (x.negative_ = y.negative_ → 0 ≤ x.toRat / y.toRat) ∧
-    (x.negative_ ≠ y.negative_ → x.toRat / y.toRat ≤ 0) := by
-  have h_mul := toRat_mul_sign x y
-  constructor
-  · intro h_eq
-    have h_prod_nn := h_mul.1 h_eq
-    cases hy_sign : y.negative_
-    · have hy_pos : 0 < y.toRat := by
-        have := Number.toRat_nonneg_of_nonnegative y hy_sign
-        exact lt_of_le_of_ne this (Ne.symm hy_ne)
-      exact div_nonneg (Number.toRat_nonneg_of_nonnegative x (h_eq ▸ hy_sign)) (le_of_lt hy_pos)
-    · have hy_neg : y.toRat < 0 := by
-        have := Number.toRat_nonpos_of_negative y hy_sign
-        exact lt_of_le_of_ne this hy_ne
-      exact div_nonneg_of_nonpos
-        (Number.toRat_nonpos_of_negative x (h_eq ▸ hy_sign)) (le_of_lt hy_neg)
-  · intro h_ne
-    cases hy_sign : y.negative_
-    · have hy_pos : 0 < y.toRat := by
-        have := Number.toRat_nonneg_of_nonnegative y hy_sign
-        exact lt_of_le_of_ne this (Ne.symm hy_ne)
-      have hx_neg : x.negative_ = true := by
-        cases hx : x.negative_
-        · exfalso; exact h_ne (hx ▸ hy_sign ▸ rfl)
-        · rfl
-      exact div_nonpos_of_nonpos_of_nonneg
-        (Number.toRat_nonpos_of_negative x hx_neg) (le_of_lt hy_pos)
-    · have hy_neg : y.toRat < 0 := by
-        have := Number.toRat_nonpos_of_negative y hy_sign
-        exact lt_of_le_of_ne this hy_ne
-      have hx_nonneg : x.negative_ = false := by
-        cases hx : x.negative_
-        · rfl
-        · exfalso; exact h_ne (hx ▸ hy_sign ▸ rfl)
-      exact div_nonpos_of_nonneg_of_nonpos
-        (Number.toRat_nonneg_of_nonnegative x hx_nonneg) (le_of_lt hy_neg)
+/-- `n.mantissa_ ≠ 0 ↔ n.toRat ≠ 0` — the contrapositive of `toRat_eq_zero_iff`.
+Absorbs the recurring "mantissa is nonzero because the value is nonzero/pos/neg"
+inline blocks: feed it `h.ne'` (from `0 < toRat`), `h.ne` (from `toRat < 0`), or a
+`toRat ≠ 0` directly. -/
+lemma Number.mantissa_ne_zero_iff {n : Number} : n.mantissa_ ≠ 0 ↔ n.toRat ≠ 0 :=
+  (not_congr Number.toRat_eq_zero_iff).symm
+
+/-- A nonzero value has a nonzero mantissa. -/
+lemma Number.mantissa_ne_zero_of_toRat_ne_zero {n : Number} (h : n.toRat ≠ 0) :
+    n.mantissa_ ≠ 0 :=
+  Number.mantissa_ne_zero_iff.mpr h
+
+/-- `x.operator_eq Number.zero` forces a zero mantissa. Absorbs the recurring
+3-line `unfold operator_eq … ; simp … ; obtain ⟨⟨_, ·⟩, _⟩` incantation. -/
+lemma Number.mantissa_eq_zero_of_operator_eq_zero {x : Number}
+    (h : x.operator_eq Number.zero = true) : x.mantissa_ = 0 := by
+  unfold Number.operator_eq Number.zero at h
+  simp only [Bool.and_eq_true, beq_iff_eq] at h
+  obtain ⟨⟨_, hmeq⟩, _⟩ := h
+  exact hmeq
+
+/-- A nonzero mantissa rules out `operator_eq Number.zero`. Absorbs the recurring
+`intro h; mantissa_eq_zero_of_operator_eq_zero; … ; omega` guard blocks. -/
+lemma Number.not_operator_eq_zero_of_mantissa_ne {x : Number} (h : x.mantissa_ ≠ 0) :
+    ¬ x.operator_eq Number.zero = true :=
+  fun heq => h (Number.mantissa_eq_zero_of_operator_eq_zero heq)
+
+/-- Two 19-digit mantissas multiply below `2^128` (the `UInt128` product fits).
+Absorbs the recurring `calc … < 10^19*10^19 = 10^38 < 2^128` block. -/
+lemma nat_mul_lt_two_pow_128 {a b : ℕ} (ha : a < 10 ^ 19) (hb : b < 10 ^ 19) :
+    a * b < 2 ^ 128 :=
+  calc a * b < 10 ^ 19 * 10 ^ 19 := Nat.mul_lt_mul'' ha hb
+    _ = 10 ^ 38 := by norm_num
+    _ < 2 ^ 128 := by norm_num
 
 /-- When `a` and `b` share a sign, `|a - b| = ||a| - |b||`. -/
 lemma abs_sub_eq_abs_sub_abs {a b : ℚ}
@@ -247,14 +265,6 @@ lemma abs_diff_eq_abs_sub_abs_of_sign_aligned (result : Number) (truth : ℚ)
 /-- For a non-zero mantissa, `operator_neg` preserves the mantissa. -/
 lemma Number.operator_neg_mantissa_of_ne (n : Number) (hne : n.mantissa_ ≠ 0) :
     n.operator_neg.mantissa_ = n.mantissa_ := by
-  unfold Number.operator_neg
-  have hm_bool : (n.mantissa_ == 0) = false := by
-    rw [beq_eq_false_iff_ne]; exact hne
-  rw [if_neg (by rw [hm_bool]; decide)]
-
-/-- For a non-zero mantissa, `operator_neg` preserves the exponent. -/
-lemma Number.operator_neg_exponent_of_ne (n : Number) (hne : n.mantissa_ ≠ 0) :
-    n.operator_neg.exponent_ = n.exponent_ := by
   unfold Number.operator_neg
   have hm_bool : (n.mantissa_ == 0) = false := by
     rw [beq_eq_false_iff_ne]; exact hne
@@ -312,5 +322,22 @@ lemma Number.toRat_neg (n : Number) : n.operator_neg.toRat = -n.toRat := by
       rw [hn'_mant, hn'_exp]
       rw [Number.toRat_of_neg n hneg]
       ring
+
+/-- Double negation on a nonzero-mantissa `Number` is the identity (the sign bit
+flips twice). Shared by the four `Sub` rounding-bound files. -/
+lemma neg_neg_of_mant_ne {y : Number} (hy_mant_ne : y.mantissa_ ≠ 0) :
+    y.operator_neg.operator_neg = y := by
+  obtain ⟨yn, ym, ye⟩ := y
+  have hy_mant_ne' : ym ≠ 0 := hy_mant_ne
+  have hbool : (ym == 0) = false := by
+    rw [beq_eq_false_iff_ne]; exact hy_mant_ne'
+  unfold Number.operator_neg
+  simp only [hbool, Bool.false_eq_true, if_false]
+  cases yn <;> rfl
+
+/-- Subtraction as addition of the negation, on `toRat`. Shared by `Sub`. -/
+lemma sub_eq_add_neg_toRat (x y : Number) :
+    x.toRat - y.toRat = x.toRat + y.operator_neg.toRat := by
+  rw [Number.toRat_neg]; ring
 
 end XRPL.Model.Protocol

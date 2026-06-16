@@ -1,31 +1,12 @@
 import Mathlib.Tactic
 
 import XRPL.Model.Protocol.Number
-import XRPL.Properties.Protocol.Number.Rounding.Guard
-import XRPL.Properties.Protocol.Number.Rounding.ScaleDown
+import XRPL.Properties.Protocol.Number.Common.Constants
+import XRPL.Properties.Protocol.Number.Common.Rounding.Guard
+import XRPL.Properties.Protocol.Number.Common.Rounding.ScaleDown
 
-set_option linter.style.longLine false
-set_option linter.style.emptyLine false
 
 namespace XRPL.Model.Protocol
-
-/-! # Shared invariants for `Number.operator_add`
-
-`Number.operator_add` rescales the smaller-exponent operand up to the larger
-exponent via a nested helper `alignDown`. Each step is exactly one application
-of `Guard.doDropDigit` (mantissa /= 10, exponent += 1, guard absorbs the
-dropped digit). This file isolates the algorithmic invariants of `alignDown`
-that downstream proofs reuse:
-
-* `alignDown_noop` / `alignDown_step` — equation lemmas (unfold cases).
-* `alignDown_e_eq` — output exponent equals `max e target`.
-* `alignDown_mantissa_eq` — output mantissa equals `m / 10 ^ (target - e).toNat`.
-* `alignDown_value` — algebraic invariant: `m * 10 ^ e` equals
-  `m' * 10 ^ e' + (truncated digits) * 10 ^ e`.
-* `alignDown_represents` — the guard captures the truncated tail in `ℚ`.
-
-These are statement-level facts about the C++-mirrored recursion; the
-per-mode bound proofs combine them with rounding semantics. -/
 
 /-! ## Equation lemmas -/
 
@@ -66,16 +47,6 @@ theorem alignDown_e_eq (m : UInt64) (e : Int) (g : Guard) (target : Int) :
     push_neg at hnlt
     exact (max_eq_left hnlt).symm
 
-/-- The exponent of `alignDown` output is at least `target`. -/
-lemma alignDown_e_ge_target (m : UInt64) (e : Int) (g : Guard) (target : Int) :
-    target ≤ (Number.operator_add.alignDown m e g target).2.1 := by
-  rw [alignDown_e_eq]; exact le_max_right _ _
-
-/-- The exponent of `alignDown` output is at least the initial `e`. -/
-lemma alignDown_e_ge_e (m : UInt64) (e : Int) (g : Guard) (target : Int) :
-    e ≤ (Number.operator_add.alignDown m e g target).2.1 := by
-  rw [alignDown_e_eq]; exact le_max_left _ _
-
 /-! ## Mantissa monotonicity / no-overflow -/
 
 /-- The output mantissa of `alignDown` is at most the input mantissa.
@@ -90,18 +61,6 @@ theorem alignDown_mantissa_le (m : UInt64) (e : Int) (g : Guard) (target : Int) 
       rw [UInt64.toNat_div]
       exact Nat.div_le_self _ _
     exact le_trans IH hstep
-  | case2 m e g hnlt =>
-    rw [alignDown_noop hnlt]
-
-/-- `alignDown` preserves the guard's sticky bit (`Guard.push` only updates
-`digits_`/`xbit_`). -/
-theorem alignDown_sbit (m : UInt64) (e : Int) (g : Guard) (target : Int) :
-    (Number.operator_add.alignDown m e g target).2.2.sbit_ = g.sbit_ := by
-  induction m, e, g using Number.operator_add.alignDown.induct target with
-  | case1 m e g hlt IH =>
-    simp only [Guard.doDropDigit] at IH
-    rw [alignDown_step hlt, IH]
-    rfl
   | case2 m e g hnlt =>
     rw [alignDown_noop hnlt]
 
@@ -183,7 +142,7 @@ theorem alignDown_represents
   | case1 m e g0 hlt IH =>
     simp only [Guard.doDropDigit] at IH
     -- One step then IH.
-    have h10_uval : (10 : UInt64).toNat = 10 := rfl
+    have h10_uval : (10 : UInt64).toNat = 10 := uint64_ten_toNat
     have hd_lt : (m % 10).toNat < 10 := by
       rw [UInt64.toNat_mod, h10_uval]
       omega

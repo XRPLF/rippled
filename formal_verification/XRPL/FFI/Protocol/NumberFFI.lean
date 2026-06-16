@@ -1,8 +1,6 @@
 import XRPL.FFI.CommonFFI
 import XRPL.Model.Protocol.Number
 
-set_option linter.style.longLine false
-set_option linter.style.emptyLine false
 
 namespace XRPL.FFI
 
@@ -11,10 +9,13 @@ open XRPL.Model.Protocol (Number largeRange)
 @[export lean_number_build]
 def lean_number_build (negative : UInt8) (mantissa : UInt64) (exponent : Int64) : Number :=
   Number.unchecked (negative != 0) mantissa exponent.toInt
+
 @[export lean_number_negative]
 def lean_number_negative (n : Number) : UInt8 := if n.negative_ then 1 else 0
+
 @[export lean_number_mantissa]
 def lean_number_mantissa (n : Number) : UInt64 := n.mantissa_
+
 @[export lean_number_exponent]
 def lean_number_exponent (n : Number) : Int64 := n.exponent_.toInt64
 
@@ -49,6 +50,12 @@ def lean_number_normalize (neg : UInt8) (mant : UInt64) (exp : Int64) (mode : UI
 @[export lean_number_signum]
 def lean_number_signum (neg : UInt8) (mant : UInt64) (exp : Int64) : Int64 :=
   (decodeNumber neg mant exp).signum.toInt64
+
+@[export lean_number_to_rep]
+def lean_number_to_rep (neg : UInt8) (mant : UInt64) (exp : Int64) (mode : UInt8) : FFIXRPResult :=
+  match (decodeNumber neg mant exp).to_rep (decodeMode mode) with
+  | .ok r => ⟨r, 0⟩
+  | .error _ => ⟨0, 1⟩
 
 @[export lean_number_eq]
 def lean_number_eq (neg1 : UInt8) (mant1 : UInt64) (exp1 : Int64)

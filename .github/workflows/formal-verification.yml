@@ -41,7 +41,7 @@ jobs:
         # (toolchain pin, dep revs, build recipe), never the model/XRPL sources,
         # so editing the model never rebuilds the image.
         env:
-          INPUTS_HASH: ${{ hashFiles('formal_verification/lean-toolchain', 'formal_verification/lake-manifest.json', 'formal_verification/lakefile.toml', 'formal_verification/scripts/build_lean.sh', 'formal_verification/docker/Dockerfile', 'external/lean4/conanfile.py') }}
+          INPUTS_HASH: ${{ hashFiles('formal_verification/lean-toolchain', 'formal_verification/lake-manifest.json', 'formal_verification/lakefile.toml', 'cmake/XrplLean4.cmake', 'formal_verification/docker/Dockerfile', 'external/lean4/conanfile.py') }}
         run: |
           lean="$(sed 's|.*:v||' formal_verification/lean-toolchain)"
           echo "image=ghcr.io/${{ github.repository }}/lean-ci:v${lean}-${INPUTS_HASH:0:12}" >>"${GITHUB_OUTPUT}"

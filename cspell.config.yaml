@@ -4,6 +4,7 @@ ignorePaths:
   - CMakeUserPresets.json
   - Doxyfile
   - docs/**/*.puml
+  - formal_verification/**/*.lean
   - cmake/**
   - LICENSE.md
   - .clang-tidy
@@ -27,7 +28,6 @@ ignoreRegExpList:
   - /\[[A-Za-z0-9-]+\]\(https:\/\/github.com\/[A-Za-z0-9-]+\)/g # Github usernames
   - /-[DWw][a-zA-Z0-9_-]+=/g # compile flags
   - /[\['"`]-[DWw][a-zA-Z0-9_-]+['"`\]]/g # compile flags
-  - /-l[A-Za-z][a-zA-Z0-9_]*/g # linker -l flags
   - ABCDEFGHIJKLMNOPQRSTUVWXYZ
   - ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 overrides:

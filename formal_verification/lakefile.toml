@@ -7,6 +7,9 @@ defaultTargets = ["XRPL"]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
 relaxedAutoImplicit = false
 weak.linter.mathlibStandardSet = true
+weak.linter.style.longLine = false
+weak.linter.style.emptyLine = false
+weak.linter.style.show = false
 maxSynthPendingDepth = 3
 
 [[require]]

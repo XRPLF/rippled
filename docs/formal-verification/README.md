@@ -7,7 +7,7 @@ compiled and wired in so the C++ can call it.
 
 `xrpld` contains arithmetic and protocol logic that is easy to get subtly
 wrong: invariants that must hold after a number of transactions have run,
-edge-case branching or rounding. Formal verification lets us examine and 
+edge-case branching or rounding. Formal verification lets us examine and
 prove properties that hold for **all** inputs. We do it in two steps:
 
 1. **Model the C++ in Lean4.** We re-implement a C++ algorithm as a Lean4
@@ -17,28 +17,28 @@ prove properties that hold for **all** inputs. We do it in two steps:
 
 2. **Cross-validate the model against the real C++.** A proof only matters if the
    model matches the shipping C++, so we run exhaustive tests that compare the two.
-   
+
 The proofs tell us the modeled algorithm is correct. The cross-validation tells
 us the model faithfully represents the C++.
 
 ## Terminology
 
-| Term | Meaning |
-|------|---------|
-| **Lean4** | Functional programming language and interactive theorem prover, which can generate C code. |
-| **Model** | A Lean4 function or structure that re-implements C++ logic  |
-| **Property / theorem** | A mathematical statement about the model, proved in Lean4 |
-| **FFI** | Foreign Function Interface, bridging Lean4 and C++ |
-| **`elan`** | Lean4 version manager, installs `lake` |
-| **`lake`** | Lean4's build tool (the equivalent of `cmake`) |
-| **`mathlib`** | Lean4's mathematics library. Large and slow to compile |
+| Term                   | Meaning                                                                                    |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| **Lean4**              | Functional programming language and interactive theorem prover, which can generate C code. |
+| **Model**              | A Lean4 function or structure that re-implements C++ logic                                 |
+| **Property / theorem** | A mathematical statement about the model, proved in Lean4                                  |
+| **FFI**                | Foreign Function Interface, bridging Lean4 and C++                                         |
+| **`elan`**             | Lean4 version manager, installs `lake`                                                     |
+| **`lake`**             | Lean4's build tool (the equivalent of `cmake`)                                             |
+| **`mathlib`**          | Lean4's mathematics library. Large and slow to compile                                     |
 
 ## Overview
 
 - Lean4 models are in `formal_verification/XRPL/Model` under the root directory.
 - C++ has unit tests in `src/test/formal_verification/` that compare Lean4 vs C++ implementation.
-- For these test to work, Lean4 needs to expose its functions to C++. 
-- Lean4 is capable of compiling to C via FFI exports, which can then be called from C++. These exports are defined in `formal_verification/XRPL/FFI`. 
+- For these test to work, Lean4 needs to expose its functions to C++.
+- Lean4 is capable of compiling to C via FFI exports, which can then be called from C++. These exports are defined in `formal_verification/XRPL/FFI`.
 - C++ side also needs FFI wrappers to abstract any complexities or memory management away from C++ developers.
 
 ```mermaid
@@ -64,14 +64,14 @@ flowchart TD
 There are two use-cases of Lean4 models:
 
 1. Developing theorems and proofs about the model.
-2. Writing unit tests to cross-verify Lean4 <-> C++ model faithfulness. 
+2. Writing unit tests to cross-verify Lean4 <-> C++ model faithfulness.
 
-As part of day-to-day development cycle, it is important that: 
+As part of day-to-day development cycle, it is important that:
 
 1. Theorems always compile in Lean4 (in Lean4, "it compiles" means "its verified"). For regular workflow of most developers, this can be left to CI/CD.
 2. Cross-verification unit tests always pass (it means Lean4 models have not drifted from C++). This affects developers working on formally verified code or formal verification itself.
 
-Integration is done as following: 
+Integration is done as following:
 
 ```mermaid
 flowchart LR
@@ -79,13 +79,12 @@ flowchart LR
     A --> E["Lean4<br/>Build theorems"]
 ```
 
-| Step | Motivation | Notes |
-|------|------------|-------|
-| Conan's recipe downloads `elan` and installs `lake` and dependencies | No C++ developer has to worry about installing the toolchain for Lean4 themselves, but the build process takes care of things automatically. | This should be optional - some C++ developers do not care about formal verification and will offload it to CI/CD. |
-| CMake builds Lean4 models and cross-verification tests | If Lean4 or C++ code change, a single build command recompiles them. | |
-| Run tests | Make it easy to run cross-verification tests. | |
-| Build theorems | Formal verification proof work can be done independently. | User can use `lake` installed by Conan, but they need to add it to `PATH`. Alternatively, install your own, but make sure version is correct. |
-
+| Step                                                                 | Motivation                                                                                                                                   | Notes                                                                                                                                         |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Conan's recipe downloads `elan` and installs `lake` and dependencies | No C++ developer has to worry about installing the toolchain for Lean4 themselves, but the build process takes care of things automatically. | This should be optional - some C++ developers do not care about formal verification and will offload it to CI/CD.                             |
+| CMake builds Lean4 models and cross-verification tests               | If Lean4 or C++ code change, a single build command rebuilds them.                                                                           |                                                                                                                                               |
+| Run tests                                                            | Make it easy to run cross-verification tests.                                                                                                |                                                                                                                                               |
+| Build theorems                                                       | Formal verification proof work can be done independently.                                                                                    | User can use `lake` installed by Conan, but they need to add it to `PATH`. Alternatively, install your own, but make sure version is correct. |
 
 ---
 
@@ -106,7 +105,7 @@ src/test/formal_verification/           C++ cross-validation tests
 ├── common/                             Common code for testing
 ├── ffi/                                FFI code on C++ side (decoding, encoding)
 └── protocol/                           Tests matching C++ directory structure
-    
+
 cmake/XrplLean4.cmake                   Links the Lean4 libraries into xrpld
 ```
 
@@ -114,7 +113,7 @@ cmake/XrplLean4.cmake                   Links the Lean4 libraries into xrpld
 
 ## The Lean4 model: translating C++ into code suitable for theorems and proofs
 
-A model is a translation of the C++ code. For example, Number class data structure will look like: 
+A model is a translation of the C++ code. For example, Number class data structure will look like:
 
 ```lean
 inductive rounding_mode where
@@ -148,7 +147,7 @@ with no `sorry` and only standard axioms, the proofs are sound.
 
 ## The FFI bridge
 
-Lean4 compiles to C, so each `@[export]` function is a C symbol that C++ can call. 
+Lean4 compiles to C, so each `@[export]` function is a C symbol that C++ can call.
 
 Lean4 values live as heap-allocated `lean_object*` pointers in the C ABI, and C++ works with them through those handles.
 
@@ -161,7 +160,7 @@ Note that we only compile and initialize the model, so that the tests are builda
 
 ### Memory management is hidden in a base class
 
-Our goal is that a test developer has least possible interaction with Lean4 
+Our goal is that a test developer has least possible interaction with Lean4
 memory management. It lives in base class `LeanObjectFFI`.
 
 ```cpp
@@ -207,8 +206,8 @@ struct LeanNumberResult : LeanNumber
 
 #### Building and reading a value
 
-For example, `lean_number_build` constructs a `Number` from its fields and 
-hands back the handle and `lean_number_mantissa` / `_negative` / `_exponent` 
+For example, `lean_number_build` constructs a `Number` from its fields and
+hands back the handle and `lean_number_mantissa` / `_negative` / `_exponent`
 read it back out.
 
 ```lean
@@ -267,7 +266,7 @@ The returned structure is a `lean_object*`.
 
 ## The build process
 
-The Lean4 side is heavy: it depends on `mathlib`, which contains thousands of files that are slow to compile. The strategy is to compile it **once** and keep it warm. 
+The Lean4 side is heavy: it depends on `mathlib`, which contains thousands of files that are slow to compile. The strategy is to compile it **once** and keep it warm.
 
 Everything else (mathlib's native objects and our model) is built **in-tree** by
 CMake when `formal_verification=ON`. `conan install` runs **once** (for the
@@ -289,9 +288,10 @@ Two properties keep compilation after edit fast:
   the library.
 
 We link the objects into a **shared** library, passing the ~8,000 object paths in a file
-instead of on the command line. 
+instead of on the command line.
 
 8,000 paths on one command line overflow the OS limit (`ARG_MAX`), which is why both `ar` and lake's own `:shared` facet fails on mathlib, so we do the linking by hand.
+NB. CMake build will report an error, but the build will complete successfully (WIP on silencing the error)
 
 The Lean4 build writes into the build directory (`.lake` is symlinked under it),
 so a checkout never accumulates a `.lake/` directory and `rm -rf .build` cleans
@@ -303,7 +303,7 @@ it.
 `formal_verification` is a Conan option (declared in `conanfile.py`) mirrored into a CMake option of the same name (declared in `cmake/XrplSettings.cmake`). Default is **OFF**, so a normal `xrpld` build is unaffected.
 
 When the option is on, a single `cmake --build .` builds the Lean4 library first,
-then links `xrpld` against it. 
+then links `xrpld` against it.
 
 > Currently, Windows support is under development.
 
@@ -334,11 +334,11 @@ cmake --build . --parallel N
 ./xrpld --unittest=formal_verification
 ```
 
-`-o '&:formal_verification=True'` pulls the `lean4` toolchain into the graph, 
-and the matching `-Dformal_verification=ON` tells CMake to build and link 
-the Lean4 side. 
+`-o '&:formal_verification=True'` pulls the `lean4` toolchain into the graph,
+and the matching `-Dformal_verification=ON` tells CMake to build and link
+the Lean4 side.
 
-`--lockfile-partial` lets Conan add `lean4` and `gmp`, which are opt-in 
+`--lockfile-partial` lets Conan add `lean4` and `gmp`, which are opt-in
 and not pinned in `conan.lock`.
 
 ## Testing Principles
@@ -352,7 +352,7 @@ agree (`checkResult`).
 The suite involves targeted fuzzing. Inputs are chosen to push the **result** onto those boundaries, to trigger coverage of every edge case, with a random pass to cover usual inputs as a backstop.
 
 A `Number` is `mantissa × 10^exponent`, sign-magnitude, normalized into a fixed
-mantissa range. 
+mantissa range.
 
 #### Deterministic sweeps and a random backstop
 
@@ -362,9 +362,9 @@ cannot.
 
 The backstop draws operands from `randomOperand`, which returns a boundary value
 about a third of the time and a uniform interior value otherwise, so random
-*pairs* also mix a boundary operand with an interior one. 
+_pairs_ also mix a boundary operand with an interior one.
 
-Its exponent range is `[STAmount::kMinOffset, kMaxOffset]` = `[-96, 80]`, the range real amounts occupy, since `Number` backs `STAmount`. 
+Its exponent range is `[STAmount::kMinOffset, kMaxOffset]` = `[-96, 80]`, the range real amounts occupy, since `Number` backs `STAmount`.
 
 Widening it to the full exponent range was measured to catch **fewer** bugs (random pairs land so far apart that additions stop cancelling); the extremes are
 covered by the deterministic sweeps instead.
@@ -383,18 +383,17 @@ not where the inputs sit. Two techniques place it there:
 
 - **Backward** (everything else): pick the target result `T` and derive the
   partner operand from the inverse op: `b = T − a` (add), `b = a − T` (sub),
-  `b = a / T` (div), `b = T / a` (mul). 
+  `b = a / T` (div), `b = T / a` (mul).
 
 #### The operators
 
 Each operator is tested by the shape that fits where it can break.
 
-| Operator | Test case targets |
-|----------|-----------------------|
-| `mul`, `div` | where the result lands: the exponent at the under/overflow edges, the mantissa at the cusp |
-| `add`, `sub` | cancellation and the cusp |
-| `neg`, `signum` | input edges only |
-| `normalize` | its input, including un-normalized values no other operator accepts |
-| `to_rep` | rounding to an integer, the only operator that does so |
-| `eq` `ne` `lt` `le` `gt` `ge` | sign and exponent ordering |
-
+| Operator                      | Test case targets                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------------ |
+| `mul`, `div`                  | where the result lands: the exponent at the under/overflow edges, the mantissa at the cusp |
+| `add`, `sub`                  | cancellation and the cusp                                                                  |
+| `neg`, `signum`               | input edges only                                                                           |
+| `normalize`                   | its input, including un-normalized values no other operator accepts                        |
+| `to_rep`                      | rounding to an integer, the only operator that does so                                     |
+| `eq` `ne` `lt` `le` `gt` `ge` | sign and exponent ordering                                                                 |

@@ -10,6 +10,11 @@ notation "mantissaFloorSucc" => 922337203685477581
     `UInt64` `def` is opaque to `omega`). -/
 notation "maxRepNat" => 9223372036854775807
 
+/-- `maxRepUp.toNat = 2^63 + 2` — the ℕ/ℚ literal form of `maxRepUp` (the
+    cusp round-up cap; numerically equals `maxRepCuspTarget`). Re-derived via
+    `rfl` all over the rounding tree; naming it keeps those proofs readable. -/
+notation "maxRepUpNat" => 9223372036854775810
+
 /-- `2^63 + 2` — the maxRep-cusp round-up target (and the `10/(2^63+2)`
     same-sign directed bound denominator). -/
 notation "maxRepCuspTarget" => 9223372036854775810
