@@ -291,7 +291,7 @@ Two properties keep compilation after edit fast:
 We link the objects into a **shared** library, passing the ~8,000 object paths in a file
 instead of on the command line. 
 
-8,000 paths on one command line overflow the OS limit (`ARG_MAX`), which is why both `ar` and lake's own `:shared` facet would fail on mathlib, so we do the linking by hand.
+8,000 paths on one command line overflow the OS limit (`ARG_MAX`), which is why both `ar` and lake's own `:shared` facet fails on mathlib, so we do the linking by hand.
 
 The Lean4 build writes into the build directory (`.lake` is symlinked under it),
 so a checkout never accumulates a `.lake/` directory and `rm -rf .build` cleans
@@ -340,3 +340,61 @@ the Lean4 side.
 
 `--lockfile-partial` lets Conan add `lean4` and `gmp`, which are opt-in 
 and not pinned in `conan.lock`.
+
+## Testing Principles
+
+### Number
+
+`LeanNumber_test.cpp` cross-validates every `Number` operation against the Lean
+model. Each case runs the operation in both implementations and asserts they
+agree (`checkResult`).
+
+The suite involves targeted fuzzing. Inputs are chosen to push the **result** onto those boundaries, to trigger coverage of every edge case, with a random pass to cover usual inputs as a backstop.
+
+A `Number` is `mantissa × 10^exponent`, sign-magnitude, normalized into a fixed
+mantissa range. 
+
+#### Deterministic sweeps and a random backstop
+
+Every operation is tested by **targeted, deterministic sweeps** that cover the
+boundaries we can enumerate, plus a **random backstop** for the interior we
+cannot.
+
+The backstop draws operands from `randomOperand`, which returns a boundary value
+about a third of the time and a uniform interior value otherwise, so random
+*pairs* also mix a boundary operand with an interior one. 
+
+Its exponent range is `[STAmount::kMinOffset, kMaxOffset]` = `[-96, 80]`, the range real amounts occupy, since `Number` backs `STAmount`. 
+
+Widening it to the full exponent range was measured to catch **fewer** bugs (random pairs land so far apart that additions stop cancelling); the extremes are
+covered by the deterministic sweeps instead.
+
+#### Landing a result on a boundary
+
+For the rounding-sensitive operators, what matters is where the **result** lands,
+not where the inputs sit. Two techniques place it there:
+
+- **Forward** (mul/div exponent): the result exponent is `ea + eb + L` for
+  multiplication and `ea − eb − L` for division (`L = mantissaLog`), so choosing
+  the operand exponents lands the result exponent anywhere. `sweepResultExp`
+  walks it across `kMinExponent` / `kMaxExponent` one step at a time, splitting
+  the two operand exponents unevenly so both odd and even result exponents are
+  hit (a "both equal" split would skip the odd ones).
+
+- **Backward** (everything else): pick the target result `T` and derive the
+  partner operand from the inverse op: `b = T − a` (add), `b = a − T` (sub),
+  `b = a / T` (div), `b = T / a` (mul). 
+
+#### The operators
+
+Each operator is tested by the shape that fits where it can break.
+
+| Operator | Test case targets |
+|----------|-----------------------|
+| `mul`, `div` | where the result lands: the exponent at the under/overflow edges, the mantissa at the cusp |
+| `add`, `sub` | cancellation and the cusp. These carry the known, still-open `operator+` rounding bugs |
+| `neg`, `signum` | input edges only. They are exact, so nothing rounds |
+| `normalize` | its input, including un-normalized values no other operator accepts |
+| `to_rep` | rounding to an integer, the only operator that does so |
+| `eq` `ne` `lt` `le` `gt` `ge` | sign and exponent ordering |
+
