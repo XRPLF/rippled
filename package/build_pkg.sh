@@ -4,18 +4,18 @@ set -euo pipefail
 # Build an RPM or Debian package from a pre-built xrpld binary.
 #
 # Flags override env vars; env vars override defaults. Env vars are intended
-# for CMake/systemd/CI integration; flags are for explicit invocation.
+# for CMake/CI integration; flags are for explicit invocation.
 
 usage() {
     cat <<'EOF'
 Usage: build_pkg.sh [options]
 
 Options (each can also be set via the env var shown):
-  --src-dir DIR             repo root                  [SRC_DIR;           default: $PWD]
-  --build-dir DIR           directory holding xrpld    [BUILD_DIR;         default: $PWD/build]
-  --pkg-version STR         version, e.g. 3.2.0-b1     [PKG_VERSION;       default: parsed from xrpld --version]
-  --pkg-release N           package release number     [PKG_RELEASE;       default: 1]
-  --source-date-epoch SECS  reproducibility timestamp  [SOURCE_DATE_EPOCH; default: latest git commit ctime]
+  --src-dir DIR             repo root                     [SRC_DIR;           default: $PWD]
+  --build-dir DIR           directory holding xrpld       [BUILD_DIR;         default: $PWD/build]
+  --xrpld-version STR       xrpld version, e.g. 3.2.0-b1  [XRPLD_VERSION;     default: parsed from xrpld --version]
+  --pkg-release N           package release iteration     [PKG_RELEASE;       default: 1]
+  --source-date-epoch SECS  reproducibility timestamp     [SOURCE_DATE_EPOCH; default: latest git commit ctime]
   -h, --help                show this help and exit
 EOF
 }
@@ -30,8 +30,8 @@ need_arg() {
 # Seed from env. CLI parsing below overrides these directly.
 SRC_DIR="${SRC_DIR:-}"
 BUILD_DIR="${BUILD_DIR:-}"
-PKG_VERSION="${PKG_VERSION:-}"
-PKG_RELEASE="${PKG_RELEASE:-}"
+XRPLD_VERSION="${XRPLD_VERSION:-}"
+PKG_RELEASE="${PKG_RELEASE:-1}"
 SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-}"
 
 while [[ $# -gt 0 ]]; do
@@ -46,9 +46,9 @@ while [[ $# -gt 0 ]]; do
             BUILD_DIR="$2"
             shift 2
             ;;
-        --pkg-version)
+        --xrpld-version)
             need_arg "$@"
-            PKG_VERSION="$2"
+            XRPLD_VERSION="$2"
             shift 2
             ;;
         --pkg-release)
@@ -75,18 +75,31 @@ done
 
 SRC_DIR="$(cd "${SRC_DIR:-${PWD}}" && pwd)"
 BUILD_DIR="$(cd "${BUILD_DIR:-${PWD}/build}" && pwd)"
-PKG_RELEASE="${PKG_RELEASE:-1}"
 
-if [[ -z "${PKG_VERSION}" ]]; then
-    PKG_VERSION="$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3; exit}')"
+if [[ -z "${XRPLD_VERSION}" ]]; then
+    XRPLD_VERSION="$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3; exit}')"
 fi
 
-if [[ -z "${PKG_VERSION}" ]]; then
-    echo "PKG_VERSION is empty (not provided and could not be derived)." >&2
+if [[ -z "${XRPLD_VERSION}" ]]; then
+    echo "XRPLD_VERSION is empty (not provided and could not be derived)." >&2
     exit 1
 fi
 
-VERSION="${PKG_VERSION}"
+# A pre-release suffix must be a single token. RPM Version cannot contain '-',
+# and this script uses one '-' as the version/release separator for both package
+# formats, so versions carrying a second '-' ("beta-1", "rc1-15-gabc123") do
+# not fit the convention. Reject those up front rather than mangling them later.
+if [[ "${XRPLD_VERSION}" == *-*-* ]]; then
+    echo "build_pkg.sh: multi-segment version XRPLD_VERSION='${XRPLD_VERSION}'." >&2
+    echo "Use a single-token pre-release like 3.2.0-b1 or 3.2.0-rc2." >&2
+    exit 1
+fi
+
+# The version as the package formats consume it: identical to XRPLD_VERSION
+# except a pre-release uses '~' (3.2.0-b1 -> 3.2.0~b1), which also sorts before
+# the final 3.2.0; a no-op for a final release. Lowercase = derived internally,
+# not an input (cf. pkg_type).
+pkg_version="${XRPLD_VERSION/-/~}"
 
 if command -v apt-get >/dev/null 2>&1; then
     pkg_type=deb
@@ -107,23 +120,6 @@ fi
 
 export SOURCE_DATE_EPOCH
 CHANGELOG_DATE="$(date -u -R -d "@$SOURCE_DATE_EPOCH")"
-
-# Split VERSION at the first '-' into base and optional pre-release suffix.
-# Examples: "3.2.0" -> ("3.2.0", ""); "3.2.0-b1" -> ("3.2.0", "b1").
-VER_BASE="${VERSION%%-*}"
-VER_SUFFIX="${VERSION#*-}"
-[[ "${VER_SUFFIX}" == "${VERSION}" ]] && VER_SUFFIX=""
-
-# Reject multi-segment suffixes (e.g. "beta-1", "rc1-15-gabc123"). Neither an
-# RPM Version nor a Debian upstream version may contain '-' (it's the NVR /
-# version-revision separator), and the convention here is single-token
-# suffixes like b1 or rc2. Fail early with a clear message rather than letting
-# the package tooling blow up or silently mangle dashes.
-if [[ "${VER_SUFFIX}" == *-* ]]; then
-    echo "build_pkg.sh: multi-segment pre-release in VERSION='${VERSION}' (suffix '${VER_SUFFIX}')." >&2
-    echo "Use single-token suffixes like 3.2.0-b1 or 3.2.0-rc2." >&2
-    exit 1
-fi
 
 SHARED="${SRC_DIR}/package/shared"
 DEBIAN_DIR="${SRC_DIR}/package/debian"
@@ -154,17 +150,10 @@ build_rpm() {
     cp "${SRC_DIR}/package/rpm/xrpld.spec" "${topdir}/SPECS/xrpld.spec"
     stage_common "${topdir}/SOURCES"
 
-    # Pre-releases use the modern rpm '~' convention (rpm >= 4.10): the suffix
-    # goes in Version (e.g. 3.2.0~b1), which rpmvercmp sorts *before* the final
-    # 3.2.0 — identical semantics to Debian's '~'. Release is just the package
-    # release number. This replaces the older "0.<release>.<suffix>" Release
-    # hack and keeps the RPM and DEB version strings symmetric.
-    local rpm_version="${VER_BASE}${VER_SUFFIX:+~${VER_SUFFIX}}"
-
     set -x
     rpmbuild -bb \
         --define "_topdir ${topdir}" \
-        --define "xrpld_version ${rpm_version}" \
+        --define "xrpld_version ${pkg_version}" \
         --define "pkg_release ${PKG_RELEASE}" \
         "${topdir}/SPECS/xrpld.spec"
 }
@@ -182,23 +171,22 @@ build_deb() {
     cp "${staging}/xrpld.tmpfiles" "${staging}/debian/xrpld.tmpfiles"
     cp "${staging}/xrpld.logrotate" "${staging}/debian/xrpld.logrotate"
 
-    # Debian '~' marks a pre-release; 3.2.0~b1 sorts before 3.2.0.
-    local deb_full_version="${VER_BASE}${VER_SUFFIX:+~${VER_SUFFIX}}-${PKG_RELEASE}"
+    # Full Debian version: <upstream>[~<pre>]-<pkg release>.
+    local deb_version="${pkg_version}-${PKG_RELEASE}"
 
-    # Derive release channel from the version suffix:
-    #   (none)      -> stable    (tagged release)
-    #   b0          -> develop   (develop-branch build)
-    #   b<N>, rc<N> -> unstable  (pre-release)
+    # Release channel drives the changelog distribution (RPM has no equivalent):
+    #   3.2.0 -> stable, *-b0[+metadata] -> develop,
+    #   any other pre-release -> unstable.
     local deb_distribution
-    case "${VER_SUFFIX}" in
-        "") deb_distribution="stable" ;;
-        b0) deb_distribution="develop" ;;
-        *) deb_distribution="unstable" ;;
+    case "${XRPLD_VERSION}" in
+        *-b0 | *-b0+*) deb_distribution="develop" ;;
+        *-*) deb_distribution="unstable" ;;
+        *) deb_distribution="stable" ;;
     esac
 
     cat >"${staging}/debian/changelog" <<EOF
-xrpld (${deb_full_version}) ${deb_distribution}; urgency=medium
-  * Release ${VERSION}.
+xrpld (${deb_version}) ${deb_distribution}; urgency=medium
+  * Release ${XRPLD_VERSION}.
 
  -- XRPL Foundation <contact@xrplf.org>  ${CHANGELOG_DATE}
 EOF

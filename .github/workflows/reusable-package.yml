@@ -82,7 +82,7 @@ jobs:
 
       - name: Build package
         env:
-          PKG_VERSION: ${{ needs.generate-version.outputs.version }}
+          XRPLD_VERSION: ${{ needs.generate-version.outputs.version }}
           PKG_RELEASE: ${{ inputs.pkg_release }}
         run: ./package/build_pkg.sh
 
