@@ -22,6 +22,7 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
@@ -81,6 +82,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -393,12 +395,22 @@ void
 PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 {
     dispatch(strand_, [this, self = shared_from_this(), fee, context]() {
-        if (usage_.charge(fee, context) == Resource::Disposition::Drop &&
+        if ((usage_.charge(fee, context) == Resource::Disposition::Drop) &&
             usage_.disconnect(pJournal_))
         {
-            // Sever the connection.
-            overlay_.incPeerDisconnectCharges();
-            fail("charge: Resources");
+            // Idempotent: only the first worker to observe Drop counts the
+            // metric and posts fail().  Without the guard, several queued
+            // workers can all see Drop before fail() lands on the strand,
+            // overcounting peerDisconnectsCharges_ and posting duplicate
+            // shutdowns.  fail(std::string const&) self-posts to strand_
+            // when invoked off-strand.
+            bool expected = false;
+            if (chargeDisconnectFired_.compare_exchange_strong(
+                    expected, true, std::memory_order_acq_rel))
+            {
+                overlay_.incPeerDisconnectCharges();
+                fail("charge: Resources");
+            }
         }
     });
 }
@@ -2034,7 +2046,7 @@ PeerImp::checkTracking(std::uint32_t validationSeq)
 void
 PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
 {
-    int const diff = std::max(seq1, seq2) - std::min(seq1, seq2);
+    std::uint32_t const diff = std::max(seq1, seq2) - std::min(seq1, seq2);
 
     if (diff < Tuning::kConvergedLedgerLimit)
     {
@@ -2475,63 +2487,63 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             return;
         }
 
-        protocol::TMGetObjectByHash reply;
-
-        reply.set_query(false);
-
-        reply.set_type(packet.type());
-
         if (packet.has_ledgerhash())
         {
             if (!stringIsUInt256Sized(packet.ledgerhash()))
             {
-                fee_.update(Resource::kFeeMalformedRequest, "ledger hash");
+                JLOG(pJournal_.debug()) << "GetObj: malformed ledgerhash from peer " << id_;
+                fee_.update(Resource::kFeeMalformedRequest, "get object ledger hash");
                 return;
             }
-
-            reply.set_ledgerhash(packet.ledgerhash());
         }
-
-        fee_.update(Resource::kFeeModerateBurdenPeer, " received a get object by hash request");
-
-        // This is a very minimal implementation
-        for (int i = 0; i < packet.objects_size(); ++i)
+        // Reject oversized requests before touching the NodeStore.
+        // The legitimate upper bound (InboundLedger::getNeededHashes())
+        // is 8 hashes; anything beyond kHardMaxReplyNodes is non-conforming.
+        if (packet.objects_size() > Tuning::kHardMaxReplyNodes)
         {
-            auto const& obj = packet.objects(i);
-            if (obj.has_hash() && stringIsUInt256Sized(obj.hash()))
-            {
-                uint256 const hash = uint256::fromRaw(obj.hash());
-                // VFALCO TODO Move this someplace more sensible so we dont
-                //             need to inject the NodeStore interfaces.
-                std::uint32_t const seq{obj.has_ledgerseq() ? obj.ledgerseq() : 0};
-                auto nodeObject{app_.getNodeStore().fetchNodeObject(hash, seq)};
-                if (nodeObject)
-                {
-                    protocol::TMIndexedObject& newObj = *reply.add_objects();
-                    newObj.set_hash(hash.begin(), hash.size());
-                    newObj.set_data(&nodeObject->getData().front(), nodeObject->getData().size());
-
-                    if (obj.has_nodeid())
-                        newObj.set_index(obj.nodeid());
-                    if (obj.has_ledgerseq())
-                        newObj.set_ledgerseq(obj.ledgerseq());
-
-                    // Check if by adding this object, reply has reached its
-                    // limit
-                    if (reply.objects_size() >= Tuning::kHardMaxReplyNodes)
-                    {
-                        fee_.update(
-                            Resource::kFeeModerateBurdenPeer,
-                            "Reply limit reached. Truncating reply.");
-                        break;
-                    }
-                }
-            }
+            JLOG(pJournal_.warn())
+                << "GetObj: oversized request from peer " << id_ << " (" << packet.objects_size()
+                << " > " << Tuning::kHardMaxReplyNodes << ")";
+            fee_.update(Resource::kFeeInvalidData, "oversized get object request");
+            return;
         }
 
-        JLOG(pJournal_.trace()) << "GetObj: " << reply.objects_size() << " of "
-                                << packet.objects_size();
-        send(std::make_shared<Message>(reply, protocol::mtGET_OBJECTS));
+        // Dispatch heavy synchronous NodeStore lookups off the peer's
+        // I/O strand and onto the bounded job queue, mirroring the pattern
+        // used by processLedgerRequest.
+        std::weak_ptr<PeerImp> const weak = shared_from_this();
+        bool const queued = app_.getJobQueue().addJob(JtLedgerReq, "RcvGetObjByHash", [weak, m]() {
+            auto peer = weak.lock();
+            if (!peer)
+                return;
+            try
+            {
+                peer->processGetObjectByHash(m);
+            }
+            catch (std::exception const& e)
+            {
+                // Surface backend failures (NodeStore I/O, allocation)
+                // back through the resource model so a misbehaving peer
+                // is still accountable rather than silently dropped.
+                JLOG(peer->pJournal_.warn()) << "GetObj: handler threw: " << e.what();
+                peer->charge(Resource::kFeeRequestNoReply, "get object handler exception");
+            }
+        });
+        if (!queued)
+        {
+            // The JobQueue is no longer accepting new work (typically
+            // because it is shutting down / has been joined).
+            JLOG(pJournal_.warn()) << "GetObj: job queue refused request from peer " << id_;
+            return;
+        }
+
+        // Admission-time charge: a peer that floods enqueues would
+        // otherwise be billed only the trivial onMessageEnd fee per
+        // message until the JobQueue catches up, re-creating an
+        // uncharged DoS window. Charge the base burden up-front (after
+        // a successful enqueue); the per-lookup differential is added
+        // in the worker.
+        fee_.update(Resource::kFeeModerateBurdenPeer, "received a get object by hash request");
     }
     else
     {
@@ -2585,6 +2597,69 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
         if (packet.type() == protocol::TMGetObjectByHash::otFETCH_PACK)
             app_.getLedgerMaster().gotFetchPack(progress, pLSeq);
     }
+}
+
+void
+PeerImp::processGetObjectByHash(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
+{
+    protocol::TMGetObjectByHash const& packet = *m;
+
+    protocol::TMGetObjectByHash reply;
+    reply.set_query(false);
+    reply.set_type(packet.type());
+
+    if (packet.has_ledgerhash())
+    {
+        reply.set_ledgerhash(packet.ledgerhash());
+    }
+
+    // Defense in depth: caller (onMessage) already validates cheap
+    // structural properties of the request before dispatching here:
+    //   - objects_size() <= kHardMaxReplyNodes (oversize gate)
+    //   - if has_ledgerhash() then ledgerhash is uint256-sized
+    // The iteration cap below mirrors the oversize gate so this method
+    // remains safe if invoked directly by tests or future callers, and
+    // a peer cannot drive unbounded NodeStore lookups by sending
+    // non-existent hashes.
+    int const requested = packet.objects_size();
+    int const iterLimit = std::min(requested, Tuning::kHardMaxReplyNodes);
+
+    for (int i = 0; i < iterLimit; ++i)
+    {
+        auto const& obj = packet.objects(i);
+        if (!obj.has_hash() || !stringIsUInt256Sized(obj.hash()))
+            continue;
+
+        uint256 const hash = uint256::fromRaw(obj.hash());
+        // VFALCO TODO Move this someplace more sensible so we don't
+        //             need to inject the NodeStore interfaces.
+        std::uint32_t const seq{obj.has_ledgerseq() ? obj.ledgerseq() : 0};
+        auto const nodeObject = app_.getNodeStore().fetchNodeObject(hash, seq);
+        if (!nodeObject)
+            continue;
+
+        protocol::TMIndexedObject& newObj = *reply.add_objects();
+        newObj.set_hash(hash.begin(), hash.size());
+        auto const& data = nodeObject->getData();
+        newObj.set_data(data.data(), data.size());
+        if (obj.has_nodeid())
+            newObj.set_index(obj.nodeid());
+        if (obj.has_ledgerseq())
+            newObj.set_ledgerseq(obj.ledgerseq());
+    }
+
+    // Apply work-proportional charge. `charge()` posts the disconnect
+    // step (if any) back to strand_, so it is safe to call from this
+    // JobQueue worker thread.
+    charge(
+        // We pass `requested` directly here, instead of actual lookups done. Which could be
+        // std::min(packet.objects_size(), static_cast<int>(Tuning::kHardMaxReplyNodes));
+        // Because we want to charge as per the request size, to discourage large requests.
+        computeGetObjectByHashFee(requested, reply.objects_size()),
+        "processed get object by hash request");
+
+    JLOG(pJournal_.trace()) << "GetObj: " << reply.objects_size() << " of " << requested;
+    send(std::make_shared<Message>(reply, protocol::mtGET_OBJECTS));
 }
 
 void
@@ -3412,6 +3487,53 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         return;
 
     send(std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA));
+}
+
+// Differential pricing helper.  Returns only the *dynamic* component
+// of the per-message charge — the base `kFeeModerateBurdenPeer` is
+// applied at admission time in `onMessage(TMGetObjectByHash)` so a
+// high traffic client pays for the message regardless of when (or
+// whether) the worker runs.
+//
+// Dynamic charge model:
+//
+//   billable       = max(0, requested - kFreeObjectsPerRequest)
+//   missed         = max(0, requested - found)
+//   billableMisses = min(missed, billable)        // misses billed first
+//   billableHits   = billable - billableMisses
+//   sizeBand       = (requested >  kBandMediumMax) ? kCostBandLarge
+//                  : (requested >  kBandSmallMax)  ? kCostBandMedium
+//                                                  : kCostBandSmall
+//   dynamic        = billableHits   * kCostPerLookupHit
+//                  + billableMisses * kCostPerLookupMiss
+//                  + sizeBand
+//
+// Misses are billed first against the billable budget because a node store
+// seek dominates a cache hit and because invalid hashes are ~100% miss by construction.
+Resource::Charge
+PeerImp::computeGetObjectByHashFee(int const requested, int const found)
+{
+    int const billable = std::max(0, requested - static_cast<int>(Tuning::kFreeObjectsPerRequest));
+    // Clamp `missed` so a future caller passing found > requested cannot
+    // produce a negative value that flips the hits/misses split.
+    int const missed = std::max(0, requested - found);
+    int const billableMisses = std::min(missed, billable);
+    int const billableHits = billable - billableMisses;
+
+    int sizeBand = Tuning::kCostBandSmall;
+    if (requested > Tuning::kBandMediumMax)
+    {
+        sizeBand = Tuning::kCostBandLarge;
+    }
+    else if (requested > Tuning::kBandSmallMax)
+    {
+        sizeBand = Tuning::kCostBandMedium;
+    }
+
+    int const dynamic = (billableHits * Tuning::kCostPerLookupHit) +
+        (billableMisses * Tuning::kCostPerLookupMiss) + sizeBand;
+
+    return Resource::Charge(dynamic, "GetObject differential");
 }
 
 int
