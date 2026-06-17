@@ -1,5 +1,6 @@
 
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>  // IWYU pragma: keep
 
 #include <xrpl/basics/base_uint.h>
@@ -152,14 +153,14 @@ public:
         env.fund(XRP(10000), alice);
         env.close();
 
-        Json::Value txJson;
+        json::Value txJson;
         txJson[jss::TransactionType] = "AMMDelete";
         txJson[jss::Account] = alice.human();
         txJson[jss::Asset][jss::currency] = "USD";
         txJson[jss::Asset][jss::issuer] = to_string(noAccount());
         txJson[jss::Asset2][jss::currency] = "XRP";
 
-        Json::Value req;
+        json::Value req;
         req[jss::tx_json] = txJson;
         req[jss::secret] = alice.name();
 
@@ -175,7 +176,7 @@ public:
         testcase("noAccount issuer rejection");
 
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::currency] = "USD";
             jv[jss::issuer] = to_string(noAccount());
 
@@ -192,7 +193,7 @@ public:
 
         {
             Serializer s;
-            s.addBitString(to_currency("USD"));
+            s.addBitString(toCurrency("USD"));
             s.addBitString(noAccount());
             SerialIter iter(s.slice());
 
@@ -225,14 +226,14 @@ public:
         env.fund(XRP(10000), alice);
         env.close();
 
-        Json::Value txJson;
+        json::Value txJson;
         txJson[jss::TransactionType] = "AMMDelete";
         txJson[jss::Account] = alice.human();
         txJson[jss::Asset][jss::currency] = "USD";
         txJson[jss::Asset][jss::issuer] = to_string(xrpAccount());
         txJson[jss::Asset2][jss::currency] = "XRP";
 
-        Json::Value req;
+        json::Value req;
         req[jss::tx_json] = txJson;
         req[jss::secret] = alice.name();
 
@@ -248,7 +249,7 @@ public:
         testcase("xrpAccount issuer rejection");
 
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::currency] = "USD";
             jv[jss::issuer] = to_string(xrpAccount());
 

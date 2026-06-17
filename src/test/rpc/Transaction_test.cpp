@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/seq.h>
@@ -892,7 +893,7 @@ class Transaction_test : public beast::unit_test::Suite
 
         auto makeConfig = [](std::uint32_t networkID) {
             return envconfig([networkID](std::unique_ptr<Config> cfg) {
-                cfg->NETWORK_ID = networkID;
+                cfg->networkId = networkID;
                 return cfg;
             });
         };
@@ -905,7 +906,7 @@ class Transaction_test : public beast::unit_test::Suite
         };
 
         auto makeTx = [&](Env& env) {
-            Json::Value tx;
+            json::Value tx;
             tx[jss::TransactionType] = jss::AccountSet;
             tx[jss::Account] = owner.human();
             tx[jss::Sequence] = env.seq(owner);
@@ -914,8 +915,8 @@ class Transaction_test : public beast::unit_test::Suite
             return tx;
         };
 
-        auto signFor = [&](Env& env, Json::Value const& tx) {
-            Json::Value signReq;
+        auto signFor = [&](Env& env, json::Value const& tx) {
+            json::Value signReq;
             signReq[jss::tx_json] = tx;
             signReq[jss::account] = signer.human();
             signReq[jss::secret] = signer.name();

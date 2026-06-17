@@ -1366,7 +1366,7 @@ public:
         env.close();
 
         auto const rpcAccountObjects = [&](std::optional<uint32_t> limit = std::nullopt) {
-            Json::Value params;
+            json::Value params;
             params[jss::account] = alice.human();
             if (limit.has_value())
             {
@@ -1380,7 +1380,7 @@ public:
         seqs.reserve(numEntries);
         for ([[maybe_unused]] auto _ : std::ranges::iota_view{0, numEntries})
         {
-            Json::Value params;
+            json::Value params;
             params[jss::secret] = toBase58(generateSeed("alice"));
             params[jss::tx_json] = offer(alice, EUR(1), XRP(2));
             auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
@@ -1395,9 +1395,9 @@ public:
 
         for (auto const s : std::views::all(seqs) | std::views::take(numEntries - 1))
         {
-            Json::Value params;
+            json::Value params;
             params[jss::secret] = toBase58(generateSeed("alice"));
-            params[jss::tx_json] = offer_cancel(alice, s - 1);
+            params[jss::tx_json] = offerCancel(alice, s - 1);
             auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
             BEAST_EXPECT(res[jss::status].asString() == "success");
         }
@@ -1408,9 +1408,9 @@ public:
         BEAST_EXPECT(not res[jss::result].isMember(jss::marker));
 
         {
-            Json::Value params;
+            json::Value params;
             params[jss::secret] = toBase58(generateSeed("alice"));
-            Json::Value tx_json;
+            json::Value tx_json;
             tx_json[jss::TransactionType] = jss::NFTokenMint;
             tx_json[jss::Account] = to_string(alice.id());
             tx_json["NFTokenTaxon"] = 1;

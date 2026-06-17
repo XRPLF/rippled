@@ -873,7 +873,7 @@ public:
 
         // Valid XRP — no issuer field
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::currency] = "XRP";
             auto const issue = issueFromJson(jv);
             BEAST_EXPECT(isXRP(issue));
@@ -881,7 +881,7 @@ public:
 
         // Valid IOU — legitimate issuer
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::currency] = "USD";
             jv[jss::issuer] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             auto const issue = issueFromJson(jv);
@@ -893,7 +893,7 @@ public:
         // rejected
         try
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::currency] = "USD";
             jv[jss::issuer] = to_string(noAccount());
             issueFromJson(jv);
@@ -908,7 +908,7 @@ public:
         // as IOU issuer
         try
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::currency] = "USD";
             jv[jss::issuer] = to_string(xrpAccount());
             issueFromJson(jv);
@@ -922,7 +922,7 @@ public:
         // Invalid base58 — must be rejected
         try
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::currency] = "USD";
             jv[jss::issuer] = "not_a_valid_address";
             issueFromJson(jv);
@@ -936,7 +936,7 @@ public:
         // Non-XRP currency with no issuer field — must be rejected
         try
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::currency] = "USD";
             issueFromJson(jv);
             fail("missing issuer accepted");
@@ -949,7 +949,7 @@ public:
         // XRP with an issuer field — must be rejected
         try
         {
-            Json::Value jv;
+            json::Value jv;
             jv[jss::currency] = "XRP";
             jv[jss::issuer] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             issueFromJson(jv);
