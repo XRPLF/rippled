@@ -23,8 +23,7 @@ checkTxPermission(SLE::const_ref delegate, STTx const& tx);
  * @param delegate The delegate account.
  * @param type Used to determine which granted granular permissions to load,
  * based on the transaction type.
- * @param granularPermissions Granted granular permissions tied to the
- * transaction type.
+ * @return the granted granular permissions tied to the transaction type.
  */
 std::unordered_set<GranularPermissionType>
 getGranularPermission(SLE::const_ref delegate, TxType const& type);

@@ -83,16 +83,20 @@ Permission::Permission()
 
     if (granularPermissionsByName_.size() != granularPermissions_.size())
     {
+        // LCOV_EXCL_START
         Throw<std::logic_error>(
             "granularPermissionsByName_ and granularPermissions_ must have same size");
+        // LCOV_EXCL_STOP
     }
 
     for (auto const& [name, type] : granularPermissionsByName_)
     {
         if (type <= UINT16_MAX)
         {
+            // LCOV_EXCL_START
             Throw<std::logic_error>(
                 "Granular permission value must exceed the maximum uint16_t value: " + name);
+            // LCOV_EXCL_STOP
         }
     }
 
@@ -104,16 +108,28 @@ Permission::Permission()
     for (auto const& [type, entry] : granularPermissions_)
     {
         if (!txDelegationMap_.contains(entry.txType))
+        {
+            // LCOV_EXCL_START
             Throw<std::logic_error>("Invalid granular permission txType in txDelegationMap_");
+            // LCOV_EXCL_STOP
+        }
 
         auto const* fmt = TxFormats::getInstance().findByType(entry.txType);
         if (fmt == nullptr)
+        {
+            // LCOV_EXCL_START
             Throw<std::logic_error>("Invalid granular permission txType");
+            // LCOV_EXCL_STOP
+        }
 
         for (auto const& field : entry.permittedFields)
         {
             if (fmt->getSOTemplate().getIndex(field.sField()) == -1)
+            {
+                // LCOV_EXCL_START
                 Throw<std::logic_error>("Invalid granular permission field");
+                // LCOV_EXCL_STOP
+            }
         }
     }
 }
