@@ -211,6 +211,16 @@ homomorphicSubtract(Slice const& a, Slice const& b)
     return serializeEcPair(diff);
 }
 
+std::optional<Buffer>
+rerandomizeCiphertext(Slice const& ciphertext, Slice const& pubKeySlice, Slice const& randomness)
+{
+    auto zero = encryptAmount(0, pubKeySlice, randomness);
+    if (!zero)
+        return std::nullopt;
+
+    return homomorphicAdd(ciphertext, *zero);
+}
+
 Buffer
 generateBlindingFactor()
 {
