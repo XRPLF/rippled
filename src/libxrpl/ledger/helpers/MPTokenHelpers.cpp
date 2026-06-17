@@ -292,7 +292,9 @@ removeEmptyHolding(
 
     // Don't delete if the token still has confidential balances
     if (mptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
-        mptoken->isFieldPresent(sfConfidentialBalanceSpending))
+        mptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
+        mptoken->isFieldPresent(sfIssuerEncryptedBalance) ||
+        mptoken->isFieldPresent(sfAuditorEncryptedBalance))
     {
         return tecHAS_OBLIGATIONS;
     }

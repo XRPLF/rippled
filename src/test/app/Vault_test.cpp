@@ -39,6 +39,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -6459,6 +6460,46 @@ class Vault_test : public beast::unit_test::Suite
         runTest(amendments);
     }
 
+    void
+    testRemoveEmptyHoldingConfidentialBalances()
+    {
+        testcase("removeEmptyHolding keeps MPToken with confidential balances");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+
+        Account const issuer{"issuer"};
+        Account const holder{"holder"};
+        MPTTester mpt{env, issuer, {.holders = {holder}}};
+        mpt.create({.authorize = MPTCreate::allHolders});
+
+        auto const tokenKeylet = keylet::mptoken(mpt.issuanceID(), holder.id());
+        auto const encryptedBalanceFields = {
+            &sfConfidentialBalanceInbox,
+            &sfConfidentialBalanceSpending,
+            &sfIssuerEncryptedBalance,
+            &sfAuditorEncryptedBalance};
+
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
+            for (auto const field : encryptedBalanceFields)
+            {
+                Sandbox sb(&view, TapNone);
+                auto const token = sb.peek(tokenKeylet);
+                if (!BEAST_EXPECT(token))
+                    return false;
+
+                token->setFieldVL(*field, gMakeZeroBuffer(kEcGamalEncryptedTotalLength));
+                sb.update(token);
+
+                BEAST_EXPECT(
+                    removeEmptyHolding(sb, holder.id(), MPTIssue(mpt.issuanceID()), j) ==
+                    tecHAS_OBLIGATIONS);
+                BEAST_EXPECT(sb.peek(tokenKeylet) != nullptr);
+            }
+            return true;
+        });
+    }
+
     // -----------------------------------------------------------------------
     // Helpers and tests: sole-shareholder / stuck-depositor (XLS-0065 +
     // fixCleanup3_2_0). The vault-level withdraw behavior is tested here;
@@ -8057,6 +8098,7 @@ public:
         testAssetsMaximum();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
+        testRemoveEmptyHoldingConfidentialBalances();
 
         testWithdrawSoleShareholderFixedAssetExit(all_ - fixCleanup3_2_0);
         testWithdrawSoleShareholderFixedAssetExit(all_);
