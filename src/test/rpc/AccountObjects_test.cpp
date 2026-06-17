@@ -23,6 +23,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
@@ -1361,7 +1362,7 @@ public:
 
         Account const alice{"alice"};
         Account const bob{"bob"};
-        auto const EUR = bob["EUR"];
+        auto const eur = bob["EUR"];
         env.fund(XRP(10000), alice, bob);
         env.close();
 
@@ -1382,7 +1383,7 @@ public:
         {
             json::Value params;
             params[jss::secret] = toBase58(generateSeed("alice"));
-            params[jss::tx_json] = offer(alice, EUR(1), XRP(2));
+            params[jss::tx_json] = offer(alice, eur(1), XRP(2));
             auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
             BEAST_EXPECT(res[jss::status].asString() == "success");
             seqs.push_back(env.seq(alice));
@@ -1410,11 +1411,11 @@ public:
         {
             json::Value params;
             params[jss::secret] = toBase58(generateSeed("alice"));
-            json::Value tx_json;
-            tx_json[jss::TransactionType] = jss::NFTokenMint;
-            tx_json[jss::Account] = to_string(alice.id());
-            tx_json["NFTokenTaxon"] = 1;
-            params[jss::tx_json] = tx_json;
+            json::Value txJson;
+            txJson[jss::TransactionType] = jss::NFTokenMint;
+            txJson[jss::Account] = to_string(alice.id());
+            txJson["NFTokenTaxon"] = 1;
+            params[jss::tx_json] = txJson;
             auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
             BEAST_EXPECT(res[jss::status].asString() == "success");
         }
