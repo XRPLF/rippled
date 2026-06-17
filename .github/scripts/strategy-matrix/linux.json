@@ -10,7 +10,7 @@
 
       {
         "compiler": ["gcc", "clang"],
-        "build_type": ["Debug"],
+        "build_type": ["Debug", "Release"],
         "arch": ["amd64"],
         "sanitizers": ["address", "undefinedbehavior"]
       },
@@ -41,7 +41,8 @@
         "build_type": ["Debug"],
         "arch": ["amd64"],
         "suffix": "unity",
-        "extra_cmake_args": "-Dunity=ON"
+        "extra_cmake_args": "-Dunity=ON",
+        "exclude_event_types": ["pull_request"]
       }
     ],
 

@@ -100,7 +100,8 @@ verifyProofs(
         auditor.emplace(
             ConfidentialRecipient{
                 .publicKey = (*issuance)[sfAuditorEncryptionKey],
-                .encryptedAmount = tx[sfAuditorEncryptedAmount]});
+                .encryptedAmount = tx[sfAuditorEncryptedAmount],
+            });
     }
 
     // Run all verifications before returning any error to prevent timing attacks
@@ -110,9 +111,14 @@ verifyProofs(
     if (auto const ter = verifyRevealedAmount(
             amount,
             Slice(blindingFactor.data(), blindingFactor.size()),
-            {.publicKey = holderPubKey, .encryptedAmount = tx[sfHolderEncryptedAmount]},
-            {.publicKey = (*issuance)[sfIssuerEncryptionKey],
-             .encryptedAmount = tx[sfIssuerEncryptedAmount]},
+            {
+                .publicKey = holderPubKey,
+                .encryptedAmount = tx[sfHolderEncryptedAmount],
+            },
+            {
+                .publicKey = (*issuance)[sfIssuerEncryptionKey],
+                .encryptedAmount = tx[sfIssuerEncryptedAmount],
+            },
             auditor);
         !isTesSuccess(ter))
     {
@@ -202,7 +208,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, mptIssue, account); !isTesSuccess(ter))
         return ter;
 
-    if (TER const res = verifyProofs(ctx.tx, sleIssuance, sleMptoken); !isTesSuccess(res))
+    if (auto const res = verifyProofs(ctx.tx, sleIssuance, sleMptoken); !isTesSuccess(res))
         return res;
 
     return tesSUCCESS;

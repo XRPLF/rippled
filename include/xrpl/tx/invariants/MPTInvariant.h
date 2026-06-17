@@ -36,17 +36,42 @@ class ValidMPTIssuance
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
 public:
+    /**
+     * @brief Track MPT issuance and holding creations, deletions, and
+     * mutations.
+     *
+     * @param isDelete Whether the ledger entry is being deleted.
+     * @param before The ledger entry before transaction application.
+     * @param after The ledger entry after transaction application.
+     */
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after);
 
+    /**
+     * @brief Verify MPT issuance invariants after transaction application.
+     *
+     * @param tx The transaction being checked.
+     * @param result The transaction result code.
+     * @param fee The fee charged by the transaction.
+     * @param view The ledger view after transaction application.
+     * @param j Journal used for diagnostics.
+     * @return true if the invariant checks pass, otherwise false.
+     */
     [[nodiscard]] bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+    finalize(
+        STTx const& tx,
+        TER const result,
+        XRPAmount const fee,
+        ReadView const& view,
+        beast::Journal const& j) const;
 };
 
-/** Verify:
- *    - OutstandingAmount <= MaximumAmount for any MPT
- *    - OutstandingAmount after = OutstandingAmount before +
- *         sum (MPT after - MPT before) - this is total MPT credit/debit
+/**
+ * @brief Verify public MPT amount and outstanding amount accounting.
+ *
+ * Checks that OutstandingAmount does not exceed MaximumAmount and that
+ * OutstandingAmount after application equals OutstandingAmount before
+ * application plus the net holder balance delta.
  */
 class ValidMPTPayment
 {
@@ -64,11 +89,33 @@ class ValidMPTPayment
     hash_map<uint192, MPTData> data_;
 
 public:
+    /**
+     * @brief Track MPT amount and outstanding amount changes.
+     *
+     * @param isDelete Whether the ledger entry is being deleted.
+     * @param before The ledger entry before transaction application.
+     * @param after The ledger entry after transaction application.
+     */
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after);
 
+    /**
+     * @brief Verify public MPT payment accounting invariants.
+     *
+     * @param tx The transaction being checked.
+     * @param result The transaction result code.
+     * @param fee The fee charged by the transaction.
+     * @param view The ledger view after transaction application.
+     * @param j Journal used for diagnostics.
+     * @return true if the invariant checks pass, otherwise false.
+     */
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(
+        STTx const& tx,
+        TER const result,
+        XRPAmount const fee,
+        ReadView const& view,
+        beast::Journal const& j);
 };
 
 /**
@@ -107,11 +154,37 @@ class ValidConfidentialMPToken
     std::map<uint192, Changes> changes_;
 
 public:
+    /**
+     * @brief Track confidential MPT balance, issuance, and version changes.
+     *
+     * @param isDelete Whether the ledger entry is being deleted.
+     * @param before The ledger entry before transaction application.
+     * @param after The ledger entry after transaction application.
+     */
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after);
 
+    /**
+     * @brief Verify confidential MPT accounting and encrypted-field
+     * invariants.
+     *
+     * @param tx The transaction being checked.
+     * @param result The transaction result code.
+     * @param fee The fee charged by the transaction.
+     * @param view The ledger view after transaction application.
+     * @param j Journal used for diagnostics.
+     * @return true if the invariant checks pass, otherwise false.
+     */
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(
+        STTx const& tx,
+        TER const result,
+        XRPAmount const fee,
+        ReadView const& view,
+        beast::Journal const& j);
 };
 
 class ValidMPTTransfer
@@ -128,11 +201,36 @@ class ValidMPTTransfer
     hash_map<uint256, bool> deletedAuthorized_;
 
 public:
+    /**
+     * @brief Track MPT balance changes and deleted authorization state.
+     *
+     * @param isDelete Whether the ledger entry is being deleted.
+     * @param before The ledger entry before transaction application.
+     * @param after The ledger entry after transaction application.
+     */
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after);
 
+    /**
+     * @brief Verify MPT transfer authorization invariants.
+     *
+     * @param tx The transaction being checked.
+     * @param result The transaction result code.
+     * @param fee The fee charged by the transaction.
+     * @param view The ledger view after transaction application.
+     * @param j Journal used for diagnostics.
+     * @return true if the invariant checks pass, otherwise false.
+     */
     bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    finalize(
+        STTx const& tx,
+        TER const result,
+        XRPAmount const fee,
+        ReadView const& view,
+        beast::Journal const& j);
 
 private:
     /**
@@ -142,7 +240,13 @@ private:
      * finalize() runs, so their authorization state is captured during
      * visitEntry() and stored in deletedAuthorized_. For deleted MPTokens,
      * returns true if reqAuth is false or lsfMPTAuthorized was set at deletion.
-     * For existing MPTokens, returns the result of requireAuth()
+     * For existing MPTokens, returns the result of requireAuth().
+     *
+     * @param view The ledger view after transaction application.
+     * @param mptid The MPToken issuance ID.
+     * @param holder The holder account being checked.
+     * @param requireAuth Whether the issuance requires explicit authorization.
+     * @return true if the holder is authorized, otherwise false.
      */
     [[nodiscard]] bool
     isAuthorized(

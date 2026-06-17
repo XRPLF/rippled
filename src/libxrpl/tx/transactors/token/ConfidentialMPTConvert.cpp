@@ -178,16 +178,22 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
         auditor.emplace(
             ConfidentialRecipient{
                 .publicKey = (*sleIssuance)[sfAuditorEncryptionKey],
-                .encryptedAmount = ctx.tx[sfAuditorEncryptedAmount]});
+                .encryptedAmount = ctx.tx[sfAuditorEncryptedAmount],
+            });
     }
 
     auto const blindingFactor = ctx.tx[sfBlindingFactor];
     if (auto const ter = verifyRevealedAmount(
             amount,
             Slice(blindingFactor.data(), blindingFactor.size()),
-            {.publicKey = holderPubKey, .encryptedAmount = ctx.tx[sfHolderEncryptedAmount]},
-            {.publicKey = (*sleIssuance)[sfIssuerEncryptionKey],
-             .encryptedAmount = ctx.tx[sfIssuerEncryptedAmount]},
+            {
+                .publicKey = holderPubKey,
+                .encryptedAmount = ctx.tx[sfHolderEncryptedAmount],
+            },
+            {
+                .publicKey = (*sleIssuance)[sfIssuerEncryptionKey],
+                .encryptedAmount = ctx.tx[sfIssuerEncryptedAmount],
+            },
             auditor);
         !isTesSuccess(ter))
     {

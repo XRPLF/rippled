@@ -401,8 +401,8 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfDomainID,                 SoeOptional},
     {sfMutableFlags,             SoeDefault},
     {sfReferenceHolding,         SoeOptional},
-    {sfIssuerEncryptionKey, SoeOptional},
-    {sfAuditorEncryptionKey, SoeOptional},
+    {sfIssuerEncryptionKey,      SoeOptional},
+    {sfAuditorEncryptionKey,     SoeOptional},
     {sfConfidentialOutstandingAmount, SoeDefault},
 }))
 

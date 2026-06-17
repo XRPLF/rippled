@@ -238,11 +238,15 @@ words:
   - pyenv
   - pyparsing
   - qalloc
+  - qbsprofile
   - queuable
   - Raphson
+  - rcflags
   - replayer
+  - rerandomize
   - rerandomization
   - rerandomized
+  - rerandomizes
   - rerere
   - retriable
   - RIPD

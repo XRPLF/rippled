@@ -26,7 +26,6 @@ class ConfidentialMPTConvert : public Transactor
 {
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
-    ;
 
     explicit ConfidentialMPTConvert(ApplyContext& ctx) : Transactor(ctx)
     {

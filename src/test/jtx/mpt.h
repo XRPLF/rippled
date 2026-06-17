@@ -10,24 +10,13 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/protocol/ConfidentialTransfer.h>
-
-// The mpt-crypto library's <mpt_protocol.h> (pulled in transitively via
-// ConfidentialTransfer.h -> <secp256k1_mpt.h>) defines ttCONFIDENTIAL_MPT_* as
-// preprocessor macros that collide with xrpld's TxType enumerators of the
-// same name, rewriting e.g. `ttCONFIDENTIAL_MPT_SEND` into the bare integer
-// `88` at every use site. Tests only use the TxType enum, so drop the macros.
-// TODO: remove once mpt-crypto renames these macros (e.g. kMPT_TT_*).
-#undef ttCONFIDENTIAL_MPT_CONVERT
-#undef ttCONFIDENTIAL_MPT_MERGE_INBOX
-#undef ttCONFIDENTIAL_MPT_CONVERT_BACK
-#undef ttCONFIDENTIAL_MPT_SEND
-#undef ttCONFIDENTIAL_MPT_CLAWBACK
-
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 namespace xrpl::test::jtx {
 
@@ -35,23 +24,28 @@ class MPTTester;
 
 auto const kMptDexFlags = tfMPTCanTrade | tfMPTCanTransfer;
 
-/*Helper lambda to create a zero-initialized buffer.
-WHY THIS IS NEEDED: In C++, xrpl::Buffer(size) allocates uninitialized heap memory.
-Because CI runs unit tests sequentially in the same process, uninitialized memory
-often recycles "ghost data" (like valid SECP256k1 keys or Pedersen commitments)
-left over from previously executed tests.
-When testing malformed cryptography paths, passing uninitialized memory might
-accidentally supply a valid curve point, causing the ledger's preflight checks
-to falsely succeed and return tecBAD_PROOF instead of the expected temMALFORMED.
-Explicitly zeroing the buffer guarantees it fails structural validation. */
-static auto gMakeZeroBuffer = [](size_t size) {
+/**
+ * @brief Create a zero-initialized buffer for malformed cryptography test
+ * inputs.
+ *
+ * xrpl::Buffer(size) allocates uninitialized heap memory. Because CI runs unit
+ * tests sequentially in the same process, uninitialized memory can recycle
+ * valid secp256k1 keys or Pedersen commitments from earlier tests. Explicitly
+ * zeroing the buffer guarantees structural validation fails deterministically.
+ *
+ * @param size The number of zero bytes to allocate.
+ * @return A buffer containing size zero bytes.
+ */
+[[nodiscard]] inline Buffer
+gMakeZeroBuffer(std::size_t size)
+{
     Buffer b(size);
     if (size > 0)
         std::memset(b.data(), 0, size);
     return b;
-};
+}
 
-// Check flags settings on MPT create
+/** @brief Test helper that checks MPT flag settings after creation. */
 class MptFlags
 {
 private:
@@ -72,7 +66,7 @@ public:
     operator()(Env& env) const;
 };
 
-// Check mptissuance or mptoken amount balances on payment
+/** @brief Test helper that checks MPT issuance or holder balances. */
 class MptBalance
 {
 private:
@@ -90,6 +84,7 @@ public:
     operator()(Env& env) const;
 };
 
+/** @brief Test helper that accepts any condition supplied by a callback. */
 class RequireAny
 {
 private:
@@ -106,6 +101,7 @@ public:
 
 using Holders = std::vector<Account>;
 
+/** @brief Arguments for building an MPTokenIssuanceCreate test transaction. */
 struct MPTCreate
 {
     static inline std::vector<Account> allHolders = {};
@@ -129,8 +125,11 @@ struct MPTCreate
     std::optional<TER> err = std::nullopt;
 };
 
+/** @brief Arguments for initializing funded MPT test accounts and issuance. */
 struct MPTInit
 {
+    // Default-initialized so designated-initializer call sites that omit
+    // `holders` don't trip GCC's -Werror=missing-field-initializers.
     Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::optional<Account> auditor = std::nullopt;
     PrettyAmount const xrp = XRP(10'000);
@@ -142,6 +141,7 @@ struct MPTInit
 };
 static MPTInit const kMptInitNoFund{.fund = false};
 
+/** @brief Full constructor arguments for MPTTester initialization. */
 struct MPTInitDef
 {
     Env& env;
@@ -159,6 +159,7 @@ struct MPTInitDef
     std::optional<TER> err = std::nullopt;
 };
 
+/** @brief Arguments for building an MPTokenIssuanceDestroy test transaction. */
 struct MPTDestroy
 {
     std::optional<Account> issuer = std::nullopt;
@@ -169,6 +170,7 @@ struct MPTDestroy
     std::optional<TER> err = std::nullopt;
 };
 
+/** @brief Arguments for building an MPTokenAuthorize test transaction. */
 struct MPTAuthorize
 {
     std::optional<Account> account = std::nullopt;
@@ -180,6 +182,7 @@ struct MPTAuthorize
     std::optional<TER> err = std::nullopt;
 };
 
+/** @brief Arguments for building an MPTokenIssuanceSet test transaction. */
 struct MPTSet
 {
     std::optional<Account> account = std::nullopt;
@@ -199,6 +202,7 @@ struct MPTSet
     std::optional<TER> err = std::nullopt;
 };
 
+/** @brief Arguments for building a ConfidentialMPTConvert test transaction. */
 struct MPTConvert
 {
     std::optional<Account> account = std::nullopt;
@@ -226,6 +230,7 @@ struct MPTConvert
     std::optional<TER> err = std::nullopt;
 };
 
+/** @brief Arguments for building a ConfidentialMPTMergeInbox test transaction. */
 struct MPTMergeInbox
 {
     std::optional<Account> account = std::nullopt;
@@ -239,6 +244,7 @@ struct MPTMergeInbox
     std::optional<TER> err = std::nullopt;
 };
 
+/** @brief Arguments for building a ConfidentialMPTSend test transaction. */
 struct MPTConfidentialSend
 {
     std::optional<Account> account = std::nullopt;
@@ -267,6 +273,7 @@ struct MPTConfidentialSend
     std::optional<TER> err = std::nullopt;
 };
 
+/** @brief Arguments for building a ConfidentialMPTConvertBack test transaction. */
 struct MPTConvertBack
 {
     std::optional<Account> account = std::nullopt;
@@ -289,6 +296,7 @@ struct MPTConvertBack
     std::optional<TER> err = std::nullopt;
 };
 
+/** @brief Arguments for building a ConfidentialMPTClawback test transaction. */
 struct MPTConfidentialClawback
 {
     std::optional<Account> account = std::nullopt;
@@ -307,13 +315,20 @@ struct MPTConfidentialClawback
 
 /**
  * @brief Stores the parameters that are exclusively used to generate a
- * pedersen linkage proof
+ * Pedersen linkage proof.
  */
 struct PedersenProofParams
 {
+    /** @brief The Pedersen commitment used by the proof. */
     Buffer const pedersenCommitment;
-    uint64_t const amt;  // either spending balance or value to be transferred
+
+    /** @brief Either the spending balance or the value being transferred. */
+    uint64_t const amt;
+
+    /** @brief The encrypted amount linked to the Pedersen commitment. */
     Buffer const encryptedAmt;
+
+    /** @brief The blinding factor used to create the Pedersen commitment. */
     Buffer const blindingFactor;
 };
 
@@ -330,9 +345,14 @@ struct PedersenProofParams
  */
 struct ConfidentialSendChainState
 {
-    std::uint64_t spending;  // Decrypted spending balance after the previous send.
-    Buffer encSpending;      // Encrypted spending balance after the previous send.
-    std::uint32_t version;   // sfConfidentialBalanceVersion after the previous send.
+    /** @brief Decrypted spending balance after the previous send. */
+    std::uint64_t spending;
+
+    /** @brief Encrypted spending balance after the previous send. */
+    Buffer encSpending;
+
+    /** @brief sfConfidentialBalanceVersion after the previous send. */
+    std::uint32_t version;
 };
 
 /**
@@ -346,7 +366,8 @@ struct ConfidentialSendChainState
  * @param currentVersion      sfConfidentialBalanceVersion before the send.
  * @param sendAmt             Plaintext amount being sent.
  * @param senderEncAmt        sfSenderEncryptedAmount from the send transaction.
- * @return The predicted chain state, or std::nullopt if homomorphic subtraction fails
+ * @return The predicted chain state, or std::nullopt if homomorphic
+ *         subtraction fails.
  */
 std::optional<ConfidentialSendChainState>
 computeNextSendChainState(
@@ -356,6 +377,10 @@ computeNextSendChainState(
     std::uint64_t sendAmt,
     Slice const& senderEncAmt);
 
+/**
+ * @brief Test helper for creating, mutating, and asserting MPT and confidential
+ * MPT ledger state.
+ */
 class MPTTester
 {
     Env& env_;
@@ -368,13 +393,17 @@ class MPTTester
     std::unordered_map<AccountID, Buffer> privKeys_;
 
 public:
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum EncryptedBalanceType {
+    enum class EncryptedBalanceType {
         IssuerEncryptedBalance,
         HolderEncryptedInbox,
         HolderEncryptedSpending,
         AuditorEncryptedBalance,
     };
+
+    static constexpr auto issuerEncryptedBalance = EncryptedBalanceType::IssuerEncryptedBalance;
+    static constexpr auto holderEncryptedInbox = EncryptedBalanceType::HolderEncryptedInbox;
+    static constexpr auto holderEncryptedSpending = EncryptedBalanceType::HolderEncryptedSpending;
+    static constexpr auto auditorEncryptedBalance = EncryptedBalanceType::AuditorEncryptedBalance;
 
     MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
     MPTTester(MPTInitDef const& constr);
@@ -416,8 +445,14 @@ public:
     void
     convert(MPTConvert const& arg = MPTConvert{});
 
-    // Build a confidential convert JV without submitting.  'seq' is the inner
-    // transaction sequence used in the Schnorr proof context hash.
+    /**
+     * @brief Build a confidential convert JV without submitting it.
+     *
+     * @param arg Transaction builder arguments.
+     * @param seq Inner transaction sequence used in the Schnorr proof context
+     *            hash.
+     * @return The transaction JSON object.
+     */
     json::Value
     convertJV(MPTConvert const& arg, std::uint32_t seq);
 
@@ -430,37 +465,54 @@ public:
     void
     send(MPTConfidentialSend const& arg = MPTConfidentialSend{});
 
-    // Build a confidential send JV.  When 'chain' is provided the sender's
-    // proof parameters are taken from it instead of the ledger, enabling
-    // correct proof generation for a second (or later) send from the same
-    // account inside a single batch.
+    /**
+     * @brief Build a confidential send JV.
+     *
+     * When chain is provided, the sender's proof parameters are taken from it
+     * instead of the ledger, enabling proof generation for a second or later
+     * send from the same account inside a single batch.
+     *
+     * @param arg Transaction builder arguments.
+     * @param seq Inner transaction sequence used in the proof context hash.
+     * @param chain Optional predicted sender state from a previous batched
+     *              send.
+     * @return The transaction JSON object.
+     */
     json::Value
     sendJV(
         MPTConfidentialSend const& arg,
         std::uint32_t seq,
         std::optional<ConfidentialSendChainState> chain = std::nullopt);
 
-    // Compute the projected sender state after a confidential send in a batch.
-    //
-    // Each confidential send requires a ZK proof that the sender's spending
-    // balance covers the transfer. In a batch, if there are more than one
-    // Confidential Send, the 2nd onwards send requires a proof that includes the
-    // updated spending balance.
-    //
-    // Example: Bob has 200, batches send 100 to Carol then 50 to Dave:
-    //   jv1   = sendJV({bob->carol, 100}, seq1)
-    //   chain = chainAfterSend(bob, 100, jv1)  // projected balance after jv1 = 100
-    //   jv2   = sendJV({bob->dave,   50}, seq2, chain)
+    /**
+     * @brief Compute the projected sender state after a confidential send in a
+     * batch.
+     *
+     * Each confidential send requires a ZK proof that the sender's spending
+     * balance covers the transfer. In a batch, the second and later sends from
+     * the same sender need proofs built against the updated spending balance.
+     *
+     * @param sender The sender whose post-send state is being predicted.
+     * @param sendAmt The plaintext amount sent by the transaction.
+     * @param jv The confidential send transaction JSON object.
+     * @return The predicted sender state after applying the send.
+     */
     [[nodiscard]] ConfidentialSendChainState
     chainAfterSend(Account const& sender, std::uint64_t sendAmt, json::Value const& jv) const;
 
     void
     convertBack(MPTConvertBack const& arg = MPTConvertBack{});
 
-    // Build a confidential convertBack JV without submitting.  'seq' is the
-    // inner transaction sequence used in the proof context hash.  Reads the
-    // current encrypted spending balance and version from the ledger, so call
-    // this before the batch is submitted.
+    /**
+     * @brief Build a confidential convertBack JV without submitting it.
+     *
+     * Reads the current encrypted spending balance and version from the ledger,
+     * so call this before the batch is submitted.
+     *
+     * @param arg Transaction builder arguments.
+     * @param seq Inner transaction sequence used in the proof context hash.
+     * @return The transaction JSON object.
+     */
     json::Value
     convertBackJV(MPTConvertBack const& arg, std::uint32_t seq);
 
@@ -535,7 +587,7 @@ public:
     getIssuanceConfidentialBalance() const;
 
     [[nodiscard]] std::optional<Buffer>
-    getEncryptedBalance(Account const& account, EncryptedBalanceType option = HolderEncryptedInbox)
+    getEncryptedBalance(Account const& account, EncryptedBalanceType option = holderEncryptedInbox)
         const;
 
     MPT
@@ -545,9 +597,6 @@ public:
     operator()(std::int64_t amount) const;
 
     operator Asset() const;
-
-    [[nodiscard]] bool
-    printMPT(Account const& holder) const;
 
     void
     generateKeyPair(Account const& account);
