@@ -146,6 +146,7 @@ class Xrpl(ConanFile):
         self.requires("sqlite3/3.53.0", force=True)
         if self.options.formal_verification:
             self.requires(f"lean4/{self._lean_version()}", transitive_headers=True)
+            self.requires(f"lean4-deps/{self._lean_version()}")
         if self.options.jemalloc:
             self.requires("jemalloc/5.3.1")
         if self.options.rocksdb:
@@ -177,8 +178,9 @@ class Xrpl(ConanFile):
         tc.variables["formal_verification"] = self.options.formal_verification
         if self.options.formal_verification:
             lean4 = self.dependencies["lean4"].cpp_info
+            lean4_deps = self.dependencies["lean4-deps"].package_folder
             tc.variables["LEAN4_BINDIR"] = lean4.bindirs[0]
-            tc.variables["LEAN4_LIBDIR"] = lean4.libdirs[0]
+            tc.variables["LEAN4_DEPS_PACKAGES"] = os.path.join(lean4_deps, "packages")
         tc.variables["jemalloc"] = self.options.jemalloc
         tc.variables["rocksdb"] = self.options.rocksdb
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared

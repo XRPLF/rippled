@@ -552,6 +552,10 @@ run the Lean 4 cross-validation suite. `--lockfile-partial` lets Conan add the
 `lean4` toolchain, which is opt-in and not pinned in `conan.lock`:
 
 ```bash
+# once per machine
+conan export ../external/lean4
+conan export ../external/lean4-deps
+
 conan install .. --output-folder . --build missing --settings build_type=Release -o '&:formal_verification=True' --lockfile-partial
 cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON -Dformal_verification=ON ..
 cmake --build . --target xrpld && ./xrpld --unittest=formal_verification

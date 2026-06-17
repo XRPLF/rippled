@@ -15,7 +15,7 @@ if(NOT TARGET xrpld OR NOT tests)
     message(FATAL_ERROR "formal_verification=ON requires xrpld and tests")
 endif()
 
-foreach(_var IN ITEMS LEAN4_BINDIR LEAN4_LIBDIR)
+foreach(_var IN ITEMS LEAN4_BINDIR LEAN4_DEPS_PACKAGES)
     if(NOT ${_var})
         message(
             FATAL_ERROR
@@ -29,61 +29,21 @@ find_package(lean4 REQUIRED)
 set(lean4_src ${CMAKE_SOURCE_DIR}/formal_verification)
 set(lean4_model_archive ${lean4_src}/.lake/build/lib/libXRPL_XRPLModel.a)
 
-if(NOT EXISTS ${lean4_src}/.lake/packages/mathlib)
-    message(
-        STATUS
-        "formal_verification: Lean4 downloading cached objects (can take a few minutes, one-time call)"
-    )
-    execute_process(
-        COMMAND ${LEAN4_BINDIR}/lake exe cache get
-        WORKING_DIRECTORY ${lean4_src}
-        RESULT_VARIABLE _cache_result
-        OUTPUT_VARIABLE _cache_log
-        ERROR_VARIABLE _cache_log
-    )
-    if(NOT _cache_result EQUAL 0)
-        message("${_cache_log}")
-        message(FATAL_ERROR "lake exe cache get failed (${_cache_result})")
-    endif()
-endif()
+# Mount the prebuilt dependency objects (mathlib + deps) from the lean4-deps package
+set(lean4_lake ${lean4_src}/.lake)
+file(MAKE_DIRECTORY ${lean4_lake})
+file(REMOVE_RECURSE ${lean4_lake}/packages)
+file(CREATE_LINK ${LEAN4_DEPS_PACKAGES} ${lean4_lake}/packages SYMBOLIC)
 
-# lake's :static archive trips ARG_MAX on mathlib, so the object count check below is the success test
-set(lean_dep_targets
-    ProofWidgets:static
-    ImportGraph:static
-    LeanSearchClient:static
-    Plausible:static
-    Aesop:static
-    Qq:static
-    Batteries:static
-    Mathlib:static
-)
-message(
-    STATUS
-    "formal_verification: Lean4 compiling objects (can take a few minutes on the first run)"
-)
-execute_process(
-    COMMAND ${LEAN4_BINDIR}/lake build ${lean_dep_targets} XRPLModel:static
-    WORKING_DIRECTORY ${lean4_src}
-    OUTPUT_VARIABLE _lake_log
-    ERROR_VARIABLE _lake_log
-)
-
-# Collect the compiled dependency objects. CONFIGURE_DEPENDS rescans them if the set changes.
+# Collect the prebuilt dependency objects from the lean4-deps package.
 file(
     GLOB_RECURSE lean4_dep_objects
     CONFIGURE_DEPENDS
-    ${lean4_src}/.lake/packages/*.c.o.export
+    ${LEAN4_DEPS_PACKAGES}/*.c.o.export
 )
 list(FILTER lean4_dep_objects EXCLUDE REGEX "/ir/Cache/")
-list(LENGTH lean4_dep_objects lean4_dep_count)
-if(lean4_dep_count LESS 7000)
-    message("${_lake_log}")
-    message(
-        FATAL_ERROR
-        "formal_verification: Lean4 only ${lean4_dep_count} objects found (expected >= 7000)"
-    )
-endif()
+
+# Mark these as prebuilt, generated object files so CMake links them directly instead of compiling.
 set_source_files_properties(
     ${lean4_dep_objects}
     PROPERTIES EXTERNAL_OBJECT TRUE GENERATED TRUE
@@ -95,23 +55,19 @@ add_custom_target(
     COMMAND ${LEAN4_BINDIR}/lake build XRPLModel:static
     BYPRODUCTS ${lean4_model_archive}
     WORKING_DIRECTORY ${lean4_src}
-    COMMENT "Building the Lean4 formal-verification model"
+    COMMENT "formal_verification: Lean4 model build"
     VERBATIM
 )
 
-add_library(lean4_dep_lib SHARED ${lean4_dep_objects})
-add_dependencies(lean4_dep_lib lean4_model)
-set_target_properties(lean4_dep_lib PROPERTIES LINKER_LANGUAGE CXX)
+# Assemble the shared FFI lib: dep objects + model archive + lean4 runtime.
+add_library(XRPL_XRPLModel SHARED ${lean4_dep_objects})
+add_dependencies(XRPL_XRPLModel lean4_model)
+set_target_properties(XRPL_XRPLModel PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(
-    lean4_dep_lib
+    XRPL_XRPLModel
     PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,${lean4_model_archive}>"
     PUBLIC lean4::lean4
 )
 
-target_link_libraries(xrpld lean4_dep_lib)
-set_property(TARGET xrpld APPEND PROPERTY BUILD_RPATH ${LEAN4_LIBDIR})
-
-message(
-    STATUS
-    "formal_verification: Lean4 linked into xrpld (${lean4_dep_count} objects)"
-)
+target_link_libraries(xrpld XRPL_XRPLModel)
+message(STATUS "formal_verification: Lean4 linked into xrpld")
