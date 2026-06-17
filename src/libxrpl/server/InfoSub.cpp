@@ -1,14 +1,46 @@
 #include <xrpl/server/InfoSub.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/resource/Consumer.h>
 
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <mutex>
 
 namespace xrpl {
+
+namespace {
+
+// Wraps a Source teardown call so that an exception from one cleanup
+// step does not prevent the subsequent steps from running. Source methods
+// acquire a lock and can throw std::system_error; a throw out of ~InfoSub
+// during stack unwinding would terminate the process. Failures are
+// reported through the Source's Journal so they reach the configured log
+// sinks; JLOG itself cannot throw, so the noexcept guarantee holds.
+template <typename F>
+void
+safeUnsub(std::uint64_t seq, F&& f, beast::Journal j) noexcept
+{
+    try
+    {
+        f();
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j.warn()) << "~InfoSub[seq=" << seq << "]: cleanup step failed: " << e.what();
+    }
+    catch (...)
+    {
+        JLOG(j.warn()) << "~InfoSub[seq=" << seq << "]: cleanup step failed: unknown exception";
+    }
+}
+
+}  // namespace
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as
@@ -32,25 +64,44 @@ InfoSub::InfoSub(Source& source, Consumer consumer)
 
 InfoSub::~InfoSub()
 {
-    source_.unsubTransactions(seq_);
-    source_.unsubRTTransactions(seq_);
-    source_.unsubLedger(seq_);
-    source_.unsubManifests(seq_);
-    source_.unsubServer(seq_);
-    source_.unsubValidations(seq_);
-    source_.unsubPeerStatus(seq_);
-    source_.unsubConsensus(seq_);
+    // Each Source teardown call below acquires a server-side lock and
+    // can throw. Wrap each independent call so partial failure does not
+    // skip the remaining teardown steps.
+
+    auto const& j = source_.journal();
+
+    safeUnsub(seq_, [&] { source_.unsubTransactions(seq_); }, j);
+    safeUnsub(seq_, [&] { source_.unsubRTTransactions(seq_); }, j);
+    safeUnsub(seq_, [&] { source_.unsubLedger(seq_); }, j);
+    safeUnsub(seq_, [&] { source_.unsubManifests(seq_); }, j);
+    safeUnsub(seq_, [&] { source_.unsubServer(seq_); }, j);
+    safeUnsub(seq_, [&] { source_.unsubValidations(seq_); }, j);
+    safeUnsub(seq_, [&] { source_.unsubPeerStatus(seq_); }, j);
+    safeUnsub(seq_, [&] { source_.unsubConsensus(seq_); }, j);
 
     // Use the internal unsubscribe so that it won't call
     // back to us and modify its own parameter
     if (!realTimeSubscriptions_.empty())
-        source_.unsubAccountInternal(seq_, realTimeSubscriptions_, true);
+    {
+        safeUnsub(
+            seq_, [&] { source_.unsubAccountInternal(seq_, realTimeSubscriptions_, true); }, j);
+    }
 
     if (!normalSubscriptions_.empty())
-        source_.unsubAccountInternal(seq_, normalSubscriptions_, false);
+    {
+        safeUnsub(
+            seq_, [&] { source_.unsubAccountInternal(seq_, normalSubscriptions_, false); }, j);
+    }
 
     for (auto const& account : accountHistorySubscriptions_)
-        source_.unsubAccountHistoryInternal(seq_, account, false);
+    {
+        safeUnsub(seq_, [&] { source_.unsubAccountHistoryInternal(seq_, account, false); }, j);
+    }
+
+    for (auto const& book : bookSubscriptions_)
+    {
+        safeUnsub(seq_, [&] { source_.unsubBookInternal(seq_, book); }, j);
+    }
 }
 
 Resource::Consumer&
@@ -112,6 +163,20 @@ InfoSub::deleteSubAccountHistory(AccountID const& account)
 {
     std::scoped_lock const sl(lock_);
     accountHistorySubscriptions_.erase(account);
+}
+
+void
+InfoSub::insertBookSubscription(Book const& book)
+{
+    std::scoped_lock const sl(lock_);
+    bookSubscriptions_.insert(book);
+}
+
+void
+InfoSub::deleteBookSubscription(Book const& book)
+{
+    std::scoped_lock const sl(lock_);
+    bookSubscriptions_.erase(book);
 }
 
 void
