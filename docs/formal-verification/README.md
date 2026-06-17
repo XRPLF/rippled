@@ -293,10 +293,8 @@ instead of on the command line.
 8,000 paths on one command line overflow the OS limit (`ARG_MAX`), which is why both `ar` and lake's own `:shared` facet fails on mathlib, so we do the linking by hand.
 NB. CMake build will report an error, but the build will complete successfully (WIP on silencing the error)
 
-The Lean4 build writes into the build directory (`.lake` is symlinked under it),
-so a checkout never accumulates a `.lake/` directory and `rm -rf .build` cleans
-everything. Building `xrpld` needs no separate Lean4 toolchain installed, Conan provides
-it.
+The Lean4 build writes its artifacts into `formal_verification/.lake/` (gitignored).
+Building `xrpld` needs no separate Lean4 toolchain installed, Conan provides it.
 
 ### Wiring into xrpld
 

@@ -28,17 +28,8 @@ find_package(lean4 REQUIRED)
 find_package(gmp REQUIRED)
 
 set(lean_src ${CMAKE_SOURCE_DIR}/formal_verification)
-set(lean_lake ${CMAKE_BINARY_DIR}/lean4)
 set(lean_model_archive ${lean_src}/.lake/build/lib/libXRPL_XRPLModel.a)
 
-# Redirect lake's .lake into the build tree, so the checkout stays clean.
-file(MAKE_DIRECTORY ${lean_lake})
-if(IS_SYMLINK ${lean_src}/.lake)
-    file(REMOVE ${lean_src}/.lake)
-endif()
-if(NOT EXISTS ${lean_src}/.lake)
-    file(CREATE_LINK ${lean_lake} ${lean_src}/.lake SYMBOLIC)
-endif()
 if(NOT EXISTS ${lean_src}/.lake/packages/mathlib)
     message(
         STATUS
