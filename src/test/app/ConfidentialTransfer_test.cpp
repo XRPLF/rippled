@@ -11,6 +11,7 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -18,6 +19,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -28,10 +30,18 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
 
+#include <openssl/evp.h>
+#include <utility/mpt_utility.h>
+
+#include <secp256k1.h>
+#include <secp256k1_mpt.h>
+
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -40,13 +50,14 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
 namespace xrpl {
 
 // NOLINTBEGIN(misc-const-correctness, bugprone-unchecked-optional-access)
-class ConfidentialTransferTest : public ConfidentialTransferTestBase
+class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 {
     void
     testConvert(FeatureBitset features)
@@ -7841,6 +7852,111 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
     }
 
     void
+    testSendRerandomizesRecipientInboxAgainstMergeCancellation(FeatureBitset features)
+    {
+        testcase("Send: recipient inbox rerandomization prevents merge cancellation");
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice"), bob("bob"), carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({
+            .ownerCount = 1,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+        });
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 100);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        // Carol converts 50 and merge inbox
+        mptAlice.convert({
+            .account = carol,
+            .amt = 50,
+            .holderPubKey = mptAlice.getPubKey(carol),
+        });
+        mptAlice.mergeInbox({.account = carol});
+
+        // Bob converts 20 and has not merged yet. His spending
+        // balance is the canonical zero Enc(0; r0), and his inbox uses the
+        // publicly revealed convert blinding factor.
+        Buffer const convertBlindingFactor = generateBlindingFactor();
+        mptAlice.convert({
+            .account = bob,
+            .amt = 20,
+            .holderPubKey = mptAlice.getPubKey(bob),
+            .blindingFactor = convertBlindingFactor,
+        });
+
+        // Derive the deterministic canonical-zero randomness r0 used for
+        // Bob's first spending balance.
+        auto getCanonicalZeroBlindingFactor = [](AccountID const& account, MPTID const& mptID) {
+            Buffer scalar(kEcBlindingFactorLength);
+            std::array<unsigned char, 51> hashInput{};
+            std::memcpy(hashInput.data(), "EncZero", 7);
+            std::memcpy(hashInput.data() + 7, account.data(), account.size());
+            std::memcpy(hashInput.data() + 27, mptID.data(), mptID.size());
+
+            for (;;)
+            {
+                unsigned int mdLen = kEcBlindingFactorLength;
+                if (EVP_Digest(
+                        hashInput.data(),
+                        hashInput.size(),
+                        scalar.data(),
+                        &mdLen,
+                        EVP_sha256(),
+                        nullptr) != 1)
+                {
+                    Throw<std::runtime_error>("Failed to derive canonical zero blinding factor");
+                }
+
+                if (secp256k1_ec_seckey_verify(mpt_secp256k1_context(), scalar.data()))
+                    return scalar;
+
+                std::memcpy(hashInput.data(), scalar.data(), scalar.size());
+            }
+        };
+
+        // Pick randomness that would cancel Bob's MergeInbox C1 to infinity
+        // without receiver-side re-randomization.
+        auto negateScalarSum = [](Buffer const& lhs, Buffer const& rhs) {
+            Buffer sum(kEcBlindingFactorLength);
+            Buffer negated(kEcBlindingFactorLength);
+            secp256k1_mpt_scalar_add(sum.data(), lhs.data(), rhs.data());
+            secp256k1_mpt_scalar_negate(negated.data(), sum.data());
+            return negated;
+        };
+
+        Buffer const canonicalZeroBlindingFactor =
+            getCanonicalZeroBlindingFactor(bob.id(), mptAlice.issuanceID());
+        Buffer const maliciousSendBlindingFactor =
+            negateScalarSum(canonicalZeroBlindingFactor, convertBlindingFactor);
+
+        // This leaves Bob's inbox with randomness -r0, making
+        // MergeInbox hit the point at infinity.
+        mptAlice.send({
+            .account = carol,
+            .dest = bob,
+            .amt = 5,
+            .blindingFactor = maliciousSendBlindingFactor,
+        });
+
+        mptAlice.mergeInbox({.account = bob});
+
+        auto const bobSpending =
+            mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending);
+        BEAST_EXPECT(bobSpending && *bobSpending == 25);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         // ConfidentialMPTConvert
@@ -7931,6 +8047,7 @@ class ConfidentialTransferTest : public ConfidentialTransferTestBase
         testSendCiphertextCombination(features);
         testSendCiphertextRerandomization(features);
         testSendZeroRandomnessCiphertext(features);
+        testSendRerandomizesRecipientInboxAgainstMergeCancellation(features);
     }
 
 public:
@@ -7945,10 +8062,6 @@ public:
 };
 // NOLINTEND(misc-const-correctness, bugprone-unchecked-optional-access)
 
-// TEMPORARILY DISABLED: the ConfidentialTransfer suite is unusably slow because
-// the test harness verifies balances via ElGamal decryption, which brute-forces
-// a discrete log over a fixed iteration range in mpt-crypto. Re-enable (uncomment)
-// once mpt-crypto ships the faster baby-step-giant-step decryption.
-// BEAST_DEFINE_TESTSUITE(ConfidentialTransfer, app, xrpl);
+BEAST_DEFINE_TESTSUITE(ConfidentialTransfer, app, xrpl);
 
 }  // namespace xrpl
