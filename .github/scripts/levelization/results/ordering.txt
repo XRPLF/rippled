@@ -14,7 +14,6 @@ libxrpl.ledger > xrpl.json
 libxrpl.ledger > xrpl.ledger
 libxrpl.ledger > xrpl.nodestore
 libxrpl.ledger > xrpl.protocol
-libxrpl.ledger > xrpl.server
 libxrpl.ledger > xrpl.shamap
 libxrpl.net > xrpl.basics
 libxrpl.net > xrpl.net
@@ -221,7 +220,6 @@ xrpl.core > xrpl.protocol
 xrpl.json > xrpl.basics
 xrpl.ledger > xrpl.basics
 xrpl.ledger > xrpl.protocol
-xrpl.ledger > xrpl.server
 xrpl.ledger > xrpl.shamap
 xrpl.net > xrpl.basics
 xrpl.nodestore > xrpl.basics
