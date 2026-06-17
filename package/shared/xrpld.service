@@ -18,6 +18,11 @@ PrivateTmp=true
 User=xrpld
 Group=xrpld
 LimitNOFILE=65536
+SystemCallArchitectures=native
+
+# Uncomment both lines to allow xrpld to bind to privileged ports (<1024)
+#CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+#AmbientCapabilities=CAP_NET_BIND_SERVICE
 
 [Install]
 WantedBy=multi-user.target

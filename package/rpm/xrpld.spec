@@ -35,17 +35,12 @@ install -Dm0644 %{_sourcedir}/validators.txt       %{buildroot}%{_sysconfdir}/%{
 
 # systemd units, sysusers, tmpfiles, preset
 install -Dm0644 %{_sourcedir}/xrpld.service        %{buildroot}%{_unitdir}/xrpld.service
-install -Dm0644 %{_sourcedir}/update-xrpld.service %{buildroot}%{_unitdir}/update-xrpld.service
-install -Dm0644 %{_sourcedir}/update-xrpld.timer   %{buildroot}%{_unitdir}/update-xrpld.timer
 install -Dm0644 %{_sourcedir}/xrpld.sysusers       %{buildroot}%{_sysusersdir}/xrpld.conf
 install -Dm0644 %{_sourcedir}/xrpld.tmpfiles       %{buildroot}%{_tmpfilesdir}/xrpld.conf
 install -Dm0644 %{_sourcedir}/50-xrpld.preset      %{buildroot}%{_presetdir}/50-xrpld.preset
 
 # Logrotate config
 install -Dm0644 %{_sourcedir}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
-
-# Update helper
-install -Dm0755 %{_sourcedir}/update-xrpld         %{buildroot}%{_libexecdir}/%{name}/update-xrpld
 
 # Docs
 install -Dm0644 %{_sourcedir}/LICENSE.md %{buildroot}%{_docdir}/%{name}/LICENSE.md
@@ -61,10 +56,10 @@ ln -s %{_bindir}/%{name} %{buildroot}/usr/local/bin/rippled
 
 %post
 systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
-%systemd_post xrpld.service update-xrpld.timer
+%systemd_post xrpld.service
 
 %preun
-%systemd_preun xrpld.service update-xrpld.timer
+%systemd_preun xrpld.service
 
 %postun
 %systemd_postun_with_restart xrpld.service
@@ -74,7 +69,6 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %doc %{_docdir}/%{name}/README.md
 
 %dir %{_sysconfdir}/%{name}
-%dir %{_libexecdir}/%{name}
 
 %{_bindir}/%{name}
 
@@ -82,18 +76,13 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %config(noreplace) %{_sysconfdir}/%{name}/validators.txt
 %config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
 
-%{_libexecdir}/%{name}/update-xrpld
 
 %{_unitdir}/xrpld.service
-%{_unitdir}/update-xrpld.service
-%{_unitdir}/update-xrpld.timer
 %{_presetdir}/50-xrpld.preset
 %{_sysusersdir}/xrpld.conf
 %{_tmpfilesdir}/xrpld.conf
-
-%ghost %dir /var/lib/%{name}
-%ghost %dir /var/log/%{name}
-
+%ghost %dir /var/lib/xrpld
+%ghost %dir /var/log/xrpld
 
 # Legacy compatibility for pre-FHS package layouts.
 # TODO: remove after rippled fully deprecated.
