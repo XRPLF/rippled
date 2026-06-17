@@ -400,10 +400,10 @@ public:
         AuditorEncryptedBalance,
     };
 
-    static constexpr auto IssuerEncryptedBalance = EncryptedBalanceType::IssuerEncryptedBalance;
-    static constexpr auto HolderEncryptedInbox = EncryptedBalanceType::HolderEncryptedInbox;
-    static constexpr auto HolderEncryptedSpending = EncryptedBalanceType::HolderEncryptedSpending;
-    static constexpr auto AuditorEncryptedBalance = EncryptedBalanceType::AuditorEncryptedBalance;
+    static constexpr auto issuerEncryptedBalance = EncryptedBalanceType::IssuerEncryptedBalance;
+    static constexpr auto holderEncryptedInbox = EncryptedBalanceType::HolderEncryptedInbox;
+    static constexpr auto holderEncryptedSpending = EncryptedBalanceType::HolderEncryptedSpending;
+    static constexpr auto auditorEncryptedBalance = EncryptedBalanceType::AuditorEncryptedBalance;
 
     MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
     MPTTester(MPTInitDef const& constr);
@@ -587,7 +587,7 @@ public:
     getIssuanceConfidentialBalance() const;
 
     [[nodiscard]] std::optional<Buffer>
-    getEncryptedBalance(Account const& account, EncryptedBalanceType option = HolderEncryptedInbox)
+    getEncryptedBalance(Account const& account, EncryptedBalanceType option = holderEncryptedInbox)
         const;
 
     MPT
