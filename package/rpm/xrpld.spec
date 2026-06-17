@@ -64,7 +64,7 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %systemd_preun xrpld.service
 
 %postun
-%systemd_postun_with_restart xrpld.service
+%systemd_postun xrpld.service
 
 %files
 %license %{_docdir}/%{name}/LICENSE.md
