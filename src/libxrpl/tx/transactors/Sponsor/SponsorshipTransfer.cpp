@@ -26,17 +26,14 @@
 
 namespace xrpl {
 
-namespace {
-
-auto const applyCountDelta = [](std::uint32_t current,
-                                std::int64_t delta) -> std::optional<std::uint32_t> {
+static std::optional<std::uint32_t>
+applyCountDelta(std::uint32_t current, std::int64_t delta)
+{
     std::int64_t const next = static_cast<std::int64_t>(current) + delta;
     if (next < 0 || next > std::numeric_limits<std::uint32_t>::max())
         return std::nullopt;
     return static_cast<std::uint32_t>(next);
-};
-
-}  // namespace
+}
 
 std::uint32_t
 SponsorshipTransfer::getFlagsMask(PreflightContext const& ctx)
@@ -375,7 +372,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 reduceReserveCount(
     ApplyView& view,
     AccountID const& account,
