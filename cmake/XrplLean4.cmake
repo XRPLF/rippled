@@ -89,9 +89,6 @@ set_source_files_properties(
     PROPERTIES EXTERNAL_OBJECT TRUE GENERATED TRUE
 )
 
-# Thousands of mathlib files overflow the link command line, so route them through a response file.
-set(CMAKE_CXX_USE_RESPONSE_FILE_FOR_OBJECTS ON)
-
 # Rebuild the model archive each build so model edits are picked up before the relink.
 add_custom_target(
     lean4_model
