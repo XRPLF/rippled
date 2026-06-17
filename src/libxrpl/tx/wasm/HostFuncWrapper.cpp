@@ -130,15 +130,6 @@ mainCheck(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     if (auto g = checkGas(rt, impFunc); !g)
         return Unexpected(g.error());  // LCOV_EXCL_LINE
 
-    auto const transLimit = rt.getTransferLimit();
-    if (transLimit <= 0)
-    {
-        // Don't change "no transfer limit" message, it is used in HosFuncMainWrap
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(        // NOLINT
-            WasmEngine::instance().newTrap("no transfer limit"));  // LCOV_EXCL_LINE
-        return Unexpected(trap);                                   // LCOV_EXCL_LINE
-    }
-
     return std::tie(hf, impFunc);
 }
 
@@ -544,22 +535,9 @@ HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
     {
         auto const mc = mainCheck(env, params, results);
         if (!mc)
-        {
-            wasm_byte_vec_t errorMessage WASM_EMPTY_VEC;
-            wasm_trap_message(mc.error(), &errorMessage);
-            if (errorMessage.size != 0u)
-            {
-                bool const outOfTransfer =
-                    static_cast<bool>(!strcmp("no transfer limit", errorMessage.data));
-                wasm_byte_vec_delete(&errorMessage);
-                if (outOfTransfer)
-                    return hfResult(results, HostFunctionError::OutOfTransferLimit);
-            }
+            return mc.error();
 
-            return mc.error();  // LCOV_EXCL_LINE
-        }
         auto& [hf, impFunc] = *mc;
-
         hfName = impFunc.name;
         auto* fWrap = reinterpret_cast<wasmSecondaryCbFuncType*>(impFunc.wrap);
         return fWrap(hf, params, results);

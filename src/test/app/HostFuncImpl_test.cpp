@@ -213,6 +213,12 @@ public:
         return transferLimit_;
     }
 
+    [[nodiscard]] std::int64_t
+    getTestTransferLimit() const
+    {
+        return transferLimit_;
+    }
+
     std::int64_t
     setTransferLimit(std::int64_t x) override
     {
@@ -6110,7 +6116,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         vrt.setTransferLimit(kWasmTransferLimit + 1024);
 
         // hfs.getLedgerSqn();
-        for (int i = 0; i < (kWasmTransferLimit / vrt.transferDiff / 2) - 1; ++i)
+        for (int i = 0; i < (kWasmTransferLimit / vrt.transferDiff) - 3; ++i)
         {
             WasmValVec params(2), result(1);
 
@@ -6120,6 +6126,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
                 BEAST_EXPECT(vrt.getUint32(params, 0) == env.current()->header().seq);
         }
+
+        BEAST_EXPECT((vrt.getTestTransferLimit() >= 0) && (vrt.getTestTransferLimit() < 1024));
 
         // Next call should hit OutOfTransferLimit
         {
@@ -6131,19 +6139,14 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                     result[0].of.i32 == hfErrorToInt(HostFunctionError::OutOfTransferLimit));
         }
 
-        // After limit exhausted, next call should trap with "no transfer limit"
+        // After limit exhausted, all next call return OutOfTransferLimit
         {
             WasmValVec params(2), result(1);
-            wasm_byte_vec_t errorMessage WASM_EMPTY_VEC;
-
             auto* trap = ww(&import.at("ldgr_index"), params, result, 0, sizeof(std::uint32_t));
 
-            if (BEAST_EXPECT(trap))
-            {
-                wasm_trap_message(trap, &errorMessage);
-                auto const s = std::string_view(errorMessage.data, errorMessage.size - 1);
-                BEAST_EXPECTS(s == "Error { kind: Message(\"no transfer limit\") }", s);
-            }
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == hfErrorToInt(HostFunctionError::OutOfTransferLimit));
         }
 
         // Reset transfer limit to a small value that can accommodate overhead but not AccountID
@@ -6183,20 +6186,16 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 BEAST_EXPECT(result[0].of.i32 == 0);
         }
 
-        // However, setData should trap when transfer limit is exhausted
+        // setData should return  when transfer limit is exhausted
         // After trace consumed overhead (1024 bytes), we have 10 - 1024 = negative limit left
         {
             WasmValVec params(2), result(1);
-            wasm_byte_vec_t errorMessage WASM_EMPTY_VEC;
             auto* trap = ww(&import.at("parent_ldgr_hash"), params, result, 500, 32);
 
-            // This should trap because the transfer limit went negative
-            if (BEAST_EXPECT(trap))
-            {
-                wasm_trap_message(trap, &errorMessage);
-                auto const s = std::string_view(errorMessage.data, errorMessage.size - 1);
-                BEAST_EXPECTS(s == "Error { kind: Message(\"no transfer limit\") }", s);
-            }
+            //  the transfer limit went negative
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == hfErrorToInt(HostFunctionError::OutOfTransferLimit));
         }
     }
 
