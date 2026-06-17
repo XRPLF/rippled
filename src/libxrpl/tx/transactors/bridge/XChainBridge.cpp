@@ -437,7 +437,7 @@ transferHelper(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
-            auto const reserve = accountReserve(psb, sleSrc, j, 0, 0);
+            auto const reserve = accountReserve(psb, sleSrc, j);
 
             auto const availableBalance = [&]() -> STAmount {
                 STAmount curBal = (*sleSrc)[sfBalance];
@@ -1441,10 +1441,8 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
         auto const balance = (*sleAcc)[sfBalance];
         auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret = checkInsufficientReserve(
-                ctx.view, ctx.tx, sleAcc, balance, *sponsorSle, 1, 0, ctx.j);
+                ctx.view, ctx.tx, sleAcc, balance, sponsorSle, 1, 0, ctx.j);
             !isTesSuccess(ret))
             return ret;
     }
@@ -1489,10 +1487,8 @@ XChainCreateBridge::doApply()
     }
 
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-    adjustOwnerCount(ctx_.view(), sleAcct, *sponsorSle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(sleBridge, *sponsorSle);
+    adjustOwnerCount(ctx_.view(), sleAcct, sponsorSle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sleBridge, sponsorSle);
 
     ctx_.view().insert(sleBridge);
     ctx_.view().update(sleAcct);
@@ -1996,10 +1992,8 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
 
         auto const balance = (*sleAcc)[sfBalance];
         auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret = checkInsufficientReserve(
-                ctx.view, ctx.tx, sleAcc, balance, *sponsorSle, 1, 0, ctx.j);
+                ctx.view, ctx.tx, sleAcc, balance, sponsorSle, 1, 0, ctx.j);
             !isTesSuccess(ret))
             return ret;
     }
@@ -2058,10 +2052,8 @@ XChainCreateClaimID::doApply()
     }
 
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-    adjustOwnerCount(ctx_.view(), sleAcct, *sponsorSle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(sleClaimID, *sponsorSle);
+    adjustOwnerCount(ctx_.view(), sleAcct, sponsorSle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sleClaimID, sponsorSle);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);

@@ -72,11 +72,9 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
 
     // Check reserve availability for new object creation
     auto const sponsorSle = getTxReserveSponsor(ctx.view(), ctx.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
     auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
     if (auto const ret = checkInsufficientReserve(
-            ctx.view(), ctx.tx, sleAccount, balance, *sponsorSle, 1, 0, ctx.journal);
+            ctx.view(), ctx.tx, sleAccount, balance, sponsorSle, 1, 0, ctx.journal);
         !isTesSuccess(ret))
         return ret;
 
@@ -91,8 +89,8 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    adjustOwnerCount(ctx.view(), sleAccount, *sponsorSle, 1, ctx.journal);
-    addSponsorToLedgerEntry(sle, *sponsorSle);
+    adjustOwnerCount(ctx.view(), sleAccount, sponsorSle, 1, ctx.journal);
+    addSponsorToLedgerEntry(sle, sponsorSle);
     ctx.view().update(sleAccount);
 
     return tesSUCCESS;

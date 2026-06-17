@@ -389,17 +389,13 @@ CheckCash::doApply()
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
             auto const sponsorSle = getTxReserveSponsor(psb, ctx_.tx);
-            if (!sponsorSle)
-                return sponsorSle.error();  // LCOV_EXCL_LINE
-
+            auto sleDst = psb.peek(keylet::account(accountID_));
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
             auto checkReserve = [&]() -> SLE::pointer {
-                auto sleDst = psb.peek(keylet::account(accountID_));
-
                 // Can the account cover the trust line's or MPT reserve?
                 if (auto const ret = checkInsufficientReserve(
-                        psb, ctx_.tx, sleDst, preFeeBalance_, *sponsorSle, 1, 0, j_);
+                        psb, ctx_.tx, sleDst, preFeeBalance_, sponsorSle, 1, 0, j_);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
@@ -457,7 +453,7 @@ CheckCash::doApply()
                                 Issue(currency, accountID_),        // limit of zero
                                 0,                                  // quality in
                                 0,                                  // quality out
-                                *sponsorSle,                        // sponsor
+                                sponsorSle,                         // sponsor
                                 viewJ);                             // journal
                             !isTesSuccess(ter))
                         {
@@ -505,7 +501,7 @@ CheckCash::doApply()
                                 return tecINSUFFICIENT_RESERVE;
 
                             if (auto const err =
-                                    checkCreateMPT(psb, mptID, accountID_, *sponsorSle, j_);
+                                    checkCreateMPT(psb, mptID, accountID_, sponsorSle, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;

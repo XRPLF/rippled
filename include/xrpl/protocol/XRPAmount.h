@@ -26,7 +26,7 @@ public:
     using value_type = std::int64_t;
 
 private:
-    value_type drops_;
+    value_type drops_ = 0;
 
 public:
     XRPAmount() = default;
@@ -39,7 +39,7 @@ public:
     {
     }
 
-    constexpr XRPAmount(beast::Zero) : drops_(0)
+    constexpr XRPAmount(beast::Zero)
     {
     }
 
@@ -143,6 +143,12 @@ public:
     operator Number() const noexcept
     {
         return drops();
+    }
+
+    [[nodiscard]] bool
+    negative() const noexcept
+    {
+        return drops_ < 0;
     }
 
     /** Return the sign of the amount */

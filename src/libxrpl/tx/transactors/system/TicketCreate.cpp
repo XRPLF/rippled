@@ -77,10 +77,8 @@ TicketCreate::doApply()
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleAccountRoot, preFeeBalance_, *sponsorSle, ticketCount, 0, j_);
+            view(), ctx_.tx, sleAccountRoot, preFeeBalance_, sponsorSle, ticketCount, 0, j_);
         !isTesSuccess(ret))
         return ret;
 
@@ -119,7 +117,7 @@ TicketCreate::doApply()
             return tecDIR_FULL;  // LCOV_EXCL_LINE
 
         sleTicket->setFieldU64(sfOwnerNode, *page);
-        addSponsorToLedgerEntry(sleTicket, *sponsorSle);
+        addSponsorToLedgerEntry(sleTicket, sponsorSle);
     }
 
     // Update the record of the number of Tickets this account owns.
@@ -128,7 +126,7 @@ TicketCreate::doApply()
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), sleAccountRoot, *sponsorSle, ticketCount, viewJ);
+    adjustOwnerCount(view(), sleAccountRoot, sponsorSle, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

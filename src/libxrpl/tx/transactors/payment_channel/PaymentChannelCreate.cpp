@@ -81,15 +81,13 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     {
         auto const balance = (*sle)[sfBalance];
         auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret =
-                checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, *sponsorSle, 1, 0, ctx.j);
+                checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, sponsorSle, 1, 0, ctx.j);
             !isTesSuccess(ret))
             return ret;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], *sponsorSle, 1, 0, ctx.j);
+                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], sponsorSle, 1, 0, ctx.j);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }
@@ -185,10 +183,8 @@ PaymentChannelCreate::doApply()
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-    adjustOwnerCount(ctx_.view(), sle, *sponsorSle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(slep, *sponsorSle);
+    adjustOwnerCount(ctx_.view(), sle, sponsorSle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(slep, sponsorSle);
     ctx_.view().update(sle);
 
     return tesSUCCESS;

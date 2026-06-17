@@ -9,8 +9,16 @@
 #include <xrpl/protocol/TxFlags.h>
 
 #include <expected>
+#include <type_traits>
+#include <utility>
 
 namespace xrpl {
+
+inline bool
+isFeeSponsored(STTx const& tx)
+{
+    return (tx.getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u;
+}
 
 inline bool
 isReserveSponsored(STTx const& tx)
@@ -21,58 +29,84 @@ isReserveSponsored(STTx const& tx)
 inline bool
 isSponsorReserveCoSigning(STTx const& tx)
 {
-    if (!tx.isFieldPresent(sfSponsorSignature))
-        return false;
-    return isReserveSponsored(tx);
+    return isReserveSponsored(tx) && tx.isFieldPresent(sfSponsorSignature);
 }
 
 inline std::optional<AccountID>
-getTxReserveSponsorAccountID(STTx const& tx)
+getTxReserveSponsorAccountID(STTx const& tx, std::optional<AccountID> const& acc = {})
 {
-    if (tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
-    {
-        return tx.getAccountID(sfSponsor);
-    }
-    return {};
+    return (!acc || acc == tx[sfAccount]) && tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx)
+        ? std::make_optional(tx[sfSponsor])
+        : std::nullopt;
 }
 
-inline std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyView& view, STTx const& tx)
+template <class V>
+auto
+getTxReserveSponsor(V&& view, STTx const& tx, std::optional<AccountID> const& acc = {})
 {
-    auto const sponsorID = getTxReserveSponsorAccountID(tx);
+    auto const sponsorID = getTxReserveSponsorAccountID(tx, acc);
     if (sponsorID)
     {
-        auto sle = view.peek(keylet::account(*sponsorID));
-
-        // already checked in Transactor::checkSponsor
-        if (!sle)
-            return std::unexpected(tecINTERNAL);
-        return sle;
+        if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
+        {
+            auto sle = view.peek(keylet::account(*sponsorID));
+            // already checked in Transactor::checkSponsor
+            if (!sle)
+                Throw<std::runtime_error>("Empty sponsor");  // LCOV_EXCL_LINE
+            return sle;
+        }
+        else
+        {
+            auto sle = view.read(keylet::account(*sponsorID));
+            // already checked in Transactor::checkSponsor
+            if (!sle)
+                Throw<std::runtime_error>("Empty sponsor");  // LCOV_EXCL_LINE
+            return sle;
+        }
     }
-    return SLE::pointer();
+
+    if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
+    {
+        return SLE::pointer();
+    }
+    else
+    {
+        return SLE::const_pointer();
+    }
 }
 
-inline std::expected<SLE::const_pointer, TER>
-getTxReserveSponsor(ReadView const& view, STTx const& tx)
+inline SF_ACCOUNT const&
+getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner)
 {
-    auto const sponsorID = getTxReserveSponsorAccountID(tx);
-    if (sponsorID)
+    switch (sle.getType())
     {
-        auto sle = view.read(keylet::account(*sponsorID));
-
-        // already checked in Transactor::checkSponsor
-        if (!sle)
-            return std::unexpected(tecINTERNAL);
-        return sle;
+        case ltRIPPLE_STATE: {
+            if (sle.isFlag(lsfHighReserve))
+            {
+                auto const highAccount = sle.getFieldAmount(sfHighLimit).getIssuer();
+                if (highAccount == owner)
+                    return sfHighSponsor;
+            }
+            if (sle.isFlag(lsfLowReserve))
+            {
+                auto const lowAccount = sle.getFieldAmount(sfLowLimit).getIssuer();
+                if (lowAccount == owner)
+                    return sfLowSponsor;
+            }
+            // LCOV_EXCL_START
+            UNREACHABLE("Should not happen. Owner should be checked before calling this function.");
+            // LCOV_EXCL_STOP
+        }
+        default:
+            return sfSponsor;
     }
-    return SLE::pointer();
 }
 
 inline std::optional<AccountID>
 getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor)
 {
     if (sle->isFieldPresent(field))
-        return sle->getAccountID(field);
+        return sle->at(field);
     return {};
 }
 
@@ -106,12 +140,19 @@ addSponsorToLedgerEntry(
     SLE::const_ref sponsorSle,
     SF_ACCOUNT const& field = sfSponsor)
 {
-    XRPL_ASSERT(
-        (sle->getType() == ltRIPPLE_STATE && (field == sfHighSponsor || field == sfLowSponsor)) ||
-            (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
-        "addSponsorToLedgerEntry : Invalid field to the LedgerEntry");
     if (sponsorSle)
-        sle->setAccountID(field, sponsorSle->getAccountID(sfAccount));
+    {
+        XRPL_ASSERT(
+            (sle->getType() == ltRIPPLE_STATE &&
+             (field == sfHighSponsor || field == sfLowSponsor)) ||
+                (sle->getType() != ltRIPPLE_STATE && field == sfSponsor),
+            "addSponsorToLedgerEntry : field type");
+
+        XRPL_ASSERT(
+            sponsorSle->getType() == ltACCOUNT_ROOT, "addSponsorToLedgerEntry : sponsor type");
+
+        sle->at(field) = sponsorSle->at(sfAccount);
+    }
 }
 
 inline void

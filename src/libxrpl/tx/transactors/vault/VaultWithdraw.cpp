@@ -327,9 +327,6 @@ VaultWithdraw::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-
     // Transfer shares from depositor to vault.
     if (auto const ter = accountSend(
             view(),
@@ -337,7 +334,7 @@ VaultWithdraw::doApply()
             vaultAccount,
             sharesRedeemed,
             j_,
-            *sponsorSle,
+            sponsorSle,
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;

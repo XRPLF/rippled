@@ -4,6 +4,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -78,7 +79,7 @@ NFTokenCreateOffer::doApply()
     return nft::tokenOfferCreateApply(
         view(),
         ctx_.tx,
-        ctx_.tx[sfAccount],
+        view().peek(keylet::account(accountID_)),
         ctx_.tx[sfAmount],
         ctx_.tx[~sfDestination],
         ctx_.tx[~sfExpiration],

@@ -748,9 +748,7 @@ directSendNoLimitIOU(
     TER terResult = directSendNoFeeIOU(view, issuer, uReceiverID, saAmount, true, sponsorSle, j);
 
     if (tesSUCCESS == terResult)
-    {
         terResult = directSendNoFeeIOU(view, uSenderID, issuer, saActual, true, sponsorSle, j);
-    }
 
     return terResult;
 }

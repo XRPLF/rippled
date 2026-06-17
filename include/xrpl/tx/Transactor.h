@@ -109,20 +109,6 @@ struct PreflightResult;
 // Needed for preflight specialization
 class Change;
 
-enum class FeePayerType {
-    Account,
-    Delegate,
-    SponsorCoSigned,
-    SponsorPreFunded,
-};
-
-struct FeePayer
-{
-    Keylet entry;
-    SF_AMOUNT const& balanceField;
-    FeePayerType type{FeePayerType::Account};
-};
-
 class Transactor
 {
 protected:
@@ -131,7 +117,7 @@ protected:
     beast::Journal const j_;
 
     AccountID const accountID_;
-    XRPAmount preFeeBalance_{};  // Balance before fees.
+    XRPAmount preFeeBalance_;  // Balance before fees.
 
 public:
     virtual ~Transactor() = default;
@@ -373,9 +359,6 @@ protected:
 private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
-
-    static FeePayer
-    getFeePayer(ReadView const& view, STTx const& tx);
 
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);

@@ -176,7 +176,6 @@ public:
     xrpLiquid(ReadView& sb) const
     {
         return xrpLiquidImpl(sb, 0);
-        ;
     }
 
     [[nodiscard]] std::string

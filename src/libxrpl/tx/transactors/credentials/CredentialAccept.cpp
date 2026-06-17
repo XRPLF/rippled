@@ -12,7 +12,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -95,10 +94,8 @@ CredentialAccept::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleSubject, preFeeBalance_, *sponsorSle, 1, 0, ctx_.journal);
+            view(), ctx_.tx, sleSubject, preFeeBalance_, sponsorSle, 1, 0, ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 
@@ -121,8 +118,8 @@ CredentialAccept::doApply()
 
     adjustOwnerCountObj(view(), sleIssuer, sleCred, -1, j_);
     removeSponsorFromLedgerEntry(sleCred);
-    adjustOwnerCount(view(), sleSubject, *sponsorSle, 1, j_);
-    addSponsorToLedgerEntry(sleCred, *sponsorSle);
+    adjustOwnerCount(view(), sleSubject, sponsorSle, 1, j_);
+    addSponsorToLedgerEntry(sleCred, sponsorSle);
 
     return tesSUCCESS;
 }

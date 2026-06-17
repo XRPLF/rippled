@@ -611,14 +611,8 @@ AMMWithdraw::withdraw(
 
     // this is also called from AMMClawback, but only AMMWithdraw does sponsor
     // the new trustline
-    SLE::pointer sponsorSle;
-    if (tx[sfAccount] == account)
-    {
-        auto sle = getTxReserveSponsor(view, tx);
-        if (!sle)
-            return {sle.error(), STAmount{}, STAmount{}, STAmount{}};  // LCOV_EXCL_LINE
-        sponsorSle = std::move(*sle);
-    }
+    SLE::pointer sponsorSle =
+        tx[sfAccount] == account ? getTxReserveSponsor(view, tx) : SLE::pointer();
 
     // Check the reserve in case a trustline or MPT has to be created
     bool const enabledFixAmMv12 = view.rules().enabled(fixAMMv1_2);

@@ -14,7 +14,6 @@
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
@@ -223,10 +222,6 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
                 return ret;
         }
     }
-
-    auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();
 
     return tesSUCCESS;
 }

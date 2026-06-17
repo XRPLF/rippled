@@ -437,10 +437,8 @@ EscrowCreate::doApply()
 
     auto const balance = sle->getFieldAmount(sfBalance).xrp();
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret =
-            checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, *sponsorSle, 1, 0, j_);
+            checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsorSle, 1, 0, j_);
         !isTesSuccess(ret))
         return ret;
 
@@ -541,8 +539,8 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    adjustOwnerCount(ctx_.view(), sle, *sponsorSle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(slep, *sponsorSle);
+    adjustOwnerCount(ctx_.view(), sle, sponsorSle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(slep, sponsorSle);
     ctx_.view().update(sle);
     return tesSUCCESS;
 }

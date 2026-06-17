@@ -471,7 +471,7 @@ Payment::doApply()
                 sponsor->getFieldU32(sfSponsoringAccountCount);
             if (currentSponsoringAccountCount == std::numeric_limits<std::uint32_t>::max())
             {
-                JLOG(j_.fatal()) << "Sponsoring account count overflow for account "
+                JLOG(j_.error()) << "Sponsoring account count overflow for account "
                                  << to_string(accountID_);
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             }
@@ -651,9 +651,9 @@ Payment::doApply()
     // reserve.
     auto const reserve = accountReserve(view(), sleSrc, j_);
 
-    // In a delegated payment, the fee payer is the delegated account,
+    // In a delegated or sponsored payment, the fee payer can be another account,
     // not the source account (accountID_).
-    bool const accountIsPayer = (ctx_.tx.getFeePayer() == accountID_);
+    bool const accountIsPayer = (getFeePayer(view(), ctx_.tx).id == accountID_);
 
     // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
     // were charged. If source account is the fee payer, it must also cover the fee.

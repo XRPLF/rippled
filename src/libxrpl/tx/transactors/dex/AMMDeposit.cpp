@@ -233,18 +233,15 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         {
             auto const lpIssue = (*ammSle)[sfLPTokenBalance].get<Issue>();
             // Adjust the reserve if LP doesn't have LPToken trustline
-            auto const sle =
-                ctx.view.read(keylet::line(accountID, lpIssue.account, lpIssue.currency));
-
+            bool const tlExists =
+                ctx.view.exists(keylet::line(accountID, lpIssue.account, lpIssue.currency));
             auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-            if (!sponsorSle)
-                return sponsorSle.error();  // LCOV_EXCL_LINE
             auto const accountSle = ctx.view.read(keylet::account(accountID));
-            auto const reserveAdj = (*sponsorSle || sle) ? 0 : 1;
+            auto const reserveAdj = (sponsorSle || tlExists) ? 0 : 1;
 
             if (xrpLiquid(ctx.view, accountID, reserveAdj, ctx.j) < deposit)
             {
-                if (sle)
+                if (tlExists)
                     return tecUNFUNDED_AMM;
                 return tecINSUF_RESERVE_LINE;
             }
@@ -254,11 +251,11 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                     ctx.tx,
                     accountSle,
                     accountSle->getFieldAmount(sfBalance) - deposit,
-                    *sponsorSle,
+                    sponsorSle,
                     1,
-                    !sle,
+                    !tlExists,
                     ctx.j);
-                *sponsorSle && !isTesSuccess(ret))
+                sponsorSle && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
             return tesSUCCESS;
@@ -386,15 +383,13 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         {
             auto const accountSle = ctx.view.read(keylet::account(accountID));
             auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-            if (!sponsorSle)
-                return sponsorSle.error();  // LCOV_EXCL_LINE
             // Insufficient reserve
             if (auto const ret = checkInsufficientReserve(
                     ctx.view,
                     ctx.tx,
                     accountSle,
                     accountSle->getFieldAmount(sfBalance),
-                    *sponsorSle,
+                    sponsorSle,
                     1,
                     0,
                     ctx.j);
@@ -406,6 +401,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         }
         else
         {
+            // <= beast::kZero is non standard case (standard is < beast::kZero) so we can't remove
+            // this block until the Sponsor Amendment is fully adopted
             STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
             // Insufficient reserve
             if (xrpBalance <= beast::kZero)
@@ -559,9 +556,6 @@ AMMDeposit::deposit(
     std::uint16_t tfee)
 {
     auto const sponsorSle = getTxReserveSponsor(view, ctx_.tx);
-    if (!sponsorSle)
-        return {sponsorSle.error(), STAmount{}};  // LCOV_EXCL_LINE
-
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
     auto checkBalance = [&](auto const& depositAmount) -> TER {
@@ -571,9 +565,9 @@ AMMDeposit::deposit(
         {
             auto const& lpIssue = lpTokensDeposit.get<Issue>();
             // Adjust the reserve if LP doesn't have LPToken trustline
-            auto const trustlineExists =
+            bool const tlExists =
                 view.exists(keylet::line(accountID_, lpIssue.account, lpIssue.currency));
-            auto const reserveAdj = (*sponsorSle || trustlineExists) ? 0 : 1;
+            auto const reserveAdj = (sponsorSle || tlExists) ? 0 : 1;
             if (xrpLiquid(view, accountID_, reserveAdj, j_) >= depositAmount)
                 return tesSUCCESS;
         }
@@ -670,7 +664,7 @@ AMMDeposit::deposit(
 
     // Deposit LP tokens
     res =
-        accountSend(view, ammAccount, accountID_, lpTokensDepositActual, ctx_.journal, *sponsorSle);
+        accountSend(view, ammAccount, accountID_, lpTokensDepositActual, ctx_.journal, sponsorSle);
     if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit LPTokens";

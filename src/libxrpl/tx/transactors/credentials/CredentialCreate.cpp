@@ -14,7 +14,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -132,10 +131,8 @@ CredentialCreate::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleIssuer, preFeeBalance_, *sponsorSle, 1, 0, ctx_.journal);
+            view(), ctx_.tx, sleIssuer, preFeeBalance_, sponsorSle, 1, 0, ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 
@@ -155,8 +152,8 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        adjustOwnerCount(view(), sleIssuer, *sponsorSle, 1, j_);
-        addSponsorToLedgerEntry(sleCred, *sponsorSle);
+        adjustOwnerCount(view(), sleIssuer, sponsorSle, 1, j_);
+        addSponsorToLedgerEntry(sleCred, sponsorSle);
     }
 
     if (subject == accountID_)

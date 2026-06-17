@@ -39,7 +39,12 @@ findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftoken
 
 /** Insert the token in the owner's token directory. */
 TER
-insertToken(ApplyView& view, STTx const& tx, AccountID owner, SLE::ref sponsorSle, STObject&& nft);
+insertToken(
+    ApplyView& view,
+    STTx const& tx,
+    SLE::ref ownerSle,
+    SLE::ref sponsorSle,
+    STObject&& nft);
 
 /** Remove the token from the owner's token directory. */
 TER
@@ -108,7 +113,7 @@ TER
 tokenOfferCreateApply(
     ApplyView& view,
     STTx const& tx,
-    AccountID const& acctID,
+    SLE::ref accSle,
     STAmount const& amount,
     std::optional<AccountID> const& dest,
     std::optional<std::uint32_t> const& expiration,

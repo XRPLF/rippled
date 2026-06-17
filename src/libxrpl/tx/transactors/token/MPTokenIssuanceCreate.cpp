@@ -24,7 +24,6 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
-#include <utility>
 
 namespace xrpl {
 
@@ -113,14 +112,8 @@ MPTokenIssuanceCreate::create(
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
-    SLE::pointer sponsorSle;
-    if (!isPseudoAccount(acct))
-    {
-        auto sle = getTxReserveSponsor(view, tx);
-        if (!sle)
-            return std::unexpected(sle.error());
-        sponsorSle = std::move(*sle);
-    }
+    SLE::pointer const sponsorSle =
+        !isPseudoAccount(acct) ? getTxReserveSponsor(view, tx, args.account) : SLE::pointer();
 
     if (args.priorBalance)
     {
@@ -187,7 +180,6 @@ MPTokenIssuanceCreate::create(
         view.insert(mptIssuance);
     }
 
-    // Update owner count.
     adjustOwnerCount(view, acct, sponsorSle, 1, journal);
 
     return mptId;

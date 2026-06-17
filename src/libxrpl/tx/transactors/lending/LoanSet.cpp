@@ -513,18 +513,16 @@ LoanSet::doApply()
         }
     }
 
-    auto const sponsorSle = getTxReserveSponsor(view, tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
+    auto const sponsorSle = getTxReserveSponsor(view, tx, borrower);
     {
         auto const balance =
             accountID_ == borrower ? preFeeBalance_ : borrowerSle->at(sfBalance).value().xrp();
         if (auto const ret =
-                checkInsufficientReserve(view, tx, borrowerSle, balance, *sponsorSle, 1, 0, j_);
+                checkInsufficientReserve(view, tx, borrowerSle, balance, sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
     }
-    adjustOwnerCount(view, borrowerSle, *sponsorSle, 1, j_);
+    adjustOwnerCount(view, borrowerSle, sponsorSle, 1, j_);
 
     // Account for the origination fee using two payments
     //
@@ -624,7 +622,7 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
-    addSponsorToLedgerEntry(loan, *sponsorSle);
+    addSponsorToLedgerEntry(loan, sponsorSle);
     view.insert(loan);
 
     // Update the balances in the vault

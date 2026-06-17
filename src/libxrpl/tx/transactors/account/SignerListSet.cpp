@@ -323,14 +323,12 @@ SignerListSet::replaceSignerList()
     // allow dipping into the reserve to pay fees.  This behavior is consistent
     // with TicketCreate.
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
             ctx_.view(),
             ctx_.tx,
             sle,
             preFeeBalance_,
-            *sponsorSle,
+            sponsorSle,
             kAddedOwnerCount,
             0,
             ctx_.journal);
@@ -357,8 +355,8 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, *sponsorSle, kAddedOwnerCount, viewJ);
-    addSponsorToLedgerEntry(signerList, *sponsorSle);
+    adjustOwnerCount(view(), sle, sponsorSle, kAddedOwnerCount, viewJ);
+    addSponsorToLedgerEntry(signerList, sponsorSle);
     return tesSUCCESS;
 }
 
