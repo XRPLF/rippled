@@ -32,7 +32,7 @@ set(lean4_model_archive ${lean4_src}/.lake/build/lib/libXRPL_XRPLModel.a)
 if(NOT EXISTS ${lean4_src}/.lake/packages/mathlib)
     message(
         STATUS
-        "formal_verification: Lean4 downloading cached objects (one-time, this can take a few minutes)"
+        "formal_verification: Lean4 downloading cached objects (can take a few minutes, one-time call)"
     )
     execute_process(
         COMMAND ${LEAN4_BINDIR}/lake exe cache get
@@ -60,7 +60,7 @@ set(lean_dep_targets
 )
 message(
     STATUS
-    "formal_verification: Lean4 compiling objects (one-time, this can take a few minutes)"
+    "formal_verification: Lean4 compiling objects (can take a few minutes on the first run)"
 )
 execute_process(
     COMMAND ${LEAN4_BINDIR}/lake build ${lean_dep_targets} XRPLModel:static
