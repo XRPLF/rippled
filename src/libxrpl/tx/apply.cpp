@@ -166,6 +166,9 @@ applyBatchTransactions(
 
         // If the transaction should be applied push its changes to the
         // whole-batch view.
+        // NOTE: each inner tx is individually capped at kOversizeMetaDataCap;
+        // there is no aggregate cap here. Bounded by kMaxBatchTxCount * cap,
+        // which standalone txns can already produce in one ledger.
         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
             perTxBatchView.apply(batchView);
 

@@ -4561,6 +4561,89 @@ class Batch_test : public beast::unit_test::Suite
             env(noop(carol), Ter(terQUEUED));
             checkMetrics(*this, env, 1, std::nullopt, 3, 2);
         }
+
+        // A Batch is a TxQ blocker (it can advance the account sequence by
+        // more than one via an inner TicketCreate or multiple inner txns),
+        // so it must be alone in the account's queue. Once a Batch is queued
+        // no follow-on transaction from the same account can be appended.
+        {
+            test::jtx::Env env{
+                *this,
+                makeSmallQueueConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}),
+                features,
+                nullptr,
+                beast::Severity::Error};
+
+            auto alice = Account("alice");
+            auto bob = Account("bob");
+            auto carol = Account("carol");
+
+            env.fund(XRP(10000), noripple(alice, bob));
+            env.close(env.now() + 5s, 10000ms);
+            env.fund(XRP(10000), noripple(carol));
+            env.close(env.now() + 5s, 10000ms);
+
+            // Fill the open ledger so subsequent transactions queue.
+            env(noop(alice));
+            env(noop(alice));
+            env(noop(alice));
+            checkMetrics(*this, env, 0, std::nullopt, 3, 2);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            // Queue the Batch (blocker) as alice's lone queue entry.
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
+                batch::Inner(pay(bob, alice, XRP(5)), bobSeq),
+                batch::Sig(bob),
+                Ter(terQUEUED));
+
+            // A follow-on transaction from alice cannot be queued behind it.
+            env(noop(alice), Seq(aliceSeq + 1), Ter(telCAN_NOT_QUEUE_BLOCKED));
+
+            // Other accounts are unaffected.
+            env(noop(carol), Ter(terQUEUED));
+        }
+
+        // A Batch (blocker) cannot be queued when the account already holds
+        // other queued (non-blocker) transactions.
+        {
+            test::jtx::Env env{
+                *this,
+                makeSmallQueueConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}),
+                features,
+                nullptr,
+                beast::Severity::Error};
+
+            auto alice = Account("alice");
+            auto bob = Account("bob");
+
+            env.fund(XRP(10000), noripple(alice, bob));
+            env.close(env.now() + 5s, 10000ms);
+
+            // Fill the open ledger so subsequent transactions queue.
+            env(noop(alice));
+            env(noop(alice));
+            env(noop(alice));
+            checkMetrics(*this, env, 0, std::nullopt, 3, 2);
+
+            auto const aliceSeq = env.seq(alice);
+
+            // Queue two normal transactions for alice.
+            env(noop(alice), Seq(aliceSeq + 0), Ter(terQUEUED));
+            env(noop(alice), Seq(aliceSeq + 1), Ter(terQUEUED));
+
+            // The Batch (blocker) cannot join a non-empty account queue.
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            env(batch::outer(alice, aliceSeq + 2, batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 3),
+                batch::Inner(pay(bob, alice, XRP(5)), bobSeq),
+                batch::Sig(bob),
+                Ter(telCAN_NOT_QUEUE_BLOCKS));
+        }
     }
 
     void
