@@ -463,34 +463,10 @@ getAsfFlagMap()
 #pragma pop_macro("ACCOUNTSET_FLAG_TO_MAP")
 #pragma pop_macro("ACCOUNTSET_FLAGS")
 
-#pragma push_macro("SPONSOR_FLAGS")
-#pragma push_macro("SPONSOR_FLAG_TO_VALUE")
-#pragma push_macro("SPONSOR_FLAG_TO_MAP")
+// Sponsor flags (spf)
 
-// Sponsor Flag values
-#define SPONSOR_FLAGS(SPF_FLAG) \
-    SPF_FLAG(spfSponsorFee, 1)  \
-    SPF_FLAG(spfSponsorReserve, 2)
-
-#define SPONSOR_FLAG_TO_VALUE(name, value) inline constexpr FlagValue name = value;
-#define SPONSOR_FLAG_TO_MAP(name, value) {#name, value},
-
-SPONSOR_FLAGS(SPONSOR_FLAG_TO_VALUE)
-
-inline std::map<std::string, FlagValue> const&
-getspfFlagMap()
-{
-    static std::map<std::string, FlagValue> const flags = {SPONSOR_FLAGS(SPONSOR_FLAG_TO_MAP)};
-    return flags;
-}
-
-#undef SPONSOR_FLAG_TO_VALUE
-#undef SPONSOR_FLAG_TO_MAP
-#undef SPONSOR_FLAGS
-
-#pragma pop_macro("SPONSOR_FLAG_TO_VALUE")
-#pragma pop_macro("SPONSOR_FLAG_TO_MAP")
-#pragma pop_macro("SPONSOR_FLAGS")
+inline constexpr FlagValue spfSponsorFee = 1;
+inline constexpr FlagValue spfSponsorReserve = 2;
 
 }  // namespace xrpl
 
