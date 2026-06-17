@@ -598,8 +598,10 @@ ValidConfidentialMPToken::visitEntry(
         auto const versionAfter = (*after)[~sfConfidentialBalanceVersion];
 
         if (spendingBefore.has_value() && spendingBefore != spendingAfter)
+        {
             if (versionBefore == versionAfter)
                 changes_[id].badVersion = true;
+        }
     }
 }
 
