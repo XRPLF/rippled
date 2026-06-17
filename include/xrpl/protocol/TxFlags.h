@@ -341,17 +341,17 @@ inline constexpr FlagValue tfTrustSetPermissionMask =
 
 // MPTokenIssuanceCreate MutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
-inline constexpr FlagValue tmfMPTCanMutateCanLock = lsmfMPTCanMutateCanLock;
-inline constexpr FlagValue tmfMPTCanMutateRequireAuth = lsmfMPTCanMutateRequireAuth;
-inline constexpr FlagValue tmfMPTCanMutateCanEscrow = lsmfMPTCanMutateCanEscrow;
-inline constexpr FlagValue tmfMPTCanMutateCanTrade = lsmfMPTCanMutateCanTrade;
-inline constexpr FlagValue tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTransfer;
-inline constexpr FlagValue tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
+inline constexpr FlagValue tmfMPTCanEnableCanLock = lsmfMPTCanEnableCanLock;
+inline constexpr FlagValue tmfMPTCanEnableRequireAuth = lsmfMPTCanEnableRequireAuth;
+inline constexpr FlagValue tmfMPTCanEnableCanEscrow = lsmfMPTCanEnableCanEscrow;
+inline constexpr FlagValue tmfMPTCanEnableCanTrade = lsmfMPTCanEnableCanTrade;
+inline constexpr FlagValue tmfMPTCanEnableCanTransfer = lsmfMPTCanEnableCanTransfer;
+inline constexpr FlagValue tmfMPTCanEnableCanClawback = lsmfMPTCanEnableCanClawback;
 inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
 inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
 inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
-    ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow |
-      tmfMPTCanMutateCanTrade | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback |
+    ~(tmfMPTCanEnableCanLock | tmfMPTCanEnableRequireAuth | tmfMPTCanEnableCanEscrow |
+      tmfMPTCanEnableCanTrade | tmfMPTCanEnableCanTransfer | tmfMPTCanEnableCanClawback |
       tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
 
 // MPTokenIssuanceSet MutableFlags:

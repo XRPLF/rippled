@@ -5443,7 +5443,7 @@ protected:
              .issuer = issuer,
              .holders = {lender, borrower},
              .flags = tfMPTCanTransfer | tfMPTCanLock,
-             .mutableFlags = tmfMPTCanMutateCanTrade});
+             .mutableFlags = tmfMPTCanEnableCanTrade});
         PrettyAsset const asset = mpt.issuanceID();
         env(pay(issuer, lender, asset(10'000'000)));
         env(pay(issuer, borrower, asset(100'000)));

@@ -46,28 +46,28 @@ MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
 struct MPTMutabilityFlags
 {
     std::uint32_t setFlag;
-    std::uint32_t canMutateFlag;
+    std::uint32_t canEnableFlag;
     std::uint32_t ledgerFlag;
 };
 
 static constexpr std::array<MPTMutabilityFlags, 6> kMptMutabilityFlags = {
     {{.setFlag = tmfMPTSetCanLock,
-      .canMutateFlag = lsmfMPTCanMutateCanLock,
+      .canEnableFlag = lsmfMPTCanEnableCanLock,
       .ledgerFlag = lsfMPTCanLock},
      {.setFlag = tmfMPTSetRequireAuth,
-      .canMutateFlag = lsmfMPTCanMutateRequireAuth,
+      .canEnableFlag = lsmfMPTCanEnableRequireAuth,
       .ledgerFlag = lsfMPTRequireAuth},
      {.setFlag = tmfMPTSetCanEscrow,
-      .canMutateFlag = lsmfMPTCanMutateCanEscrow,
+      .canEnableFlag = lsmfMPTCanEnableCanEscrow,
       .ledgerFlag = lsfMPTCanEscrow},
      {.setFlag = tmfMPTSetCanTrade,
-      .canMutateFlag = lsmfMPTCanMutateCanTrade,
+      .canEnableFlag = lsmfMPTCanEnableCanTrade,
       .ledgerFlag = lsfMPTCanTrade},
      {.setFlag = tmfMPTSetCanTransfer,
-      .canMutateFlag = lsmfMPTCanMutateCanTransfer,
+      .canEnableFlag = lsmfMPTCanEnableCanTransfer,
       .ledgerFlag = lsfMPTCanTransfer},
      {.setFlag = tmfMPTSetCanClawback,
-      .canMutateFlag = lsmfMPTCanMutateCanClawback,
+      .canEnableFlag = lsmfMPTCanEnableCanClawback,
       .ledgerFlag = lsfMPTCanClawback}}};
 
 NotTEC
@@ -220,7 +220,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
     {
         if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
-                return !isMutableFlag(f.canMutateFlag) && ((*mutableFlags & f.setFlag) != 0u);
+                return !isMutableFlag(f.canEnableFlag) && ((*mutableFlags & f.setFlag) != 0u);
             }))
             return tecNO_PERMISSION;
     }
