@@ -943,9 +943,7 @@ class Transaction_test : public beast::unit_test::Suite
             auto result = signFor(env, tx);
 
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                result[jss::error_message] ==
-                "Missing field 'tx_json.NetworkID'.");
+            BEAST_EXPECT(result[jss::error_message] == "Missing field 'tx_json.NetworkID'.");
         }
 
         // Test case: NetworkID > 1024 - NetworkID field is not a number
@@ -958,9 +956,7 @@ class Transaction_test : public beast::unit_test::Suite
             auto result = signFor(env, tx);
 
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                result[jss::error_message] ==
-                "Invalid field 'tx_json.NetworkID'.");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'tx_json.NetworkID'.");
         }
 
         // Test case: NetworkID > 1024 - NetworkID field is not integral
@@ -973,9 +969,7 @@ class Transaction_test : public beast::unit_test::Suite
             auto result = signFor(env, tx);
 
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                result[jss::error_message] ==
-                "Invalid field 'tx_json.NetworkID'.");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'tx_json.NetworkID'.");
         }
 
         // Test case: NetworkID > 1024 - NetworkID field is different from
@@ -989,9 +983,7 @@ class Transaction_test : public beast::unit_test::Suite
             auto result = signFor(env, tx);
 
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(
-                result[jss::error_message] ==
-                "Invalid field 'tx_json.NetworkID'.");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'tx_json.NetworkID'.");
         }
 
         // Test case: NetworkID > 1024 - NetworkID field is correct
