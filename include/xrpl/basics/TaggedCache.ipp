@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/scope.h>
 
 namespace xrpl {
 
@@ -536,8 +537,15 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     std::vector<key_type> v;
 
     {
-        std::scoped_lock const lock(mutex_);
-        v.reserve(cache_.size());
+        std::unique_lock lock(mutex_);
+        for (int size = cache_.size(); v.capacity() < size; size = cache_.size())
+        {
+            ScopeUnlock const unlock(lock);
+            v.reserve(size);
+        }
+        XRPL_ASSERT(lock.owns_lock(), "xrpl::TaggedCache::getKeys(): owns lock");
+        XRPL_ASSERT(
+            v.capacity() >= cache_.size(), "xrpl::TaggedCache::getKeys(): sufficient capacity");
         for (auto const& _ : cache_)
             v.push_back(_.first);
     }
