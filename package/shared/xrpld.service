@@ -17,6 +17,8 @@ ProtectHome=true
 PrivateTmp=true
 User=xrpld
 Group=xrpld
+StateDirectory=xrpld
+LogsDirectory=xrpld
 LimitNOFILE=65536
 
 [Install]
