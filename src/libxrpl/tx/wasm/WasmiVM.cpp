@@ -106,6 +106,18 @@ public:
     {
         return iw_.setGas(gas);
     }
+
+    std::int64_t
+    getTransferLimit() override
+    {
+        return iw_.getTransferLimit();
+    }
+
+    std::int64_t
+    setTransferLimit(std::int64_t x) override
+    {
+        return iw_.setTransferLimit(x);
+    }
 };
 
 InstancePtr
@@ -245,6 +257,32 @@ InstanceWrapper::setGas(std::int64_t gas) const
     }
 
     return gas;
+}
+
+std::int64_t
+InstanceWrapper::getTransferLimit() const
+{
+    if (store_ == nullptr)
+        return -1;  // LCOV_EXCL_LINE
+
+    return transferLimit_;
+}
+
+std::int64_t
+InstanceWrapper::setTransferLimit(std::int64_t x)
+{
+    if (store_ == nullptr)
+        return -1;  // LCOV_EXCL_LINE
+    if (x < 0)
+    {
+        transferLimit_ = std::numeric_limits<decltype(transferLimit_)>::max();
+    }
+    else
+    {
+        transferLimit_ = x;
+    }
+
+    return transferLimit_;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
