@@ -20,9 +20,12 @@ env:
   BUILD_DIR: build
   BUILD_TYPE: Debug # Debug so that ASSERTS and such participate in clang-tidy check
 
-  OUTPUT_FILE: clang-tidy-output.txt
-  DIFF_FILE: clang-tidy-git-diff.txt
-  ISSUE_FILE: clang-tidy-issue.md
+  OUTPUT_FILE: /tmp/clang-tidy-output.txt
+  FILTERED_OUTPUT_FILE: /tmp/clang-tidy-filtered-output.txt
+  DIFF_FILE: /tmp/clang-tidy-git-diff.txt
+  ISSUE_FILE: /tmp/clang-tidy-issue.md
+
+  COMPILER: clang
 
 jobs:
   determine-files:
@@ -59,7 +62,7 @@ jobs:
       - name: Set compiler environment
         uses: ./.github/actions/set-compiler-env
         with:
-          compiler: clang
+          compiler: ${{ env.COMPILER }}
 
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
@@ -150,21 +153,21 @@ jobs:
         run: |
           if [ -f "${OUTPUT_FILE}" ]; then
               # Extract lines containing 'error:', 'warning:', or 'note:'
-              grep -E '(error:|warning:|note:)' "${OUTPUT_FILE}" >filtered-output.txt || true
+              grep -E '(error:|warning:|note:)' "${OUTPUT_FILE}" >"${FILTERED_OUTPUT_FILE}" || true
 
               # If filtered output is empty, use original (might be a different error format)
-              if [ ! -s filtered-output.txt ]; then
-                  cp "${OUTPUT_FILE}" filtered-output.txt
+              if [ ! -s "${FILTERED_OUTPUT_FILE}" ]; then
+                  cp "${OUTPUT_FILE}" "${FILTERED_OUTPUT_FILE}"
               fi
 
               # Truncate if too large
-              head -c 60000 filtered-output.txt >>"${ISSUE_FILE}"
-              if [ "$(wc -c <filtered-output.txt)" -gt 60000 ]; then
+              head -c 60000 "${FILTERED_OUTPUT_FILE}" >>"${ISSUE_FILE}"
+              if [ "$(wc -c <"${FILTERED_OUTPUT_FILE}")" -gt 60000 ]; then
                   echo "" >>"${ISSUE_FILE}"
                   echo "... (output truncated, see artifacts for full output)" >>"${ISSUE_FILE}"
               fi
 
-              rm filtered-output.txt
+              rm "${FILTERED_OUTPUT_FILE}"
           else
               echo "No output file found" >>"${ISSUE_FILE}"
           fi

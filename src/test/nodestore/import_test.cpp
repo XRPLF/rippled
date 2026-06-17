@@ -21,10 +21,15 @@
 #include <nudb/file.hpp>
 #include <nudb/native_file.hpp>
 #include <nudb/xxhasher.hpp>
+
+#if XRPL_ROCKSDB_AVAILABLE
+
 #include <rocksdb/db.h>
 #include <rocksdb/iterator.h>
 #include <rocksdb/options.h>
 #include <rocksdb/status.h>
+
+#endif
 
 #include <algorithm>
 #include <chrono>
