@@ -104,11 +104,11 @@ add_dependencies(lean4_dep_lib lean4_model)
 set_target_properties(lean4_dep_lib PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(
     lean4_dep_lib
-    PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,${lean4_model_archive}>" lean4::lean4
+    PRIVATE "$<LINK_LIBRARY:WHOLE_ARCHIVE,${lean4_model_archive}>"
+    PUBLIC lean4::lean4
 )
 
-add_dependencies(xrpld lean4_dep_lib)
-target_link_libraries(xrpld lean4_dep_lib lean4::lean4)
+target_link_libraries(xrpld lean4_dep_lib)
 set_property(TARGET xrpld APPEND PROPERTY BUILD_RPATH ${LEAN4_LIBDIR})
 
 message(
