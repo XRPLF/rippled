@@ -291,7 +291,6 @@ We link the objects into a **shared** library, passing the ~8,000 object paths i
 instead of on the command line.
 
 8,000 paths on one command line overflow the OS limit (`ARG_MAX`), which is why both `ar` and lake's own `:shared` facet fails on mathlib, so we do the linking by hand.
-NB. CMake build will report an error, but the build will complete successfully (WIP on silencing the error)
 
 The Lean4 build writes its artifacts into `formal_verification/.lake/` (gitignored).
 Building `xrpld` needs no separate Lean4 toolchain installed, Conan provides it.
@@ -317,7 +316,7 @@ mkdir .build && cd .build
 # Register the lean4 toolchain recipe in the Conan cache (once per machine).
 conan export ../external/lean4
 
-# Resolve and build dependencies. Runs once and pulls the lean4 toolchain + gmp.
+# Resolve and build dependencies. Runs once and pulls the lean4 toolchain.
 conan install .. --output-folder . --build missing --settings build_type=Release \
     -o '&:formal_verification=True' --lockfile-partial
 
@@ -336,8 +335,7 @@ cmake --build . --parallel N
 and the matching `-Dformal_verification=ON` tells CMake to build and link
 the Lean4 side.
 
-`--lockfile-partial` lets Conan add `lean4` and `gmp`, which are opt-in
-and not pinned in `conan.lock`.
+`--lockfile-partial` lets Conan add `lean4`, which is opt-in and not pinned in `conan.lock`.
 
 ## Testing Principles
 
