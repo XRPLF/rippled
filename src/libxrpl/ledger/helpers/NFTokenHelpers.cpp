@@ -753,7 +753,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
             {
                 Throw<std::runtime_error>(
                     "NFTokenPage directory for " + to_string(owner) +
-                    " cannot be repaired.  std::unexpected link problem.");
+                    " cannot be repaired. Unexpected link problem.");
             }
             newPrev->at(sfNextPageMin) = nextPage->key();
             view.update(newPrev);
