@@ -99,7 +99,10 @@ fi
 # except a pre-release uses '~' (3.2.0-b1 -> 3.2.0~b1), which also sorts before
 # the final 3.2.0; a no-op for a final release. Lowercase = derived internally,
 # not an input (cf. pkg_type).
-pkg_version="${XRPLD_VERSION/-/~}"
+pkg_version="${XRPLD_VERSION}"
+if [[ "${XRPLD_VERSION}" == *-* ]]; then
+    pkg_version="${XRPLD_VERSION%%-*}~${XRPLD_VERSION#*-}"
+fi
 
 if command -v apt-get >/dev/null 2>&1; then
     pkg_type=deb
