@@ -144,6 +144,9 @@ Permission::getInstance()
 std::optional<std::string>
 Permission::getPermissionName(std::uint32_t value) const
 {
+    if (value == 0)
+        return std::nullopt;
+
     auto const permissionValue = static_cast<GranularPermissionType>(value);
     if (auto const granular = getGranularName(permissionValue))
         return granular;
@@ -209,6 +212,9 @@ Permission::getTxFeature(TxType txType) const
 bool
 Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
 {
+    if (permissionValue == 0)
+        return false;  // LCOV_EXCL_LINE
+
     auto const amendmentEnabled = [&rules](TxDelegationEntry const& entry) {
         return entry.amendment == uint256{} || rules.enabled(entry.amendment);
     };
