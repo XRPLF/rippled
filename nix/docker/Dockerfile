@@ -56,7 +56,7 @@ ENV GIT_SSL_CAINFO="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
 # Externally-built dynamically-linked ELF binaries hard-code the loader path
 # (e.g. /lib64/ld-linux-x86-64.so.2) in their PT_INTERP header. Install it
 # from the Nix store when the base image doesn't already provide one.
-COPY docker/loader-path.sh /tmp/loader-path.sh
+COPY nix/docker/loader-path.sh /tmp/loader-path.sh
 
 RUN <<EOF
 target="$(/tmp/loader-path.sh)"
@@ -71,12 +71,12 @@ if [ ! -e "${target}" ]; then
 fi
 EOF
 
-COPY docker/check-tools.sh /tmp/check-tools.sh
+COPY bin/check-tools.sh /tmp/check-tools.sh
 RUN /tmp/check-tools.sh
 
 # Sanity-check that the g++/clang++ are able to build binaries, including sanitizer-instrumented ones.
-COPY docker/test_files/cpp_sources/ /tmp/cpp_sources/
-COPY docker/test_files/compile-cpp-sources.sh /tmp/compile-cpp-sources.sh
+COPY nix/docker/test_files/cpp_sources/ /tmp/cpp_sources/
+COPY nix/docker/test_files/compile-cpp-sources.sh /tmp/compile-cpp-sources.sh
 RUN /tmp/compile-cpp-sources.sh /tmp/cpp_sources /tmp/bins
 
 # Tester: start from a clean BASE_IMAGE, install sanitizer runtime libraries,
@@ -93,8 +93,8 @@ RUN if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then \
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 # Sanity-check that the built binaries run correctly in the vanilla base image, with the necessary sanitizer runtime libraries installed.
-COPY docker/install-sanitizer-libs.sh /tmp/install-sanitizer-libs.sh
-COPY docker/test_files/run-test-binaries.sh /tmp/run-test-binaries.sh
+COPY bin/install-sanitizer-libs.sh /tmp/install-sanitizer-libs.sh
+COPY nix/docker/test_files/run-test-binaries.sh /tmp/run-test-binaries.sh
 COPY --from=final /tmp/bins /tmp/bins
 
 RUN <<EOF

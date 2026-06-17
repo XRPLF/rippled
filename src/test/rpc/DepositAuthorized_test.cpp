@@ -324,7 +324,7 @@ public:
         env.close();
 
         // becky authorize any account recognized by carol to make a payment
-        env(deposit::authCredentials(becky, {{carol, credType}}));
+        env(deposit::authCredentials(becky, {{.issuer = carol, .credType = credType}}));
         env.close();
 
         {
@@ -507,7 +507,7 @@ public:
             env.close();
 
             // becky authorize any account recognized by carol to make a payment
-            env(deposit::authCredentials(becky, {{carol, credType2}}));
+            env(deposit::authCredentials(becky, {{.issuer = carol, .credType = credType2}}));
             env.close();
 
             {
