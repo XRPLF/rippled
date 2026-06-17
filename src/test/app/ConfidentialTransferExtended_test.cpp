@@ -620,13 +620,13 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             BEAST_EXPECT(ammSle && ammSle->isFieldPresent(sfAMMID));
             BEAST_EXPECT(mptAlice.getBalance(ammHolder) == 100);
 
-            BEAST_EXPECT(!mptAlice.getEncryptedBalance(ammHolder, MPTTester::HolderEncryptedInbox));
+            BEAST_EXPECT(!mptAlice.getEncryptedBalance(ammHolder, MPTTester::holderEncryptedInbox));
             BEAST_EXPECT(
-                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::HolderEncryptedSpending));
+                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::holderEncryptedSpending));
             BEAST_EXPECT(
-                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::IssuerEncryptedBalance));
+                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::issuerEncryptedBalance));
             BEAST_EXPECT(
-                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::AuditorEncryptedBalance));
+                !mptAlice.getEncryptedBalance(ammHolder, MPTTester::auditorEncryptedBalance));
 
             mptAlice.confidentialClaw({
                 .account = alice,
@@ -944,8 +944,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
             // AllOrNothing: inner 3 fails
             // bob's spending must remain 100; carol's inbox must remain 0.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 0);
         }
 
         // Bob sends to two recipients (Carol and Dave) in one batch.
@@ -978,9 +978,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
                 // Nothing applied: bob stays 150, carol and dave inbox stay 0.
                 BEAST_EXPECT(
-                    mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 150);
-                BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
-                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+                    mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 150);
+                BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 0);
+                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 0);
             }
 
             // If we change batch mode to be tfIndependent — txn 1 applies, inner 2 fails.
@@ -999,10 +999,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
                 // bob 150→100, carol inbox 0→50
                 BEAST_EXPECT(
-                    mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-                BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 50);
+                    mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+                BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 50);
                 // dave gets nothing
-                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 0);
             }
         }
 
@@ -1042,10 +1042,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 env.close();
 
                 // Both txns applied: bob 200→0, carol inbox=100, dave inbox=100.
-                BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 0);
+                BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 0);
                 BEAST_EXPECT(
-                    mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 100);
-                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 100);
+                    mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 100);
+                BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 100);
             }
 
             // Now Bob has 150, but tries to send two 100 in one batch.
@@ -1079,10 +1079,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
                 // AllOrNothing: inner 2 fails → nothing applied.
                 BEAST_EXPECT(
-                    mpt2.getDecryptedBalance(bob2, MPTTester::HolderEncryptedSpending) == 150);
+                    mpt2.getDecryptedBalance(bob2, MPTTester::holderEncryptedSpending) == 150);
                 BEAST_EXPECT(
-                    mpt2.getDecryptedBalance(carol2, MPTTester::HolderEncryptedInbox) == 0);
-                BEAST_EXPECT(mpt2.getDecryptedBalance(dave2, MPTTester::HolderEncryptedInbox) == 0);
+                    mpt2.getDecryptedBalance(carol2, MPTTester::holderEncryptedInbox) == 0);
+                BEAST_EXPECT(mpt2.getDecryptedBalance(dave2, MPTTester::holderEncryptedInbox) == 0);
             }
         }
     }
@@ -1131,8 +1131,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             //   spending balance: 100 - 30 = 70
             //   inbox:    0   + 50 (from convert) = 50
             env.require(MptBalance(mpt, bob, 30));
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 70);
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedInbox) == 50);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 70);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == 50);
         }
 
         // convert + mergeInbox + convertBack, stale convertBack proof.
@@ -1171,8 +1171,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
             // jv3 fails so nothing is applied.
             env.require(MptBalance(mpt, bob, 50));
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == 0);
         }
     }
 
@@ -1240,12 +1240,12 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // All four applied:
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 70);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 70);
             // carol's inbox was merged: spending=80, inbox=0
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 80);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 80);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 0);
             // dave: spending=30, regular=20
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedSpending) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedSpending) == 30);
             env.require(MptBalance(mpt, dave, 20));
         }
 
@@ -1279,8 +1279,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // AllOrNothing: jv2 fails (stale proof) → nothing applied.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 0);
         }
     }
 
@@ -1319,9 +1319,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // Both txn applied: bob's balance 100→90, carol 60→55, dave inbox 0→15
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 90);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 55);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 15);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 90);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 15);
         }
     }
 
@@ -1359,9 +1359,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // No success found → nothing applied; balances unchanged
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 60);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 60);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 0);
         }
 
         // bob sends dave 200 (invalid), carol sends dave 5 (valid)
@@ -1381,9 +1381,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // Only carol's send applied: carol 60→55, dave inbox 0→5, bob unchanged
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 55);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 5);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 5);
         }
     }
 
@@ -1420,8 +1420,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 Ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 60);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 60);
         }
 
         // Bob sends dave 10, Carol sends dave 5 — both valid and independent
@@ -1441,9 +1441,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // Both applied: bob 100→90, carol 60→55, dave inbox 0→15
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 90);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 55);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 15);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 90);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 15);
         }
     }
 
@@ -1486,11 +1486,11 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // inner 1 (bob→dave 10) applied: bob 100→90
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 90);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 90);
             // inner 2 failed (carol not changed), inner 3 applied: carol 60→55
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 55);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 55);
             // dave inbox: 10 (from bob) + 5 (from carol inner 3) = 15
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 15);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 15);
         }
     }
 
@@ -1541,9 +1541,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // Both sends applied: bob 100→40, carol inbox=40, dave inbox=20.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 40);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 40);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 20);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 20);
         }
 
         // inner transactions each consume their own ticket.
@@ -1582,9 +1582,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // Both sends applied: bob 100→30, carol inbox=40, dave inbox=30.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 30);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 40);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 30);
         }
 
         // inner send uses wrong sequence (account seq instead of ticket seq)
@@ -1615,8 +1615,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 Ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 0);
         }
     }
 
@@ -1962,9 +1962,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // Stale proof on jv2, AllOrNothing rolls back everything.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 0);
         }
 
         // AllOrNothing: two delegated sends with correctly chained proofs both apply.
@@ -1999,9 +1999,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // Both inner tx applied
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 20);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 40);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 20);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 40);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 40);
         }
     }
 
@@ -2047,9 +2047,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
             // jv1 applied in the batch view, then jv2 failed, so
             // AllOrNothing discards both inner effects.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 60);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 60);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 0);
         }
 
         // Independent: the delegated confidential send is skipped because lack of permission. The
@@ -2081,9 +2081,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // jv1 failed and jv2 applied.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 30);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 30);
         }
     }
 
@@ -2123,8 +2123,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 Ter(temBAD_SIGNER));
             env.close();
 
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 0);
         }
 
         // Dave submits a mixed batch: bob signs inner tx1, and
@@ -2160,8 +2160,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // Both sends applied: bob 100→30, carol inbox=70.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 30);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 70);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 30);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 70);
         }
 
         // Verify the delegator Bob's BatchSigner does not bypass the missing delegation permission.
@@ -2194,9 +2194,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env.close();
 
             // jv1 fails before jv2 is attempted.
-            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
-            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 60);
-            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+            BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+            BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 60);
+            BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 0);
         }
     }
 
@@ -2263,17 +2263,17 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         env.close();
 
         env.require(MptBalance(mpt, bob, 60));
-        BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 105);
-        BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::HolderEncryptedInbox) == 0);
+        BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 105);
+        BEAST_EXPECT(mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == 0);
         env.require(MptBalance(mpt, carol, 0));
-        BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedSpending) == 45);
-        BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+        BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedSpending) == 45);
+        BEAST_EXPECT(mpt.getDecryptedBalance(carol, MPTTester::holderEncryptedInbox) == 0);
         env.require(MptBalance(mpt, frank, 15));
-        BEAST_EXPECT(mpt.getDecryptedBalance(frank, MPTTester::HolderEncryptedSpending) == 25);
-        BEAST_EXPECT(mpt.getDecryptedBalance(frank, MPTTester::HolderEncryptedInbox) == 0);
+        BEAST_EXPECT(mpt.getDecryptedBalance(frank, MPTTester::holderEncryptedSpending) == 25);
+        BEAST_EXPECT(mpt.getDecryptedBalance(frank, MPTTester::holderEncryptedInbox) == 0);
         env.require(MptBalance(mpt, dave, 0));
-        BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedSpending) == 0);
-        BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::HolderEncryptedInbox) == 0);
+        BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedSpending) == 0);
+        BEAST_EXPECT(mpt.getDecryptedBalance(dave, MPTTester::holderEncryptedInbox) == 0);
         auto const outstandingBalance = mpt.getIssuanceOutstandingBalance();
         BEAST_EXPECT(outstandingBalance && *outstandingBalance == 250);
         BEAST_EXPECT(mpt.getIssuanceConfidentialBalance() == 175);

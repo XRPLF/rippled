@@ -128,7 +128,9 @@ struct MPTCreate
 /** @brief Arguments for initializing funded MPT test accounts and issuance. */
 struct MPTInit
 {
-    Holders holders;
+    // Default-initialized so designated-initializer call sites that omit
+    // `holders` don't trip GCC's -Werror=missing-field-initializers.
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::optional<Account> auditor = std::nullopt;
     PrettyAmount const xrp = XRP(10'000);
     PrettyAmount const xrpHolders = XRP(10'000);
@@ -144,7 +146,7 @@ struct MPTInitDef
 {
     Env& env;
     Account issuer;
-    Holders holders;
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::optional<Account> auditor = std::nullopt;
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;

@@ -255,10 +255,10 @@ protected:
             , issuerPubKey(requireOptional(mpt.getPubKey(issuer), "Missing issuer public key"))
             , auditorPubKey(auditor ? mpt.getPubKey(auditor->get()) : std::nullopt)
             , prevSpending(requireOptional(
-                  mpt.getDecryptedBalance(sender, test::jtx::MPTTester::HolderEncryptedSpending),
+                  mpt.getDecryptedBalance(sender, test::jtx::MPTTester::holderEncryptedSpending),
                   "Missing sender spending balance"))
             , prevEncryptedSpending(requireOptional(
-                  mpt.getEncryptedBalance(sender, test::jtx::MPTTester::HolderEncryptedSpending),
+                  mpt.getEncryptedBalance(sender, test::jtx::MPTTester::holderEncryptedSpending),
                   "Missing sender encrypted spending balance"))
             , balanceCommitment(mpt.getPedersenCommitment(prevSpending, balanceBlindingFactor))
         {
