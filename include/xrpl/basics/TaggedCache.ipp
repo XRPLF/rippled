@@ -538,7 +538,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     {
         std::unique_lock lock(mutex_);
-        for (int size = cache_.size(); v.capacity() < size; size = cache_.size())
+        for (auto size = cache_.size(); v.capacity() < size; size = cache_.size())
         {
             ScopeUnlock const unlock(lock);
             v.reserve(size);
