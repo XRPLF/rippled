@@ -116,28 +116,29 @@ custom version string, use the script or container path above with
 environment variable. Flags override env vars; env vars override the built-in
 defaults. Run `./package/build_pkg.sh --help` for the same table:
 
-| Flag                       | Env var             | Default                       | Purpose                             |
-| -------------------------- | ------------------- | ----------------------------- | ----------------------------------- |
-| `--src-dir DIR`            | `SRC_DIR`           | `$PWD`                        | repo root                           |
-| `--build-dir DIR`          | `BUILD_DIR`         | `$PWD/build`                  | directory holding pre-built `xrpld` |
-| `--xrpld-version STR`      | `XRPLD_VERSION`     | parsed from `xrpld --version` | `xrpld` version, e.g. `3.2.0-b1`    |
-| `--pkg-release N`          | `PKG_RELEASE`       | `1`                           | package release iteration           |
-| `--source-date-epoch SECS` | `SOURCE_DATE_EPOCH` | latest git commit ctime       | reproducibility timestamp           |
+| Flag                       | Env var             | Default/source                                           | Purpose                             |
+| -------------------------- | ------------------- | -------------------------------------------------------- | ----------------------------------- |
+| `--src-dir DIR`            | `SRC_DIR`           | `$PWD`                                                   | repo root                           |
+| `--build-dir DIR`          | `BUILD_DIR`         | `$PWD/build`                                             | directory holding pre-built `xrpld` |
+| `--xrpld-version STR`      | `XRPLD_VERSION`     | set by CMake/CI; fallback: parsed from `xrpld --version` | `xrpld` version, e.g. `3.2.0-b1`    |
+| `--pkg-release N`          | `PKG_RELEASE`       | `1`                                                      | package release iteration           |
+| `--source-date-epoch SECS` | `SOURCE_DATE_EPOCH` | latest git commit ctime; fallback: current time          | reproducibility timestamp           |
 
 `XRPLD_VERSION` is the `build_pkg.sh` input for the `xrpld` software version in
-both package formats.
+both package formats. CMake derives it as `xrpld_version` and exports it as
+`XRPLD_VERSION`; direct script invocations may pass it explicitly or let the
+script fall back to parsing `xrpld --version`.
 
 `build_pkg.sh` converts pre-release versions such as `3.2.0-b1` or
 `3.2.0-rc1` from `-` to `~` for package metadata so pre-releases sort before
-the final release. Internally, the script keeps the raw software version as
-`XRPLD_VERSION` and the package-metadata form as `pkg_version`. Versions with
-more than one `-` are rejected so the pre-release suffix remains a single
-token.
+the final release. Versions with more than one `-` are rejected so the
+pre-release suffix remains a single token.
 
 `PKG_RELEASE` is a different value: the package release iteration for that
-`xrpld` version. RPM receives `pkg_version` and `PKG_RELEASE` as separate
-`Version` and `Release` values because the spec format requires that; DEB
-combines them as `deb_version` in `debian/changelog`.
+`xrpld` version. RPM receives the normalized version and `PKG_RELEASE` as
+separate `pkg_version` and `pkg_release` macros for its `Version` and `Release`
+values; DEB writes them as `${pkg_version}-${PKG_RELEASE}` in
+`debian/changelog`.
 
 With `PKG_RELEASE=1`, the package metadata becomes:
 
@@ -148,9 +149,10 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 | `3.2.0-b1`         | `3.2.0~b1-1%{?dist}`         | `3.2.0~b1-1`         |
 | `3.2.0-rc1`        | `3.2.0~rc1-1%{?dist}`        | `3.2.0~rc1-1`        |
 
-For Debian changelogs, final releases use the `stable` distribution,
-`b0` builds, including `b0+metadata`, use `develop`, and other pre-releases use
-`unstable`.
+The Debian changelog's distribution field carries our apt repo _component_ (the
+suite/codename is assigned by the publishing infra at ingest, not here): final
+releases use `stable`, `b0` builds, including `b0+metadata`, use `develop`, and
+other pre-releases use `unstable`.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
@@ -162,9 +164,11 @@ manager (`apt-get` -> deb, `dnf`/`yum` -> rpm). Hosts without one of those
 fail early.
 
 Flags are for explicit invocation; environment variables are intended for
-CMake/CI integration. The CI workflow and the CMake `package` target
-both invoke `build_pkg.sh` with no flags, configuring it entirely via env
-(see `cmake/XrplPackaging.cmake`).
+CMake/CI integration. The CI workflow and the CMake `package` target both invoke
+`build_pkg.sh` with no flags; CMake supplies `SRC_DIR`, `BUILD_DIR`,
+`XRPLD_VERSION`, and `PKG_RELEASE` via env, while CI supplies `BUILD_DIR`,
+`XRPLD_VERSION`, and `PKG_RELEASE` via env and lets the script use defaults for
+the rest.
 
 It resolves `SRC_DIR` and `BUILD_DIR` to absolute paths, then calls
 `stage_common()` to copy the binary, config files, and shared support files
@@ -174,8 +178,8 @@ into the staging area, and invokes the platform build tool.
 
 1. Creates the standard `rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}` tree inside the build directory.
 2. Copies `xrpld.spec` and all source files (binary, configs, service files) into `SOURCES/`.
-3. Runs `rpmbuild -bb`, passing `pkg_version` as `xrpld_version` and
-   `PKG_RELEASE` as `pkg_release`.
+3. Runs `rpmbuild -bb`, passing the normalized version and `PKG_RELEASE` as the
+   `pkg_version` and `pkg_release` RPM macros.
    The spec uses manual `install` commands to place files, disables `dwz`, and
    writes uncompressed RPM payloads while generating debuginfo packages.
 4. Output: `rpmbuild/RPMS/x86_64/xrpld-*.rpm`
@@ -186,8 +190,7 @@ into the staging area, and invokes the platform build tool.
 2. Stages the binary, configs, `README.md`, and `LICENSE.md`.
 3. Copies `package/debian/` control files into `debbuild/source/debian/`.
 4. Copies shared service/sysusers/tmpfiles into `debian/` where `dh_installsystemd`, `dh_installsysusers`, and `dh_installtmpfiles` pick them up automatically.
-5. Generates a minimal `debian/changelog` using
-   `deb_version`.
+5. Generates a minimal `debian/changelog` using `${pkg_version}-${PKG_RELEASE}`.
 6. Runs `dpkg-buildpackage -b --no-sign -d` (`-d` skips the build-dependency check, since the binary is already built). `debian/rules` uses manual `install` commands.
 7. Output: `debbuild/*.deb` and `debbuild/*.ddeb` (dbgsym package)
 
@@ -205,10 +208,11 @@ rpm -qlp rpmbuild/RPMS/x86_64/*.rpm
 ## Reproducibility
 
 `build_pkg.sh` already defaults `SOURCE_DATE_EPOCH` to the latest git commit
-time and exports it (override with `--source-date-epoch` / `SOURCE_DATE_EPOCH`);
-the RPM spec clamps file modification times to it via `%build_mtime_policy`. The remaining
-variables below further improve reproducibility but are _not_ set by the
-script — export them yourself if needed:
+time, or the current time outside a git tree, and exports it (override with
+`--source-date-epoch` / `SOURCE_DATE_EPOCH`); the RPM spec clamps file
+modification times to it via `%build_mtime_policy`. The remaining variables
+below further improve reproducibility but are _not_ set by the script — export
+them yourself if needed:
 
 ```bash
 export TZ=UTC

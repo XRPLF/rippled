@@ -1,5 +1,5 @@
 Name:     xrpld
-Version:  %{xrpld_version}
+Version:  %{pkg_version}
 Release:  %{pkg_release}%{?dist}
 Summary:  XRP Ledger daemon
 

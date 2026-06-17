@@ -13,9 +13,9 @@ Usage: build_pkg.sh [options]
 Options (each can also be set via the env var shown):
   --src-dir DIR             repo root                     [SRC_DIR;           default: $PWD]
   --build-dir DIR           directory holding xrpld       [BUILD_DIR;         default: $PWD/build]
-  --xrpld-version STR       xrpld version, e.g. 3.2.0-b1  [XRPLD_VERSION;     default: parsed from xrpld --version]
+  --xrpld-version STR       xrpld version, e.g. 3.2.0-b1  [XRPLD_VERSION;     set by CMake/CI; fallback: xrpld --version]
   --pkg-release N           package release iteration     [PKG_RELEASE;       default: 1]
-  --source-date-epoch SECS  reproducibility timestamp     [SOURCE_DATE_EPOCH; default: latest git commit ctime]
+  --source-date-epoch SECS  reproducibility timestamp     [SOURCE_DATE_EPOCH; latest git ctime; fallback: current time]
   -h, --help                show this help and exit
 EOF
 }
@@ -156,7 +156,7 @@ build_rpm() {
     set -x
     rpmbuild -bb \
         --define "_topdir ${topdir}" \
-        --define "xrpld_version ${pkg_version}" \
+        --define "pkg_version ${pkg_version}" \
         --define "pkg_release ${PKG_RELEASE}" \
         "${topdir}/SPECS/xrpld.spec"
 }
@@ -174,21 +174,21 @@ build_deb() {
     cp "${staging}/xrpld.tmpfiles" "${staging}/debian/xrpld.tmpfiles"
     cp "${staging}/xrpld.logrotate" "${staging}/debian/xrpld.logrotate"
 
-    # Full Debian version: <upstream>[~<pre>]-<pkg release>.
-    local deb_version="${pkg_version}-${PKG_RELEASE}"
-
-    # Release channel drives the changelog distribution (RPM has no equivalent):
-    #   3.2.0 -> stable, *-b0[+metadata] -> develop,
-    #   any other pre-release -> unstable.
-    local deb_distribution
+    # The release channel selects our apt repo *component*. dpkg names the
+    # changelog's third field "distribution", but the suite/codename (noble,
+    # bookworm, ...) is assigned by the publishing infra at ingest; this
+    # suite-agnostic build only sets the component. RPM has no equivalent.
+    #   3.2.0 -> stable, *-b0[+metadata] -> develop, other pre-release -> unstable.
+    local deb_component
     case "${XRPLD_VERSION}" in
-        *-b0 | *-b0+*) deb_distribution="develop" ;;
-        *-*) deb_distribution="unstable" ;;
-        *) deb_distribution="stable" ;;
+        *-b0 | *-b0+*) deb_component="develop" ;;
+        *-*) deb_component="unstable" ;;
+        *) deb_component="stable" ;;
     esac
 
+    # Debian version is <upstream>[~<pre>]-<pkg release>.
     cat >"${staging}/debian/changelog" <<EOF
-xrpld (${deb_version}) ${deb_distribution}; urgency=medium
+xrpld (${pkg_version}-${PKG_RELEASE}) ${deb_component}; urgency=medium
   * Release ${XRPLD_VERSION}.
 
  -- XRPL Foundation <contact@xrplf.org>  ${CHANGELOG_DATE}
