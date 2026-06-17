@@ -26,6 +26,18 @@
 
 namespace xrpl {
 
+namespace {
+
+auto const applyCountDelta = [](std::uint32_t current,
+                                std::int64_t delta) -> std::optional<std::uint32_t> {
+    std::int64_t const next = static_cast<std::int64_t>(current) + delta;
+    if (next < 0 || next > std::numeric_limits<std::uint32_t>::max())
+        return std::nullopt;
+    return static_cast<std::uint32_t>(next);
+};
+
+}  // namespace
+
 std::uint32_t
 SponsorshipTransfer::getFlagsMask(PreflightContext const& ctx)
 {
@@ -380,16 +392,15 @@ reduceReserveCount(
     if (!sponsorSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    int64_t const reserveCount = sponsorSle->getFieldU32(sfReserveCount);
-    int64_t const afterReserveCount = reserveCount + delta;
-
-    if (afterReserveCount < 0)
+    auto const afterReserveCount = applyCountDelta(sponsorSle->getFieldU32(sfReserveCount), delta);
+    if (!afterReserveCount)
     {
         // already checked in preclaim()
+        UNREACHABLE("xrpl::reduceReserveCount : invalid reserve count");
         return tefINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    sponsorSle->at(sfReserveCount) = static_cast<unsigned>(afterReserveCount);
+    sponsorSle->at(sfReserveCount) = *afterReserveCount;
     view.update(sponsorSle);
     return tesSUCCESS;
 }
@@ -409,15 +420,14 @@ SponsorshipTransfer::doApply()
 
     auto const setSponsorFieldU32 =
         [] [[nodiscard]] (auto const& sle, auto const& field, auto const& delta) -> TER {
-        int64_t const newValue = static_cast<int64_t>(sle->getFieldU32(field)) + delta;
-
-        if (newValue < 0 || newValue > std::numeric_limits<std::uint32_t>::max())
+        auto const newValue = applyCountDelta(sle->getFieldU32(field), delta);
+        if (!newValue)
         {
             UNREACHABLE("xrpl::SponsorshipTransfer::doApply : Invalid sponsor field value");
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
 
-        sle->at(field) = static_cast<std::uint32_t>(newValue);
+        sle->at(field) = *newValue;
         return tesSUCCESS;
     };
 
