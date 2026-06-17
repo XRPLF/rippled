@@ -118,7 +118,8 @@ verifySendProofs(
         auditor.emplace(
             ConfidentialRecipient{
                 .publicKey = (*sleIssuance)[sfAuditorEncryptionKey],
-                .encryptedAmount = ctx.tx[sfAuditorEncryptedAmount]});
+                .encryptedAmount = ctx.tx[sfAuditorEncryptedAmount],
+            });
     }
 
     auto const contextHash = getSendContextHash(
@@ -130,12 +131,18 @@ verifySendProofs(
 
     return verifySendProof(
         ctx.tx[sfZKProof],
-        {.publicKey = (*sleSenderMPToken)[sfHolderEncryptionKey],
-         .encryptedAmount = ctx.tx[sfSenderEncryptedAmount]},
-        {.publicKey = (*sleDestinationMPToken)[sfHolderEncryptionKey],
-         .encryptedAmount = ctx.tx[sfDestinationEncryptedAmount]},
-        {.publicKey = (*sleIssuance)[sfIssuerEncryptionKey],
-         .encryptedAmount = ctx.tx[sfIssuerEncryptedAmount]},
+        {
+            .publicKey = (*sleSenderMPToken)[sfHolderEncryptionKey],
+            .encryptedAmount = ctx.tx[sfSenderEncryptedAmount],
+        },
+        {
+            .publicKey = (*sleDestinationMPToken)[sfHolderEncryptionKey],
+            .encryptedAmount = ctx.tx[sfDestinationEncryptedAmount],
+        },
+        {
+            .publicKey = (*sleIssuance)[sfIssuerEncryptionKey],
+            .encryptedAmount = ctx.tx[sfIssuerEncryptedAmount],
+        },
         auditor,
         (*sleSenderMPToken)[sfConfidentialBalanceSpending],
         ctx.tx[sfAmountCommitment],
@@ -256,9 +263,10 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 
     // Check deposit preauth before the expensive ZK proof verification.
     // Uses read-only view.
-    if (auto const err = checkDepositPreauth(ctx.tx, ctx.view, account, destination, sleDst, ctx.j);
-        !isTesSuccess(err))
-        return err;
+    auto const preauthErr =
+        checkDepositPreauth(ctx.tx, ctx.view, account, destination, sleDst, ctx.j);
+    if (!isTesSuccess(preauthErr))
+        return preauthErr;
 
     return verifySendProofs(ctx, sleSenderMPToken, sleDestinationMPToken, sleIssuance);
 }

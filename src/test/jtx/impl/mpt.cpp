@@ -42,7 +42,6 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
-#include <iostream>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -52,8 +51,7 @@
 #include <vector>
 
 namespace xrpl::test::jtx {
-
-// NOLINTBEGIN(bugprone-unchecked-optional-access)
+namespace {
 
 /**
  * @brief Helper function to convert a PedersenProofParams into the C library struct.
@@ -61,7 +59,7 @@ namespace xrpl::test::jtx {
  * @param params The Pedersen commitment proof parameters.
  * @return The equivalent mpt_pedersen_proof_params for use with the C library.
  */
-static mpt_pedersen_proof_params
+mpt_pedersen_proof_params
 makePedersenParams(PedersenProofParams const& params)
 {
     mpt_pedersen_proof_params res{};
@@ -72,6 +70,10 @@ makePedersenParams(PedersenProofParams const& params)
     std::memcpy(res.blinding_factor, params.blindingFactor.data(), kMPT_BLINDING_FACTOR_SIZE);
     return res;
 }
+
+}  // namespace
+
+// NOLINTBEGIN(bugprone-unchecked-optional-access)
 
 void
 MptFlags::operator()(Env& env) const
@@ -619,18 +621,6 @@ MPTTester::checkDomainID(std::optional<uint256> expected) const
     });
 }
 
-// todo: remove this function, which is only for debugging
-[[nodiscard]] bool
-MPTTester::printMPT(Account const& holder) const
-{
-    return forObject(
-        [&](SLEP const& sle) -> bool {
-            std::cout << "\n" << sle->getJson();
-            return true;
-        },
-        holder);
-}
-
 [[nodiscard]] bool
 MPTTester::checkMPTokenAmount(Account const& holder, std::int64_t expectedAmount) const
 {
@@ -999,24 +989,24 @@ MPTTester::getEncryptedBalance(Account const& account, EncryptedBalanceType opti
 
     if (auto const sle = env_.le(keylet::mptoken(*id_, account.id())))
     {
-        if (option == HolderEncryptedInbox && sle->isFieldPresent(sfConfidentialBalanceInbox))
+        if (option == holderEncryptedInbox && sle->isFieldPresent(sfConfidentialBalanceInbox))
         {
             return Buffer(
                 (*sle)[sfConfidentialBalanceInbox].data(),
                 (*sle)[sfConfidentialBalanceInbox].size());
         }
-        if (option == HolderEncryptedSpending && sle->isFieldPresent(sfConfidentialBalanceSpending))
+        if (option == holderEncryptedSpending && sle->isFieldPresent(sfConfidentialBalanceSpending))
         {
             return Buffer(
                 (*sle)[sfConfidentialBalanceSpending].data(),
                 (*sle)[sfConfidentialBalanceSpending].size());
         }
-        if (option == IssuerEncryptedBalance && sle->isFieldPresent(sfIssuerEncryptedBalance))
+        if (option == issuerEncryptedBalance && sle->isFieldPresent(sfIssuerEncryptedBalance))
         {
             return Buffer(
                 (*sle)[sfIssuerEncryptedBalance].data(), (*sle)[sfIssuerEncryptedBalance].size());
         }
-        if (option == AuditorEncryptedBalance && sle->isFieldPresent(sfAuditorEncryptedBalance))
+        if (option == auditorEncryptedBalance && sle->isFieldPresent(sfAuditorEncryptedBalance))
         {
             return Buffer(
                 (*sle)[sfAuditorEncryptedBalance].data(), (*sle)[sfAuditorEncryptedBalance].size());
@@ -1169,9 +1159,9 @@ MPTTester::convert(MPTConvert const& arg)
     auto const holderAmt = getBalance(*arg.account);
     auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
 
-    auto const prevInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
-    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
-    auto const prevIssuerBalance = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
+    auto const prevInboxBalance = getDecryptedBalance(*arg.account, holderEncryptedInbox);
+    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, holderEncryptedSpending);
+    auto const prevIssuerBalance = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
 
     if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
         Throw<std::runtime_error>("Failed to get Pre-convert balance");
@@ -1179,7 +1169,7 @@ MPTTester::convert(MPTConvert const& arg)
     std::optional<uint64_t> prevAuditorBalance;
     if (arg.auditorEncryptedAmt || auditor_)
     {
-        prevAuditorBalance = getDecryptedBalance(*arg.account, AuditorEncryptedBalance);
+        prevAuditorBalance = getDecryptedBalance(*arg.account, auditorEncryptedBalance);
         if (!prevAuditorBalance)
             Throw<std::runtime_error>("Failed to get Pre-convert balance");
     }
@@ -1199,18 +1189,18 @@ MPTTester::convert(MPTConvert const& arg)
         }));
 
         env_.require(RequireAny([&]() -> bool {
-            return getEncryptedBalance(*arg.account, HolderEncryptedInbox).has_value();
+            return getEncryptedBalance(*arg.account, holderEncryptedInbox).has_value();
         }));
         env_.require(RequireAny([&]() -> bool {
-            return getEncryptedBalance(*arg.account, HolderEncryptedSpending).has_value();
+            return getEncryptedBalance(*arg.account, holderEncryptedSpending).has_value();
         }));
         env_.require(RequireAny([&]() -> bool {
-            return getEncryptedBalance(*arg.account, IssuerEncryptedBalance).has_value();
+            return getEncryptedBalance(*arg.account, issuerEncryptedBalance).has_value();
         }));
 
-        auto const postInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
-        auto const postIssuerBalance = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
-        auto const postSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
+        auto const postInboxBalance = getDecryptedBalance(*arg.account, holderEncryptedInbox);
+        auto const postIssuerBalance = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
+        auto const postSpendingBalance = getDecryptedBalance(*arg.account, holderEncryptedSpending);
 
         if (!postInboxBalance || !postIssuerBalance || !postSpendingBalance)
             Throw<std::runtime_error>("Failed to get post-convert balance");
@@ -1218,13 +1208,13 @@ MPTTester::convert(MPTConvert const& arg)
         if (arg.auditorEncryptedAmt || auditor_)
         {
             auto const postAuditorBalance =
-                getDecryptedBalance(*arg.account, AuditorEncryptedBalance);
+                getDecryptedBalance(*arg.account, auditorEncryptedBalance);
 
             if (!postAuditorBalance)
                 Throw<std::runtime_error>("Failed to get post-convert auditor balance");
 
             env_.require(RequireAny([&]() -> bool {
-                return getEncryptedBalance(*arg.account, AuditorEncryptedBalance).has_value();
+                return getEncryptedBalance(*arg.account, auditorEncryptedBalance).has_value();
             }));
 
             // auditor's encrypted balance is updated correctly
@@ -1414,31 +1404,31 @@ MPTTester::send(MPTConfidentialSend const& arg)
     auto const prevDestVersion = getMPTokenVersion(*arg.dest);
 
     // Sender's previous confidential state
-    auto const prevSenderInbox = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
-    auto const prevSenderSpending = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
-    auto const prevSenderIssuer = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
+    auto const prevSenderInbox = getDecryptedBalance(*arg.account, holderEncryptedInbox);
+    auto const prevSenderSpending = getDecryptedBalance(*arg.account, holderEncryptedSpending);
+    auto const prevSenderIssuer = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
     if (!prevSenderInbox || !prevSenderSpending || !prevSenderIssuer)
         Throw<std::runtime_error>("Failed to get Pre-send balance");
 
     std::optional<uint64_t> prevSenderAuditor;
     if (arg.auditorEncryptedAmt || auditor_)
     {
-        prevSenderAuditor = getDecryptedBalance(*arg.account, AuditorEncryptedBalance);
+        prevSenderAuditor = getDecryptedBalance(*arg.account, auditorEncryptedBalance);
         if (!prevSenderAuditor)
             Throw<std::runtime_error>("Failed to get Pre-send balance");
     }
 
     // Destination's previous confidential state
-    auto const prevDestInbox = getDecryptedBalance(*arg.dest, HolderEncryptedInbox);
-    auto const prevDestSpending = getDecryptedBalance(*arg.dest, HolderEncryptedSpending);
-    auto const prevDestIssuer = getDecryptedBalance(*arg.dest, IssuerEncryptedBalance);
+    auto const prevDestInbox = getDecryptedBalance(*arg.dest, holderEncryptedInbox);
+    auto const prevDestSpending = getDecryptedBalance(*arg.dest, holderEncryptedSpending);
+    auto const prevDestIssuer = getDecryptedBalance(*arg.dest, issuerEncryptedBalance);
     if (!prevDestInbox || !prevDestSpending || !prevDestIssuer)
         Throw<std::runtime_error>("Failed to get Pre-send balance");
 
     std::optional<uint64_t> prevDestAuditor;
     if (arg.auditorEncryptedAmt || auditor_)
     {
-        prevDestAuditor = getDecryptedBalance(*arg.dest, AuditorEncryptedBalance);
+        prevDestAuditor = getDecryptedBalance(*arg.dest, auditorEncryptedBalance);
         if (!prevDestAuditor)
             Throw<std::runtime_error>("Failed to get Pre-send balance");
     }
@@ -1492,11 +1482,26 @@ MPTTester::send(MPTConfidentialSend const& arg)
         // If a key is missing, we skip adding the recipient. This intentionally
         // causes proof generation to fail, triggering the dummy proof fallback.
         if (senderPubKey)
-            recipients.push_back({.publicKey = Slice(*senderPubKey), .encryptedAmount = senderAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*senderPubKey),
+                .encryptedAmount = senderAmt,
+            });
+        }
         if (destPubKey)
-            recipients.push_back({.publicKey = Slice(*destPubKey), .encryptedAmount = destAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*destPubKey),
+                .encryptedAmount = destAmt,
+            });
+        }
         if (issuerPubKey)
-            recipients.push_back({.publicKey = Slice(*issuerPubKey), .encryptedAmount = issuerAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*issuerPubKey),
+                .encryptedAmount = issuerAmt,
+            });
+        }
 
         std::optional<Buffer> auditorPubKey;
         if (auditorAmt)
@@ -1507,13 +1512,15 @@ MPTTester::send(MPTConfidentialSend const& arg)
             auditorPubKey = getPubKey(*auditor_);
             if (auditorPubKey)
             {
-                recipients.push_back(
-                    {.publicKey = Slice(*auditorPubKey), .encryptedAmount = *auditorAmt});
+                recipients.push_back({
+                    .publicKey = Slice(*auditorPubKey),
+                    .encryptedAmount = *auditorAmt,
+                });
             }
         }
 
         auto const prevEncryptedSenderSpending =
-            getEncryptedBalance(*arg.account, HolderEncryptedSpending);
+            getEncryptedBalance(*arg.account, holderEncryptedSpending);
 
         std::optional<Buffer> proof;
 
@@ -1529,14 +1536,18 @@ MPTTester::send(MPTConfidentialSend const& arg)
                 recipients,
                 blindingFactor,
                 ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = *arg.amt,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = blindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = *prevSenderSpending,
-                 .encryptedAmt = *prevEncryptedSenderSpending,
-                 .blindingFactor = balanceBlindingFactor});
+                {
+                    .pedersenCommitment = amountCommitment,
+                    .amt = *arg.amt,
+                    .encryptedAmt = senderAmt,
+                    .blindingFactor = blindingFactor,
+                },
+                {
+                    .pedersenCommitment = balanceCommitment,
+                    .amt = *prevSenderSpending,
+                    .encryptedAmt = *prevEncryptedSenderSpending,
+                    .blindingFactor = balanceBlindingFactor,
+                });
         }
 
         if (proof)
@@ -1560,17 +1571,17 @@ MPTTester::send(MPTConfidentialSend const& arg)
         auto const postOA = getIssuanceOutstandingBalance();
 
         // Sender's post confidential state
-        auto const postSenderInbox = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
-        auto const postSenderSpending = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
-        auto const postSenderIssuer = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
+        auto const postSenderInbox = getDecryptedBalance(*arg.account, holderEncryptedInbox);
+        auto const postSenderSpending = getDecryptedBalance(*arg.account, holderEncryptedSpending);
+        auto const postSenderIssuer = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
 
         if (!postSenderInbox || !postSenderSpending || !postSenderIssuer)
             Throw<std::runtime_error>("Failed to get Post-send balance");
 
         // Destination's post confidential state
-        auto const postDestInbox = getDecryptedBalance(*arg.dest, HolderEncryptedInbox);
-        auto const postDestSpending = getDecryptedBalance(*arg.dest, HolderEncryptedSpending);
-        auto const postDestIssuer = getDecryptedBalance(*arg.dest, IssuerEncryptedBalance);
+        auto const postDestInbox = getDecryptedBalance(*arg.dest, holderEncryptedInbox);
+        auto const postDestSpending = getDecryptedBalance(*arg.dest, holderEncryptedSpending);
+        auto const postDestIssuer = getDecryptedBalance(*arg.dest, issuerEncryptedBalance);
 
         if (!postDestInbox || !postDestSpending || !postDestIssuer)
             Throw<std::runtime_error>("Failed to get Post-send balance");
@@ -1616,8 +1627,8 @@ MPTTester::send(MPTConfidentialSend const& arg)
         if (arg.auditorEncryptedAmt || auditor_)
         {
             auto const postSenderAuditor =
-                getDecryptedBalance(*arg.account, AuditorEncryptedBalance);
-            auto const postDestAuditor = getDecryptedBalance(*arg.dest, AuditorEncryptedBalance);
+                getDecryptedBalance(*arg.account, auditorEncryptedBalance);
+            auto const postDestAuditor = getDecryptedBalance(*arg.dest, auditorEncryptedBalance);
             if (!postSenderAuditor || !postDestAuditor)
                 Throw<std::runtime_error>("Failed to get Post-send balance");
 
@@ -1726,11 +1737,11 @@ MPTTester::sendJV(
     }
     else
     {
-        auto const ledgerSpending = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
+        auto const ledgerSpending = getDecryptedBalance(*arg.account, holderEncryptedSpending);
         if (!ledgerSpending)
             Throw<std::runtime_error>("Failed to get sender spending balance");
         prevSenderSpending = *ledgerSpending;
-        prevEncryptedSenderSpending = getEncryptedBalance(*arg.account, HolderEncryptedSpending);
+        prevEncryptedSenderSpending = getEncryptedBalance(*arg.account, holderEncryptedSpending);
         version = getMPTokenVersion(*arg.account);
     }
 
@@ -1776,11 +1787,26 @@ MPTTester::sendJV(
         auto const issuerPubKey = getPubKey(issuer_);
 
         if (senderPubKey)
-            recipients.push_back({.publicKey = Slice(*senderPubKey), .encryptedAmount = senderAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*senderPubKey),
+                .encryptedAmount = senderAmt,
+            });
+        }
         if (destPubKey)
-            recipients.push_back({.publicKey = Slice(*destPubKey), .encryptedAmount = destAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*destPubKey),
+                .encryptedAmount = destAmt,
+            });
+        }
         if (issuerPubKey)
-            recipients.push_back({.publicKey = Slice(*issuerPubKey), .encryptedAmount = issuerAmt});
+        {
+            recipients.push_back({
+                .publicKey = Slice(*issuerPubKey),
+                .encryptedAmount = issuerAmt,
+            });
+        }
 
         std::optional<Buffer> auditorPubKey;
         if (auditorAmt)
@@ -1790,8 +1816,10 @@ MPTTester::sendJV(
             auditorPubKey = getPubKey(*auditor_);
             if (auditorPubKey)
             {
-                recipients.push_back(
-                    {.publicKey = Slice(*auditorPubKey), .encryptedAmount = *auditorAmt});
+                recipients.push_back({
+                    .publicKey = Slice(*auditorPubKey),
+                    .encryptedAmount = *auditorAmt,
+                });
             }
         }
 
@@ -1806,14 +1834,18 @@ MPTTester::sendJV(
                 recipients,
                 blindingFactor,
                 ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = *arg.amt,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = blindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = prevSenderSpending,
-                 .encryptedAmt = *prevEncryptedSenderSpending,
-                 .blindingFactor = balanceBlindingFactor});
+                {
+                    .pedersenCommitment = amountCommitment,
+                    .amt = *arg.amt,
+                    .encryptedAmt = senderAmt,
+                    .blindingFactor = blindingFactor,
+                },
+                {
+                    .pedersenCommitment = balanceCommitment,
+                    .amt = prevSenderSpending,
+                    .encryptedAmt = *prevEncryptedSenderSpending,
+                    .blindingFactor = balanceBlindingFactor,
+                });
         }
 
         if (proof)
@@ -1842,8 +1874,8 @@ parseSenderEncAmt(json::Value const& jv)
 ConfidentialSendChainState
 MPTTester::chainAfterSend(Account const& sender, std::uint64_t sendAmt, json::Value const& jv) const
 {
-    auto const prevSpending = getDecryptedBalance(sender, HolderEncryptedSpending);
-    auto const prevEncSpending = getEncryptedBalance(sender, HolderEncryptedSpending);
+    auto const prevSpending = getDecryptedBalance(sender, holderEncryptedSpending);
+    auto const prevEncSpending = getEncryptedBalance(sender, holderEncryptedSpending);
     auto const prevVersion = getMPTokenVersion(sender);
 
     if (!prevSpending || !prevEncSpending)
@@ -1960,15 +1992,15 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
 
         // Verify holder's confidential balances are zeroed out
         env_.require(RequireAny(
-            [&]() -> bool { return getDecryptedBalance(*arg.holder, HolderEncryptedInbox) == 0; }));
+            [&]() -> bool { return getDecryptedBalance(*arg.holder, holderEncryptedInbox) == 0; }));
         env_.require(RequireAny([&]() -> bool {
-            return getDecryptedBalance(*arg.holder, HolderEncryptedSpending) == 0;
+            return getDecryptedBalance(*arg.holder, holderEncryptedSpending) == 0;
         }));
         env_.require(RequireAny([&]() -> bool {
-            return getDecryptedBalance(*arg.holder, IssuerEncryptedBalance) == 0;
+            return getDecryptedBalance(*arg.holder, issuerEncryptedBalance) == 0;
         }));
         env_.require(RequireAny([&]() -> bool {
-            return getDecryptedBalance(*arg.holder, AuditorEncryptedBalance) == 0;
+            return getDecryptedBalance(*arg.holder, auditorEncryptedBalance) == 0;
         }));
 
         // Verify version is incremented
@@ -2067,11 +2099,11 @@ MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType bala
 
     Account decryptor = account;
 
-    if (balanceType == IssuerEncryptedBalance)
+    if (balanceType == issuerEncryptedBalance)
     {
         decryptor = issuer_;
     }
-    else if (balanceType == AuditorEncryptedBalance)
+    else if (balanceType == auditorEncryptedBalance)
     {
         if (!auditor_)
             return std::nullopt;
@@ -2134,11 +2166,11 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
     auto const holderPubAmt = getBalance(*arg.account);
     auto const prevCOA = getIssuanceConfidentialBalance();
     auto const prevOA = getIssuanceOutstandingBalance();
-    auto const prevInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
-    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
-    auto const prevIssuerBalance = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
-    auto const prevIssuerEncrypted = getEncryptedBalance(*arg.account, IssuerEncryptedBalance);
-    auto const prevAuditorEncrypted = getEncryptedBalance(*arg.account, AuditorEncryptedBalance);
+    auto const prevInboxBalance = getDecryptedBalance(*arg.account, holderEncryptedInbox);
+    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, holderEncryptedSpending);
+    auto const prevIssuerBalance = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
+    auto const prevIssuerEncrypted = getEncryptedBalance(*arg.account, issuerEncryptedBalance);
+    auto const prevAuditorEncrypted = getEncryptedBalance(*arg.account, auditorEncryptedBalance);
     auto const prevVersion = getMPTokenVersion(*arg.account);
 
     if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
@@ -2148,13 +2180,13 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
     {
         auto const postCOA = getIssuanceConfidentialBalance();
         auto const postOA = getIssuanceOutstandingBalance();
-        auto const postInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
-        auto const postSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
-        auto const postIssuerBalance = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
-        auto const postInboxEncrypted = getEncryptedBalance(*arg.account, HolderEncryptedInbox);
-        auto const postIssuerEncrypted = getEncryptedBalance(*arg.account, IssuerEncryptedBalance);
+        auto const postInboxBalance = getDecryptedBalance(*arg.account, holderEncryptedInbox);
+        auto const postSpendingBalance = getDecryptedBalance(*arg.account, holderEncryptedSpending);
+        auto const postIssuerBalance = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
+        auto const postInboxEncrypted = getEncryptedBalance(*arg.account, holderEncryptedInbox);
+        auto const postIssuerEncrypted = getEncryptedBalance(*arg.account, issuerEncryptedBalance);
         auto const postAuditorEncrypted =
-            getEncryptedBalance(*arg.account, AuditorEncryptedBalance);
+            getEncryptedBalance(*arg.account, auditorEncryptedBalance);
         auto const postVersion = getMPTokenVersion(*arg.account);
 
         if (!postInboxBalance || !postSpendingBalance || !postIssuerBalance ||
@@ -2265,9 +2297,9 @@ MPTTester::convertBack(MPTConvertBack const& arg)
 
     jv[sfBlindingFactor] = strHex(blindingFactor);
 
-    auto const prevInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
-    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
-    auto const prevIssuerBalance = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
+    auto const prevInboxBalance = getDecryptedBalance(*arg.account, holderEncryptedInbox);
+    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, holderEncryptedSpending);
+    auto const prevIssuerBalance = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
 
     if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
         Throw<std::runtime_error>("Failed to get Pre-convertBack balance");
@@ -2298,7 +2330,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
         auto const contextHash = getConvertBackContextHash(arg.account->id(), *id_, seq, version);
         auto const prevEncryptedSpendingBalance =
-            getEncryptedBalance(*arg.account, HolderEncryptedSpending);
+            getEncryptedBalance(*arg.account, holderEncryptedSpending);
 
         Buffer proof;
         // generate a dummy proof if no encrypted amount field, so that other
@@ -2329,7 +2361,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
     std::optional<uint64_t> prevAuditorBalance;
     if (arg.auditorEncryptedAmt || auditor_)
     {
-        prevAuditorBalance = getDecryptedBalance(*arg.account, AuditorEncryptedBalance);
+        prevAuditorBalance = getDecryptedBalance(*arg.account, auditorEncryptedBalance);
         if (!prevAuditorBalance)
             Throw<std::runtime_error>("Failed to get Pre-convertBack balance");
     }
@@ -2350,9 +2382,9 @@ MPTTester::convertBack(MPTConvertBack const& arg)
             return prevConfidentialOutstanding - *arg.amt == postConfidentialOutstanding;
         }));
 
-        auto const postInboxBalance = getDecryptedBalance(*arg.account, HolderEncryptedInbox);
-        auto const postIssuerBalance = getDecryptedBalance(*arg.account, IssuerEncryptedBalance);
-        auto const postSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
+        auto const postInboxBalance = getDecryptedBalance(*arg.account, holderEncryptedInbox);
+        auto const postIssuerBalance = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
+        auto const postSpendingBalance = getDecryptedBalance(*arg.account, holderEncryptedSpending);
 
         if (!postInboxBalance || !postIssuerBalance || !postSpendingBalance)
             Throw<std::runtime_error>("Failed to get post-convertBack balance");
@@ -2360,7 +2392,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         if (arg.auditorEncryptedAmt || auditor_)
         {
             auto const postAuditorBalance =
-                getDecryptedBalance(*arg.account, AuditorEncryptedBalance);
+                getDecryptedBalance(*arg.account, auditorEncryptedBalance);
 
             if (!postAuditorBalance)
                 Throw<std::runtime_error>("Failed to get post-convertBack balance");
@@ -2430,7 +2462,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
 
     jv[sfBlindingFactor] = strHex(blindingFactor);
 
-    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, HolderEncryptedSpending);
+    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, holderEncryptedSpending);
     if (!prevSpendingBalance)
         Throw<std::runtime_error>("convertBackJV: failed to read spending balance from ledger");
 
@@ -2454,7 +2486,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
     else
     {
         auto const version = getMPTokenVersion(*arg.account);
-        auto const prevEncSpending = getEncryptedBalance(*arg.account, HolderEncryptedSpending);
+        auto const prevEncSpending = getEncryptedBalance(*arg.account, holderEncryptedSpending);
         auto const contextHash = getConvertBackContextHash(arg.account->id(), *id_, seq, version);
 
         Buffer proof;

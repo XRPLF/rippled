@@ -26,13 +26,8 @@
 #include <vector>
 
 namespace xrpl {
+namespace {
 
-/**
- * @brief Converts an XRPL AccountID to mpt-crypto lib C struct.
- *
- * @param account The AccountID.
- * @return The equivalent mpt-crypto lib account_id struct.
- */
 account_id
 toAccountId(AccountID const& account)
 {
@@ -41,12 +36,6 @@ toAccountId(AccountID const& account)
     return res;
 }
 
-/**
- * @brief Converts an XRPL uint192 to mpt-crypto lib C struct.
- *
- * @param i The XRPL MPTokenIssuance ID.
- * @return The equivalent mpt-crypto lib mpt_issuance_id struct.
- */
 mpt_issuance_id
 toIssuanceId(uint192 const& issuance)
 {
@@ -54,6 +43,8 @@ toIssuanceId(uint192 const& issuance)
     std::memcpy(res.bytes, issuance.data(), kMPT_ISSUANCE_ID_SIZE);
     return res;
 }
+
+}  // namespace
 
 uint256
 getSendContextHash(
@@ -430,10 +421,11 @@ verifySendProof(
         return p;
     };
 
-    std::vector<mpt_confidential_participant> participants(recipientCount);
-    participants[0] = makeParticipant(sender);
-    participants[1] = makeParticipant(destination);
-    participants[2] = makeParticipant(issuer);
+    std::vector<mpt_confidential_participant> participants;
+    participants.reserve(recipientCount);
+    participants.push_back(makeParticipant(sender));
+    participants.push_back(makeParticipant(destination));
+    participants.push_back(makeParticipant(issuer));
     if (auditor)
     {
         if (auditor->publicKey.size() != kEcPubKeyLength ||
@@ -441,8 +433,10 @@ verifySendProof(
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
-        participants[3] = makeParticipant(*auditor);
+        participants.push_back(makeParticipant(*auditor));
     }
+    if (participants.size() != recipientCount)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (mpt_verify_send_proof(
             proof.data(),

@@ -54,36 +54,51 @@ struct MPTMutabilityFlags
     bool isCannotMutate = false;  // if true, cannot mutate by default.
 };
 
-static constexpr std::array<MPTMutabilityFlags, 7> kMptMutabilityFlags = {
-    {{.setFlag = tmfMPTSetCanLock,
-      .clearFlag = tmfMPTClearCanLock,
-      .mutabilityFlag = lsmfMPTCanMutateCanLock,
-      .targetFlag = lsfMPTCanLock},
-     {.setFlag = tmfMPTSetRequireAuth,
-      .clearFlag = tmfMPTClearRequireAuth,
-      .mutabilityFlag = lsmfMPTCanMutateRequireAuth,
-      .targetFlag = lsfMPTRequireAuth},
-     {.setFlag = tmfMPTSetCanEscrow,
-      .clearFlag = tmfMPTClearCanEscrow,
-      .mutabilityFlag = lsmfMPTCanMutateCanEscrow,
-      .targetFlag = lsfMPTCanEscrow},
-     {.setFlag = tmfMPTSetCanTrade,
-      .clearFlag = tmfMPTClearCanTrade,
-      .mutabilityFlag = lsmfMPTCanMutateCanTrade,
-      .targetFlag = lsfMPTCanTrade},
-     {.setFlag = tmfMPTSetCanTransfer,
-      .clearFlag = tmfMPTClearCanTransfer,
-      .mutabilityFlag = lsmfMPTCanMutateCanTransfer,
-      .targetFlag = lsfMPTCanTransfer},
-     {.setFlag = tmfMPTSetCanClawback,
-      .clearFlag = tmfMPTClearCanClawback,
-      .mutabilityFlag = lsmfMPTCanMutateCanClawback,
-      .targetFlag = lsfMPTCanClawback},
-     {.setFlag = tmfMPTSetCanConfidentialAmount,
-      .clearFlag = tmfMPTClearCanConfidentialAmount,
-      .mutabilityFlag = lsmfMPTCannotMutateCanConfidentialAmount,
-      .targetFlag = lsfMPTCanConfidentialAmount,
-      .isCannotMutate = true}}};
+static constexpr auto kMptMutabilityFlags = std::to_array<MPTMutabilityFlags>({
+    {
+        .setFlag = tmfMPTSetCanLock,
+        .clearFlag = tmfMPTClearCanLock,
+        .mutabilityFlag = lsmfMPTCanMutateCanLock,
+        .targetFlag = lsfMPTCanLock,
+    },
+    {
+        .setFlag = tmfMPTSetRequireAuth,
+        .clearFlag = tmfMPTClearRequireAuth,
+        .mutabilityFlag = lsmfMPTCanMutateRequireAuth,
+        .targetFlag = lsfMPTRequireAuth,
+    },
+    {
+        .setFlag = tmfMPTSetCanEscrow,
+        .clearFlag = tmfMPTClearCanEscrow,
+        .mutabilityFlag = lsmfMPTCanMutateCanEscrow,
+        .targetFlag = lsfMPTCanEscrow,
+    },
+    {
+        .setFlag = tmfMPTSetCanTrade,
+        .clearFlag = tmfMPTClearCanTrade,
+        .mutabilityFlag = lsmfMPTCanMutateCanTrade,
+        .targetFlag = lsfMPTCanTrade,
+    },
+    {
+        .setFlag = tmfMPTSetCanTransfer,
+        .clearFlag = tmfMPTClearCanTransfer,
+        .mutabilityFlag = lsmfMPTCanMutateCanTransfer,
+        .targetFlag = lsfMPTCanTransfer,
+    },
+    {
+        .setFlag = tmfMPTSetCanClawback,
+        .clearFlag = tmfMPTClearCanClawback,
+        .mutabilityFlag = lsmfMPTCanMutateCanClawback,
+        .targetFlag = lsfMPTCanClawback,
+    },
+    {
+        .setFlag = tmfMPTSetCanConfidentialAmount,
+        .clearFlag = tmfMPTClearCanConfidentialAmount,
+        .mutabilityFlag = lsmfMPTCannotMutateCanConfidentialAmount,
+        .targetFlag = lsfMPTCanConfidentialAmount,
+        .isCannotMutate = true,
+    },
+});
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)

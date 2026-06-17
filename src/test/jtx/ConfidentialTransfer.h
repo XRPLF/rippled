@@ -55,10 +55,27 @@
 
 namespace xrpl {
 
-// NOLINTBEGIN(misc-const-correctness, bugprone-unchecked-optional-access)
 class ConfidentialTransferTestBase : public beast::unit_test::Suite
 {
 protected:
+    template <class T>
+    static T
+    requireOptional(std::optional<T> value, char const* message)
+    {
+        if (!value)
+            Throw<std::runtime_error>(message);
+        return std::move(*value);
+    }
+
+    template <class T>
+    static T const&
+    requireOptionalRef(std::optional<T> const& value, char const* message)
+    {
+        if (!value)
+            Throw<std::runtime_error>(message);
+        return *value;
+    }
+
     // Offset where the bulletproof begins in a send proof blob.
     // Proof layout: [compact_sigma | bulletproof]
     static constexpr size_t kBulletproofOffset = kEcSendProofLength - kEcDoubleBulletproofLength;
@@ -233,23 +250,38 @@ protected:
                                 mpt.encryptAmount(auditor->get(), amount, blindingFactor))
                           : std::nullopt)
             , amountCommitment(mpt.getPedersenCommitment(amount, amountBlindingFactor))
-            , senderPubKey(*mpt.getPubKey(sender))
-            , destPubKey(*mpt.getPubKey(dest))
-            , issuerPubKey(*mpt.getPubKey(issuer))
+            , senderPubKey(requireOptional(mpt.getPubKey(sender), "Missing sender public key"))
+            , destPubKey(requireOptional(mpt.getPubKey(dest), "Missing destination public key"))
+            , issuerPubKey(requireOptional(mpt.getPubKey(issuer), "Missing issuer public key"))
             , auditorPubKey(auditor ? mpt.getPubKey(auditor->get()) : std::nullopt)
-            , prevSpending(
-                  *mpt.getDecryptedBalance(sender, test::jtx::MPTTester::HolderEncryptedSpending))
-            , prevEncryptedSpending(
-                  *mpt.getEncryptedBalance(sender, test::jtx::MPTTester::HolderEncryptedSpending))
+            , prevSpending(requireOptional(
+                  mpt.getDecryptedBalance(sender, test::jtx::MPTTester::holderEncryptedSpending),
+                  "Missing sender spending balance"))
+            , prevEncryptedSpending(requireOptional(
+                  mpt.getEncryptedBalance(sender, test::jtx::MPTTester::holderEncryptedSpending),
+                  "Missing sender encrypted spending balance"))
             , balanceCommitment(mpt.getPedersenCommitment(prevSpending, balanceBlindingFactor))
         {
-            recipients.push_back({.publicKey = Slice(senderPubKey), .encryptedAmount = senderAmt});
-            recipients.push_back({.publicKey = Slice(destPubKey), .encryptedAmount = destAmt});
-            recipients.push_back({.publicKey = Slice(issuerPubKey), .encryptedAmount = issuerAmt});
+            recipients.push_back({
+                .publicKey = Slice(senderPubKey),
+                .encryptedAmount = senderAmt,
+            });
+            recipients.push_back({
+                .publicKey = Slice(destPubKey),
+                .encryptedAmount = destAmt,
+            });
+            recipients.push_back({
+                .publicKey = Slice(issuerPubKey),
+                .encryptedAmount = issuerAmt,
+            });
             if (auditor)
             {
-                recipients.push_back(
-                    {.publicKey = Slice(*auditorPubKey), .encryptedAmount = *auditorAmt});
+                recipients.push_back({
+                    .publicKey =
+                        Slice(requireOptionalRef(auditorPubKey, "Missing auditor public key")),
+                    .encryptedAmount =
+                        requireOptionalRef(auditorAmt, "Missing auditor encrypted amount"),
+                });
             }
         }
 
@@ -270,14 +302,18 @@ protected:
                 recipients,
                 blindingFactor,
                 ctxHash,
-                {.pedersenCommitment = amountCommitment,
-                 .amt = sendAmount,
-                 .encryptedAmt = senderAmt,
-                 .blindingFactor = amountBlindingFactor},
-                {.pedersenCommitment = balanceCommitment,
-                 .amt = prevSpending,
-                 .encryptedAmt = prevEncryptedSpending,
-                 .blindingFactor = balanceBlindingFactor});
+                {
+                    .pedersenCommitment = amountCommitment,
+                    .amt = sendAmount,
+                    .encryptedAmt = senderAmt,
+                    .blindingFactor = amountBlindingFactor,
+                },
+                {
+                    .pedersenCommitment = balanceCommitment,
+                    .amt = prevSpending,
+                    .encryptedAmt = prevEncryptedSpending,
+                    .blindingFactor = balanceBlindingFactor,
+                });
         }
 
         [[nodiscard]] test::jtx::MPTConfidentialSend
@@ -298,7 +334,8 @@ protected:
                 .auditorEncryptedAmt = auditorAmt,
                 .amountCommitment = amountCommitment,
                 .balanceCommitment = balanceCommitment,
-                .err = err};
+                .err = err,
+            };
         }
     };
 
@@ -340,19 +377,23 @@ protected:
             for (auto const& h : holders)
                 mpt.generateKeyPair(h.account);
             if (auditor)
-                mpt.generateKeyPair(*auditor);
+                mpt.generateKeyPair(requireOptionalRef(auditor, "Missing auditor"));
 
-            mpt.set(
-                {.account = issuer,
-                 .issuerPubKey = mpt.getPubKey(issuer),
-                 .auditorPubKey = auditor ? mpt.getPubKey(*auditor) : std::optional<Buffer>{}});
+            mpt.set({
+                .account = issuer,
+                .issuerPubKey = mpt.getPubKey(issuer),
+                .auditorPubKey = auditor
+                    ? mpt.getPubKey(requireOptionalRef(auditor, "Missing auditor"))
+                    : std::optional<Buffer>{},
+            });
 
             for (auto const& h : holders)
             {
-                mpt.convert(
-                    {.account = h.account,
-                     .amt = h.convertAmount,
-                     .holderPubKey = mpt.getPubKey(h.account)});
+                mpt.convert({
+                    .account = h.account,
+                    .amt = h.convertAmount,
+                    .holderPubKey = mpt.getPubKey(h.account),
+                });
                 mpt.mergeInbox({.account = h.account});
             }
         }
@@ -402,32 +443,54 @@ protected:
         mpt.generateKeyPair(carol);
         mpt.generateKeyPair(dave);
 
-        mpt.set({.account = alice, .issuerPubKey = mpt.getPubKey(alice)});
+        mpt.set({
+            .account = alice,
+            .issuerPubKey = mpt.getPubKey(alice),
+        });
 
         if (bobAmt > 0)
         {
-            mpt.convert({.account = bob, .amt = bobAmt, .holderPubKey = mpt.getPubKey(bob)});
+            mpt.convert({
+                .account = bob,
+                .amt = bobAmt,
+                .holderPubKey = mpt.getPubKey(bob),
+            });
             mpt.mergeInbox({.account = bob});
         }
         else
         {
-            mpt.convert({.account = bob, .amt = 0, .holderPubKey = mpt.getPubKey(bob)});
+            mpt.convert({
+                .account = bob,
+                .amt = 0,
+                .holderPubKey = mpt.getPubKey(bob),
+            });
         }
 
         if (carolAmt > 0)
         {
-            mpt.convert({.account = carol, .amt = carolAmt, .holderPubKey = mpt.getPubKey(carol)});
+            mpt.convert({
+                .account = carol,
+                .amt = carolAmt,
+                .holderPubKey = mpt.getPubKey(carol),
+            });
             mpt.mergeInbox({.account = carol});
         }
         else
         {
-            mpt.convert({.account = carol, .amt = 0, .holderPubKey = mpt.getPubKey(carol)});
+            mpt.convert({
+                .account = carol,
+                .amt = 0,
+                .holderPubKey = mpt.getPubKey(carol),
+            });
         }
 
         // dave: register pubkey only (0 spending/inbox)
-        mpt.convert({.account = dave, .amt = 0, .holderPubKey = mpt.getPubKey(dave)});
+        mpt.convert({
+            .account = dave,
+            .amt = 0,
+            .holderPubKey = mpt.getPubKey(dave),
+        });
     }
 };
-// NOLINTEND(misc-const-correctness, bugprone-unchecked-optional-access)
 
 }  // namespace xrpl
