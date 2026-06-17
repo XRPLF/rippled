@@ -118,6 +118,28 @@ defaults. Run `./package/build_pkg.sh --help` for the same table:
 | `--pkg-release N`          | `PKG_RELEASE`       | `1`                           | package release number              |
 | `--source-date-epoch SECS` | `SOURCE_DATE_EPOCH` | latest git commit ctime       | reproducibility timestamp           |
 
+`PKG_VERSION` is the canonical input version for both package formats.
+`build_pkg.sh` splits pre-release versions such as `3.2.0-b1` or
+`3.2.0-rc1` into a base version and suffix, then converts the suffix separator
+from `-` to `~` for package metadata so pre-releases sort before the final
+release. `PKG_RELEASE` remains the package release number. For RPM builds,
+those two inputs are passed to `xrpld.spec` as `xrpld_version` and
+`pkg_release`; `pkg_release` is derived directly from `PKG_RELEASE` and is not
+a separate user-facing input.
+
+With `PKG_RELEASE=1`, the package metadata becomes:
+
+| Input version | RPM version/release   | Debian version |
+| ------------- | --------------------- | -------------- |
+| `3.2.0`       | `3.2.0-1%{?dist}`     | `3.2.0-1`      |
+| `3.2.0-b1`    | `3.2.0~b1-1%{?dist}`  | `3.2.0~b1-1`   |
+| `3.2.0-rc1`   | `3.2.0~rc1-1%{?dist}` | `3.2.0~rc1-1`  |
+
+The RPM path intentionally uses `~` in `Version`, matching the Debian
+pre-release ordering convention, so RPM filenames/NVRs begin with forms like
+`xrpld-3.2.0~b1-...` and `xrpld-3.2.0~rc1-...` instead of encoding
+pre-releases with an older `0.<release>.<suffix>` RPM `Release` value.
+
 The package format (`deb` or `rpm`) is inferred from the host's package
 manager (`apt-get` -> deb, `dnf`/`yum` -> rpm). Hosts without one of those
 fail early.
@@ -135,7 +157,11 @@ into the staging area, and invokes the platform build tool.
 
 1. Creates the standard `rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}` tree inside the build directory.
 2. Copies `xrpld.spec` and all source files (binary, configs, service files) into `SOURCES/`.
-3. Runs `rpmbuild -bb --define "xrpld_version ..." --define "xrpld_release ..."`. The spec uses manual `install` commands to place files, disables `dwz`, and writes uncompressed RPM payloads while generating debuginfo packages.
+3. Converts `PKG_VERSION` to the RPM `xrpld_version` define, passes
+   `PKG_RELEASE` through as the `pkg_release` define, then runs
+   `rpmbuild -bb --define "xrpld_version ..." --define "pkg_release ..."`.
+   The spec uses manual `install` commands to place files, disables `dwz`, and
+   writes uncompressed RPM payloads while generating debuginfo packages.
 4. Output: `rpmbuild/RPMS/x86_64/xrpld-*.rpm`
 
 ### DEB

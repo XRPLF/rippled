@@ -165,7 +165,7 @@ build_rpm() {
     rpmbuild -bb \
         --define "_topdir ${topdir}" \
         --define "xrpld_version ${rpm_version}" \
-        --define "xrpld_release ${PKG_RELEASE}" \
+        --define "pkg_release ${PKG_RELEASE}" \
         "${topdir}/SPECS/xrpld.spec"
 }
 

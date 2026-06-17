@@ -1,6 +1,6 @@
 Name:     xrpld
 Version:  %{xrpld_version}
-Release:  %{xrpld_release}%{?dist}
+Release:  %{pkg_release}%{?dist}
 Summary:  XRP Ledger daemon
 
 License:  ISC
