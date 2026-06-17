@@ -2972,17 +2972,14 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // todo: test m exceeding range, require using scala and refactor
     }
 
-    /* TODO: uncomment when MPT crypto supports proof generation with value 0
-     * Tests verifier behavior when the send amount is 0.
-     *
-     * The equality proof library and range proof library do not
+    /* The equality proof library and range proof library do not
      * support generating proofs for amt=0 (they require a positive witness).
      * To test the VERIFIER without crashing the helper, we bypass normal proof
      * generation by supplying explicit ciphertexts, commitments, and a dummy
      * (all-zero) proof.  The preflight has no temBAD_AMOUNT guard for
      * ConfidentialMPTSend, so all validation occurs in verifySendProofs.
      */
-    /*void
+    void
     testSendZeroAmount(FeatureBitset features)
     {
         testcase("Send: zero amount — equality and range proof verifier behavior");
@@ -3055,11 +3052,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         });
 
         // All rejected sends must leave balances unchanged.
-        BEAST_EXPECT(
-            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING) == 100);
-        BEAST_EXPECT(
-            mptAlice.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
-    }*/
+        BEAST_EXPECT(mptAlice.getDecryptedBalance(bob, MPTTester::HolderEncryptedSpending) == 100);
+        BEAST_EXPECT(mptAlice.getDecryptedBalance(carol, MPTTester::HolderEncryptedInbox) == 0);
+    }
 
     void
     testDelete(FeatureBitset features)

@@ -36,7 +36,7 @@
 namespace xrpl {
 
 // NOLINTBEGIN(misc-const-correctness, bugprone-unchecked-optional-access)
-class ConfidentialTransferExtendedTest : public ConfidentialTransferTestBase
+class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 {
     void
     testSendDepositPreauth(FeatureBitset features)
@@ -2592,9 +2592,6 @@ public:
 };
 // NOLINTEND(misc-const-correctness, bugprone-unchecked-optional-access)
 
-// TEMPORARILY DISABLED: see ConfidentialTransfer_test.cpp. The confidential
-// balance checks still rely on slow brute-force ElGamal decryption in the test
-// harness.
-// BEAST_DEFINE_TESTSUITE(ConfidentialTransferExtended, app, xrpl);
+BEAST_DEFINE_TESTSUITE(ConfidentialTransferExtended, app, xrpl);
 
 }  // namespace xrpl
