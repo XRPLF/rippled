@@ -560,6 +560,9 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         {
             auto carolMiddleNFTokenPage = env.le(
                 keylet::nftokenPage(keylet::nftokenPageMin(carol), carolMiddleNFTokenPageIndex));
+            if (!BEAST_EXPECT(carolMiddleNFTokenPage))
+                return;
+            BEAST_EXPECT(carolMiddleNFTokenPage->isFieldPresent(sfPreviousPageMin));
             BEAST_EXPECT(!carolMiddleNFTokenPage->isFieldPresent(sfNextPageMin));
         }
         // carol has a "last" page, but it has no PreviousPageMin field.
