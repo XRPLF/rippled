@@ -93,8 +93,10 @@ fi
 # the final 3.2.0; a no-op for a final release. Lowercase = derived internally,
 # not an input (cf. pkg_type).
 pkg_version="${xrpld_version}"
+pre_release=""
 if [[ "${xrpld_version}" == *-* ]]; then
-    pkg_version="${xrpld_version%%-*}~${xrpld_version#*-}"
+    pre_release="${xrpld_version#*-}"
+    pkg_version="${xrpld_version%%-*}~${pre_release}"
 fi
 
 # BuildInfo already SemVer-validates the binary's version. Packaging adds one
@@ -105,6 +107,12 @@ if [[ "${pkg_version}" == *-* ]]; then
     echo "build_pkg.sh: unsupported xrpld version '${xrpld_version}'." >&2
     echo "Package version '${pkg_version}' cannot contain '-'." >&2
     echo "Use a single-token pre-release like 3.2.0-b1 or 3.2.0-rc2." >&2
+    exit 1
+fi
+
+if [[ -n "${pre_release}" && ! "${pre_release}" =~ ^(b0|b[1-9][0-9]*|rc[0-9]+)(\+.*)?$ ]]; then
+    echo "build_pkg.sh: unsupported xrpld pre-release '${pre_release}'." >&2
+    echo "Use bN or rcN, e.g. 3.2.0-b1 or 3.2.0-rc2." >&2
     exit 1
 fi
 
@@ -179,13 +187,19 @@ build_deb() {
 
     # Choose the Debian repository component for this package.
     #   3.2.0 -> stable, *-b0[+metadata] -> develop,
-    #   other pre-release such as bN/rcN -> unstable.
+    #   bN/rcN pre-releases -> unstable.
     local deb_component
-    case "${xrpld_version}" in
-        *-b0 | *-b0+*) deb_component="develop" ;;
-        *-*) deb_component="unstable" ;;
-        *) deb_component="stable" ;;
-    esac
+    if [[ -z "${pre_release}" ]]; then
+        deb_component="stable"
+    elif [[ "${pre_release}" =~ ^b0(\+.*)?$ ]]; then
+        deb_component="develop"
+    elif [[ "${pre_release}" =~ ^(b[1-9][0-9]*|rc[0-9]+)(\+.*)?$ ]]; then
+        deb_component="unstable"
+    else
+        echo "build_pkg.sh: unsupported xrpld pre-release '${pre_release}'." >&2
+        echo "Use bN or rcN, e.g. 3.2.0-b1 or 3.2.0-rc2." >&2
+        exit 1
+    fi
 
     # Debian version is <upstream>[~<pre>]-<pkg release>.
     cat >"${staging}/debian/changelog" <<EOF
