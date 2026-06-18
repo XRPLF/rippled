@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.11)
 project(validator-keys-tool)
 
 #[===========================================[
-  This project is built as part of the rippled
+  This project is built as part of the xrpld
   repository's Conan test package. The parent
   project calls find_package(xrpl) and adds this
   directory, providing the xrpl::libxrpl target.

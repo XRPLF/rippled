@@ -88,7 +88,7 @@ createToken(boost::filesystem::path const& keyFile)
     // Update key file with new token sequence
     keys.writeToFile(keyFile);
 
-    std::cout << "Update rippled.cfg file with these values and restart xrpld:\n\n";
+    std::cout << "Update xrpld.cfg file with these values and restart xrpld:\n\n";
     std::cout << "# validator public key: " << toBase58(TokenType::NodePublic, keys.publicKey())
               << "\n\n";
     std::cout << "[validator_token]\n";
@@ -118,7 +118,7 @@ createRevocation(boost::filesystem::path const& keyFile)
     // Update key file with new token sequence
     keys.writeToFile(keyFile);
 
-    std::cout << "Update rippled.cfg file with these values and restart xrpld:\n\n";
+    std::cout << "Update xrpld.cfg file with these values and restart xrpld:\n\n";
     std::cout << "# validator public key: " << toBase58(TokenType::NodePublic, keys.publicKey())
               << "\n\n";
     std::cout << "[validator_key_revocation]\n";
@@ -206,7 +206,7 @@ setDomain(std::string const& domain, boost::filesystem::path const& keyFile)
     attestDomain(keys);
 
     std::cout << "\n";
-    std::cout << "You also need to update the rippled.cfg file to add a new\n";
+    std::cout << "You also need to update the xrpld.cfg file to add a new\n";
     std::cout << "validator token and restart xrpld:\n\n";
     std::cout << "# validator public key: " << toBase58(TokenType::NodePublic, keys.publicKey())
               << "\n\n";

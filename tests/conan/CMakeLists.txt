@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 3.21)
 
 set(name validator-keys-conan-test)
-set(version 0.1.0)
 
-project(${name} VERSION ${version} LANGUAGES CXX)
+project(${name} LANGUAGES CXX)
 
 find_package(xrpl CONFIG REQUIRED)
 

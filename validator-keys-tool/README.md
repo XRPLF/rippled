@@ -1,26 +1,27 @@
 # validator-keys-tool
 
-Rippled validator key generation tool
+Xrpld validator key generation tool
 
 ## Build
 
-If you do not have package `xrpl` in your local Conan cache, it can be added by following the instructions in the [BUILD.md](https://github.com/XRPLF/rippled/blob/master/BUILD.md#patched-recipes) file in the rippled GitHub repository.
-
-The build requirements and commands are the exact same as
-[those](https://github.com/XRPLF/rippled/blob/develop/BUILD.md) for rippled.
-In short:
+Build from the xrpld repository root, enabling the optional
+`validator_keys` target:
 
 ```
 mkdir .build
 cd .build
-conan install .. --output-folder . --build missing
+conan install .. --output-folder . --build missing --settings build_type=Release
 cmake -DCMAKE_POLICY_DEFAULT_CMP0091=NEW \
     -DCMAKE_TOOLCHAIN_FILE:FILEPATH=conan_toolchain.cmake \
     -DCMAKE_BUILD_TYPE=Release \
+    -Dvalidator_keys=ON \
     ..
-cmake --build .
-./validator-keys --unittest # or ctest --test-dir .
+cmake --build . --target validator-keys
+./validator-keys --unittest
 ```
+
+The Conan test package in `tests/conan` builds the same target against the
+exported `xrpl` package.
 
 ## Guide
 
