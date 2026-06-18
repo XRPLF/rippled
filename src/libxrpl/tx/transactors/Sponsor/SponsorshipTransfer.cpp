@@ -30,6 +30,15 @@
 
 namespace xrpl {
 
+static std::optional<std::uint32_t>
+applyCountDelta(std::uint32_t current, std::int64_t delta)
+{
+    std::int64_t const next = static_cast<std::int64_t>(current) + delta;
+    if (next < 0 || next > std::numeric_limits<std::uint32_t>::max())
+        return std::nullopt;
+    return static_cast<std::uint32_t>(next);
+}
+
 std::uint32_t
 SponsorshipTransfer::getFlagsMask(PreflightContext const&)
 {
@@ -332,7 +341,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
+static TER
 reduceReserveCount(
     ApplyView& view,
     AccountID const& account,
@@ -349,16 +358,15 @@ reduceReserveCount(
     if (!sponsorSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    uint32_t const reserveCount = sponsorSle->getFieldU32(sfReserveCount);
-    int64_t const afterReserveCount = reserveCount + delta;
-
-    if (afterReserveCount < 0)
+    auto const afterReserveCount = applyCountDelta(sponsorSle->getFieldU32(sfReserveCount), delta);
+    if (!afterReserveCount)
     {
         // already checked in preclaim()
+        UNREACHABLE("xrpl::reduceReserveCount : invalid reserve count");
         return tefINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    sponsorSle->at(sfReserveCount) = static_cast<unsigned>(afterReserveCount);
+    sponsorSle->at(sfReserveCount) = *afterReserveCount;
     view.update(sponsorSle);
     return tesSUCCESS;
 }
@@ -385,6 +393,19 @@ SponsorshipTransfer::doApply()
     if (!sponseeSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const setSponsorFieldU32 =
+        [] [[nodiscard]] (auto const& sle, auto const& field, auto const& delta) -> TER {
+        auto const newValue = applyCountDelta(sle->getFieldU32(field), delta);
+        if (!newValue)
+        {
+            UNREACHABLE("xrpl::SponsorshipTransfer::doApply : Invalid sponsor field value");
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
+
+        sle->at(field) = *newValue;
+        return tesSUCCESS;
+    };
+
     if (isObjectSponsor)
     {
         auto const hasSignature = tx.isFieldPresent(sfSponsorSignature);
@@ -402,7 +423,7 @@ SponsorshipTransfer::doApply()
         if (!ownerSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        std::int64_t const ownerCountDelta = getLedgerEntryOwnerCount(*objSle);
+        std::int64_t const ownerCountDelta = getLedgerEntryOwnerCount(objSle);
 
         auto const& sponsorField = getLedgerEntrySponsorField(*objSle, *ownerAccountID);
 
@@ -412,14 +433,20 @@ SponsorshipTransfer::doApply()
             XRPL_ASSERT(!!newSponsorAccountID, "New sponsor is required when creating sponsorship");
 
             // update owner's sponsored count
-            setSponsorFieldU32(*ownerSle, sfSponsoredOwnerCount, ownerCountDelta);
+            if (auto const ter =
+                    setSponsorFieldU32(ownerSle, sfSponsoredOwnerCount, ownerCountDelta);
+                !isTesSuccess(ter))
+                return ter;
             view().update(ownerSle);
 
             // increment new sponsor's sponsoring count
             auto const newSponsorSle = view().peek(keylet::account(newSponsorAccountID));
             if (!newSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
-            setSponsorFieldU32(*newSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
+            if (auto const ter =
+                    setSponsorFieldU32(newSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
+                !isTesSuccess(ter))
+                return ter;
             view().update(newSponsorSle);
 
             // set new sponsor to object
@@ -449,14 +476,20 @@ SponsorshipTransfer::doApply()
             auto const oldSponsorSle = view().peek(keylet::account(oldSponsorAccountID));
             if (!oldSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
-            setSponsorFieldU32(*oldSponsorSle, sfSponsoringOwnerCount, -ownerCountDelta);
+            if (auto const ter =
+                    setSponsorFieldU32(oldSponsorSle, sfSponsoringOwnerCount, -ownerCountDelta);
+                !isTesSuccess(ter))
+                return ter;
             view().update(oldSponsorSle);
 
             // increment new sponsor's sponsoring count
             auto const newSponsorSle = view().peek(keylet::account(newSponsorAccountID));
             if (!newSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
-            setSponsorFieldU32(*newSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
+            if (auto const ter =
+                    setSponsorFieldU32(newSponsorSle, sfSponsoringOwnerCount, ownerCountDelta);
+                !isTesSuccess(ter))
+                return ter;
             view().update(newSponsorSle);
 
             // set new sponsor to object
@@ -482,11 +515,17 @@ SponsorshipTransfer::doApply()
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             // decrement sponsored count
-            setSponsorFieldU32(*sponseeSle, sfSponsoredOwnerCount, -ownerCountDelta);
+            if (auto const ter =
+                    setSponsorFieldU32(sponseeSle, sfSponsoredOwnerCount, -ownerCountDelta);
+                !isTesSuccess(ter))
+                return ter;
             view().update(sponseeSle);
 
             // decrement old sponsoring count
-            setSponsorFieldU32(*oldSponsorSle, sfSponsoringOwnerCount, -ownerCountDelta);
+            if (auto const ter =
+                    setSponsorFieldU32(oldSponsorSle, sfSponsoringOwnerCount, -ownerCountDelta);
+                !isTesSuccess(ter))
+                return ter;
             view().update(oldSponsorSle);
 
             // remove sponsor from object
@@ -504,7 +543,9 @@ SponsorshipTransfer::doApply()
             auto const newSponsorSle = view().peek(keylet::account(newSponsorAccountID));
             if (!newSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
-            setSponsorFieldU32(*newSponsorSle, sfSponsoringAccountCount, 1);
+            if (auto const ter = setSponsorFieldU32(newSponsorSle, sfSponsoringAccountCount, 1);
+                !isTesSuccess(ter))
+                return ter;
             view().update(newSponsorSle);
 
             // set new sponsor to account
@@ -519,7 +560,9 @@ SponsorshipTransfer::doApply()
             auto const newSponsorSle = view().peek(keylet::account(newSponsorAccountID));
             if (!newSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
-            setSponsorFieldU32(*newSponsorSle, sfSponsoringAccountCount, 1);
+            if (auto const ter = setSponsorFieldU32(newSponsorSle, sfSponsoringAccountCount, 1);
+                !isTesSuccess(ter))
+                return ter;
             view().update(newSponsorSle);
 
             // decrement old sponsoring count
@@ -527,7 +570,9 @@ SponsorshipTransfer::doApply()
             auto const oldSponsorSle = view().peek(keylet::account(oldSponsor));
             if (!oldSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
-            setSponsorFieldU32(*oldSponsorSle, sfSponsoringAccountCount, -1);
+            if (auto const ter = setSponsorFieldU32(oldSponsorSle, sfSponsoringAccountCount, -1);
+                !isTesSuccess(ter))
+                return ter;
             view().update(oldSponsorSle);
 
             // set new sponsor to account
@@ -545,7 +590,9 @@ SponsorshipTransfer::doApply()
             auto const oldSponsorSle = view().peek(keylet::account(oldSponsorAccountID));
             if (!oldSponsorSle)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
-            setSponsorFieldU32(*oldSponsorSle, sfSponsoringAccountCount, -1);
+            if (auto const ter = setSponsorFieldU32(oldSponsorSle, sfSponsoringAccountCount, -1);
+                !isTesSuccess(ter))
+                return ter;
             view().update(oldSponsorSle);
         }
     }
