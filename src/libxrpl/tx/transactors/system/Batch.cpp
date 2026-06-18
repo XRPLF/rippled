@@ -413,12 +413,13 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     std::unordered_set<AccountID> requiredSigners;
     for (STObject const& rb : rawTxns)
     {
-        auto const innerAccount = rb.getAccountID(sfAccount);
+        // A delegated inner is signed by the delegate, not the account holder,
+        // so the delegate is the required signer when present.
+        AccountID const authorizer = rb[~sfDelegate].value_or(rb[sfAccount]);
 
-        // If the inner account is the same as the outer account, do not add the
-        // inner account to the required signers set.
-        if (innerAccount != outerAccount)
-            requiredSigners.insert(innerAccount);
+        // The outer signature already covers the outer account.
+        if (authorizer != outerAccount)
+            requiredSigners.insert(authorizer);
         // Some transactions have a Counterparty, who must also sign the
         // transaction if they are not the outer account
         if (auto const counterparty = rb.at(~sfCounterparty);

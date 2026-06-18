@@ -4696,6 +4696,222 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testBatchDelegateConsent(FeatureBitset features)
+    {
+        testcase("batch delegate consent");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // Delegate consent bypass.
+        //
+        // Alice delegates Payment to Bob. A Batch carries an inner Payment with
+        // Delegate=Bob, but Bob never signs the batch (and, because the inner
+        // Account == the outer Account, no BatchSigners are required at all).
+        // Batch waives the per-inner signature check, and preflightSigValidated
+        // derives required signers from sfAccount only -- it ignores sfDelegate
+        // -- so Bob's delegated authority is exercised without Bob's consent.
+        //
+        // SECURE EXPECTATION: the delegate (Bob) must authorize the inner txn,
+        // so the batch must be rejected (temBAD_SIGNER) when Bob does not sign.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const mallory = Account("mallory");
+            env.fund(XRP(10000), alice, bob, mallory);
+            env.close();
+
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const preMallory = env.balance(mallory);
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+
+            auto inner = batch::Inner(pay(alice, mallory, XRP(1000)), seq + 1);
+            inner[jss::Delegate] = bob.human();
+
+            // Bob is NOT among the batch signers; he never consents.
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                inner,
+                batch::Inner(pay(alice, mallory, XRP(1)), seq + 2),
+                Ter(temBAD_SIGNER));
+            env.close();
+
+            // No funds should have moved to Mallory.
+            BEAST_EXPECT(env.balance(mallory) == preMallory);
+        }
+
+        // Self-grant attribution forgery.
+        //
+        // With no pre-existing delegation, Alice places DelegateSet(authorize
+        // Bob) and a Delegate=Bob action in the SAME batch. The second inner
+        // reads the delegation created by the first from the batch's running
+        // view, and Bob never signs -- manufacturing on-chain attribution of
+        // the action to Bob without his consent.
+        //
+        // SECURE EXPECTATION: rejected (temBAD_SIGNER) -- Bob must consent, and
+        // a grant cannot be created and exercised within the same atomic batch.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const mallory = Account("mallory");
+            env.fund(XRP(10000), alice, bob, mallory);
+            env.close();
+
+            auto const preMallory = env.balance(mallory);
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+
+            auto inner = batch::Inner(pay(alice, mallory, XRP(1000)), seq + 2);
+            inner[jss::Delegate] = bob.human();
+
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(delegate::set(alice, bob, {"Payment"}), seq + 1),
+                inner,
+                Ter(temBAD_SIGNER));
+            env.close();
+
+            BEAST_EXPECT(env.balance(mallory) == preMallory);
+        }
+
+        // Legitimate counterpart: the same atomic grant-and-use is allowed when
+        // the delegate co-signs the batch -- consent is present, so it succeeds.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const mallory = Account("mallory");
+            env.fund(XRP(10000), alice, bob, mallory);
+            env.close();
+
+            auto const preMallory = env.balance(mallory);
+
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const seq = env.seq(alice);
+
+            auto inner = batch::Inner(pay(alice, mallory, XRP(1000)), seq + 2);
+            inner[jss::Delegate] = bob.human();
+
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(delegate::set(alice, bob, {"Payment"}), seq + 1),
+                inner,
+                batch::Sig(bob),
+                Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(env.balance(mallory) == preMallory + XRP(1000));
+        }
+
+        // Multi-account: a delegated inner from a non-outer account also
+        // requires the delegate's signature (not the account holder's).
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+            env.fund(XRP(10000), alice, bob, carol);
+            env.close();
+
+            env(delegate::set(bob, carol, {"Payment"}));
+            env.close();
+
+            auto const preAlice = env.balance(alice);
+
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+
+            auto inner = batch::Inner(pay(bob, alice, XRP(1)), bobSeq);
+            inner[jss::Delegate] = carol.human();
+
+            // Carol (the delegate) does not sign.
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                inner,
+                batch::Inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
+                Ter(temBAD_SIGNER));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice) == preAlice);
+        }
+
+        // Wrong signer: a batch signature from someone other than the named
+        // delegate does not satisfy the requirement.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+            auto const mallory = Account("mallory");
+            env.fund(XRP(10000), alice, bob, carol, mallory);
+            env.close();
+
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const preMallory = env.balance(mallory);
+
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const seq = env.seq(alice);
+
+            auto inner = batch::Inner(pay(alice, mallory, XRP(1000)), seq + 1);
+            inner[jss::Delegate] = bob.human();
+
+            // Carol signs instead of the named delegate Bob.
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                inner,
+                batch::Inner(pay(alice, mallory, XRP(1)), seq + 2),
+                batch::Sig(carol),
+                Ter(temBAD_SIGNER));
+            env.close();
+
+            BEAST_EXPECT(env.balance(mallory) == preMallory);
+        }
+
+        // Delegate is the outer account: the outer signature already provides
+        // the delegate's consent, so no BatchSigners are required.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            // Bob delegates Payment to Alice, who is also the batch submitter.
+            env(delegate::set(bob, alice, {"Payment"}));
+            env.close();
+
+            auto const preBob = env.balance(bob);
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+
+            auto inner = batch::Inner(pay(bob, alice, XRP(1)), bobSeq);
+            inner[jss::Delegate] = alice.human();
+
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                inner,
+                batch::Inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // Net: Bob sends 1 to Alice, receives 2 from Alice.
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
+        }
+    }
+
+    void
     testBatchDelegate(FeatureBitset features)
     {
         testcase("batch delegate");
@@ -4720,17 +4936,20 @@ class Batch_test : public beast::unit_test::Suite
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
 
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
 
             auto tx = batch::Inner(pay(alice, bob, XRP(1)), seq + 1);
             tx[jss::Delegate] = bob.human();
+            // The delegate (Bob) authorizes the delegated inner, so Bob must
+            // provide the batch signature.
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 tx,
-                batch::Inner(pay(alice, bob, XRP(2)), seq + 2));
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 2),
+                batch::Sig(bob));
             env.close();
 
             std::vector<TestLedgerData> const testCases = {
@@ -4785,13 +5004,15 @@ class Batch_test : public beast::unit_test::Suite
 
             auto tx = batch::Inner(pay(bob, alice, XRP(1)), bobSeq);
             tx[jss::Delegate] = carol.human();
+            // Carol is the delegate authorizing the inner txn on Bob's behalf,
+            // so Carol -- not Bob -- must provide the batch signature.
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
                 batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 tx,
                 batch::Inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
-                batch::Sig(bob));
+                batch::Sig(carol));
             env.close();
 
             std::vector<TestLedgerData> const testCases = {
@@ -4841,19 +5062,22 @@ class Batch_test : public beast::unit_test::Suite
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
 
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
 
             auto tx = batch::Inner(noop(alice), seq + 1);
             std::string const domain = "example.com";
             tx[sfDomain.jsonName] = strHex(domain);
             tx[jss::Delegate] = bob.human();
+            // Bob is the delegate authorizing the inner AccountSet, so Bob must
+            // provide the batch signature.
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 tx,
-                batch::Inner(pay(alice, bob, XRP(2)), seq + 2));
+                batch::Inner(pay(alice, bob, XRP(2)), seq + 2),
+                batch::Sig(bob));
             env.close();
 
             std::vector<TestLedgerData> const testCases = {
@@ -4904,7 +5128,7 @@ class Batch_test : public beast::unit_test::Suite
             env.close();
 
             auto const seq = env.seq(alice);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
             json::Value jv1;
             jv1[sfTransactionType] = jss::MPTokenIssuanceSet;
@@ -4922,12 +5146,15 @@ class Batch_test : public beast::unit_test::Suite
             jv2[sfMPTokenIssuanceID] = to_string(mptID);
             jv2[sfFlags] = tfMPTUnlock;
 
+            // Both inners are delegated to Bob, so Bob must provide the batch
+            // signature (one signer covers both).
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(jv1, seq + 1),
-                batch::Inner(jv2, seq + 2));
+                batch::Inner(jv2, seq + 2),
+                batch::Sig(bob));
             env.close();
 
             std::vector<TestLedgerData> const testCases = {
@@ -4968,19 +5195,22 @@ class Batch_test : public beast::unit_test::Suite
             env.close();
 
             auto const seq = env.seq(gw);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
             auto jv1 = trust(gw, gw["USD"](0), alice, tfSetfAuth);
             jv1[sfDelegate] = bob.human();
             auto jv2 = trust(gw, gw["USD"](0), alice, tfSetFreeze);
             jv2[sfDelegate] = bob.human();
 
+            // Both inners are delegated to Bob, so Bob must provide the batch
+            // signature.
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
                 batch::outer(gw, seq, batchFee, tfAllOrNothing),
                 batch::Inner(jv1, seq + 1),
-                batch::Inner(jv2, seq + 2));
+                batch::Inner(jv2, seq + 2),
+                batch::Sig(bob));
             env.close();
 
             std::vector<TestLedgerData> const testCases = {
@@ -5019,20 +5249,23 @@ class Batch_test : public beast::unit_test::Suite
             env.close();
 
             auto const seq = env.seq(gw);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
             auto jv1 = trust(gw, gw["USD"](0), alice, tfSetFreeze);
             jv1[sfDelegate] = bob.human();
             auto jv2 = trust(gw, gw["USD"](0), alice, tfClearFreeze);
             jv2[sfDelegate] = bob.human();
 
+            // Both inners are delegated to Bob, so Bob must provide the batch
+            // signature; jv2 still fails preclaim for lack of permission.
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
                 batch::outer(gw, seq, batchFee, tfIndependent),
                 batch::Inner(jv1, seq + 1),
                 // terNO_DELEGATE_PERMISSION: not authorized to clear freeze
-                batch::Inner(jv2, seq + 2));
+                batch::Inner(jv2, seq + 2),
+                batch::Sig(bob));
             env.close();
 
             std::vector<TestLedgerData> const testCases = {
@@ -5470,6 +5703,7 @@ class Batch_test : public beast::unit_test::Suite
         testBatchTxQueue(features);
         testBatchNetworkOps(features);
         testBatchDelegate(features);
+        testBatchDelegateConsent(features);
         testValidateRPCResponse(features);
         testBatchCalculateBaseFee(features);
         testStandaloneInnerBatchFlag(features);
