@@ -301,11 +301,14 @@ public:
         auto const cLargeLegacy = std::to_array<Case>({
             {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep / 10, 1}, __LINE__},
         });
-        auto const cLargeCorrected = std::to_array<Case>({
+        auto const cLarge320 = std::to_array<Case>({
             {Number{Number::kMaxRep},
              Number{6, -1},
              Number{(Number::kMaxRep / 10) + 1, 1},
              __LINE__},
+        });
+        auto const cLargeCorrected = std::to_array<Case>({
+            {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep}, __LINE__},
         });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z, line] : c)
@@ -326,6 +329,10 @@ public:
             if (scale == MantissaRange::MantissaScale::LargeLegacy)
             {
                 test(cLargeLegacy);
+            }
+            else if (scale == MantissaRange::MantissaScale::Large320)
+            {
+                test(cLarge320);
             }
             else
             {
@@ -2556,6 +2563,170 @@ public:
     }
 
     void
+    testNumberRoundCuspWithFractionalParts()
+    {
+        auto const scale = Number::getMantissaScale();
+
+        testcase << "normalization cusp: rounding behavior with fractional parts "
+                 << to_string(scale);
+        NumberRoundModeGuard const roundGuard{Number::RoundingMode::ToNearest};
+
+        Number const below{static_cast<std::int64_t>(Number::kMaxRep), 0};
+        Number const above{false, Number::kMaxRepUp, 0, Number::Normalized{}};
+
+        log << "Below: " << below << ", Above: " << above << std::endl;
+
+        auto const zeroPointFour = Number(4, -1);
+        auto const zeroPointSix = Number(6, -1);
+        auto const onePointFour = Number(14, -1);
+        auto const onePointFive = Number(15, -1);
+        auto const onePointSix = Number(16, -1);
+        auto const twoPointFour = Number(24, -1);
+        auto const twoPointSix = Number(26, -1);
+
+        auto const operands = std::to_array<Number>({
+            zeroPointFour,
+            zeroPointSix,
+            onePointFour,
+            onePointFive,
+            onePointSix,
+            twoPointFour,
+            twoPointSix,
+        });
+
+        auto const modes = std::to_array<Number::RoundingMode>({
+            Number::RoundingMode::ToNearest,
+            Number::RoundingMode::TowardsZero,
+            Number::RoundingMode::Downward,
+            Number::RoundingMode::Upward,
+        });
+
+        // Addition cases test kMaxRep + Operand
+        for (auto const& mode : modes)
+        {
+            for (auto const& operand : operands)
+            {
+                NumberRoundModeGuard const rg{mode};
+
+                auto const expectedValue = [&]() {
+                    if (scale >= MantissaRange::MantissaScale::Large330)
+                    {
+                        if (mode == Number::RoundingMode::ToNearest && operand < onePointFive)
+                            return below;
+                        if (mode == Number::RoundingMode::TowardsZero ||
+                            mode == Number::RoundingMode::Downward)
+                            return below;
+                    }
+                    if (scale == MantissaRange::MantissaScale::Large320)
+                    {
+                        if (mode == Number::RoundingMode::ToNearest)
+                        {
+                            if (operand < zeroPointSix)
+                                return below;
+                        }
+                        if (mode == Number::RoundingMode::TowardsZero ||
+                            mode == Number::RoundingMode::Downward)
+                        {
+                            if (operand >= onePointFour)
+                                return below - 7;
+                            return below;
+                        }
+                    }
+                    if (scale == MantissaRange::MantissaScale::LargeLegacy)
+                    {
+                        if (mode == Number::RoundingMode::ToNearest)
+                        {
+                            if (operand < zeroPointSix)
+                                return below;
+                            if (operand == zeroPointSix)
+                                return below - 7;
+                        }
+                        if (mode == Number::RoundingMode::TowardsZero ||
+                            mode == Number::RoundingMode::Downward)
+                        {
+                            if (operand >= onePointFour)
+                                return below - 7;
+                            return below;
+                        }
+                        if (mode == Number::RoundingMode::Upward && operand <= zeroPointSix)
+                            return below - 7;
+                    }
+                    if (scale == MantissaRange::MantissaScale::Small &&
+                        mode == Number::RoundingMode::Upward)
+                        return above + 1000;
+                    return above;
+                }();
+
+                Number const actual = below + operand;
+
+                std::stringstream ss;
+                ss << "kMaxRep + " << operand << " rounded " << to_string(mode) << " to " << actual
+                   << ". Expected: " << expectedValue;
+                if (BEAST_EXPECTS(actual == expectedValue, ss.str()))
+                    log << "\tSUCCESS: " << to_string(scale) << " " << ss.str() << std::endl;
+            }
+            log << std::endl;
+        }
+
+        // Subtraction cases test kMaxRepUp - Operand
+        for (auto const& mode : modes)
+        {
+            for (auto const& operand : operands)
+            {
+                NumberRoundModeGuard const rg{mode};
+
+                auto const expectedValue = [&]() {
+                    if (scale >= MantissaRange::MantissaScale::Large330)
+                    {
+                        if (mode == Number::RoundingMode::ToNearest && operand > onePointFive)
+                            return below;
+                        if (mode == Number::RoundingMode::TowardsZero ||
+                            mode == Number::RoundingMode::Downward)
+                            return below;
+                    }
+                    if (scale == MantissaRange::MantissaScale::LargeLegacy ||
+                        scale == MantissaRange::MantissaScale::Large320)
+                    {
+                        if (mode == Number::RoundingMode::ToNearest)
+                        {
+                            if (operand >= twoPointSix)
+                                return below;
+                        }
+                        if (mode == Number::RoundingMode::TowardsZero)
+                        {
+                            if (operand >= onePointFour)
+                                return below - 7;
+                        }
+                        if (mode == Number::RoundingMode::Downward)
+                        {
+                            if (operand <= onePointSix)
+                                return below - 7;
+                            return below;
+                        }
+                    }
+                    if (scale == MantissaRange::MantissaScale::Small)
+                    {
+                        if (mode == Number::RoundingMode::Downward)
+                            return below - 1000;
+                        if (mode == Number::RoundingMode::Upward)
+                            return below;
+                    }
+                    return above;
+                }();
+
+                Number const actual = above - operand;
+
+                std::stringstream ss;
+                ss << "kMaxRepUp - " << operand << " rounded " << to_string(mode) << " to "
+                   << actual << ". Expected: " << expectedValue;
+                if (BEAST_EXPECTS(actual == expectedValue, ss.str()))
+                    log << "\tSUCCESS: " << to_string(scale) << " " << ss.str() << std::endl;
+            }
+            log << std::endl;
+        }
+    }
+
+    void
     run() override
     {
         for (auto const scale : MantissaRange::getAllScales())
@@ -2587,6 +2758,7 @@ public:
             testEdgeCases();
             testNumberAddDirectedSignWrong();
             testNumberAddToNearestPicksFarther();
+            testNumberRoundCuspWithFractionalParts();
         }
     }
 };
