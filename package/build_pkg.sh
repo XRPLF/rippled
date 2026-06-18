@@ -110,6 +110,12 @@ if [[ "${pkg_version}" == *-* ]]; then
     exit 1
 fi
 
+if [[ -z "${pre_release}" && "${xrpld_version}" == *+* ]]; then
+    echo "build_pkg.sh: unsupported xrpld version '${xrpld_version}'." >&2
+    echo "Build metadata is only supported on bN/rcN pre-releases." >&2
+    exit 1
+fi
+
 if [[ -n "${pre_release}" && ! "${pre_release}" =~ ^(b0|b[1-9][0-9]*|rc[0-9]+)(\+.*)?$ ]]; then
     echo "build_pkg.sh: unsupported xrpld pre-release '${pre_release}'." >&2
     echo "Use bN or rcN, e.g. 3.2.0-b1 or 3.2.0-rc2." >&2

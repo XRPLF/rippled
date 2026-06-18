@@ -149,6 +149,7 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 The Debian changelog entry carries the repository component: final releases use
 `stable`, `b0` builds, including `b0+metadata`, use `develop`, and `bN`/`rcN`
 pre-releases use `unstable`.
+Build metadata on a final release, such as `3.2.0+abc123`, is rejected.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
