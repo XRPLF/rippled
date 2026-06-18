@@ -18,7 +18,10 @@ PrivateTmp=true
 User=xrpld
 Group=xrpld
 StateDirectory=xrpld
+StateDirectoryMode=0750
 LogsDirectory=xrpld
+LogsDirectoryMode=0750
+UMask=0027
 LimitNOFILE=65536
 
 [Install]
