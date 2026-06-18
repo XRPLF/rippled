@@ -36,7 +36,7 @@ inline std::optional<AccountID>
 getTxReserveSponsorAccountID(STTx const& tx, std::optional<AccountID> const& acc = {})
 {
     if ((!acc || acc == tx[sfAccount]) && tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
-        return std::make_optional(tx[sfSponsor]);
+        return tx[sfSponsor];
     return std::nullopt;
 }
 

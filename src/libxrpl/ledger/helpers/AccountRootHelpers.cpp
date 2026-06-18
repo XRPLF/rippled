@@ -64,9 +64,9 @@ getFeePayerHlp(
 
     if (tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx))
     {
-        AccountID const sponsorAccountID = tx.getAccountID(sfSponsor);
-        AccountID const sponseeAccountID = tx.getAccountID(sfAccount);
-        auto const sponsorshipKeylet = keylet::sponsor(sponsorAccountID, sponseeAccountID);
+        AccountID const sponsorID = tx.getAccountID(sfSponsor);
+        AccountID const sponseeID = tx.getAccountID(sfAccount);
+        auto const sponsorshipKeylet = keylet::sponsor(sponsorID, sponseeID);
 
         if (sponsorshipSle)
         {
@@ -80,7 +80,7 @@ getFeePayerHlp(
                 }
 
                 return FeePayer{
-                    .id = sponsorAccountID,
+                    .id = sponsorID,
                     .keylet = sponsorshipKeylet,
                     .balanceField = sfFeeAmount,
                     .type = FeePayerType::SponsorPreFunded};
@@ -90,7 +90,7 @@ getFeePayerHlp(
         {
             // pre funded
             return FeePayer{
-                .id = sponsorAccountID,
+                .id = sponsorID,
                 .keylet = sponsorshipKeylet,
                 .balanceField = sfFeeAmount,
                 .type = FeePayerType::SponsorPreFunded};
@@ -104,8 +104,8 @@ getFeePayerHlp(
 
         // co-signed
         return FeePayer{
-            .id = sponsorAccountID,
-            .keylet = keylet::account(sponsorAccountID),
+            .id = sponsorID,
+            .keylet = keylet::account(sponsorID),
             .balanceField = sfBalance,
             .type = FeePayerType::SponsorCoSigned};
     }

@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -190,6 +191,10 @@ deleteSponsorshipHlp(
 
     auto const sponsorID = (*sponsorshipSle)[sfOwner];
     auto const sponseeID = (*sponsorshipSle)[sfSponsee];
+
+    XRPL_ASSERT(
+        sponsorID == sponsorSle->at(sfAccount),
+        "deleteSponsorshipHlp: sponsorID == sponsorSle->at(sfAccount)");
 
     // The reserve for the Sponsorship object is held by the sponsor (Owner).
 
