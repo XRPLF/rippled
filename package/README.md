@@ -146,9 +146,9 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 | `3.2.0-b1`         | `3.2.0~b1-1%{?dist}`         | `3.2.0~b1-1`         |
 | `3.2.0-rc1`        | `3.2.0~rc1-1%{?dist}`        | `3.2.0~rc1-1`        |
 
-The Debian changelog's distribution field carries the package channel: final
-releases use `stable`, `b0` builds, including `b0+metadata`, use `develop`, and
-other pre-releases such as beta and RC builds use `unstable`.
+The Debian changelog entry carries the repository component: final releases use
+`stable`, `b0` builds, including `b0+metadata`, use `develop`, and other
+pre-releases such as beta and RC builds use `unstable`.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like

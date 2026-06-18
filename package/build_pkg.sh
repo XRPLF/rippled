@@ -177,19 +177,19 @@ build_deb() {
     cp "${staging}/xrpld.tmpfiles" "${staging}/debian/xrpld.tmpfiles"
     cp "${staging}/xrpld.logrotate" "${staging}/debian/xrpld.logrotate"
 
-    # Choose the Debian changelog distribution value used by our package channels.
+    # Choose the Debian repository component for this package.
     #   3.2.0 -> stable, *-b0[+metadata] -> develop,
     #   other pre-release such as bN/rcN -> unstable.
-    local deb_distribution
+    local deb_component
     case "${xrpld_version}" in
-        *-b0 | *-b0+*) deb_distribution="develop" ;;
-        *-*) deb_distribution="unstable" ;;
-        *) deb_distribution="stable" ;;
+        *-b0 | *-b0+*) deb_component="develop" ;;
+        *-*) deb_component="unstable" ;;
+        *) deb_component="stable" ;;
     esac
 
     # Debian version is <upstream>[~<pre>]-<pkg release>.
     cat >"${staging}/debian/changelog" <<EOF
-xrpld (${pkg_version}-${PKG_RELEASE}) ${deb_distribution}; urgency=medium
+xrpld (${pkg_version}-${PKG_RELEASE}) ${deb_component}; urgency=medium
   * Release ${xrpld_version}.
 
  -- XRPL Foundation <contact@xrplf.org>  ${CHANGELOG_DATE}
