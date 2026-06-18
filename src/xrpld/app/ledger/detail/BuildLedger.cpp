@@ -233,6 +233,10 @@ buildLedger(
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
             for (auto& tx : replayData.orderedTxns())
             {
+                // Inner batch transactions are applied as part of their outer
+                // Batch transaction, never on their own. Skip them here so they
+                // are not re-applied a second time outside of the batch during
+                // replay.
                 if (tx.second->isFlag(tfInnerBatchTxn))
                     continue;
                 applyTransaction(app, accum, *tx.second, false, applyFlags, j);

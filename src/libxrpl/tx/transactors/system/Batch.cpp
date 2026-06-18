@@ -4,6 +4,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -405,6 +406,9 @@ Batch::preflight(PreflightContext const& ctx)
 NotTEC
 Batch::preflightSigValidated(PreflightContext const& ctx)
 {
+    XRPL_ASSERT(
+        ctx.tx.getTxnType() == ttBATCH,
+        "xrpl::Batch::preflightSigValidated : not a batch transaction");
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
@@ -524,7 +528,7 @@ Batch::checkBatchSign(PreclaimContext const& ctx)
             if (sleAccount)
             {
                 if (isPseudoAccount(sleAccount))
-                    return tefBAD_AUTH;
+                    return tefBAD_AUTH;  // LCOV_EXCL_LINE
 
                 if (ret = checkSingleSign(ctx.view, idSigner, idAccount, sleAccount, ctx.j);
                     !isTesSuccess(ret))

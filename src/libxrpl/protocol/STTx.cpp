@@ -433,6 +433,7 @@ STTx::checkSingleSign(STObject const& sigObject) const
 std::expected<void, std::string>
 STTx::checkBatchSingleSign(STObject const& batchSigner) const
 {
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : not a batch transaction");
     Serializer msg;
     serializeBatch(
         msg, getAccountID(sfAccount), getSeqValue(), getFlags(), getBatchTransactionIDs());
@@ -520,6 +521,7 @@ multiSignHelper(
 std::expected<void, std::string>
 STTx::checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const
 {
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchMultiSign : not a batch transaction");
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.

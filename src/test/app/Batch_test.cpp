@@ -440,6 +440,22 @@ class Batch_test : public beast::unit_test::Suite
             BEAST_EXPECT(pf == temINVALID_INNER_BATCH);
         }
 
+        // temINVALID_FLAG: tfInnerBatchTxn set but featureBatchV1_1 disabled.
+        {
+            test::jtx::Env disabledEnv{*this, features - featureBatchV1_1};
+            disabledEnv.fund(XRP(10000), alice, bob);
+            disabledEnv.close();
+            auto jtx = disabledEnv.jt(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn));
+            PreflightContext const pfCtx(
+                disabledEnv.app(),
+                *jtx.stx,
+                disabledEnv.current()->rules(),
+                TapNone,
+                disabledEnv.journal);
+            auto const pf = Transactor::invokePreflight<Payment>(pfCtx);
+            BEAST_EXPECT(pf == temINVALID_FLAG);
+        }
+
         // temINVALID_INNER_BATCH: parentBatchId set but tfInnerBatchTxn not
         // set.
         {
