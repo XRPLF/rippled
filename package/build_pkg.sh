@@ -177,9 +177,7 @@ build_deb() {
     cp "${staging}/xrpld.tmpfiles" "${staging}/debian/xrpld.tmpfiles"
     cp "${staging}/xrpld.logrotate" "${staging}/debian/xrpld.logrotate"
 
-    # The Debian changelog distribution carries the XRPLF release channel used
-    # by publishing, not the build host's Debian/Ubuntu codename. Local package
-    # builds are not restricted by codename.
+    # Choose the Debian changelog distribution value used by our package channels.
     #   3.2.0 -> stable, *-b0[+metadata] -> develop,
     #   other pre-release such as bN/rcN -> unstable.
     local deb_distribution
