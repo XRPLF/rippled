@@ -32,6 +32,9 @@ isSponsorReserveCoSigning(STTx const& tx)
     return isReserveSponsored(tx) && tx.isFieldPresent(sfSponsorSignature);
 }
 
+// Optional account is an additional check, that we are checking sponsor for correct account
+// In a functions account can be named something like dstAccount or else, and it is a bit confusing.
+// Passing the account to this function will mitigate the risk.
 inline std::optional<AccountID>
 getTxReserveSponsorAccountID(STTx const& tx, std::optional<AccountID> const& acc = {})
 {
