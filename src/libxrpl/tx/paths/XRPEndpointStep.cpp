@@ -204,7 +204,7 @@ private:
         {
             return ctx.strandDeliver.visit(
                 [&](Issue const& issue) {
-                    if (!ctx.view.exists(keylet::rippleState(acc, issue)))
+                    if (!ctx.view.exists(keylet::trustLine(acc, issue)))
                         return -1;
                     return 0;
                 },

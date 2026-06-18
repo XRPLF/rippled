@@ -518,7 +518,7 @@ ammLPHolds(
     auto const currency = ammLPTCurrency(asset1, asset2);
     STAmount amount;
 
-    auto const sle = view.read(keylet::rippleState(lpAccount, ammAccount, currency));
+    auto const sle = view.read(keylet::trustLine(lpAccount, ammAccount, currency));
     if (!sle)
     {
         amount.clear(Issue{currency, ammAccount});
@@ -610,7 +610,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
             }
             else if (
                 auto const sle =
-                    view.read(keylet::rippleState(ammAccountID, issue.account, issue.currency));
+                    view.read(keylet::trustLine(ammAccountID, issue.account, issue.currency));
                 sle && !isFrozen(view, ammAccountID, issue.currency, issue.account))
             {
                 STAmount amount = (*sle)[sfBalance];

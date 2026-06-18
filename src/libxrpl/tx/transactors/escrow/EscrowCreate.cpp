@@ -208,7 +208,7 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
-    auto const sleRippleState = ctx.view.read(keylet::rippleState(account, issuer, issue.currency));
+    auto const sleRippleState = ctx.view.read(keylet::trustLine(account, issuer, issue.currency));
     if (!sleRippleState)
         return tecNO_LINE;
 

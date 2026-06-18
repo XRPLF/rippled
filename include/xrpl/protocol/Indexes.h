@@ -87,12 +87,12 @@ book(Book const& b);
 */
 /** @{ */
 Keylet
-rippleState(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
+trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
 
 inline Keylet
-rippleState(AccountID const& id, Issue const& issue) noexcept
+trustLine(AccountID const& id, Issue const& issue) noexcept
 {
-    return rippleState(id, issue.account, issue.currency);
+    return trustLine(id, issue.account, issue.currency);
 }
 /** @} */
 

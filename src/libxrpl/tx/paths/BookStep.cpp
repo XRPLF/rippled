@@ -1354,7 +1354,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
 
             auto const err = book_.in.visit(
                 [&](Issue const& issue) -> std::optional<TER> {
-                    auto sle = view.read(keylet::rippleState(*prev, cur, issue.currency));
+                    auto sle = view.read(keylet::trustLine(*prev, cur, issue.currency));
                     if (!sle)
                         return terNO_LINE;
                     if (sle->isFlag((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))

@@ -2997,7 +2997,7 @@ class Vault_test : public beast::unit_test::Suite
             env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
             env.close();
 
-            auto trustline = env.le(keylet::rippleState(owner, asset.raw().get<Issue>()));
+            auto trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
             BEAST_EXPECT(trustline == nullptr);
 
             // Withdraw without trust line, will succeed
@@ -3180,7 +3180,7 @@ class Vault_test : public beast::unit_test::Suite
                 env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
                 env.close();
 
-                auto trustline = env.le(keylet::rippleState(owner, asset.raw().get<Issue>()));
+                auto trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
                 BEAST_EXPECT(trustline == nullptr);
 
                 env(ticket::create(owner, 1));
@@ -7618,14 +7618,13 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(keylet);
             BEAST_EXPECT(sleVault != nullptr);
             auto const pseudoId = sleVault->at(sfAccount);
-            auto const expected = keylet::rippleState(pseudoId, asset.raw().get<Issue>()).key;
+            auto const expected = keylet::trustLine(pseudoId, asset.raw().get<Issue>()).key;
 
             auto const stored = readReferenceHolding(env, keylet);
             BEAST_EXPECT(stored.has_value());
             BEAST_EXPECT(stored && *stored == expected);
             // The pointed-to RippleState must actually exist.
-            BEAST_EXPECT(
-                env.le(keylet::rippleState(pseudoId, asset.raw().get<Issue>())) != nullptr);
+            BEAST_EXPECT(env.le(keylet::trustLine(pseudoId, asset.raw().get<Issue>())) != nullptr);
         }
 
         // XRP-backed vaults leave the field absent: XRP has no separate

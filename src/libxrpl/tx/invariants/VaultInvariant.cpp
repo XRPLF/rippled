@@ -199,7 +199,7 @@ ValidVault::deltaAssets(AccountID const& id) const
             {
                 if (isXRP(issue))
                     return lookup(keylet::account(id).key);
-                auto result = lookup(keylet::rippleState(id, issue).key);
+                auto result = lookup(keylet::trustLine(id, issue).key);
                 // Trust-line balance is stored from the low-account's perspective;
                 // negate if id is the high account so the delta is in id's terms.
                 if (result && id > issue.getIssuer())

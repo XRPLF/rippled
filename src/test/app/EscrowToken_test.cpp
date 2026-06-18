@@ -929,7 +929,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env(trust(alice, usd(0)));
             env.close();
 
-            auto const trustLineKey = keylet::rippleState(alice.id(), gw.id(), usd.currency);
+            auto const trustLineKey = keylet::trustLine(alice.id(), gw.id(), usd.currency);
             BEAST_EXPECT(!env.current()->exists(trustLineKey));
 
             env.close();

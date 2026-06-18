@@ -707,7 +707,7 @@ parseRippleState(
             "malformedCurrency", jss::currency, "Currency");
     }
 
-    return keylet::rippleState(*id1, *id2, uCurrency).key;
+    return keylet::trustLine(*id1, *id2, uCurrency).key;
 }
 
 static std::expected<uint256, json::Value>

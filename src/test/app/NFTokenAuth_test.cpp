@@ -130,8 +130,7 @@ public:
         // close ledger before running the actual tests against this trustline.
         // After ledger is closed, the trustline will not exist.
         auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::rippleState(a1, g1, g1["USD"].currency));
+            auto const sleA1 = std::make_shared<SLE>(keylet::trustLine(a1, g1, g1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, a1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
@@ -194,8 +193,7 @@ public:
         // tests against this trustline. After ledger is closed, the trustline
         // will not exist.
         auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::rippleState(a1, g1, g1["USD"].currency));
+            auto const sleA1 = std::make_shared<SLE>(keylet::trustLine(a1, g1, g1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, a1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
@@ -315,8 +313,7 @@ public:
 
         // Creating an artificial unauth trustline
         auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::rippleState(a1, g1, g1["USD"].currency));
+            auto const sleA1 = std::make_shared<SLE>(keylet::trustLine(a1, g1, g1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, a1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
@@ -435,8 +432,7 @@ public:
         env.close();
 
         auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::rippleState(a1, g1, g1["USD"].currency));
+            auto const sleA1 = std::make_shared<SLE>(keylet::trustLine(a1, g1, g1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, a1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;

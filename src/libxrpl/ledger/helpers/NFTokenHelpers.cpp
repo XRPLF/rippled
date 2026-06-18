@@ -839,10 +839,10 @@ tokenOfferCreatePreclaim(
         if (view.rules().enabled(featureNFTokenMintOffer))
         {
             if (nftIssuer != amount.getIssuer() &&
-                !view.read(keylet::rippleState(nftIssuer, amount.get<Issue>())))
+                !view.read(keylet::trustLine(nftIssuer, amount.get<Issue>())))
                 return tecNO_LINE;
         }
-        else if (!view.exists(keylet::rippleState(nftIssuer, amount.get<Issue>())))
+        else if (!view.exists(keylet::trustLine(nftIssuer, amount.get<Issue>())))
         {
             return tecNO_LINE;
         }
@@ -1020,8 +1020,7 @@ checkTrustlineAuthorized(
 
         if (issuerAccount->isFlag(lsfRequireAuth))
         {
-            auto const trustLine =
-                view.read(keylet::rippleState(id, issue.account, issue.currency));
+            auto const trustLine = view.read(keylet::trustLine(id, issue.account, issue.currency));
 
             if (!trustLine)
             {
@@ -1071,7 +1070,7 @@ checkTrustlineDeepFrozen(
             return tesSUCCESS;
         }
 
-        auto const trustLine = view.read(keylet::rippleState(id, issue.account, issue.currency));
+        auto const trustLine = view.read(keylet::trustLine(id, issue.account, issue.currency));
 
         if (!trustLine)
         {

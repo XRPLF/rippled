@@ -3150,8 +3150,7 @@ protected:
 
                 env(pay(borrower, issuer, broker.asset(10'000)));
                 env.close();
-                auto const trustline =
-                    keylet::rippleState(borrower, broker.asset.raw().get<Issue>());
+                auto const trustline = keylet::trustLine(borrower, broker.asset.raw().get<Issue>());
                 auto const sleLine1 = env.le(trustline);
                 BEAST_EXPECT(sleLine1 == nullptr);
 
@@ -3244,7 +3243,7 @@ protected:
                 env.trust(broker.asset(0), lender);
                 env.close();
 
-                auto const trustline = keylet::rippleState(lender, broker.asset.raw().get<Issue>());
+                auto const trustline = keylet::trustLine(lender, broker.asset.raw().get<Issue>());
                 auto const sleLine1 = env.le(trustline);
                 BEAST_EXPECT(sleLine1 != nullptr);
 
@@ -4214,7 +4213,7 @@ protected:
                     BEAST_EXPECT(le))
                 {
                     auto const account = le->at(accountField);
-                    if (auto const sleLine = env.le(keylet::rippleState(account, iou));
+                    if (auto const sleLine = env.le(keylet::trustLine(account, iou));
                         BEAST_EXPECT(sleLine))
                     {
                         STAmount balance = sleLine->at(sfBalance);
@@ -6909,7 +6908,7 @@ protected:
         env(loanBroker::coverDeposit(broker, brokerInfo.brokerID, STAmount{iou, additionalCover}));
         env.close();
         // Verify broker owner has a trustline
-        auto const brokerTrustline = keylet::rippleState(broker, iou);
+        auto const brokerTrustline = keylet::trustLine(broker, iou);
         BEAST_EXPECT(env.le(brokerTrustline) != nullptr);
         // Broker owner deletes their trustline
         // First, pay any positive balance to issuer to zero it out

@@ -284,7 +284,7 @@ OfferCreate::checkAcceptAsset(
             auto const& issuer = issue.getIssuer();
             if (issuerAccount->isFlag(lsfRequireAuth))
             {
-                auto const trustLine = view.read(keylet::rippleState(id, issuer, issue.currency));
+                auto const trustLine = view.read(keylet::trustLine(id, issuer, issue.currency));
 
                 if (!trustLine)
                 {
@@ -308,8 +308,7 @@ OfferCreate::checkAcceptAsset(
                 }
             }
 
-            auto const trustLine =
-                view.read(keylet::rippleState(id, issue.account, issue.currency));
+            auto const trustLine = view.read(keylet::trustLine(id, issue.account, issue.currency));
 
             if (!trustLine)
             {

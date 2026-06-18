@@ -238,12 +238,12 @@ book(Book const& b)
 }
 
 Keylet
-rippleState(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept
+trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept
 {
     // There is code in TrustSet that calls us with id0 == id1, to allow users
     // to locate and delete such "weird" trustlines. If we remove that code, we
     // could enable this assert:
-    // XRPL_ASSERT(id0 != id1, "xrpl::keylet::rippleState : accounts must be
+    // XRPL_ASSERT(id0 != id1, "xrpl::keylet::trustLine : accounts must be
     // different");
 
     // A trust line is shared between two accounts; while we typically think

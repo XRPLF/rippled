@@ -260,7 +260,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
     // LP Token already exists. (should not happen)
     auto const lptIss = ammLPTIssue(amount.asset(), amount2.asset(), accountId);
-    if (sb.read(keylet::rippleState(accountId, lptIss)))
+    if (sb.read(keylet::trustLine(accountId, lptIss)))
     {
         JLOG(j.error()) << "AMM Instance: LP Token already exists.";
         return {tecDUPLICATE, false};
@@ -331,7 +331,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                 if (!isXRP(amount))
                 {
                     SLE::pointer const sleRippleState =
-                        sb.peek(keylet::rippleState(accountId, issue));
+                        sb.peek(keylet::trustLine(accountId, issue));
                     if (!sleRippleState)
                     {
                         return tecINTERNAL;  // LCOV_EXCL_LINE

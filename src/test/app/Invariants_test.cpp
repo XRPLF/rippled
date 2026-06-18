@@ -461,7 +461,7 @@ class Invariants_test : public beast::unit_test::Suite
                 BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
 
                 for (auto const& trustKeylet :
-                     {keylet::rippleState(ammAcctID, a1["USD"]), keylet::rippleState(a1, ammIssue)})
+                     {keylet::trustLine(ammAcctID, a1["USD"]), keylet::trustLine(a1, ammIssue)})
                 {
                     auto const line = ac.view().peek(trustKeylet);
                     if (!line)
@@ -562,7 +562,7 @@ class Invariants_test : public beast::unit_test::Suite
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create simple trust SLE with xrp currency
                 auto const sleNew =
-                    std::make_shared<SLE>(keylet::rippleState(a1, a2, xrpIssue().currency));
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, xrpIssue().currency));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -579,7 +579,7 @@ class Invariants_test : public beast::unit_test::Suite
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleNew =
-                    std::make_shared<SLE>(keylet::rippleState(a1, a2, a1["USD"].currency));
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
 
@@ -595,7 +595,7 @@ class Invariants_test : public beast::unit_test::Suite
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleNew =
-                    std::make_shared<SLE>(keylet::rippleState(a1, a2, a1["USD"].currency));
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -610,7 +610,7 @@ class Invariants_test : public beast::unit_test::Suite
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleNew =
-                    std::make_shared<SLE>(keylet::rippleState(a1, a2, a1["USD"].currency));
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -625,7 +625,7 @@ class Invariants_test : public beast::unit_test::Suite
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleNew =
-                    std::make_shared<SLE>(keylet::rippleState(a1, a2, a1["USD"].currency));
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -640,7 +640,7 @@ class Invariants_test : public beast::unit_test::Suite
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleNew =
-                    std::make_shared<SLE>(keylet::rippleState(a1, a2, a1["USD"].currency));
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -695,8 +695,8 @@ class Invariants_test : public beast::unit_test::Suite
                                         ApplyContext& ac,
                                         int a1Balance,
                                         int a2Balance) {
-            auto const sleA1 = ac.view().peek(keylet::rippleState(a1, g1["USD"]));
-            auto const sleA2 = ac.view().peek(keylet::rippleState(a2, g1["USD"]));
+            auto const sleA1 = ac.view().peek(keylet::trustLine(a1, g1["USD"]));
+            auto const sleA2 = ac.view().peek(keylet::trustLine(a2, g1["USD"]));
 
             sleA1->setFieldAmount(sfBalance, g1["USD"](a1Balance));
             sleA2->setFieldAmount(sfBalance, g1["USD"](a2Balance));
@@ -4648,8 +4648,8 @@ class Invariants_test : public beast::unit_test::Suite
                                                    auto const& goodConfig) {
             char const* const c1 = "USD";
             char const* const c2 = "EUR";
-            auto const k1 = keylet::rippleState(a1, a2, a1[c1].currency);
-            auto const k2 = keylet::rippleState(a1, a3, a1[c2].currency);
+            auto const k1 = keylet::trustLine(a1, a2, a1[c1].currency);
+            auto const k2 = keylet::trustLine(a1, a3, a1[c2].currency);
 
             bool const k1First = k1.key < k2.key;
             auto const& badKey = k1First ? k1 : k2;

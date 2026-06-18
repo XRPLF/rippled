@@ -307,7 +307,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline) &&
             (nft::getFlags(tokenID) & nft::kFlagCreateTrustLines) == 0 &&
             nftMinter != amount.getIssuer() &&
-            !ctx.view.read(keylet::rippleState(nftMinter, amount.get<Issue>())))
+            !ctx.view.read(keylet::trustLine(nftMinter, amount.get<Issue>())))
             return tecNO_LINE;
 
         // Check that the issuer is allowed to receive IOUs.

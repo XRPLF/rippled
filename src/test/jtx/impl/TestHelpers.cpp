@@ -338,7 +338,7 @@ xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 [[nodiscard]] bool
 expectHolding(Env& env, AccountID const& account, STAmount const& value, bool defaultLimits)
 {
-    if (auto const sle = env.le(keylet::rippleState(account, value.get<Issue>())))
+    if (auto const sle = env.le(keylet::trustLine(account, value.get<Issue>())))
     {
         Issue const issue = value.get<Issue>();
         bool const accountLow = account < issue.account;
@@ -368,7 +368,7 @@ expectHolding(Env& env, AccountID const& account, STAmount const& value, bool de
 [[nodiscard]] bool
 expectHolding(Env& env, AccountID const& account, None const&, Issue const& issue)
 {
-    return !env.le(keylet::rippleState(account, issue));
+    return !env.le(keylet::trustLine(account, issue));
 }
 
 [[nodiscard]] bool
