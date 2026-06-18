@@ -22,6 +22,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
@@ -46,6 +47,7 @@
 #include <exception>
 #include <optional>
 #include <stdexcept>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -175,6 +177,16 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 
         if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
             return temBAD_SIGNER;
+
+        auto const& perm = Permission::getInstance();
+        auto const txType = ctx.tx.getTxnType();
+
+        // If the transaction is not delegable and does not have granular permissions, fail earlier
+        // with temINVALID. This is to prevent transactions that are not delegable at all from
+        // being processed further in the invokeCheckPermission function.
+        if (!perm.isDelegable(Permission::txToPermissionType(txType), ctx.rules) &&
+            !perm.hasGranularPermissions(txType))
+            return temINVALID;
     }
 
     if (auto const ret = preflight0(ctx, flagMask))
@@ -295,19 +307,33 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
 }
 
 NotTEC
-Transactor::checkPermission(ReadView const& view, STTx const& tx)
+Transactor::checkPermission(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType>& heldGranularPermissions)
 {
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
         return tesSUCCESS;
 
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
+    auto const sle = view.read(keylet::delegate(tx[sfAccount], *delegate));
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    return checkTxPermission(sle, tx);
+    if (isTesSuccess(checkTxPermission(sle, tx)))
+        return tesSUCCESS;
+
+    if (!Permission::getInstance().hasGranularPermissions(tx.getTxnType()))
+        return terNO_DELEGATE_PERMISSION;
+
+    heldGranularPermissions = getGranularPermission(sle, tx.getTxnType());
+    if (heldGranularPermissions.empty())
+        return terNO_DELEGATE_PERMISSION;
+
+    if (!Permission::getInstance().checkGranularSandbox(tx, heldGranularPermissions))
+        return terNO_DELEGATE_PERMISSION;
+
+    return tesSUCCESS;
 }
 
 XRPAmount

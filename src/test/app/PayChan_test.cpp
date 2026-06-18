@@ -1990,7 +1990,10 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{testableAmendments()};
+        // fixCleanup3_2_0 changes payment-channel error codes (tem* -> tec*)
+        // and channel-closing semantics. This suite asserts the
+        // pre-amendment behavior, so run it with the amendment disabled.
+        FeatureBitset const all{testableAmendments() - fixCleanup3_2_0};
         testWithFeats(all);
         testDepositAuthCreds();
         testMetaAndOwnership(all - fixIncludeKeyletFields);
