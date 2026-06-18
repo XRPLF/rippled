@@ -33,7 +33,7 @@ public:
      * @brief Construct a Bridge ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Bridge(std::shared_ptr<SLE const> sle)
+    explicit Bridge(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -210,7 +210,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    BridgeBuilder(std::shared_ptr<SLE const> sle)
+    BridgeBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltBRIDGE)
         {

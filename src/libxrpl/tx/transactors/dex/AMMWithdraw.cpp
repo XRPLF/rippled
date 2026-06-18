@@ -32,7 +32,6 @@
 #include <bit>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -758,7 +757,7 @@ AMMWithdraw::equalWithdrawTokens(
 std::pair<TER, bool>
 AMMWithdraw::deleteAMMAccountIfEmpty(
     Sandbox& sb,
-    std::shared_ptr<SLE> const ammSle,
+    SLE::pointer const ammSle,
     STAmount const& lpTokenBalance,
     Asset const& asset1,
     Asset const& asset2,
@@ -1092,10 +1091,13 @@ AMMWithdraw::singleWithdrawEPrice(
     // t = T*(T + A*E*(f - 2))/(T*f - A*E)
     Number const ae = amountBalance * ePrice;
     auto const f = getFee(tfee);
-    auto tokNoRoundCb = [&] {
-        return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / (lptAMMBalance * f - ae);
-    };
-    auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / (lptAMMBalance * f - ae); };
+    auto const denom = lptAMMBalance * f - ae;
+    // fixCleanup3_3_0: guard against division by zero
+    // when ePrice == lptAMMBalance*f/amountBalance
+    if (view.rules().enabled(fixCleanup3_3_0) && denom == beast::kZero)
+        return {tecAMM_FAILED, STAmount{}};
+    auto tokNoRoundCb = [&] { return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom; };
+    auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
     auto const tokensAdj =
         getRoundedLPTokens(view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::No);
     if (tokensAdj <= beast::kZero)
@@ -1137,10 +1139,7 @@ AMMWithdraw::isWithdrawAll(STTx const& tx)
     return WithdrawAll::No;
 }
 void
-AMMWithdraw::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

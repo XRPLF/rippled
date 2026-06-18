@@ -8,7 +8,6 @@
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -28,8 +27,10 @@
 
 #include <chrono>
 #include <exception>
+#include <expected>
 #include <limits>
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -44,14 +45,14 @@ LedgerHandler::check()
 {
     auto const& params = context_.params;
 
-    auto getBool = [&](json::StaticString const& field) -> Expected<bool, Status> {
+    auto getBool = [&](json::StaticString const& field) -> std::expected<bool, Status> {
         if (!params.isMember(field))
         {
             return false;
         }
         if (!params[field].isBool())
         {
-            return Unexpected(RpcInvalidParams);
+            return std::unexpected(RpcInvalidParams);
         }
 
         return params[field].asBool();
@@ -349,13 +350,15 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     auto end = std::chrono::system_clock::now();
     auto duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() * 1.0;
+    // Guard the per-item rates: an empty ledger has zero objects and/or zero
+    // transactions, and dividing by zero is undefined for these doubles.
+    auto const numObjects = response.ledger_objects().objects_size();
+    auto const numTxns = response.transactions_list().transactions_size();
+    std::string const msPerObj = numObjects > 0 ? std::to_string(duration / numObjects) : "n/a";
+    std::string const msPerTxn = numTxns > 0 ? std::to_string(duration / numTxns) : "n/a";
     JLOG(context.j.warn()) << __func__ << " - Extract time = " << duration
-                           << " - num objects = " << response.ledger_objects().objects_size()
-                           << " - num txns = " << response.transactions_list().transactions_size()
-                           << " - ms per obj "
-                           << duration / response.ledger_objects().objects_size()
-                           << " - ms per txn "
-                           << duration / response.transactions_list().transactions_size();
+                           << " - num objects = " << numObjects << " - num txns = " << numTxns
+                           << " - ms per obj " << msPerObj << " - ms per txn " << msPerTxn;
 
     return {response, status};
 }
