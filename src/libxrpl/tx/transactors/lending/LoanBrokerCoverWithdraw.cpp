@@ -128,7 +128,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(fixCleanup3_3_0))
     {
         if (auto const ret =
-                checkWithdrawFreezes(ctx.view, pseudoAccountID, account, dstAcct, vaultAsset))
+                checkWithdrawFreeze(ctx.view, pseudoAccountID, account, dstAcct, vaultAsset))
             return ret;
     }
     else

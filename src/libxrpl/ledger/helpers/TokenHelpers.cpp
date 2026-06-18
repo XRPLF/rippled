@@ -165,7 +165,7 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& ass
 }
 
 TER
-checkWithdrawFreezes(
+checkWithdrawFreeze(
     ReadView const& view,
     AccountID const& srcAcct,
     AccountID const& submitterAcct,

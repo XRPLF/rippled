@@ -132,18 +132,32 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& 
 checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
 /**
- * Checks freeze compliance for a pseudo-account withdrawal to a non-issuer destination.
+ * Checks freeze compliance for withdrawing an asset from a pseudo-account
+ * (e.g. Vault, AMM, LoanBroker) to a destination account.
  *
- * Returns tesSUCCESS immediately when dstAcct is the asset issuer — redemption
- * to the issuer bypasses all freeze checks.
+ * Asserts that sourceAcct is a pseudo-account.
  *
- * Otherwise checks:
- *   - The source pseudo-account is not frozen for the asset (checkFrozen).
- *   - The submitting account is not individually frozen for the asset (checkFrozen).
- *   - The destination is not deep-frozen for the asset (checkDeepFrozen).
+ * Issuer exemption: returns tesSUCCESS immediately when dstAcct is the asset
+ * issuer — the issuer can always receive their own token, even when the pool
+ * is frozen.  Callers that need to block withdrawals from a frozen pool even
+ * for the issuer (e.g. because the pool math cannot handle it) must check
+ * checkFrozen(sourceAcct, asset) separately before calling this function.
+ *
+ * Otherwise checks, in order:
+ *   1. checkFrozen(sourceAcct, asset)   — the pseudo-account's trustline /
+ *      global freeze must not block sending.
+ *   2. checkFrozen(submitterAcct, asset) — skipped when submitter == dst
+ *      (self-withdrawal); a regular freeze should not prevent recovering
+ *      one's own funds.
+ *   3. checkDeepFrozen(dstAcct, asset)  — the destination must not be
+ *      deep-frozen (cannot receive under any circumstance).
+ *
+ * For IOUs a regular individual freeze on the withdrawer does NOT block
+ * self-withdrawal; only deep freeze does.  For MPTs "locked" is equivalent
+ * to deep-frozen, so locked MPT holders are always blocked.
  */
 [[nodiscard]] TER
-checkWithdrawFreezes(
+checkWithdrawFreeze(
     ReadView const& view,
     AccountID const& sourceAcct,
     AccountID const& submitterAcct,
@@ -151,14 +165,23 @@ checkWithdrawFreezes(
     Asset const& asset);
 
 /**
- * Checks freeze compliance for a pseudo-account deposit.
- *  - The source pseudo-account is not deep frozen for the asset
- *  - The submitting account is not individually frozen for the asset
+ * Checks freeze compliance for depositing an asset into a pseudo-account
+ * (e.g. Vault, AMM, LoanBroker).
+ *
+ * Asserts that dstAcct is a pseudo-account.
+ *
+ * Checks, in order:
+ *   1. checkFrozen(srcAcct, asset)  — the depositor must not be frozen
+ *      (global or individual) for the asset.
+ *   2. checkFrozen(dstAcct, asset)  — the pseudo-account must not be
+ *      frozen for the asset.  Unlike regular accounts, pseudo-accounts
+ *      cannot receive deposits under a regular freeze because the
+ *      deposited funds could not later be withdrawn.
  */
 [[nodiscard]] TER
 checkDepositFreeze(
     ReadView const& view,
-    AccountID const& sourceAcct,
+    AccountID const& srcAcct,
     AccountID const& dstAcct,
     Asset const& asset);
 

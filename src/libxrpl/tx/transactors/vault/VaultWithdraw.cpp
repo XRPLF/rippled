@@ -170,7 +170,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // The only way shares become locked is transitively via the
         // underlying asset, which checkWithdrawFreezes already covers.
         if (auto const ret =
-                checkWithdrawFreezes(ctx.view, vaultAccount, account, dstAcct, vaultAsset))
+                checkWithdrawFreeze(ctx.view, vaultAccount, account, dstAcct, vaultAsset))
             return ret;
     }
     else
