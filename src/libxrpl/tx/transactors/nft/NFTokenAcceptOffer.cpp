@@ -374,12 +374,21 @@ NFTokenAcceptOffer::transferNFToken(
 
     std::uint32_t const buyerOwnerCountBefore = sleBuyer->getFieldU32(sfOwnerCount);
 
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
+    // The transaction's reserve sponsor belongs to the submitter. It can only
+    // sponsor the buyer's NFTokenPage when the buyer is also the submitter.
+    SLE::pointer buyerSponsorSle = nullptr;
+    if (accountID_ == buyer)
+    {
+        auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
+        buyerSponsorSle = *sponsorSle;
+    }
 
+    // A null sponsor preserves the legacy behavior: the buyer owns any newly
+    // created NFTokenPage reserve without writing sfSponsor.
     auto const insertRet =
-        nft::insertToken(view(), ctx_.tx, buyer, *sponsorSle, std::move(tokenAndPage->token));
+        nft::insertToken(view(), ctx_.tx, buyer, buyerSponsorSle, std::move(tokenAndPage->token));
 
     // if fixNFTokenReserve is enabled, check if the buyer has sufficient
     // reserve to own a new object, if their OwnerCount changed.
@@ -399,9 +408,6 @@ NFTokenAcceptOffer::transferNFToken(
         auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
         if (buyerOwnerCountAfter > buyerOwnerCountBefore)
         {
-            SLE::const_pointer buyerSponsorSle;
-            if (accountID_ == buyer)
-                buyerSponsorSle = *sponsorSle;
             if (auto const ret = checkInsufficientReserve(
                     ctx_.view(), ctx_.tx, sleBuyer, buyerBalance, buyerSponsorSle, 0, 0, j_);
                 !isTesSuccess(ret))

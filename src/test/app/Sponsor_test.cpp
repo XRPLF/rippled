@@ -4071,6 +4071,74 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
+        {
+            // A broker can submit a sponsored accept, but the broker's reserve
+            // sponsor must not be bound to the buyer's new NFTokenPage.
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, broker, sponsor);
+            env.close();
+
+            uint256 const nftId{token::getNextID(env, alice, taxon, tfTransferable)};
+            env(token::mint(alice, taxon), Txflags(tfTransferable));
+            env.close();
+
+            uint256 const buyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftId, XRP(1)),
+                token::Owner(alice),
+                token::Destination(broker));
+
+            uint256 const sellOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, XRP(1)),
+                Txflags(tfSellNFToken),
+                token::Destination(broker));
+            env.close();
+
+            env(token::brokerOffers(broker, buyOfferIndex, sellOfferIndex),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            auto const bobPage = env.le(keylet::nftpageMax(bob));
+            if (!BEAST_EXPECT(bobPage))
+                return;
+
+            // Make sure the broker's sponsor is not written to the buyer's NFTokenPage.
+            BEAST_EXPECT(!bobPage->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+        {
+            // A seller can submit a sponsored accept, but the seller's reserve
+            // sponsor must not be bound to the buyer's new NFTokenPage.
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            uint256 const nftId{token::getNextID(env, alice, taxon, tfTransferable)};
+            env(token::mint(alice, taxon), Txflags(tfTransferable));
+            env.close();
+
+            uint256 const buyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftId, XRP(1)), token::Owner(alice));
+            env.close();
+
+            env(token::acceptBuyOffer(alice, buyOfferIndex),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            auto const bobPage = env.le(keylet::nftpageMax(bob));
+            if (!BEAST_EXPECT(bobPage))
+                return;
+
+            // Make sure the seller's sponsor is not written to
+            // the buyer's NFTokenPage.
+            BEAST_EXPECT(!bobPage->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
     }
 
     void
