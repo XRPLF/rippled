@@ -81,72 +81,65 @@ MantissaRange::getAllScales()
     return kScales;
 }
 
-std::unordered_map<MantissaRange::MantissaScale, MantissaRange> const&
-MantissaRange::getRanges()
-{
-    static auto const kMap = []() {
-        std::unordered_map<MantissaScale, MantissaRange> map;
-        for (auto const scale : getAllScales())
-        {
-            map.emplace(scale, scale);
-        }
-
-        // Use these constexpr declarations to do static_asserts to verify the MantissaRanges are
-        // created correctly, but nothing else.
-        {
-            [[maybe_unused]]
-            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Small};
-            static_assert(isPowerOfTen(kRange.min));
-            static_assert(kRange.min == 1'000'000'000'000'000LL);
-            static_assert(kRange.max == 9'999'999'999'999'999LL);
-            static_assert(kRange.log == 15);
-            static_assert(kRange.min < Number::kMaxRep);
-            static_assert(kRange.max < Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Disabled);
-        }
-        {
-            [[maybe_unused]]
-            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::LargeLegacy};
-            static_assert(isPowerOfTen(kRange.min));
-            static_assert(kRange.min == 1'000'000'000'000'000'000ULL);
-            static_assert(kRange.max == rep(9'999'999'999'999'999'999ULL));
-            static_assert(kRange.log == 18);
-            static_assert(kRange.min < Number::kMaxRep);
-            static_assert(kRange.max > Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Disabled);
-        }
-        {
-            [[maybe_unused]]
-            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large320};
-            static_assert(isPowerOfTen(kRange.min));
-            static_assert(kRange.min == 1'000'000'000'000'000'000ULL);
-            static_assert(kRange.max == rep(9'999'999'999'999'999'999ULL));
-            static_assert(kRange.log == 18);
-            static_assert(kRange.min < Number::kMaxRep);
-            static_assert(kRange.max > Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled320);
-        }
-        {
-            [[maybe_unused]]
-            constexpr static MantissaRange kRange{MantissaRange::MantissaScale::Large330};
-            static_assert(isPowerOfTen(kRange.min));
-            static_assert(kRange.min == 1'000'000'000'000'000'000ULL);
-            static_assert(kRange.max == rep(9'999'999'999'999'999'999ULL));
-            static_assert(kRange.log == 18);
-            static_assert(kRange.min < Number::kMaxRep);
-            static_assert(kRange.max > Number::kMaxRep);
-            static_assert(kRange.cuspRoundingFix == CuspRoundingFix::Enabled330);
-        }
-        return map;
-    }();
-
-    return kMap;
-}
-
-MantissaRange const&
+constexpr MantissaRange const&
 MantissaRange::getMantissaRange(MantissaScale scale)
 {
-    return getRanges().at(scale);
+    static constexpr MantissaRange kSmall{MantissaScale::Small};
+    static constexpr MantissaRange kLegacy{MantissaScale::LargeLegacy};
+    static constexpr MantissaRange kLarge320{MantissaScale::Large320};
+    static constexpr MantissaRange kLarge330{MantissaScale::Large330};
+
+    switch (scale)
+    {
+        case MantissaScale::Small:
+            return kSmall;
+        case MantissaScale::LargeLegacy:
+            return kLegacy;
+        case MantissaScale::Large320:
+            return kLarge320;
+        case MantissaScale::Large330:
+            return kLarge330;
+    }
+    throw std::logic_error("Unknown mantissa scale");
+
+    // static_asserts are checked at compile time, so it doesn't matter where in the function they
+    // are located. For readability of the main body, put them after it.
+
+    // Small
+    static_assert(isPowerOfTen(kSmall.min));
+    static_assert(kSmall.min == 1'000'000'000'000'000LL);
+    static_assert(kSmall.max == 9'999'999'999'999'999LL);
+    static_assert(kSmall.log == 15);
+    static_assert(kSmall.min < Number::kMaxRep);
+    static_assert(kSmall.max < Number::kMaxRep);
+    static_assert(kSmall.cuspRoundingFix == CuspRoundingFix::Disabled);
+
+    // LargeLegacy
+    static_assert(isPowerOfTen(kLegacy.min));
+    static_assert(kLegacy.min == 1'000'000'000'000'000'000ULL);
+    static_assert(kLegacy.max == rep(9'999'999'999'999'999'999ULL));
+    static_assert(kLegacy.log == 18);
+    static_assert(kLegacy.min < Number::kMaxRep);
+    static_assert(kLegacy.max > Number::kMaxRep);
+    static_assert(kLegacy.cuspRoundingFix == CuspRoundingFix::Disabled);
+
+    // Large320
+    static_assert(isPowerOfTen(kLarge320.min));
+    static_assert(kLarge320.min == 1'000'000'000'000'000'000ULL);
+    static_assert(kLarge320.max == rep(9'999'999'999'999'999'999ULL));
+    static_assert(kLarge320.log == 18);
+    static_assert(kLarge320.min < Number::kMaxRep);
+    static_assert(kLarge320.max > Number::kMaxRep);
+    static_assert(kLarge320.cuspRoundingFix == CuspRoundingFix::Enabled320);
+
+    // Large330
+    static_assert(isPowerOfTen(kLarge330.min));
+    static_assert(kLarge330.min == 1'000'000'000'000'000'000ULL);
+    static_assert(kLarge330.max == rep(9'999'999'999'999'999'999ULL));
+    static_assert(kLarge330.log == 18);
+    static_assert(kLarge330.min < Number::kMaxRep);
+    static_assert(kLarge330.max > Number::kMaxRep);
+    static_assert(kLarge330.cuspRoundingFix == CuspRoundingFix::Enabled330);
 }
 
 Number::RoundingMode
@@ -421,7 +414,9 @@ Number::Guard::doDropDigit<uint128_t>(uint128_t& mantissa, int& exponent) noexce
 Number::Guard::Round
 Number::Guard::round() const noexcept
 {
-    auto mode = Number::getround();
+    // Local "mode" shadows and has the same value as the static thread_local "Number::mode".
+    // This ensures the overhead of loading the thread_local is only incurred once.
+    auto const mode = Number::getround();
 
     if (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 && empty())
     {
@@ -438,14 +433,17 @@ Number::Guard::round() const noexcept
         return Round::Down;
     }
 
-    // Away from Zero
-    if ((mode == RoundingMode::Downward && sbit_) || (mode == RoundingMode::Upward && !sbit_))
+    // Away from Zero. Since we checked sbit_ in the previous block, we don't need to check it
+    // again.
+    if (mode == RoundingMode::Downward || mode == RoundingMode::Upward)
     {
         if (empty())
             return Round::Down;
         return Round::Up;
     }
 
+    XRPL_ASSERT(
+        mode == RoundingMode::ToNearest, "xrpl::Number::Guard::Round : fallthrough to ToNearest");
     // assume round to nearest if mode is not one of the predefined values
     if (digits_ > 0x5000'0000'0000'0000)
         return Round::Up;
