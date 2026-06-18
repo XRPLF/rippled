@@ -4999,6 +4999,61 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         }
+        // SponsorshipTransfer
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, gw, sponsor);
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx);
+            env.close();
+
+            // Alice owns the vault, pseudo account and MPToken
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+            if (cosigning)
+            {
+                // Alice lets sponsor to sponsor her Vault
+                env(sponsor::transfer(alice, tfSponsorshipCreate, vaultKeylet.key),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor));
+                env.close();
+            }
+            else
+            {
+                // Create sponsorship with reserve count being 2 (for vault and pseudo account)
+                env(sponsor::set_reserve(sponsor, 0, 2), sponsor::SponseeAcc(alice));
+                env.close();
+                env(sponsor::transfer(alice, tfSponsorshipCreate, vaultKeylet.key),
+                    sponsor::As(sponsor, spfSponsorReserve));
+                env.close();
+
+                auto const sponsorshipSle = env.le(keylet::sponsor(sponsor, alice));
+                if (!BEAST_EXPECT(sponsorshipSle))
+                    return;
+                BEAST_EXPECT(sponsorshipSle->getFieldU32(sfReserveCount) == 0);
+            }
+
+            BEAST_EXPECT(env.le(vaultKeylet)->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+            // Vault counts for 2 reserves, vault and the pseudo account
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+
+            // End sponsorship
+            env(sponsor::transfer(alice, tfSponsorshipEnd, vaultKeylet.key));
+            env.close();
+
+            BEAST_EXPECT(!env.le(vaultKeylet)->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+            // Sponsorship ended and the sponsored owner count should be 0.
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
     }
 
     void

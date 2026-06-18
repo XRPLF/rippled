@@ -205,6 +205,9 @@ getLedgerEntryOwnerCount(T const& sle)
         case ltORACLE: {
             return OracleSet::calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
         }
+        // Vaults require 2 owner counts (the vault and a pseudo-account)
+        case ltVAULT:
+            return 2;
         default:
             return 1;
     }
