@@ -31,6 +31,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -413,23 +414,29 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
 
-    // Build the signers list
-    std::unordered_set<AccountID> requiredSigners;
+    // Accounts that must sign the batch: each inner authorizer and counterparty
+    // (excluding the outer account), sorted and de-duplicated to match against
+    // the ascending, unique batch signers.
+    std::vector<AccountID> requiredSigners;
+    requiredSigners.reserve(rawTxns.size());
     for (STObject const& rb : rawTxns)
     {
         // A delegated inner is signed by the delegate, not the account holder,
         // so the delegate is the required signer when present.
         AccountID const authorizer = rb[~sfDelegate].value_or(rb[sfAccount]);
 
-        // The outer signature already covers the outer account.
         if (authorizer != outerAccount)
-            requiredSigners.insert(authorizer);
+            requiredSigners.push_back(authorizer);
         // Some transactions have a Counterparty, who must also sign the
         // transaction if they are not the outer account
         if (auto const counterparty = rb.at(~sfCounterparty);
             counterparty && counterparty != outerAccount)
-            requiredSigners.insert(*counterparty);
+            requiredSigners.push_back(*counterparty);
     }
+    std::ranges::sort(requiredSigners);
+    requiredSigners.erase(std::ranges::unique(requiredSigners).begin(), requiredSigners.end());
+
+    std::size_t matched = 0;
 
     // Validation Batch Signers
     if (ctx.tx.isFieldPresent(sfBatchSigners))
@@ -444,7 +451,9 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             return temARRAY_TOO_LARGE;
         }
 
-        // Batch signers must be in strictly ascending order by AccountID.
+        // Batch signers must be strictly ascending and match the required
+        // signers exactly; since both are sorted, each must be the next
+        // required signer.
         AccountID lastBatchSigner{beast::kZero};
         for (auto const& signer : signers)
         {
@@ -471,14 +480,13 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             }
             lastBatchSigner = signerAccount;
 
-            // Check that the batch signer is in the required signers set.
-            // Remove it if it does, as it can be crossed off the list.
-            if (requiredSigners.erase(signerAccount) == 0)
+            if (matched >= requiredSigners.size() || requiredSigners[matched] != signerAccount)
             {
                 JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                     << "extra signer provided: " << signerAccount;
                 return temBAD_SIGNER;
             }
+            ++matched;
         }
 
         // Check the batch signers signatures.
@@ -492,7 +500,9 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         }
     }
 
-    if (!requiredSigners.empty())
+    // Reject if any required signer was not matched (also covers signers being
+    // required while sfBatchSigners is absent, leaving matched at 0).
+    if (matched != requiredSigners.size())
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                             << "invalid batch signers.";
