@@ -164,7 +164,7 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& ass
         [&](auto const& issue) { return checkDeepFrozen(view, account, issue); }, asset.value());
 }
 
-TER
+[[nodiscard]] TER
 checkWithdrawFreeze(
     ReadView const& view,
     AccountID const& srcAcct,
@@ -174,7 +174,7 @@ checkWithdrawFreeze(
 {
     XRPL_ASSERT(
         isPseudoAccount(view, srcAcct),
-        "xrpl::checkWithdrawFreezes : source must be a pseudo-account");
+        "xrpl::checkWithdrawFreeze : source must be a pseudo-account");
 
     // No matter what, funds can be sent to the issuer
     if (dstAcct == asset.getIssuer())
