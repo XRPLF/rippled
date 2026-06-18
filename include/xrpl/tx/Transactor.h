@@ -222,8 +222,63 @@ public:
         return tesSUCCESS;
     }
 
+    /**
+     * This function can be overridden to introduce additional semantic constraints beyond the
+     * granular template validation for granular permissions. It is called by the base
+     * invokeCheckPermission method only after the transaction has successfully passed
+     * checkGranularSandbox.
+     */
     static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
+    checkGranularSemantics(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
+    {
+        return tesSUCCESS;
+    }
+
+    /**
+     * Checks whether the transaction is authorized to be executed by the delegated account.
+     * This function enforces the strict permission check hierarchy. It is explicitly
+     * designed NOT to be overridden. Derived transactors must instead implement
+     * checkGranularSemantics to add custom validation logic for granular permissions.
+     *
+     * The evaluation proceeds as follows:
+     * - If transaction-level permission is granted, the function immediately returns tesSUCCESS.
+     * - If transaction-level permission is not granted, the function checks whether the transaction
+     * matches the granular permission template defined in permissions.macro. If it does, it then
+     * calls checkGranularSemantics to perform any additional, fine-grained validation.
+     *
+     */
+    template <class T>
+    static NotTEC
+    invokeCheckPermission(ReadView const& view, STTx const& tx)
+    {
+        // heldGranularPermissions is passed by reference into checkPermission.
+        // It is populated with the sender’s granular permissions only when the sender
+        // lacks tx-level permission but has granular permissions that satisfy the
+        // granular permission template.
+        //
+        // - result is terNO_DELEGATE_PERMISSION: return immediately.
+        // - result is tesSUCCESS and heldGranularPermissions is empty: tx-level permission was
+        // granted, so we returned success before populating it.
+        // - result is tesSUCCESS and heldGranularPermissions is not empty: tx-level permission was
+        // not granted, but the held granular permissions passed checkGranularSandbox, so we proceed
+        // to checkGranularSemantics.
+        //
+        // WARNING: Do not simplify checkPermission to return only
+        // heldGranularPermissions or the ter code. Both the result and the
+        // populated set are required to enforce the strict permission hierarchy
+        // described above.
+        std::unordered_set<GranularPermissionType> heldGranularPermissions;
+        if (NotTEC const result = checkPermission(view, tx, heldGranularPermissions);
+            !isTesSuccess(result) || heldGranularPermissions.empty())
+        {
+            return result;
+        }
+
+        return T::checkGranularSemantics(view, tx, heldGranularPermissions);
+    }
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
@@ -353,6 +408,12 @@ protected:
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
 private:
+    static NotTEC
+    checkPermission(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
+
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
 
