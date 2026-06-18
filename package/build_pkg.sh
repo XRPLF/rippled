@@ -77,11 +77,17 @@ SRC_DIR="$(cd "${SRC_DIR:-${PWD}}" && pwd)"
 BUILD_DIR="$(cd "${BUILD_DIR:-${PWD}/build}" && pwd)"
 
 if [[ -z "${XRPLD_VERSION}" ]]; then
-    XRPLD_VERSION="$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3; exit}')"
+    XRPLD_VERSION="$("${BUILD_DIR}/xrpld" --version | awk 'NR == 1 { print $3 }')"
 fi
 
 if [[ -z "${XRPLD_VERSION}" ]]; then
     echo "XRPLD_VERSION is empty (not provided and could not be derived)." >&2
+    exit 1
+fi
+
+if [[ "${XRPLD_VERSION}" == -* || "${XRPLD_VERSION}" == *- ]]; then
+    echo "build_pkg.sh: invalid XRPLD_VERSION='${XRPLD_VERSION}'." >&2
+    echo "Version cannot start or end with '-'." >&2
     exit 1
 fi
 

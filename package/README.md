@@ -66,14 +66,14 @@ so you don't need to hardcode a SHA.
 # .package_configs.debian[0].image for the deb image):
 IMAGE=$(jq -r '.package_configs.rhel[0].image' .github/scripts/strategy-matrix/linux.json)
 
-XRPLD_VERSION=2.4.0-local
+XRPLD_VERSION=0.0.0-local
 PKG_RELEASE=1
 
 docker run --rm \
     -v "$(pwd):/src" \
     -w /src \
-    "$IMAGE" \
-    ./package/build_pkg.sh --xrpld-version "$XRPLD_VERSION" --pkg-release "$PKG_RELEASE"
+    "${IMAGE}" \
+    ./package/build_pkg.sh --xrpld-version "${XRPLD_VERSION}" --pkg-release "${PKG_RELEASE}"
 
 # Output:
 #   build/debbuild/*.deb         (DEB + dbgsym .ddeb)
@@ -134,9 +134,13 @@ script fall back to parsing `xrpld --version`.
 the final release. Versions with more than one `-` are rejected so the
 pre-release suffix remains a single token.
 
+`pkg_version` is the normalized package metadata version derived inside
+`build_pkg.sh` from `XRPLD_VERSION` (`-` pre-release separator converted to
+`~`). It is not a separate user input.
+
 `PKG_RELEASE` is a different value: the package release iteration for that
-`xrpld` version. RPM receives the normalized version and `PKG_RELEASE` as
-separate `pkg_version` and `pkg_release` macros for its `Version` and `Release`
+`xrpld` version. RPM receives the normalized `pkg_version` and `PKG_RELEASE` as
+the `pkg_version` and `pkg_release` macros for its `Version` and `Release`
 values; DEB writes them as `${pkg_version}-${PKG_RELEASE}` in
 `debian/changelog`.
 
@@ -178,11 +182,21 @@ into the staging area, and invokes the platform build tool.
 
 1. Creates the standard `rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}` tree inside the build directory.
 2. Copies `xrpld.spec` and all source files (binary, configs, service files) into `SOURCES/`.
-3. Runs `rpmbuild -bb`, passing the normalized version and `PKG_RELEASE` as the
-   `pkg_version` and `pkg_release` RPM macros.
+3. Runs `rpmbuild -bb`, passing the normalized package metadata version as the
+   `pkg_version` RPM macro and `PKG_RELEASE` as the `pkg_release` RPM macro.
    The spec uses manual `install` commands to place files, disables `dwz`, and
    writes uncompressed RPM payloads while generating debuginfo packages.
 4. Output: `rpmbuild/RPMS/x86_64/xrpld-*.rpm`
+
+The uncompressed RPM payload setting is intentionally unconditional for
+generated RPMs. It trades larger RPM artifacts for much shorter package
+build/validation time, which keeps RPM package validation in the same rough time
+class as Debian package validation.
+
+RPM upgrades intentionally do not restart a running `xrpld` service. The spec
+uses `%systemd_postun`, matching Debian's `dh_installsystemd
+--no-stop-on-upgrade` behavior; operators pick up the new binary on the next
+service restart.
 
 ### DEB
 
@@ -190,7 +204,8 @@ into the staging area, and invokes the platform build tool.
 2. Stages the binary, configs, `README.md`, and `LICENSE.md`.
 3. Copies `package/debian/` control files into `debbuild/source/debian/`.
 4. Copies shared service/sysusers/tmpfiles into `debian/` where `dh_installsystemd`, `dh_installsysusers`, and `dh_installtmpfiles` pick them up automatically.
-5. Generates a minimal `debian/changelog` using `${pkg_version}-${PKG_RELEASE}`.
+5. Generates a minimal `debian/changelog` using `${pkg_version}-${PKG_RELEASE}`,
+   where `pkg_version` is derived from `XRPLD_VERSION`.
 6. Runs `dpkg-buildpackage -b --no-sign -d` (`-d` skips the build-dependency check, since the binary is already built). `debian/rules` uses manual `install` commands.
 7. Output: `debbuild/*.deb` and `debbuild/*.ddeb` (dbgsym package)
 

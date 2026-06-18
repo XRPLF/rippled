@@ -1,3 +1,11 @@
+%if "%{?pkg_version}" == ""
+%{error:pkg_version must be defined}
+%endif
+
+%if "%{?pkg_release}" == ""
+%{error:pkg_release must be defined}
+%endif
+
 Name:     xrpld
 Version:  %{pkg_version}
 Release:  %{pkg_release}%{?dist}
@@ -11,6 +19,7 @@ BuildRequires: systemd-rpm-macros
 
 %undefine _debugsource_packages
 %debug_package
+# Intentionally trade larger RPM artifacts for faster package validation.
 %global _binary_payload w.ufdio
 %global _find_debuginfo_dwz_opts %{nil}
 
