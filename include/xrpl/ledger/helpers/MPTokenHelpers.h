@@ -78,7 +78,8 @@ authorizeMPToken(
     AccountID const& account,
     beast::Journal journal,
     std::uint32_t flags = 0,
-    std::optional<AccountID> holderID = std::nullopt);
+    std::optional<AccountID> holderID = std::nullopt,
+    bool allowSponsor = true);
 
 /** Check if the account lacks required authorization for MPT.
  *

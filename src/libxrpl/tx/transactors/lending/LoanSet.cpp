@@ -295,6 +295,14 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
+    // A reserve sponsor only covers tx.Account's own objects, not counterparty's
+    if (isReserveSponsored(tx) && borrower != account)
+    {
+        JLOG(ctx.j.warn())
+            << "LoanSet: reserve sponsorship cannot cover the counterparty borrower.";
+        return tecNO_PERMISSION;
+    }
+
     auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vault)
     {

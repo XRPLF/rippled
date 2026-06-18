@@ -144,7 +144,16 @@ addEmptyHolding(
     if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;
 
-    return authorizeMPToken(view, tx, priorBalance, mptID, accountID, journal);
+    return authorizeMPToken(
+        view,
+        tx,
+        priorBalance,
+        mptID,
+        accountID,
+        journal,
+        0,
+        std::nullopt,
+        accountID == tx[sfAccount]);
 }
 
 [[nodiscard]] TER
@@ -156,7 +165,8 @@ authorizeMPToken(
     AccountID const& account,
     beast::Journal journal,
     std::uint32_t flags,
-    std::optional<AccountID> holderID)
+    std::optional<AccountID> holderID,
+    bool allowSponsor)
 {
     auto const sleAcct = view.peek(keylet::account(account));
     if (!sleAcct)
@@ -193,22 +203,26 @@ authorizeMPToken(
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
-        auto const sponsorSle = getTxReserveSponsor(view, tx);
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
+        SLE::pointer sponsorSle;
+        if (allowSponsor)
+        {
+            auto sle = getTxReserveSponsor(view, tx);
+            if (!sle)
+                return sle.error();  // LCOV_EXCL_LINE
+            sponsorSle = std::move(*sle);
+        }
 
         // The reserve that is required to create the MPToken. Note
         // that although the reserve increases with every item
         // an account owns, in the case of MPTokens we only
         // *enforce* a reserve if the user owns more than two
         // items. This is similar to the reserve requirements of trust lines.
-        // The "free-tier" shortcut (ownerCount < 2) does not apply once a sponsor is on
-        // the tx — the sponsor must always cover the reserve (via balance or prefunded
-        // budget), so this check always runs for sponsored transactions.
-        if (*sponsorSle || ownerCount(view, sleAcct, journal) >= 2)
+        // The free-tier shortcut (ownerCount < 2) does not apply once
+        // a sponsor is on the tx; the sponsor must cover the reserve.
+        if (sponsorSle || ownerCount(view, sleAcct, journal) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
-                    view, tx, sleAcct, priorBalance, *sponsorSle, 1, 0, journal);
+                    view, tx, sleAcct, priorBalance, sponsorSle, 1, 0, journal);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -235,8 +249,8 @@ authorizeMPToken(
         view.insert(mptoken);
 
         // Update owner count.
-        adjustOwnerCount(view, sleAcct, *sponsorSle, 1, journal);
-        addSponsorToLedgerEntry(mptoken, *sponsorSle);
+        adjustOwnerCount(view, sleAcct, sponsorSle, 1, journal);
+        addSponsorToLedgerEntry(mptoken, sponsorSle);
 
         return tesSUCCESS;
     }

@@ -3090,19 +3090,18 @@ public:
         // defaults to 0.
         env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::SponseeAcc(sponsee));
         env.close();
-        BEAST_EXPECT(env.le(keylet::sponsor(sponsor, sponsee)));
+        BEAST_EXPECT(env.le(keylet::sponsorship(sponsor, sponsee)));
 
-        // Sponsee creates a DID with the sponsor co-signing the reserve. The
+        // Sponsee creates a Check with the sponsor co-signing the reserve. The
         // fee-only Sponsorship's has ReserveCount (0), so this fails
         // with tecINSUFFICIENT_RESERVE
-        env(did::set(sponsee),
-            did::Uri("uri"),
+        env(check::create(sponsee, sponsor, XRP(1)),
             sponsor::As(sponsor, spfSponsorReserve),
             Sig(sfSponsorSignature, sponsor),
             Ter(tecINSUFFICIENT_RESERVE));
         env.close();
 
-        BEAST_EXPECT(!env.le(keylet::did(sponsee)));
+        BEAST_EXPECT(ownerCount(env, sponsee) == 0);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         BEAST_EXPECT(sponsoredOwnerCount(env, sponsee) == 0);
 
@@ -3111,14 +3110,13 @@ public:
         env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(sponsee));
         env.close();
 
-        env(did::set(sponsee),
-            did::Uri("uri"),
+        env(check::create(sponsee, sponsor, XRP(1)),
             sponsor::As(sponsor, spfSponsorReserve),
             Sig(sfSponsorSignature, sponsor),
             Ter(tesSUCCESS));
         env.close();
 
-        BEAST_EXPECT(env.le(keylet::did(sponsee)));
+        BEAST_EXPECT(ownerCount(env, sponsee) == 1);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
         BEAST_EXPECT(sponsoredOwnerCount(env, sponsee) == 1);
     }
