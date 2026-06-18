@@ -84,7 +84,7 @@ fi
 xrpld_version="$("${xrpld_binary}" --version | awk 'NR == 1 { print $3 }')"
 
 if [[ -z "${xrpld_version}" ]]; then
-    echo "Unable to derive xrpld version from ${BUILD_DIR}/xrpld --version." >&2
+    echo "build_pkg.sh: unable to derive xrpld version from ${xrpld_binary} --version." >&2
     exit 1
 fi
 
