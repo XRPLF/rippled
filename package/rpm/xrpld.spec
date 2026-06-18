@@ -48,7 +48,11 @@ install -Dm0644 %{_sourcedir}/validators.txt       %{buildroot}%{_sysconfdir}/%{
 install -Dm0644 %{_sourcedir}/xrpld.service        %{buildroot}%{_unitdir}/xrpld.service
 install -Dm0644 %{_sourcedir}/xrpld.sysusers       %{buildroot}%{_sysusersdir}/xrpld.conf
 install -Dm0644 %{_sourcedir}/xrpld.tmpfiles       %{buildroot}%{_tmpfilesdir}/xrpld.conf
-install -Dm0644 %{_sourcedir}/50-xrpld.preset      %{buildroot}%{_presetdir}/50-xrpld.preset
+install -Dm0644 /dev/null %{buildroot}%{_presetdir}/50-xrpld.preset
+cat >%{buildroot}%{_presetdir}/50-xrpld.preset <<'EOF'
+# /usr/lib/systemd/system-preset/50-xrpld.preset
+enable xrpld.service
+EOF
 
 # Logrotate config
 install -Dm0644 %{_sourcedir}/xrpld.logrotate      %{buildroot}%{_sysconfdir}/logrotate.d/%{name}

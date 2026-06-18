@@ -15,7 +15,6 @@ package/
     xrpld.sysusers      sysusers.d config (used by both RPM and DEB)
     xrpld.tmpfiles      tmpfiles.d config (used by both RPM and DEB)
     xrpld.logrotate     logrotate config (installed to /etc/logrotate.d/xrpld)
-    50-xrpld.preset     systemd preset (RPM only; DEB enables the unit via dh_installsystemd)
 ```
 
 ## Prerequisites
@@ -28,10 +27,10 @@ to a new image, edit that field and both CI and local builds pick it up. The
 package format (deb or rpm) is inferred at build time from the container's
 package manager (`apt-get` -> deb, `dnf`/`yum` -> rpm).
 
-| Package type | Image (`package_configs.<distro>[].image` in `linux.json`) | Tools required                                 |
-| ------------ | ---------------------------------------------------------- | ---------------------------------------------- |
-| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`                                     |
-| DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<sha>`           | `dpkg-buildpackage`, `debhelper-compat (= 13)` |
+| Package type | Image (`package_configs.<distro>[].image` in `linux.json`) | Tools required                                      |
+| ------------ | ---------------------------------------------------------- | --------------------------------------------------- |
+| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<sha>`             | `rpmbuild`                                          |
+| DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<sha>`           | `dpkg-buildpackage`, debhelper with compat level 13 |
 
 To print the full packaging matrix (artifact names and images) for the current
 `linux.json`:
@@ -47,11 +46,11 @@ To print the full packaging matrix (artifact names and images) for the current
 Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
 `reusable-package.yml`. That workflow generates its own packaging matrix from
 `package_configs` in `linux.json` (via `generate.py --packaging`) and fans out
-one job per distro. Each job downloads the pre-built `xrpld` binary artifact,
-runs in that distro's container (so the package format follows from the
-container's package manager), and calls `build_pkg.sh` with `XRPLD_VERSION` and
-`PKG_RELEASE` supplied via env — no CMake configure or build step is needed
-inside the packaging job.
+one job per distro. Each job downloads the pre-built `xrpld` binary artifact and
+runs in that distro's container, so the package format follows from the
+container's package manager. The packaging script derives the package version
+from the downloaded binary's `xrpld --version` output; no CMake configure or
+build step is needed inside the packaging job.
 
 ### Locally (mirrors CI)
 
@@ -66,14 +65,13 @@ so you don't need to hardcode a SHA.
 # .package_configs.debian[0].image for the deb image):
 IMAGE=$(jq -r '.package_configs.rhel[0].image' .github/scripts/strategy-matrix/linux.json)
 
-XRPLD_VERSION=0.0.0-local
 PKG_RELEASE=1
 
 docker run --rm \
     -v "$(pwd):/src" \
     -w /src \
     "${IMAGE}" \
-    ./package/build_pkg.sh --xrpld-version "${XRPLD_VERSION}" --pkg-release "${PKG_RELEASE}"
+    ./package/build_pkg.sh --pkg-release "${PKG_RELEASE}"
 
 # Output:
 #   build/debbuild/*.deb         (DEB + dbgsym .ddeb)
@@ -102,13 +100,9 @@ infers the package format from the host's package manager. The packaging script
 installs to FHS-standard paths (`/usr/bin`, `/etc/xrpld`, etc.) regardless of
 `CMAKE_INSTALL_PREFIX`.
 
-The version is not a CMake input on this path: `cmake/XrplVersion.cmake` reads
-it from `src/libxrpl/protocol/BuildInfo.cpp` into `xrpld_version`, and
-`XrplPackaging.cmake` exports that to `build_pkg.sh` as `XRPLD_VERSION` (a
-`-Dxrpld_version=...` on the command line is overwritten and has no effect). The
-release defaults to 1 and is overridable with `-Dpkg_release=N`. To package a
-custom version string, use the script or container path above with
-`--xrpld-version`.
+The package version is not a CMake input on this path: `build_pkg.sh` derives it
+from the just-built `xrpld` binary's `xrpld --version` output. The package
+release defaults to 1 and is overridable with `-Dpkg_release=N`.
 
 ## How `build_pkg.sh` works
 
@@ -116,27 +110,26 @@ custom version string, use the script or container path above with
 environment variable. Flags override env vars; env vars override the built-in
 defaults. Run `./package/build_pkg.sh --help` for the same table:
 
-| Flag                       | Env var             | Default/source                                           | Purpose                             |
-| -------------------------- | ------------------- | -------------------------------------------------------- | ----------------------------------- |
-| `--src-dir DIR`            | `SRC_DIR`           | `$PWD`                                                   | repo root                           |
-| `--build-dir DIR`          | `BUILD_DIR`         | `$PWD/build`                                             | directory holding pre-built `xrpld` |
-| `--xrpld-version STR`      | `XRPLD_VERSION`     | set by CMake/CI; fallback: parsed from `xrpld --version` | `xrpld` version, e.g. `3.2.0-b1`    |
-| `--pkg-release N`          | `PKG_RELEASE`       | `1`                                                      | package release iteration           |
-| `--source-date-epoch SECS` | `SOURCE_DATE_EPOCH` | latest git commit ctime; fallback: current time          | reproducibility timestamp           |
+| Flag                       | Env var             | Default/source                                  | Purpose                             |
+| -------------------------- | ------------------- | ----------------------------------------------- | ----------------------------------- |
+| `--src-dir DIR`            | `SRC_DIR`           | `${PWD}`                                        | repo root                           |
+| `--build-dir DIR`          | `BUILD_DIR`         | `${PWD}/build`                                  | directory holding pre-built `xrpld` |
+| `--pkg-release N`          | `PKG_RELEASE`       | `1`                                             | package release iteration           |
+| `--source-date-epoch SECS` | `SOURCE_DATE_EPOCH` | latest git commit ctime; fallback: current time | reproducibility timestamp           |
 
-`XRPLD_VERSION` is the `build_pkg.sh` input for the `xrpld` software version in
-both package formats. CMake derives it as `xrpld_version` and exports it as
-`XRPLD_VERSION`; direct script invocations may pass it explicitly or let the
-script fall back to parsing `xrpld --version`.
+`build_pkg.sh` derives the `xrpld` software version from
+`${BUILD_DIR}/xrpld --version` in both package formats.
 
+The binary's version is already SemVer-validated by `BuildInfo`.
 `build_pkg.sh` converts pre-release versions such as `3.2.0-b1` or
 `3.2.0-rc1` from `-` to `~` for package metadata so pre-releases sort before
-the final release. Versions with more than one `-` are rejected so the
-pre-release suffix remains a single token.
+the final release. If that normalized package version still contains `-`,
+packaging fails because RPM forbids `-` in `Version`, and Debian uses `-` as
+the upstream/revision separator.
 
 `pkg_version` is the normalized package metadata version derived inside
-`build_pkg.sh` from `XRPLD_VERSION` (`-` pre-release separator converted to
-`~`). It is not a separate user input.
+`build_pkg.sh` from the binary-reported `xrpld` version (`-` pre-release
+separator converted to `~`). It is not a separate user input.
 
 `PKG_RELEASE` is a different value: the package release iteration for that
 `xrpld` version. RPM receives the normalized `pkg_version` and `PKG_RELEASE` as
@@ -153,10 +146,10 @@ With `PKG_RELEASE=1`, the package metadata becomes:
 | `3.2.0-b1`         | `3.2.0~b1-1%{?dist}`         | `3.2.0~b1-1`         |
 | `3.2.0-rc1`        | `3.2.0~rc1-1%{?dist}`        | `3.2.0~rc1-1`        |
 
-The Debian changelog's distribution field carries our apt repo _component_ (the
-suite/codename is assigned by the publishing infra at ingest, not here): final
-releases use `stable`, `b0` builds, including `b0+metadata`, use `develop`, and
-other pre-releases use `unstable`.
+The Debian changelog's distribution field carries the XRPLF release channel used
+by publishing, not the build host's Debian/Ubuntu codename: final releases use
+`stable`, `b0` builds, including `b0+metadata`, use `develop`, and other
+pre-releases such as beta and RC builds use `unstable`.
 
 The RPM path intentionally uses `~` in `Version`, matching the Debian
 pre-release ordering convention, so RPM filenames/NVRs begin with forms like
@@ -169,10 +162,9 @@ fail early.
 
 Flags are for explicit invocation; environment variables are intended for
 CMake/CI integration. The CI workflow and the CMake `package` target both invoke
-`build_pkg.sh` with no flags; CMake supplies `SRC_DIR`, `BUILD_DIR`,
-`XRPLD_VERSION`, and `PKG_RELEASE` via env, while CI supplies `BUILD_DIR`,
-`XRPLD_VERSION`, and `PKG_RELEASE` via env and lets the script use defaults for
-the rest.
+`build_pkg.sh` with no flags; CMake supplies `SRC_DIR`, `BUILD_DIR`, and
+`PKG_RELEASE` via env, while CI supplies `BUILD_DIR` and `PKG_RELEASE` via env
+and lets the script use defaults for the rest.
 
 It resolves `SRC_DIR` and `BUILD_DIR` to absolute paths, then calls
 `stage_common()` to copy the binary, config files, and shared support files
@@ -181,7 +173,7 @@ into the staging area, and invokes the platform build tool.
 ### RPM
 
 1. Creates the standard `rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}` tree inside the build directory.
-2. Copies `xrpld.spec` and all source files (binary, configs, service files) into `SOURCES/`.
+2. Copies `xrpld.spec` and all shared source files (binary, configs, service files) into `SOURCES/`.
 3. Runs `rpmbuild -bb`, passing the normalized package metadata version as the
    `pkg_version` RPM macro and `PKG_RELEASE` as the `pkg_release` RPM macro.
    The spec uses manual `install` commands to place files, disables `dwz`, and
@@ -205,7 +197,7 @@ service restart.
 3. Copies `package/debian/` control files into `debbuild/source/debian/`.
 4. Copies shared service/sysusers/tmpfiles into `debian/` where `dh_installsystemd`, `dh_installsysusers`, and `dh_installtmpfiles` pick them up automatically.
 5. Generates a minimal `debian/changelog` using `${pkg_version}-${PKG_RELEASE}`,
-   where `pkg_version` is derived from `XRPLD_VERSION`.
+   where `pkg_version` is derived from the binary-reported `xrpld` version.
 6. Runs `dpkg-buildpackage -b --no-sign -d` (`-d` skips the build-dependency check, since the binary is already built). `debian/rules` uses manual `install` commands.
 7. Output: `debbuild/*.deb` and `debbuild/*.ddeb` (dbgsym package)
 
