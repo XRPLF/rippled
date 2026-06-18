@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -27,7 +28,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -138,10 +138,10 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     // Consider removing the offer if:
     //  o `TakerPays` is XRP (because of XRP drops granularity) or
     //  o `TakerPays` and `TakerGets` are both IOU and `TakerPays`<`TakerGets`
-    constexpr bool const kIN_IS_XRP = std::is_same_v<TTakerPays, XRPAmount>;
-    constexpr bool const kOUT_IS_XRP = std::is_same_v<TTakerGets, XRPAmount>;
+    static constexpr bool kInIsXrp = std::is_same_v<TTakerPays, XRPAmount>;
+    static constexpr bool kOutIsXrp = std::is_same_v<TTakerGets, XRPAmount>;
 
-    if constexpr (kOUT_IS_XRP)
+    if constexpr (kOutIsXrp)
     {
         // If `TakerGets` is XRP, the worst this offer's quality can change is
         // to about 10^-81 `TakerPays` and 1 drop `TakerGets`. This will be
@@ -156,7 +156,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
 
-    if constexpr (!kIN_IS_XRP && !kOUT_IS_XRP)
+    if constexpr (!kInIsXrp && !kOutIsXrp)
     {
         if (Number(ofrAmts.in) >= Number(ofrAmts.out))
             return false;
@@ -205,7 +205,7 @@ TOfferStreamBase<TIn, TOut>::step()
         if (!tip_.step(j_))
             return false;
 
-        std::shared_ptr<SLE> const entry = tip_.entry();
+        SLE::pointer const entry = tip_.entry();
 
         // If we exceed the maximum number of allowed steps, we're done.
         if (!counter_.step())
@@ -250,7 +250,13 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        if (entry->isFieldPresent(sfDomainID) &&
+        // Pre-fixCleanup3_3_0: validate domain membership for any book.
+        // Post-fixCleanup3_3_0: only validate when walking a domain book.
+        // Hybrid offers carry sfDomainID but also participate in the open
+        // book; expiry of the owner's domain credential should not evict
+        // the offer from the open book.
+        if ((!view_.rules().enabled(fixCleanup3_3_0) || book_.domain.has_value()) &&
+            entry->isFieldPresent(sfDomainID) &&
             !permissioned_dex::offerInDomain(
                 view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
         {
@@ -271,7 +277,7 @@ TOfferStreamBase<TIn, TOut>::step()
             j_);
 
         // Check for unfunded offer
-        if (*ownerFunds_ <= beast::kZERO)
+        if (*ownerFunds_ <= beast::kZero)
         {
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the

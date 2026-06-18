@@ -13,16 +13,19 @@
 
 namespace xrpl {
 
+class SHAMapTreeNode;
+using SHAMapTreeNodePtr = intr_ptr::SharedPtr<SHAMapTreeNode>;
+
 // These are wire-protocol identifiers used during serialization to encode the
 // type of a node. They should not be arbitrarily be changed.
-static constexpr unsigned char const kWIRE_TYPE_TRANSACTION = 0;
-static constexpr unsigned char const kWIRE_TYPE_ACCOUNT_STATE = 1;
-static constexpr unsigned char const kWIRE_TYPE_INNER = 2;
-static constexpr unsigned char const kWIRE_TYPE_COMPRESSED_INNER = 3;
-static constexpr unsigned char const kWIRE_TYPE_TRANSACTION_WITH_META = 4;
+static constexpr unsigned char const kWireTypeTransaction = 0;
+static constexpr unsigned char const kWireTypeAccountState = 1;
+static constexpr unsigned char const kWireTypeInner = 2;
+static constexpr unsigned char const kWireTypeCompressedInner = 3;
+static constexpr unsigned char const kWireTypeTransactionWithMeta = 4;
 
 // Lower bound on SHAMap leaf item payload size, in bytes.
-inline constexpr std::size_t kMIN_SHA_MAP_ITEM_BYTES = 12;
+inline constexpr std::size_t kMinShaMapItemBytes = 12;
 
 enum class SHAMapNodeType {
     TnInner = 1,
@@ -112,7 +115,7 @@ public:
     }
 
     /** Make a copy of this node, setting the owner. */
-    virtual intr_ptr::SharedPtr<SHAMapTreeNode>
+    virtual SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const = 0;
     /** @} */
 
@@ -153,20 +156,20 @@ public:
     virtual void
     invariants(bool isRoot = false) const = 0;
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeFromWire(Slice rawNode);
 
 private:
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeAccountState(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static intr_ptr::SharedPtr<SHAMapTreeNode>
+    static SHAMapTreeNodePtr
     makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid);
 };
 

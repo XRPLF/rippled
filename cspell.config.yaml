@@ -50,6 +50,7 @@ words:
   - AMMXRP
   - amt
   - amts
+  - archs
   - asnode
   - asynchrony
   - attestation
@@ -83,6 +84,7 @@ words:
   - coro
   - coros
   - cowid
+  - cpack
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
@@ -93,18 +95,23 @@ words:
   - daria
   - dcmake
   - dearmor
+  - dedented
   - deleteme
   - demultiplexer
   - deserializaton
   - desync
   - desynced
   - determ
+  - disablerepo
   - distro
   - doxyfile
   - dxrpl
   - enabled
+  - enablerepo
   - endmacro
+  - envrc
   - exceptioned
+  - EXPECT_STREQ
   - Falco
   - fcontext
   - finalizers
@@ -130,6 +137,7 @@ words:
   - iou
   - ious
   - isrdc
+  - isystem
   - itype
   - jemalloc
   - jlog
@@ -162,6 +170,7 @@ words:
   - Merkle
   - Metafuncton
   - misprediction
+  - missingok
   - mptbalance
   - MPTDEX
   - mptflags
@@ -193,11 +202,15 @@ words:
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
+  - noreplace
   - noripple
+  - nostdinc
+  - notifempty
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
+  - onlatest
   - ostr
   - pargs
   - partitioner
@@ -213,6 +226,7 @@ words:
   - preauthorize
   - preauthorizes
   - preclaim
+  - preun
   - protobuf
   - protos
   - ptrs
@@ -220,8 +234,10 @@ words:
   - pyenv
   - pyparsing
   - qalloc
+  - qbsprofile
   - queuable
   - Raphson
+  - rcflags
   - replayer
   - rerere
   - retriable
@@ -247,12 +263,15 @@ words:
   - sfields
   - shamap
   - shamapitem
+  - shfmt
+  - shlibs
   - sidechain
   - SIGGOOD
   - sle
   - sles
   - soci
   - socidb
+  - SRPMS
   - sslws
   - statsd
   - STATSDCOLLECTOR
@@ -280,8 +299,8 @@ words:
   - txn
   - txns
   - txs
-  - UBSAN
   - ubsan
+  - UBSAN
   - umant
   - unacquired
   - unambiguity
@@ -289,6 +308,7 @@ words:
   - unauthorizing
   - unergonomic
   - unfetched
+  - unfindable
   - unflatten
   - unfund
   - unimpair
@@ -318,7 +338,6 @@ words:
   - xbridge
   - xchain
   - ximinez
-  - EXPECT_STREQ
   - XMACRO
   - xrpkuwait
   - xrpl
@@ -326,3 +345,4 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - CGNAT

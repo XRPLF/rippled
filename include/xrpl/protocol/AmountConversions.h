@@ -96,9 +96,9 @@ inline MPTAmount
 toAmount<MPTAmount>(STAmount const& amt)
 {
     XRPL_ASSERT(
-        amt.holds<MPTIssue>() && amt.mantissa() <= kMAX_MP_TOKEN_AMOUNT && amt.exponent() == 0,
+        amt.holds<MPTIssue>() && amt.mantissa() <= kMaxMpTokenAmount && amt.exponent() == 0,
         "xrpl::toAmount<MPTAmount> : maximum mantissa");
-    if (amt.mantissa() > kMAX_MP_TOKEN_AMOUNT || amt.exponent() != 0)
+    if (amt.mantissa() > kMaxMpTokenAmount || amt.exponent() != 0)
         Throw<std::runtime_error>("toAmount<MPTAmount>: invalid mantissa or exponent");
     bool const isNeg = amt.negative();
     std::int64_t const sMant = isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
@@ -167,8 +167,8 @@ toAmount(Asset const& asset, Number const& n, Number::RoundingMode mode = Number
     }
     else
     {
-        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
-        static_assert(kALWAYS_FALSE, "Unsupported type for toAmount");
+        static constexpr bool kAlwaysFalse = !std::is_same_v<T, T>;
+        static_assert(kAlwaysFalse, "Unsupported type for toAmount");
     }
 }
 
@@ -178,30 +178,30 @@ toMaxAmount(Asset const& asset)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
     {
-        return IOUAmount(STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+        return IOUAmount(STAmount::kMaxValue, STAmount::kMaxOffset);
     }
     else if constexpr (std::is_same_v<XRPAmount, T>)
     {
-        return XRPAmount(static_cast<std::int64_t>(STAmount::kMAX_NATIVE_N));
+        return XRPAmount(static_cast<std::int64_t>(STAmount::kMaxNativeN));
     }
     else if constexpr (std::is_same_v<MPTAmount, T>)
     {
-        return MPTAmount(kMAX_MP_TOKEN_AMOUNT);
+        return MPTAmount(kMaxMpTokenAmount);
     }
     else if constexpr (std::is_same_v<STAmount, T>)
     {
         return asset.visit(
             [](Issue const& issue) {
                 if (isXRP(issue))
-                    return STAmount(issue, static_cast<std::int64_t>(STAmount::kMAX_NATIVE_N));
-                return STAmount(issue, STAmount::kMAX_VALUE, STAmount::kMAX_OFFSET);
+                    return STAmount(issue, static_cast<std::int64_t>(STAmount::kMaxNativeN));
+                return STAmount(issue, STAmount::kMaxValue, STAmount::kMaxOffset);
             },
-            [](MPTIssue const& issue) { return STAmount(issue, kMAX_MP_TOKEN_AMOUNT); });
+            [](MPTIssue const& issue) { return STAmount(issue, kMaxMpTokenAmount); });
     }
     else
     {
-        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
-        static_assert(kALWAYS_FALSE, "Unsupported type for toMaxAmount");
+        static constexpr bool kAlwaysFalse = !std::is_same_v<T, T>;
+        static_assert(kAlwaysFalse, "Unsupported type for toMaxAmount");
     }
 }
 
@@ -233,8 +233,8 @@ getAsset(T const& amt)
     }
     else
     {
-        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
-        static_assert(kALWAYS_FALSE, "Unsupported type for getIssue");
+        static constexpr bool kAlwaysFalse = !std::is_same_v<T, T>;
+        static_assert(kAlwaysFalse, "Unsupported type for getIssue");
     }
 }
 
@@ -260,8 +260,8 @@ get(STAmount const& a)
     }
     else
     {
-        constexpr bool kALWAYS_FALSE = !std::is_same_v<T, T>;
-        static_assert(kALWAYS_FALSE, "Unsupported type for get");
+        constexpr bool kAlwaysFalse = !std::is_same_v<T, T>;
+        static_assert(kAlwaysFalse, "Unsupported type for get");
     }
 }
 

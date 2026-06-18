@@ -47,6 +47,7 @@ public:
         std::uint32_t crawlOptions = 0;
         std::optional<std::uint32_t> networkID;
         bool vlEnabled = true;
+        bool verifyEndpoints = true;
     };
 
     using PeerSequence = std::vector<std::shared_ptr<Peer>>;
@@ -116,11 +117,11 @@ public:
 
     /** Broadcast a proposal. */
     virtual void
-    broadcast(protocol::TMProposeSet& m) = 0;
+    broadcast(protocol::TMProposeSet const& m) = 0;
 
     /** Broadcast a validation. */
     virtual void
-    broadcast(protocol::TMValidation& m) = 0;
+    broadcast(protocol::TMValidation const& m) = 0;
 
     /** Relay a proposal.
      * @param m the serialized proposal
@@ -129,7 +130,7 @@ public:
      * @return the set of peers which have already sent us this proposal
      */
     virtual std::set<Peer::id_t>
-    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) = 0;
+    relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator) = 0;
 
     /** Relay a validation.
      * @param m the serialized validation
@@ -138,7 +139,7 @@ public:
      * @return the set of peers which have already sent us this validation
      */
     virtual std::set<Peer::id_t>
-    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) = 0;
+    relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator) = 0;
 
     /** Relay a transaction. If the tx reduce-relay feature is enabled then
      * randomly select peers to relay to and queue transaction's hash

@@ -9,7 +9,6 @@
 
 #include <xrpl/protocol/tokens.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/detail/b58_utils.h>
@@ -23,6 +22,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <expected>
 #include <span>
 #include <string>
 #include <string_view>
@@ -122,15 +122,15 @@ coefficients sizes greatly speeds up the multi-precision computations.
 
 namespace xrpl {
 
-static constexpr char const* kALPHABET_FORWARD =
+static constexpr char const* kAlphabetForward =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-static constexpr std::array<int, 256> const kALPHABET_REVERSE = []() {
+static constexpr std::array<int, 256> const kAlphabetReverse = []() {
     std::array<int, 256> map{};
     for (auto& m : map)
         m = -1;
-    for (int i = 0, j = 0; kALPHABET_FORWARD[i] != 0; ++i)
-        map[static_cast<unsigned char>(kALPHABET_FORWARD[i])] = j++;
+    for (int i = 0, j = 0; kAlphabetForward[i] != 0; ++i)
+        map[static_cast<unsigned char>(kAlphabetForward[i])] = j++;
     return map;
 }();
 
@@ -239,9 +239,9 @@ encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp
     // Translate the result into a string.
     std::string str;
     str.reserve(zeroes + (b58end - iter));
-    str.assign(zeroes, kALPHABET_FORWARD[0]);
+    str.assign(zeroes, kAlphabetForward[0]);
     while (iter != b58end)
-        str += kALPHABET_FORWARD[*(iter++)];
+        str += kAlphabetForward[*(iter++)];
     return str;
 }
 
@@ -252,7 +252,7 @@ decodeBase58(std::string const& s)
     auto remain = s.size();
     // Skip and count leading zeroes
     int zeroes = 0;
-    while (remain > 0 && kALPHABET_REVERSE[*psz] == 0)
+    while (remain > 0 && kAlphabetReverse[*psz] == 0)
     {
         ++zeroes;
         ++psz;
@@ -267,7 +267,7 @@ decodeBase58(std::string const& s)
     std::vector<unsigned char> b256((remain * 733 / 1000) + 1);
     while (remain > 0)
     {
-        auto carry = kALPHABET_REVERSE[*psz];
+        auto carry = kAlphabetReverse[*psz];
         if (carry == -1)
             return {};
         // Apply "b256 = b256 * 58 + carry".
@@ -353,7 +353,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     // (33 bytes for nodepublic + 1 byte token + 4 bytes checksum)
     if (input.size() > 38)
     {
-        return Unexpected(TokenCodecErrc::InputTooLarge);
+        return std::unexpected(TokenCodecErrc::InputTooLarge);
     };
 
     auto countLeadingZeros = [](std::span<std::uint8_t const> const& col) -> std::size_t {
@@ -425,7 +425,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
 
     // Translate the result into the alphabet
     // Put all the zeros at the beginning, then all the values from the output
-    std::fill(out.begin(), out.begin() + inputZeros, ::xrpl::kALPHABET_FORWARD[0]);
+    std::fill(out.begin(), out.begin() + inputZeros, ::xrpl::kAlphabetForward[0]);
 
     // iterate through the base 58^10 coeff
     // convert to base 58 big endian then
@@ -441,7 +441,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         static constexpr std::uint64_t kB5810 = 430804206899405824;  // 58^10;
         if (base5810Coeff[i] >= kB5810)
         {
-            return Unexpected(TokenCodecErrc::InputTooLarge);
+            return std::unexpected(TokenCodecErrc::InputTooLarge);
         }
         std::array<std::uint8_t, 10> const b58Be =
             xrpl::b58_fast::detail::b5810ToB58Be(base5810Coeff[i]);
@@ -453,12 +453,12 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
             skipZeros = false;
             if (out.size() < ((i + 1) * 10) - toSkip)
             {
-                return Unexpected(TokenCodecErrc::OutputTooSmall);
+                return std::unexpected(TokenCodecErrc::OutputTooSmall);
             }
         }
         for (auto b58Coeff : b58BeS.subspan(toSkip))
         {
-            out[outIndex] = ::xrpl::kALPHABET_FORWARD[b58Coeff];
+            out[outIndex] = ::xrpl::kAlphabetForward[b58Coeff];
             outIndex += 1;
         }
     }
@@ -476,18 +476,18 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
     // log(2^(38*8),58) ~= 51.9
     if (input.size() > 52)
     {
-        return Unexpected(TokenCodecErrc::InputTooLarge);
+        return std::unexpected(TokenCodecErrc::InputTooLarge);
     };
     if (out.size() < 8)
     {
-        return Unexpected(TokenCodecErrc::OutputTooSmall);
+        return std::unexpected(TokenCodecErrc::OutputTooSmall);
     }
 
     auto countLeadingZeros = [&](auto const& col) -> std::size_t {
         std::size_t count = 0;
         for (auto const& c : col)
         {
-            if (c != ::xrpl::kALPHABET_FORWARD[0])
+            if (c != ::xrpl::kAlphabetForward[0])
             {
                 return count;
             }
@@ -510,10 +510,10 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
         "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
     for (unsigned char const c : input.substr(0, partial_coeff_len))
     {
-        auto curVal = ::xrpl::kALPHABET_REVERSE[c];
+        auto curVal = ::xrpl::kAlphabetReverse[c];
         if (curVal < 0)
         {
-            return Unexpected(TokenCodecErrc::InvalidEncodingChar);
+            return std::unexpected(TokenCodecErrc::InvalidEncodingChar);
         }
         b5810Coeff[0] *= 58;
         b5810Coeff[0] += curVal;
@@ -523,10 +523,10 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
         for (int j = 0; j < num_full_coeffs; ++j)
         {
             unsigned char const c = input[partial_coeff_len + (j * 10) + i];
-            auto curVal = ::xrpl::kALPHABET_REVERSE[c];
+            auto curVal = ::xrpl::kAlphabetReverse[c];
             if (curVal < 0)
             {
-                return Unexpected(TokenCodecErrc::InvalidEncodingChar);
+                return std::unexpected(TokenCodecErrc::InvalidEncodingChar);
             }
             b5810Coeff[numPartialCoeffs + j] *= 58;
             b5810Coeff[numPartialCoeffs + j] += curVal;
@@ -548,7 +548,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
                 std::span(&result[0], curResultSize + 1), kB5810);
             if (code != TokenCodecErrc::Success)
             {
-                return Unexpected(code);
+                return std::unexpected(code);
             }
         }
         {
@@ -556,7 +556,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
                 std::span(&result[0], curResultSize + 1), c);
             if (code != TokenCodecErrc::Success)
             {
-                return Unexpected(code);
+                return std::unexpected(code);
             }
         }
         if (result[curResultSize] != 0)
@@ -589,7 +589,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
     }
     if ((curOutI + (8 * (curResultSize - 1))) > out.size())
     {
-        return Unexpected(TokenCodecErrc::OutputTooSmall);
+        return std::unexpected(TokenCodecErrc::OutputTooSmall);
     }
 
     for (int i = curResultSize - 2; i >= 0; --i)
@@ -610,15 +610,15 @@ encodeBase58Token(
     std::span<std::uint8_t const> input,
     std::span<std::uint8_t> out)
 {
-    constexpr std::size_t kTMP_BUF_SIZE = 128;
-    std::array<std::uint8_t, kTMP_BUF_SIZE> buf{};
-    if (input.size() > kTMP_BUF_SIZE - 5)
+    static constexpr std::size_t kTmpBufSize = 128;
+    std::array<std::uint8_t, kTmpBufSize> buf{};
+    if (input.size() > kTmpBufSize - 5)
     {
-        return Unexpected(TokenCodecErrc::InputTooLarge);
+        return std::unexpected(TokenCodecErrc::InputTooLarge);
     }
     if (input.empty())
     {
-        return Unexpected(TokenCodecErrc::InputTooSmall);
+        return std::unexpected(TokenCodecErrc::InputTooSmall);
     }
     // <type (1 byte)><token (input len)><checksum (4 bytes)>
     buf[0] = static_cast<std::uint8_t>(tokenType);
@@ -648,23 +648,23 @@ decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> ou
 
     // Reject zero length tokens
     if (ret.size() < 6)
-        return Unexpected(TokenCodecErrc::InputTooSmall);
+        return std::unexpected(TokenCodecErrc::InputTooSmall);
 
     // The type must match.
     if (type != static_cast<TokenType>(static_cast<std::uint8_t>(ret[0])))
-        return Unexpected(TokenCodecErrc::MismatchedTokenType);
+        return std::unexpected(TokenCodecErrc::MismatchedTokenType);
 
     // And the checksum must as well.
     std::array<std::uint8_t, 4> guard{};
     checksum(guard.data(), ret.data(), ret.size() - guard.size());
     if (!std::equal(guard.rbegin(), guard.rend(), ret.rbegin()))
     {
-        return Unexpected(TokenCodecErrc::MismatchedChecksum);
+        return std::unexpected(TokenCodecErrc::MismatchedChecksum);
     }
 
     std::size_t const outSize = ret.size() - 1 - guard.size();
     if (outBuf.size() < outSize)
-        return Unexpected(TokenCodecErrc::OutputTooSmall);
+        return std::unexpected(TokenCodecErrc::OutputTooSmall);
     // Skip the leading type byte and the trailing checksum.
     std::copy(ret.begin() + 1, ret.begin() + outSize + 1, outBuf.begin());
     return outBuf.subspan(0, outSize);

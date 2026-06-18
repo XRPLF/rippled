@@ -23,7 +23,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -43,21 +42,22 @@ PaymentChannelClaim::getFlagsMask(PreflightContext const&)
 NotTEC
 PaymentChannelClaim::preflight(PreflightContext const& ctx)
 {
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfChannel] == beast::kZero)
+        return temMALFORMED;
+
     auto const bal = ctx.tx[~sfBalance];
-    if (bal && (!isXRP(*bal) || *bal <= beast::kZERO))
+    if (bal && (!isXRP(*bal) || *bal <= beast::kZero))
         return temBAD_AMOUNT;
 
     auto const amt = ctx.tx[~sfAmount];
-    if (amt && (!isXRP(*amt) || *amt <= beast::kZERO))
+    if (amt && (!isXRP(*amt) || *amt <= beast::kZero))
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)
         return temBAD_AMOUNT;
 
     {
-        auto const flags = ctx.tx.getFlags();
-
-        if (((flags & tfClose) != 0u) && ((flags & tfRenew) != 0u))
+        if (ctx.tx.isFlag(tfClose) && ctx.tx.isFlag(tfRenew))
             return temMALFORMED;
     }
 
@@ -119,12 +119,10 @@ PaymentChannelClaim::doApply()
     AccountID const txAccount = ctx_.tx[sfAccount];
 
     auto const curExpiration = (*slep)[~sfExpiration];
+    if (isChannelExpired(ctx_.view(), (*slep)[~sfCancelAfter]) ||
+        isChannelExpired(ctx_.view(), curExpiration))
     {
-        auto const cancelAfter = (*slep)[~sfCancelAfter];
-        auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
-        if ((cancelAfter && closeTime >= *cancelAfter) ||
-            (curExpiration && closeTime >= *curExpiration))
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+        return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
     }
 
     if (txAccount != src && txAccount != dst)
@@ -137,13 +135,19 @@ PaymentChannelClaim::doApply()
         auto const reqBalance = ctx_.tx[sfBalance].xrp();
 
         if (txAccount == dst && !ctx_.tx[~sfSignature])
-            return temBAD_SIGNATURE;
+        {
+            return ctx_.view().rules().enabled(fixCleanup3_2_0) ? TER{tecNO_PERMISSION}
+                                                                : TER{temBAD_SIGNATURE};
+        }
 
         if (ctx_.tx[~sfSignature])
         {
             PublicKey const pk((*slep)[sfPublicKey]);
             if (ctx_.tx[sfPublicKey] != pk)
-                return temBAD_SIGNER;
+            {
+                return ctx_.view().rules().enabled(fixCleanup3_2_0) ? TER{tecNO_PERMISSION}
+                                                                    : TER{temBAD_SIGNER};
+            }
         }
 
         if (reqBalance > chanFunds)
@@ -167,13 +171,13 @@ PaymentChannelClaim::doApply()
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
         XRPAmount const reqDelta = reqBalance - chanBalance;
         XRPL_ASSERT(
-            reqDelta >= beast::kZERO, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
+            reqDelta >= beast::kZero, "xrpl::PaymentChannelClaim::doApply : minimum balance delta");
         (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
         ctx_.view().update(sled);
         ctx_.view().update(slep);
     }
 
-    if ((ctx_.tx.getFlags() & tfRenew) != 0u)
+    if (ctx_.tx.isFlag(tfRenew))
     {
         if (src != txAccount)
             return tecNO_PERMISSION;
@@ -181,15 +185,16 @@ PaymentChannelClaim::doApply()
         ctx_.view().update(slep);
     }
 
-    if ((ctx_.tx.getFlags() & tfClose) != 0u)
+    if (ctx_.tx.isFlag(tfClose))
     {
         // Channel will close immediately if dry or the receiver closes
         if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
             return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
 
-        auto const settleExpiration =
-            ctx_.view().header().parentCloseTime.time_since_epoch().count() +
-            (*slep)[sfSettleDelay];
+        auto const settleExpiration = saturatingAdd(
+            ctx_.view().rules(),
+            ctx_.view().header().parentCloseTime.time_since_epoch().count(),
+            (*slep)[sfSettleDelay]);
 
         if (!curExpiration || *curExpiration > settleExpiration)
         {
@@ -202,10 +207,7 @@ PaymentChannelClaim::doApply()
 }
 
 void
-PaymentChannelClaim::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+PaymentChannelClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

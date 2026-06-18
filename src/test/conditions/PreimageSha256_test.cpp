@@ -73,7 +73,7 @@ class PreimageSha256_test : public beast::unit_test::Suite
         BEAST_EXPECT(validate(*f2, *c2, makeSlice(known[0].first)));
         BEAST_EXPECT(validate(*f2, *c2, makeSlice(known[0].second)));
 
-        // Shouldn't validate if the kFULFILLMENT & condition don't match
+        // Shouldn't validate if the kFulfillment & condition don't match
         // regardless of the message.
         BEAST_EXPECT(!validate(*f2, *c1));
         BEAST_EXPECT(!validate(*f2, *c1, makeSlice(known[0].first)));

@@ -47,9 +47,9 @@ private:
     */
     std::uintptr_t tp_ = 0;
     /** bit-and with this mask to get the tag bits (lowest two bits) */
-    static constexpr std::uintptr_t kTAG_MASK = 3;
+    static constexpr std::uintptr_t kTagMask = 3;
     /** bit-and with this mask to get the pointer bits (mask out the tag) */
-    static constexpr std::uintptr_t kPTR_MASK = ~kTAG_MASK;
+    static constexpr std::uintptr_t kPtrMask = ~kTagMask;
 
     /** Deallocate memory and run destructors */
     void
@@ -148,7 +148,7 @@ public:
     /** Get the number of elements in each array and a pointer to the start
         of each array.
     */
-    [[nodiscard]] std::tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
+    [[nodiscard]] std::tuple<std::uint8_t, SHAMapHash*, SHAMapTreeNodePtr*>
     getHashesAndChildren() const;
 
     /** Get the `hashes` array */
@@ -156,7 +156,7 @@ public:
     getHashes() const;
 
     /** Get the `children` array */
-    [[nodiscard]] intr_ptr::SharedPtr<SHAMapTreeNode>*
+    [[nodiscard]] SHAMapTreeNodePtr*
     getChildren() const;
 
     /** Call the `f` callback for all 16 (branchFactor) branches - even if
@@ -205,7 +205,7 @@ popcnt16(std::uint16_t a)
     return __builtin_popcount(a);
 #else
     // fallback to table lookup
-    static auto constexpr const tbl = []() {
+    static constexpr auto tbl = []() {
         std::array<std::uint8_t, 256> ret{};
         for (int i = 0; i != 256; ++i)
         {

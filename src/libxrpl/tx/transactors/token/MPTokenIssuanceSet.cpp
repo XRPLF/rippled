@@ -5,7 +5,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -16,15 +15,12 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <memory>
-#include <unordered_set>
 
 namespace xrpl {
 
@@ -52,7 +48,7 @@ struct MPTMutabilityFlags
     std::uint32_t canMutateFlag;
 };
 
-static constexpr std::array<MPTMutabilityFlags, 6> kMPT_MUTABILITY_FLAGS = {
+static constexpr std::array<MPTMutabilityFlags, 6> kMptMutabilityFlags = {
     {{.setFlag = tmfMPTSetCanLock,
       .clearFlag = tmfMPTClearCanLock,
       .canMutateFlag = lsmfMPTCanMutateCanLock},
@@ -86,10 +82,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfDomainID) && ctx.tx.isFieldPresent(sfHolder))
         return temMALFORMED;
 
-    auto const txFlags = ctx.tx.getFlags();
-
     // fails if both flags are set
-    if (((txFlags & tfMPTLock) != 0u) && ((txFlags & tfMPTUnlock) != 0u))
+    if (ctx.tx.isFlag(tfMPTLock) && ctx.tx.isFlag(tfMPTUnlock))
         return temINVALID_FLAG;
 
     auto const accountID = ctx.tx[sfAccount];
@@ -100,7 +94,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (ctx.rules.enabled(featureSingleAssetVault) || ctx.rules.enabled(featureDynamicMPT))
     {
         // Is this transaction actually changing anything ?
-        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID) && !isMutate)
+        if (ctx.tx.getFlags() == 0 && !ctx.tx.isFieldPresent(sfDomainID) && !isMutate)
             return temMALFORMED;
     }
 
@@ -111,13 +105,13 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // Can not set flags when mutating MPTokenIssuance
-        if (isMutate && ((txFlags & tfUniversalMask) != 0u))
+        if (isMutate && ((ctx.tx.getFlags() & tfUniversalMask) != 0u))
             return temMALFORMED;
 
-        if (transferFee && *transferFee > kMAX_TRANSFER_FEE)
+        if (transferFee && *transferFee > kMaxTransferFee)
             return temBAD_TRANSFER_FEE;
 
-        if (metadata && metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
+        if (metadata && metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
 
         if (mutableFlags)
@@ -126,7 +120,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                 return temINVALID_FLAG;
 
             // Can not set and clear the same flag
-            if (std::ranges::any_of(kMPT_MUTABILITY_FLAGS, [mutableFlags](auto const& f) {
+            if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags](auto const& f) {
                     return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
                 }))
                 return temINVALID_FLAG;
@@ -137,41 +131,6 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                 return temMALFORMED;
         }
     }
-
-    return tesSUCCESS;
-}
-
-NotTEC
-MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
-{
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    auto const txFlags = tx.getFlags();
-
-    // this is added in case more flags will be added for MPTokenIssuanceSet
-    // in the future. Currently unreachable.
-    if ((txFlags & tfMPTokenIssuanceSetMask) != 0u)
-        return terNO_DELEGATE_PERMISSION;  // LCOV_EXCL_LINE
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttMPTOKEN_ISSUANCE_SET, granularPermissions);
-
-    if (((txFlags & tfMPTLock) != 0u) && !granularPermissions.contains(MPTokenIssuanceLock))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (((txFlags & tfMPTUnlock) != 0u) && !granularPermissions.contains(MPTokenIssuanceUnlock))
-        return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
 }
@@ -218,7 +177,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         if (not sleMptIssuance->isFlag(lsfMPTRequireAuth))
             return tecNO_PERMISSION;
 
-        if (*domain != beast::kZERO)
+        if (*domain != beast::kZero)
         {
             auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
             if (!sleDomain)
@@ -236,11 +195,10 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
     {
-        if (std::ranges::any_of(
-                kMPT_MUTABILITY_FLAGS, [mutableFlags, &isMutableFlag](auto const& f) {
-                    return !isMutableFlag(f.canMutateFlag) &&
-                        ((*mutableFlags & (f.setFlag | f.clearFlag)));
-                }))
+        if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
+                return !isMutableFlag(f.canMutateFlag) &&
+                    ((*mutableFlags & (f.setFlag | f.clearFlag)));
+            }))
             return tecNO_PERMISSION;
 
         // Clearing lsfMPTRequireAuth is invalid when the issuance already has
@@ -273,10 +231,9 @@ TER
 MPTokenIssuanceSet::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto const txFlags = ctx_.tx.getFlags();
     auto const holderID = ctx_.tx[~sfHolder];
     auto const domainID = ctx_.tx[~sfDomainID];
-    std::shared_ptr<SLE> sle;
+    SLE::pointer sle;
 
     if (holderID)
     {
@@ -293,18 +250,18 @@ MPTokenIssuanceSet::doApply()
     std::uint32_t const flagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t flagsOut = flagsIn;
 
-    if ((txFlags & tfMPTLock) != 0u)
+    if (ctx_.tx.isFlag(tfMPTLock))
     {
         flagsOut |= lsfMPTLocked;
     }
-    else if ((txFlags & tfMPTUnlock) != 0u)
+    else if (ctx_.tx.isFlag(tfMPTUnlock))
     {
         flagsOut &= ~lsfMPTLocked;
     }
 
     if (auto const mutableFlags = ctx_.tx[~sfMutableFlags].value_or(0))
     {
-        for (auto const& f : kMPT_MUTABILITY_FLAGS)
+        for (auto const& f : kMptMutabilityFlags)
         {
             if ((mutableFlags & f.setFlag) != 0u)
             {
@@ -362,7 +319,7 @@ MPTokenIssuanceSet::doApply()
             sle->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
-        if (*domainID != beast::kZERO)
+        if (*domainID != beast::kZero)
         {
             sle->setFieldH256(sfDomainID, *domainID);
         }
@@ -379,10 +336,7 @@ MPTokenIssuanceSet::doApply()
 }
 
 void
-MPTokenIssuanceSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+MPTokenIssuanceSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

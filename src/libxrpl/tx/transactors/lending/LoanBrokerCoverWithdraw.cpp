@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -19,8 +20,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 bool
@@ -32,11 +31,11 @@ LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanBrokerID] == beast::kZERO)
+    if (ctx.tx[sfLoanBrokerID] == beast::kZero)
         return temINVALID;
 
     auto const dstAmount = ctx.tx[sfAmount];
-    if (dstAmount <= beast::kZERO)
+    if (dstAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     if (!isLegalNet(dstAmount))
@@ -44,7 +43,7 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 
     if (auto const destination = ctx.tx[~sfDestination])
     {
-        if (*destination == beast::kZERO)
+        if (*destination == beast::kZero)
         {
             return temMALFORMED;
         }
@@ -93,10 +92,20 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
+    // Helper handles both IOU and MPT correctly without explicit branching.
+    if (auto const ret = canApplyToBrokerCover(
+            ctx.view, sleBroker, vaultAsset, amount, ctx.j, "LoanBrokerCoverWithdraw"))
+        return ret;
+
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
-    // Cannot transfer a non-transferable Asset
-    if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct))
+    // Post-fixCleanup3_2_0: cover withdraw is a recovery path that bypasses
+    // the lsfMPTCanTransfer flag check, so an issuer cannot trap a broker's
+    // first-loss capital. Other transferability checks (IOU NoRipple, freeze,
+    // requireAuth) still apply.
+    auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
+                                                                 : WaiveMPTCanTransfer::No;
+    if (auto const ret = canTransfer(ctx.view, vaultAsset, pseudoAccountID, dstAcct, waive))
         return ret;
 
     // Withdrawal to a 3rd party destination account is essentially a transfer.
@@ -131,6 +140,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
     auto const minimumCover = [&]() {
+        if (ctx.view.rules().enabled(fixCleanup3_2_0))
+        {
+            return minimumBrokerCover(
+                currentDebtTotal, TenthBips32{sleBroker->at(sfCoverRateMinimum)}, vault);
+        }
+
         // Always round the minimum required up.
         // Applies to `tenthBipsOfValue` as well as `roundToAsset`.
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
@@ -163,7 +178,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
-    auto const dstAcct = tx[~sfDestination].value_or(account_);
+    auto const dstAcct = tx[~sfDestination].value_or(accountID_);
 
     auto broker = view().peek(keylet::loanbroker(brokerID));
     if (!broker)
@@ -183,14 +198,11 @@ LoanBrokerCoverWithdraw::doApply()
 
     associateAsset(*broker, vaultAsset);
 
-    return doWithdraw(view(), tx, account_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
+    return doWithdraw(view(), tx, accountID_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
 }
 
 void
-LoanBrokerCoverWithdraw::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+LoanBrokerCoverWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

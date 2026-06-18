@@ -78,7 +78,17 @@ TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
     auto const amount = ctx.tx[sfAmount];
-    return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::kZERO};
+    return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::kZero};
+}
+
+bool
+EscrowCreate::checkExtraFeatures(PreflightContext const& ctx)
+{
+    // Only require featureMPTokensV1 when the escrow amount is an MPT and
+    // fixCleanup3_2_0 is active; XRP/IOU escrows are unaffected by this gate.
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfAmount].holds<MPTIssue>())
+        return ctx.rules.enabled(featureMPTokensV1);
+    return true;
 }
 
 template <ValidIssueType T>
@@ -90,7 +100,7 @@ NotTEC
 escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
 {
     STAmount const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount <= beast::kZERO)
+    if (amount.native() || amount <= beast::kZero)
         return temBAD_AMOUNT;
 
     if (badCurrency() == amount.get<Issue>().currency)
@@ -103,11 +113,11 @@ template <>
 NotTEC
 escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
+    if (!ctx.rules.enabled(fixCleanup3_2_0) && !ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT} || amount <= beast::kZERO)
+    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -130,7 +140,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     }
     else
     {
-        if (amount <= beast::kZERO)
+        if (amount <= beast::kZero)
             return temBAD_AMOUNT;
     }
 
@@ -205,11 +215,11 @@ escrowCreatePreclaimHelper<Issue>(
     STAmount const balance = (*sleRippleState)[sfBalance];
 
     // If balance is positive, issuer must have higher address than account
-    if (balance > beast::kZERO && issuer < account)
+    if (balance > beast::kZero && issuer < account)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If balance is negative, issuer must have lower address than account
-    if (balance < beast::kZERO && issuer > account)
+    if (balance < beast::kZero && issuer > account)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
@@ -232,7 +242,7 @@ escrowCreatePreclaimHelper<Issue>(
         ctx.view, account, issue.currency, issuer, FreezeHandling::IgnoreFreeze, ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
-    if (spendableAmount <= beast::kZERO)
+    if (spendableAmount <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     // If the spendable amount is less than the amount, return
@@ -313,7 +323,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
         ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
-    if (spendableAmount <= beast::kZERO)
+    if (spendableAmount <= beast::kZero)
         return tecINSUFFICIENT_FUNDS;
 
     // If the spendable amount is less than the amount, return
@@ -417,7 +427,7 @@ EscrowCreate::doApply()
     if (ctx_.tx[~sfFinishAfter] && after(closeTime, ctx_.tx[sfFinishAfter]))
         return tecNO_PERMISSION;
 
-    auto const sle = ctx_.view().peek(keylet::account(account_));
+    auto const sle = ctx_.view().peek(keylet::account(accountID_));
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -442,16 +452,16 @@ EscrowCreate::doApply()
         auto const sled = ctx_.view().read(keylet::account(ctx_.tx[sfDestination]));
         if (!sled)
             return tecNO_DST;  // LCOV_EXCL_LINE
-        if ((((*sled)[sfFlags] & lsfRequireDestTag) != 0u) && !ctx_.tx[~sfDestinationTag])
+        if (sled->isFlag(lsfRequireDestTag) && !ctx_.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
     }
 
     // Create escrow in ledger.  Note that we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
-    Keylet const escrowKeylet = keylet::escrow(account_, ctx_.tx.getSeqValue());
+    Keylet const escrowKeylet = keylet::escrow(accountID_, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = amount;
-    (*slep)[sfAccount] = account_;
+    (*slep)[sfAccount] = accountID_;
     (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
     (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
     (*slep)[sfDestination] = ctx_.tx[sfDestination];
@@ -467,7 +477,7 @@ EscrowCreate::doApply()
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
     {
         auto const xferRate = transferRate(ctx_.view(), amount);
-        if (xferRate != kPARITY_RATE)
+        if (xferRate != kParityRate)
             (*slep)[sfTransferRate] = xferRate.value;
     }
 
@@ -476,7 +486,7 @@ EscrowCreate::doApply()
     // Add escrow to sender's owner directory
     {
         auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_), escrowKeylet, describeOwnerDir(account_));
+            keylet::ownerDir(accountID_), escrowKeylet, describeOwnerDir(accountID_));
         if (!page)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*slep)[sfOwnerNode] = *page;
@@ -484,7 +494,7 @@ EscrowCreate::doApply()
 
     // If it's not a self-send, add escrow to recipient's owner directory.
     AccountID const dest = ctx_.tx[sfDestination];
-    if (dest != account_)
+    if (dest != accountID_)
     {
         auto page =
             ctx_.view().dirInsert(keylet::ownerDir(dest), escrowKeylet, describeOwnerDir(dest));
@@ -497,7 +507,7 @@ EscrowCreate::doApply()
     // track the total locked balance. For MPT, this isn't necessary because the
     // locked balance is already stored directly in the MPTokenIssuance object.
     AccountID const issuer = amount.getIssuer();
-    if (!isXRP(amount) && issuer != account_ && issuer != dest && !amount.holds<MPTIssue>())
+    if (!isXRP(amount) && issuer != accountID_ && issuer != dest && !amount.holds<MPTIssue>())
     {
         auto page =
             ctx_.view().dirInsert(keylet::ownerDir(issuer), escrowKeylet, describeOwnerDir(issuer));
@@ -515,7 +525,7 @@ EscrowCreate::doApply()
     {
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
-                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, account_, amount, j_);
+                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))
@@ -531,10 +541,7 @@ EscrowCreate::doApply()
 }
 
 void
-EscrowCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+EscrowCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

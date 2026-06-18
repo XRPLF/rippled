@@ -26,8 +26,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
-
 namespace xrpl {
 
 bool
@@ -45,7 +43,7 @@ LoanManage::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanManage::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::kZERO)
+    if (ctx.tx[sfLoanID] == beast::kZero)
         return temINVALID;
 
     // Flags are mutually exclusive
@@ -435,10 +433,7 @@ LoanManage::doApply()
 }
 
 void
-LoanManage::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+LoanManage::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

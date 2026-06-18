@@ -5,8 +5,17 @@ on:
     types:
       - checks_requested
   pull_request:
-    types: [opened, edited, reopened, synchronize, ready_for_review]
-    branches: [develop]
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+    branches:
+      - develop
+      - "release-*"
+      - "release/*"
+      - "staging/*"
 
 jobs:
   check_description:
@@ -14,17 +23,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Write PR body to file
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         if: ${{ github.event_name == 'pull_request' }}
-        run: printenv PR_BODY > pr_body.md
+        run: printenv PR_BODY >pr_body.md
 
       - name: Check PR description differs from template
         if: ${{ github.event_name == 'pull_request' }}
-        run: >
-          python .github/scripts/check-pr-description.py
-          --template-file .github/pull_request_template.md
-          --pr-body-file pr_body.md
+        run: |
+          python .github/scripts/check-pr-description.py \
+              --template-file .github/pull_request_template.md \
+              --pr-body-file pr_body.md

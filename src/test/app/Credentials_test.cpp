@@ -142,7 +142,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
                 BEAST_EXPECT(sleCred->getAccountID(sfSubject) == issuer.id());
                 BEAST_EXPECT(sleCred->getAccountID(sfIssuer) == issuer.id());
-                BEAST_EXPECT((sleCred->getFieldU32(sfFlags) & lsfAccepted));
+                BEAST_EXPECT(sleCred->isFlag(lsfAccepted));
                 BEAST_EXPECT(
                     sleCred->getFieldU64(sfIssuerNode) == sleCred->getFieldU64(sfSubjectNode));
                 BEAST_EXPECT(ownerCount(env, issuer) == 1);
@@ -461,17 +461,17 @@ struct Credentials_test : public beast::unit_test::Suite
                 testcase(
                     "Credentials fail, credentialType length > "
                     "maxCredentialTypeLength.");
-                constexpr std::string_view kLONG_CRED_TYPE =
+                static constexpr std::string_view kLongCredType =
                     "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
                     "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
-                static_assert(kLONG_CRED_TYPE.size() > kMAX_CREDENTIAL_TYPE_LENGTH);
-                auto jv = credentials::create(subject, issuer, kLONG_CRED_TYPE);
+                static_assert(kLongCredType.size() > kMaxCredentialTypeLength);
+                auto jv = credentials::create(subject, issuer, kLongCredType);
                 env(jv, Ter(temMALFORMED));
             }
 
             {
                 testcase("Credentials fail, URI length > 256.");
-                constexpr std::string_view kLONG_URI =
+                static constexpr std::string_view kLongUri =
                     "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
                     "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p   "
                     "9hfup;wDJFBVSD8f72  "
@@ -480,9 +480,9 @@ struct Credentials_test : public beast::unit_test::Suite
                     "vujhgWQIE7F6WEUYFGWUKEYFVQW87FGWOEFWEFUYWVEF8723GFWEFB"
                     "WULE"
                     "fv28o37gfwEFB3872TFO8GSDSDVD";
-                static_assert(kLONG_URI.size() > kMAX_CREDENTIAL_URI_LENGTH);
+                static_assert(kLongUri.size() > kMaxCredentialUriLength);
                 env(credentials::create(subject, issuer, credType),
-                    credentials::Uri(kLONG_URI),
+                    credentials::Uri(kLongUri),
                     Ter(temMALFORMED));
             }
 
@@ -1074,11 +1074,11 @@ struct Credentials_test : public beast::unit_test::Suite
         // Verify credential exists and is accepted
         {
             auto const sleCred = env.current()->read(credKeylet);
-            BEAST_EXPECT(sleCred && sleCred->getFlags() & lsfAccepted);
+            BEAST_EXPECT(sleCred && sleCred->isFlag(lsfAccepted));
         }
 
         // Create DepositPreauth
-        env(deposit::authCredentials(becky, {{subject, credType}}));
+        env(deposit::authCredentials(becky, {{.issuer = subject, .credType = credType}}));
         env.close();
         // env();
         auto jtx = env.jt(pay(subject, becky, XRP(100)), credentials::Ids({credIdx}));
@@ -1087,7 +1087,7 @@ struct Credentials_test : public beast::unit_test::Suite
         auto const stx = std::make_shared<STTx>(*jtx.stx);
 
         // Create PermissionedDomain
-        env(pdomain::setTx(becky, {{issuer, credType}}));
+        env(pdomain::setTx(becky, {{.issuer = issuer, .credType = credType}}));
         env.close();
         auto const objects = pdomain::getObjects(becky, env);
         if (!BEAST_EXPECT(!objects.empty()))
@@ -1127,11 +1127,11 @@ struct Credentials_test : public beast::unit_test::Suite
 
         auto const dpTer = xrpl::verifyDepositPreauth(*stx, av, subject, becky, {}, j);
         auto sleCredAfter = av.read(credKeylet);
-        BEAST_EXPECT(sleCredAfter && (sleCredAfter->getFlags() & lsfAccepted));
+        BEAST_EXPECT(sleCredAfter && sleCredAfter->isFlag(lsfAccepted));
 
         auto const domTer = xrpl::verifyValidDomain(av, subject.id(), domain, j);
         sleCredAfter = av.read(credKeylet);
-        BEAST_EXPECT(sleCredAfter && (sleCredAfter->getFlags() & lsfAccepted));
+        BEAST_EXPECT(sleCredAfter && sleCredAfter->isFlag(lsfAccepted));
 
         if (fixEnabled)
         {

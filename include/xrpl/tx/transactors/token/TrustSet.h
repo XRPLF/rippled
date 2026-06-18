@@ -8,7 +8,7 @@ namespace xrpl {
 class TrustSet : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Normal;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit TrustSet(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -21,7 +21,10 @@ public:
     preflight(PreflightContext const& ctx);
 
     static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
+    checkGranularSemantics(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType> const& heldGranularPermissions);
 
     static TER
     preclaim(PreclaimContext const& ctx);
@@ -30,10 +33,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

@@ -21,13 +21,13 @@ public:
         bool sslVerify,
         beast::Journal j,
         boost::asio::ssl::context_base::method method = boost::asio::ssl::context::sslv23)
-        : ssl_context_{method}, j_(j), verify_{sslVerify}
+        : sslContext_{method}, j_(j), verify_{sslVerify}
     {
         boost::system::error_code ec;
 
         if (sslVerifyFile.empty())
         {
-            registerSSLCerts(ssl_context_, ec, j_);
+            registerSSLCerts(sslContext_, ec, j_);
 
             if (ec && sslVerifyDir.empty())
             {
@@ -37,12 +37,12 @@ public:
         }
         else
         {
-            ssl_context_.load_verify_file(sslVerifyFile);
+            sslContext_.load_verify_file(sslVerifyFile);
         }
 
         if (!sslVerifyDir.empty())
         {
-            ssl_context_.add_verify_path(sslVerifyDir, ec);
+            sslContext_.add_verify_path(sslVerifyDir, ec);
 
             if (ec)
             {
@@ -55,7 +55,7 @@ public:
     boost::asio::ssl::context&
     context()
     {
-        return ssl_context_;
+        return sslContext_;
     }
 
     [[nodiscard]] bool
@@ -153,7 +153,7 @@ public:
     }
 
 private:
-    boost::asio::ssl::context ssl_context_;
+    boost::asio::ssl::context sslContext_;
     beast::Journal const j_;
     bool const verify_;
 };

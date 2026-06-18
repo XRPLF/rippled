@@ -7,7 +7,7 @@ namespace xrpl {
 class PaymentChannelFund : public Transactor
 {
 public:
-    static constexpr auto kCONSEQUENCES_FACTORY = ConsequencesFactoryType::Custom;
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
     explicit PaymentChannelFund(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -23,10 +23,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

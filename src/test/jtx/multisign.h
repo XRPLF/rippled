@@ -46,7 +46,7 @@ public:
     SField const* const subField = nullptr;
     /// Used solely as a convenience placeholder for ctors that do _not_ specify
     /// a subfield.
-    static constexpr SField* const kTOP_LEVEL = nullptr;
+    static constexpr SField const* kTopLevel = nullptr;
 
     Msig(SField const* subField, std::vector<Reg> signers)
         : signers(std::move(signers)), subField(subField)
@@ -58,7 +58,7 @@ public:
     {
     }
 
-    Msig(std::vector<Reg> signers) : Msig(kTOP_LEVEL, signers)
+    Msig(std::vector<Reg> signers) : Msig(kTopLevel, signers)
     {
     }
 
@@ -84,7 +84,7 @@ public:
         requires(std::convertible_to<AccountType, Reg> && !std::is_same_v<AccountType, SField*>)
     explicit Msig(AccountType&& a0, Accounts&&... aN)
         : Msig{
-              kTOP_LEVEL,
+              kTopLevel,
               std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
