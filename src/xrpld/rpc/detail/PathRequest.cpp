@@ -20,7 +20,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PathAsset.h>
@@ -30,7 +29,6 @@
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
@@ -198,18 +196,6 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
         return false;
     }
 
-    if (sponsorCreatedAccount_ && !lrLedger->rules().enabled(featureSponsor))
-    {
-        jvStatus_ = rpcError(RpcNotEnabled);
-        return false;
-    }
-
-    if (sponsorCreatedAccount_ && !saDstAmount_.native())
-    {
-        jvStatus_ = rpcError(RpcDstAmtMalformed);
-        return false;
-    }
-
     auto const sleDest = lrLedger->read(keylet::account(*raDstAccount_));
 
     json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = json::ValueType::Array);
@@ -224,8 +210,7 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
             return false;
         }
 
-        if (!sponsorCreatedAccount_ && !convertAll_ &&
-            saDstAmount_ < STAmount(lrLedger->fees().reserve))
+        if (!convertAll_ && saDstAmount_ < STAmount(lrLedger->fees().reserve))
         {
             // Payment must meet reserve.
             jvStatus_ = rpcError(RpcDstAmtMalformed);
@@ -234,12 +219,6 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     }
     else
     {
-        if (sponsorCreatedAccount_)
-        {
-            jvStatus_ = rpcError(RpcInvalidParams);
-            return false;
-        }
-
         bool const disallowXRP(sleDest->isFlag(lsfDisallowXRP));
 
         auto const destAssets = accountDestAssets(*raDstAccount_, crCache, !disallowXRP);
@@ -339,19 +318,6 @@ PathRequest::parseJson(json::Value const& jvParams)
     {
         jvStatus_ = rpcError(RpcDstAmtMalformed);
         return PFR_PJ_INVALID;
-    }
-
-    sponsorCreatedAccount_ = false;
-    if (jvParams.isMember(jss::Flags))
-    {
-        auto const& flags = jvParams[jss::Flags];
-        if (!flags.isUInt() || (flags.asUInt() & ~tfSponsorCreatedAccount) != 0u)
-        {
-            jvStatus_ = rpcError(RpcInvalidParams);
-            return PFR_PJ_INVALID;
-        }
-
-        sponsorCreatedAccount_ = (flags.asUInt() & tfSponsorCreatedAccount) != 0u;
     }
 
     if (jvParams.isMember(jss::send_max))
@@ -553,7 +519,6 @@ PathRequest::getPathFinder(
         dstAmount,
         saSendMax_,
         domain_,
-        sponsorCreatedAccount_,
         app_);
     // NOLINTEND(bugprone-unchecked-optional-access)
     if (pathfinder->findPaths(level, continueCallback))
@@ -660,10 +625,6 @@ PathRequest::findPaths(
         if (convertAll_)
             rcInput.partialPaymentAllowed = true;
         auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
-        // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-        preparePathfindingSandboxForSponsoredDestination(
-            *sandbox, *raSrcAccount_, *raDstAccount_, sponsorCreatedAccount_);
-        // NOLINTEND(bugprone-unchecked-optional-access)
         auto rc = path::RippleCalc::rippleCalculate(
             *sandbox,
             saMaxAmount,  // --> Amount to send is unlimited
@@ -685,10 +646,6 @@ PathRequest::findPaths(
 
             ps.pushBack(fullLiquidityPath);
             sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
-            // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-            preparePathfindingSandboxForSponsoredDestination(
-                *sandbox, *raSrcAccount_, *raDstAccount_, sponsorCreatedAccount_);
-            // NOLINTEND(bugprone-unchecked-optional-access)
             rc = path::RippleCalc::rippleCalculate(
                 *sandbox,
                 saMaxAmount,  // --> Amount to send is unlimited

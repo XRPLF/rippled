@@ -218,7 +218,6 @@ Pathfinder::Pathfinder(
     STAmount const& saDstAmount,
     std::optional<STAmount> const& srcAmount,
     std::optional<uint256> const& domain,
-    bool sponsorCreatedAccount,
     Application& app)
     : srcAccount_(uSrcAccount)
     , dstAccount_(uDstAccount)
@@ -229,7 +228,6 @@ Pathfinder::Pathfinder(
     , srcAmount_(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount))
     , convertAll_(convertAllCheck(dstAmount_))
     , domain_(domain)
-    , sponsorCreatedAccount_(sponsorCreatedAccount)
     , ledger_(cache->getLedger())
     , rLCache_(cache)
     , app_(app)
@@ -316,7 +314,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
         }
 
         auto const reserve = STAmount(ledger_->fees().reserve);
-        if (!sponsorCreatedAccount_ && dstAmount_ < reserve)
+        if (dstAmount_ < reserve)
         {
             JLOG(j_.debug()) << "New account not getting enough funding: " << dstAmount_ << " < "
                              << reserve;
@@ -403,10 +401,6 @@ Pathfinder::getPathLiquidity(
         if (convertAll_)
             rcInput.partialPaymentAllowed = true;
 
-        if (!preparePathfindingSandboxForSponsoredDestination(
-                sandbox, srcAccount_, dstAccount_, sponsorCreatedAccount_))
-            return tecPATH_DRY;
-
         auto rc = path::RippleCalc::rippleCalculate(
             sandbox,
             srcAmount_,
@@ -463,8 +457,6 @@ Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& cont
     try
     {
         PaymentSandbox sandbox(&*ledger_, TapNone);
-        preparePathfindingSandboxForSponsoredDestination(
-            sandbox, srcAccount_, dstAccount_, sponsorCreatedAccount_);
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = true;

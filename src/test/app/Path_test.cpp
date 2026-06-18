@@ -146,9 +146,7 @@ public:
         STAmount const& saDstAmount,
         std::optional<STAmount> const& saSendMax = std::nullopt,
         std::optional<Currency> const& saSrcCurrency = std::nullopt,
-        std::optional<uint256> const& domain = std::nullopt,
-        std::optional<std::uint32_t> const& txFlags = std::nullopt,
-        bool allowError = false)
+        std::optional<uint256> const& domain = std::nullopt)
     {
         using namespace jtx;
 
@@ -186,8 +184,6 @@ public:
         }
         if (domain)
             params[jss::domain] = to_string(*domain);
-        if (txFlags)
-            params[jss::Flags] = *txFlags;
 
         json::Value result;
         Gate g;
@@ -200,8 +196,7 @@ public:
 
         using namespace std::chrono_literals;
         BEAST_EXPECT(g.waitFor(5s));
-        if (!allowError)
-            BEAST_EXPECT(!result.isMember(jss::error));
+        BEAST_EXPECT(!result.isMember(jss::error));
         return result;
     }
 
@@ -422,79 +417,6 @@ public:
         auto const result =
             findPaths(env, "alice", "bob", XRP(5), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(std::get<0>(result).empty());
-    }
-
-    void
-    sponsoredCreateAccountPathFind()
-    {
-        testcase("sponsored create account path find");
-        using namespace jtx;
-
-        Env env = pathTestEnv();
-
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const charlie = Account("charlie");
-        auto const dan = Account("dan");
-        auto const gw = Account("gw");
-        auto const usd = gw["USD"];
-
-        env.fund(XRP(10000), alice, bob, gw);
-        env.close();
-        env.trust(usd(100), alice, bob);
-        env.close();
-        env(pay(gw, alice, usd(50)));
-        env.close();
-
-        env(offer(bob, usd(50), XRP(5)));
-        env.close();
-
-        auto hasAlternatives = [](json::Value const& result) {
-            return result.isMember(jss::alternatives) && result[jss::alternatives].isArray() &&
-                result[jss::alternatives].size() > 0;
-        };
-
-        auto const fundedResult =
-            findPathsRequest(env, alice, bob, drops(1), std::nullopt, usd.currency);
-        BEAST_EXPECTS(hasAlternatives(fundedResult), fundedResult.toStyledString());
-
-        env(pay(alice, charlie, drops(1)),
-            Path(~XRP),
-            Sendmax(usd(50)),
-            Txflags(tfSponsorCreatedAccount));
-        env.close();
-
-        auto const charlieSle = env.le(keylet::account(charlie));
-        BEAST_EXPECT(charlieSle);
-        if (charlieSle)
-        {
-            BEAST_EXPECT(charlieSle->isFieldPresent(sfSponsor));
-            BEAST_EXPECT(charlieSle->getAccountID(sfSponsor) == alice.id());
-        }
-
-        auto const withoutFlag = findPathsRequest(
-            env,
-            alice,
-            dan,
-            drops(1),
-            std::nullopt,
-            usd.currency,
-            std::nullopt,
-            std::nullopt,
-            true);
-        BEAST_EXPECT(withoutFlag.isMember(jss::error));
-        BEAST_EXPECT(withoutFlag[jss::error].asString() == "dstAmtMalformed");
-
-        auto const withFlag = findPathsRequest(
-            env,
-            alice,
-            dan,
-            drops(1),
-            std::nullopt,
-            usd.currency,
-            std::nullopt,
-            tfSponsorCreatedAccount);
-        BEAST_EXPECTS(hasAlternatives(withFlag), withFlag.toStyledString());
     }
 
     void
@@ -1957,7 +1879,6 @@ public:
         trustAutoClearTrustNormalClear();
         trustAutoClearTrustAutoClear();
         norippleCombinations();
-        sponsoredCreateAccountPathFind();
 
         for (bool const domainEnabled : {false, true})
         {

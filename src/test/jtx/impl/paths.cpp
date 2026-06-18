@@ -50,7 +50,6 @@ Paths::operator()(Env& env, JTx& jt) const
         amount,
         std::nullopt,
         domain,
-        false,
         env.app());
     if (!pf.findPaths(depth_))
         return;
