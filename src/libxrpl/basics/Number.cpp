@@ -14,7 +14,6 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 
 #ifdef _MSC_VER
