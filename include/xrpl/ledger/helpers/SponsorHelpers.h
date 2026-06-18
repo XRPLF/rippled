@@ -35,9 +35,9 @@ isSponsorReserveCoSigning(STTx const& tx)
 inline std::optional<AccountID>
 getTxReserveSponsorAccountID(STTx const& tx, std::optional<AccountID> const& acc = {})
 {
-    return (!acc || acc == tx[sfAccount]) && tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx)
-        ? std::make_optional(tx[sfSponsor])
-        : std::nullopt;
+    if ((!acc || acc == tx[sfAccount]) && tx.isFieldPresent(sfSponsor) && isReserveSponsored(tx))
+        return std::make_optional(tx[sfSponsor]);
+    return std::nullopt;
 }
 
 template <class V>
@@ -165,14 +165,5 @@ removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor)
     if (sle->isFieldPresent(field))
         sle->makeFieldAbsent(field);
 }
-
-// namespace sponsor
-// {
-// // Accessing the ledger to check if provided sponsor is valid.
-// [[nodiscard]] TER
-// valid(ReadView const& view, STTx const& tx, beast::Journal j)
-// {
-// }
-// }
 
 }  // namespace xrpl
