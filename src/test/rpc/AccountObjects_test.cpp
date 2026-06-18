@@ -1428,7 +1428,8 @@ public:
 
         // Now sponsor bob's trust line
         auto const trustId = keylet::line(bob, gw, usd.currency);
-        BEAST_EXPECT(env.le(trustId));
+        if (!BEAST_EXPECT(env.le(trustId)))
+            return;
 
         env(sponsor::transfer(bob, tfSponsorshipCreate, trustId.key),
             sponsor::As(sponsor1, spfSponsorReserve),
@@ -1438,6 +1439,8 @@ public:
         // Verify trust line has sponsor field
         {
             auto const sle = env.le(trustId);
+            if (!BEAST_EXPECT(sle))
+                return;
             BEAST_EXPECT(sle->isFieldPresent(sfHighSponsor) || sle->isFieldPresent(sfLowSponsor));
         }
 
@@ -1446,9 +1449,10 @@ public:
             auto const resp = acctObjsSponsored(env, bob.id(), true);
             auto const& objs = resp[jss::result][jss::account_objects];
             bool foundTrustLine = false;
-            BEAST_EXPECT(objs.size() == 1);
-            for (auto const& obj : objs)
+            if (BEAST_EXPECT(objs.size() == 1))
             {
+                auto const& obj = objs[0u];
+                BEAST_EXPECT(obj[sfLedgerEntryType.jsonName] == jss::RippleState);
                 if (obj[sfLedgerEntryType.jsonName] == jss::RippleState)
                 {
                     BEAST_EXPECT(
@@ -1479,32 +1483,33 @@ public:
         // Only the queried side of a shared trust line should determine
         // sponsorship classification.
         {
-            Env env2(*this, testableAmendments());
+            Env env(*this, testableAmendments());
             Account const issuer("issuer");
             Account const user("user");
-            Account const sponsor2("sponsor2");
-            auto const usd2 = issuer["USD"];
+            Account const sponsor("sponsor");
+            auto const usd = issuer["USD"];
 
-            env2.fund(XRP(10000), issuer, user, sponsor2);
-            env2.close();
+            env.fund(XRP(10000), issuer, user, sponsor);
+            env.close();
 
-            env2(trust(issuer, user["USD"](100)));
-            env2.close();
+            env(trust(issuer, user["USD"](100)));
+            env.close();
 
-            env2(trust(user, usd2(100)));
-            env2.close();
+            env(trust(user, usd(100)));
+            env.close();
 
-            auto const trustId = keylet::line(user, issuer, usd2.currency);
-            BEAST_EXPECT(env2.le(trustId));
+            auto const trustId = keylet::line(user, issuer, usd.currency);
+            if (!BEAST_EXPECT(env.le(trustId)))
+                return;
 
-            env2(
-                sponsor::transfer(user, tfSponsorshipCreate, trustId.key),
-                sponsor::As(sponsor2, spfSponsorReserve),
-                Sig(sfSponsorSignature, sponsor2));
-            env2.close();
+            env(sponsor::transfer(user, tfSponsorshipCreate, trustId.key),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
 
-            auto const line = env2.le(trustId);
-            BEAST_EXPECT(line);
+            auto const line = env.le(trustId);
+            if (!BEAST_EXPECT(line))
+                return;
 
             auto const userIsHigh = line->getFieldAmount(sfHighLimit).getIssuer() == user.id();
             auto const& userSponsorField = userIsHigh ? sfHighSponsor : sfLowSponsor;
@@ -1514,66 +1519,70 @@ public:
             BEAST_EXPECT(!line->isFieldPresent(issuerSponsorField));
 
             {
-                auto const resp = acctObjsSponsored(env2, user.id(), true, jss::state);
+                auto const resp = acctObjsSponsored(env, user.id(), true, jss::state);
                 auto const& objs = resp[jss::result][jss::account_objects];
-                BEAST_EXPECT(objs.size() == 1);
+                if (BEAST_EXPECT(objs.size() == 1))
+                    BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::RippleState);
             }
             {
-                auto const resp = acctObjsSponsored(env2, user.id(), false, jss::state);
+                auto const resp = acctObjsSponsored(env, user.id(), false, jss::state);
                 auto const& objs = resp[jss::result][jss::account_objects];
                 BEAST_EXPECT(objs.size() == 0);
             }
             {
-                auto const resp = acctObjsSponsored(env2, issuer.id(), true, jss::state);
+                auto const resp = acctObjsSponsored(env, issuer.id(), true, jss::state);
                 auto const& objs = resp[jss::result][jss::account_objects];
                 BEAST_EXPECT(objs.size() == 0);
             }
             {
-                auto const resp = acctObjsSponsored(env2, issuer.id(), false, jss::state);
+                auto const resp = acctObjsSponsored(env, issuer.id(), false, jss::state);
                 auto const& objs = resp[jss::result][jss::account_objects];
-                BEAST_EXPECT(objs.size() == 1);
+                if (BEAST_EXPECT(objs.size() == 1))
+                    BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::RippleState);
             }
         }
 
         // A Sponsorship object is visible to both sides, but its reserve side
         // belongs only to sfOwner.
         {
-            Env env2(*this, testableAmendments());
+            Env env(*this, testableAmendments());
             Account const owner("owner");
             Account const sponsee("sponsee");
-            Account const sponsor2("sponsor2");
+            Account const sponsor("sponsor");
 
-            env2.fund(XRP(10000), owner, sponsee, sponsor2);
-            env2.close();
+            env.fund(XRP(10000), owner, sponsee, sponsor);
+            env.close();
 
-            env2(sponsor::set_reserve(sponsor2, 0, 100), sponsor::SponseeAcc(owner));
-            env2.close();
+            env(sponsor::set_reserve(sponsor, 0, 100), sponsor::SponseeAcc(owner));
+            env.close();
 
-            env2(
-                sponsor::set(owner, 0, 100, XRP(100)),
+            env(sponsor::set(owner, 0, 100, XRP(100)),
                 sponsor::SponseeAcc(sponsee),
-                sponsor::As(sponsor2, spfSponsorReserve),
-                Sig(sfSponsorSignature, sponsor2));
-            env2.close();
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
 
-            auto const sponsorship = env2.le(keylet::sponsor(owner, sponsee));
-            BEAST_EXPECT(sponsorship);
+            auto const sponsorship = env.le(keylet::sponsor(owner, sponsee));
+            if (!BEAST_EXPECT(sponsorship))
+                return;
             BEAST_EXPECT(sponsorship->isFieldPresent(sfSponsor));
 
             {
-                auto const resp = acctObjsSponsored(env2, owner.id(), true, jss::sponsorship);
+                auto const resp = acctObjsSponsored(env, owner.id(), true, jss::sponsorship);
                 auto const& objs = resp[jss::result][jss::account_objects];
-                BEAST_EXPECT(objs.size() == 1);
+                if (BEAST_EXPECT(objs.size() == 1))
+                    BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::Sponsorship);
             }
             {
-                auto const resp = acctObjsSponsored(env2, sponsee.id(), true, jss::sponsorship);
+                auto const resp = acctObjsSponsored(env, sponsee.id(), true, jss::sponsorship);
                 auto const& objs = resp[jss::result][jss::account_objects];
                 BEAST_EXPECT(objs.size() == 0);
             }
             {
-                auto const resp = acctObjsSponsored(env2, sponsee.id(), false, jss::sponsorship);
+                auto const resp = acctObjsSponsored(env, sponsee.id(), false, jss::sponsorship);
                 auto const& objs = resp[jss::result][jss::account_objects];
-                BEAST_EXPECT(objs.size() == 1);
+                if (BEAST_EXPECT(objs.size() == 1))
+                    BEAST_EXPECT(objs[0u][sfLedgerEntryType.jsonName] == jss::Sponsorship);
             }
         }
 
@@ -1584,7 +1593,8 @@ public:
             env.close();
 
             auto const nftPageKeylet = keylet::nftpageMax(bob);
-            BEAST_EXPECT(env.le(nftPageKeylet));
+            if (!BEAST_EXPECT(env.le(nftPageKeylet)))
+                return;
 
             // Sponsor the NFT page
             env(sponsor::transfer(bob, tfSponsorshipCreate, nftPageKeylet.key),
@@ -1593,7 +1603,10 @@ public:
             env.close();
 
             // Verify NFT page has sponsor field
-            BEAST_EXPECT(env.le(nftPageKeylet)->isFieldPresent(sfSponsor));
+            auto const nftPage = env.le(nftPageKeylet);
+            if (!BEAST_EXPECT(nftPage))
+                return;
+            BEAST_EXPECT(nftPage->isFieldPresent(sfSponsor));
 
             // sponsored=true should include the sponsored NFT page
             // sponsored=false should NOT include the sponsored NFT page

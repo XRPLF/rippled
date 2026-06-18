@@ -138,9 +138,9 @@ autofillTx(json::Value& txJson, RPC::JsonContext& context)
     {
         auto& sponsorSignature = txJson[sfSponsorSignature.jsonName];
         if (!sponsorSignature.isObject())
-            return RPC::objectFieldError("tx.SponsorSignature");
+            return RPC::objectFieldError(sfSponsorSignature.jsonName);
 
-        if (auto error = autofillSignature(sponsorSignature))
+        if (auto const error = autofillSignature(sponsorSignature))
             return error;
     }
 
@@ -161,9 +161,8 @@ autofillTx(json::Value& txJson, RPC::JsonContext& context)
 
     if (!txJson.isMember(jss::Fee))
     {
-        // autofill Fee
-        // Must happen after all the other autofills happen
-        // Error handling/messaging works better that way
+        // Autofill Fee after normalizing nested signer fields so the fee
+        // estimator sees the full transaction shape.
         auto feeOrError = RPC::getCurrentNetworkFee(
             context.role,
             context.app.config(),

@@ -376,7 +376,7 @@ class Simulate_test : public beast::unit_test::Suite
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
-                "Invalid field 'tx.SponsorSignature', not object.");
+                "Invalid field 'SponsorSignature', not object.");
         }
         {
             // Invalid transaction
@@ -838,7 +838,6 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
         Env env(*this);
-        static auto const kNewDomain = "123ABC";
         Account const sponsor("sponsor");
         Account const signer("signer");
         env.fund(XRP(10000), sponsor, signer);
@@ -849,6 +848,7 @@ class Simulate_test : public beast::unit_test::Suite
 
         auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
             auto const result = resp[jss::result];
+            // Verifies Fee autofill counts nested sponsor-signature signers.
             auto const expectedFee = env.current()->fees().base * 2;
             checkBasicReturnValidity(result, tx, env.seq(env.master), expectedFee);
 
@@ -868,7 +868,7 @@ class Simulate_test : public beast::unit_test::Suite
         json::Value tx;
         tx[jss::Account] = env.master.human();
         tx[jss::TransactionType] = jss::AccountSet;
-        tx[sfDomain] = kNewDomain;
+        tx[sfDomain] = "123ABC";
         tx[sfSponsor.jsonName] = sponsor.human();
         tx[sfSponsorFlags.jsonName] = spfSponsorFee;
         tx[sfSponsorSignature.jsonName] = json::ValueType::Object;
@@ -878,6 +878,8 @@ class Simulate_test : public beast::unit_test::Suite
         signerObj[sfSigner][jss::Account] = signer.human();
         tx[sfSponsorSignature.jsonName][sfSigners.jsonName].append(signerObj);
 
+        // Leave Fee unset so simulate must autofill it after sponsor signer normalization.
+        BEAST_EXPECT(!tx.isMember(jss::Fee));
         testTx(env, tx, validateOutput, false);
     }
 

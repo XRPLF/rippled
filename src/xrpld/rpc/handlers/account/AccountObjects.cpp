@@ -33,7 +33,8 @@ namespace xrpl {
     @param dirIndex Begin gathering account objects from this directory.
     @param entryIndex Begin gathering objects from this directory node.
     @param limit Maximum number of objects to find.
-    @param sponsored Whether to filter by sponsored objects.
+    @param hasSponsoredFilter Whether to filter by sponsored objects.
+    @param sponsored Whether filtered objects should be sponsored.
     @param jvResult A JSON result that holds the request objects.
 */
 bool
@@ -44,7 +45,8 @@ getAccountObjects(
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
-    std::optional<bool> const sponsored,
+    bool const hasSponsoredFilter,
+    bool const sponsored,
     json::Value& jvResult)
 {
     // check if dirIndex is valid
@@ -103,12 +105,12 @@ getAccountObjects(
         while (currentPage)
         {
             bool canAppendNFT = true;
-            if (sponsored.has_value())
+            if (hasSponsoredFilter)
             {
                 std::optional<AccountID> const nftSponsor = currentPage->isFieldPresent(sfSponsor)
                     ? currentPage->getAccountID(sfSponsor)
                     : std::optional<AccountID>(std::nullopt);
-                if (!sponsoredMatchesFilter(sponsored.value(), nftSponsor))
+                if (!sponsoredMatchesFilter(sponsored, nftSponsor))
                     canAppendNFT = false;
             }
             if (canAppendNFT)
@@ -230,7 +232,7 @@ getAccountObjects(
             };
             std::optional<AccountID> const sponsor = getSponsor();
 
-            if (sponsored.has_value() && !sponsoredMatchesFilter(sponsored.value(), sponsor))
+            if (hasSponsoredFilter && !sponsoredMatchesFilter(sponsored, sponsor))
                 canAppend = false;
 
             if (canAppend)
@@ -381,8 +383,9 @@ doAccountObjects(RPC::JsonContext& context)
             return RPC::invalidFieldError(jss::marker);
     }
 
-    std::optional<bool> sponsored;
-    if (params.isMember(jss::sponsored))
+    bool const hasSponsoredFilter = params.isMember(jss::sponsored);
+    bool sponsored = false;
+    if (hasSponsoredFilter)
     {
         auto const& sponsoredJv = params[jss::sponsored];
         if (!sponsoredJv.isBool())
@@ -392,7 +395,15 @@ doAccountObjects(RPC::JsonContext& context)
     }
 
     if (!getAccountObjects(
-            *ledger, accountID, typeFilter, dirIndex, entryIndex, limit, sponsored, result))
+            *ledger,
+            accountID,
+            typeFilter,
+            dirIndex,
+            entryIndex,
+            limit,
+            hasSponsoredFilter,
+            sponsored,
+            result))
         return RPC::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
