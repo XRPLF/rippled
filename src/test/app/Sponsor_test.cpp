@@ -1848,6 +1848,20 @@ public:
         env(pay(alice, bob, usd(100)), Txflags(tfSponsorCreatedAccount), Ter(temBAD_AMOUNT));
         env.close();
 
+        // Sponsored account creation is reserve sponsorship and is only supported for direct XRP
+        // payments.
+        env(pay(alice, bob, drops(1)),
+            Txflags(tfSponsorCreatedAccount),
+            Sendmax(usd(2)),
+            Ter(temINVALID));
+        env.close();
+
+        env(pay(alice, bob, drops(1)),
+            Txflags(tfSponsorCreatedAccount),
+            Path(~XRP),
+            Ter(temINVALID));
+        env.close();
+
         // Account is not sponsored by normal Sponsor specification
         {
             env(pay(alice, bob, drops(baseAccountReserve(*env.current(), 0))),
