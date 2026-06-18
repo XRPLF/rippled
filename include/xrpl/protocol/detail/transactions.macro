@@ -1084,7 +1084,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 85, SponsorshipTransfer,
     Delegation::Delegable,
     featureSponsor,
-    NoPriv,
+    MayModifyVault,
     ({
     {sfObjectID, SoeOptional},
     {sfSponsee, SoeOptional},
