@@ -211,8 +211,9 @@ checkDepositFreeze(
     if (auto const ret = checkFrozen(view, srcAcct, asset))
         return ret;
 
-    // Pseudo-account cannot receive if asset is deep frozen
-    return checkDeepFrozen(view, dstAcct, asset);
+    // Unlike regular accounts, pseudo-accounts cannot receive deposits under a regular freeze
+    // because those funds cannot be later withdrawn
+    return checkFrozen(view, dstAcct, asset);
 }
 
 //------------------------------------------------------------------------------

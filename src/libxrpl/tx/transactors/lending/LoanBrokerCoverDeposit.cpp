@@ -78,8 +78,21 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ret = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
         return ret;
 
-    if (auto const ret = checkDepositFreeze(ctx.view, account, pseudoAccountID, vaultAsset))
-        return ret;
+    if (ctx.view.rules().enabled(fixCleanup3_3_0))
+    {
+        if (auto const ret = checkDepositFreeze(ctx.view, account, pseudoAccountID, vaultAsset))
+            return ret;
+    }
+    else
+    {
+        if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
+            return ret;
+
+        // Unlike regular accounts, pseudo-accounts cannot receive assets
+        // Under a regular freeze because those funds cannot be later withdrawn
+        if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
+            return ret;
+    }
 
     // Cannot transfer unauthorized asset
     if (auto const ret = requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
