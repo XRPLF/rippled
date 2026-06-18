@@ -25,9 +25,6 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    static TER
-    deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j);
-
     TER
     doApply() override;
 
