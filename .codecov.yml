@@ -4,7 +4,20 @@ codecov:
 comment:
   behavior: default
   layout: reach,diff,flags,tree,reach
-  show_carryforward_flags: false
+  show_carryforward_flags: true
+
+# Coverage is uploaded from independent workflows: the C++ build under the `cpp`
+# flag and the Rust build under the `rust` flag. Carrying forward each flag means
+# a commit that only re-runs one language keeps the other language's last-known
+# coverage instead of dropping it, so the combined project total stays stable.
+flag_management:
+  default_rules:
+    carryforward: true
+  individual_flags:
+    - name: cpp
+      carryforward: true
+    - name: rust
+      carryforward: true
 
 coverage:
   range: "70..85"

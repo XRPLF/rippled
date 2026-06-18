@@ -44,6 +44,15 @@ repos:
         "types_or": [c++, c, proto]
         exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
 
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: cargo fmt --manifest-path crates/Cargo.toml --all
+        language: system
+        types: [rust]
+        pass_filenames: false # rustfmt formats the whole workspace
+
   - repo: https://github.com/BlankSpruce/gersemi-pre-commit
     rev: faadd6a9d852369ca94f4d15b2404c967ba8cb01 # frozen: 0.27.6
     hooks:

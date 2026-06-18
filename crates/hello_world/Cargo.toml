@@ -7,7 +7,4 @@ edition.workspace = true
 crate-type = ["staticlib"]
 
 [dependencies]
-tracing.workspace = true
-tracing-subscriber.workspace = true
-tracing-appender.workspace = true
 cxx.workspace = true

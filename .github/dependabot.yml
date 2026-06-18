@@ -15,3 +15,20 @@ updates:
     commit-message:
       prefix: "ci: [DEPENDABOT] "
     target-branch: develop
+
+  - package-ecosystem: cargo
+    directory: /crates
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/GMT
+    commit-message:
+      prefix: "ci: [DEPENDABOT] "
+    target-branch: develop
+    open-pull-requests-limit: 10
+    # Bundle all Rust dependency bumps into a single PR per run to reduce noise.
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"

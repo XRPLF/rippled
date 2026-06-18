@@ -3,9 +3,6 @@ members = ["hello_world"]
 resolver = "3"
 
 [workspace.dependencies]
-tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-tracing-appender = "0.2.5"
 cxx = { version = "1.0.194", features = ["c++20"] }
 
 [workspace.package]
