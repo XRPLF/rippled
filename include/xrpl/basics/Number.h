@@ -158,7 +158,7 @@ struct MantissaRange final
     rep const max{(min * 10) - 1};
     CuspRoundingFix const cuspRoundingFix{isCuspFixEnabled(scale)};
 
-    static MantissaRange const&
+    static constexpr MantissaRange const&
     getMantissaRange(MantissaScale scale);
 
     static std::set<MantissaScale> const&
@@ -213,9 +213,6 @@ private:
                 throw std::runtime_error("Unknown mantissa scale");  // LCOV_EXCL_LINE
         }
     }
-
-    static std::unordered_map<MantissaScale, MantissaRange> const&
-    getRanges();
 };
 
 // Like std::integral, but only 64-bit integral types.
