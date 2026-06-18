@@ -556,16 +556,16 @@ class Batch_test : public beast::unit_test::Suite
             env.close();
         }
 
-        // DEFENSIVE: temARRAY_TOO_LARGE: Batch: signers array exceeds 8
-        // entries.
+        // DEFENSIVE: temARRAY_TOO_LARGE: Batch: signers array exceeds
+        // kMaxBatchSigners entries.
         // ACTUAL: telENV_RPC_FAILED: isRawTransactionOkay()
         {
             auto const seq = env.seq(alice);
-            auto const batchFee = batch::calcBatchFee(env, 9, 2);
+            auto const batchFee = batch::calcBatchFee(env, kMaxBatchSigners + 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::Inner(pay(alice, bob, XRP(5)), seq + 2),
-                batch::Sig(bob, carol, alice, bob, carol, alice, bob, carol, alice, alice),
+                batch::Sig(std::vector<Reg>(kMaxBatchSigners + 1, bob)),
                 Ter(telENV_RPC_FAILED));
             env.close();
         }
@@ -1530,7 +1530,8 @@ class Batch_test : public beast::unit_test::Suite
             });
         }
 
-        // telENV_RPC_FAILED: Batch: signers array exceeds 8 entries.
+        // telENV_RPC_FAILED: Batch: signers array exceeds kMaxBatchSigners
+        // entries.
         {
             test::jtx::Env env{*this, features};
 
@@ -1540,16 +1541,17 @@ class Batch_test : public beast::unit_test::Suite
             env.close();
 
             auto const aliceSeq = env.seq(alice);
-            auto const batchFee = batch::calcBatchFee(env, 9, 2);
+            auto const batchFee = batch::calcBatchFee(env, kMaxBatchSigners + 1, 2);
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::Inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
-                batch::Sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob),
+                batch::Sig(std::vector<Reg>(kMaxBatchSigners + 1, bob)),
                 Ter(telENV_RPC_FAILED));
             env.close();
         }
 
-        // temARRAY_TOO_LARGE: Batch preflight: signers array exceeds 8 entries.
+        // temARRAY_TOO_LARGE: Batch preflight: signers array exceeds
+        // kMaxBatchSigners entries.
         {
             test::jtx::Env env{*this, features};
 
@@ -1558,13 +1560,13 @@ class Batch_test : public beast::unit_test::Suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            auto const batchFee = batch::calcBatchFee(env, 0, 9);
+            auto const batchFee = batch::calcBatchFee(env, kMaxBatchSigners + 1, 2);
             auto const aliceSeq = env.seq(alice);
             auto jt = env.jtnofill(
                 batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::Inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
-                batch::Sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob));
+                batch::Sig(std::vector<Reg>(kMaxBatchSigners + 1, bob)));
 
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto const result = xrpl::apply(env.app(), view, *jt.stx, TapNone, j);
@@ -5424,7 +5426,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::Inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::Inner(pay(alice, bob, XRP(5)), seq + 2),
-                batch::Sig(bob, carol, alice, bob, carol, alice, bob, carol, alice, alice));
+                batch::Sig(std::vector<Reg>(kMaxBatchSigners + 1, bob)));
             XRPAmount const txBaseFee = getBaseFee(jtx);
             BEAST_EXPECT(txBaseFee == XRPAmount(kInitialXrp));
         }

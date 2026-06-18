@@ -307,4 +307,14 @@ constexpr std::size_t kPermissionMaxSize = 10;
 /** The maximum number of transactions that can be in a batch. */
 constexpr std::size_t kMaxBatchTxCount = 8;
 
+/** The maximum number of batch signers.
+ *
+ * A single inner transaction can require more than one signer: the inner
+ * account's authorizer plus, for some transaction types, a counterparty
+ * and/or a sponsor. Bounding the signers array at the inner-transaction
+ * count would therefore reject otherwise-valid batches. Allow up to three
+ * distinct signers per inner transaction.
+ */
+constexpr std::size_t kMaxBatchSigners = kMaxBatchTxCount * 3;
+
 }  // namespace xrpl

@@ -117,7 +117,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         auto const& signers = tx.getFieldArray(sfBatchSigners);
 
         // LCOV_EXCL_START
-        if (signers.size() > kMaxBatchTxCount)
+        if (signers.size() > kMaxBatchSigners)
         {
             JLOG(debugLog().error()) << "BatchTrace: Batch Signers array exceeds max entries.";
             return XRPAmount{kInitialXrp};
@@ -241,10 +241,10 @@ Batch::preflight(PreflightContext const& ctx)
     }
 
     if (ctx.tx.isFieldPresent(sfBatchSigners) &&
-        ctx.tx.getFieldArray(sfBatchSigners).size() > kMaxBatchTxCount)
+        ctx.tx.getFieldArray(sfBatchSigners).size() > kMaxBatchSigners)
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
-                            << "signers array exceeds 8 entries.";
+                            << "signers array exceeds " << kMaxBatchSigners << " entries.";
         return temARRAY_TOO_LARGE;
     }
 
@@ -433,10 +433,10 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         STArray const& signers = ctx.tx.getFieldArray(sfBatchSigners);
 
         // Check that the batch signers array is not too large.
-        if (signers.size() > kMaxBatchTxCount)
+        if (signers.size() > kMaxBatchSigners)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "signers array exceeds " << kMaxBatchTxCount << " entries.";
+                                << "signers array exceeds " << kMaxBatchSigners << " entries.";
             return temARRAY_TOO_LARGE;
         }
 
