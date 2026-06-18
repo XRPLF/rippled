@@ -94,7 +94,8 @@ getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner)
                     return sfLowSponsor;
             }
             // LCOV_EXCL_START
-            UNREACHABLE("Should not happen. Owner should be checked before calling this function.");
+            Throw<std::logic_error>(
+                "Should not happen. Owner should be checked before calling this function.");
             // LCOV_EXCL_STOP
         }
         default:
