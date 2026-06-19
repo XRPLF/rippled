@@ -157,9 +157,9 @@ public:
      */
     [[nodiscard]]
     protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getReserveCount() const
+    getRemainingOwnerCount() const
     {
-        if (hasReserveCount())
+        if (hasRemainingOwnerCount())
         {
             return this->tx_->at(sfRemainingOwnerCount);
         }
@@ -172,7 +172,7 @@ public:
      */
     [[nodiscard]]
     bool
-    hasReserveCount() const
+    hasRemainingOwnerCount() const
     {
         return this->tx_->isFieldPresent(sfRemainingOwnerCount);
     }
@@ -267,7 +267,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
-    setReserveCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setRemainingOwnerCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfRemainingOwnerCount] = value;
         return *this;

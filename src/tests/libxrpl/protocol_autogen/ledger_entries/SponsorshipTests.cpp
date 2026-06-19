@@ -26,7 +26,7 @@ TEST(SponsorshipTests, BuilderSettersRoundTrip)
     auto const sponseeValue = canonical_ACCOUNT();
     auto const feeAmountValue = canonical_AMOUNT();
     auto const maxFeeValue = canonical_AMOUNT();
-    auto const reserveCountValue = canonical_UINT32();
+    auto const remainingOwnerCountValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
     auto const sponseeNodeValue = canonical_UINT64();
 
@@ -41,7 +41,7 @@ TEST(SponsorshipTests, BuilderSettersRoundTrip)
 
     builder.setFeeAmount(feeAmountValue);
     builder.setMaxFee(maxFeeValue);
-    builder.setReserveCount(reserveCountValue);
+    builder.setRemainingOwnerCount(remainingOwnerCountValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -105,11 +105,11 @@ TEST(SponsorshipTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = reserveCountValue;
-        auto const actualOpt = entry.getReserveCount();
+        auto const& expected = remainingOwnerCountValue;
+        auto const actualOpt = entry.getRemainingOwnerCount();
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfRemainingOwnerCount");
-        EXPECT_TRUE(entry.hasReserveCount());
+        EXPECT_TRUE(entry.hasRemainingOwnerCount());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -131,7 +131,7 @@ TEST(SponsorshipTests, BuilderFromSleRoundTrip)
     auto const sponseeValue = canonical_ACCOUNT();
     auto const feeAmountValue = canonical_AMOUNT();
     auto const maxFeeValue = canonical_AMOUNT();
-    auto const reserveCountValue = canonical_UINT32();
+    auto const remainingOwnerCountValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
     auto const sponseeNodeValue = canonical_UINT64();
 
@@ -143,7 +143,7 @@ TEST(SponsorshipTests, BuilderFromSleRoundTrip)
     sle->at(sfSponsee) = sponseeValue;
     sle->at(sfFeeAmount) = feeAmountValue;
     sle->at(sfMaxFee) = maxFeeValue;
-    sle->at(sfRemainingOwnerCount) = reserveCountValue;
+    sle->at(sfRemainingOwnerCount) = remainingOwnerCountValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
     sle->at(sfSponseeNode) = sponseeNodeValue;
 
@@ -243,10 +243,10 @@ TEST(SponsorshipTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = reserveCountValue;
+        auto const& expected = remainingOwnerCountValue;
 
-        auto const fromSleOpt = entryFromSle.getReserveCount();
-        auto const fromBuilderOpt = entryFromBuilder.getReserveCount();
+        auto const fromSleOpt = entryFromSle.getRemainingOwnerCount();
+        auto const fromBuilderOpt = entryFromBuilder.getRemainingOwnerCount();
 
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
@@ -323,7 +323,7 @@ TEST(SponsorshipTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getFeeAmount().has_value());
     EXPECT_FALSE(entry.hasMaxFee());
     EXPECT_FALSE(entry.getMaxFee().has_value());
-    EXPECT_FALSE(entry.hasReserveCount());
-    EXPECT_FALSE(entry.getReserveCount().has_value());
+    EXPECT_FALSE(entry.hasRemainingOwnerCount());
+    EXPECT_FALSE(entry.getRemainingOwnerCount().has_value());
 }
 }

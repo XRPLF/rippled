@@ -33,7 +33,7 @@ TEST(TransactionsSponsorshipSetTests, BuilderSettersRoundTrip)
     auto const sponseeValue = canonical_ACCOUNT();
     auto const feeAmountValue = canonical_AMOUNT();
     auto const maxFeeValue = canonical_AMOUNT();
-    auto const reserveCountValue = canonical_UINT32();
+    auto const remainingOwnerCountValue = canonical_UINT32();
 
     SponsorshipSetBuilder builder{
         accountValue,
@@ -46,7 +46,7 @@ TEST(TransactionsSponsorshipSetTests, BuilderSettersRoundTrip)
     builder.setSponsee(sponseeValue);
     builder.setFeeAmount(feeAmountValue);
     builder.setMaxFee(maxFeeValue);
-    builder.setReserveCount(reserveCountValue);
+    builder.setRemainingOwnerCount(remainingOwnerCountValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -97,11 +97,11 @@ TEST(TransactionsSponsorshipSetTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = reserveCountValue;
-        auto const actualOpt = tx.getReserveCount();
+        auto const& expected = remainingOwnerCountValue;
+        auto const actualOpt = tx.getRemainingOwnerCount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRemainingOwnerCount should be present";
         expectEqualField(expected, *actualOpt, "sfRemainingOwnerCount");
-        EXPECT_TRUE(tx.hasReserveCount());
+        EXPECT_TRUE(tx.hasRemainingOwnerCount());
     }
 
 }
@@ -124,7 +124,7 @@ TEST(TransactionsSponsorshipSetTests, BuilderFromStTxRoundTrip)
     auto const sponseeValue = canonical_ACCOUNT();
     auto const feeAmountValue = canonical_AMOUNT();
     auto const maxFeeValue = canonical_AMOUNT();
-    auto const reserveCountValue = canonical_UINT32();
+    auto const remainingOwnerCountValue = canonical_UINT32();
 
     // Build an initial transaction
     SponsorshipSetBuilder initialBuilder{
@@ -137,7 +137,7 @@ TEST(TransactionsSponsorshipSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setSponsee(sponseeValue);
     initialBuilder.setFeeAmount(feeAmountValue);
     initialBuilder.setMaxFee(maxFeeValue);
-    initialBuilder.setReserveCount(reserveCountValue);
+    initialBuilder.setRemainingOwnerCount(remainingOwnerCountValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -185,8 +185,8 @@ TEST(TransactionsSponsorshipSetTests, BuilderFromStTxRoundTrip)
     }
 
     {
-        auto const& expected = reserveCountValue;
-        auto const actualOpt = rebuiltTx.getReserveCount();
+        auto const& expected = remainingOwnerCountValue;
+        auto const actualOpt = rebuiltTx.getRemainingOwnerCount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRemainingOwnerCount should be present";
         expectEqualField(expected, *actualOpt, "sfRemainingOwnerCount");
     }
@@ -254,8 +254,8 @@ TEST(TransactionsSponsorshipSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getFeeAmount().has_value());
     EXPECT_FALSE(tx.hasMaxFee());
     EXPECT_FALSE(tx.getMaxFee().has_value());
-    EXPECT_FALSE(tx.hasReserveCount());
-    EXPECT_FALSE(tx.getReserveCount().has_value());
+    EXPECT_FALSE(tx.hasRemainingOwnerCount());
+    EXPECT_FALSE(tx.getRemainingOwnerCount().has_value());
 }
 
 }
