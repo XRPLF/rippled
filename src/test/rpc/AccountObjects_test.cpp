@@ -950,7 +950,7 @@ public:
                 BEAST_EXPECT(sponsorship[sfSponsee.jsonName] == gw.human());
                 BEAST_EXPECT(
                     sponsorship[sfFlags.jsonName].asUInt() == tfSponsorshipSetRequireSignForFee);
-                BEAST_EXPECT(sponsorship[sfReserveCount.jsonName].asUInt() == 200);
+                BEAST_EXPECT(sponsorship[sfRemainingOwnerCount.jsonName].asUInt() == 200);
                 BEAST_EXPECT(sponsorship[sfFeeAmount.jsonName].asUInt() == 100000000);
                 BEAST_EXPECT(sponsorship[sfMaxFee.jsonName].asUInt() == 10);
             }

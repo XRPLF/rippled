@@ -280,7 +280,7 @@ adjustOwnerCount(
             // update the pre-funded ReserveCount on Sponsorship ledger object
             // Reserve count moves opposite to adjustment: +adjustment => consume reserve (-),
             adjustOwnerCountHlp(
-                view, sponsorObjSle, sfReserveCount, sponsorID, -adjustment, j, false);
+                view, sponsorObjSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
         }
     }
     adjustOwnerCountHlp(view, accountSle, sfOwnerCount, accountID, adjustment, j);
@@ -354,7 +354,7 @@ checkInsufficientReserve(
 
         if (sle)
         {
-            auto const ownerCountAllowed = sle->getFieldU32(sfReserveCount);
+            auto const ownerCountAllowed = sle->getFieldU32(sfRemainingOwnerCount);
             if (ownerCountAllowed < ownerCountDelta)
                 return tecINSUFFICIENT_RESERVE;
         }

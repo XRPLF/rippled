@@ -99,8 +99,8 @@ TEST(TransactionsSponsorshipSetTests, BuilderSettersRoundTrip)
     {
         auto const& expected = reserveCountValue;
         auto const actualOpt = tx.getReserveCount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReserveCount should be present";
-        expectEqualField(expected, *actualOpt, "sfReserveCount");
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRemainingOwnerCount should be present";
+        expectEqualField(expected, *actualOpt, "sfRemainingOwnerCount");
         EXPECT_TRUE(tx.hasReserveCount());
     }
 
@@ -187,8 +187,8 @@ TEST(TransactionsSponsorshipSetTests, BuilderFromStTxRoundTrip)
     {
         auto const& expected = reserveCountValue;
         auto const actualOpt = rebuiltTx.getReserveCount();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfReserveCount should be present";
-        expectEqualField(expected, *actualOpt, "sfReserveCount");
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfRemainingOwnerCount should be present";
+        expectEqualField(expected, *actualOpt, "sfRemainingOwnerCount");
     }
 
 }

@@ -390,7 +390,8 @@ reduceReserveCount(
     if (!sponsorSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const afterReserveCount = applyCountDelta(sponsorSle->getFieldU32(sfReserveCount), delta);
+    auto const afterReserveCount =
+        applyCountDelta(sponsorSle->getFieldU32(sfRemainingOwnerCount), delta);
     if (!afterReserveCount)
     {
         // already checked in preclaim()
@@ -398,7 +399,7 @@ reduceReserveCount(
         return tefINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    sponsorSle->at(sfReserveCount) = *afterReserveCount;
+    sponsorSle->at(sfRemainingOwnerCount) = *afterReserveCount;
     view.update(sponsorSle);
     return tesSUCCESS;
 }

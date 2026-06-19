@@ -108,7 +108,7 @@ TEST(SponsorshipTests, BuilderSettersRoundTrip)
         auto const& expected = reserveCountValue;
         auto const actualOpt = entry.getReserveCount();
         ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfReserveCount");
+        expectEqualField(expected, *actualOpt, "sfRemainingOwnerCount");
         EXPECT_TRUE(entry.hasReserveCount());
     }
 
@@ -143,7 +143,7 @@ TEST(SponsorshipTests, BuilderFromSleRoundTrip)
     sle->at(sfSponsee) = sponseeValue;
     sle->at(sfFeeAmount) = feeAmountValue;
     sle->at(sfMaxFee) = maxFeeValue;
-    sle->at(sfReserveCount) = reserveCountValue;
+    sle->at(sfRemainingOwnerCount) = reserveCountValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
     sle->at(sfSponseeNode) = sponseeNodeValue;
 
@@ -251,8 +251,8 @@ TEST(SponsorshipTests, BuilderFromSleRoundTrip)
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
 
-        expectEqualField(expected, *fromSleOpt, "sfReserveCount");
-        expectEqualField(expected, *fromBuilderOpt, "sfReserveCount");
+        expectEqualField(expected, *fromSleOpt, "sfRemainingOwnerCount");
+        expectEqualField(expected, *fromBuilderOpt, "sfRemainingOwnerCount");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);

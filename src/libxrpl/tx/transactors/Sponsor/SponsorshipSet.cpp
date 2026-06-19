@@ -67,7 +67,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
             return temINVALID_FLAG;
 
         // can not include these fields when deleting
-        if (ctx.tx.isFieldPresent(sfFeeAmount) || ctx.tx.isFieldPresent(sfReserveCount) ||
+        if (ctx.tx.isFieldPresent(sfFeeAmount) || ctx.tx.isFieldPresent(sfRemainingOwnerCount) ||
             ctx.tx.isFieldPresent(sfMaxFee))
             return temMALFORMED;
     }
@@ -133,7 +133,7 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
     auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) ||
         ((txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee)) !=
          0u);
-    auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) ||
+    auto const sponsoringReserve = tx.isFieldPresent(sfRemainingOwnerCount) ||
         ((txFlags &
           (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve)) != 0u);
 
@@ -250,7 +250,7 @@ SponsorshipSet::doApply()
 
     auto const feeAmount = ctx_.tx[~sfFeeAmount];
     auto const maxFee = ctx_.tx[~sfMaxFee];
-    auto const reserveCount = ctx_.tx[~sfReserveCount];
+    auto const reserveCount = ctx_.tx[~sfRemainingOwnerCount];
 
     auto reserveSponsorAccSle = getTxReserveSponsor(view(), ctx_.tx);
     if (!reserveSponsorAccSle)
@@ -287,7 +287,7 @@ SponsorshipSet::doApply()
         if (maxFee && *maxFee > XRPAmount(0))
             (*newSle)[sfMaxFee] = *maxFee;
         if (reserveCount && *reserveCount > 0)
-            (*newSle)[sfReserveCount] = *reserveCount;
+            (*newSle)[sfRemainingOwnerCount] = *reserveCount;
 
         auto flags = 0;
         if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
@@ -368,7 +368,7 @@ SponsorshipSet::doApply()
     }
 
     if (reserveCount)
-        sponsorObjSle->at(sfReserveCount) = *reserveCount;
+        sponsorObjSle->at(sfRemainingOwnerCount) = *reserveCount;
 
     // update Flags
     auto flags = sponsorObjSle->getFieldU32(sfFlags);

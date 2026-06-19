@@ -152,7 +152,7 @@ public:
     }
 
     /**
-     * @brief Get sfReserveCount (SoeOptional)
+     * @brief Get sfRemainingOwnerCount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -161,20 +161,20 @@ public:
     {
         if (hasReserveCount())
         {
-            return this->tx_->at(sfReserveCount);
+            return this->tx_->at(sfRemainingOwnerCount);
         }
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfReserveCount is present.
+     * @brief Check if sfRemainingOwnerCount is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
     hasReserveCount() const
     {
-        return this->tx_->isFieldPresent(sfReserveCount);
+        return this->tx_->isFieldPresent(sfRemainingOwnerCount);
     }
 };
 
@@ -263,13 +263,13 @@ public:
     }
 
     /**
-     * @brief Set sfReserveCount (SoeOptional)
+     * @brief Set sfRemainingOwnerCount (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     SponsorshipSetBuilder&
     setReserveCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
-        object_[sfReserveCount] = value;
+        object_[sfRemainingOwnerCount] = value;
         return *this;
     }
 
