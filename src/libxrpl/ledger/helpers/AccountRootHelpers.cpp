@@ -278,8 +278,9 @@ adjustOwnerCount(
         if (sponsorObjSle && adjustment > 0)
         {
             // update the pre-funded RemainingOwnerCount on Sponsorship ledger object
-            // Remaining owner count moves opposite to adjustment: +adjustment => consume reserve
-            // (-),
+            // Remaining owner count moves opposite to adjustment:
+            // +adjustment => consume reserve (-),
+            adjustOwnerCountHlp(
                 view, sponsorObjSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
         }
     }
