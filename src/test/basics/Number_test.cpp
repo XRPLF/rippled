@@ -2662,10 +2662,8 @@ public:
                 std::stringstream ss;
                 ss << "kMaxRep + " << operand << " rounded " << to_string(mode) << " to " << actual
                    << ". Expected: " << expectedValue;
-                if (BEAST_EXPECTS(actual == expectedValue, ss.str()))
-                    log << "\tSUCCESS: " << to_string(scale) << " " << ss.str() << "\n";
+                BEAST_EXPECTS(actual == expectedValue, ss.str());
             }
-            log << "\n";
         }
 
         // Subtraction cases test kMaxRepUp - Operand
@@ -2719,10 +2717,8 @@ public:
                 std::stringstream ss;
                 ss << "kMaxRepUp - " << operand << " rounded " << to_string(mode) << " to "
                    << actual << ". Expected: " << expectedValue;
-                if (BEAST_EXPECTS(actual == expectedValue, ss.str()))
-                    log << "\tSUCCESS: " << to_string(scale) << " " << ss.str() << "\n";
+                BEAST_EXPECTS(actual == expectedValue, ss.str());
             }
-            log << "\n";
         }
     }
 
