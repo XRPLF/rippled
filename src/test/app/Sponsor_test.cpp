@@ -5527,7 +5527,7 @@ public:
                 Ter(tesSUCCESS));
             env.close();
 
-            auto const keylet = keylet::sponsor(sponsor, alice);
+            auto const keylet = sponsor(sponsor, alice);
             auto const obj = env.le(keylet);
             BEAST_EXPECT(obj);
             BEAST_EXPECT(
