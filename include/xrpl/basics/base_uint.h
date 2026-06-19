@@ -78,7 +78,7 @@ class BaseUInt
     // This is really big-endian in byte order.
     // We sometimes use std::uint32_t for speed.
 
-    std::array<std::uint32_t, kWidth> data_{};
+    std::array<std::uint32_t, kWidth> data_;
 
 public:
     //--------------------------------------------------------------------------

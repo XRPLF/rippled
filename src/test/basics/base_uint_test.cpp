@@ -130,7 +130,7 @@ struct base_uint_test : beast::unit_test::Suite
             Blob const tooSmall{1, 2, 3, 4, 5, 6, 7, 8};
             test96 const result = test96::fromRaw(tooSmall);
             auto const resultText = to_string(result);
-            BEAST_EXPECTS(resultText == "010203040506070800000000", resultText);
+            BEAST_EXPECTS(resultText.substr(0, 16) == "0102030405060708", resultText);
         }
 
         // Container larger than the base_uint (16 bytes vs 12 bytes for
@@ -224,6 +224,19 @@ struct base_uint_test : beast::unit_test::Suite
         for (auto& d : z)
         {
             BEAST_EXPECT(d == 0);
+        }
+
+        {
+            // There are several ways to create a zero. beast::kZero is tested above. Test some
+            // others.
+            test96 z1;
+            BEAST_EXPECTS(z1 == z, to_string(z1));
+
+            test96 z2{};
+            BEAST_EXPECTS(z2 == z, to_string(z2));
+
+            test96 z3{0u};
+            BEAST_EXPECTS(z3 == z, to_string(z2));
         }
 
         test96 n{z};
