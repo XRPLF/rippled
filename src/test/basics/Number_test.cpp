@@ -2574,7 +2574,7 @@ public:
         Number const below{static_cast<std::int64_t>(Number::kMaxRep), 0};
         Number const above{false, Number::kMaxRepUp, 0, Number::Normalized{}};
 
-        log << "Below: " << below << ", Above: " << above << std::endl;
+        log << "Below: " << below << ", Above: " << above << "\n";
 
         auto const zeroPointFour = Number(4, -1);
         auto const zeroPointSix = Number(6, -1);
@@ -2663,9 +2663,9 @@ public:
                 ss << "kMaxRep + " << operand << " rounded " << to_string(mode) << " to " << actual
                    << ". Expected: " << expectedValue;
                 if (BEAST_EXPECTS(actual == expectedValue, ss.str()))
-                    log << "\tSUCCESS: " << to_string(scale) << " " << ss.str() << std::endl;
+                    log << "\tSUCCESS: " << to_string(scale) << " " << ss.str() << "\n";
             }
-            log << std::endl;
+            log << "\n";
         }
 
         // Subtraction cases test kMaxRepUp - Operand
@@ -2720,9 +2720,9 @@ public:
                 ss << "kMaxRepUp - " << operand << " rounded " << to_string(mode) << " to "
                    << actual << ". Expected: " << expectedValue;
                 if (BEAST_EXPECTS(actual == expectedValue, ss.str()))
-                    log << "\tSUCCESS: " << to_string(scale) << " " << ss.str() << std::endl;
+                    log << "\tSUCCESS: " << to_string(scale) << " " << ss.str() << "\n";
             }
-            log << std::endl;
+            log << "\n";
         }
     }
 
