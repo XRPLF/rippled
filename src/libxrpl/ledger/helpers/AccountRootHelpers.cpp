@@ -274,7 +274,7 @@ adjustOwnerCount(
         adjustOwnerCountHlp(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
         adjustOwnerCountHlp(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
 
-        auto sponsorObjSle = view.peek(keylet::sponsor(sponsorID, accountID));
+        auto sponsorObjSle = view.peek(keylet::sponsorship(sponsorID, accountID));
         if (sponsorObjSle && adjustment > 0)
         {
             // update the pre-funded ReserveCount on Sponsorship ledger object
@@ -345,7 +345,8 @@ checkInsufficientReserve(
         auto const isCoSigning = isSponsorReserveCoSigning(tx);
 
         auto const sle = view.read(
-            keylet::sponsor(sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
+            keylet::sponsorship(
+                sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
         // prefunded sponsor should have a sponsorship entry
         if (!isCoSigning && !sle)

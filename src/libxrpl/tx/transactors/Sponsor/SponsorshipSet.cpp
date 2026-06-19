@@ -170,7 +170,8 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // check if object exists
-    auto const sponsorObjSle = ctx.view.read(keylet::sponsor(sponsorAccountID, sponseeAccountID));
+    auto const sponsorObjSle =
+        ctx.view.read(keylet::sponsorship(sponsorAccountID, sponseeAccountID));
 
     if (ctx.tx.isFlag(tfDeleteObject) && !sponsorObjSle)
         return tecNO_ENTRY;
@@ -235,7 +236,7 @@ SponsorshipSet::doApply()
     if (!ctx_.view().exists(keylet::account(sponseeAccountID)))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorKeylet = keylet::sponsor(sponsorAccountID, sponseeAccountID);
+    auto const sponsorKeylet = keylet::sponsorship(sponsorAccountID, sponseeAccountID);
     auto const sponsorObjSle = ctx_.view().peek(sponsorKeylet);
 
     if (ctx_.tx.isFlag(tfDeleteObject))

@@ -385,7 +385,7 @@ reduceReserveCount(
     if (delta > 0)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorKeylet = keylet::sponsor(sponsor, account);
+    auto const sponsorKeylet = keylet::sponsorship(sponsor, account);
     auto const sponsorSle = view.peek(sponsorKeylet);
     if (!sponsorSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
