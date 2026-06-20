@@ -16,7 +16,7 @@ fit together, see
 Nothing here is built by hand for usual use. The C++ cross-validation tests
 compile this model in-tree and link it into `xrpld`, gated by the
 `formal_verification` option; the Lean toolchain comes from the one `lean4`
-Conan package, so it needs no separate Lean or elan install. 
+Conan package, so it needs no separate Lean or elan install.
 
 ## Working on the proofs directly
 

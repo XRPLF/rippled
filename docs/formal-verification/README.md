@@ -320,7 +320,7 @@ conan export ../external/lean4-deps
 
 # Resolve and build dependencies. Runs once and pulls the lean4 toolchain and lean4-deps.
 conan install .. --output-folder . --build missing --settings build_type=Release \
-    -o '&:formal_verification=True' --lockfile-partial
+    -o formal_verification=True --lockfile-partial
 
 # Configure, then build. CMake builds the Lean4 model and links the shared
 # library. lake keeps later builds incremental.
@@ -332,7 +332,7 @@ cmake --build . --parallel N
 ./xrpld --unittest=formal_verification
 ```
 
-`-o '&:formal_verification=True'` pulls the `lean4` toolchain and `lean4-deps`
+`-o formal_verification=True` pulls the `lean4` toolchain and `lean4-deps`
 into the graph, and the matching `-Dformal_verification=ON` tells CMake to build
 and link the Lean4 side.
 
