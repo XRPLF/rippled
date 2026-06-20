@@ -107,6 +107,7 @@ test.csf > xrpld.consensus
 test.csf > xrpl.json
 test.csf > xrpl.ledger
 test.csf > xrpl.protocol
+test.formal_verification > xrpl.basics
 test.json > test.jtx
 test.json > xrpl.json
 test.jtx > xrpl.basics
