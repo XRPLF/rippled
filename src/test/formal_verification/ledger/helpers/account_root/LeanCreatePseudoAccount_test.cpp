@@ -71,7 +71,7 @@ class LeanCreatePseudoAccount_test : public LedgerSuite
             Sandbox sb(&*env.current(), TapNone);
             uint256 const key{7};
             for (int i = 0; i < 256; ++i)
-                createPseudoAccount(sb, key, sfVaultID);
+                (void)createPseudoAccount(sb, key, sfVaultID);
             runCreatePseudoAccount(sb, key, sfVaultID, 0, "createPseudoAccount.duplicate");
         }
     }

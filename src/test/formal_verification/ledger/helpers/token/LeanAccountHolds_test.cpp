@@ -84,7 +84,7 @@ class LeanAccountHolds_test : public LedgerSuite
             std::string cppError;
             try
             {
-                accountHolds(
+                (void)accountHolds(
                     view,
                     account,
                     asset,

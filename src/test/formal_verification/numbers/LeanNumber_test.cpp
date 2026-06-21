@@ -440,7 +440,7 @@ class LeanNumber_test : public LeanSuite
         {
             SaveNumberRoundMode save{Number::setround(mode)};
             for (int e : {0, 40, -40})
-                for (uint64_t t = Number::kMaxRep - 7; t <= Number::kMaxRepUp + 13; ++t)
+                for (uint64_t t = Number::kMaxRep - 7; t <= kMaxRepUp + 13; ++t)
                     for (bool aNeg : {false, true})
                     {
                         auto a = makeNumberPair(aNeg, minM, e);
@@ -582,13 +582,7 @@ public:
         // Sweep the result mantissa across the cusp, at mid, top, and bottom exponents.
         for (int e : {0, Number::kMaxExponent, Number::kMinExponent})
             runResultMantissaSweep(
-                '*',
-                lean_number_mul,
-                mul,
-                mulFactor,
-                Number::kMaxRep - 7,
-                Number::kMaxRepUp + 13,
-                e);
+                '*', lean_number_mul, mul, mulFactor, Number::kMaxRep - 7, kMaxRepUp + 13, e);
 
         // Land at maxMantissa (top of range) at kMax: there a round-up carries past
         // it, and only at kMax does that carry tip the exponent into overflow.
@@ -632,13 +626,7 @@ public:
         uint64_t const maxM = Number::maxMantissa();
         for (int e : {0, Number::kMaxExponent, Number::kMinExponent})
             runResultMantissaSweep(
-                '/',
-                lean_number_div,
-                div,
-                divFactor,
-                Number::kMaxRep - 7,
-                Number::kMaxRepUp + 13,
-                e);
+                '/', lean_number_div, div, divFactor, Number::kMaxRep - 7, kMaxRepUp + 13, e);
 
         runResultMantissaSweep(
             '/', lean_number_div, div, divFactor, maxM - 20, maxM, Number::kMaxExponent);
@@ -753,7 +741,7 @@ public:
         {
             SaveNumberRoundMode save{Number::setround(mode)};
 
-            for (uint64_t m = Number::kMaxRep - 7; m <= Number::kMaxRepUp + 13; ++m)
+            for (uint64_t m = Number::kMaxRep - 7; m <= kMaxRepUp + 13; ++m)
                 for (bool neg : {false, true})
                     for (int e : {0, 1, -1, 40})
                         checkNormalize("normalize(" + fmtNum(neg, m, e) + ")", neg, m, e, mode);

@@ -49,7 +49,8 @@ class LeanXrpLiquid_test : public LedgerSuite
             std::string cppError;
             try
             {
-                xrpLiquid(view, id, ownerCountAdj, beast::Journal{beast::Journal::getNullSink()});
+                (void)xrpLiquid(
+                    view, id, ownerCountAdj, beast::Journal{beast::Journal::getNullSink()});
             }
             catch (std::exception const& e)
             {
