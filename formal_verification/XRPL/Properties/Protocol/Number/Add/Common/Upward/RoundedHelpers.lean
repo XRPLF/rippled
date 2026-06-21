@@ -11,13 +11,6 @@ import XRPL.Properties.Protocol.Number.Common.Closest.GridPoint
 
 namespace XRPL.Model.Protocol
 
-/-! # `operator_add` is correctly rounded under `.upward`
-
-The result is `Number.upper` of the exact sum. `hresult` is genuinely
-required: an underflow flush returns zero regardless of direction, and for a
-tiny positive sum `0 < truth` violates `.upward` itself. -/
-
-/-- No normalized Number sits strictly between the sum and `result.toRat`. -/
 theorem operator_add_no_inbetween_above_upward (x y result : Number)
     (hx : x.isNormalized) (hy : y.isNormalized)
     (hx_mant_ne : x.mantissa_ ≠ 0) (hy_mant_ne : y.mantissa_ ≠ 0)
@@ -77,9 +70,6 @@ theorem operator_add_no_inbetween_above_upward (x y result : Number)
         exact h_sbit.trans hzn_false)
       h_ge
 
-/-- `operator_add` under `.upward` is **correctly rounded**: the result is
-`Number.upper` of the exact sum. `hresult` is essential (the underflow flush
-ignores the direction). -/
 theorem operator_add_rounded_upward_proof (x y result : Number)
     (hx : x.isNormalized) (hy : y.isNormalized)
     (hok : Number.operator_add x y .upward = .ok result)

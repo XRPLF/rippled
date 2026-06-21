@@ -3,8 +3,6 @@ import XRPL.Model.Protocol.MPTAmount
 import XRPL.Model.Protocol.STAmount
 import XRPL.Model.Protocol.XRPAmount
 
-set_option linter.style.longLine false
-set_option linter.style.emptyLine false
 
 namespace XRPL.FFI
 

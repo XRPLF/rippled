@@ -1,7 +1,5 @@
 import XRPL.Model.Protocol.Number
 
-set_option linter.style.longLine false
-set_option linter.style.emptyLine false
 
 namespace XRPL.Model.Protocol
 

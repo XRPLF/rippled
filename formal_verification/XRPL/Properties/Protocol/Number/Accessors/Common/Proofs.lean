@@ -3,7 +3,7 @@ import XRPL.Properties.Protocol.Number.Common.Int64Lemmas
 
 namespace XRPL.Model.Protocol
 
-/-- `maxRep.toNat = 2^63 - 1 < 2^63` — the internal mantissa always fits in
+/-- `maxRep.toNat = 2^63 - 1 < 2^63`  the internal mantissa always fits in
 the positive `Int64` range when below the `maxRep` cusp. -/
 private lemma maxRep_lt_2pow63 : maxRep.toNat < 2 ^ 63 := by rw [maxRep_val]; norm_num
 
@@ -36,7 +36,6 @@ lemma Number.mantissa_toInt (n : Number) :
       rw [UInt64.neg_toInt64_toInt_of_lt _ hfit]; ring
     · rw [if_neg hneg, if_neg hneg]
       rw [UInt64.toInt64_toInt_of_lt _ hfit]; ring
-
 
 theorem mantissa_mul_exponent_eq_toRat_proof (n : Number) (hn : n.isNormalized) :
     (n.mantissa.toInt : ℚ) * (10 : ℚ) ^ n.exponent = n.toRat := by

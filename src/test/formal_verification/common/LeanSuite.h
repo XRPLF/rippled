@@ -13,8 +13,6 @@
 extern "C" void
 lean_initialize_runtime_module(void);
 
-// Initializer of the XRPL.FFI.FFI module: pulls in the Model + FFI closure
-// only (libXRPL_XRPLModel.a), not the Properties proof modules
 extern "C" lean_object*
 initialize_XRPL_XRPL_FFI_FFI(uint8_t builtin, lean_object* w);
 

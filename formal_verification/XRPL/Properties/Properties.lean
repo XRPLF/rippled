@@ -1,2 +1,12 @@
+import XRPL.Properties.Protocol.MPTAmount.Properties
+import XRPL.Properties.Protocol.IOUAmount.Properties
 import XRPL.Properties.Protocol.Number.Properties
-import XRPL.Properties.Protocol.Number.Common.Rounding.SmallRangeBound
+import XRPL.Properties.Protocol.XRPAmount.Properties
+import XRPL.Properties.Protocol.STAmount.Add.RoundsWithin
+import XRPL.Properties.Protocol.STAmount.Add.RoundsToRepresentable
+import XRPL.Properties.Protocol.STAmount.Sub.RoundsWithin
+import XRPL.Properties.Protocol.STAmount.Sub.RoundsToRepresentable
+import XRPL.Properties.Protocol.STAmount.Mul.RoundsWithin
+import XRPL.Properties.Protocol.STAmount.Mul.RoundsToRepresentable
+import XRPL.Properties.Protocol.STAmount.Compare.Compare
+import XRPL.Properties.Protocol.STAmount.RoundToScale.RoundToScale

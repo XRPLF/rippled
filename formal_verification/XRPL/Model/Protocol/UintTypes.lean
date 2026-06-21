@@ -1,7 +1,5 @@
 import Mathlib.Tactic
 
-set_option linter.style.longLine false
-set_option linter.style.emptyLine false
 
 namespace XRPL.Model.Protocol
 

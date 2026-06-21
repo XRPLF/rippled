@@ -1,8 +1,6 @@
 import XRPL.Model.Protocol.Issue
 import XRPL.Model.Protocol.MPTIssue
 
-set_option linter.style.longLine false
-set_option linter.style.emptyLine false
 
 namespace XRPL.Model.Protocol
 

@@ -4,8 +4,6 @@ import XRPL.Model.Protocol.MPTAmount
 import XRPL.Model.Protocol.Number
 import XRPL.Model.Protocol.XRPAmount
 
-set_option linter.style.longLine false
-set_option linter.style.emptyLine false
 
 namespace XRPL.Model.Protocol
 
@@ -102,7 +100,7 @@ def STAmount.toNumber (s : STAmount) (mode : rounding_mode) : Except String Numb
     | .error e => .error e
     | .ok m => m.toNumber mode
 
-private def STAmount.canonicalize (s : STAmount) (mode : rounding_mode) : Except String STAmount :=
+def STAmount.canonicalize (s : STAmount) (mode : rounding_mode) : Except String STAmount :=
   if s.integral then
     -- XRP or MPT
     if s.mValue == 0 || s.mOffset ≤ -20 then
@@ -271,7 +269,7 @@ def STAmount.operator_sub (v1 v2 : STAmount) (mode : rounding_mode)
     : Except String STAmount :=
   STAmount.operator_add v1 v2.operator_neg mode
 
-private def STAmount.muldiv (multiplier multiplicand divisor : UInt64) : Except String UInt64 :=
+def STAmount.muldiv (multiplier multiplicand divisor : UInt64) : Except String UInt64 :=
   let prod : UInt128 := toUInt128 multiplier * toUInt128 multiplicand
   let q : UInt128 := prod / toUInt128 divisor
   let uint64Max : UInt128 := 2^64 - 1

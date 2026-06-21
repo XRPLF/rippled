@@ -69,5 +69,10 @@ target_link_libraries(
     PUBLIC lean4::lean4
 )
 
+# macOS linker is strict about undefined symbols, so relax it for C++ extern functions like cpp_sha_512_half
+if(APPLE)
+    target_link_options(XRPL_XRPLModel PRIVATE LINKER:-undefined,dynamic_lookup)
+endif()
+
 target_link_libraries(xrpld XRPL_XRPLModel)
 message(STATUS "formal_verification: Lean4 linked into xrpld")

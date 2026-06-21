@@ -1,7 +1,5 @@
 import XRPL.Model.Protocol.Number
 
-set_option linter.style.longLine false
-set_option linter.style.emptyLine false
 
 namespace XRPL.Model.Protocol
 
@@ -37,7 +35,7 @@ def IOUAmount.fromNumber (n : Number) (mode : rounding_mode) : Except String IOU
   | .error e => .error e
   | .ok (m, e) => .ok { mantissa_ := m, exponent_ := e }
 
-private def IOUAmount.normalize (a : IOUAmount) (mode : rounding_mode) : Except String IOUAmount :=
+def IOUAmount.normalize (a : IOUAmount) (mode : rounding_mode) : Except String IOUAmount :=
   if a.mantissa_ == 0 then .ok IOUAmount.zero
   else
     -- `Number{mantissa_, exponent_}` ctor normalizes against largeRange (throws on overflow).
