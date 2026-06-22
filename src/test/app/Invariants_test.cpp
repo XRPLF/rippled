@@ -5077,6 +5077,7 @@ public:
         testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
         testVaultComputeCoarsestScale();
         testAMM();
+        testSponsorship();
     }
 };
 
