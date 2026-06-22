@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
@@ -1978,7 +1979,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             json::Value j;
             json::Value obj(json::ValueType::Object);
             json::Value* current = &obj;
-            for (int i = 0; i < 63; ++i)
+            for (std::size_t i = 0; i < 63; ++i)
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
@@ -1997,7 +1998,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             json::Value j;
             json::Value obj(json::ValueType::Object);
             json::Value* current = &obj;
-            for (int i = 0; i < 64; ++i)
+            for (std::size_t i = 0; i < 64; ++i)
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
@@ -2149,6 +2150,130 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 std::string const what(e.what());
                 unexpected(!what.starts_with("First level children of `Template`"));
             }
+        }
+    }
+
+    void
+    testArrayBoundsChecking()
+    {
+        testcase("Array bounds checking");
+
+        auto const limitStr = std::to_string(kMaxParsedJsonArraySize) + " elements per field.";
+
+        // parseArray rejects oversized STI_ARRAY (SignerEntries)
+        {
+            json::Value jv;
+            json::Value entries(json::ValueType::Array);
+            for (std::size_t i = 0; i < 600; ++i)
+            {
+                json::Value entry;
+                entry["SignerEntry"]["Account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+                entry["SignerEntry"]["SignerWeight"] = 1;
+                entries.append(entry);
+            }
+            jv["SignerEntries"] = entries;
+
+            STParsedJSONObject parsed("test", jv);
+            BEAST_EXPECT(!parsed.object);
+            BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                parsed.error[jss::error_message] ==
+                "Field 'test.SignerEntries' exceeds allowed JSON array size of " + limitStr);
+        }
+
+        // parseObject rejects oversized STI_VECTOR256 (Amendments)
+        {
+            json::Value jv;
+            json::Value amendments(json::ValueType::Array);
+            std::string const hash(64, '0');
+            for (std::size_t i = 0; i < 600; ++i)
+                amendments.append(hash);
+            jv["Amendments"] = amendments;
+
+            STParsedJSONObject parsed("test", jv);
+            BEAST_EXPECT(!parsed.object);
+            BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                parsed.error[jss::error_message] ==
+                "Field 'test.Amendments' exceeds allowed JSON array size of " + limitStr);
+        }
+
+        // parseObject rejects oversized STI_PATHSET (outer array)
+        {
+            json::Value jv;
+            json::Value paths(json::ValueType::Array);
+            for (std::size_t i = 0; i < 600; ++i)
+            {
+                json::Value path(json::ValueType::Array);
+                json::Value hop;
+                hop["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+                path.append(hop);
+                paths.append(path);
+            }
+            jv["Paths"] = paths;
+
+            STParsedJSONObject parsed("test", jv);
+            BEAST_EXPECT(!parsed.object);
+            BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                parsed.error[jss::error_message] ==
+                "Field 'test.Paths' exceeds allowed JSON array size of " + limitStr);
+        }
+
+        // parseObject rejects oversized STI_PATHSET (inner path hop array)
+        {
+            json::Value jv;
+            json::Value paths(json::ValueType::Array);
+            json::Value path(json::ValueType::Array);
+            json::Value hop;
+            hop["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            for (std::size_t i = 0; i < 600; ++i)
+                path.append(hop);
+            paths.append(path);
+            jv["Paths"] = paths;
+
+            STParsedJSONObject parsed("test", jv);
+            BEAST_EXPECT(!parsed.object);
+            BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                parsed.error[jss::error_message] ==
+                "Field 'test.Paths[0]' exceeds allowed JSON array size of " + limitStr);
+        }
+
+        // parseArray accepts exactly kMaxParsedJsonArraySize Memos (boundary)
+        {
+            json::Value jv;
+            json::Value memos(json::ValueType::Array);
+            for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
+            {
+                json::Value memo;
+                memo["Memo"] = json::ValueType::Object;
+                memos.append(memo);
+            }
+            jv["Memos"] = memos;
+
+            STParsedJSONObject const parsed("test", jv);
+            BEAST_EXPECT(parsed.object);
+        }
+
+        // parseArray rejects one more than kMaxParsedJsonArraySize Memos
+        {
+            json::Value jv;
+            json::Value memos(json::ValueType::Array);
+            for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
+            {
+                json::Value memo;
+                memo["Memo"] = json::ValueType::Object;
+                memos.append(memo);
+            }
+            jv["Memos"] = memos;
+
+            STParsedJSONObject parsed("test", jv);
+            BEAST_EXPECT(!parsed.object);
+            BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                parsed.error[jss::error_message] ==
+                "Field 'test.Memos' exceeds allowed JSON array size of " + limitStr);
         }
     }
 
@@ -2419,6 +2544,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         testNumber();
         testObject();
         testArray();
+        testArrayBoundsChecking();
         testEdgeCases();
     }
 };
