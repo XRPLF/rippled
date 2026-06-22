@@ -5058,7 +5058,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
-                .mutableFlags = tmfMPTCanMutateCanLock,
+                .mutableFlags = tmfMPTCanEnableCanLock,
             });
 
             mptAlice.authorize({

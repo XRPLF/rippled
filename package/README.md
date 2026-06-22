@@ -15,7 +15,6 @@ package/
     xrpld.sysusers      sysusers.d config (used by both RPM and DEB)
     xrpld.tmpfiles      tmpfiles.d config (used by both RPM and DEB)
     xrpld.logrotate     logrotate config (installed to /etc/logrotate.d/xrpld)
-    update-xrpld        auto-update script (installed to /usr/libexec/xrpld/, run by update-xrpld.timer)
 ```
 
 ## Prerequisites
