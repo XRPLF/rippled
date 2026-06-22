@@ -202,18 +202,6 @@ InnerObjectFormats::InnerObjectFormats()
             {sfHookParameters, SoeOptional},
             {sfHookGrants, SoeOptional},
         });
-
-    add(sfRawTransaction.jsonName,
-        sfRawTransaction.getCode(),
-        {
-            {sfTransactionType, SoeRequired},
-            {sfAccount, SoeRequired},
-            {sfAmount, SoeOptional},
-            {sfDestination, SoeOptional},
-            {sfSequence, SoeRequired},
-            {sfSigningPubKey, SoeRequired},
-            {sfTxnSignature, SoeOptional},
-        });
 }
 
 InnerObjectFormats const&
