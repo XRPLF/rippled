@@ -179,8 +179,8 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-TER
-SponsorshipSet::deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
+static TER
+deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
