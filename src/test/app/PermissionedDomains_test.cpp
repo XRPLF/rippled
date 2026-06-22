@@ -574,8 +574,8 @@ public:
         testDelete(withFix_);
         testAccountReserve(withFeature_);
         testAccountReserve(withFix_);
-        testTicket(withFeature_ - fixCleanup3_1_3);
-        testTicket(withFeature_ | fixCleanup3_1_3);
+        testTicket(withFeature_);
+        testTicket(withFix_);
     }
 };
 
