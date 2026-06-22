@@ -1106,8 +1106,41 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(alice, bob, {"PaymentBurn"}));
             env.close();
 
-            env(pay(alice, gw, usd(30)), Sendmax(usd(30)), delegate::As(bob));
+            env(pay(alice, gw, usd(30)), delegate::As(bob));
             env.require(Balance(alice, usd(20)));
+        }
+
+        // PaymentBurn is authorized by balance direction, not trust limit.
+        // holder is allowed to burn even if trust limit is 0.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+            auto const gwUSD = gw["USD"];
+            auto const aliceUSD = alice["USD"];
+
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(gwUSD(200), alice);
+            env.close();
+
+            env(pay(gw, alice, gwUSD(50)));
+            env.require(Balance(alice, gwUSD(50)));
+            env.close();
+
+            env(delegate::set(alice, bob, {"PaymentBurn"}));
+            env.close();
+
+            env.trust(gwUSD(0), alice);
+            env.close();
+            BEAST_EXPECT(env.limit(alice, gwUSD.issue()) == gwUSD(0));
+
+            env(trust(gw, aliceUSD(200)));
+            env.close();
+
+            env(pay(alice, gw, gwUSD(30)), delegate::As(bob));
+            env.require(Balance(alice, gwUSD(20)));
+            env.require(Balance(gw, aliceUSD(-20)));
         }
 
         // Test invalid fields or flags not allowed in granular permission template

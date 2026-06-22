@@ -319,7 +319,6 @@ Payment::checkGranularSemantics(
             return terNO_DELEGATE_PERMISSION;
 
         bool const accountIsLow = (account < destination);
-        auto const accountLimit = sle->getFieldAmount(accountIsLow ? sfLowLimit : sfHighLimit);
         auto const destLimit = sle->getFieldAmount(accountIsLow ? sfHighLimit : sfLowLimit);
         auto const rawBalance = sle->getFieldAmount(sfBalance);
         bool const accountIsHolder =
@@ -333,10 +332,8 @@ Payment::checkGranularSemantics(
             return tesSUCCESS;
 
         // PaymentBurn requires the source account to be the holder and the destination to be the
-        // issuer. accountLimit > 0: account is willing to hold destination's IOUs (destination is
-        // the issuer). accountIsHolder: DirectStepI will redeem, not issue.
-        if (heldGranularPermissions.contains(PaymentBurn) && accountLimit > beast::kZero &&
-            accountIsHolder)
+        // issuer. accountIsHolder: DirectStepI will redeem, not issue.
+        if (heldGranularPermissions.contains(PaymentBurn) && accountIsHolder)
             return tesSUCCESS;
     }
 
