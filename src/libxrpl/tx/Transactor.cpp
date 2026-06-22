@@ -386,7 +386,7 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
         return tesSUCCESS;
 
     auto const sponsorshipSle =
-        view.read(keylet::sponsor(tx.getAccountID(sfSponsor), tx.getAccountID(sfAccount)));
+        view.read(keylet::sponsorship(tx.getAccountID(sfSponsor), tx.getAccountID(sfAccount)));
 
     // sponsorship object missing for pre-funded tx
     if (!sponsorshipSle)
@@ -1322,7 +1322,7 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
         auto const sponsorAccountID = tx.getAccountID(sfSponsor);
         auto const sponseeAccountID = tx.getAccountID(sfAccount);
         auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
-        auto const sponsorshipKeylet = keylet::sponsor(sponsorAccountID, sponseeAccountID);
+        auto const sponsorshipKeylet = keylet::sponsorship(sponsorAccountID, sponseeAccountID);
 
         // if pre-funded sponsorship exists, prefer it
         if (hasSponsorSignature && !view.exists(sponsorshipKeylet))

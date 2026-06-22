@@ -320,7 +320,7 @@ signers(AccountID const& account) noexcept
 }
 
 Keylet
-sponsor(AccountID const& sponsor, AccountID const& sponsee) noexcept
+sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept
 {
     return {ltSPONSORSHIP, indexHash(LedgerNameSpace::Sponsorship, sponsor, sponsee)};
 }
