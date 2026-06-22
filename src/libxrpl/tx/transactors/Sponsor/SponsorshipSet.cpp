@@ -1,7 +1,10 @@
 #include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -176,6 +179,47 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+static TER
+deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
+{
+    if (!sle)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const sponsorAccountID = (*sle)[sfOwner];
+    auto const sponseeAccountID = (*sle)[sfSponsee];
+
+    // The reserve for the Sponsorship object is held by the sponsor (Owner).
+    auto sponsorAccSle = view.peek(keylet::account(sponsorAccountID));
+    if (!sponsorAccSle)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    if (!view.dirRemove(keylet::ownerDir(sponsorAccountID), (*sle)[sfOwnerNode], sle->key(), false))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "Unable to delete Sponsorship from sponsor.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+    if (!view.dirRemove(
+            keylet::ownerDir(sponseeAccountID), (*sle)[sfSponseeNode], sle->key(), false))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "Unable to delete Sponsorship from sponsee.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    adjustOwnerCountObj(view, sponsorAccSle, sle, -1, j);
+
+    // transfer feeAmount back to the sponsor
+    if (sle->isFieldPresent(sfFeeAmount))
+        (*sponsorAccSle)[sfBalance] += sle->getFieldAmount(sfFeeAmount);
+
+    view.erase(sle);
+
+    return tesSUCCESS;
+}
+
 TER
 SponsorshipSet::doApply()
 {
@@ -201,29 +245,7 @@ SponsorshipSet::doApply()
         if (!sponsorObjSle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        adjustOwnerCountObj(ctx_.view(), sponsorAccSle, sponsorObjSle, -1, ctx_.journal);
-
-        ctx_.view().dirRemove(
-            keylet::ownerDir(sponsorAccountID),
-            (*sponsorObjSle)[sfOwnerNode],
-            sponsorObjSle->key(),
-            false);
-        ctx_.view().dirRemove(
-            keylet::ownerDir(sponseeAccountID),
-            (*sponsorObjSle)[sfSponseeNode],
-            sponsorObjSle->key(),
-            false);
-
-        // transfer feeAmount from ledger entry
-        if (sponsorObjSle->isFieldPresent(sfFeeAmount))
-        {
-            auto const feeAmount = sponsorObjSle->getFieldAmount(sfFeeAmount);
-            (*sponsorAccSle)[sfBalance] += feeAmount;
-        }
-
-        ctx_.view().erase(sponsorObjSle);
-
-        return tesSUCCESS;
+        return deleteSponsorship(ctx_.view(), sponsorObjSle, ctx_.journal);
     }
 
     auto const feeAmount = ctx_.tx[~sfFeeAmount];
