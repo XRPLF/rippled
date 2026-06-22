@@ -698,7 +698,8 @@ public:
                 // Close another ledger, which will trigger a rotation, but the
                 // rotation will be stuck until the missing ledger is filled in.
                 env.close();
-                // DO NOT CALL rendezvous()! You'll end up with a deadlock.
+                // DO NOT CALL rendezvous() without a timeout parameter! You'll end up with a
+                // deadlock.
                 ++maxSeq;
 
                 // Nothing has changed
@@ -712,7 +713,7 @@ public:
                         expectedRange(minSeq, deleteSeq, maxSeq),
                         lm.getCompleteLedgers()));
 
-                // Close 5 more ledgers, waiting one second in between to
+                // Close 5 more ledgers, waiting a little bit in between to
                 // simulate the ledger making progress while online delete waits
                 // for the missing ledger to be filled in.
                 // This ensures the healthWait check has time to run and
