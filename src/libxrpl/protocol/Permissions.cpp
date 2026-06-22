@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -248,7 +249,11 @@ Permission::txToPermissionType(TxType const type)
 TxType
 Permission::permissionToTxType(uint32_t value)
 {
-    XRPL_ASSERT(value > 0, "xrpl::Permission::permissionToTxType : value is greater than 0");
+    // Values outside this range [1, 65536] would silently truncate when cast to
+    // uint16_t, for example, 65537 would become 1, mapping to the Payment transaction.
+    XRPL_ASSERT(
+        value > 0 && value <= std::numeric_limits<std::uint16_t>::max() + 1u,
+        "xrpl::Permission::permissionToTxType : value out of valid range");
     return static_cast<TxType>(value - 1);
 }
 
