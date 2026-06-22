@@ -30,7 +30,6 @@
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
-#include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 
 #include <cstdint>
 #include <utility>
@@ -186,23 +185,11 @@ removeDelegateFromLedger(
     return DelegateSet::deleteDelegate(view, sleDel, j);
 }
 
-TER
-removeSponsorshipFromLedger(
-    ServiceRegistry&,
-    ApplyView& view,
-    AccountID const&,
-    uint256 const&,
-    SLE::ref sleDel,
-    beast::Journal j)
-{
-    return SponsorshipSet::deleteSponsorship(view, sleDel, j);
-}
-
-// Return nullptr if the object represents an obligation that can't be deleted
-// during deletion of account.  Otherwise return the pointer to the function
-// that can delete the non-obligation.
+// Return nullptr if the LedgerEntryType represents an obligation that can't
+// be deleted.  Otherwise return the pointer to the function that can delete
+// the non-obligation
 DeleterFuncPtr
-nonObligationDeleter(LedgerEntryType t, SLE::const_ref sleItem, AccountID const& account)
+nonObligationDeleter(LedgerEntryType t)
 {
     switch (t)
     {
@@ -224,12 +211,6 @@ nonObligationDeleter(LedgerEntryType t, SLE::const_ref sleItem, AccountID const&
             return removeCredentialFromLedger;
         case ltDELEGATE:
             return removeDelegateFromLedger;
-        case ltSPONSORSHIP:
-            // A Sponsorship lives in both the sponsor's (Owner) and the
-            // sponsee's owner directories, but it is an obligation only for the
-            // sponsor, who holds its reserve. The sponsee must remain free to
-            // delete its account.
-            return (*sleItem)[sfOwner] == account ? nullptr : removeSponsorshipFromLedger;
         default:
             return nullptr;
     }
@@ -354,7 +335,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
 
         LedgerEntryType const nodeType{safeCast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
-        if (nonObligationDeleter(nodeType, sleItem, account) == nullptr)
+        if (nonObligationDeleter(nodeType) == nullptr)
             return tecHAS_OBLIGATIONS;
 
         // We found a deletable directory entry.  Count it.  If we find too
@@ -395,7 +376,7 @@ AccountDelete::doApply()
         [&](LedgerEntryType nodeType,
             uint256 const& dirEntry,
             SLE::pointer& sleItem) -> std::pair<TER, SkipEntry> {
-            if (auto deleter = nonObligationDeleter(nodeType, sleItem, accountID_))
+            if (auto deleter = nonObligationDeleter(nodeType))
             {
                 TER const result{deleter(ctx_.registry, view(), accountID_, dirEntry, sleItem, j_)};
 

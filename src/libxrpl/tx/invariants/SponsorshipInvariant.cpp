@@ -93,7 +93,7 @@ SponsorshipOwnerCountsMatch::visitEntry(
         (afterSponsoredObjectOwnerCount - beforeSponsoredObjectOwnerCount);
 
     if (getOwnerCount(after) < getSponsored(after))
-        invalidOwnerCountLessThanSponsoredOwnerCount_ += 1;
+        ownerCountBelowSponsored_ += 1;
 }
 
 bool
@@ -111,17 +111,17 @@ SponsorshipOwnerCountsMatch::finalize(
         return false;
     }
 
+    if (ownerCountBelowSponsored_ > 0)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: OwnerCount must be greater than or equal to SponsoredOwnerCount.";
+        return false;
+    }
+
     if (deltaSponsoredObjectOwnerCount_ != deltaSponsoredOwnerCount_)
     {
         JLOG(j.fatal()) << "Invariant failed: SponsoredObjectOwnerCount does not "
                            "equal SponsoredOwnerCount delta.";
-        return false;
-    }
-
-    if (invalidOwnerCountLessThanSponsoredOwnerCount_ > 0)
-    {
-        JLOG(j.fatal())
-            << "Invariant failed: OwnerCount must be greater than or equal to SponsoredOwnerCount.";
         return false;
     }
 
