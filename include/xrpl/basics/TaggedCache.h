@@ -172,8 +172,8 @@ public:
         @param key The key corresponding to the object.
         @param data A shared pointer to the data corresponding to the object.
 
-        @return `true` If the key already existed.
-    */
+        @return `true` if an existing live entry was found and used; `false` if a new entry was
+                inserted or an expired tracked entry was re-cached.
     bool
     canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data);
 
