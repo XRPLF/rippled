@@ -37,6 +37,8 @@ reduceOffer(auto const& amount)
 
 enum class IsDeposit : bool { No = false, Yes = true };
 
+inline Number const kAMMInvariantRelativeTolerance{1, -11};
+
 /** Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
  * @param asset2 AMM another side of the pool reserve
@@ -736,6 +738,30 @@ ammPoolHolds(
     Asset const& asset2,
     FreezeHandling freezeHandling,
     AuthHandling authHandling,
+    beast::Journal const j);
+
+/** Check AMM pool product invariant after an AMM operation that changes LP tokens
+ * (deposit/withdraw/clawback) from an already calculated pool product mean.
+ * Returns tecPRECISION_LOSS if poolProductMean < newLPTokenBalance beyond the
+ * invariant tolerance,
+ * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
+ */
+TER
+checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance);
+
+/** Check AMM pool product invariant after an AMM operation that changes LP tokens
+ * (deposit/withdraw/clawback).
+ * Returns tecPRECISION_LOSS if sqrt(asset1 * asset2) < newLPTokenBalance beyond
+ * the invariant tolerance,
+ * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
+ */
+TER
+checkAMMPrecisionLoss(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    Asset const& asset1,
+    Asset const& asset2,
+    STAmount const& newLPTokenBalance,
     beast::Journal const j);
 
 /** Get AMM pool and LP token balances. If both optIssue are

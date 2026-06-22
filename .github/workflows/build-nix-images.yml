@@ -54,9 +54,9 @@ jobs:
             base_image: debian:bookworm
           - name: rhel
             base_image: registry.access.redhat.com/ubi9/ubi:latest
-    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@c1b480188519e0cad040e6aa70db1cbc5a797e07
+    uses: XRPLF/actions/.github/workflows/build-multiarch-image.yml@ee03d31bcc4501d7599dc1b1ecd7a34af582ad1c
     with:
-      image_name: ghcr.io/xrplf/xrpld/nix-${{ matrix.distro.name }}
+      image_name: xrpld/nix-${{ matrix.distro.name }}
       dockerfile: nix/docker/Dockerfile
       base_image: ${{ matrix.distro.base_image }}
-      push: ${{ github.repository == 'XRPLF/rippled' && github.event_name == 'push' }}
+      push: ${{ github.event_name == 'push' }}

@@ -7,8 +7,13 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace xrpl {
+
+class STTx;
+
 /**
  * We have both transaction type permissions and granular type permissions.
  * Since we will reuse the TransactionFormats to parse the Transaction
@@ -19,15 +24,15 @@ namespace xrpl {
 // Macro-generated, complex
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum GranularPermissionType : std::uint32_t {
-#pragma push_macro("PERMISSION")
-#undef PERMISSION
+#pragma push_macro("GRANULAR_PERMISSION")
+#undef GRANULAR_PERMISSION
 
-#define PERMISSION(type, txType, value) type = (value),
+#define GRANULAR_PERMISSION(name, txType, value, ...) name = (value),
 
 #include <xrpl/protocol/detail/permissions.macro>
 
-#undef PERMISSION
-#pragma pop_macro("PERMISSION")
+#undef GRANULAR_PERMISSION
+#pragma pop_macro("GRANULAR_PERMISSION")
 };
 
 // Injected bare enumerators (xrpl::delegable / xrpl::notDelegable) are required by preprocessor
@@ -40,15 +45,30 @@ class Permission
 private:
     Permission();
 
-    std::unordered_map<std::uint16_t, uint256> txFeatureMap_;
+    struct GranularPermissionEntry
+    {
+        std::string name;
+        TxType txType;
+        std::uint32_t permittedFlags;
+        SOTemplate permittedFields;
 
-    std::unordered_map<std::uint16_t, Delegation> delegableTx_;
+        GranularPermissionEntry(
+            std::string name,
+            TxType txType,
+            std::uint32_t permittedFlags,
+            std::vector<SOElement> fields);
+    };
 
-    std::unordered_map<std::string, GranularPermissionType> granularPermissionMap_;
+    struct TxDelegationEntry
+    {
+        uint256 amendment;
+        Delegation delegable{NotDelegable};
+    };
 
-    std::unordered_map<GranularPermissionType, std::string> granularNameMap_;
-
-    std::unordered_map<GranularPermissionType, TxType> granularTxTypeMap_;
+    std::unordered_set<TxType> granularTxTypes_;
+    std::unordered_map<TxType, TxDelegationEntry> txDelegationMap_;
+    std::unordered_map<std::string, GranularPermissionType> granularPermissionsByName_;
+    std::unordered_map<GranularPermissionType, GranularPermissionEntry> granularPermissions_;
 
 public:
     static Permission const&
@@ -59,30 +79,52 @@ public:
     operator=(Permission const&) = delete;
 
     [[nodiscard]] std::optional<std::string>
-    getPermissionName(std::uint32_t const value) const;
+    getPermissionName(std::uint32_t value) const;
 
     [[nodiscard]] std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;
 
     [[nodiscard]] std::optional<std::string>
-    getGranularName(GranularPermissionType const& value) const;
+    getGranularName(GranularPermissionType value) const;
 
     [[nodiscard]] std::optional<TxType>
-    getGranularTxType(GranularPermissionType const& gpType) const;
+    getGranularTxType(GranularPermissionType gpType) const;
 
+    // Returns a reference to avoid copying uint256 - 32 bytes. std::optional
+    // cannot hold references directly, so std::reference_wrapper is used.
     [[nodiscard]] std::optional<std::reference_wrapper<uint256 const>>
     getTxFeature(TxType txType) const;
 
     [[nodiscard]] bool
-    isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const;
+    isDelegable(std::uint32_t permissionValue, Rules const& rules) const;
+
+    [[nodiscard]] bool
+    hasGranularPermissions(TxType txType) const;
 
     // for tx level permission, permission value is equal to tx type plus one
-    static uint32_t
-    txToPermissionType(TxType const& type);
+    [[nodiscard]] static uint32_t
+    txToPermissionType(TxType type);
 
     // tx type value is permission value minus one
-    static TxType
-    permissionToTxType(uint32_t const& value);
+    [[nodiscard]] static TxType
+    permissionToTxType(std::uint32_t value);
+
+    /**
+     * @brief Verifies a delegated transaction against its granular permission template.
+     *
+     * @note WARNING: Do not move this check before standard transaction-level
+     * format checks, which is in preclaim. This function assumes the transaction's
+     * base structural integrity (fees, sequence, signatures) has already been
+     * validated.
+     *
+     * @param tx The transaction to verify.
+     * @param heldPermissions The granular permissions that the sender hold.
+     * @return true if the transaction fields and flags comply with the granular template.
+     */
+    [[nodiscard]] bool
+    checkGranularSandbox(
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType> const& heldPermissions) const;
 };
 
 }  // namespace xrpl
