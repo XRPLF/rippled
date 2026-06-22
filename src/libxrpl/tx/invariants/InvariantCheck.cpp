@@ -35,6 +35,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <string>
 #include <vector>
 
 namespace xrpl {
@@ -62,6 +63,20 @@ hasPrivilege(STTx const& tx, Privilege priv)
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
+
+// Returns the human-readable name of a ledger entry's type, falling back to
+// the numeric type if the format is somehow unknown.
+static std::string
+ledgerEntryTypeName(SLE const& sle)
+{
+    auto const item = LedgerFormats::getInstance().findByType(sle.getType());
+
+    XRPL_ASSERT(item, "xrpl::ledgerEntryTypeName : ledger entry has ledger format");
+    if (item == nullptr)
+        return std::to_string(sle.getType());  // LCOV_EXCL_LINE
+
+    return item->getName();
+}
 
 void
 TransactionFeeCheck::visitEntry(bool, SLE::const_ref, SLE::const_ref)
@@ -455,16 +470,8 @@ AccountRootsDeletedClean::finalize(
         if (auto const sle = view.read(keylet))
         {
             // Finding the object is bad
-            auto const typeName = [&sle]() {
-                auto item = LedgerFormats::getInstance().findByType(sle->getType());
-
-                if (item != nullptr)
-                    return item->getName();
-                return std::to_string(sle->getType());
-            }();
-
-            JLOG(j.fatal()) << "Invariant failed: account deletion left behind a " << typeName
-                            << " object";
+            JLOG(j.fatal()) << "Invariant failed: account deletion left behind a "
+                            << ledgerEntryTypeName(*sle) << " object";
             // The comment above starting with "assert(enforce)" explains this
             // assert.
             XRPL_ASSERT(
@@ -1110,18 +1117,12 @@ ObjectHasPseudoAccount::finalize(
     if (deletedObjSles_.empty())
         return true;
 
-    auto const typeName = [](SLE const& sle) {
-        if (auto item = LedgerFormats::getInstance().findByType(sle.getType()))
-            return item->getName();
-        return std::to_string(sle.getType());
-    };
-
     bool failed = false;
     for (auto const& sle : deletedObjSles_)
     {
         if (!sle->isFieldPresent(sfAccount))
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted " << typeName(*sle)
+            JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
                             << " is missing pseudo-account field";
             failed = true;
             continue;
@@ -1131,7 +1132,7 @@ ObjectHasPseudoAccount::finalize(
         bool const exists = view.read(keylet::account(sle->getAccountID(sfAccount))) != nullptr;
         if (exists)
         {
-            JLOG(j.fatal()) << "Invariant failed: deleted " << typeName(*sle)
+            JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
                             << " without deleting its pseudo-account";
             failed = true;
         }
