@@ -62,6 +62,21 @@ namespace xrpl::test {
 struct AMMMPT_test : public jtx::AMMTest
 {
 private:
+    // All 2^N permutations of testableAmendments() with each subset of the
+    // given features excluded.
+    static std::vector<FeatureBitset>
+    amendmentCombinations(std::initializer_list<uint256> features)
+    {
+        std::vector<FeatureBitset> result{jtx::testableAmendments()};
+        for (auto const& f : features)
+        {
+            auto const n = result.size();
+            for (std::size_t i = 0; i < n; ++i)
+                result.push_back(result[i] - f);
+        }
+        return result;
+    }
+
     void
     testInstanceCreate()
     {
@@ -726,13 +741,14 @@ private:
 
             ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt, Ter(tecLOCKED));
 
-            if (!features[featureAMMClawback])
+            // Post-fixCleanup3_3_0 a locked holder cannot deposit the other
+            // (non-locked) token either, matching featureAMMClawback.
+            if (!features[featureAMMClawback] && !features[fixCleanup3_3_0])
             {
                 ammAlice.deposit(carol_, USD(100), std::nullopt, std::nullopt, std::nullopt);
             }
             else
             {
-                // Carol can not deposit non-frozen token either
                 ammAlice.deposit(
                     carol_, USD(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecLOCKED));
             }
@@ -753,8 +769,15 @@ private:
                 gw_, STAmount{Issue{gw_["USD"].currency, ammAlice.ammAccount()}, 0}, tfSetFreeze));
             env.close();
 
-            // Can deposit non-frozen token
-            ammAlice.deposit(carol_, btc(100), std::nullopt, std::nullopt, std::nullopt);
+            // Post-fixCleanup3_3_0 the deposit checks both pool assets, so the
+            // non-frozen token cannot be deposited while the AMM's USD is frozen.
+            ammAlice.deposit(
+                carol_,
+                btc(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                features[fixCleanup3_3_0] ? Ter(tecFROZEN) : Ter(tesSUCCESS));
 
             // Cannot deposit frozen token
             ammAlice.deposit(carol_, 1'000'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
@@ -773,8 +796,15 @@ private:
             // Individually lock AMM
             btc.set({.holder = ammAlice.ammAccount(), .flags = tfMPTLock});
 
-            // Can deposit non-frozen token
-            ammAlice.deposit(carol_, USD(100), std::nullopt, std::nullopt, std::nullopt);
+            // Post-fixCleanup3_3_0 the non-locked token cannot be deposited
+            // while the AMM's BTC is locked.
+            ammAlice.deposit(
+                carol_,
+                USD(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                features[fixCleanup3_3_0] ? Ter(tecLOCKED) : Ter(tesSUCCESS));
 
             // Can not deposit locked token
             ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt, Ter(tecLOCKED));
@@ -788,7 +818,9 @@ private:
             ammAlice.deposit(carol_, btc(100), std::nullopt, std::nullopt, std::nullopt);
         }
 
-        // Individually lock MPT (AMM) account with MPT/MPT AMM
+        // Individually lock MPT (AMM) account with MPT/MPT AMM.
+        // This block always runs with all amendments (incl. fixCleanup3_3_0),
+        // so the deposit checks both pool assets unconditionally.
         {
             Env env{*this};
             env.fund(XRP(10'000), gw_, alice_, carol_);
@@ -826,8 +858,10 @@ private:
             // Individually lock MPT BTC (AMM) account
             btc.set({.holder = ammAlice.ammAccount(), .flags = tfMPTLock});
 
-            // Can deposit non-locked token USD
-            ammAlice.deposit(carol_, usd(100), std::nullopt, std::nullopt, std::nullopt);
+            // Post-fixCleanup3_3_0 the non-locked token USD cannot be deposited
+            // while the AMM's BTC is locked.
+            ammAlice.deposit(
+                carol_, usd(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecLOCKED));
 
             // Can not deposit locked token BTC
             ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt, Ter(tecLOCKED));
@@ -843,8 +877,10 @@ private:
             // Individually Lock MPT USD (AMM) account
             usd.set({.holder = ammAlice.ammAccount(), .flags = tfMPTLock});
 
-            // Can deposit non-locked token BTC
-            ammAlice.deposit(carol_, btc(100), std::nullopt, std::nullopt, std::nullopt);
+            // Post-fixCleanup3_3_0 the non-locked token BTC cannot be deposited
+            // while the AMM's USD is locked.
+            ammAlice.deposit(
+                carol_, btc(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecLOCKED));
 
             // Can not deposit locked token USD
             ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt, Ter(tecLOCKED));
@@ -876,7 +912,9 @@ private:
             AMM amm(env, alice, XRP(10'000), btc(10'000));
             env.close();
 
-            if (!features[featureAMMClawback])
+            // Post-fixCleanup3_3_0 the deposit requires authorization for both
+            // pool assets, so the unauthorized MPT blocks the XRP deposit too.
+            if (!features[featureAMMClawback] && !features[fixCleanup3_3_0])
             {
                 amm.deposit(carol, XRP(10), std::nullopt, std::nullopt, std::nullopt);
             }
@@ -7081,8 +7119,8 @@ private:
         FeatureBitset const all{jtx::testableAmendments()};
         testInstanceCreate();
         testInvalidInstance();
-        testInvalidDeposit(all);
-        testInvalidDeposit(all - featureAMMClawback);
+        for (auto const& f : amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
+            testInvalidDeposit(f);
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();

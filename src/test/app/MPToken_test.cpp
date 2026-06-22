@@ -7567,15 +7567,15 @@ class MPToken_test : public beast::unit_test::Suite
             // MPTLock is set
 
             usd.set({.flags = tfMPTLock});
-            // carol and issuer can't withdraw
+            auto const fix330 = env.current()->rules().enabled(fixCleanup3_3_0);
+            // carol can't withdraw the locked token; post-fixCleanup3_3_0 the
+            // issuer can still redeem its own locked token.
             for (auto const& account : {carol, gw})
             {
+                auto const lockErr = (fix330 && account == gw) ? Ter(tesSUCCESS) : Ter(tecLOCKED);
                 amm.withdraw(
-                    {.account = account,
-                     .asset1Out = usd(1),
-                     .asset2Out = eur(1),
-                     .err = Ter(tecLOCKED)});
-                amm.withdraw({.account = account, .tokens = 1'000, .err = Ter(tecLOCKED)});
+                    {.account = account, .asset1Out = usd(1), .asset2Out = eur(1), .err = lockErr});
+                amm.withdraw({.account = account, .tokens = 1'000, .err = lockErr});
                 // can single withdraw another asset
                 amm.withdraw(
                     {.account = account, .asset1Out = eur(1), .assets = std::make_pair(eur, usd)});
