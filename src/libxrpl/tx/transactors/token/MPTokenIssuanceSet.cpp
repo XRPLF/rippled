@@ -17,14 +17,12 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <unordered_set>
 
 namespace xrpl {
 
@@ -42,9 +40,8 @@ MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
     return tfMPTokenIssuanceSetMask;
 }
 
-// Maps set/clear mutable flags in an MPTokenIssuanceSet transaction to the
-// corresponding ledger mutable flags that control whether the change is
-// allowed.
+// Maps each MPTokenIssuanceSet MutableFlags to the corresponding mutable
+// flag and the target ledger flag to mutate.
 struct MPTMutabilityFlags
 {
     std::uint32_t setFlag{};
@@ -58,37 +55,37 @@ static constexpr auto kMptMutabilityFlags = std::to_array<MPTMutabilityFlags>({
     {
         .setFlag = tmfMPTSetCanLock,
         .clearFlag = tmfMPTClearCanLock,
-        .mutabilityFlag = lsmfMPTCanMutateCanLock,
+        .mutabilityFlag = lsmfMPTCanEnableCanLock,
         .targetFlag = lsfMPTCanLock,
     },
     {
         .setFlag = tmfMPTSetRequireAuth,
         .clearFlag = tmfMPTClearRequireAuth,
-        .mutabilityFlag = lsmfMPTCanMutateRequireAuth,
+        .mutabilityFlag = lsmfMPTCanEnableRequireAuth,
         .targetFlag = lsfMPTRequireAuth,
     },
     {
         .setFlag = tmfMPTSetCanEscrow,
         .clearFlag = tmfMPTClearCanEscrow,
-        .mutabilityFlag = lsmfMPTCanMutateCanEscrow,
+        .mutabilityFlag = lsmfMPTCanEnableCanEscrow,
         .targetFlag = lsfMPTCanEscrow,
     },
     {
         .setFlag = tmfMPTSetCanTrade,
         .clearFlag = tmfMPTClearCanTrade,
-        .mutabilityFlag = lsmfMPTCanMutateCanTrade,
+        .mutabilityFlag = lsmfMPTCanEnableCanTrade,
         .targetFlag = lsfMPTCanTrade,
     },
     {
         .setFlag = tmfMPTSetCanTransfer,
         .clearFlag = tmfMPTClearCanTransfer,
-        .mutabilityFlag = lsmfMPTCanMutateCanTransfer,
+        .mutabilityFlag = lsmfMPTCanEnableCanTransfer,
         .targetFlag = lsfMPTCanTransfer,
     },
     {
         .setFlag = tmfMPTSetCanClawback,
         .clearFlag = tmfMPTClearCanClawback,
-        .mutabilityFlag = lsmfMPTCanMutateCanClawback,
+        .mutabilityFlag = lsmfMPTCanEnableCanClawback,
         .targetFlag = lsfMPTCanClawback,
     },
     {
@@ -205,39 +202,6 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
     if (hasAuditorElGamalKey && !isValidCompressedECPoint(ctx.tx[sfAuditorEncryptionKey]))
         return temMALFORMED;
-
-    return tesSUCCESS;
-}
-
-NotTEC
-MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
-{
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    // this is added in case more flags will be added for MPTokenIssuanceSet
-    // in the future. Currently unreachable.
-    if ((tx.getFlags() & tfMPTokenIssuanceSetMask) != 0u)
-        return terNO_DELEGATE_PERMISSION;  // LCOV_EXCL_LINE
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttMPTOKEN_ISSUANCE_SET, granularPermissions);
-
-    if (tx.isFlag(tfMPTLock) && !granularPermissions.contains(MPTokenIssuanceLock))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFlag(tfMPTUnlock) && !granularPermissions.contains(MPTokenIssuanceUnlock))
-        return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
 }
