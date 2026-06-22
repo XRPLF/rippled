@@ -1904,19 +1904,19 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env(sponsor::set(alice, 0), sponsor::SponseeAcc(bob));
         env.close();
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
-        std::string sponsorshipIndex;
+        auto const sponsorshipIndex = to_string(keylet::sponsorship(alice.id(), bob.id()).key);
+
         {
             // Request by sponsor and sponsee.
             json::Value jvParams;
             jvParams[jss::sponsorship][jss::sponsor] = alice.human();
             jvParams[jss::sponsorship][jss::sponsee] = bob.human();
             jvParams[jss::ledger_hash] = ledgerHash;
-            json::Value const jrr =
-                env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Sponsorship);
             BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
             BEAST_EXPECT(jrr[jss::node][sfSponsee.jsonName] == bob.human());
-            sponsorshipIndex = jrr[jss::node][jss::index].asString();
+            BEAST_EXPECT(sponsorshipIndex == jrr[jss::node][jss::index].asString());
         }
         {
             // Request by index.
@@ -1928,6 +1928,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Sponsorship);
             BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
             BEAST_EXPECT(jrr[jss::node][sfSponsee.jsonName] == bob.human());
+            BEAST_EXPECT(sponsorshipIndex == jrr[jss::node][jss::index].asString());
         }
         {
             // Check all malformed cases.
