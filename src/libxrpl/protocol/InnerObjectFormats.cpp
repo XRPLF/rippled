@@ -161,14 +161,6 @@ InnerObjectFormats::InnerObjectFormats()
             {sfSigners, SoeOptional},
         });
 
-    add(sfMemo.jsonName,
-        sfMemo.getCode(),
-        {
-            {sfMemoType, SoeOptional},
-            {sfMemoData, SoeOptional},
-            {sfMemoFormat, SoeOptional},
-        });
-
     add(sfHookParameter.jsonName,
         sfHookParameter.getCode(),
         {

@@ -375,21 +375,6 @@ public:
                 BEAST_EXPECT(result[jss::result].isMember(jss::INNER_OBJECT_FORMATS));
                 json::Value const& innerFormats = result[jss::result][jss::INNER_OBJECT_FORMATS];
 
-                // test the fields of the Memo inner object
-                {
-                    BEAST_EXPECT(innerFormats.isMember("Memo"));
-                    json::Value const& section = innerFormats["Memo"];
-
-                    BEAST_EXPECT(section[0u][jss::name] == "MemoType");
-                    BEAST_EXPECT(section[0u][jss::optionality] == SoeOptional);
-
-                    BEAST_EXPECT(section[1u][jss::name] == "MemoData");
-                    BEAST_EXPECT(section[1u][jss::optionality] == SoeOptional);
-
-                    BEAST_EXPECT(section[2u][jss::name] == "MemoFormat");
-                    BEAST_EXPECT(section[2u][jss::optionality] == SoeOptional);
-                }
-
                 // test the fields of the SignerEntry inner object
                 {
                     BEAST_EXPECT(innerFormats.isMember("SignerEntry"));
