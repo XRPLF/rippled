@@ -514,7 +514,8 @@ checkInsufficientReserve(
         auto const isCoSigning = isSponsorReserveCoSigning(tx);
 
         auto const sle = view.read(
-            keylet::sponsor(sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
+            keylet::sponsorship(
+                sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
         // prefunded sponsor should have a sponsorship entry
         if (!isCoSigning && !sle)
@@ -522,7 +523,7 @@ checkInsufficientReserve(
 
         if (sle)
         {
-            auto const ownerCountAllowed = sle->getFieldU32(sfReserveCount);
+            auto const ownerCountAllowed = sle->getFieldU32(sfRemainingOwnerCount);
             if (ownerCountAllowed < ownerCountDelta)
                 return tecINSUFFICIENT_RESERVE;
         }

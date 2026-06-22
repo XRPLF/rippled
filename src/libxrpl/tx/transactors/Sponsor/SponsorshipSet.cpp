@@ -68,7 +68,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
             return temINVALID_FLAG;
 
         // can not include these fields when deleting
-        if (ctx.tx.isFieldPresent(sfFeeAmount) || ctx.tx.isFieldPresent(sfReserveCount) ||
+        if (ctx.tx.isFieldPresent(sfFeeAmount) || ctx.tx.isFieldPresent(sfRemainingOwnerCount) ||
             ctx.tx.isFieldPresent(sfMaxFee))
             return temMALFORMED;
     }
@@ -134,7 +134,7 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
     auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) ||
         ((txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee)) !=
          0u);
-    auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) ||
+    auto const sponsoringReserve = tx.isFieldPresent(sfRemainingOwnerCount) ||
         ((txFlags &
           (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve)) != 0u);
 
@@ -230,17 +230,6 @@ deleteSponsorshipHlp(
     view.erase(sponsorshipSle);
 
     return tesSUCCESS;
-}
-
-TER
-SponsorshipSet::deleteSponsorship(ApplyView& view, SLE::ref sponsorshipSle, beast::Journal j)
-{
-    auto const sponsorID = (*sponsorshipSle)[sfOwner];
-    auto sponsorSle = view.peek(keylet::account(sponsorID));
-    if (!sponsorSle)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    return deleteSponsorshipHlp(view, sponsorSle, sponsorshipSle, j);
 }
 
 TER

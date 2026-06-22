@@ -126,6 +126,9 @@ getLedgerEntryOwnerCount(SLE const& sle)
         case ltORACLE: {
             return OracleSet::calculateOracleReserve(sle.getFieldArray(sfPriceDataSeries).size());
         }
+        // Vaults require 2 owner counts (the vault and a pseudo-account)
+        case ltVAULT:
+            return 2;
         default:
             return 1;
     }
@@ -258,6 +261,128 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+(??)template <typename T>
+(??)inline std::optional<AccountID>
+(??)getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account)
+(??){
+(??)    switch (sle->getType())
+(??)    {
+(??)        case ltNFTOKEN_OFFER:
+(??)        case ltORACLE:
+(??)        case ltPERMISSIONED_DOMAIN:
+(??)        case ltVAULT:
+(??)        case ltLOAN_BROKER:
+(??)            return sle->getAccountID(sfOwner);
+(??)        case ltCHECK:
+(??)        case ltDID:
+(??)        case ltTICKET:
+(??)        case ltOFFER:
+(??)        case ltXCHAIN_OWNED_CLAIM_ID:
+(??)        case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
+(??)        case ltESCROW:
+(??)        case ltPAYCHAN:
+(??)        case ltMPTOKEN:
+(??)        case ltDELEGATE:
+(??)        case ltBRIDGE:
+(??)        case ltDEPOSIT_PREAUTH:
+(??)            return sle->getAccountID(sfAccount);
+(??)        case ltMPTOKEN_ISSUANCE:
+(??)            return sle->getAccountID(sfIssuer);
+(??)        case ltLOAN:
+(??)            return sle->getAccountID(sfBorrower);
+(??)        case ltSIGNER_LIST: {
+(??)            auto const signerList = view.read(keylet::signers(account));
+(??)            if (!signerList)
+(??)                return std::nullopt;
+(??)            if (signerList->key() == sle->key())
+(??)                return account;
+(??)            return std::nullopt;
+(??)        }
+(??)        case ltCREDENTIAL: {
+(??)            if (sle->isFlag(lsfAccepted))
+(??)                return sle->getAccountID(sfSubject);
+(??)            return sle->getAccountID(sfIssuer);
+(??)        }
+(??)        case ltNFTOKEN_PAGE: {
+(??)            // the upper 20 bytes of the index of ltNFTokenPage are the Owner's
+(??)            // AccountID
+(??)            uint256 const& key = sle->key();
+(??)            return AccountID::fromVoid(key.data());
+(??)        }
+(??)        case ltRIPPLE_STATE: {
+(??)            if (sle->isFlag(lsfHighReserve))
+(??)            {
+(??)                auto const highAccount = sle->getFieldAmount(sfHighLimit).getIssuer();
+(??)                if (highAccount == account)
+(??)                    return highAccount;
+(??)            }
+(??)            if (sle->isFlag(lsfLowReserve))
+(??)            {
+(??)                auto const lowAccount = sle->getFieldAmount(sfLowLimit).getIssuer();
+(??)                if (lowAccount == account)
+(??)                    return lowAccount;
+(??)            }
+(??)            return std::nullopt;
+(??)        }
+(??)        case ltACCOUNT_ROOT: {
+(??)            // AccountRoot is not supported for object sponsorship
+(??)            return std::nullopt;
+(??)        }
+(??)        case ltNEGATIVE_UNL:
+(??)        case ltDIR_NODE:
+(??)        case ltAMENDMENTS:
+(??)        case ltLEDGER_HASHES:
+(??)        case ltFEE_SETTINGS:
+(??)        case ltAMM:
+(??)            return std::nullopt;
+(??)        default:
+(??)            return std::nullopt;
+(??)    };
+(??)}
+(??)
+(??)template <typename T>
+(??)inline std::uint32_t
+(??)getLedgerEntryOwnerCount(T const& sle)
+(??){
+(??)    switch (sle->getType())
+(??)    {
+(??)        case ltORACLE: {
+(??)            return OracleSet::calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
+(??)        }
+(??)        default:
+(??)            return 1;
+(??)    }
+(??)};
+(??)
+(??)template <typename T>
+(??)inline SF_ACCOUNT const&
+(??)getLedgerEntrySponsorField(T const& sle, AccountID const& owner)
+(??){
+(??)    switch (sle->getType())
+(??)    {
+(??)        case ltRIPPLE_STATE: {
+(??)            if (sle->isFlag(lsfHighReserve))
+(??)            {
+(??)                auto const highAccount = sle->getFieldAmount(sfHighLimit).getIssuer();
+(??)                if (highAccount == owner)
+(??)                    return sfHighSponsor;
+(??)            }
+(??)            if (sle->isFlag(lsfLowReserve))
+(??)            {
+(??)                auto const lowAccount = sle->getFieldAmount(sfLowLimit).getIssuer();
+(??)                if (lowAccount == owner)
+(??)                    return sfLowSponsor;
+(??)            }
+(??)            // LCOV_EXCL_START
+(??)            UNREACHABLE("Should not happen. Owner should be checked before calling this function.");
+(??)            return sfSponsor;
+(??)            // LCOV_EXCL_STOP
+(??)        }
+(??)        default:
+(??)            return sfSponsor;
+(??)    }
+(??)};
+(??)
 TER
 SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 {

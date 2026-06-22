@@ -132,6 +132,9 @@ Payment::preflight(PreflightContext const& ctx)
         if (tx.isFlag(tfNoRippleDirect) || tx.isFlag(tfPartialPayment) || tx.isFlag(tfLimitQuality))
             return temINVALID_FLAG;
 
+        if (tx.isFieldPresent(sfSendMax) || tx.isFieldPresent(sfPaths))
+            return temINVALID;
+
         if (!dstAmount.native())
             return temBAD_AMOUNT;
     }

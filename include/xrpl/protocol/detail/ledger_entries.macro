@@ -613,7 +613,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
 }))
 
 /** A ledger object representing a sponsorship.
-    \sa keylet::sponsor
+    \sa keylet::sponsorship
  */
 LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
     {sfPreviousTxnID,        SoeRequired},
@@ -622,7 +622,7 @@ LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
     {sfSponsee,              SoeRequired},
     {sfFeeAmount,            SoeOptional},
     {sfMaxFee,               SoeOptional},
-    {sfReserveCount,         SoeDefault},
+    {sfRemainingOwnerCount,         SoeDefault},
     {sfOwnerNode,            SoeRequired},
     {sfSponseeNode,          SoeRequired},
 }))
