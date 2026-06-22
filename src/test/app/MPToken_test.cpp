@@ -3834,9 +3834,8 @@ class MPToken_test : public beast::unit_test::Suite
         Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
-        Account const dan("dan");
 
-        MPTTester mptAlice(env, alice, {.holders = {bob, dan}});
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
         mptAlice.create(
             {.ownerCount = 1,
              .flags = tfMPTCanTransfer,
