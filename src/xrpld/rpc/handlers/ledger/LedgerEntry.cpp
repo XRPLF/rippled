@@ -785,7 +785,7 @@ parseSponsorship(
     if (!sponseeAccountID)
         return std::unexpected(sponseeAccountID.error());
 
-    return keylet::sponsor(*sponsorAccountID, *sponseeAccountID).key;
+    return keylet::sponsorship(*sponsorAccountID, *sponseeAccountID).key;
 }
 
 static std::expected<uint256, json::Value>
