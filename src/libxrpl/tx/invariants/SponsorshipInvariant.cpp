@@ -93,7 +93,7 @@ SponsorshipOwnerCountsMatch::visitEntry(
         (afterSponsoredObjectOwnerCount - beforeSponsoredObjectOwnerCount);
 
     if (getOwnerCount(after) < getSponsored(after))
-        invalidOwnerCountLessThanSponsoredOwnerCount_ += 1;
+        ownerCountBelowSponsored_ += 1;
 }
 
 bool
@@ -111,7 +111,7 @@ SponsorshipOwnerCountsMatch::finalize(
         return false;
     }
 
-    if (invalidOwnerCountLessThanSponsoredOwnerCount_ > 0)
+    if (ownerCountBelowSponsored_ > 0)
     {
         JLOG(j.fatal())
             << "Invariant failed: OwnerCount must be greater than or equal to SponsoredOwnerCount.";
