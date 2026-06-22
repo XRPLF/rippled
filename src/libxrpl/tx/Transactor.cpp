@@ -1159,7 +1159,6 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
         if (ter == tecINCOMPLETE)
         {
             types.insert(ltRIPPLE_STATE);
-            types.insert(ltMPTOKEN);
         }
         if (ter == tecEXPIRED)
         {
