@@ -1156,11 +1156,9 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
         std::unordered_set<LedgerEntryType> types;
         if ((ter == tecOVERSIZE) || (ter == tecKILLED))
             types.insert(ltOFFER);
-        if (ter == tecINCOMPLETE)
-        {
+        else if (ter == tecINCOMPLETE)
             types.insert(ltRIPPLE_STATE);
-        }
-        if (ter == tecEXPIRED)
+        else if (ter == tecEXPIRED)
         {
             types.insert(ltNFTOKEN_OFFER);
             types.insert(ltCREDENTIAL);
