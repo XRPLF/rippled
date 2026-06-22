@@ -44,7 +44,7 @@ jobs:
     container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-fe4c8ae
     steps:
       - name: Checkout repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Prepare runner
         uses: XRPLF/actions/prepare-runner@c47daebb2f9db64ffbac71b47d68a661498d5ce8
