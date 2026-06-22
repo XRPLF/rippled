@@ -54,6 +54,23 @@ namespace xrpl::test::jtx {
 namespace {
 
 /**
+ * @brief Returns a reference to the value held by an optional, throwing if it
+ *        is not an optional.
+ *
+ * @param opt The optional to unwrap.
+ * @param what Description used in the thrown exception if opt is empty.
+ * @return A const reference to the contained value.
+ */
+template <class T>
+[[nodiscard]] T const&
+requireValue(std::optional<T> const& opt, char const* what)
+{
+    if (!opt)
+        Throw<std::logic_error>(what);
+    return *opt;
+}
+
+/**
  * @brief Helper function to convert a PedersenProofParams into the C library struct.
  *
  * @param params The Pedersen commitment proof parameters.
@@ -72,8 +89,6 @@ makePedersenParams(PedersenProofParams const& params)
 }
 
 }  // namespace
-
-// NOLINTBEGIN(bugprone-unchecked-optional-access)
 
 void
 MptFlags::operator()(Env& env) const
@@ -849,12 +864,16 @@ MPTTester::getSchnorrProof(Account const& account, uint256 const& ctxHash) const
         return std::nullopt;
 
     auto const privKey = getPrivKey(account);
-    if (privKey->size() != kEcPrivKeyLength)
+    if (requireValue(privKey, "privKey").size() != kEcPrivKeyLength)
         return std::nullopt;
 
     Buffer proof(kEcSchnorrProofLength);
 
-    if (mpt_get_convert_proof(pubKey->data(), privKey->data(), ctxHash.data(), proof.data()) != 0)
+    if (mpt_get_convert_proof(
+            requireValue(pubKey, "pubKey").data(),
+            requireValue(privKey, "privKey").data(),
+            ctxHash.data(),
+            proof.data()) != 0)
         return std::nullopt;
 
     return proof;
@@ -956,7 +975,7 @@ MPTTester::getConvertBackProof(
     // Expected total proof length: compact sigma proof (128 bytes) + single bulletproof (688 bytes)
     std::size_t constexpr kExpectedProofLength = kEcConvertBackProofLength;
 
-    auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
+    auto const sleMptoken = env_.le(keylet::mptoken(issuanceID(), holder.id()));
     if (!sleMptoken || !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
         return gMakeZeroBuffer(kExpectedProofLength);
 
@@ -1061,7 +1080,8 @@ MPTTester::fillConversionCiphertexts(
     }
     else
     {
-        holderCiphertext = encryptAmount(*arg.account, *arg.amt, blindingFactor);
+        holderCiphertext = encryptAmount(
+            requireValue(arg.account, "account"), requireValue(arg.amt, "amt"), blindingFactor);
     }
 
     jv[sfHolderEncryptedAmount.jsonName] = strHex(holderCiphertext);
@@ -1073,7 +1093,7 @@ MPTTester::fillConversionCiphertexts(
     }
     else
     {
-        issuerCiphertext = encryptAmount(issuer_, *arg.amt, blindingFactor);
+        issuerCiphertext = encryptAmount(issuer_, requireValue(arg.amt, "amt"), blindingFactor);
     }
 
     jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext);
@@ -1083,9 +1103,10 @@ MPTTester::fillConversionCiphertexts(
     {
         auditorCiphertext = *arg.auditorEncryptedAmt;
     }
-    else if (auditor_.has_value() && *arg.fillAuditorEncryptedAmt)
+    else if (auditor_.has_value() && arg.fillAuditorEncryptedAmt.value_or(false))
     {
-        auditorCiphertext = encryptAmount(*auditor_, *arg.amt, blindingFactor);
+        auditorCiphertext = encryptAmount(
+            requireValue(auditor_, "auditor"), requireValue(arg.amt, "amt"), blindingFactor);
     }
 
     // Update auditor JSON only if ciphertext exists
@@ -1143,7 +1164,8 @@ MPTTester::convert(MPTConvert const& arg)
         // otherwise, default to generating the proof only if holder pub key is
         // present.
         auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
-        auto const contextHash = getConvertContextHash(arg.account->id(), *id_, seq);
+        auto const contextHash =
+            getConvertContextHash(requireValue(arg.account, "account").id(), issuanceID(), seq);
 
         auto const proof = getSchnorrProof(*arg.account, contextHash);
         if (proof)
@@ -1180,7 +1202,8 @@ MPTTester::convert(MPTConvert const& arg)
     {
         auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
         auto const postOutstanding = getIssuanceOutstandingBalance();
-        env_.require(MptBalance(*this, *arg.account, holderAmt - *arg.amt));
+        env_.require(MptBalance(
+            *this, requireValue(arg.account, "account"), holderAmt - requireValue(arg.amt, "amt")));
         env_.require(RequireAny([&]() -> bool {
             return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
         }));
@@ -1310,7 +1333,8 @@ MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
     }
     else if (arg.fillSchnorrProof.value_or(arg.holderPubKey.has_value()))
     {
-        auto const contextHash = getConvertContextHash(arg.account->id(), *id_, seq);
+        auto const contextHash =
+            getConvertContextHash(requireValue(arg.account, "account").id(), issuanceID(), seq);
         auto const proof = getSchnorrProof(*arg.account, contextHash);
         if (proof)
         {
@@ -1381,9 +1405,10 @@ MPTTester::send(MPTConfidentialSend const& arg)
     {
         auditorAmt = arg.auditorEncryptedAmt;
     }
-    else if (auditor_.has_value() && *arg.fillAuditorEncryptedAmt)
+    else if (auditor_.has_value() && arg.fillAuditorEncryptedAmt.value_or(false))
     {
-        auditorAmt = encryptAmount(*auditor_, *arg.amt, blindingFactor);
+        auditorAmt = encryptAmount(
+            requireValue(auditor_, "auditor"), requireValue(arg.amt, "amt"), blindingFactor);
     }
 
     jv[sfSenderEncryptedAmount] = strHex(senderAmt);
@@ -1470,8 +1495,12 @@ MPTTester::send(MPTConfidentialSend const& arg)
     {
         auto const version = getMPTokenVersion(*arg.account);
         auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
-        auto const ctxHash =
-            getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
+        auto const ctxHash = getSendContextHash(
+            requireValue(arg.account, "account").id(),
+            issuanceID(),
+            seq,
+            requireValue(arg.dest, "dest").id(),
+            version);
 
         std::vector<ConfidentialRecipient> recipients;
 
@@ -1708,9 +1737,10 @@ MPTTester::sendJV(
     {
         auditorAmt = arg.auditorEncryptedAmt;
     }
-    else if (auditor_.has_value() && *arg.fillAuditorEncryptedAmt)
+    else if (auditor_.has_value() && arg.fillAuditorEncryptedAmt.value_or(false))
     {
-        auditorAmt = encryptAmount(*auditor_, *arg.amt, blindingFactor);
+        auditorAmt = encryptAmount(
+            requireValue(auditor_, "auditor"), requireValue(arg.amt, "amt"), blindingFactor);
     }
 
     jv[sfSenderEncryptedAmount] = strHex(senderAmt);
@@ -1777,8 +1807,12 @@ MPTTester::sendJV(
     }
     else
     {
-        auto const ctxHash =
-            getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
+        auto const ctxHash = getSendContextHash(
+            requireValue(arg.account, "account").id(),
+            issuanceID(),
+            seq,
+            requireValue(arg.dest, "dest").id(),
+            version);
 
         std::vector<ConfidentialRecipient> recipients;
 
@@ -1951,13 +1985,18 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
     else
     {
         auto const seq = arg.ticketSeq ? *arg.ticketSeq : env_.seq(account);
-        auto const contextHash = getClawbackContextHash(account.id(), *id_, seq, arg.holder->id());
+        auto const contextHash = getClawbackContextHash(
+            account.id(), issuanceID(), seq, requireValue(arg.holder, "holder").id());
 
         auto const privKey = getPrivKey(account);
         if (!privKey || privKey->size() != kEcPrivKeyLength)
             Throw<std::runtime_error>("Failed to get clawback private key");
 
-        auto const proof = getClawbackProof(*arg.holder, *arg.amt, *privKey, contextHash);
+        auto const proof = getClawbackProof(
+            requireValue(arg.holder, "holder"),
+            requireValue(arg.amt, "amt"),
+            requireValue(privKey, "privKey"),
+            contextHash);
 
         if (proof)
         {
@@ -2209,8 +2248,10 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
         if (!holderPubKey)
             Throw<std::runtime_error>("Failed to get holder public key");
 
-        auto const expectedInbox =
-            encryptCanonicalZeroAmount(*holderPubKey, arg.account->id(), *id_);
+        auto const expectedInbox = encryptCanonicalZeroAmount(
+            requireValue(holderPubKey, "holderPubKey"),
+            requireValue(arg.account, "account").id(),
+            issuanceID());
         if (!expectedInbox)
             Throw<std::runtime_error>("Failed to get canonical zero encryption");
 
@@ -2328,7 +2369,8 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         // if the caller generated ciphertexts themselves, they should also
         // generate the proof themselves from the blinding factor
         auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
-        auto const contextHash = getConvertBackContextHash(arg.account->id(), *id_, seq, version);
+        auto const contextHash = getConvertBackContextHash(
+            requireValue(arg.account, "account").id(), issuanceID(), seq, version);
         auto const prevEncryptedSpendingBalance =
             getEncryptedBalance(*arg.account, holderEncryptedSpending);
 
@@ -2343,7 +2385,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         {
             proof = getConvertBackProof(
                 *arg.account,
-                *arg.amt,
+                requireValue(arg.amt, "amt"),
                 contextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
@@ -2374,7 +2416,8 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
         auto const postOutstanding = getIssuanceOutstandingBalance();
         auto const postVersion = getMPTokenVersion(*arg.account);
-        env_.require(MptBalance(*this, *arg.account, holderAmt + *arg.amt));
+        env_.require(MptBalance(
+            *this, requireValue(arg.account, "account"), holderAmt + requireValue(arg.amt, "amt")));
         env_.require(RequireAny([&]() -> bool {
             return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
         }));
@@ -2487,7 +2530,8 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
     {
         auto const version = getMPTokenVersion(*arg.account);
         auto const prevEncSpending = getEncryptedBalance(*arg.account, holderEncryptedSpending);
-        auto const contextHash = getConvertBackContextHash(arg.account->id(), *id_, seq, version);
+        auto const contextHash = getConvertBackContextHash(
+            requireValue(arg.account, "account").id(), issuanceID(), seq, version);
 
         Buffer proof;
         if (!prevEncSpending)
@@ -2498,7 +2542,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
         {
             proof = getConvertBackProof(
                 *arg.account,
-                *arg.amt,
+                requireValue(arg.amt, "amt"),
                 contextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
@@ -2513,7 +2557,5 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
 
     return jv;
 }
-
-// NOLINTEND(bugprone-unchecked-optional-access)
 
 }  // namespace xrpl::test::jtx

@@ -56,7 +56,6 @@
 
 namespace xrpl {
 
-// NOLINTBEGIN(misc-const-correctness, bugprone-unchecked-optional-access)
 class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 {
     void
@@ -541,7 +540,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.convert({
                 .account = bob,
                 .amt = 10,
-                .proof = strHex(*proof),
+                .proof = strHex(requireOptional(proof, "Missing proof")),
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .err = tecBAD_PROOF,
             });
@@ -3393,8 +3392,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 mptAlice.encryptAmount(alice, kMaxMpTokenAmount, convertBlindingFactor);
             auto const convertContextHash =
                 getConvertContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob));
-            auto const schnorrProof = mptAlice.getSchnorrProof(bob, convertContextHash);
-            BEAST_EXPECT(schnorrProof.has_value());
+            auto const schnorrProof = requireOptional(
+                mptAlice.getSchnorrProof(bob, convertContextHash), "Missing schnorr proof");
 
             {
                 json::Value jv;
@@ -3402,11 +3401,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
                 jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
                 jv[sfMPTAmount.jsonName] = std::to_string(kMaxMpTokenAmount);
-                jv[sfHolderEncryptionKey.jsonName] = strHex(*mptAlice.getPubKey(bob));
+                jv[sfHolderEncryptionKey.jsonName] =
+                    strHex(requireOptional(mptAlice.getPubKey(bob), "Missing holder public key"));
                 jv[sfHolderEncryptedAmount.jsonName] = strHex(convertHolderCiphertext);
                 jv[sfIssuerEncryptedAmount.jsonName] = strHex(convertIssuerCiphertext);
                 jv[sfBlindingFactor.jsonName] = strHex(convertBlindingFactor);
-                jv[sfZKProof.jsonName] = strHex(*schnorrProof);
+                jv[sfZKProof.jsonName] = strHex(schnorrProof);
 
                 env(jv, Ter(tesSUCCESS));
             }
@@ -3433,9 +3433,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 mptAlice.encryptAmount(alice, convertBackAmt, convertBackBlindingFactor);
 
             // Get the encrypted spending balance from ledger (no decryption needed)
-            auto const encryptedSpendingBalance =
-                mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
-            BEAST_EXPECT(encryptedSpendingBalance.has_value());
+            auto const encryptedSpendingBalance = requireOptional(
+                mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending),
+                "Missing encrypted spending balance");
 
             // Generate pedersen commitment for the known spending balance
             Buffer const pcBlindingFactor = generateBlindingFactor();
@@ -3454,7 +3454,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = kMaxMpTokenAmount,
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -4219,7 +4219,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 return;
 
             auto const proof = mptAlice.getClawbackProof(
-                bob, 60, *privKey, makeContextHash(env, mptAlice, alice, bob, carol));
+                bob,
+                60,
+                requireOptionalRef(privKey, "Missing private key"),
+                makeContextHash(env, mptAlice, alice, bob, carol));
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
@@ -4227,7 +4230,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = bob,
                 .amt = 60,
-                .proof = strHex(*proof),
+                .proof = strHex(requireOptional(proof, "Missing proof")),
                 .err = tecBAD_PROOF,
             });
         };
@@ -4839,7 +4842,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             auto const proof = mptAlice.getClawbackProof(
                 bob,
                 500,
-                *privKey,
+                requireOptionalRef(privKey, "Missing private key"),
                 getClawbackContextHash(
                     alice.id(), mptAlice.issuanceID(), env.seq(alice), bob.id()));
             if (!BEAST_EXPECT(proof.has_value()))
@@ -4857,7 +4860,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .account = alice,
                 .holder = bob,
                 .amt = 500,
-                .proof = strHex(*proof),
+                .proof = strHex(requireOptional(proof, "Missing proof")),
             });
         }
     }
@@ -5233,15 +5236,16 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Buffer const blindingFactor = generateBlindingFactor();
         Buffer const pcBlindingFactor = generateBlindingFactor();
 
-        auto const spendingBalance =
-            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        BEAST_EXPECT(spendingBalance.has_value());
-        auto const encryptedSpendingBalance =
-            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        BEAST_EXPECT(encryptedSpendingBalance.has_value() && !encryptedSpendingBalance->empty());
+        auto const spendingBalance = requireOptional(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing spending balance");
+        auto const encryptedSpendingBalance = requireOptional(
+            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing encrypted spending balance");
+        BEAST_EXPECT(!encryptedSpendingBalance.empty());
 
         Buffer const pedersenCommitment =
-            mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
+            mptAlice.getPedersenCommitment(spendingBalance, pcBlindingFactor);
         Buffer const issuerCiphertext = mptAlice.encryptAmount(alice, amt, blindingFactor);
         Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
         auto const version = mptAlice.getMPTokenVersion(bob);
@@ -5265,8 +5269,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 contextHash,
                 {
                     .pedersenCommitment = badPedersenCommitment,  // wrong pedersen commitment
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .amt = spendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -5295,8 +5299,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 contextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .amt = spendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = generateBlindingFactor(),  // wrong blinding factor
                 });
 
@@ -5326,7 +5330,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = 1,  // wrong balance
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -5357,8 +5361,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 contextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .amt = spendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -5387,8 +5391,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 badContextHash,  // wrong context hash
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .amt = spendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -5416,8 +5420,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 contextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .amt = spendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -5452,15 +5456,16 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Buffer const blindingFactor = generateBlindingFactor();
         Buffer const pcBlindingFactor = generateBlindingFactor();
 
-        auto const spendingBalance =
-            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        BEAST_EXPECT(spendingBalance.has_value());
-        auto const encryptedSpendingBalance =
-            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        BEAST_EXPECT(encryptedSpendingBalance.has_value() && !encryptedSpendingBalance->empty());
+        auto const spendingBalance = requireOptional(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing spending balance");
+        auto const encryptedSpendingBalance = requireOptional(
+            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing encrypted spending balance");
+        BEAST_EXPECT(!encryptedSpendingBalance.empty());
 
         Buffer const pedersenCommitment =
-            mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
+            mptAlice.getPedersenCommitment(spendingBalance, pcBlindingFactor);
         Buffer const issuerCiphertext = mptAlice.encryptAmount(alice, amt, blindingFactor);
         Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
         auto const version = mptAlice.getMPTokenVersion(bob);
@@ -5484,7 +5489,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 {
                     .pedersenCommitment = pedersenCommitment,
                     .amt = 1,  // wrong balance (actual balance is ~40)
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -5514,8 +5519,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 contextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .amt = spendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = generateBlindingFactor(),  // wrong blinding factor
                 });
 
@@ -5543,8 +5548,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 badContextHash,  // wrong context hash
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .amt = spendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -5572,8 +5577,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 contextHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .amt = spendingBalance,
+                    .encryptedAmt = encryptedSpendingBalance,
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -5619,8 +5624,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             if (!BEAST_EXPECT(spendingBalance && encryptedSpendingBalance))
                 return;
 
-            Buffer const pedersenCommitment =
-                mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
+            Buffer const pedersenCommitment = mptAlice.getPedersenCommitment(
+                requireOptional(spendingBalance, "Missing spending balance"), pcBlindingFactor);
             Buffer const issuerCiphertext = mptAlice.encryptAmount(alice, amt, blindingFactor);
             Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
             auto const version = mptAlice.getMPTokenVersion(bob);
@@ -5631,8 +5636,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 makeContextHash(env, mptAlice, alice, bob, carol, version),
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpendingBalance,
+                    .amt = requireOptional(spendingBalance, "Missing spending balance"),
+                    .encryptedAmt = requireOptionalRef(
+                        encryptedSpendingBalance, "Missing encrypted spending balance"),
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -5707,14 +5713,16 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 50}}};
         auto& mptAlice = confEnv.mpt;
 
-        auto const spendingBalance =
-            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        auto const encryptedSpendingBalance =
-            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
+        auto const spendingBalance = requireOptional(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing spending balance");
+        auto const encryptedSpendingBalance = requireOptional(
+            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing encrypted spending balance");
         auto const version = mptAlice.getMPTokenVersion(bob);
         Buffer const pcBlindingFactor = generateBlindingFactor();
         Buffer const pedersenCommitment =
-            mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
+            mptAlice.getPedersenCommitment(spendingBalance, pcBlindingFactor);
 
         // Generate a valid proof pi for Amount m1 = 10
         uint64_t const amtA = 10;
@@ -5728,8 +5736,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             contextHashA,
             {
                 .pedersenCommitment = pedersenCommitment,
-                .amt = *spendingBalance,
-                .encryptedAmt = *encryptedSpendingBalance,
+                .amt = spendingBalance,
+                .encryptedAmt = encryptedSpendingBalance,
                 .blindingFactor = pcBlindingFactor,
             });
 
@@ -5769,17 +5777,19 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto& mptAlice = confEnv.mpt;
 
         auto const versionV = mptAlice.getMPTokenVersion(bob);
-        auto const spendingBalanceV =
-            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        auto const encryptedSpendingBalanceV =
-            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
+        auto const spendingBalanceV = requireOptional(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing spending balance");
+        auto const encryptedSpendingBalanceV = requireOptional(
+            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing encrypted spending balance");
 
         // Parameters for the intended ConvertBack transaction
         uint64_t const amt = 10;
         Buffer const blindingFactor = generateBlindingFactor();
         Buffer const pcBlindingFactor = generateBlindingFactor();
         Buffer const pedersenCommitment =
-            mptAlice.getPedersenCommitment(*spendingBalanceV, pcBlindingFactor);
+            mptAlice.getPedersenCommitment(spendingBalanceV, pcBlindingFactor);
         Buffer const issuerCiphertext = mptAlice.encryptAmount(alice, amt, blindingFactor);
         Buffer const bobCiphertext = mptAlice.encryptAmount(bob, amt, blindingFactor);
 
@@ -5807,8 +5817,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             oldContextHash,
             {
                 .pedersenCommitment = pedersenCommitment,
-                .amt = *spendingBalanceV,
-                .encryptedAmt = *encryptedSpendingBalanceV,
+                .amt = spendingBalanceV,
+                .encryptedAmt = encryptedSpendingBalanceV,
                 .blindingFactor = pcBlindingFactor,
             });
 
@@ -5855,17 +5865,18 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto const deltaCipherText = mptAlice.encryptAmount(bob, 1, deltaBf);
 
         // Homomorphically add Delta to HolderCipherText: Tampered = Enc(10) + Enc(1) = Enc(11)
-        auto tamperedOpt = homomorphicAdd(holderCipherText, deltaCipherText);
-        BEAST_EXPECT(tamperedOpt.has_value());
-        Buffer tamperedHolderCipherText = std::move(*tamperedOpt);
+        Buffer tamperedHolderCipherText = requireOptional(
+            homomorphicAdd(holderCipherText, deltaCipherText), "Missing tampered ciphertext");
 
         // Generate a valid proof for the ORIGINAL amount (10)
-        auto const spendingBal =
-            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        auto const spendingBalEnc =
-            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
+        auto const spendingBal = requireOptional(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing spending balance");
+        auto const spendingBalEnc = requireOptional(
+            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing encrypted spending balance");
         Buffer const pcBf = generateBlindingFactor();
-        auto const pedersenCommitment = mptAlice.getPedersenCommitment(*spendingBal, pcBf);
+        auto const pedersenCommitment = mptAlice.getPedersenCommitment(spendingBal, pcBf);
 
         auto const currentVersion = mptAlice.getMPTokenVersion(bob);
         // Uses the new signature: Account, IssuanceID, Sequence, Version
@@ -5878,8 +5889,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             contextHash,
             {
                 .pedersenCommitment = pedersenCommitment,
-                .amt = *spendingBal,
-                .encryptedAmt = *spendingBalEnc,
+                .amt = spendingBal,
+                .encryptedAmt = spendingBalEnc,
                 .blindingFactor = pcBf,
             });
 
@@ -5939,9 +5950,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Buffer const encOne = mptAlice.encryptAmount(bob, 1, bf2);
 
         // Homomorphically add to produce CB_S_holder' = Enc(MAX) + Enc(1)
-        auto overflowedOpt = homomorphicAdd(encMax, encOne);
-        BEAST_EXPECT(overflowedOpt.has_value());
-        Buffer overflowedCt = std::move(*overflowedOpt);
+        Buffer overflowedCt =
+            requireOptional(homomorphicAdd(encMax, encOne), "Missing overflowed ciphertext");
 
         // Submit the send transaction with the tampered ciphertext.
         // Setting amt = kMaxMpTokenAmount + 1 drives proof generation for the
@@ -6000,9 +6010,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // Homomorphically subtract to produce CB_S_holder' = Enc(0) − Enc(1)
         // = Enc(−1), which lies below [0, kMaxMpTokenAmount].
-        auto underflowedOpt = homomorphicSubtract(encZero, encOne);
-        BEAST_EXPECT(underflowedOpt.has_value());
-        Buffer underflowedCt = std::move(*underflowedOpt);
+        Buffer underflowedCt =
+            requireOptional(homomorphicSubtract(encZero, encOne), "Missing underflowed ciphertext");
 
         // The underflowed value as uint64_t: 0 - 1 wraps to 0xFFFFFFFFFFFFFFFF.
         // Generate a real proof using this wrapped value. The validator must still reject it
@@ -6533,14 +6542,15 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto submitWithDivergentC1 = [&](std::optional<Participant> divergent) {
             ConfidentialSendSetup setup(mptAlice, bob, carol, alice, amt, std::cref(auditor));
 
-            auto const proofOpt = setup.generateProof(mptAlice, env, bob, carol);
-            BEAST_EXPECT(proofOpt.has_value());
+            auto const proofOpt =
+                requireOptional(setup.generateProof(mptAlice, env, bob, carol), "Missing proof");
 
             // Re-encrypt one participant's ciphertext with divergent randomness.
             Buffer senderCt = setup.senderAmt;
             Buffer destCt = setup.destAmt;
             Buffer issuerCt = setup.issuerAmt;
-            Buffer auditorCt = *setup.auditorAmt;
+            Buffer auditorCt =
+                requireOptionalRef(setup.auditorAmt, "Missing auditor encrypted amount");
             if (divergent)
             {
                 Buffer const bfDivergent = generateBlindingFactor();
@@ -6567,7 +6577,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .account = bob,
                 .dest = carol,
                 .amt = amt,
-                .proof = strHex(*proofOpt),
+                .proof = strHex(proofOpt),
                 .senderEncryptedAmt = senderCt,
                 .destEncryptedAmt = destCt,
                 .issuerEncryptedAmt = issuerCt,
@@ -6750,7 +6760,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Buffer const forgedBlindingFactor = generateBlindingFactor();
             auto const forgedDestAmt = mptAlice.encryptAmount(carol, 20, forgedBlindingFactor);
 
-            auto args = setup.sendArgs(bob, carol, *proof, tecBAD_PROOF);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(proof, "Missing proof"), tecBAD_PROOF);
             args.destEncryptedAmt = forgedDestAmt;
             mptAlice.send(args);
         }
@@ -6764,7 +6775,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Buffer const forgedBlindingFactor = generateBlindingFactor();
             auto const forgedSenderAmt = mptAlice.encryptAmount(bob, 5, forgedBlindingFactor);
 
-            auto args = setup.sendArgs(bob, carol, *proof, tecBAD_PROOF);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(proof, "Missing proof"), tecBAD_PROOF);
             args.senderEncryptedAmt = forgedSenderAmt;
             mptAlice.send(args);
         }
@@ -6778,7 +6790,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Buffer const forgedBlindingFactor = generateBlindingFactor();
             auto const forgedIssuerAmt = mptAlice.encryptAmount(alice, 100, forgedBlindingFactor);
 
-            auto args = setup.sendArgs(bob, carol, *proof, tecBAD_PROOF);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(proof, "Missing proof"), tecBAD_PROOF);
             args.issuerEncryptedAmt = forgedIssuerAmt;
             mptAlice.send(args);
         }
@@ -6813,12 +6826,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         auto const amountCommitment = mptAlice.getPedersenCommitment(badAmount, blindingFactor);
 
         // Balance commitment for Bob's actual balance.
-        auto const prevSpending =
-            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        BEAST_EXPECT(prevSpending.has_value());
+        auto const prevSpending = requireOptional(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing previous spending balance");
         auto const balanceBlindingFactor = generateBlindingFactor();
         auto const balanceCommitment =
-            mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
+            mptAlice.getPedersenCommitment(prevSpending, balanceBlindingFactor);
 
         // Generate a valid proof for a legitimate amount, then corrupt
         // the bulletproof segment to simulate a forged range proof.
@@ -6828,7 +6841,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             return;
 
         // Corrupt bulletproof bytes.
-        Buffer forgedProof = *validProof;
+        Buffer forgedProof = requireOptional(validProof, "Missing valid proof");
         for (size_t i = kBulletproofOffset; i < forgedProof.size(); i += 7)
             forgedProof.data()[i] ^= 0xFF;
 
@@ -6846,10 +6859,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
              .err = tecBAD_PROOF});
 
         // Supply invariant: Bob's balance unchanged.
-        auto const postSpending =
-            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        BEAST_EXPECT(postSpending.has_value());
-        BEAST_EXPECT(*postSpending == *prevSpending);
+        auto const postSpending = requireOptional(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing post spending balance");
+        BEAST_EXPECT(postSpending == prevSpending);
     }
 
     void
@@ -6891,8 +6904,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             {setup.amountBlindingFactor, setup.balanceBlindingFactor},
             ctxHash);
 
-        Buffer forgedProof(validProof->size());
-        std::memcpy(forgedProof.data(), validProof->data(), kBulletproofOffset);
+        Buffer forgedProof(requireOptionalRef(validProof, "Missing valid proof").size());
+        std::memcpy(
+            forgedProof.data(),
+            requireOptionalRef(validProof, "Missing valid proof").data(),
+            kBulletproofOffset);
         std::memcpy(
             forgedProof.data() + kBulletproofOffset,
             forgedBulletproof.data(),
@@ -6901,10 +6917,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         mptAlice.send(setup.sendArgs(bob, carol, forgedProof, tecBAD_PROOF));
 
         // Supply invariant: Bob's balance unchanged.
-        auto const postSpending =
-            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        BEAST_EXPECT(postSpending.has_value());
-        BEAST_EXPECT(*postSpending == setup.prevSpending);
+        auto const postSpending = requireOptional(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing post spending balance");
+        BEAST_EXPECT(postSpending == setup.prevSpending);
     }
 
     void
@@ -6947,7 +6963,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
-            mptAlice.send(setup.sendArgs(bob, carol, *proof, tecBAD_PROOF));
+            mptAlice.send(setup.sendArgs(
+                bob, carol, requireOptionalRef(proof, "Missing proof"), tecBAD_PROOF));
         };
 
         // Wrong sender account in the proof context.
@@ -7035,7 +7052,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             auto const forgedCommitment =
                 mptAlice.getPedersenCommitment(setup.sendAmount + 5, forgedBlindingFactor);
 
-            auto args = setup.sendArgs(bob, carol, *proof, tecBAD_PROOF);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(proof, "Missing proof"), tecBAD_PROOF);
             args.amountCommitment = forgedCommitment;
             mptAlice.send(args);
         }
@@ -7049,7 +7067,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.pay(bob, carol, 1);
             env.close();
 
-            mptAlice.send(setup.sendArgs(bob, carol, *proof, tecBAD_PROOF));
+            mptAlice.send(setup.sendArgs(
+                bob, carol, requireOptionalRef(proof, "Missing proof"), tecBAD_PROOF));
         }
 
         // Variant C: tampered response scalars.
@@ -7058,8 +7077,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
-            Buffer tamperedProof(proof->size());
-            std::memcpy(tamperedProof.data(), proof->data(), proof->size());
+            auto const& proofRef = requireOptionalRef(proof, "Missing proof");
+            Buffer tamperedProof(proofRef.size());
+            std::memcpy(tamperedProof.data(), proofRef.data(), proofRef.size());
             size_t const tamperOffset = tamperedProof.size() / 2;
             tamperedProof.data()[tamperOffset] ^= 0xFF;
 
@@ -7093,10 +7113,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
-            mptAlice.send(setup.sendArgs(bob, carol, *proof));
+            mptAlice.send(setup.sendArgs(bob, carol, requireOptionalRef(proof, "Missing proof")));
             mptAlice.mergeInbox({.account = carol});
 
-            mptAlice.send(setup.sendArgs(bob, carol, *proof, tecBAD_PROOF));
+            mptAlice.send(setup.sendArgs(
+                bob, carol, requireOptionalRef(proof, "Missing proof"), tecBAD_PROOF));
         }
 
         // Variant B: replay proof to a different destination.
@@ -7107,14 +7128,15 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
-            mptAlice.send(setup.sendArgs(bob, carol, *proof));
+            mptAlice.send(setup.sendArgs(bob, carol, requireOptionalRef(proof, "Missing proof")));
             mptAlice.mergeInbox({.account = carol});
 
             auto const destAmtDan = mptAlice.encryptAmount(dan, sendAmount, setup.blindingFactor);
             auto const issuerAmtDan =
                 mptAlice.encryptAmount(alice, sendAmount, setup.blindingFactor);
 
-            auto args = setup.sendArgs(bob, dan, *proof, tecBAD_PROOF);
+            auto args =
+                setup.sendArgs(bob, dan, requireOptionalRef(proof, "Missing proof"), tecBAD_PROOF);
             args.destEncryptedAmt = destAmtDan;
             args.issuerEncryptedAmt = issuerAmtDan;
             mptAlice.send(args);
@@ -7143,7 +7165,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
-            Buffer forgedProof = *proof;
+            Buffer forgedProof = requireOptionalRef(proof, "Missing proof");
 
             static constexpr size_t kSigmaScalarSize = 32;
             static constexpr size_t kChallengeOffset = 0;
@@ -7163,7 +7185,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Buffer invalidCiphertext(kEcGamalEncryptedTotalLength);
             std::memset(invalidCiphertext.data(), 0, kEcGamalEncryptedTotalLength);
 
-            auto args = setup.sendArgs(bob, carol, *proof, temBAD_CIPHERTEXT);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(proof, "Missing proof"), temBAD_CIPHERTEXT);
             args.senderEncryptedAmt = invalidCiphertext;
             mptAlice.send(args);
         }
@@ -7177,7 +7200,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Buffer invalidCommitment(kEcPedersenCommitmentLength);
             std::memset(invalidCommitment.data(), 0, kEcPedersenCommitmentLength);
 
-            auto args = setup.sendArgs(bob, carol, *proof, temMALFORMED);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(proof, "Missing proof"), temMALFORMED);
             args.amountCommitment = invalidCommitment;
             mptAlice.send(args);
         }
@@ -7188,7 +7212,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
-            Buffer forgedProof = *proof;
+            Buffer forgedProof = requireOptionalRef(proof, "Missing proof");
 
             static constexpr unsigned char kCurveOrder[32] = {
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  //
@@ -7208,7 +7232,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             if (!BEAST_EXPECT(proof.has_value()))
                 return;
 
-            Buffer forgedProof = *proof;
+            Buffer forgedProof = requireOptionalRef(proof, "Missing proof");
 
             static constexpr unsigned char kOverflowScalar[32] = {
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,  //
@@ -7258,16 +7282,16 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, sendAmount);
 
             // Generate a valid convertBack proof for bob
-            auto const spendingBalance =
-                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
-            BEAST_EXPECT(spendingBalance.has_value());
-            auto const encryptedSpending =
-                mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
-            BEAST_EXPECT(encryptedSpending.has_value());
+            auto const spendingBalance = requireOptional(
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+                "Missing spending balance");
+            auto const encryptedSpending = requireOptional(
+                mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending),
+                "Missing encrypted spending balance");
 
             Buffer const pcBlindingFactor = generateBlindingFactor();
             Buffer const pedersenCommitment =
-                mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
+                mptAlice.getPedersenCommitment(spendingBalance, pcBlindingFactor);
 
             auto const version = mptAlice.getMPTokenVersion(bob);
             uint256 const convertBackCtxHash =
@@ -7279,8 +7303,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 convertBackCtxHash,
                 {
                     .pedersenCommitment = pedersenCommitment,
-                    .amt = *spendingBalance,
-                    .encryptedAmt = *encryptedSpending,
+                    .amt = spendingBalance,
+                    .encryptedAmt = encryptedSpending,
                     .blindingFactor = pcBlindingFactor,
                 });
 
@@ -7339,7 +7363,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // Submit with the correct issuanceID — verifier recomputes
             // the challenge using the real issuanceID, which differs from
             // the one baked into the proof.
-            mptAlice.send(setup.sendArgs(bob, carol, *wrongProof, tecBAD_PROOF));
+            mptAlice.send(setup.sendArgs(
+                bob, carol, requireOptionalRef(wrongProof, "Missing wrong proof"), tecBAD_PROOF));
         }
     }
 
@@ -7434,7 +7459,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             auto const inflatedDestAmt =
                 mptAlice.encryptAmount(carol, sendAmount * 2, setup.blindingFactor);
 
-            auto args = setup.sendArgs(bob, carol, *validProof, tecBAD_PROOF);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(validProof, "Missing valid proof"), tecBAD_PROOF);
             args.destEncryptedAmt = inflatedDestAmt;
             mptAlice.send(args);
         }
@@ -7515,7 +7541,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             auto const negDestAmt = negateCiphertext(setup.destAmt);
             auto const negIssuerAmt = negateCiphertext(setup.issuerAmt);
 
-            auto args = setup.sendArgs(bob, carol, *validProof, tecBAD_PROOF);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(validProof, "Missing valid proof"), tecBAD_PROOF);
             args.senderEncryptedAmt = negSenderAmt;
             args.destEncryptedAmt = negDestAmt;
             args.issuerEncryptedAmt = negIssuerAmt;
@@ -7536,7 +7563,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             auto const negSenderAmt = negateCiphertext(setup.senderAmt);
 
-            auto args = setup.sendArgs(bob, carol, *validProof, tecBAD_PROOF);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(validProof, "Missing valid proof"), tecBAD_PROOF);
             args.senderEncryptedAmt = negSenderAmt;
             mptAlice.send(args);
         }
@@ -7585,11 +7613,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // Homomorphically add Enc(m2) to the original Enc(m1)
             Buffer const bf2 = generateBlindingFactor();
             auto const encM2 = mptAlice.encryptAmount(carol, m2, bf2);
-            auto const combined = homomorphicAdd(
-                Slice(origDestCt.data(), origDestCt.size()), Slice(encM2.data(), encM2.size()));
-            BEAST_EXPECT(combined.has_value());
+            auto const combined = requireOptional(
+                homomorphicAdd(
+                    Slice(origDestCt.data(), origDestCt.size()), Slice(encM2.data(), encM2.size())),
+                "Missing combined ciphertext");
 
-            obj.setFieldVL(sfDestinationEncryptedAmount, *combined);
+            obj.setFieldVL(sfDestinationEncryptedAmount, combined);
 
             Serializer tampered;
             obj.add(tampered);
@@ -7616,7 +7645,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             auto const combinedDest = homomorphicAdd(setup.destAmt, encM2);
             BEAST_EXPECT(combinedDest.has_value());
 
-            auto args = setup.sendArgs(bob, carol, *validProof, tecBAD_PROOF);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(validProof, "Missing valid proof"), tecBAD_PROOF);
             args.destEncryptedAmt = combinedDest;
             mptAlice.send(args);
         }
@@ -7633,7 +7663,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             auto const proof1 = setup1.generateProof(mptAlice, env, bob, carol);
             if (!BEAST_EXPECT(proof1.has_value()))
                 return;
-            mptAlice.send(setup1.sendArgs(bob, carol, *proof1));
+            mptAlice.send(setup1.sendArgs(bob, carol, requireOptionalRef(proof1, "Missing proof")));
 
             ConfidentialSendSetup const setup2(mptAlice, bob, carol, alice, m2);
 
@@ -7645,7 +7675,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             auto const crossCombined = homomorphicAdd(setup1.destAmt, setup2.destAmt);
             BEAST_EXPECT(crossCombined.has_value());
 
-            auto args = setup2.sendArgs(bob, carol, *proof2, tecBAD_PROOF);
+            auto args = setup2.sendArgs(
+                bob, carol, requireOptionalRef(proof2, "Missing proof"), tecBAD_PROOF);
             args.destEncryptedAmt = crossCombined;
             mptAlice.send(args);
         }
@@ -7738,7 +7769,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // Replace C1 in dest ciphertext, keep C2
             auto const rerandomizedDest = substituteC1(setup.destAmt, otherCt);
 
-            auto args = setup.sendArgs(bob, carol, *validProof, tecBAD_PROOF);
+            auto args = setup.sendArgs(
+                bob, carol, requireOptionalRef(validProof, "Missing valid proof"), tecBAD_PROOF);
             args.destEncryptedAmt = rerandomizedDest;
             mptAlice.send(args);
         }
@@ -7851,7 +7883,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 return;
 
             // Submit first transaction successfully
-            mptAlice.send(setup1.sendArgs(bob, carol, *proof1));
+            mptAlice.send(setup1.sendArgs(bob, carol, requireOptionalRef(proof1, "Missing proof")));
 
             mptAlice.mergeInbox({.account = carol});
 
@@ -7860,7 +7892,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // proof generated for the old sequence is invalid.
             ConfidentialSendSetup const setup2(mptAlice, bob, carol, alice, sendAmount);
 
-            mptAlice.send(setup2.sendArgs(bob, carol, *proof1, tecBAD_PROOF));
+            mptAlice.send(setup2.sendArgs(
+                bob, carol, requireOptionalRef(proof1, "Missing proof"), tecBAD_PROOF));
         }
     }
 
@@ -8073,7 +8106,6 @@ public:
         testWithFeats(all);
     }
 };
-// NOLINTEND(misc-const-correctness, bugprone-unchecked-optional-access)
 
 BEAST_DEFINE_TESTSUITE(ConfidentialTransfer, app, xrpl);
 
