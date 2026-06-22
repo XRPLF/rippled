@@ -80,9 +80,10 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const hasAuditorElGamalKey = ctx.tx.isFieldPresent(sfAuditorEncryptionKey);
     auto const txFlags = ctx.tx.getFlags();
 
-    auto const mutatePrivacy = mutableFlags &&
-        (((*mutableFlags & (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount))) !=
-         0u);
+    auto const mutablePrivacyFlags = mutableFlags
+        ? (*mutableFlags & (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount))
+        : 0u;
+    auto const mutatePrivacy = mutablePrivacyFlags != 0u;
 
     auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
     auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
@@ -131,12 +132,20 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         if (transferFee && *transferFee > kMaxTransferFee)
             return temBAD_TRANSFER_FEE;
 
+        if (transferFee && *transferFee > 0u &&
+            (mutablePrivacyFlags & tmfMPTSetCanConfidentialAmount) != 0u)
+            return temBAD_TRANSFER_FEE;
+
         if (metadata && metadata->length() > kMaxMpTokenMetadataLength)
             return temMALFORMED;
 
         if (mutableFlags)
         {
             if ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceSetMutableMask) != 0u))
+                return temINVALID_FLAG;
+
+            if (mutablePrivacyFlags ==
+                (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount))
                 return temINVALID_FLAG;
         }
     }
@@ -220,11 +229,17 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     };
 
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    auto const mutablePrivacyFlags = mutableFlags
+        ? (*mutableFlags & (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount))
+        : 0u;
     if (mutableFlags)
     {
         if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
                 return !isMutableFlag(f.canEnableFlag) && ((*mutableFlags & f.setFlag) != 0u);
             }))
+            return tecNO_PERMISSION;
+
+        if (mutablePrivacyFlags != 0u && isMutableFlag(lsmfMPTCannotMutateCanConfidentialAmount))
             return tecNO_PERMISSION;
     }
 
@@ -265,7 +280,11 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     // Check if the transaction is enabling confidential amounts
     bool const enablesConfidentialAmount =
-        mutableFlags && ((*mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u);
+        (mutablePrivacyFlags & tmfMPTSetCanConfidentialAmount) != 0u;
+
+    if (enablesConfidentialAmount && sleMptIssuance->isFieldPresent(sfTransferFee) &&
+        (*sleMptIssuance)[sfTransferFee] > 0u)
+        return tecNO_PERMISSION;
 
     // Encryption keys can only be set if confidential amounts are already
     // enabled on the issuance OR if the transaction is enabling it
@@ -283,7 +302,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     // cannot upload key if there's circulating supply of COA
     if ((ctx.tx.isFieldPresent(sfIssuerEncryptionKey) ||
-         ctx.tx.isFieldPresent(sfAuditorEncryptionKey)) &&
+         ctx.tx.isFieldPresent(sfAuditorEncryptionKey) || mutablePrivacyFlags != 0u) &&
         (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
     {
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
@@ -332,6 +351,15 @@ MPTokenIssuanceSet::doApply()
             {
                 flagsOut |= f.ledgerFlag;
             }
+        }
+
+        if ((mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u)
+        {
+            flagsOut |= lsfMPTCanConfidentialAmount;
+        }
+        else if ((mutableFlags & tmfMPTClearCanConfidentialAmount) != 0u)
+        {
+            flagsOut &= ~lsfMPTCanConfidentialAmount;
         }
     }
 
