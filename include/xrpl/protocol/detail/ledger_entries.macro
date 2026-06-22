@@ -622,7 +622,7 @@ LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
     {sfSponsee,              SoeRequired},
     {sfFeeAmount,            SoeOptional},
     {sfMaxFee,               SoeOptional},
-    {sfReserveCount,         SoeDefault},
+    {sfRemainingOwnerCount,         SoeDefault},
     {sfOwnerNode,            SoeRequired},
     {sfSponseeNode,          SoeRequired},
 }))
