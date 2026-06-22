@@ -20,7 +20,7 @@ namespace xrpl::test {
 
 using namespace formal_verification;
 
-class LeanSTTakesAsset_test : public LedgerSuite
+class LeanAssociateAsset_test : public LedgerSuite
 {
     Asset const xrp{xrpIssue()};
     Asset const iou = iouAsset();
@@ -418,6 +418,6 @@ class LeanSTTakesAsset_test : public LedgerSuite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LeanSTTakesAsset, formal_verification, xrpl);
+BEAST_DEFINE_TESTSUITE(LeanAssociateAsset, formal_verification, xrpl);
 
 }  // namespace xrpl::test
