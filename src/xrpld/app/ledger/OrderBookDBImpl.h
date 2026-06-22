@@ -1,10 +1,7 @@
 #pragma once
 
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/AcceptedLedgerTx.h>
-#include <xrpl/ledger/BookListeners.h>
 #include <xrpl/ledger/OrderBookDB.h>
-#include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <mutex>
@@ -54,18 +51,6 @@ public:
     void
     update(std::shared_ptr<ReadView const> const& ledger);
 
-    // see if this txn effects any orderbook
-    void
-    processTxn(
-        std::shared_ptr<ReadView const> const& ledger,
-        AcceptedLedgerTx const& alTx,
-        MultiApiJson const& jvObj) override;
-
-    BookListeners::pointer
-    getBookListeners(Book const&) override;
-    BookListeners::pointer
-    makeBookListeners(Book const&) override;
-
 private:
     std::reference_wrapper<ServiceRegistry> registry_;
     int const pathSearchMax_;
@@ -83,10 +68,6 @@ private:
     hash_set<std::pair<Asset, Domain>> xrpDomainBooks_;
 
     std::recursive_mutex lock_;
-
-    using BookToListenersMap = hash_map<Book, BookListeners::pointer>;
-
-    BookToListenersMap listeners_;
 
     std::atomic<std::uint32_t> seq_;
 
