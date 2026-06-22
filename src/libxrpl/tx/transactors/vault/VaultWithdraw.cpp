@@ -65,6 +65,10 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
 TER
 VaultWithdraw::preclaim(PreclaimContext const& ctx)
 {
+    auto const fix313Enabled = ctx.view.rules().enabled(fixCleanup3_1_3);
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
@@ -82,8 +86,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     // lsfMPTCanTransfer flag check, so an issuer cannot trap depositor funds.
     // Other transferability checks (IOU NoRipple, freeze, requireAuth) still
     // apply.
-    auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
-                                                                 : WaiveMPTCanTransfer::No;
+    auto const waive = fix320Enabled ? WaiveMPTCanTransfer::Yes : WaiveMPTCanTransfer::No;
     if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct, waive);
         !isTesSuccess(ter))
     {
@@ -100,7 +103,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixCleanup3_1_3) && amount.asset() == vaultShare)
+    if (fix313Enabled && amount.asset() == vaultShare)
     {
         // Post-fixCleanup3_1_3: if the user specified shares, convert
         // to the equivalent asset amount before checking withdrawal
@@ -160,15 +163,15 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType); !isTesSuccess(ter))
         return ter;
 
-    if (ctx.view.rules().enabled(fixCleanup3_3_0))
+    if (fix330Enabled)
     {
-        // checkWithdrawFreezes checks the underlying asset on the source
+        // checkWithdrawFreeze checks the underlying asset on the source
         // (vault pseudo-account), the submitter, and the destination.
         // A separate share-level freeze check is unnecessary: vault shares
         // are issued by the vault pseudo-account, which cannot submit
         // MPTokenIssuanceSet to individually lock a holder's MPToken.
         // The only way shares become locked is transitively via the
-        // underlying asset, which checkWithdrawFreezes already covers.
+        // underlying asset, which checkWithdrawFreeze covers.
         if (auto const ret =
                 checkWithdrawFreeze(ctx.view, vaultAccount, account, dstAcct, vaultAsset))
             return ret;
@@ -269,8 +272,7 @@ VaultWithdraw::doApply()
         return tecPATH_DRY;
     }
 
-    // Post-fixCleanup3_3_0: preclaim already handles all freeze checks, so they are safe to skip
-    // here
+    // Post-fixCleanup3_3_0: preclaim already handles freeze checks
     auto const freezeHandling = view().rules().enabled(fixCleanup3_3_0)
         ? FreezeHandling::IgnoreFreeze
         : FreezeHandling::ZeroIfFrozen;

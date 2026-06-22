@@ -43,6 +43,8 @@ LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
 TER
 LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
 {
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -78,7 +80,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ret = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
         return ret;
 
-    if (ctx.view.rules().enabled(fixCleanup3_3_0))
+    if (fix330Enabled)
     {
         if (auto const ret = checkDepositFreeze(ctx.view, account, pseudoAccountID, vaultAsset))
             return ret;
@@ -88,8 +90,6 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
         if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
             return ret;
 
-        // Unlike regular accounts, pseudo-accounts cannot receive assets
-        // Under a regular freeze because those funds cannot be later withdrawn
         if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
             return ret;
     }
@@ -103,7 +103,6 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     // `sfCoverAvailable  +=` could credit the broker more than the depositor paid  Computing it
     // here in preclaim lets  us reject sub-cover-scale dust early with tecPRECISION_LOSS instead of
     // failing only in  doApply.
-    bool const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const roundedAmount = [&]() -> STAmount {
         if (!fix320Enabled)
             return tx[sfAmount];

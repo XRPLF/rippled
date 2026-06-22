@@ -63,6 +63,9 @@ VaultDeposit::preflight(PreflightContext const& ctx)
 TER
 VaultDeposit::preclaim(PreclaimContext const& ctx)
 {
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
@@ -107,7 +110,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixCleanup3_3_0))
+    if (fix330Enabled)
     {
         if (auto const ret = checkDepositFreeze(ctx.view, account, vaultAccount, vaultAsset))
             return ret;
@@ -149,7 +152,6 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
-    bool const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const roundedAmount = fix320Enabled ? roundToVaultScale(amount, vault) : amount;
 
     if (fix320Enabled && roundedAmount == beast::kZero)
