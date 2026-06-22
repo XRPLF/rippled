@@ -188,8 +188,8 @@ public:
         @param data A shared pointer to the data corresponding to the object;
                     updated to the canonical value when one already exists.
 
-        @return `true` If the key already existed.
-    */
+        @return `true` if an existing live entry was found and used; `false` if a new entry was
+                inserted or an expired tracked entry was re-cached.
     bool
     canonicalizeReplaceClient(key_type const& key, SharedPointerType& data);
 
