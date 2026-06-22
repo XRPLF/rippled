@@ -158,6 +158,7 @@ public:
 
         @return `true` if an existing live entry was found and used; `false` if a new entry was
                 inserted or an expired tracked entry was re-cached.
+    **/
     template <class Callback>
     bool
     canonicalize(key_type const& key, SharedPointerType& data, Callback&& replaceCallback);
@@ -174,6 +175,7 @@ public:
 
         @return `true` if an existing live entry was found and used; `false` if a new entry was
                 inserted or an expired tracked entry was re-cached.
+    **/
     bool
     canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data);
 
@@ -190,6 +192,7 @@ public:
 
         @return `true` if an existing live entry was found and used; `false` if a new entry was
                 inserted or an expired tracked entry was re-cached.
+    **/
     bool
     canonicalizeReplaceClient(key_type const& key, SharedPointerType& data);
 
