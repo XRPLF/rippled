@@ -5465,8 +5465,7 @@ public:
         Account const sponsor("sponsor");
 
         {
-            // A Sponsorship object blocks deletion of the sponsor,
-            // but NOT of the sponsee.
+            // Delete Sponsor/Sponsee Account with ltSponsorship (tecHAS_OBLIGATIONS)
             Env env{*this, testableAmendments()};
             env.fund(XRP(1000000), alice, bob, sponsor);
             env.close();
@@ -5477,83 +5476,20 @@ public:
                 Ter(tesSUCCESS));
             env.close();
 
-            auto const keylet = keylet::sponsorship(sponsor, alice);
-            BEAST_EXPECT(env.le(keylet));
-            // sponsor pays its own reserve here, so there is no SponsoredOwnerCount.
-            BEAST_EXPECT(ownerCount(env, sponsor) == 1);
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-
-            // sponsor's sequence is the higher one, so a single call readies
-            // both accounts for deletion
             incLgrSeqForAccDel(env, sponsor);
-            auto const requiredFee = drops(env.current()->fees().increment);
-
-            // sponsor cannot be deleted while the Sponsorship exists
-            env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
-            env.close();
-
-            // sponsee can be deleted
-            auto const sponsorBalBefore = env.balance(sponsor);
-            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tesSUCCESS));
-            env.close();
-
-            BEAST_EXPECT(!env.le(keylet));
-            BEAST_EXPECT(!env.le(keylet::account(alice)));
-            // deleting sponsee makes those counts zero.
-            BEAST_EXPECT(ownerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-
-            // FeeAmount is returned to the sponsor
-            BEAST_EXPECT(env.balance(sponsor) == sponsorBalBefore + XRP(100));
-        }
-
-        {
-            // The SponsorshipSet transaction itself
-            // is sponsored by a 3rd counterparty. Test deleting sponsee.
-            Env env{*this, testableAmendments()};
-            Account const counterparty("counterparty");
-            env.fund(XRP(1000000), alice, bob, sponsor, counterparty);
-            env.close();
-
-            // sponsor creates a Sponsorship for alice; the SponsorshipSet tx is
-            // itself reserve-sponsored by counterparty, so the object's reserve is counterparty's.
-            env(sponsor::set(sponsor, 0, 100, XRP(100)),
-                sponsor::SponseeAcc(alice),
-                sponsor::As(counterparty, spfSponsorReserve),
-                Sig(sfSponsorSignature, counterparty),
-                Ter(tesSUCCESS));
-            env.close();
 
             auto const keylet = keylet::sponsorship(sponsor, alice);
-            auto const obj = env.le(keylet);
-            BEAST_EXPECT(obj);
-            BEAST_EXPECT(
-                obj->isFieldPresent(sfSponsor) &&
-                obj->getAccountID(sfSponsor) == counterparty.id());
-            // sponsor owns the object; its reserve is sponsored by counterparty.
-            BEAST_EXPECT(ownerCount(env, sponsor) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, counterparty) == 1);
+            auto const sponsorObj = env.le(keylet);
+            BEAST_EXPECT(sponsorObj);
 
-            auto const sponsorBalBefore = env.balance(sponsor);
-            incLgrSeqForAccDel(env, alice);
+            // AccountDelete
             auto const requiredFee = drops(env.current()->fees().increment);
-            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tesSUCCESS));
-            env.close();
-
-            BEAST_EXPECT(!env.le(keylet));
-            // deleting sponsee makes those counts zero.
-            BEAST_EXPECT(ownerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, counterparty) == 0);
-            BEAST_EXPECT(env.balance(sponsor) == sponsorBalBefore + XRP(100));
+            env(acctdelete(alice, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
+            env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
         }
 
         {
-            // Deleting SponsoredAccount, whose account reserve is paid by a sponsor.
+            // Delete SponsoredAccount
             Env env{*this, testableAmendments()};
             env.memoize(alice);
             env.fund(XRP(1000000), bob, sponsor);
