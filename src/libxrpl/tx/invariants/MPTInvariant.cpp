@@ -509,7 +509,7 @@ ValidConfidentialMPToken::visitEntry(
     if (before && before->getType() == ltMPTOKEN)
     {
         uint192 const id = getMptID(before);
-        changes_[id].mptAmountDelta -= before->getFieldU64(sfMPTAmount);
+        changes_[id].mptAmountDelta -= static_cast<std::int64_t>(before->getFieldU64(sfMPTAmount));
 
         // Cannot delete MPToken with non-zero confidential state or non-zero public amount
         if (isDelete)
@@ -527,7 +527,7 @@ ValidConfidentialMPToken::visitEntry(
     if (after && after->getType() == ltMPTOKEN)
     {
         uint192 const id = getMptID(after);
-        changes_[id].mptAmountDelta += after->getFieldU64(sfMPTAmount);
+        changes_[id].mptAmountDelta += static_cast<std::int64_t>(after->getFieldU64(sfMPTAmount));
 
         // Encrypted field existence consistency
         bool const hasIssuerBalance = after->isFieldPresent(sfIssuerEncryptedBalance);
@@ -563,8 +563,12 @@ ValidConfidentialMPToken::visitEntry(
     {
         uint192 const id = getMptID(before);
         if (before->isFieldPresent(sfConfidentialOutstandingAmount))
-            changes_[id].coaDelta -= before->getFieldU64(sfConfidentialOutstandingAmount);
-        changes_[id].outstandingDelta -= before->getFieldU64(sfOutstandingAmount);
+        {
+            changes_[id].coaDelta -=
+                static_cast<std::int64_t>(before->getFieldU64(sfConfidentialOutstandingAmount));
+        }
+        changes_[id].outstandingDelta -=
+            static_cast<std::int64_t>(before->getFieldU64(sfOutstandingAmount));
     }
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
@@ -577,9 +581,9 @@ ValidConfidentialMPToken::visitEntry(
         std::uint64_t const oa = after->getFieldU64(sfOutstandingAmount);
 
         if (hasCOA)
-            change.coaDelta += coa;
+            change.coaDelta += static_cast<std::int64_t>(coa);
 
-        change.outstandingDelta += oa;
+        change.outstandingDelta += static_cast<std::int64_t>(oa);
         change.issuance = after;
 
         // COA <= OutstandingAmount
