@@ -1227,6 +1227,139 @@ class Delegate_test : public beast::unit_test::Suite
             }
         }
 
+        // PaymentMint/PaymentBurn must not trust IOU issuer aliases.
+        // In a direct IOU payment, sfAmount.issuer may be encoded as either
+        // endpoint, and PaySteps normalizes those aliases to the same execution.
+        // These cases ensure a delegate cannot flip the encoded issuer to turn a
+        // mint into an apparent burn, or a burn into an apparent mint.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+            auto const gwUSD = gw["USD"];
+            auto const aliceUSD = alice["USD"];
+
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(gwUSD(200), alice);
+            env.close();
+
+            // Alice holds 100 USD issued by gw.
+            env(pay(gw, alice, gwUSD(100)));
+            env.close();
+            env.require(Balance(alice, gwUSD(100)));
+
+            // Delegate with only PaymentBurn tries to mint by encoding
+            // Amount.issuer as the destination alias, alice. The actual issuer
+            // is gw, so this requires PaymentMint and must be rejected.
+            {
+                env(delegate::set(gw, bob, {"PaymentBurn"}));
+                env.close();
+
+                // Amount.issuer = alice (destination), rejected because gw is
+                // the actual issuer and PaymentMint is required.
+                env(pay(gw, alice, aliceUSD(50)),
+                    delegate::As(bob),
+                    Ter(terNO_DELEGATE_PERMISSION));
+                env.require(Balance(alice, gwUSD(100)));
+
+                // Fails because bob holds PaymentBurn, not PaymentMint.
+                env(pay(gw, alice, gwUSD(50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+                env.require(Balance(alice, gwUSD(100)));
+            }
+
+            // Delegate with only PaymentMint tries to burn by encoding
+            // Amount.issuer as the source alias, alice. The actual issuer is
+            // gw, so this requires PaymentBurn and must be rejected.
+            {
+                env(delegate::set(alice, bob, {"PaymentMint"}));
+                env.close();
+
+                // Amount.issuer = alice (account), rejected because gw is the
+                // actual issuer and PaymentBurn is required.
+                env(pay(alice, gw, aliceUSD(50)),
+                    delegate::As(bob),
+                    Ter(terNO_DELEGATE_PERMISSION));
+                env.require(Balance(alice, gwUSD(100)));
+
+                // Fails because bob holds PaymentMint, not PaymentBurn.
+                env(pay(alice, gw, gwUSD(50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+                env.require(Balance(alice, gwUSD(100)));
+            }
+        }
+
+        // Both trust limits (who is the designated issuer) and balance direction
+        // (which way DirectStepI executes) must be checked. Neither alone is sufficient.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+            auto const gwUSD = gw["USD"];
+            auto const aliceUSD = alice["USD"];
+
+            env.fund(XRP(10000), alice, bob, gw);
+
+            // Alice trusts gw but holds zero gw-issued USD. With balance == 0,
+            // DirectStepI would issue rather than redeem, so PaymentBurn must
+            // be rejected even though Alice's trust limit to gw is positive.
+            {
+                env.trust(gwUSD(200), alice);
+                env.close();
+
+                // Alice has nothing to burn.
+                env(delegate::set(alice, bob, {"PaymentBurn"}));
+                env.close();
+
+                env(pay(alice, gw, gwUSD(50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+                env(pay(alice, gw, aliceUSD(50)),
+                    delegate::As(bob),
+                    Ter(terNO_DELEGATE_PERMISSION));
+            }
+
+            // Set up a trust line where gw holds alice-issued USD. DirectStepI
+            // would redeem rather than issue, so PaymentMint must be rejected
+            // even though the endpoint identity matches.
+            {
+                // Gw sets trust to accept alice-issued USD.
+                env(trust(gw, aliceUSD(200)));
+                env.close();
+
+                // Alice issues her own USD to gw; now gw holds alice's IOUs.
+                env(pay(alice, gw, aliceUSD(100)));
+                env.close();
+
+                // In gw's view, accountHolds(gw, USD, alice) > 0, so DirectStepI redeems.
+                // PaymentMint must be rejected because the step would redeem, not issue.
+                env(delegate::set(gw, bob, {"PaymentMint"}));
+                env.close();
+
+                env(pay(gw, alice, gwUSD(50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+                env(pay(gw, alice, aliceUSD(50)),
+                    delegate::As(bob),
+                    Ter(terNO_DELEGATE_PERMISSION));
+            }
+        }
+
+        // Alice trusts gw but gw is not willing to hold alice's IOU (destLimit == 0).
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(gw["USD"](200), alice);
+            env.close();
+
+            env(delegate::set(alice, bob, {"PaymentMint"}));
+            env.close();
+
+            env(pay(alice, gw, gw["USD"](50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+            env(pay(alice, gw, alice["USD"](50)),
+                delegate::As(bob),
+                Ter(terNO_DELEGATE_PERMISSION));
+        }
+
         // Verify granular permissions of different tx types in the same SLE are scoped
         // correctly. AccountSet permissions don't apply to Payment and vice versa
         {
