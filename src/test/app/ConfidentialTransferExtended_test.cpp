@@ -35,7 +35,6 @@
 
 namespace xrpl {
 
-// NOLINTBEGIN(misc-const-correctness, bugprone-unchecked-optional-access)
 class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 {
     void
@@ -765,13 +764,13 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             BEAST_EXPECT(env.seq(bob) != ticketSeq1);
             uint256 const badCtxHash =
                 getConvertContextHash(bob, mptAlice.issuanceID(), env.seq(bob));
-            auto const badProof = mptAlice.getSchnorrProof(bob, badCtxHash);
-            BEAST_EXPECT(badProof.has_value());
+            auto const badProof = requireOptional(
+                mptAlice.getSchnorrProof(bob, badCtxHash), "Missing Schnorr Proof.");
 
             mptAlice.convert({
                 .account = bob,
                 .amt = amt,
-                .proof = strHex(*badProof),
+                .proof = strHex(badProof),
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .holderEncryptedAmt = holderCt,
                 .issuerEncryptedAmt = issuerCt,
@@ -1881,7 +1880,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         Account const carol{"carol"};
         Account const dave{"dave"};
 
-        ConfidentialEnv confEnv{
+        ConfidentialEnv const confEnv{
             env,
             alice,
             {{.account = bob, .payAmount = 100, .convertAmount = 50},
@@ -2321,13 +2320,13 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
             auto const badCtxHash =
                 getConvertContextHash(bob, mptAlice.issuanceID(), ticketSeq + 1);
-            auto const badProof = mptAlice.getSchnorrProof(bob, badCtxHash);
-            BEAST_EXPECT(badProof.has_value());
+            auto const badProof = requireOptional(
+                mptAlice.getSchnorrProof(bob, badCtxHash), "Missing Schnorr Proof.");
 
             mptAlice.convert({
                 .account = bob,
                 .amt = amt,
-                .proof = strHex(*badProof),
+                .proof = strHex(badProof),
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .holderEncryptedAmt = holderCt,
                 .issuerEncryptedAmt = issuerCt,
@@ -2343,13 +2342,13 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             auto const ticketSeq = env.seq(bob) + 1;
             env(ticket::create(bob, 1));
             auto const badCtxHash = getConvertContextHash(bob, mptAlice.issuanceID(), env.seq(bob));
-            auto const badProof = mptAlice.getSchnorrProof(bob, badCtxHash);
-            BEAST_EXPECT(badProof.has_value());
+            auto const badProof = requireOptional(
+                mptAlice.getSchnorrProof(bob, badCtxHash), "Missing Schnorr Proof.");
 
             mptAlice.convert({
                 .account = bob,
                 .amt = amt,
-                .proof = strHex(*badProof),
+                .proof = strHex(badProof),
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .holderEncryptedAmt = holderCt,
                 .issuerEncryptedAmt = issuerCt,
@@ -2417,14 +2416,14 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             // Build proof using ticketSeq.
             auto const ctxHashForTicket =
                 getConvertContextHash(bob, mptAlice.issuanceID(), ticketSeq);
-            auto const proof = mptAlice.getSchnorrProof(bob, ctxHashForTicket);
-            BEAST_EXPECT(proof.has_value());
+            auto const proof = requireOptional(
+                mptAlice.getSchnorrProof(bob, ctxHashForTicket), "Missing Schnorr Proof.");
 
             // Submit without ticket.
             mptAlice.convert({
                 .account = bob,
                 .amt = amt,
-                .proof = strHex(*proof),
+                .proof = strHex(proof),
                 .holderPubKey = mptAlice.getPubKey(bob),
                 .holderEncryptedAmt = holderCt,
                 .issuerEncryptedAmt = issuerCt,
@@ -2590,7 +2589,6 @@ public:
         testWithFeats(all);
     }
 };
-// NOLINTEND(misc-const-correctness, bugprone-unchecked-optional-access)
 
 BEAST_DEFINE_TESTSUITE(ConfidentialTransferExtended, app, xrpl);
 
