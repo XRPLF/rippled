@@ -1080,26 +1080,6 @@ removeDeletedTrustLines(
     }
 }
 
-static void
-removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Journal viewJ)
-{
-    // There could be at most two MPTs - one for each side of AMM pool
-    if (mpts.size() > 2)
-    {
-        JLOG(viewJ.error()) << "removeDeletedMPTs: deleted mpts exceed 2 " << mpts.size();
-        return;
-    }
-
-    for (auto const& index : mpts)
-    {
-        if (auto const sleState = view.peek({ltMPTOKEN, index}); sleState &&
-            deleteAMMMPToken(view, sleState, (*sleState)[sfAccount], viewJ) != tesSUCCESS)
-        {
-            JLOG(viewJ.error()) << "removeDeletedMPTs: failed to delete AMM MPT";
-        }
-    }
-}
-
 /** Reset the context, discarding any changes made and adjust the fee.
 
     @param fee The transaction fee to be charged.
@@ -1255,9 +1235,6 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
                     break;
                 case ltRIPPLE_STATE:
                     removeDeletedTrustLines(view(), ids, viewJ);
-                    break;
-                case ltMPTOKEN:
-                    removeDeletedMPTs(view(), ids, viewJ);
                     break;
                 case ltCREDENTIAL:
                     removeExpiredCredentials(view(), ids, viewJ);
