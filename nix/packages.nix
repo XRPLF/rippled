@@ -22,6 +22,7 @@ in
     git-lfs
     gnumake
     gnupg # needed for signing commits & codecov/codecov-action
+    graphviz
     llvmPackages_22.clang-tools
     less # needed for git diff
     mold
