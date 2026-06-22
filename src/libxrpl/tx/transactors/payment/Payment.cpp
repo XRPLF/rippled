@@ -311,7 +311,7 @@ Payment::checkGranularSemantics(
         auto const& issue = amountAsset.get<Issue>();
 
         // Reject if neither endpoint is the issuer.
-        if (issue.account != account && issue.account != destination)
+        if (issue.getIssuer() != account && issue.getIssuer() != destination)
             return terNO_DELEGATE_PERMISSION;
 
         auto const sle = view.read(keylet::line(account, destination, issue.currency));
