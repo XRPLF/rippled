@@ -66,7 +66,7 @@ getFeePayerHlp(
     {
         AccountID const sponsorID = tx.getAccountID(sfSponsor);
         AccountID const sponseeID = tx.getAccountID(sfAccount);
-        auto const sponsorshipKeylet = keylet::sponsor(sponsorID, sponseeID);
+        auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeID);
 
         if (sponsorshipSle)
         {
@@ -410,8 +410,10 @@ adjustOwnerCount(
     bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
                                       : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
     if (!validType)
+    {
         Throw<std::logic_error>(
             "xrpl::adjustOwnerCount : valid account sle type");  // LCOV_EXCL_LINE
+    }
 
     XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCount : nonzero adjustment input");
     if (ownerCountAdj == 0)
@@ -421,27 +423,31 @@ adjustOwnerCount(
     if (sponsorSle)
     {
         if (sponsorSle->getType() != ltACCOUNT_ROOT)
+        {
             Throw<std::logic_error>(
                 "xrpl::adjustOwnerCount : valid sponsor sle type");  // LCOV_EXCL_LINE
+        }
         auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
         if (accountID == sponsorID)
+        {
             Throw<std::logic_error>(
                 "adjustOwnerCount : account can't be sponsor for themself");  // LCOV_EXCL_LINE
+        }
 
         adjustOwnerCountHlp(view, accountSle, sfSponsoredOwnerCount, accountID, ownerCountAdj, j);
         adjustOwnerCountHlp(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, ownerCountAdj, j);
 
-        auto sponsorshipSle = view.peek(keylet::sponsor(sponsorID, accountID));
+        auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
         if (sponsorshipSle && ownerCountAdj > 0)
         {
             // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
             // Removing/reassigning ownership of the object doesn't increase ReserveCount back.
             // Don't call hook because this counter is not something that require reserve (like
-            // other sf...OwnerCounts do). If sfReserveCount goes < 0, it just set to 0. It means tx
-            // is co-signed, checkXrpBalance verify that
+            // other sf...OwnerCounts do). If sfRemainingOwnerCount goes < 0, it just set to 0. It
+            // means tx is co-signed, checkXrpBalance verify that
             adjustOwnerCountHlp(
-                view, sponsorshipSle, sfReserveCount, sponsorID, -ownerCountAdj, j, true);
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -ownerCountAdj, j, true);
         }
     }
     adjustOwnerCountHlp(view, accountSle, sfOwnerCount, accountID, ownerCountAdj, j);
@@ -456,11 +462,15 @@ adjustOwnerCountObj(
     beast::Journal j)
 {
     if (!objectSle)
+    {
         Throw<std::runtime_error>(
             "xrpl::adjustOwnerCountObj : valid object sle");  // LCOV_EXCL_LINE
+    }
     if (objectSle->getType() == ltACCOUNT_ROOT)
+    {
         Throw<std::logic_error>(
             "xrpl::adjustOwnerCountObj : valid object sle type");  // LCOV_EXCL_LINE
+    }
     if (ownerCountAdj >= 0)
         Throw<std::logic_error>("xrpl::adjustOwnerCountObj : adjustment >= 0");  // LCOV_EXCL_LINE
 

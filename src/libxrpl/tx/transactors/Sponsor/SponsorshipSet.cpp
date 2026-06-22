@@ -171,7 +171,7 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // check if object exists
-    auto const sponsorshipSle = ctx.view.read(keylet::sponsor(sponsorID, sponseeID));
+    auto const sponsorshipSle = ctx.view.read(keylet::sponsorship(sponsorID, sponseeID));
 
     if (ctx.tx.isFlag(tfDeleteObject) && !sponsorshipSle)
         return tecNO_ENTRY;
@@ -248,7 +248,7 @@ SponsorshipSet::doApply()
     if (!ctx_.view().exists(keylet::account(sponseeID)))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorKeylet = keylet::sponsor(sponsorID, sponseeID);
+    auto const sponsorKeylet = keylet::sponsorship(sponsorID, sponseeID);
     auto const sponsorshipSle = ctx_.view().peek(sponsorKeylet);
 
     if (ctx_.tx.isFlag(tfDeleteObject))
@@ -262,7 +262,7 @@ SponsorshipSet::doApply()
 
     auto const feeAmount = ctx_.tx[~sfFeeAmount];
     auto const maxFee = ctx_.tx[~sfMaxFee];
-    auto const remainingOwnerCount = ctx_.tx[~sfReserveCount];
+    auto const remainingOwnerCount = ctx_.tx[~sfRemainingOwnerCount];
 
     auto txSponsorSle = getTxReserveSponsor(view(), ctx_.tx, sponsorID);
     if (!sponsorshipSle)
@@ -297,7 +297,7 @@ SponsorshipSet::doApply()
         if (maxFee && *maxFee > XRPAmount(0))
             (*newSle)[sfMaxFee] = *maxFee;
         if (remainingOwnerCount && *remainingOwnerCount > 0)
-            (*newSle)[sfReserveCount] = *remainingOwnerCount;
+            (*newSle)[sfRemainingOwnerCount] = *remainingOwnerCount;
 
         auto flags = 0;
         if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
@@ -378,7 +378,7 @@ SponsorshipSet::doApply()
     }
 
     if (remainingOwnerCount)
-        sponsorshipSle->at(sfReserveCount) = *remainingOwnerCount;
+        sponsorshipSle->at(sfRemainingOwnerCount) = *remainingOwnerCount;
 
     // update Flags
     auto flags = sponsorshipSle->getFieldU32(sfFlags);
