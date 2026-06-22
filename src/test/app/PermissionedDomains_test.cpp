@@ -15,12 +15,14 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <map>
 #include <optional>
@@ -549,15 +551,23 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             env(pdomain::setTx(alice, credentials), ticket::Use(++seq));
             auto domain = pdomain::getNewDomain(env.meta());
             if (features[fixCleanup3_1_3])
+            {
                 BEAST_EXPECT(domain == keylet::permissionedDomain(alice.id(), seq).key);
+            }
             else
+            {
                 BEAST_EXPECT(domain == keylet::permissionedDomain(alice.id(), 0).key);
+            }
         }
 
         if (features[fixCleanup3_1_3])
+        {
             env(pdomain::setTx(alice, credentials), ticket::Use(++seq));
+        }
         else
+        {
             env(pdomain::setTx(alice, credentials), ticket::Use(++seq), Ter(tefEXCEPTION));
+        }
     }
 
 public:
