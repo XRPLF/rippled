@@ -160,6 +160,60 @@ InnerObjectFormats::InnerObjectFormats()
             {sfTxnSignature, SoeOptional},
             {sfSigners, SoeOptional},
         });
+
+    add(sfMemo.jsonName,
+        sfMemo.getCode(),
+        {
+            {sfMemoType, SoeOptional},
+            {sfMemoData, SoeOptional},
+            {sfMemoFormat, SoeOptional},
+        });
+
+    add(sfHookParameter.jsonName,
+        sfHookParameter.getCode(),
+        {
+            {sfHookParameterName, SoeRequired},
+            {sfHookParameterValue, SoeRequired},
+        });
+
+    add(sfHookGrant.jsonName,
+        sfHookGrant.getCode(),
+        {
+            {sfHookHash, SoeOptional},
+            {sfAuthorize, SoeOptional},
+        });
+
+    add(sfHook.jsonName,
+        sfHook.getCode(),
+        {
+            {sfHookGrants, SoeOptional},
+            {sfHookParameters, SoeOptional},
+            {sfHookDefinition, SoeOptional},
+        });
+
+    add(sfHookDefinition.jsonName,
+        sfHookDefinition.getCode(),
+        {
+            {sfHookOn, SoeOptional},
+            {sfHookNamespace, SoeOptional},
+            {sfHookApiVersion, SoeOptional},
+            {sfCreateCode, SoeOptional},
+            {sfFee, SoeOptional},
+            {sfHookParameters, SoeOptional},
+            {sfHookGrants, SoeOptional},
+        });
+
+    add(sfRawTransaction.jsonName,
+        sfRawTransaction.getCode(),
+        {
+            {sfTransactionType, SoeRequired},
+            {sfAccount, SoeRequired},
+            {sfAmount, SoeOptional},
+            {sfDestination, SoeOptional},
+            {sfSequence, SoeRequired},
+            {sfSigningPubKey, SoeRequired},
+            {sfTxnSignature, SoeOptional},
+        });
 }
 
 InnerObjectFormats const&

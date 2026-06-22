@@ -6,6 +6,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -256,7 +257,6 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::FIELDS][i++] = innerArray;
     }
 
-    // populate TER code names and values
     defs_[jss::TRANSACTION_RESULTS] = json::ValueType::Object;
 
     for (auto const& [code, terInfo] : transResults())
@@ -264,7 +264,6 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::TRANSACTION_RESULTS][terInfo.first] = code;
     }
 
-    // populate TxType names and values
     defs_[jss::TRANSACTION_TYPES] = json::ValueType::Object;
     defs_[jss::TRANSACTION_TYPES][jss::Invalid] = -1;
     for (auto const& f : TxFormats::getInstance())
@@ -272,7 +271,6 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::TRANSACTION_TYPES][f.getName()] = f.getType();
     }
 
-    // populate TxFormats
     defs_[jss::TRANSACTION_FORMATS] = json::ValueType::Object;
 
     defs_[jss::TRANSACTION_FORMATS][jss::common] = json::ValueType::Array;
@@ -302,7 +300,6 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
         defs_[jss::TRANSACTION_FORMATS][format.getName()] = templateArray;
     }
 
-    // populate LedgerFormats
     defs_[jss::LEDGER_ENTRY_FORMATS] = json::ValueType::Object;
     defs_[jss::LEDGER_ENTRY_FORMATS][jss::common] = json::ValueType::Array;
     auto ledgerCommonFields = std::set<std::string>();
@@ -328,6 +325,21 @@ ServerDefinitions::ServerDefinitions() : defs_{json::ValueType::Object}
             templateArray.append(elementObj);
         }
         defs_[jss::LEDGER_ENTRY_FORMATS][format.getName()] = templateArray;
+    }
+
+    defs_[jss::INNER_OBJECT_FORMATS] = json::ValueType::Object;
+    for (auto const& format : InnerObjectFormats::getInstance())
+    {
+        auto const& soTemplate = format.getSOTemplate();
+        json::Value templateArray = json::ValueType::Array;
+        for (auto const& element : soTemplate)
+        {
+            json::Value elementObj = json::ValueType::Object;
+            elementObj[jss::name] = element.sField().getName();
+            elementObj[jss::optionality] = element.style();
+            templateArray.append(elementObj);
+        }
+        defs_[jss::INNER_OBJECT_FORMATS][format.getName()] = templateArray;
     }
 
     defs_[jss::TRANSACTION_FLAGS] = json::ValueType::Object;

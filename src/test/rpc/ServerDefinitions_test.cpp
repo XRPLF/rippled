@@ -33,6 +33,7 @@ public:
             BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_RESULTS));
             BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));
             BEAST_EXPECT(result[jss::result].isMember(jss::TYPES));
+            BEAST_EXPECT(result[jss::result].isMember(jss::INNER_OBJECT_FORMATS));
             BEAST_EXPECT(result[jss::result].isMember(jss::hash));
 
             // test a random element of each result
@@ -369,6 +370,54 @@ public:
                 }
             }
 
+            // test the properties of the INNER_OBJECT_FORMATS section
+            {
+                BEAST_EXPECT(result[jss::result].isMember(jss::INNER_OBJECT_FORMATS));
+                json::Value const& innerFormats = result[jss::result][jss::INNER_OBJECT_FORMATS];
+
+                // test the fields of the Memo inner object
+                {
+                    BEAST_EXPECT(innerFormats.isMember("Memo"));
+                    json::Value const& section = innerFormats["Memo"];
+
+                    BEAST_EXPECT(section[0u][jss::name] == "MemoType");
+                    BEAST_EXPECT(section[0u][jss::optionality] == SoeOptional);
+
+                    BEAST_EXPECT(section[1u][jss::name] == "MemoData");
+                    BEAST_EXPECT(section[1u][jss::optionality] == SoeOptional);
+
+                    BEAST_EXPECT(section[2u][jss::name] == "MemoFormat");
+                    BEAST_EXPECT(section[2u][jss::optionality] == SoeOptional);
+                }
+
+                // test the fields of the SignerEntry inner object
+                {
+                    BEAST_EXPECT(innerFormats.isMember("SignerEntry"));
+                    json::Value const& section = innerFormats["SignerEntry"];
+
+                    BEAST_EXPECT(section[0u][jss::name] == "Account");
+                    BEAST_EXPECT(section[0u][jss::optionality] == SoeRequired);
+
+                    BEAST_EXPECT(section[1u][jss::name] == "SignerWeight");
+                    BEAST_EXPECT(section[1u][jss::optionality] == SoeRequired);
+
+                    BEAST_EXPECT(section[2u][jss::name] == "WalletLocator");
+                    BEAST_EXPECT(section[2u][jss::optionality] == SoeOptional);
+                }
+
+                // test the fields of the HookParameter inner object
+                {
+                    BEAST_EXPECT(innerFormats.isMember("HookParameter"));
+                    json::Value const& section = innerFormats["HookParameter"];
+
+                    BEAST_EXPECT(section[0u][jss::name] == "HookParameterName");
+                    BEAST_EXPECT(section[0u][jss::optionality] == SoeRequired);
+
+                    BEAST_EXPECT(section[1u][jss::name] == "HookParameterValue");
+                    BEAST_EXPECT(section[1u][jss::optionality] == SoeRequired);
+                }
+            }
+
             // Exhaustive test: verify all transaction flags from getAllTxFlags() appear in the
             // output
             {
@@ -442,6 +491,7 @@ public:
                 BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::LEDGER_ENTRY_FORMATS));
+                BEAST_EXPECT(!result[jss::result].isMember(jss::INNER_OBJECT_FORMATS));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_RESULTS));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_TYPES));
                 BEAST_EXPECT(!result[jss::result].isMember(jss::TRANSACTION_FLAGS));
@@ -465,6 +515,7 @@ public:
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_TYPES));
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
                 BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FORMATS));
+                BEAST_EXPECT(result[jss::result].isMember(jss::INNER_OBJECT_FORMATS));
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_RESULTS));
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_TYPES));
                 BEAST_EXPECT(result[jss::result].isMember(jss::TRANSACTION_FLAGS));
@@ -484,6 +535,7 @@ public:
         for (auto const& field :
              {jss::ACCOUNT_SET_FLAGS,
               jss::FIELDS,
+              jss::INNER_OBJECT_FORMATS,
               jss::LEDGER_ENTRY_FLAGS,
               jss::LEDGER_ENTRY_FORMATS,
               jss::LEDGER_ENTRY_TYPES,
