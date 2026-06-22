@@ -406,6 +406,16 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (!isTesSuccess(result))
         return {result, false};
 
+    if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
+    {
+        if (auto const ter = checkAMMPrecisionLoss(
+                sb, ammAccountID, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], newLPTokenBalance, j_);
+            !isTesSuccess(ter))
+        {
+            return {ter, false};
+        }
+    }
+
     auto const res = deleteAMMAccountIfEmpty(
         sb, ammSle, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
     // LCOV_EXCL_START
