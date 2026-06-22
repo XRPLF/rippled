@@ -34,9 +34,9 @@ public:
 
     using key_type = uint256;
 
-    using mapped_type = std::shared_ptr<SLE const>;
+    using mapped_type = SLE::const_pointer;
 
-    struct SlesType : detail::ReadViewFwdRange<std::shared_ptr<SLE const>>
+    struct SlesType : detail::ReadViewFwdRange<SLE::const_pointer>
     {
         explicit SlesType(ReadView const& view);
         [[nodiscard]] Iterator
@@ -143,7 +143,7 @@ public:
         @return `nullptr` if the key is not present or
                 if the type does not match.
     */
-    [[nodiscard]] virtual std::shared_ptr<SLE const>
+    [[nodiscard]] virtual SLE::const_pointer
     read(Keylet const& k) const = 0;
 
     // Accounts in a payment are not allowed to use assets acquired during that

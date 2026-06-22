@@ -8,14 +8,15 @@
 #include <test/jtx/pay.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl::test {
@@ -29,7 +30,7 @@ public:
         testcase << "Overload " << (useWS ? "WS" : "HTTP") << " RPC client";
         using namespace jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                    cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
                     return noAdmin(std::move(cfg));
                 })};
 

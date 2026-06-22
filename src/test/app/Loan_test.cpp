@@ -4,7 +4,6 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/envconfig.h>
@@ -5423,110 +5422,12 @@ protected:
     }
 
     void
-    testCoverDepositWithdrawNonTransferableMPT(FeatureBitset feature)
+    testLendingCanTradeDisabledNoImpact()
     {
-        testcase("CoverDeposit blocked, CoverWithdraw allowed when CanTransfer cleared");
-        using namespace jtx;
-        using namespace loanBroker;
-
-        Env env(*this, feature);
-
-        Account const issuer{"issuer"};
-        Account const alice{"alice"};
-
-        env.fund(XRP(100'000), issuer, alice);
-        env.close();
-
-        MPTTester mpt(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {alice},
-             .pay = 100,
-             .flags = tfMPTCanTransfer,
-             .mutableFlags = tmfMPTCanMutateCanTransfer});
-        PrettyAsset const asset = mpt["MPT"];
-
-        Vault const vault{env};
-        auto const [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
-        env(createTx);
-        env.close();
-
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
-        env(set(alice, vaultKeylet.key));
-        env.close();
-
-        auto const brokerSle = env.le(brokerKeylet);
-        if (!BEAST_EXPECT(brokerSle))
-            return;
-
-        Account const pseudoAccount{"Loan Broker pseudo-account", brokerSle->at(sfAccount)};
-
-        // First, deposit some cover while CanTransfer is set so we have an
-        // existing position to withdraw from after the governance action.
-        auto const depositAmount = asset(1);
-        env(coverDeposit(alice, brokerKeylet.key, depositAmount));
-        env.close();
-
-        if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
-        {
-            BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 1);
-            env.require(Balance(pseudoAccount, depositAmount));
-        }
-
-        // Issuer governance: clear CanTransfer.
-        mpt.set({.mutableFlags = tmfMPTClearCanTransfer});
-        env.close();
-
-        // Standard Payment path still forbids third-party transfers.
-        auto const err = feature[featureMPTokensV2] ? tecNO_PERMISSION : tecNO_AUTH;
-        env(pay(alice, pseudoAccount, asset(1)), Ter(err));
-        env.close();
-
-        // New cover deposits are blocked - this would create new exposure.
-        env(coverDeposit(alice, brokerKeylet.key, depositAmount), Ter{tecNO_AUTH});
-        env.close();
-
-        if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
-        {
-            BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 1);
-            env.require(Balance(pseudoAccount, depositAmount));
-        }
-
-        bool const postAmendment = feature[fixCleanup3_2_0];
-        if (postAmendment)
-        {
-            // Post-fixCleanup3_2_0: existing cover can always be withdrawn
-            // even when CanTransfer is cleared, so the broker is not trapped.
-            env(coverWithdraw(alice, brokerKeylet.key, depositAmount));
-            env.close();
-
-            if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
-            {
-                BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 0);
-                env.require(Balance(pseudoAccount, asset(0)));
-            }
-        }
-        else
-        {
-            // Pre-fixCleanup3_2_0 regression: cover withdraw was blocked,
-            // trapping the broker's first-loss capital.
-            env(coverWithdraw(alice, brokerKeylet.key, depositAmount), Ter{tecNO_AUTH});
-            env.close();
-
-            if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
-            {
-                BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 1);
-                env.require(Balance(pseudoAccount, depositAmount));
-            }
-        }
-    }
-
-    void
-    testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared()
-    {
-        testcase("LoanSet blocked, LoanPay allowed when CanTransfer cleared");
+        testcase("Lending: CanTrade disabled has no impact");
         using namespace jtx;
         using namespace loan;
+        using namespace loanBroker;
 
         Env env(*this, all_);
 
@@ -5542,67 +5443,7 @@ protected:
              .issuer = issuer,
              .holders = {lender, borrower},
              .flags = tfMPTCanTransfer | tfMPTCanLock,
-             .mutableFlags = tmfMPTCanMutateCanTransfer});
-        PrettyAsset const asset = mpt.issuanceID();
-        env(pay(issuer, lender, asset(10'000'000)));
-        // Fund the borrower with enough to cover principal+interest+fees
-        env(pay(issuer, borrower, asset(100'000)));
-        env.close();
-
-        // Create vault and broker while CanTransfer is set.
-        auto const broker = createVaultAndBroker(env, asset, lender);
-
-        auto const loanSetFee = Fee(env.current()->fees().base * 2);
-
-        // Create an existing loan while CanTransfer is set.
-        env(set(borrower, broker.brokerID, 1'000),
-            Sig(sfCounterpartySignature, lender),
-            loanSetFee);
-        env.close();
-        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
-        BEAST_EXPECT(env.le(loanKeylet));
-
-        // Issuer governance: clear CanTransfer.
-        mpt.set({.mutableFlags = tmfMPTClearCanTransfer});
-        env.close();
-
-        // Issuing a NEW loan is blocked - it would create new exposure into
-        // a pool the issuer is restricting.
-        env(set(borrower, broker.brokerID, 1'000),
-            Sig(sfCounterpartySignature, lender),
-            loanSetFee,
-            Ter{tecNO_AUTH});
-        env.close();
-
-        // Repaying an existing loan is always allowed - blocking it would
-        // create irrecoverable bad debt and trap SAV depositor principal.
-        env(pay(borrower, loanKeylet.key, asset(1'000)));
-        env.close();
-    }
-
-    void
-    testLendingCanTradeClearedNoImpact()
-    {
-        testcase("Lending: CanTrade cleared has no impact");
-        using namespace jtx;
-        using namespace loan;
-        using namespace loanBroker;
-
-        Env env(*this, all_);
-
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(1'000'000), issuer, lender, borrower);
-        env.close();
-
-        MPTTester mpt(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {lender, borrower},
-             .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
-             .mutableFlags = tmfMPTCanMutateCanTrade});
+             .mutableFlags = tmfMPTCanEnableCanTrade});
         PrettyAsset const asset = mpt.issuanceID();
         env(pay(issuer, lender, asset(10'000'000)));
         env(pay(issuer, borrower, asset(100'000)));
@@ -5610,16 +5451,7 @@ protected:
 
         auto const broker = createVaultAndBroker(env, asset, lender);
 
-        // Sanity: while CanTrade is set, the asset can be placed on the DEX.
-        env(offer(lender, XRP(1), asset(10)));
-        env.close();
-
-        // Issuer governance: clear CanTrade. Loan origination and repayment
-        // are not trades: nothing in the Lending Protocol should be impacted.
-        mpt.set({.mutableFlags = tmfMPTClearCanTrade});
-        env.close();
-
-        // Control: clearing CanTrade is observable on the DEX path.
+        // CanTrade is not set
         env(offer(lender, XRP(1), asset(10)), Ter{tecNO_PERMISSION});
         env.close();
 
@@ -5643,6 +5475,13 @@ protected:
 
         // Cover withdrawal still works.
         env(coverWithdraw(lender, broker.brokerID, asset(100)));
+        env.close();
+
+        // Enable CanTrade and verify the DEX path is restored.
+        mpt.set({.mutableFlags = tmfMPTSetCanTrade});
+        env.close();
+
+        env(offer(lender, XRP(1), asset(10)));
         env.close();
     }
 
@@ -7580,6 +7419,366 @@ protected:
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
     }
 
+    // A residual overpayment can reduce the stored principal by one scale-unit
+    // *less* than computeOverpaymentComponents predicts, firing the
+    // "principal change agrees" XRPL_ASSERT_PARTS in doOverpayment:
+    //
+    //   trackedPrincipalDelta == principalOutstanding - newPrincipalOutstanding
+    //
+    // tryOverpayment re-amortizes the loan at the reduced principal, then
+    // re-derives the theoretical principal from the new periodic payment via
+    // (P * paymentFactor) / paymentFactor. That round-trip is not exact in
+    // Number's 19-digit arithmetic; a positive residual pushes the recomputed
+    // principal a hair above the exact grid point `oldPrincipal - delta`, and
+    // the Upward rounding in tryOverpayment then bumps it a full scale-unit
+    // higher. The principal therefore drops by `delta - 1 unit`, not `delta`.
+    //
+    // Concrete case (isolated, at the tryOverpayment level):
+    // A 100 USD loan at the minimum non-zero rate, 3 payments, loanScale -10.
+    // After one regular payment (principalOutstanding 66.6666666674) a residual overpayment of
+    // 0.049999998 yields trackedPrincipalDelta 0.048999998 but only reduces the principal by
+    // 0.0489999979 (newPrincipal 66.6176666695) — short by 1e-10.
+    //
+    // With fixCleanup3_2_0, tryOverpayment pins the new principal to the exact,
+    // on-grid reduction (oldPrincipal - trackedPrincipalDelta) instead of the
+    // lossy (P*factor)/factor round-trip, so the assertion holds and the
+    // overpayment applies cleanly. The three "principal change agrees" /
+    // "interest paid agrees" / "principal payment matches" assertions are
+    // gated behind the same amendment, so without it they are disabled (the
+    // server does not abort) and the loan keeps the pre-amendment computation.
+    //
+    // The test runs the same scenario under both amendment settings and checks
+    // the stored principal against a ground-truth value derived independently of
+    // the loan-state computation under test.
+    void
+    testBugOverpaymentPrincipalChange()
+    {
+        testcase("bug: doOverpayment asserts 'principal change agrees'");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace xrpl::detail;
+
+        struct Params
+        {
+            TenthBips32 interestRate;
+            TenthBips16 managementFeeRate;
+            std::uint32_t paymentTotal;
+            std::uint32_t paymentInterval;
+            std::int64_t principal;
+            Number overpayment;
+            TenthBips32 overpaymentInterestRate;
+            TenthBips32 overpaymentFeeRate;
+            std::optional<int> vaultScale;
+        };
+
+        struct Result
+        {
+            Number principalOutstanding;  // stored principal after the LoanPay
+            Number expectedNewPrincipal;  // ground truth, independent of the fix
+            Number managementFeeChange;   // managementFeeOutstanding after - before
+            Number unit;                  // one scale-unit at the loan scale
+        };
+
+        auto runScenario = [this](FeatureBitset features, Params const& p) -> Result {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const lender{"vaultOwner"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(1'000'000), issuer, lender, borrower);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const iouAsset = issuer["USD"];
+            Asset const asset = iouAsset.raw();
+            STAmount const iouLimit{asset, Number{9'999'999'999'999'999LL}};
+            env(trust(lender, iouLimit));
+            env(trust(borrower, iouLimit));
+            env(pay(issuer, lender, iouAsset(1'000'000)));
+            env(pay(issuer, borrower, iouAsset(1'000'000)));
+            env.close();
+
+            auto const broker = createVaultAndBroker(
+                env,
+                iouAsset,
+                lender,
+                {.vaultDeposit = 900'000,
+                 .debtMax = 0,
+                 .managementFeeRate = p.managementFeeRate,
+                 .vaultScale = p.vaultScale});
+
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            BEAST_EXPECT(brokerSle);
+            auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
+            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+
+            env(set(borrower, broker.brokerID, Number{p.principal}, tfLoanOverpayment),
+                Sig(sfCounterpartySignature, lender),
+                kInterestRate(p.interestRate),
+                kPaymentTotal(p.paymentTotal),
+                kPaymentInterval(p.paymentInterval),
+                kGracePeriod(p.paymentInterval),
+                kOverpaymentFee(p.overpaymentFeeRate),
+                kOverpaymentInterestRate(p.overpaymentInterestRate),
+                Fee(env.current()->fees().base * 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // The single LoanPay below makes one regular payment (the overpayment
+            // is smaller than one period) and leaves the residual as an
+            // overpayment.
+            auto const s = getCurrentState(env, broker, loanKeylet);
+            auto const periodicRate = loanPeriodicRate(s.interestRate, s.paymentInterval);
+            auto const onePeriod = computePaymentComponents(
+                env.current()->rules(),
+                asset,
+                s.loanScale,
+                s.totalValue,
+                s.principalOutstanding,
+                s.managementFeeOutstanding,
+                s.periodicPayment,
+                periodicRate,
+                s.paymentRemaining,
+                p.managementFeeRate);
+
+            // Ground truth: the stored principal must drop by exactly the regular
+            // payment's principal portion plus the overpayment's principal
+            // portion. computeOverpaymentComponents depends only on the
+            // overpayment amount and rates (not on the loan-state computation
+            // under test), so it is an independent oracle. Both components are
+            // computed under the same rules as the env so the payment factor
+            // matches.
+            auto const overpaymentComponents = computeOverpaymentComponents(
+                env.current()->rules(),
+                asset,
+                s.loanScale,
+                p.overpayment,
+                p.overpaymentInterestRate,
+                p.overpaymentFeeRate,
+                p.managementFeeRate);
+            Number const expectedNewPrincipal = s.principalOutstanding -
+                onePeriod.trackedPrincipalDelta - overpaymentComponents.trackedPrincipalDelta;
+
+            Number const managementFeeBefore = s.managementFeeOutstanding;
+
+            STAmount const payAmount{asset, onePeriod.trackedValueDelta + p.overpayment};
+            env(pay(borrower, loanKeylet.key, payAmount),
+                Txflags(tfLoanOverpayment),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const loanSle = env.le(loanKeylet);
+            BEAST_EXPECT(loanSle);
+
+            return Result{
+                .principalOutstanding = loanSle ? Number{loanSle->at(sfPrincipalOutstanding)} : 0,
+                .expectedNewPrincipal = expectedNewPrincipal,
+                .managementFeeChange =
+                    (loanSle ? Number{loanSle->at(sfManagementFeeOutstanding)} : Number{0}) -
+                    managementFeeBefore,
+                .unit = Number{1, s.loanScale}};
+        };
+
+        // Scenario 1: the original near-zero-rate principal reproduction
+        // (loanScale -10, no management fee). 0.049999998 is smaller than one
+        // period, so it stays a residual overpayment.
+        Params const principalCase{
+            .interestRate = TenthBips32{1},
+            .managementFeeRate = TenthBips16{0},
+            .paymentTotal = 3,
+            .paymentInterval = 60,
+            .principal = 100,
+            .overpayment = Number{49999998, -9},
+            .overpaymentInterestRate = TenthBips32{1000},
+            .overpaymentFeeRate = TenthBips32{1000},
+            .vaultScale = 1};
+
+        // With fixCleanup3_2_0 the stored principal lands exactly on the
+        // ground-truth grid point: it is reduced by exactly the overpayment's
+        // principal portion. This is the key correctness check: if the principal
+        // pin were removed (even with the assertions still gated off), the lossy
+        // (P * factor) / factor round-trip would leave the principal one
+        // scale-unit high and this would fail.
+        Result const fixed = runScenario(all_, principalCase);
+        BEAST_EXPECTS(
+            fixed.principalOutstanding == fixed.expectedNewPrincipal,
+            "fixed principal " + to_string(fixed.principalOutstanding) + " != expected " +
+                to_string(fixed.expectedNewPrincipal));
+
+        // Without the amendment the loan amortizes with the catastrophically
+        // cancelling near-zero payment factor, so its schedule (and ground truth)
+        // differ from the fixed case; the gated assertions keep the server from
+        // aborting and the overpayment still lands exactly on that schedule.
+        Result const legacy = runScenario(all_ - fixCleanup3_2_0, principalCase);
+        BEAST_EXPECTS(
+            legacy.principalOutstanding == legacy.expectedNewPrincipal,
+            "legacy principal " + to_string(legacy.principalOutstanding) + " != expected " +
+                to_string(legacy.expectedNewPrincipal));
+
+        // Scenario 2: a normal-rate loan with a 10% management fee. At a normal
+        // rate the payment factor is identical across the amendment, so toggling
+        // fixCleanup3_2_0 isolates the fix. This overpayment (found by search)
+        // lands on a state where both the principal and the management fee differ
+        // by one scale-unit between the fixed and legacy paths.
+        Params const feeCase{
+            .interestRate = TenthBips32{10000},
+            .managementFeeRate = TenthBips16{10000},
+            .paymentTotal = 6,
+            .paymentInterval = 30u * 24 * 60 * 60,
+            .principal = 1000,
+            .overpayment = Number{214367363, -10},
+            .overpaymentInterestRate = TenthBips32{0},
+            .overpaymentFeeRate = TenthBips32{0},
+            .vaultScale = std::nullopt};
+
+        Result const feeFixed = runScenario(all_, feeCase);
+        Result const feeLegacy = runScenario(all_ - fixCleanup3_2_0, feeCase);
+
+        // With the fix the principal is the exact reduction; without it the lossy
+        // (P * factor) / factor round-trip leaves it one scale-unit high.
+        BEAST_EXPECTS(
+            feeFixed.principalOutstanding == feeFixed.expectedNewPrincipal,
+            "fee-case fixed principal " + to_string(feeFixed.principalOutstanding) +
+                " != expected " + to_string(feeFixed.expectedNewPrincipal));
+        BEAST_EXPECTS(
+            feeLegacy.principalOutstanding == feeLegacy.expectedNewPrincipal + feeLegacy.unit,
+            "fee-case legacy principal " + to_string(feeLegacy.principalOutstanding) +
+                " != expected " + to_string(feeLegacy.expectedNewPrincipal + feeLegacy.unit));
+
+        // Management fee: the overpayment re-amortizes a fee-bearing loan, so the management fee
+        // outstanding drops.
+        //
+        // Unlike the principal that is already at the correct precision, the re-amortized
+        // management fee  is tenthBipsOfValue of the new schedule's gross interest, which depends
+        // on the recomputed periodic payment. So the expected change below is a pinned constant
+        // captured from a passing run a magic value only because there is nothing simpler to
+        // compare against.
+        //
+        // At the integration level, toggling the amendment also changes the regular payment's
+        // rounding so a fixed-vs-legacy comparison cannot isolate the overpayment management-fee
+        // fix.
+        BEAST_EXPECT(feeFixed.managementFeeChange == feeLegacy.managementFeeChange);
+        BEAST_EXPECTS(
+            (feeFixed.managementFeeChange == Number{-8219709543, -10}),
+            "fee-case mgmt fee change " + to_string(feeFixed.managementFeeChange));
+    }
+
+    // A LoanSet with InterestRate = 1 (0.001% annualized, the minimum non-zero
+    // rate). At such a near-zero rate the closed-form payment factor
+    // (1 + r)^n - 1 cancels catastrophically.
+    //
+    // Without fixCleanup3_2_0 the resulting amortization is degenerate and the
+    // LoanSet is rejected with tecPRECISION_LOSS (no loan created). With the
+    // amendment, computePowerMinusOneHybrid uses a numerically-stable series
+    // expansion, so the loan is created and the scheduled payments
+    // (2 * periodicPayment) cover the principal — no economic underpayment
+    // (yield theft).
+    //
+    // The test runs the same LoanSet under both amendment settings and pins the
+    // exact outcome for each.
+    void
+    testLoanSetNearZeroInterestRateSucceeds()
+    {
+        testcase("LoanSet near-zero interest rate covers principal");
+
+        using namespace jtx;
+        using namespace loan;
+
+        Number const principalRequested{1000};
+
+        struct Result
+        {
+            TER ter = tesSUCCESS;
+            bool created = false;
+            std::int32_t loanScale = 0;
+            Number principal;
+            Number totalValue;
+            Number managementFee;
+            Number periodicPayment;
+        };
+
+        auto runScenario = [&](FeatureBitset features, TER expectedTer) -> Result {
+            Env env(*this, features);
+
+            Account const issuer{"issuer"};
+            Account const lender{"vaultOwner"};
+            Account const borrower{"borrower"};
+
+            env.fund(XRP(1'000'000), issuer, lender, borrower);
+            env(fset(issuer, asfDefaultRipple));
+            env.close();
+
+            PrettyAsset const iouAsset = issuer["USD"];
+            STAmount const iouLimit{iouAsset.raw(), Number{9'999'999'999'999'999LL}};
+            env(trust(lender, iouLimit));
+            env(trust(borrower, iouLimit));
+            env(pay(issuer, lender, iouAsset(1'000'000)));
+            env(pay(issuer, borrower, iouAsset(1'000'000)));
+            env.close();
+
+            auto const broker = createVaultAndBroker(
+                env,
+                iouAsset,
+                lender,
+                {.vaultDeposit = 100'000, .debtMax = 0, .managementFeeRate = TenthBips16{0}});
+
+            auto const brokerSle = env.le(broker.brokerKeylet());
+            BEAST_EXPECT(brokerSle);
+            auto const loanSequence = brokerSle ? brokerSle->at(sfLoanSequence) : 0;
+            auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+
+            env(set(borrower, broker.brokerID, principalRequested),
+                Sig(sfCounterpartySignature, lender),
+                kInterestRate(TenthBips32{1}),
+                kPaymentTotal(2),
+                kPaymentInterval(400),
+                Fee(env.current()->fees().base * 2),
+                Ter(expectedTer));
+            env.close();
+
+            Result r;
+            r.ter = env.ter();
+            if (auto const loanSle = env.le(loanKeylet))
+            {
+                r.created = true;
+                r.loanScale = loanSle->at(sfLoanScale);
+                r.principal = loanSle->at(sfPrincipalOutstanding);
+                r.totalValue = loanSle->at(sfTotalValueOutstanding);
+                r.managementFee = loanSle->at(sfManagementFeeOutstanding);
+                r.periodicPayment = loanSle->at(sfPeriodicPayment);
+            }
+            return r;
+        };
+
+        Result const fixed = runScenario(all_, tesSUCCESS);
+        Result const legacy = runScenario(all_ - fixCleanup3_2_0, tecPRECISION_LOSS);
+
+        // Without the amendment, the catastrophically-cancelling closed-form
+        // payment factor produces a degenerate amortization that fails
+        // checkLoanGuards: the LoanSet is rejected with tecPRECISION_LOSS and no
+        // loan is created.
+        BEAST_EXPECT(legacy.ter == tecPRECISION_LOSS);
+        BEAST_EXPECT(!legacy.created);
+
+        // With the amendment the stable series expansion produces a valid loan
+        // at loanScale -10.
+        BEAST_EXPECT(fixed.ter == tesSUCCESS);
+        BEAST_EXPECT(fixed.created);
+        BEAST_EXPECT(fixed.loanScale == -10);
+        BEAST_EXPECT(fixed.principal == principalRequested);
+        BEAST_EXPECT((fixed.totalValue == Number{10000000001903, -10}));
+        BEAST_EXPECT(fixed.managementFee == beast::kZero);
+
+        // Periodic payment from the numerically-stable series expansion, and the
+        // scheduled total (2 * periodicPayment) which exceeds the 1000 principal
+        // — no economic underpayment / yield theft.
+        BEAST_EXPECT((fixed.periodicPayment == Number{5000000000951293762, -16}));
+        BEAST_EXPECT((fixed.periodicPayment * 2 == Number{1000000000190258752, -15}));
+        BEAST_EXPECT(fixed.periodicPayment * 2 > principalRequested);
+    }
+
     // An overpayment whose residual amount has more precision than loanScale
     // fires the isRounded(asset, overpayment, loanScale) assertion in
     // computeOverpaymentComponents (and a downstream "interest paid agrees"
@@ -8356,14 +8555,15 @@ protected:
         testRIPD3901();
         testBorrowerIsBroker();
         testLimitExceeded();
-        testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared();
-        testLendingCanTradeClearedNoImpact();
+        testLendingCanTradeDisabledNoImpact();
+        testBugOverpaymentPrincipalChange();
         testBugOverpayUnroundedAmount();
 
         for (auto const flags : {0u, tfLoanOverpayment})
             testYieldTheftRounding(flags);
         testBugInterestDueDeltaCrash();
         testFullLifecycleVaultPnLNearZeroRate();
+        testLoanSetNearZeroInterestRateSucceeds();
     }
 
     // Tests run under each entry in amendmentCombinations().
@@ -8385,7 +8585,6 @@ protected:
         testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(features);
         testBatchBypassCounterparty(features);
         testLoanNextPaymentDueDateOverflow(features);
-        testCoverDepositWithdrawNonTransferableMPT(features);
         testSequentialFLCDepletion(features);
 
         // Invariants

@@ -249,6 +249,19 @@ public:
 
     virtual void
     stateAccounting(json::Value& obj) = 0;
+
+    /** Total number of (book, subscriber) entries currently tracked.
+     *
+     *  Counts every weak_ptr stored across every book in subBook_, NOT the
+     *  number of distinct subscribers and NOT the number of distinct
+     *  books: a single subscriber following N books contributes N entries.
+     *
+     *  @note Diagnostic accessor; intended for tests and operator visibility
+     *        into per-book subscription state. The returned value is a
+     *        snapshot under the subscription lock.
+     */
+    virtual std::size_t
+    getBookSubscribersCount() = 0;
 };
 
 }  // namespace xrpl

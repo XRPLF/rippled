@@ -51,6 +51,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
@@ -216,7 +217,7 @@ class Invariants_test : public beast::unit_test::Suite
             // std::cerr << messages << '\n';
             for (auto const& m : expectLogs)
             {
-                BEAST_EXPECTS(messages.find(m) != std::string::npos, m);
+                BEAST_EXPECTS(messages.contains(m), m);
             }
         }
     }
@@ -1277,7 +1278,88 @@ class Invariants_test : public beast::unit_test::Suite
             });
     }
 
-    static std::shared_ptr<SLE>
+    void
+    testAMMDeleteInvariants(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const enforceAMMDelete = features[fixCleanup3_3_0];
+        testcase << "AMM delete invariants" + std::string(enforceAMMDelete ? " fix" : "");
+
+        Env env(*this, features);
+        Account const issuer{"issuer"};
+        Issue const lptIssue{Currency(0x4c50540000000000), issuer.id()};
+        STAmount const zeroLP{lptIssue, 0};
+        STAmount const nonZeroLP{lptIssue, 1};
+
+        auto const makeAMM = [](STAmount const& lptBalance) {
+            auto sleAMM = std::make_shared<SLE>(keylet::amm(uint256(1)));
+            sleAMM->setFieldAmount(sfLPTokenBalance, lptBalance);
+            return sleAMM;
+        };
+
+        auto const checkInvariant = [&](TxType txType,
+                                        TER result,
+                                        std::optional<STAmount> const& deletedLPBalance,
+                                        bool expected,
+                                        std::string const& expectedLog) {
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ValidAMM invariant;
+
+            if (deletedLPBalance)
+                invariant.visitEntry(true, makeAMM(*deletedLPBalance), nullptr);
+
+            bool const actual = invariant.finalize(
+                STTx{txType, [](STObject&) {}}, result, XRPAmount{}, *env.current(), jlog);
+
+            BEAST_EXPECTS(actual == expected, "unexpected AMM delete invariant result");
+            auto const messages = sink.messages().str();
+            auto const expectedLogWhenEnforced = enforceAMMDelete ? expectedLog : "";
+            if (!expectedLogWhenEnforced.empty())
+            {
+                BEAST_EXPECTS(messages.contains(expectedLogWhenEnforced), expectedLogWhenEnforced);
+            }
+            else
+            {
+                BEAST_EXPECTS(messages.empty(), messages);
+            }
+        };
+
+        checkInvariant(
+            ttPAYMENT,
+            tesSUCCESS,
+            nonZeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMM failed, unexpected AMM deletion by");
+        checkInvariant(
+            ttAMM_DELETE,
+            tesSUCCESS,
+            std::nullopt,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object remained on tesSUCCESS");
+        checkInvariant(
+            ttAMM_DELETE,
+            tesSUCCESS,
+            nonZeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object deleted with non-zero LP balance");
+        checkInvariant(
+            ttAMM_DELETE,
+            tecINCOMPLETE,
+            zeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object deleted when result is not tesSUCCESS");
+
+        checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, nonZeroLP, true, "");
+        checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, nonZeroLP, true, "");
+
+        checkInvariant(ttAMM_DELETE, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, zeroLP, true, "");
+    }
+
+    static SLE::pointer
     createPermissionedDomain(
         ApplyContext& ac,
         test::jtx::Account const& a1,
@@ -2187,8 +2269,7 @@ class Invariants_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!invariant.finalize(
                     makeOfferCreateTx(), tesSUCCESS, XRPAmount{}, view, missingRootJlog));
                 BEAST_EXPECT(
-                    missingRootSink.messages().str().find("book directory root missing") !=
-                    std::string::npos);
+                    missingRootSink.messages().str().contains("book directory root missing"));
             }
             {
                 // delete
@@ -4767,109 +4848,119 @@ class Invariants_test : public beast::unit_test::Suite
             std::vector<ValidVault::DeltaInfo> values;
         };
 
-        NumberMantissaScaleGuard const g{MantissaRange::MantissaScale::Large};
-
-        auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
-            return {.delta = n, .scale = scale(n, vaultAsset.raw())};
-        };
-
-        auto const testCases = std::vector<TestCase>{
-            {
-                .name = "No values",
-                .expectedMinScale = 0,
-                .values = {},
-            },
-            {
-                .name = "Mixed integer and Number values",
-                .expectedMinScale = -15,
-                .values = {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
-            },
-            {
-                .name = "Mixed scales",
-                .expectedMinScale = -17,
-                .values =
-                    {makeDelta(Number{1, -2}), makeDelta(Number{5, -3}), makeDelta(Number{3, -2})},
-            },
-            {
-                .name = "Equal scales",
-                .expectedMinScale = -16,
-                .values =
-                    {makeDelta(Number{1, -1}), makeDelta(Number{5, -1}), makeDelta(Number{1, -1})},
-            },
-            {
-                .name = "Mixed mantissa sizes",
-                .expectedMinScale = -12,
-                .values =
-                    {makeDelta(Number{1}),
-                     makeDelta(Number{1234, -3}),
-                     makeDelta(Number{12345, -6}),
-                     makeDelta(Number{123, 1})},
-            },
-        };
-
-        for (auto const& tc : testCases)
+        for (auto const mantissaScale : {
+                 MantissaRange::MantissaScale::LargeLegacy,
+                 MantissaRange::MantissaScale::Large,
+             })
         {
-            testcase("vault computeCoarsestScale: " + tc.name);
+            NumberMantissaScaleGuard const g{mantissaScale};
 
-            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+            auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
+                return {.delta = n, .scale = scale(n, vaultAsset.raw())};
+            };
 
-            BEAST_EXPECTS(
-                actualScale == tc.expectedMinScale,
-                "expected: " + std::to_string(tc.expectedMinScale) +
-                    ", actual: " + std::to_string(actualScale));
-            for (auto const& num : tc.values)
-            {
-                // None of these scales are far enough apart that rounding the
-                // values would lose information, so check that the rounded
-                // value matches the original.
-                auto const actualRounded = roundToAsset(vaultAsset, num.delta, actualScale);
-                BEAST_EXPECTS(
-                    actualRounded == num.delta,
-                    "number " + to_string(num.delta) + " rounded to scale " +
-                        std::to_string(actualScale) + " is " + to_string(actualRounded));
-            }
-        }
-
-        auto const testCases2 = std::vector<TestCase>{
-            {
-                .name = "False equivalence",
-                .expectedMinScale = -15,
-                .values =
-                    {
-                        makeDelta(Number{1234567890123456789, -18}),
-                        makeDelta(Number{12345, -4}),
-                        makeDelta(Number{1}),
-                    },
-            },
-        };
-
-        // Unlike the first set of test cases, the values in these test could
-        // look equivalent if using the wrong scale.
-        for (auto const& tc : testCases2)
-        {
-            testcase("vault computeCoarsestScale: " + tc.name);
-
-            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
-
-            BEAST_EXPECTS(
-                actualScale == tc.expectedMinScale,
-                "expected: " + std::to_string(tc.expectedMinScale) +
-                    ", actual: " + std::to_string(actualScale));
-            std::optional<Number> first;
-            Number firstRounded;
-            for (auto const& num : tc.values)
-            {
-                if (!first)
+            auto const testCases = std::vector<TestCase>{
                 {
-                    first = num.delta;
-                    firstRounded = roundToAsset(vaultAsset, num.delta, actualScale);
-                    continue;
-                }
-                auto const numRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    .name = "No values",
+                    .expectedMinScale = 0,
+                    .values = {},
+                },
+                {
+                    .name = "Mixed integer and Number values",
+                    .expectedMinScale = -15,
+                    .values = {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
+                },
+                {
+                    .name = "Mixed scales",
+                    .expectedMinScale = -17,
+                    .values =
+                        {makeDelta(Number{1, -2}),
+                         makeDelta(Number{5, -3}),
+                         makeDelta(Number{3, -2})},
+                },
+                {
+                    .name = "Equal scales",
+                    .expectedMinScale = -16,
+                    .values =
+                        {makeDelta(Number{1, -1}),
+                         makeDelta(Number{5, -1}),
+                         makeDelta(Number{1, -1})},
+                },
+                {
+                    .name = "Mixed mantissa sizes",
+                    .expectedMinScale = -12,
+                    .values =
+                        {makeDelta(Number{1}),
+                         makeDelta(Number{1234, -3}),
+                         makeDelta(Number{12345, -6}),
+                         makeDelta(Number{123, 1})},
+                },
+            };
+
+            for (auto const& tc : testCases)
+            {
+                testcase("vault computeCoarsestScale: " + tc.name);
+
+                auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
                 BEAST_EXPECTS(
-                    numRounded != firstRounded,
-                    "at a scale of " + std::to_string(actualScale) + " " + to_string(num.delta) +
-                        " == " + to_string(*first));
+                    actualScale == tc.expectedMinScale,
+                    "expected: " + std::to_string(tc.expectedMinScale) +
+                        ", actual: " + std::to_string(actualScale));
+                for (auto const& num : tc.values)
+                {
+                    // None of these scales are far enough apart that rounding the
+                    // values would lose information, so check that the rounded
+                    // value matches the original.
+                    auto const actualRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    BEAST_EXPECTS(
+                        actualRounded == num.delta,
+                        "number " + to_string(num.delta) + " rounded to scale " +
+                            std::to_string(actualScale) + " is " + to_string(actualRounded));
+                }
+            }
+
+            auto const testCases2 = std::vector<TestCase>{
+                {
+                    .name = "False equivalence",
+                    .expectedMinScale = -15,
+                    .values =
+                        {
+                            makeDelta(Number{1234567890123456789, -18}),
+                            makeDelta(Number{12345, -4}),
+                            makeDelta(Number{1}),
+                        },
+                },
+            };
+
+            // Unlike the first set of test cases, the values in these test could
+            // look equivalent if using the wrong scale.
+            for (auto const& tc : testCases2)
+            {
+                testcase("vault computeCoarsestScale: " + tc.name);
+
+                auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
+                BEAST_EXPECTS(
+                    actualScale == tc.expectedMinScale,
+                    "expected: " + std::to_string(tc.expectedMinScale) +
+                        ", actual: " + std::to_string(actualScale));
+                std::optional<Number> first;
+                Number firstRounded;
+                for (auto const& num : tc.values)
+                {
+                    if (!first)
+                    {
+                        first = num.delta;
+                        firstRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                        continue;
+                    }
+                    auto const numRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    BEAST_EXPECTS(
+                        numRounded != firstRounded,
+                        "at a scale of " + std::to_string(actualScale) + " " +
+                            to_string(num.delta) + " == " + to_string(*first));
+                }
             }
         }
     }
@@ -4891,6 +4982,8 @@ public:
         testNoZeroEscrow();
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
+        testAMMDeleteInvariants(defaultAmendments());
+        testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_3_0);
         testPermissionedDomainInvariants(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);

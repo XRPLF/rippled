@@ -148,13 +148,13 @@ public:
     }
 
     void
-    addFixedPeer(std::string const& name, beast::IP::Endpoint const& ep)
+    addFixedPeer(std::string_view name, beast::IP::Endpoint const& ep)
     {
         addFixedPeer(name, std::vector<beast::IP::Endpoint>{ep});
     }
 
     void
-    addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses)
+    addFixedPeer(std::string_view name, std::vector<beast::IP::Endpoint> const& addresses)
     {
         std::scoped_lock const _(lock);
 

@@ -50,6 +50,7 @@ words:
   - AMMXRP
   - amt
   - amts
+  - archs
   - asnode
   - asynchrony
   - attestation
@@ -83,6 +84,7 @@ words:
   - coro
   - coros
   - cowid
+  - cpack
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
@@ -93,6 +95,7 @@ words:
   - daria
   - dcmake
   - dearmor
+  - dedented
   - deleteme
   - demultiplexer
   - deserializaton
@@ -106,6 +109,7 @@ words:
   - enabled
   - enablerepo
   - endmacro
+  - envrc
   - exceptioned
   - EXPECT_STREQ
   - Falco
@@ -133,6 +137,7 @@ words:
   - iou
   - ious
   - isrdc
+  - isystem
   - itype
   - jemalloc
   - jlog
@@ -229,8 +234,10 @@ words:
   - pyenv
   - pyparsing
   - qalloc
+  - qbsprofile
   - queuable
   - Raphson
+  - rcflags
   - replayer
   - rerere
   - retriable

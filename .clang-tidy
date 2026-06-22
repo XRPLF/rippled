@@ -153,8 +153,9 @@ Checks: "-*,
   readability-use-std-min-max
   "
 # ---
-# readability-inconsistent-declaration-parameter-name, # in this codebase this check will break a lot of arg names
-# readability-static-accessed-through-instance,        # this check is probably unnecessary. it makes the code less readable
+# bugprone-narrowing-conversions,                      # this will break a lot of code but we should enable it in the future because it can eliminate a lot of bugs
+# readability-inconsistent-declaration-parameter-name, # In this codebase this check will break a lot of arg names
+# readability-static-accessed-through-instance,        # this check is probably unnecessary. It makes the code less readable
 # ---
 
 CheckOptions:
@@ -199,6 +200,6 @@ CheckOptions:
   readability-identifier-naming.PublicMemberSuffix: ""
   readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
 
-HeaderFilterRegex: '^.*/(test|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
+HeaderFilterRegex: '^.*/(tests?|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
 ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'
 WarningsAsErrors: "*"

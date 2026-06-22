@@ -63,7 +63,7 @@ DIDSet::preflight(PreflightContext const& ctx)
 }
 
 static TER
-addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owner)
+addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
 {
     auto const sleAccount = ctx.view().peek(keylet::account(owner));
     if (!sleAccount)
@@ -150,10 +150,7 @@ DIDSet::doApply()
 }
 
 void
-DIDSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+DIDSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
