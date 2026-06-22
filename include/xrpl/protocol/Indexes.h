@@ -153,7 +153,7 @@ signers(AccountID const& account) noexcept;
 
 /** A Sponsorship */
 Keylet
-sponsor(AccountID const& sponsor, AccountID const& sponsee) noexcept;
+sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept;
 
 /** A Check */
 /** @{ */
