@@ -90,16 +90,11 @@ getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner)
                 if (highAccount == owner)
                     return sfHighSponsor;
             }
-            if (sle.isFlag(lsfLowReserve))
-            {
-                auto const lowAccount = sle.getFieldAmount(sfLowLimit).getIssuer();
-                if (lowAccount == owner)
-                    return sfLowSponsor;
-            }
-            // LCOV_EXCL_START
-            Throw<std::logic_error>(
-                "Should not happen. Owner should be checked before calling this function.");
-            // LCOV_EXCL_STOP
+
+            XRPL_ASSERT(sle.isFlag(lsfLowReserve), "getLedgerEntrySponsorField lsfLowReserve flag");
+            auto const lowAccount = sle.getFieldAmount(sfLowLimit).getIssuer();
+            XRPL_ASSERT(lowAccount == owner, "getLedgerEntrySponsorField lowAccount == owner");
+            return sfLowSponsor;
         }
         default:
             return sfSponsor;

@@ -185,7 +185,7 @@ ownerCountHlp(
     {
         Throw<std::logic_error>(
             "xrpl::ownerCountHlp : OwnerCount must be greater than or equal to "
-            "SponsoredOwnerCount");
+            "SponsoredOwnerCount");  // LCOV_EXCL_LINE
     }
 
     std::int64_t deltaCount =
@@ -249,7 +249,7 @@ baseReserveHlp(ReadView const& view, std::uint32_t ownerCount, std::uint32_t res
     return (fees.reserve * reserveCount) + (fees.increment * ownerCount);
 }
 
-// reserve, ownerCount, reserveCount
+// returns {reserve, ownerCount, reserveCount}
 static std::tuple<XRPAmount, std::uint32_t, std::uint32_t>
 accountReserveHlp(
     ReadView const& view,
@@ -277,12 +277,12 @@ ownerCount(
     std::int32_t ownerCountAdj)
 {
     if (!accSle)
-        Throw<std::logic_error>("xrpl::ownerCount: empty sle type");
+        Throw<std::logic_error>("xrpl::ownerCount: empty sle type");  // LCOV_EXCL_LINE
 
     auto const sleType = accSle->getType();
     bool const validType = sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
     if (!validType)
-        Throw<std::logic_error>("xrpl::ownerCount: valid sle type");
+        Throw<std::logic_error>("xrpl::ownerCount: valid sle type");  // LCOV_EXCL_LINE
 
     return ownerCountHlp(view, accSle, ownerCountAdj, true, j);
 }
@@ -315,18 +315,6 @@ xrpLiquidHlp(
                     << " reserveCount=" << reserveCount << " reserveCountAdj=" << reserveCountAdj
                     << " fee adj=" << fee.decimalXRP();
     return amount;
-}
-
-XRPAmount
-xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
-{
-    auto const accSle = view.read(keylet::account(id));
-    if (!accSle)
-        return beast::kZero;
-
-    auto const x =
-        xrpLiquidHlp(view, accSle, ownerCountAdj, 0, std::pair<AccountID, XRPAmount>(), j);
-    return x.negative() ? XRPAmount() : x;
 }
 
 XRPAmount
@@ -396,9 +384,9 @@ adjustOwnerCountHlp(
     bool isSponsorship = false)
 {
     std::uint32_t const current = sle->at(sfield);
-    std::uint32_t const adjusted = !isSponsorship
-        ? confineOwnerCount(current, ownerCountAdj, accID, j)
-        : confineOwnerCountSponsorship(current, ownerCountAdj, accID, j);
+    std::uint32_t const adjusted = isSponsorship
+        ? confineOwnerCountSponsorship(current, ownerCountAdj, accID, j)
+        : confineOwnerCount(current, ownerCountAdj, accID, j);
 
     if (!isSponsorship)
         view.adjustOwnerCountHook(accID, current, adjusted);
@@ -416,13 +404,14 @@ adjustOwnerCount(
     beast::Journal j)
 {
     if (!accountSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid account sle");
+        Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid account sle");  // LCOV_EXCL_LINE
 
     auto const sleType = accountSle->getType();
     bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
                                       : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
     if (!validType)
-        Throw<std::logic_error>("xrpl::adjustOwnerCount : valid account sle type");
+        Throw<std::logic_error>(
+            "xrpl::adjustOwnerCount : valid account sle type");  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCount : nonzero adjustment input");
     if (ownerCountAdj == 0)
@@ -432,11 +421,13 @@ adjustOwnerCount(
     if (sponsorSle)
     {
         if (sponsorSle->getType() != ltACCOUNT_ROOT)
-            Throw<std::logic_error>("xrpl::adjustOwnerCount : valid sponsor sle type");
+            Throw<std::logic_error>(
+                "xrpl::adjustOwnerCount : valid sponsor sle type");  // LCOV_EXCL_LINE
         auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
         if (accountID == sponsorID)
-            Throw<std::logic_error>("adjustOwnerCount : account can't be sponsor for themself");
+            Throw<std::logic_error>(
+                "adjustOwnerCount : account can't be sponsor for themself");  // LCOV_EXCL_LINE
 
         adjustOwnerCountHlp(view, accountSle, sfSponsoredOwnerCount, accountID, ownerCountAdj, j);
         adjustOwnerCountHlp(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, ownerCountAdj, j);
@@ -465,11 +456,13 @@ adjustOwnerCountObj(
     beast::Journal j)
 {
     if (!objectSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCountObj : valid object sle");
+        Throw<std::runtime_error>(
+            "xrpl::adjustOwnerCountObj : valid object sle");  // LCOV_EXCL_LINE
     if (objectSle->getType() == ltACCOUNT_ROOT)
-        Throw<std::logic_error>("xrpl::adjustOwnerCountObj : valid object sle type");
+        Throw<std::logic_error>(
+            "xrpl::adjustOwnerCountObj : valid object sle type");  // LCOV_EXCL_LINE
     if (ownerCountAdj >= 0)
-        Throw<std::logic_error>("xrpl::adjustOwnerCountObj : adjustment >= 0");
+        Throw<std::logic_error>("xrpl::adjustOwnerCountObj : adjustment >= 0");  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCount : nonzero adjustment input");
     if (ownerCountAdj == 0)
@@ -488,11 +481,11 @@ accountReserve(
     std::int32_t reserveCountAdj)
 {
     if (!sle)
-        Throw<std::runtime_error>("xrpl::accountReserve : valid sle");
+        Throw<std::runtime_error>("xrpl::accountReserve : valid sle");  // LCOV_EXCL_LINE
     if (sle->getType() != ltACCOUNT_ROOT)
-        Throw<std::logic_error>("xrpl::accountReserve : valid sle type");
+        Throw<std::logic_error>("xrpl::accountReserve : valid sle type");  // LCOV_EXCL_LINE
 
-    [[maybe_unused]] auto [reserve, _1, _2] =
+    [[maybe_unused]] auto [reserve, _ownerCount, _reserveCount] =
         accountReserveHlp(view, sle, ownerCountAdj, reserveCountAdj, true, j);
 
     return reserve;

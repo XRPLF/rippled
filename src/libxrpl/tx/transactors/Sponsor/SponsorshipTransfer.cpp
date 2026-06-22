@@ -66,6 +66,9 @@ getLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accou
         case ltLOAN:
             return sle.getAccountID(sfBorrower);
         case ltSIGNER_LIST: {
+            if (sle.isFieldPresent(sfOwner))
+                return sle.getAccountID(sfOwner); // added by fixIncludeKeyletFields
+
             auto const signerList = view.read(keylet::signers(account));
             if (!signerList)
                 return std::nullopt;
@@ -150,7 +153,7 @@ reduceReserveCount(
     if (!afterReserveCount)
     {
         // already checked in preclaim()
-        UNREACHABLE("xrpl::reduceReserveCount : invalid reserve count");
+        UNREACHABLE("xrpl::reduceReserveCount : invalid reserve count"); // LCOV_EXCL_LINE
         return tefINTERNAL;  // LCOV_EXCL_LINE
     }
 
@@ -165,7 +168,7 @@ setSponsorFieldU32(SLE& sle, SF_UINT32 const& field, std::int64_t delta)
     auto const newValue = applyCountDelta(sle[field], delta);
     if (!newValue)
     {
-        UNREACHABLE("xrpl::SponsorshipTransfer::doApply : Invalid sponsor field value");
+        UNREACHABLE("xrpl::SponsorshipTransfer::doApply : Invalid sponsor field value");  // LCOV_EXCL_LINE
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 

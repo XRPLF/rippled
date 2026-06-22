@@ -31,8 +31,19 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 // to subtract.
 //
 // @param ownerCountAdj positive to add to count, negative to reduce count.
+
 [[nodiscard]] XRPAmount
-xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j);
+xrpLiquid(
+    ReadView const& view,
+    SLE::const_ref accSle,
+    std::int32_t ownerCountAdj,
+    beast::Journal j);
+
+[[nodiscard]] inline XRPAmount
+xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j)
+{
+    return xrpLiquid(view, view.read(keylet::account(id)), ownerCountAdj, j);
+}
 
 // Returns the account reserve.
 // Actual owner count and reserve count can be adjusted
