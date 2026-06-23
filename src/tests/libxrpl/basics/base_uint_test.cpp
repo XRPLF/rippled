@@ -51,9 +51,9 @@ struct Nonhash
 
 struct BaseUintTest : public ::testing::Test
 {
-    using test96 = BaseUInt<96>;
-    static_assert(std::is_copy_constructible_v<test96>);
-    static_assert(std::is_copy_assignable_v<test96>);
+    using BaseUInt96 = BaseUInt<96>;
+    static_assert(std::is_copy_constructible_v<BaseUInt96>);
+    static_assert(std::is_copy_assignable_v<BaseUInt96>);
 
     static void
     testComparisons()
@@ -124,18 +124,18 @@ struct BaseUintTest : public ::testing::Test
 
 TEST_F(BaseUintTest, base_uint)
 {
-    static_assert(!std::is_constructible_v<test96, std::complex<double>>);
-    static_assert(!std::is_assignable_v<test96&, std::complex<double>>);
+    static_assert(!std::is_constructible_v<BaseUInt96, std::complex<double>>);
+    static_assert(!std::is_assignable_v<BaseUInt96&, std::complex<double>>);
 
     testComparisons();
 
     // used to verify set insertion (hashing required)
-    std::unordered_set<test96, HardenedHash<>> uset;
+    std::unordered_set<BaseUInt96, HardenedHash<>> uset;
 
     Blob const raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-    EXPECT_EQ(test96::kBytes, raw.size());
+    EXPECT_EQ(BaseUInt96::kBytes, raw.size());
 
-    test96 u = test96::fromRaw(raw);
+    BaseUInt96 u = BaseUInt96::fromRaw(raw);
     uset.insert(u);
     EXPECT_EQ(raw.size(), u.size());
     EXPECT_EQ(to_string(u), "0102030405060708090A0B0C");
@@ -156,10 +156,11 @@ TEST_F(BaseUintTest, base_uint)
     // back into another base_uint (w) for comparison with the original
     Nonhash<96> h{};
     hash_append(h, u);
-    test96 const w = test96::fromRaw(std::vector<std::uint8_t>(h.data.begin(), h.data.end()));
+    BaseUInt96 const w =
+        BaseUInt96::fromRaw(std::vector<std::uint8_t>(h.data.begin(), h.data.end()));
     EXPECT_EQ(w, u);
 
-    test96 v{~u};
+    BaseUInt96 v{~u};
     uset.insert(v);
     EXPECT_EQ(to_string(v), "FEFDFCFBFAF9F8F7F6F5F4F3");
     EXPECT_EQ(toShortString(v), "FEFDFCFB...");
@@ -180,7 +181,7 @@ TEST_F(BaseUintTest, base_uint)
     v = u;
     EXPECT_EQ(v, u);
 
-    test96 z{beast::kZero};
+    BaseUInt96 z{beast::kZero};
     uset.insert(z);
     EXPECT_EQ(to_string(z), "000000000000000000000000");
     EXPECT_EQ(toShortString(z), "00000000...");
@@ -196,9 +197,9 @@ TEST_F(BaseUintTest, base_uint)
         EXPECT_EQ(d, 0);
     }
 
-    test96 n{z};
+    BaseUInt96 n{z};
     n++;
-    EXPECT_EQ(n, test96(1));
+    EXPECT_EQ(n, BaseUInt96(1));
     n--;
     EXPECT_EQ(n, beast::kZero);
     EXPECT_EQ(n, z);
@@ -208,18 +209,18 @@ TEST_F(BaseUintTest, base_uint)
     n = beast::kZero;
     EXPECT_EQ(n, z);
 
-    test96 zp1{z};
+    BaseUInt96 zp1{z};
     zp1++;
-    test96 zm1{z};
+    BaseUInt96 zm1{z};
     zm1--;
-    test96 const x{zm1 ^ zp1};
+    BaseUInt96 const x{zm1 ^ zp1};
     uset.insert(x);
     EXPECT_EQ(to_string(x), "FFFFFFFFFFFFFFFFFFFFFFFE") << to_string(x);
     EXPECT_EQ(toShortString(x), "FFFFFFFF...") << toShortString(x);
 
     EXPECT_EQ(uset.size(), 4);
 
-    test96 tmp;
+    BaseUInt96 tmp;
     EXPECT_TRUE(tmp.parseHex(to_string(u)));
     EXPECT_EQ(tmp, u);
     tmp = z;
@@ -263,29 +264,29 @@ TEST_F(BaseUintTest, base_uint)
 
     // Constexpr constructors
     {
-        static_assert(test96{}.signum() == 0);
-        static_assert(test96("0").signum() == 0);
-        static_assert(test96("000000000000000000000000").signum() == 0);
-        static_assert(test96("000000000000000000000001").signum() == 1);
-        static_assert(test96("800000000000000000000000").signum() == 1);
+        static_assert(BaseUInt96{}.signum() == 0);
+        static_assert(BaseUInt96("0").signum() == 0);
+        static_assert(BaseUInt96("000000000000000000000000").signum() == 0);
+        static_assert(BaseUInt96("000000000000000000000001").signum() == 1);
+        static_assert(BaseUInt96("800000000000000000000000").signum() == 1);
 
 // Everything within the #if should fail during compilation.
 #if 0
             // Too few characters
-            static_assert(test96("00000000000000000000000").signum() == 0);
+            static_assert(BaseUInt96("00000000000000000000000").signum() == 0);
 
             // Too many characters
-            static_assert(test96("0000000000000000000000000").signum() == 0);
+            static_assert(BaseUInt96("0000000000000000000000000").signum() == 0);
 
             // Non-hex characters
-            static_assert(test96("00000000000000000000000 ").signum() == 1);
-            static_assert(test96("00000000000000000000000/").signum() == 1);
-            static_assert(test96("00000000000000000000000:").signum() == 1);
-            static_assert(test96("00000000000000000000000@").signum() == 1);
-            static_assert(test96("00000000000000000000000G").signum() == 1);
-            static_assert(test96("00000000000000000000000`").signum() == 1);
-            static_assert(test96("00000000000000000000000g").signum() == 1);
-            static_assert(test96("00000000000000000000000~").signum() == 1);
+            static_assert(BaseUInt96("00000000000000000000000 ").signum() == 1);
+            static_assert(BaseUInt96("00000000000000000000000/").signum() == 1);
+            static_assert(BaseUInt96("00000000000000000000000:").signum() == 1);
+            static_assert(BaseUInt96("00000000000000000000000@").signum() == 1);
+            static_assert(BaseUInt96("00000000000000000000000G").signum() == 1);
+            static_assert(BaseUInt96("00000000000000000000000`").signum() == 1);
+            static_assert(BaseUInt96("00000000000000000000000g").signum() == 1);
+            static_assert(BaseUInt96("00000000000000000000000~").signum() == 1);
 #endif  // 0
 
         // Using the constexpr constructor in a non-constexpr context
@@ -298,7 +299,7 @@ TEST_F(BaseUintTest, base_uint)
                 // Try to prevent constant evaluation.
                 std::vector<char> str(23, '7');
                 std::string_view const sView(str.data(), str.size());
-                [[maybe_unused]] test96 const t96(sView);
+                [[maybe_unused]] BaseUInt96 const t96(sView);
             }
             catch (std::invalid_argument const& e)
             {
@@ -316,7 +317,7 @@ TEST_F(BaseUintTest, base_uint)
                 std::vector<char> str(23, '7');
                 str.push_back('G');
                 std::string_view const sView(str.data(), str.size());
-                [[maybe_unused]] test96 const t96(sView);
+                [[maybe_unused]] BaseUInt96 const t96(sView);
             }
             catch (std::range_error const& e)
             {
@@ -331,7 +332,7 @@ TEST_F(BaseUintTest, base_uint)
         struct StrBaseUInt
         {
             char const* const str;
-            test96 tst;
+            BaseUInt96 tst;
 
             constexpr StrBaseUInt(char const* s) : str(s), tst(s)
             {
@@ -347,7 +348,7 @@ TEST_F(BaseUintTest, base_uint)
 
         for (StrBaseUInt const& t : kTestCases)
         {
-            test96 t96;
+            BaseUInt96 t96;
             EXPECT_TRUE(t96.parseHex(t.str));
             EXPECT_EQ(t96, t.tst);
         }
