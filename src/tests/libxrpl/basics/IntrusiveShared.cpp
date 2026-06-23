@@ -378,8 +378,8 @@ TEST(IntrusiveSharedTest, partial_delete)
 
     auto strong = makeSharedIntrusive<TIBase>();
     WeakIntrusive<TIBase> weak{strong};
-    bool destructorRan = false;
-    bool partialDeleteRan = false;
+    std::atomic<bool> destructorRan{false};
+    std::atomic<bool> partialDeleteRan{false};
     std::latch partialDeleteStartedSyncPoint{2};
     strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
@@ -403,13 +403,11 @@ TEST(IntrusiveSharedTest, partial_delete)
         }
         if (next == PartiallyDeleted)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            partialDeleteRan = true;
+            EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
         }
         if (next == Deleted)
         {
-            EXPECT_FALSE(destructorRan);
-            destructorRan = true;
+            EXPECT_FALSE(destructorRan.exchange(true));
         }
     };
     std::thread t1{[&] {
@@ -423,7 +421,7 @@ TEST(IntrusiveSharedTest, partial_delete)
     t1.join();
     t2.join();
 
-    EXPECT_TRUE(destructorRan && partialDeleteRan);
+    EXPECT_TRUE(destructorRan.load() && partialDeleteRan.load());
 }
 
 TEST(IntrusiveSharedTest, destructor)
@@ -442,20 +440,18 @@ TEST(IntrusiveSharedTest, destructor)
 
     auto strong = makeSharedIntrusive<TIBase>();
     WeakIntrusive<TIBase> weak{strong};
-    bool destructorRan = false;
-    bool partialDeleteRan = false;
+    std::atomic<bool> destructorRan{false};
+    std::atomic<bool> partialDeleteRan{false};
     std::latch weakResetSyncPoint{2};
     strong->tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
         using enum TrackedState;
         if (next == PartiallyDeleted)
         {
-            EXPECT_FALSE(partialDeleteRan || destructorRan);
-            partialDeleteRan = true;
+            EXPECT_FALSE(partialDeleteRan.exchange(true) || destructorRan.load());
         }
         if (next == Deleted)
         {
-            EXPECT_FALSE(destructorRan);
-            destructorRan = true;
+            EXPECT_FALSE(destructorRan.exchange(true));
         }
     };
     std::thread t1{[&] {
@@ -469,7 +465,7 @@ TEST(IntrusiveSharedTest, destructor)
     t1.join();
     t2.join();
 
-    EXPECT_TRUE(destructorRan && !partialDeleteRan);
+    EXPECT_TRUE(destructorRan.load() && !partialDeleteRan.load());
 }
 
 TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
