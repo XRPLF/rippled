@@ -109,10 +109,10 @@ protected:
     beast::Journal const j_{TestSink::instance()};
 
     static Buffer
-    intToVuc(int v)
+    intToVuc(std::uint8_t v)
     {
         Buffer vuc{32};
-        std::fill_n(vuc.data(), vuc.size(), static_cast<std::uint8_t>(v));
+        std::fill_n(vuc.data(), vuc.size(), v);
         return vuc;
     }
 };
@@ -251,7 +251,7 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
         {
             EXPECT_TRUE(map.addItem(
                 SHAMapNodeType::TnTransactionNm,
-                makeShamapitem(kEYS[k], intToVuc(static_cast<int>(k)))));
+                makeShamapitem(kEYS[k], intToVuc(static_cast<std::uint8_t>(k)))));
             EXPECT_EQ(map.getHash().asUInt256(), kHASHES[k]);
             map.invariants();
         }
