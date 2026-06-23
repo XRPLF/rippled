@@ -32,9 +32,10 @@ isSponsorReserveCoSigning(STTx const& tx)
     return isReserveSponsored(tx) && tx.isFieldPresent(sfSponsorSignature);
 }
 
-// Optional account is an additional check, that we are checking sponsor for correct account
-// In a functions account can be named something like dstAccount or else, and it is a bit confusing.
-// Passing the account to this function will mitigate the risk.
+/** Optional account is an additional check, that we are checking sponsor for correct account
+ * In a functions account can be named something like dstAccount or else, and it is a bit confusing.
+ * Passing the account to this function will mitigate the risk.
+ */
 inline std::optional<AccountID>
 getTxReserveSponsorAccountID(STTx const& tx, std::optional<AccountID> const& acc = {})
 {
@@ -43,39 +44,30 @@ getTxReserveSponsorAccountID(STTx const& tx, std::optional<AccountID> const& acc
     return std::nullopt;
 }
 
-template <class V>
-auto
-getTxReserveSponsor(V&& view, STTx const& tx, std::optional<AccountID> const& acc = {})
+inline SLE::pointer
+getTxReserveSponsor(ApplyView& view, STTx const& tx, std::optional<AccountID> const& acc = {})
 {
-    auto const sponsorID = getTxReserveSponsorAccountID(tx, acc);
-    if (sponsorID)
+    if (auto const sponsorID = getTxReserveSponsorAccountID(tx, acc))
     {
-        if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
-        {
-            auto sle = view.peek(keylet::account(*sponsorID));
-            // already checked in Transactor::checkSponsor
-            if (!sle)
-                Throw<std::runtime_error>("Empty sponsor");  // LCOV_EXCL_LINE
-            return sle;
-        }
-        else
-        {
-            auto sle = view.read(keylet::account(*sponsorID));
-            // already checked in Transactor::checkSponsor
-            if (!sle)
-                Throw<std::runtime_error>("Empty sponsor");  // LCOV_EXCL_LINE
-            return sle;
-        }
+        auto sle = view.peek(keylet::account(*sponsorID));
+        if (!sle)
+            Throw<std::runtime_error>("Empty sponsor");  // LCOV_EXCL_LINE
+        return sle;
     }
+    return {};
+}
 
-    if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
+inline SLE::const_pointer
+getTxReserveSponsor(ReadView const& view, STTx const& tx, std::optional<AccountID> const& acc = {})
+{
+    if (auto const sponsorID = getTxReserveSponsorAccountID(tx, acc))
     {
-        return SLE::pointer();
+        auto sle = view.read(keylet::account(*sponsorID));
+        if (!sle)
+            Throw<std::runtime_error>("Empty sponsor");  // LCOV_EXCL_LINE
+        return sle;
     }
-    else
-    {
-        return SLE::const_pointer();
-    }
+    return {};
 }
 
 inline std::optional<AccountID>
@@ -83,7 +75,7 @@ getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& fiel
 {
     if (sle->isFieldPresent(field))
         return sle->at(field);
-    return {};
+    return std::nullopt;
 }
 
 inline SLE::pointer

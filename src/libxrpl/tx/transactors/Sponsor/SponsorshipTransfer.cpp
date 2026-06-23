@@ -131,10 +131,12 @@ getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner)
                     return sfHighSponsor;
             }
 
-            XRPL_ASSERT(sle.isFlag(lsfLowReserve), "getLedgerEntrySponsorField lsfLowReserve flag");
+            XRPL_ASSERT(
+                sle.isFlag(lsfLowReserve),
+                "xrpl::getLedgerEntrySponsorField : lsfLowReserve flag is set");
             XRPL_ASSERT(
                 sle.getFieldAmount(sfLowLimit).getIssuer() == owner,
-                "getLedgerEntrySponsorField lowAccount == owner");
+                "xrpl::getLedgerEntrySponsorField : lowAccount == owner");
             return sfLowSponsor;
         }
         default:
