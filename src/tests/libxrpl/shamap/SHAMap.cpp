@@ -122,7 +122,7 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
     auto const testMode = GetParam();
     tests::TestNodeFamily f{j_};
 
-    // h3 and h4 differ only in the leaf, same terminal node (level 19)
+    // kH3 and kH4 differ only in the leaf, same terminal node (level 19)
     constexpr uint256 kH1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
     constexpr uint256 kH2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
     constexpr uint256 kH3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
