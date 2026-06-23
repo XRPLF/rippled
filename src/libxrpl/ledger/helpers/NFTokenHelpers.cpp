@@ -36,7 +36,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -77,9 +76,7 @@ getPageForToken(
     STTx const& tx,
     AccountID const& owner,
     SLE::ref sponsorSle,
-    uint256 const& id,
-    std::function<TER(ApplyView&, STTx const&, SLE::ref, AccountID const&, SLE::ref)> const&
-        createCallback)
+    uint256 const& id)
 {
     auto const base = keylet::nftpageMin(owner);
     auto const first = keylet::nftpage(base, id);
@@ -91,6 +88,21 @@ getPageForToken(
     auto cp =
         view.peek(Keylet(ltNFTOKEN_PAGE, view.succ(first.key, last.key.next()).value_or(last.key)));
 
+    auto const onNewPage = [&](SLE::ref newPage) -> TER {
+        if (isReserveSponsored(tx))
+        {
+            auto const ownerSle = view.read(keylet::account(owner));
+            auto const ownerBalance = ownerSle->getFieldAmount(sfBalance);
+            if (auto const ret =
+                    checkInsufficientReserve(view, tx, ownerSle, ownerBalance, sponsorSle, 1);
+                !isTesSuccess(ret))
+                return ret;
+        }
+        adjustOwnerCount(view, view.peek(keylet::account(owner)), sponsorSle, 1);
+        addSponsorToLedgerEntry(newPage, sponsorSle);
+        return tesSUCCESS;
+    };
+
     // A suitable page doesn't exist; we'll have to create one.
     if (!cp)
     {
@@ -99,7 +111,7 @@ getPageForToken(
         cp->setFieldArray(sfNFTokens, arr);
         view.insert(cp);
 
-        if (auto const ret = createCallback(view, tx, cp, owner, sponsorSle); !isTesSuccess(ret))
+        if (auto const ret = onNewPage(cp); !isTesSuccess(ret))
             return std::unexpected(ret);
         return cp;
     }
@@ -213,7 +225,7 @@ getPageForToken(
     cp->setFieldH256(sfPreviousPageMin, np->key());
     view.update(cp);
 
-    if (auto const ret = createCallback(view, tx, np, owner, sponsorSle); ret != tesSUCCESS)
+    if (auto const ret = onNewPage(np); !isTesSuccess(ret))
         return std::unexpected(ret);
 
     return (first.key < np->key()) ? np : cp;
@@ -277,29 +289,7 @@ insertToken(ApplyView& view, STTx const& tx, AccountID owner, SLE::ref sponsorSl
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
     // the NFT.
-    auto createCallback = [](ApplyView& view,
-                             STTx const& tx,
-                             std::shared_ptr<SLE> const& newPage,
-                             AccountID const& owner,
-                             SLE::ref sponsorSle) -> TER {
-        if (isReserveSponsored(tx))
-        {
-            auto const ownerSle = view.read(keylet::account(owner));
-            auto const ownerBalance = ownerSle->getFieldAmount(sfBalance);
-            if (auto const ret =
-                    checkInsufficientReserve(view, tx, ownerSle, ownerBalance, sponsorSle, 1);
-                !isTesSuccess(ret))
-                return ret;
-        }
-
-        adjustOwnerCount(view, view.peek(keylet::account(owner)), sponsorSle, 1);
-
-        addSponsorToLedgerEntry(newPage, sponsorSle);
-        return tesSUCCESS;
-    };
-
-    auto const page =
-        getPageForToken(view, tx, owner, sponsorSle, nft[sfNFTokenID], createCallback);
+    auto const page = getPageForToken(view, tx, owner, sponsorSle, nft[sfNFTokenID]);
 
     if (!page.has_value())
         return page.error();
