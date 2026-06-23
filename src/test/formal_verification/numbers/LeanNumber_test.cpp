@@ -1101,7 +1101,7 @@ private:
 
         // Issues identified during formal verification.
         // Kept here to ensure there are no regression bugs.
-        // testNegativeComparison();
+        testNegativeComparison();
         // testRangeBoundaryArithmetic();
         // testAdditionRounding();
         testDivisionRounding();
