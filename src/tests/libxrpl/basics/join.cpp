@@ -57,6 +57,10 @@ TEST_F(JoinTest, join)
     test(CollectionAndDelimiter(std::vector<int>{0, 42}, std::to_string(99)), "09942");
     // vector with one item edge case
     test(CollectionAndDelimiter(std::vector<std::string>{"master"}, "xxx"), "master");
+    // vector with one non-trivial streamable item edge case
+    test(
+        CollectionAndDelimiter(std::vector<uint256>{uint256{1}}, "xxx"),
+        "0000000000000000000000000000000000000000000000000000000000000001");
     // empty vector edge case
     test(CollectionAndDelimiter(std::vector<uint256>{}, ","), "");
     // C-style string
