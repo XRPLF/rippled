@@ -541,7 +541,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         env.fund(XRP(1000), alice);
 
         pdomain::Credentials const credentials{
-            {alice, "credential1"},
+            {.issuer = alice, .credType = "credential1"},
         };
 
         std::uint32_t seq{env.seq(alice)};
