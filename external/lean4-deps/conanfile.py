@@ -20,6 +20,10 @@ DEP_TARGETS = [
 
 MIN_OBJECTS = 7000
 
+PACKAGES_DIR = "packages"
+LIB_DIR = "lib"
+ARCHIVE_NAME = "libLeanDeps.a"
+
 
 class Lean4Deps(ConanFile):
     """Prebuilt Lean4 mathlib and transitive deps bundled into lib/libLeanDeps.a.
@@ -71,12 +75,12 @@ class Lean4Deps(ConanFile):
             self.output.error(log.getvalue())
             raise
         self.output.info(
-            f"lean4-deps: Lean4 compiled {n} objects, bundled into libLeanDeps.a"
+            f"lean4-deps: Lean4 compiled {n} objects, bundled into {ARCHIVE_NAME}"
         )
 
     def _dep_objects(self):
         # Native objects from `lake build :static` (cache get only fetches .olean/.c)
-        packages_dir = Path(self.build_folder) / ".lake" / "packages"
+        packages_dir = Path(self.build_folder) / ".lake" / PACKAGES_DIR
         objects = []
         for dirpath, _dirs, filenames in os.walk(packages_dir):
             if "/ir/Cache/" in (dirpath.replace("\\", "/") + "/"):
@@ -101,11 +105,16 @@ class Lean4Deps(ConanFile):
             "".join(f"{symlink}\n" for symlink in symlinks), encoding="utf-8"
         )
 
-        archive = build_dir / "libLeanDeps.a"
+        archive = build_dir / ARCHIVE_NAME
         self.run(f'llvm-ar qcs "{archive}" "@{response_file}"')
 
     def package(self):
         build_dir = Path(self.build_folder)
         package_dir = Path(self.package_folder)
-        copy(self, "*", src=build_dir / ".lake" / "packages", dst=package_dir / "packages")
-        copy(self, "libLeanDeps.a", src=build_dir, dst=package_dir / "lib")
+        copy(self, "*", src=build_dir / ".lake" / PACKAGES_DIR, dst=package_dir / PACKAGES_DIR)
+        copy(self, ARCHIVE_NAME, src=build_dir, dst=package_dir / LIB_DIR)
+
+    def package_info(self):
+        package_dir = Path(self.package_folder)
+        self.cpp_info.set_property("packages", str(package_dir / PACKAGES_DIR))
+        self.cpp_info.set_property("archive", str(package_dir / LIB_DIR / ARCHIVE_NAME))
