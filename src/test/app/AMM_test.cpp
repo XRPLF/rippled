@@ -1842,8 +1842,18 @@ private:
         // are rounded to all LP tokens.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto const err =
-                    env.enabled(fixAMMv1_3) ? Ter(tecINVARIANT_FAILED) : Ter(tecAMM_BALANCE);
+                // Without fixAMMv1_3: sub-method returns tecAMM_BALANCE early.
+                // With fixAMMv1_3 but without fixCleanup3_3_0: sub-method succeeds
+                //   but invariant check catches the precision violation.
+                // With fixCleanup3_3_0: caught in the transaction layer before
+                //   the invariant checker runs.
+                auto const err = [&] {
+                    if (!env.enabled(fixAMMv1_3))
+                        return Ter(tecAMM_BALANCE);
+                    if (env.enabled(fixCleanup3_3_0))
+                        return Ter(tecPRECISION_LOSS);
+                    return Ter(tecINVARIANT_FAILED);
+                }();
                 ammAlice.withdraw(
                     alice_,
                     STAmount{USD, UINT64_C(9'999'999999999999), -12},
@@ -1851,7 +1861,7 @@ private:
                     std::nullopt,
                     err);
             },
-            {.features = {all, all - fixAMMv1_3}, .noLog = true});
+            {.features = {all, all - fixAMMv1_3, all - fixCleanup3_3_0}, .noLog = true});
 
         // Tiny withdraw
         testAMM([&](AMM& ammAlice, Env&) {

@@ -51,6 +51,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
@@ -1275,6 +1276,87 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().insert(nftPage);
                 return true;
             });
+    }
+
+    void
+    testAMMDeleteInvariants(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const enforceAMMDelete = features[fixCleanup3_3_0];
+        testcase << "AMM delete invariants" + std::string(enforceAMMDelete ? " fix" : "");
+
+        Env env(*this, features);
+        Account const issuer{"issuer"};
+        Issue const lptIssue{Currency(0x4c50540000000000), issuer.id()};
+        STAmount const zeroLP{lptIssue, 0};
+        STAmount const nonZeroLP{lptIssue, 1};
+
+        auto const makeAMM = [](STAmount const& lptBalance) {
+            auto sleAMM = std::make_shared<SLE>(keylet::amm(uint256(1)));
+            sleAMM->setFieldAmount(sfLPTokenBalance, lptBalance);
+            return sleAMM;
+        };
+
+        auto const checkInvariant = [&](TxType txType,
+                                        TER result,
+                                        std::optional<STAmount> const& deletedLPBalance,
+                                        bool expected,
+                                        std::string const& expectedLog) {
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ValidAMM invariant;
+
+            if (deletedLPBalance)
+                invariant.visitEntry(true, makeAMM(*deletedLPBalance), nullptr);
+
+            bool const actual = invariant.finalize(
+                STTx{txType, [](STObject&) {}}, result, XRPAmount{}, *env.current(), jlog);
+
+            BEAST_EXPECTS(actual == expected, "unexpected AMM delete invariant result");
+            auto const messages = sink.messages().str();
+            auto const expectedLogWhenEnforced = enforceAMMDelete ? expectedLog : "";
+            if (!expectedLogWhenEnforced.empty())
+            {
+                BEAST_EXPECTS(messages.contains(expectedLogWhenEnforced), expectedLogWhenEnforced);
+            }
+            else
+            {
+                BEAST_EXPECTS(messages.empty(), messages);
+            }
+        };
+
+        checkInvariant(
+            ttPAYMENT,
+            tesSUCCESS,
+            nonZeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMM failed, unexpected AMM deletion by");
+        checkInvariant(
+            ttAMM_DELETE,
+            tesSUCCESS,
+            std::nullopt,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object remained on tesSUCCESS");
+        checkInvariant(
+            ttAMM_DELETE,
+            tesSUCCESS,
+            nonZeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object deleted with non-zero LP balance");
+        checkInvariant(
+            ttAMM_DELETE,
+            tecINCOMPLETE,
+            zeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object deleted when result is not tesSUCCESS");
+
+        checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, nonZeroLP, true, "");
+        checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, nonZeroLP, true, "");
+
+        checkInvariant(ttAMM_DELETE, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, zeroLP, true, "");
     }
 
     static SLE::pointer
@@ -4900,6 +4982,8 @@ public:
         testNoZeroEscrow();
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
+        testAMMDeleteInvariants(defaultAmendments());
+        testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_3_0);
         testPermissionedDomainInvariants(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
