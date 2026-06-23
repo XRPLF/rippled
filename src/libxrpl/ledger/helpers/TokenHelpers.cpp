@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -192,6 +193,13 @@ checkWithdrawFreeze(
     if (auto const ret = checkGlobalFrozen(view, asset))
         return ret;
 
+    // Special case for shares - check if the shares (and the transitive asset) is not frozen
+    if (asset.holds<MPTIssue>() &&
+        isVaultPseudoAccountFrozen(view, dstAcct, asset.get<MPTIssue>(), 0))
+    {
+        return tecLOCKED;
+    }
+
     // The transfer is from Submitter to Destination via Source (pseudo-account)
     // Both Source and Submitter must not be frozen to allow sending funds
     if (auto const ret = checkIndividualFrozen(view, srcAcct, asset))
@@ -226,6 +234,13 @@ checkDepositFreeze(
 
     if (auto const ret = checkGlobalFrozen(view, asset))
         return ret;
+
+    // Special case for shares - check if the shares (and the transitive asset) is not frozen
+    if (asset.holds<MPTIssue>() &&
+        isVaultPseudoAccountFrozen(view, dstAcct, asset.get<MPTIssue>(), 0))
+    {
+        return tecLOCKED;
+    }
 
     if (srcAcct != asset.getIssuer())
     {
