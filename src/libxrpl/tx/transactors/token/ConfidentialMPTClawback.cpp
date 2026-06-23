@@ -50,10 +50,7 @@ ConfidentialMPTClawback::preflight(PreflightContext const& ctx)
 XRPAmount
 ConfidentialMPTClawback::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge kConfidentialFeeMultiplier extra base fees so the total is
-    // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
+    return Transactor::calculateBaseFee(view, tx, kConfidentialFeeMultiplier);
 }
 
 TER
@@ -88,8 +85,8 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // Check if issuance allows confidential transfer
-    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
-        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+    if (!sleIssuance->isFlag(lsfMPTCanHoldConfidentialBalance))
+        return tecNO_PERMISSION;
 
     // Check holder's MPToken
     auto const sleHolderMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, holder));
@@ -98,11 +95,11 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Check if holder has confidential balances to claw back
     if (!sleHolderMPToken->isFieldPresent(sfIssuerEncryptedBalance))
-        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+        return tecNO_PERMISSION;
 
     // Check if Holder has ElGamal public Key
     if (!sleHolderMPToken->isFieldPresent(sfHolderEncryptionKey))
-        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+        return tecNO_PERMISSION;
 
     // Sanity check: claw amount can not exceed confidential outstanding amount
     // or total outstanding amount (prevents underflow in doApply)

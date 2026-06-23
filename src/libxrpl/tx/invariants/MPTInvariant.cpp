@@ -671,11 +671,11 @@ ValidConfidentialMPToken::finalize(
         // changing those fields requires the issuance privacy flag.
         if (checks.changesConfidentialFields)
         {
-            if (!issuance->isFlag(lsfMPTCanConfidentialAmount))
+            if (!issuance->isFlag(lsfMPTCanHoldConfidentialBalance))
             {
                 JLOG(j.fatal()) << "Invariant failed: MPToken has encrypted "
                                    "fields but Issuance does not have "
-                                   "lsfMPTCanConfidentialAmount set";
+                                   "lsfMPTCanHoldConfidentialBalance set";
                 return false;
             }
         }

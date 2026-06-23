@@ -73,7 +73,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -118,7 +118,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -153,7 +153,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -216,7 +216,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
         });
 
         mptAlice.authorize({
@@ -265,7 +265,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             MPTTester mptAlice(env, alice);
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.generateKeyPair(alice);
 
@@ -426,7 +426,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -475,7 +475,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -521,7 +521,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({.account = bob});
             mptAlice.authorize({.account = carol});
@@ -590,7 +590,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -616,7 +616,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
             });
         }
 
@@ -637,14 +637,14 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
                 .issuerPubKey = mptAlice.getPubKey(alice),
                 .auditorPubKey = mptAlice.getPubKey(auditor),
             });
 
-            // Verify lsfMPTCanConfidentialAmount flag is set
+            // Verify lsfMPTCanHoldConfidentialBalance flag is set
             BEAST_EXPECT(mptAlice.checkFlags(
-                lsfMPTCanTransfer | lsfMPTCanLock | lsfMPTCanConfidentialAmount));
+                lsfMPTCanTransfer | lsfMPTCanLock | lsfMPTCanHoldConfidentialBalance));
 
             // Verify keys are persisted on the issuance
             auto const sle = env.le(keylet::mptIssuance(mptAlice.issuanceID()));
@@ -695,7 +695,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -796,7 +796,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -828,7 +828,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -880,11 +880,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const alice("alice");
             MPTTester mptAlice(env, alice, {.holders = {}});
 
-            // Create with tmfMPTCannotMutateCanConfidentialAmount
+            // Create with tmfMPTCannotEnableCanHoldConfidentialBalance
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTCanTransfer | tfMPTCanLock,
-                .mutableFlags = tmfMPTCannotMutateCanConfidentialAmount,
+                .mutableFlags = tmfMPTCannotEnableCanHoldConfidentialBalance,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -893,7 +893,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // because the issuance cannot mutate canConfidentialAmount
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
                 .issuerPubKey = mptAlice.getPubKey(alice),
                 .err = tecNO_PERMISSION,
             });
@@ -908,7 +908,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -939,7 +939,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         using namespace test::jtx;
 
         // MPTokenIssuanceCreate: cannot create with both TransferFee > 0 and
-        // tfMPTCanConfidentialAmount
+        // tfMPTCanHoldConfidentialBalance
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -947,14 +947,14 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .transferFee = 100,
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
                 .err = temBAD_TRANSFER_FEE,
             });
 
-            // transferFee being 0 is allowed, even with tfMPTCanConfidentialAmount
+            // transferFee being 0 is allowed, even with tfMPTCanHoldConfidentialBalance
             mptAlice.create({
                 .transferFee = 0,
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
             });
         }
 
@@ -973,7 +973,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
                 .transferFee = 100,
                 .err = temBAD_TRANSFER_FEE,
             });
@@ -995,13 +995,13 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
                 .err = tecNO_PERMISSION,
             });
         }
 
         // MPTokenIssuanceSet (preclaim): cannot set TransferFee > 0 on an
-        // issuance that already has lsfMPTCanConfidentialAmount
+        // issuance that already has lsfMPTCanHoldConfidentialBalance
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -1009,7 +1009,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
                 .mutableFlags = tmfMPTCanMutateTransferFee,
             });
 
@@ -1033,7 +1033,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testcase("Convert preclaim");
         using namespace test::jtx;
 
-        // tfMPTCanConfidentialAmount is not set on issuance
+        // tfMPTCanHoldConfidentialBalance is not set on issuance
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -1070,7 +1070,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1098,7 +1098,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1128,7 +1128,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -1154,7 +1154,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1214,7 +1214,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1245,7 +1245,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1279,7 +1279,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1328,8 +1328,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags =
-                    tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth |
+                    tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1383,7 +1383,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1422,8 +1422,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags =
-                    tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth |
+                    tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1474,7 +1474,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1511,7 +1511,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1550,7 +1550,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 });
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1585,7 +1585,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1616,7 +1616,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1646,7 +1646,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1693,7 +1693,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({.account = bob});
             mptAlice.pay(alice, bob, 100);
@@ -1726,7 +1726,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({.account = bob});
             mptAlice.pay(alice, bob, 100);
@@ -1778,7 +1778,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
         });
 
         mptAlice.authorize({
@@ -1827,7 +1827,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1846,7 +1846,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
         }
 
-        // tfMPTCanConfidentialAmount is not set on issuance
+        // tfMPTCanHoldConfidentialBalance is not set on issuance
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -1881,7 +1881,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -1903,7 +1903,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1932,7 +1932,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -1985,8 +1985,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags =
-                    tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTRequireAuth,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance |
+                    tfMPTRequireAuth,
             });
 
             mptAlice.authorize({
@@ -2089,7 +2089,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             alice,
             {{.account = bob, .payAmount = 100, .convertAmount = 60},
              {.account = carol, .payAmount = 50, .convertAmount = 20}},
-            tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             auditor};
         auto& mptAlice = confEnv.mpt;
 
@@ -2162,7 +2162,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -2350,7 +2350,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -2425,8 +2425,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // authorize bob, carol, dave (not eve)
         mptAlice.create({
-            .flags =
-                tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth |
+                tfMPTCanHoldConfidentialBalance,
         });
         mptAlice.authorize({
             .account = bob,
@@ -2491,7 +2491,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -2750,7 +2750,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 alice,
                 {{.account = bob, .payAmount = 100, .convertAmount = 60},
                  {.account = carol, .payAmount = 50, .convertAmount = 20}},
-                tfMPTCanLock | tfMPTCanConfidentialAmount};
+                tfMPTCanLock | tfMPTCanHoldConfidentialBalance};
             auto& mptAlice = confEnv.mpt;
 
             // bob sends 10 to carol
@@ -2759,6 +2759,40 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .dest = carol,
                 .amt = 10,  // will be encrypted internally
                 .err = tecNO_AUTH,
+            });
+        }
+
+        // Confidential MPTs should not have a transfer fee. Force malformed
+        // ledger state to cover the defensive preclaim check.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            ConfidentialEnv confEnv{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 60},
+                 {.account = carol, .payAmount = 50, .convertAmount = 20}}};
+            auto& mptAlice = confEnv.mpt;
+
+            BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const issuance = std::const_pointer_cast<SLE>(
+                    view.read(keylet::mptIssuance(mptAlice.issuanceID())));
+                if (!issuance)
+                    return false;
+
+                issuance->setFieldU16(sfTransferFee, 1);
+                view.rawReplace(issuance);
+                return true;
+            }));
+
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(),
+                .err = tecNO_PERMISSION,
             });
         }
 
@@ -2813,7 +2847,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -2984,7 +3018,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
         });
         mptAlice.authorize({.account = bob});
         mptAlice.authorize({.account = carol});
@@ -3062,7 +3096,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -3099,7 +3133,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -3146,7 +3180,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -3180,7 +3214,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -3271,12 +3305,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // to simulate a scenario where vault shares somehow have
             // confidential balances
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
-                // Set lsfMPTCanConfidentialAmount on the share issuance
+                // Set lsfMPTCanHoldConfidentialBalance on the share issuance
                 // so the invariant allows encrypted fields on the MPToken
                 auto issuance = std::const_pointer_cast<SLE>(view.read(keylet::mptIssuance(share)));
                 if (!issuance)
                     return false;
-                issuance->setFlag(lsfMPTCanConfidentialAmount);
+                issuance->setFlag(lsfMPTCanHoldConfidentialBalance);
                 view.rawReplace(issuance);
 
                 auto const k = keylet::mptoken(share, depositor.id());
@@ -3287,8 +3321,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 Buffer dummyCiphertext(kEcGamalEncryptedTotalLength);
                 std::memset(dummyCiphertext.data(), 0, kEcGamalEncryptedTotalLength);
                 dummyCiphertext.data()[0] = kEcCompressedPrefixEvenY;
-                dummyCiphertext.data()[kEcGamalEncryptedLength] = kEcCompressedPrefixEvenY;
-                dummyCiphertext.data()[kEcGamalEncryptedLength - 1] = 0x01;
+                dummyCiphertext.data()[kEcCiphertextComponentLength] = kEcCompressedPrefixEvenY;
+                dummyCiphertext.data()[kEcCiphertextComponentLength - 1] = 0x01;
                 dummyCiphertext.data()[kEcGamalEncryptedTotalLength - 1] = 0x01;
                 sle->setFieldVL(sfConfidentialBalanceSpending, dummyCiphertext);
                 sle->setFieldVL(sfConfidentialBalanceInbox, dummyCiphertext);
@@ -3363,7 +3397,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -3484,7 +3518,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             env,
             alice,
             {{.account = bob, .payAmount = 100, .convertAmount = 40}},
-            tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             auditor};
         auto& mptAlice = confEnv.mpt;
 
@@ -3634,7 +3668,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -3654,7 +3688,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
         }
 
-        // tfMPTCanConfidentialAmount is not set on issuance
+        // tfMPTCanHoldConfidentialBalance is not set on issuance
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -3690,7 +3724,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.generateKeyPair(alice);
@@ -3714,7 +3748,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -3750,7 +3784,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -3801,8 +3835,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags =
-                    tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTRequireAuth |
+                    tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -3933,7 +3967,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 env,
                 alice,
                 {{.account = bob, .payAmount = 100, .convertAmount = 50}},
-                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
                 auditor};
             auto& mptAlice = confEnv.mpt;
 
@@ -3970,8 +4004,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         MPTTester mptAlice(env, alice, {.holders = {bob, carol, dave}});
 
         mptAlice.create({
-            .flags =
-                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback |
+                tfMPTCanHoldConfidentialBalance,
         });
         mptAlice.authorize({
             .account = bob,
@@ -4095,8 +4129,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
 
         mptAlice.create({
-            .flags =
-                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback |
+                tfMPTCanHoldConfidentialBalance,
         });
         mptAlice.authorize({
             .account = bob,
@@ -4203,7 +4237,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 env,
                 alice,
                 {{.account = bob, .payAmount = 100, .convertAmount = 60}},
-                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount};
+                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback |
+                    tfMPTCanHoldConfidentialBalance};
             auto& mptAlice = confEnv.mpt;
 
             auto const privKey = mptAlice.getPrivKey(alice);
@@ -4311,7 +4346,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -4396,7 +4431,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTRequireAuth |
-                    tfMPTCanConfidentialAmount,
+                    tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -4469,7 +4504,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -4492,7 +4527,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const bob("bob");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
             mptAlice.create({
-                .flags = tfMPTCanClawback | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanClawback | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -4514,7 +4549,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const bob("bob");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
             mptAlice.create({
-                .flags = tfMPTCanClawback | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanClawback | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({
                 .account = bob,
@@ -4539,7 +4574,87 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         // After setup, bob has confidential balance 60 in spending.
         std::uint32_t const setupFlags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTRequireAuth |
-            tfMPTCanLock | tfMPTCanConfidentialAmount;
+            tfMPTCanLock | tfMPTCanHoldConfidentialBalance;
+        std::string const dummyClawbackProof(kEcClawbackProofLength * 2, '0');
+
+        auto removeMPTokenField =
+            [&](Env& env, MPTTester const& mpt, Account const& holder, SField const& field) {
+                BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                    auto const sle = std::const_pointer_cast<SLE>(
+                        view.read(keylet::mptoken(mpt.issuanceID(), holder.id())));
+                    if (!sle)
+                        return false;
+
+                    sle->makeFieldAbsent(field);
+                    view.rawReplace(sle);
+                    return true;
+                }));
+            };
+
+        // After global COA is drained to zero, a further confidential clawback
+        // fails because the amount exceeds the remaining confidential
+        // outstanding amount.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 60}}, setupFlags};
+            auto& mptAlice = confEnv.mpt;
+
+            mptAlice.confidentialClaw({
+                .account = alice,
+                .holder = bob,
+                .amt = 60,
+            });
+
+            mptAlice.confidentialClaw({
+                .account = alice,
+                .holder = bob,
+                .amt = 1,
+                .proof = dummyClawbackProof,
+                .err = tecINSUFFICIENT_FUNDS,
+            });
+        }
+
+        // Missing issuer encrypted balance should fail before proof
+        // verification.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 60}}, setupFlags};
+            auto& mptAlice = confEnv.mpt;
+
+            removeMPTokenField(env, mptAlice, bob, sfIssuerEncryptedBalance);
+            mptAlice.confidentialClaw({
+                .account = alice,
+                .holder = bob,
+                .amt = 60,
+                .proof = dummyClawbackProof,
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // Missing holder encryption key should fail before proof verification.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv confEnv{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 60}}, setupFlags};
+            auto& mptAlice = confEnv.mpt;
+
+            removeMPTokenField(env, mptAlice, bob, sfHolderEncryptionKey);
+            mptAlice.confidentialClaw({
+                .account = alice,
+                .holder = bob,
+                .amt = 60,
+                .proof = dummyClawbackProof,
+                .err = tecNO_PERMISSION,
+            });
+        }
 
         // lock should not block clawback. lock bob individually
         {
@@ -4643,7 +4758,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
             mptAlice.create({
-                .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanHoldConfidentialBalance,
             });
 
             for (auto const& [acct, amt] : {std::pair{bob, 1000}, {carol, 2000}})
@@ -4896,7 +5011,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 env,
                 alice,
                 {{.account = bob, .payAmount = 100, .convertAmount = 50}},
-                tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+                tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance};
 
             env.fund(XRP(1'000), carol);
             ct.mpt.authorize({.account = carol});
@@ -4916,7 +5031,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({.account = bob});
@@ -4952,7 +5067,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 env,
                 alice,
                 {{.account = bob, .payAmount = 100, .convertAmount = 50}},
-                tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanConfidentialAmount};
+                tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanHoldConfidentialBalance};
 
             env.fund(XRP(1'000), carol);
             ct.mpt.authorize({.account = carol});
@@ -4968,10 +5083,10 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
     void
     testMutatePrivacy(FeatureBitset features)
     {
-        testcase("mutate lsfMPTCanConfidentialAmount");
+        testcase("mutate lsfMPTCanHoldConfidentialBalance");
         using namespace test::jtx;
 
-        // can not create mpt issuance with tmfMPTCannotMutateCanConfidentialAmount
+        // can not create mpt issuance with tmfMPTCannotEnableCanHoldConfidentialBalance
         // when featureDynamicMPT is disabled
         {
             Env env{*this, features - featureDynamicMPT};
@@ -4981,12 +5096,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 0,
-                .mutableFlags = tmfMPTCannotMutateCanConfidentialAmount,
+                .mutableFlags = tmfMPTCannotEnableCanHoldConfidentialBalance,
                 .err = temDISABLED,
             });
         }
 
-        // can not create mpt issuance with tmfMPTCannotMutateCanConfidentialAmount when
+        // can not create mpt issuance with tmfMPTCannotEnableCanHoldConfidentialBalance when
         // featureConfidentialTransfer is disabled
         {
             Env env{*this, features - featureConfidentialTransfer};
@@ -4996,13 +5111,13 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 0,
-                .mutableFlags = tmfMPTCannotMutateCanConfidentialAmount,
+                .mutableFlags = tmfMPTCannotEnableCanHoldConfidentialBalance,
                 .err = temDISABLED,
             });
         }
 
-        // if lsmfMPTCannotMutateCanConfidentialAmount is set, can not set/clear
-        // lsfMPTCanConfidentialAmount
+        // if lsmfMPTCannotEnableCanHoldConfidentialBalance is set, can not set/clear
+        // lsfMPTCanHoldConfidentialBalance
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -5012,17 +5127,17 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.create({
                 .ownerCount = 1,
                 .flags = tfMPTCanTransfer,
-                .mutableFlags = tmfMPTCannotMutateCanConfidentialAmount,
+                .mutableFlags = tmfMPTCannotEnableCanHoldConfidentialBalance,
             });
 
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
                 .err = tecNO_PERMISSION,
             });
         }
 
-        // Toggle lsfMPTCanConfidentialAmount
+        // Toggle lsfMPTCanHoldConfidentialBalance
         {
             Env env{*this, features};
             Account const alice("alice");
@@ -5031,7 +5146,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
                 .mutableFlags = tmfMPTCanEnableCanLock,
             });
 
@@ -5080,18 +5195,18 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 }
             };
 
-            // set lsfMPTCanConfidentialAmount, but no effect because lsfMPTCanConfidentialAmount
-            // was already set
+            // set lsfMPTCanHoldConfidentialBalance, but no effect because
+            // lsfMPTCanHoldConfidentialBalance was already set
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
             });
             verifyToggle(tesSUCCESS, 10);
 
-            // set lsfMPTCanConfidentialAmount again
+            // set tmfMPTSetCanHoldConfidentialBalance again
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
             });
             verifyToggle(tesSUCCESS, 30);
         }
@@ -5104,11 +5219,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             Account const bob("bob");
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            // lsmfMPTCannotMutateCanConfidentialAmount is false by default,
-            // so that lsfMPTCanConfidentialAmount can be mutated
+            // lsmfMPTCannotEnableCanHoldConfidentialBalance is false by default,
+            // so that lsfMPTCanHoldConfidentialBalance can be mutated
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
             });
 
             mptAlice.authorize({
@@ -5123,11 +5238,11 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // bob convert 50 to confidential
             mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
 
-            // set lsfMPTCanConfidentialAmount should fail because of
+            // set lsfMPTCanHoldConfidentialBalance should fail because of
             // confidential outstanding balance
             mptAlice.set({
                 .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
+                .mutableFlags = tmfMPTSetCanHoldConfidentialBalance,
                 .err = tecNO_PERMISSION,
             });
         }
@@ -6111,15 +6226,15 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             std::memset(badC1goodC2.data(), 0xFF, kEcGamalEncryptedTotalLength);
             badC1goodC2.data()[0] = kEcCompressedPrefixEvenY;
             std::memcpy(
-                badC1goodC2.data() + kEcGamalEncryptedLength,
-                tc.data() + kEcGamalEncryptedLength,
-                kEcGamalEncryptedLength);
+                badC1goodC2.data() + kEcCiphertextComponentLength,
+                tc.data() + kEcCiphertextComponentLength,
+                kEcCiphertextComponentLength);
 
             // C1 = valid trivial point, C2 = bad (0xFF...FF)
             Buffer goodC1badC2(kEcGamalEncryptedTotalLength);
             std::memset(goodC1badC2.data(), 0xFF, kEcGamalEncryptedTotalLength);
-            std::memcpy(goodC1badC2.data(), tc.data(), kEcGamalEncryptedLength);
-            goodC1badC2.data()[kEcGamalEncryptedLength] = kEcCompressedPrefixEvenY;
+            std::memcpy(goodC1badC2.data(), tc.data(), kEcCiphertextComponentLength);
+            goodC1badC2.data()[kEcCiphertextComponentLength] = kEcCompressedPrefixEvenY;
 
             // sender's encrypted amount — bad C1
             mptAlice.send({
@@ -6215,8 +6330,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         Buffer wrongGroupCt(kEcGamalEncryptedTotalLength);
         wrongGroupCt.data()[0] = kEcCompressedPrefixEvenY;
         std::memcpy(wrongGroupCt.data() + 1, kP256GeneratorX, 32);
-        wrongGroupCt.data()[kEcGamalEncryptedLength] = kEcCompressedPrefixEvenY;
-        std::memcpy(wrongGroupCt.data() + kEcGamalEncryptedLength + 1, kP256GeneratorX, 32);
+        wrongGroupCt.data()[kEcCiphertextComponentLength] = kEcCompressedPrefixEvenY;
+        std::memcpy(wrongGroupCt.data() + kEcCiphertextComponentLength + 1, kP256GeneratorX, 32);
 
         // A 33-byte commitment using the same wrong-curve x-coordinate.
         Buffer wrongGroupCommitment(kEcPedersenCommitmentLength);
@@ -6307,7 +6422,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({.account = bob});
             mptAlice.authorize({.account = carol});
@@ -6344,7 +6459,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             MPTTester mptAlice(env, alice, {.holders = {bob}});
             mptAlice.create({
                 .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({.account = bob});
             mptAlice.pay(alice, bob, 100);
@@ -6440,7 +6555,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             alice,
             {{.account = bob, .payAmount = 100, .convertAmount = 50},
              {.account = carol, .payAmount = 50, .convertAmount = 50}},
-            tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer,
+            tfMPTCanLock | tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer,
             auditor};
         auto& mptAlice = confEnv.mpt;
 
@@ -6538,7 +6653,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             [&](MPTTester& mpt, Account const& alice, Account const& bob, Account const& carol) {
                 mpt.create({
                     .ownerCount = 1,
-                    .flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer |
+                    .flags = tfMPTCanLock | tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer |
                         tfMPTCanClawback,
                 });
                 mpt.authorize({.account = bob});
@@ -6559,7 +6674,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             setup(mptAlice, alice, bob, carol);
 
             auto const baseFee = env.current()->fees().base;
-            auto const expectedFee = baseFee * 10;
+            auto const expectedFee = baseFee * (kConfidentialFeeMultiplier + 1);
 
             // lambda function to submit confidential transaction and check fee charged to the
             // account
@@ -6605,19 +6720,20 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
             setup(mptAlice, alice, bob, carol);
             auto const baseFee = env.current()->fees().base;
+            auto const expectedFee = baseFee * (kConfidentialFeeMultiplier + 1);
 
             mptAlice.convert(
                 {.account = bob,
                  .amt = 1,
                  .holderPubKey = mptAlice.getPubKey(bob),
-                 .fee = baseFee * 10 - 1,
+                 .fee = expectedFee - 1,
                  .err = telINSUF_FEE_P});
             mptAlice.mergeInbox({.account = bob, .fee = baseFee, .err = telINSUF_FEE_P});
             mptAlice.send(
                 {.account = bob,
                  .dest = carol,
                  .amt = 1,
-                 .fee = baseFee * 9,
+                 .fee = baseFee * kConfidentialFeeMultiplier,
                  .err = telINSUF_FEE_P});
             mptAlice.convertBack({.account = bob, .amt = 1, .fee = baseFee, .err = telINSUF_FEE_P});
             mptAlice.confidentialClaw(
@@ -6636,7 +6752,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             setup(mptAlice, alice, bob, carol);
 
             auto const baseFee = env.current()->fees().base;
-            auto const highFee = baseFee * 20;
+            auto const highFee = baseFee * (kConfidentialFeeMultiplier + 1) * 2;
             auto const bobBefore = env.balance(bob);
             mptAlice.convert(
                 {.account = bob,
@@ -7179,7 +7295,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             env,
             alice,
             {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}},
-            tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer | tfMPTCanClawback};
+            tfMPTCanLock | tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer | tfMPTCanClawback};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -7300,7 +7416,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             env,
             alice,
             {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}},
-            tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+            tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -7398,7 +7514,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             env,
             alice,
             {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}},
-            tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+            tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -7409,8 +7525,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // swaps them: -P has the same x but opposite y.
         auto negateCiphertext = [](Buffer const& ct) -> Buffer {
             Buffer neg = ct;
-            neg.data()[0] ^= 0x01;                        // negate C1
-            neg.data()[kEcGamalEncryptedLength] ^= 0x01;  // negate C2
+            neg.data()[0] ^= 0x01;                             // negate C1
+            neg.data()[kEcCiphertextComponentLength] ^= 0x01;  // negate C2
             return neg;
         };
 
@@ -7503,7 +7619,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             alice,
             {{.account = bob, .payAmount = 1000, .convertAmount = 200},
              {.account = carol, .payAmount = 1000, .convertAmount = 100}},
-            tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+            tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const m1 = 10;
@@ -7618,7 +7734,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             env,
             alice,
             {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}},
-            tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+            tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -7628,8 +7744,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         // ciphertext (C1', C2).
         auto substituteC1 = [](Buffer const& target, Buffer const& source) -> Buffer {
             Buffer result = target;
-            // Copy C1 (first ecGamalEncryptedLength bytes) from source
-            std::memcpy(result.data(), source.data(), kEcGamalEncryptedLength);
+            // Copy C1 (the first ciphertext component) from source.
+            std::memcpy(result.data(), source.data(), kEcCiphertextComponentLength);
             return result;
         };
 
@@ -7707,7 +7823,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             env,
             alice,
             {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}},
-            tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+            tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance};
         auto& mptAlice = confEnv.mpt;
 
         uint64_t const sendAmount = 10;
@@ -7740,9 +7856,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // C2 half: use a valid point so only C1 is the problem
             auto const& tc = getTrivialCiphertext();
             std::memcpy(
-                zeroCiphertext.data() + kEcGamalEncryptedLength,
-                tc.data() + kEcGamalEncryptedLength,
-                kEcGamalEncryptedLength);
+                zeroCiphertext.data() + kEcCiphertextComponentLength,
+                tc.data() + kEcCiphertextComponentLength,
+                kEcCiphertextComponentLength);
             obj.setFieldVL(sfSenderEncryptedAmount, zeroCiphertext);
 
             // Re-serialize with the original (now-stale) signature
@@ -7770,9 +7886,9 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             std::memset(zeroCiphertext.data(), 0, kEcGamalEncryptedTotalLength);
             auto const& tc = getTrivialCiphertext();
             std::memcpy(
-                zeroCiphertext.data() + kEcGamalEncryptedLength,
-                tc.data() + kEcGamalEncryptedLength,
-                kEcGamalEncryptedLength);
+                zeroCiphertext.data() + kEcCiphertextComponentLength,
+                tc.data() + kEcCiphertextComponentLength,
+                kEcCiphertextComponentLength);
 
             mptAlice.send(
                 {.account = bob,
@@ -7825,7 +7941,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
         });
 
         mptAlice.authorize({.account = bob});
@@ -7943,7 +8059,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testSendPreclaim(features);
         testSendRangeProof(features);
 
-        // testSendZeroAmount(features);
+        testSendZeroAmount(features);
         testSendWithAuditor(features);
 
         // ConfidentialMPTClawback

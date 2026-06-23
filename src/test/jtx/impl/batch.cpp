@@ -11,6 +11,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Batch.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -44,7 +45,7 @@ calcConfidentialBatchFee(
     uint32_t const& txns)
 {
     XRPAmount const feeDrops = env.current()->fees().base;
-    return ((numSigners + 2) * feeDrops) + feeDrops * 10 * txns;
+    return ((numSigners + 2) * feeDrops) + feeDrops * (kConfidentialFeeMultiplier + 1) * txns;
 }
 
 // Batch.

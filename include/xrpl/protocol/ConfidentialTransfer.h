@@ -29,12 +29,12 @@ namespace xrpl {
  */
 struct ConfidentialRecipient
 {
-    /** @brief The recipient's ElGamal public key (size=xrpl::ecPubKeyLength). */
+    /** @brief The recipient's ElGamal public key (size=xrpl::kEcPubKeyLength). */
     Slice publicKey;
 
     /**
      * @brief The encrypted amount ciphertext
-     * (size=xrpl::ecGamalEncryptedTotalLength).
+     * (size=xrpl::kEcGamalEncryptedTotalLength).
      */
     Slice encryptedAmount;
 };
@@ -148,10 +148,12 @@ getConvertBackContextHash(
 /**
  * @brief Parses an ElGamal ciphertext into two secp256k1 public key components.
  *
- * Breaks a 66-byte encrypted amount (two 33-byte compressed EC points) into
+ * Breaks an encrypted amount (size=xrpl::kEcGamalEncryptedTotalLength, two
+ * compressed EC points of size=xrpl::kEcCiphertextComponentLength) into
  * a pair containing (C1, C2) for use in cryptographic operations.
  *
- * @param buffer The 66-byte buffer containing the compressed ciphertext.
+ * @param buffer The buffer containing the compressed ciphertext
+ *               (size=xrpl::kEcGamalEncryptedTotalLength).
  * @return The parsed pair (c1, c2) if successful, std::nullopt if the buffer is invalid.
  */
 std::optional<EcPair>
@@ -160,11 +162,13 @@ makeEcPair(Slice const& buffer);
 /**
  * @brief Serializes an EcPair into compressed form.
  *
- * Converts an EcPair (C1, C2) back into a 66-byte buffer containing
- * two 33-byte compressed EC points.
+ * Converts an EcPair (C1, C2) back into a buffer
+ * (size=xrpl::kEcGamalEncryptedTotalLength) containing two compressed EC
+ * points (size=xrpl::kEcCiphertextComponentLength each).
  *
  * @param pair The EcPair to serialize.
- * @return The 66-byte buffer, or std::nullopt if serialization fails.
+ * @return The buffer (size=xrpl::kEcGamalEncryptedTotalLength), or std::nullopt
+ *         if serialization fails.
  */
 std::optional<Buffer>
 serializeEcPair(EcPair const& pair);
@@ -184,7 +188,8 @@ isValidCiphertext(Slice const& buffer);
  * Can be used to validate both compressed public keys and Pedersen commitments.
  * Fails early if the prefix byte is not 0x02 or 0x03.
  *
- * @param buffer The input buffer containing a compressed EC point (33 bytes).
+ * @param buffer The input buffer containing a compressed EC point
+ *               (size=xrpl::kCompressedEcPointLength).
  * @return true if the point can be parsed successfully, false otherwise.
  */
 bool
@@ -196,8 +201,8 @@ isValidCompressedECPoint(Slice const& buffer);
  * Uses the additive homomorphic property of ElGamal encryption to compute
  * Enc(a + b) from Enc(a) and Enc(b) without decryption.
  *
- * @param a The first ciphertext (66 bytes).
- * @param b The second ciphertext (66 bytes).
+ * @param a The first ciphertext (size=xrpl::kEcGamalEncryptedTotalLength).
+ * @param b The second ciphertext (size=xrpl::kEcGamalEncryptedTotalLength).
  * @return The resulting ciphertext Enc(a + b), or std::nullopt on failure.
  */
 std::optional<Buffer>
@@ -209,8 +214,8 @@ homomorphicAdd(Slice const& a, Slice const& b);
  * Uses the additive homomorphic property of ElGamal encryption to compute
  * Enc(a - b) from Enc(a) and Enc(b) without decryption.
  *
- * @param a The minuend ciphertext (66 bytes).
- * @param b The subtrahend ciphertext (66 bytes).
+ * @param a The minuend ciphertext (size=xrpl::kEcGamalEncryptedTotalLength).
+ * @param b The subtrahend ciphertext (size=xrpl::kEcGamalEncryptedTotalLength).
  * @return The resulting ciphertext Enc(a - b), or std::nullopt on failure.
  */
 std::optional<Buffer>
@@ -223,9 +228,11 @@ homomorphicSubtract(Slice const& a, Slice const& b);
  * This is used when a public, deterministic scalar must perturb ciphertext
  * randomness while preserving ledger reproducibility.
  *
- * @param ciphertext The ciphertext to re-randomize (66 bytes).
+ * @param ciphertext The ciphertext to re-randomize
+ *                   (size=xrpl::kEcGamalEncryptedTotalLength).
  * @param pubKeySlice The ElGamal public key matching the ciphertext recipient.
- * @param randomness The scalar used as zero-encryption randomness (32 bytes).
+ * @param randomness The scalar used as zero-encryption randomness
+ *                   (size=xrpl::kEcScalarLength).
  * @return The re-randomized ciphertext, or std::nullopt on failure.
  */
 std::optional<Buffer>
@@ -238,10 +245,10 @@ rerandomizeCiphertext(Slice const& ciphertext, Slice const& pubKeySlice, Slice c
  * using the provided blinding factor r.
  *
  * @param amt            The plaintext amount to encrypt.
- * @param pubKeySlice    The recipient's ElGamal public key (size=xrpl::ecPubKeyLength).
+ * @param pubKeySlice    The recipient's ElGamal public key (size=xrpl::kEcPubKeyLength).
  * @param blindingFactor The randomness used as blinding factor r
  *                       (size=xrpl::ecBlindingFactorLength).
- * @return The ciphertext (size=xrpl::ecGamalEncryptedTotalLength), or std::nullopt on failure.
+ * @return The ciphertext (size=xrpl::kEcGamalEncryptedTotalLength), or std::nullopt on failure.
  */
 std::optional<Buffer>
 encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindingFactor);
@@ -252,10 +259,10 @@ encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindin
  * Creates a deterministic encryption of zero that is unique to the account
  * and MPT issuance. Used to initialize confidential balance fields.
  *
- * @param pubKeySlice The holder's ElGamal public key (size=xrpl::ecPubKeyLength).
+ * @param pubKeySlice The holder's ElGamal public key (size=xrpl::kEcPubKeyLength).
  * @param account     The account ID of the token holder.
  * @param mptId       The MPToken Issuance ID.
- * @return The canonical zero ciphertext (size=xrpl::ecGamalEncryptedTotalLength), or std::nullopt
+ * @return The canonical zero ciphertext (size=xrpl::kEcGamalEncryptedTotalLength), or std::nullopt
  * on failure.
  */
 std::optional<Buffer>
@@ -267,7 +274,7 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
  * Proves that the submitter knows the secret key corresponding to the
  * provided public key, without revealing the secret key itself.
  *
- * @param pubKeySlice The ElGamal public key (size=xrpl::ecPubKeyLength).
+ * @param pubKeySlice The ElGamal public key (size=xrpl::kEcPubKeyLength).
  * @param proofSlice  The Schnorr proof (size=xrpl::ecSchnorrProofLength).
  * @param contextHash The 256-bit context hash binding the proof.
  * @return tesSUCCESS if valid, or an error code otherwise.
@@ -335,9 +342,9 @@ getConfidentialRecipientCount(bool hasAuditor)
  *
  * @param amount      The revealed plaintext amount.
  * @param proof       The zero-knowledge proof bytes (ecClawbackProofLength).
- * @param pubKeySlice The issuer's ElGamal public key (ecPubKeyLength bytes).
+ * @param pubKeySlice The issuer's ElGamal public key (kEcPubKeyLength bytes).
  * @param ciphertext  The issuer's encrypted balance on the holder's account
- *                    (ecGamalEncryptedTotalLength bytes).
+ *                    (kEcGamalEncryptedTotalLength bytes).
  * @param contextHash The 256-bit context hash binding the proof.
  * @return tesSUCCESS if the proof is valid, or an error code otherwise.
  */
@@ -350,12 +357,14 @@ verifyClawbackProof(
     uint256 const& contextHash);
 
 /**
- * @brief Generates a cryptographically secure 32-byte blinding factor.
+ * @brief Generates a cryptographically secure blinding factor
+ * (size=xrpl::kEcBlindingFactorLength).
  *
  * Produces random bytes suitable for use as an ElGamal blinding factor
  * or Pedersen commitment randomness.
  *
- * @return A 32-byte buffer containing the random blinding factor.
+ * @return A buffer containing the random blinding factor
+ *         (size=xrpl::kEcBlindingFactorLength).
  */
 Buffer
 generateBlindingFactor();

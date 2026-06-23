@@ -178,7 +178,7 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfMPTCanTrade, 0x00000010)                                                                                       \
         LSF_FLAG(lsfMPTCanTransfer, 0x00000020)                                                                                    \
         LSF_FLAG(lsfMPTCanClawback, 0x00000040)                                                                                    \
-        LSF_FLAG(lsfMPTCanConfidentialAmount, 0x00000080))                                                                         \
+        LSF_FLAG(lsfMPTCanHoldConfidentialBalance, 0x00000080))                                                                         \
                                                                                                                                    \
     LEDGER_OBJECT(MPTokenIssuanceMutable,                                                                                          \
         LSF_FLAG(lsmfMPTCanEnableCanLock, 0x00000002)                                                                              \
@@ -189,7 +189,7 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsmfMPTCanEnableCanClawback, 0x00000040)                                                                          \
         LSF_FLAG(lsmfMPTCanMutateMetadata, 0x00010000)                                                                             \
         LSF_FLAG(lsmfMPTCanMutateTransferFee, 0x00020000)                                                                          \
-        LSF_FLAG(lsmfMPTCannotMutateCanConfidentialAmount, 0x00040000))                                                            \
+        LSF_FLAG(lsmfMPTCannotEnableCanHoldConfidentialBalance, 0x00040000))                                                            \
                                                                                                                                    \
     LEDGER_OBJECT(MPToken,                                                                                                         \
         LSF_FLAG2(lsfMPTLocked, 0x00000001)                                                                                        \

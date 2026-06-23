@@ -4,6 +4,10 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Units.h>
 
+#include <mpt_protocol.h>
+#include <secp256k1_mpt.h>
+
+#include <cstddef>
 #include <cstdint>
 
 namespace xrpl {
@@ -307,46 +311,54 @@ constexpr std::size_t kPermissionMaxSize = 10;
 /** The maximum number of transactions that can be in a batch. */
 constexpr std::size_t kMaxBatchTxCount = 8;
 
-/** Length of one component of EC ElGamal ciphertext */
-constexpr std::size_t kEcGamalEncryptedLength = 33;
-
-/** EC ElGamal ciphertext length: two 33-byte components concatenated */
-constexpr std::size_t kEcGamalEncryptedTotalLength = kEcGamalEncryptedLength * 2;
+/** Length of a secp256k1 scalar in bytes. */
+constexpr std::size_t kEcScalarLength = kMPT_SCALAR_SIZE;
 
 /** Length of EC point (compressed) */
 constexpr std::size_t kCompressedEcPointLength = 33;
 
+/** Length of one compressed EC point component in an EC ElGamal ciphertext. */
+constexpr std::size_t kEcCiphertextComponentLength = kMPT_ELGAMAL_CIPHER_SIZE;
+
+/** EC ElGamal ciphertext length: two compressed EC points concatenated. */
+constexpr std::size_t kEcGamalEncryptedTotalLength = kMPT_ELGAMAL_TOTAL_SIZE;
+
 /** Length of EC public key (compressed) */
-constexpr std::size_t kEcPubKeyLength = kCompressedEcPointLength;
+constexpr std::size_t kEcPubKeyLength = kMPT_PUBKEY_SIZE;
 
 /** Length of EC private key in bytes */
-constexpr std::size_t kEcPrivKeyLength = 32;
+constexpr std::size_t kEcPrivKeyLength = kMPT_PRIVKEY_SIZE;
 
 /** Length of the EC blinding factor in bytes */
-constexpr std::size_t kEcBlindingFactorLength = 32;
+constexpr std::size_t kEcBlindingFactorLength = kMPT_BLINDING_FACTOR_SIZE;
 
 /** Length of Schnorr ZKProof for public key registration (compact form) in bytes */
-constexpr std::size_t kEcSchnorrProofLength = 64;
+constexpr std::size_t kEcSchnorrProofLength = kMPT_SCHNORR_PROOF_SIZE;
 
 /** Length of Pedersen Commitment (compressed) */
-constexpr std::size_t kEcPedersenCommitmentLength = kCompressedEcPointLength;
+constexpr std::size_t kEcPedersenCommitmentLength = kMPT_PEDERSEN_COMMIT_SIZE;
 
 /** Length of single bulletproof (range proof for 1 commitment) in bytes */
-constexpr std::size_t kEcSingleBulletproofLength = 688;
+constexpr std::size_t kEcSingleBulletproofLength = kMPT_SINGLE_BULLETPROOF_SIZE;
 
 /** Length of double bulletproof (range proof for 2 commitments) in bytes */
-constexpr std::size_t kEcDoubleBulletproofLength = 754;
+constexpr std::size_t kEcDoubleBulletproofLength = kMPT_DOUBLE_BULLETPROOF_SIZE;
 
-/** Length of the ZKProof for ConfidentialMPTSend.
- *  192 bytes compact sigma proof + 754 bytes double bulletproof. */
-constexpr std::size_t kEcSendProofLength = 946;
+/** Length of the compact sigma proof component for ConfidentialMPTSend. */
+constexpr std::size_t kEcSendSigmaProofLength = SECP256K1_COMPACT_STANDARD_PROOF_SIZE;
 
-/** Length of the ZKProof for ConfidentialMPTConvertBack.
- *  128 bytes compact sigma proof + 688 bytes single bulletproof. */
-constexpr std::size_t kEcConvertBackProofLength = 816;
+/**  192 bytes compact sigma proof + 754 bytes double bulletproof. */
+constexpr std::size_t kEcSendProofLength = kEcSendSigmaProofLength + kEcDoubleBulletproofLength;
+
+/** Length of the compact sigma proof component for ConfidentialMPTConvertBack. */
+constexpr std::size_t kEcConvertBackSigmaProofLength = SECP256K1_COMPACT_CONVERTBACK_PROOF_SIZE;
+
+/**  128 bytes compact sigma proof + 688 bytes single bulletproof. */
+constexpr std::size_t kEcConvertBackProofLength =
+    kEcConvertBackSigmaProofLength + kEcSingleBulletproofLength;
 
 /** Length of the ZKProof for ConfidentialMPTClawback. */
-constexpr std::size_t kEcClawbackProofLength = 64;
+constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_SIZE;
 
 /** Extra base fee multiplier charged to confidential MPT transactions. */
 constexpr std::uint32_t kConfidentialFeeMultiplier = 9;

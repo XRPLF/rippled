@@ -37,13 +37,14 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
-    if (ctx.tx.isFlag(tfMPTCanConfidentialAmount) &&
+    if (ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance) &&
         !ctx.rules.enabled(featureConfidentialTransfer))
         return false;
 
-    // can not set tmfMPTCannotMutateCanConfidentialAmount without featureConfidentialTransfer
+    // can not set tmfMPTCannotEnableCanHoldConfidentialBalance without featureConfidentialTransfer
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
-    return !mutableFlags || ((*mutableFlags & tmfMPTCannotMutateCanConfidentialAmount) == 0u) ||
+    return !mutableFlags ||
+        ((*mutableFlags & tmfMPTCannotEnableCanHoldConfidentialBalance) == 0u) ||
         ctx.rules.enabled(featureConfidentialTransfer);
 }
 
@@ -79,7 +80,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // Confidential amounts are encrypted so transfer rate is disallowed.
-        if (fee > 0u && ctx.tx.isFlag(tfMPTCanConfidentialAmount))
+        if (fee > 0u && ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance))
             return temBAD_TRANSFER_FEE;
     }
 

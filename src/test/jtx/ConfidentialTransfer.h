@@ -126,7 +126,7 @@ protected:
             std::memset(buf.data(), 0xFF, kEcGamalEncryptedTotalLength);
 
             buf.data()[0] = kEcCompressedPrefixEvenY;
-            buf.data()[kEcGamalEncryptedLength] = kEcCompressedPrefixEvenY;
+            buf.data()[kEcCiphertextComponentLength] = kEcCompressedPrefixEvenY;
             return buf;
         }();
 
@@ -144,9 +144,9 @@ protected:
             std::memset(buf.data(), 0, kEcGamalEncryptedTotalLength);
 
             buf.data()[0] = kEcCompressedPrefixEvenY;
-            buf.data()[kEcGamalEncryptedLength] = kEcCompressedPrefixEvenY;
+            buf.data()[kEcCiphertextComponentLength] = kEcCompressedPrefixEvenY;
 
-            buf.data()[kEcGamalEncryptedLength - 1] = 0x01;
+            buf.data()[kEcCiphertextComponentLength - 1] = 0x01;
             buf.data()[kEcGamalEncryptedTotalLength - 1] = 0x01;
 
             return buf;
@@ -180,11 +180,11 @@ protected:
         Buffer buf(kEcSendProofLength);
         std::memset(buf.data(), 0, kEcSendProofLength);
 
-        for (std::size_t i = 0; i < kEcSendProofLength; i += kEcGamalEncryptedLength)
+        for (std::size_t i = 0; i < kEcSendProofLength; i += kEcCiphertextComponentLength)
         {
             buf.data()[i] = kEcCompressedPrefixEvenY;
-            if (i + kEcGamalEncryptedLength - 1 < kEcSendProofLength)
-                buf.data()[i + kEcGamalEncryptedLength - 1] = 0x01;
+            if (i + kEcCiphertextComponentLength - 1 < kEcSendProofLength)
+                buf.data()[i + kEcCiphertextComponentLength - 1] = 0x01;
         }
 
         return strHex(buf);
@@ -359,7 +359,7 @@ protected:
             test::jtx::Env& env,
             test::jtx::Account const& issuer,
             std::vector<HolderInit> const& holders,
-            std::uint32_t flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer,
+            std::uint32_t flags = tfMPTCanLock | tfMPTCanHoldConfidentialBalance | tfMPTCanTransfer,
             std::optional<test::jtx::Account> auditor = std::nullopt)
             : mpt{env, issuer, {.holders = extractAccounts(holders), .auditor = auditor}}
         {
@@ -427,7 +427,7 @@ protected:
         using namespace test::jtx;
         mpt.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
         });
         mpt.authorize({.account = bob});
         mpt.authorize({.account = carol});

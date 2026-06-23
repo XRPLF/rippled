@@ -44,6 +44,21 @@ toIssuanceId(uint192 const& issuance)
     return res;
 }
 
+/**
+ * @brief Pack a ConfidentialRecipient (public key + ElGamal ciphertext) into the
+ * secp256k1-mpt participant struct. Callers MUST have already validated that
+ * r.publicKey.size() == kEcPubKeyLength and
+ * r.encryptedAmount.size() == kEcGamalEncryptedTotalLength;
+ */
+mpt_confidential_participant
+toParticipant(ConfidentialRecipient const& r)
+{
+    mpt_confidential_participant p{};
+    std::memcpy(p.pubkey, r.publicKey.data(), kEcPubKeyLength);
+    std::memcpy(p.ciphertext, r.encryptedAmount.data(), kEcGamalEncryptedTotalLength);
+    return p;
+}
+
 }  // namespace
 
 uint256
@@ -107,15 +122,15 @@ getConvertBackContextHash(
 std::optional<EcPair>
 makeEcPair(Slice const& buffer)
 {
-    if (buffer.length() != 2 * kEcGamalEncryptedLength)
+    if (buffer.length() != 2 * kEcCiphertextComponentLength)
         return std::nullopt;  // LCOV_EXCL_LINE
 
     auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
         return secp256k1_ec_pubkey_parse(secp256k1Context(), &out, slice.data(), slice.length());
     };
 
-    Slice const s1{buffer.data(), kEcGamalEncryptedLength};
-    Slice const s2{buffer.data() + kEcGamalEncryptedLength, kEcGamalEncryptedLength};
+    Slice const s1{buffer.data(), kEcCiphertextComponentLength};
+    Slice const s2{buffer.data() + kEcCiphertextComponentLength, kEcCiphertextComponentLength};
 
     EcPair pair{};
     if (parsePubKey(s1, pair.c1) != 1 || parsePubKey(s2, pair.c2) != 1)
@@ -128,16 +143,16 @@ std::optional<Buffer>
 serializeEcPair(EcPair const& pair)
 {
     auto serializePubKey = [](secp256k1_pubkey const& pub, unsigned char* out) {
-        size_t outLen = kEcGamalEncryptedLength;  // 33 bytes
+        size_t outLen = kEcCiphertextComponentLength;  // 33 bytes
         auto const ret = secp256k1_ec_pubkey_serialize(
             secp256k1Context(), out, &outLen, &pub, SECP256K1_EC_COMPRESSED);
-        return ret == 1 && outLen == kEcGamalEncryptedLength;
+        return ret == 1 && outLen == kEcCiphertextComponentLength;
     };
 
     Buffer buffer(kEcGamalEncryptedTotalLength);
     auto const ptr = buffer.data();
     bool const res1 = serializePubKey(pair.c1, ptr);
-    bool const res2 = serializePubKey(pair.c2, ptr + kEcGamalEncryptedLength);
+    bool const res2 = serializePubKey(pair.c2, ptr + kEcCiphertextComponentLength);
 
     if (!res1 || !res2)
         return std::nullopt;
@@ -288,16 +303,9 @@ verifyRevealedAmount(
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    auto toParticipant = [](ConfidentialRecipient const& r) {
-        mpt_confidential_participant p;
-        std::memcpy(p.pubkey, r.publicKey.data(), kMPT_PUBKEY_SIZE);
-        std::memcpy(p.ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
-        return p;
-    };
-
     auto const holderP = toParticipant(holder);
     auto const issuerP = toParticipant(issuer);
-    mpt_confidential_participant auditorP;
+    mpt_confidential_participant auditorP{};
     mpt_confidential_participant const* auditorPtr = nullptr;
     if (auditor)
     {
@@ -414,18 +422,11 @@ verifySendProof(
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
-    auto makeParticipant = [](ConfidentialRecipient const& r) {
-        mpt_confidential_participant p;
-        std::memcpy(p.pubkey, r.publicKey.data(), kMPT_PUBKEY_SIZE);
-        std::memcpy(p.ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
-        return p;
-    };
-
     std::vector<mpt_confidential_participant> participants;
     participants.reserve(recipientCount);
-    participants.push_back(makeParticipant(sender));
-    participants.push_back(makeParticipant(destination));
-    participants.push_back(makeParticipant(issuer));
+    participants.push_back(toParticipant(sender));
+    participants.push_back(toParticipant(destination));
+    participants.push_back(toParticipant(issuer));
     if (auditor)
     {
         if (auditor->publicKey.size() != kEcPubKeyLength ||
@@ -433,7 +434,7 @@ verifySendProof(
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
-        participants.push_back(makeParticipant(*auditor));
+        participants.push_back(toParticipant(*auditor));
     }
     if (participants.size() != recipientCount)
         return tecINTERNAL;  // LCOV_EXCL_LINE

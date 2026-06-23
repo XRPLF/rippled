@@ -93,13 +93,12 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
 XRPAmount
 ConfidentialMPTSend::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge kConfidentialFeeMultiplier extra base fees so the total is
-    // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
+    return Transactor::calculateBaseFee(view, tx, kConfidentialFeeMultiplier);
 }
 
-TER
+namespace detail {
+
+static TER
 verifySendProofs(
     PreclaimContext const& ctx,
     std::shared_ptr<SLE const> const& sleSenderMPToken,
@@ -150,6 +149,8 @@ verifySendProofs(
         contextHash);
 }
 
+}  // namespace detail
+
 TER
 ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 {
@@ -182,14 +183,14 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         return tecNO_AUTH;
 
     // Check if issuance allows confidential transfer
-    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
+    if (!sleIssuance->isFlag(lsfMPTCanHoldConfidentialBalance))
         return tecNO_PERMISSION;
 
-    // Sanity check: transfer rate must be 0 for confidential MPTs.
-    // This is unreachable since it is already enforced during MPTokenIssuanceCreate and
-    // MPTokenIssuanceSet.
+    // Sanity check: transfer fee must be 0 for confidential MPTs. This should
+    // be unreachable in valid ledger state because MPTokenIssuanceCreate and
+    // MPTokenIssuanceSet enforce it.
     if ((*sleIssuance)[~sfTransferFee].value_or(0) > 0)
-        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+        return tecNO_PERMISSION;
 
     // Check if issuance has issuer ElGamal public key
     if (!sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
@@ -268,7 +269,7 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
     if (!isTesSuccess(preauthErr))
         return preauthErr;
 
-    return verifySendProofs(ctx, sleSenderMPToken, sleDestinationMPToken, sleIssuance);
+    return detail::verifySendProofs(ctx, sleSenderMPToken, sleDestinationMPToken, sleIssuance);
 }
 
 TER

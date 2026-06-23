@@ -604,7 +604,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create({
-                .flags = kMptDexFlags | tfMPTCanClawback | tfMPTCanConfidentialAmount,
+                .flags = kMptDexFlags | tfMPTCanClawback | tfMPTCanHoldConfidentialBalance,
             });
             mptAlice.authorize({.account = bob});
             mptAlice.pay(alice, bob, 1'000);
@@ -654,7 +654,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
         });
         mptAlice.authorize({.account = bob});
         mptAlice.authorize({.account = carol});
@@ -741,7 +741,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         mptAlice.create({
             .ownerCount = 1,
             .holderCount = 0,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
         });
         mptAlice.authorize({.account = bob});
         mptAlice.pay(alice, bob, 100);
@@ -809,7 +809,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             env,
             alice,
             {{.account = bob}, {.account = carol, .payAmount = 1000, .convertAmount = 50}},
-            tfMPTCanTransfer | tfMPTCanConfidentialAmount};
+            tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance};
         auto& mptAlice = confEnv.mpt;
 
         // Set RequireDest on carol
@@ -864,7 +864,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         mptAlice.create({
             .ownerCount = 1,
             .holderCount = 0,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
         });
         mptAlice.authorize({.account = bob});
         mptAlice.pay(alice, bob, 100);
@@ -1640,8 +1640,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags =
-                tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanClawback |
+                tfMPTCanHoldConfidentialBalance,
         });
         mptAlice.authorize({.account = bob});
         mptAlice.authorize({.account = carol});
@@ -1755,7 +1755,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
         });
         mptAlice.authorize({.account = bob});
         mptAlice.pay(alice, bob, 100);
@@ -1817,7 +1817,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount,
+            .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
         });
         mptAlice.authorize({.account = bob});
         mptAlice.authorize({.account = carol});
@@ -1885,7 +1885,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             alice,
             {{.account = bob, .payAmount = 100, .convertAmount = 50},
              {.account = carol, .payAmount = 100, .convertAmount = 100}},
-            tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanConfidentialAmount};
+            tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanHoldConfidentialBalance};
         auto& mptAlice = confEnv.mpt;
         env.fund(XRP(10000), dave);
         env.close();
@@ -2295,7 +2295,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount | tfMPTCanClawback,
+            .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance | tfMPTCanClawback,
         });
         mptAlice.authorize({.account = bob});
         mptAlice.pay(alice, bob, 200);
@@ -2454,7 +2454,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         mptAlice.create({
             .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount | tfMPTCanClawback,
+            .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance | tfMPTCanClawback,
         });
         mptAlice.authorize({.account = bob});
         mptAlice.authorize({.account = carol});
