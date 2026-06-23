@@ -211,7 +211,9 @@ TEST(XRPAmountTest, mul_ratio)
         big -= 0xf;  // Subtract a little so it's divisible by 4
         EXPECT_EQ(mulRatio(big, 3, 4, false).value(), (big.value() / 4) * 3);
         EXPECT_EQ(mulRatio(big, 3, 4, true).value(), (big.value() / 4) * 3);
-        EXPECT_NE((big.value() * 3) / 4, (big.value() / 4) * 3);
+        EXPECT_EQ(big.value() % 4, 0);
+        EXPECT_GT(big.value(), kMaxXrp / 3);
+        EXPECT_LE(big.value() / 4, kMaxXrp / 3);
     }
 
     {
@@ -225,7 +227,9 @@ TEST(XRPAmountTest, mul_ratio)
         // naively, and check that it gives the correct answer
         EXPECT_EQ(mulRatio(big, 3, 4, false).value(), (big.value() / 4) * 3);
         EXPECT_EQ(mulRatio(big, 3, 4, true).value(), (big.value() / 4) * 3);
-        EXPECT_NE((big.value() * 3) / 4, (big.value() / 4) * 3);
+        EXPECT_EQ(big.value() % 4, 0);
+        EXPECT_LT(big.value(), kMinXrp / 3);
+        EXPECT_GE(big.value() / 4, kMinXrp / 3);
     }
 
     {
