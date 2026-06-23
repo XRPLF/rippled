@@ -867,10 +867,9 @@ Transactor::checkSign(
         if (!sigObject.isFieldPresent(sfSponsor))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const sponsorAccountID = sigObject.getAccountID(sfSponsor);
+        auto const sponsorID = sigObject.getAccountID(sfSponsor);
         auto const sponsorSignature = sigObject.getFieldObject(sfSponsorSignature);
-        if (auto const ret =
-                checkSign(view, flags, std::nullopt, sponsorAccountID, sponsorSignature, j);
+        if (auto const ret = checkSign(view, flags, std::nullopt, sponsorID, sponsorSignature, j);
             !isTesSuccess(ret))
             return ret;
     }
@@ -1319,17 +1318,17 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 {
     if (tx.isFieldPresent(sfSponsor) && ((tx.getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u))
     {
-        auto const sponsorAccountID = tx.getAccountID(sfSponsor);
+        auto const sponsorID = tx.getAccountID(sfSponsor);
         auto const sponseeAccountID = tx.getAccountID(sfAccount);
         auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
-        auto const sponsorshipKeylet = keylet::sponsorship(sponsorAccountID, sponseeAccountID);
+        auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeAccountID);
 
         // if pre-funded sponsorship exists, prefer it
         if (hasSponsorSignature && !view.exists(sponsorshipKeylet))
         {
             // co-signed
             return FeePayer{
-                .entry = keylet::account(sponsorAccountID),
+                .entry = keylet::account(sponsorID),
                 .balanceField = sfBalance,
                 .type = FeePayerType::SponsorCoSigned};
         }

@@ -50,10 +50,10 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     if (hasSponsor == hasSponsee)
         return temMALFORMED;
 
-    auto const sponsorAccountID = ctx.tx[~sfCounterpartySponsor].value_or(account);
+    auto const sponsorID = ctx.tx[~sfCounterpartySponsor].value_or(account);
     auto const sponseeAccountID = ctx.tx[~sfSponsee].value_or(account);
 
-    if (sponsorAccountID == sponseeAccountID)
+    if (sponsorID == sponseeAccountID)
         return temMALFORMED;
 
     if (ctx.tx.isFlag(tfDeleteObject))
@@ -75,7 +75,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     {
         // although both Sponsor and Sponsee can delete,
         // only the Sponsor can create or update sponsorship.
-        if (account != sponsorAccountID)
+        if (account != sponsorID)
             return temMALFORMED;
 
         // Check FeeAmount and MaxFee
@@ -149,14 +149,14 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
 TER
 SponsorshipSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const sponsorAccountID = ctx.tx[~sfCounterpartySponsor].value_or(ctx.tx[sfAccount]);
+    auto const sponsorID = ctx.tx[~sfCounterpartySponsor].value_or(ctx.tx[sfAccount]);
     auto const sponseeAccountID = ctx.tx[~sfSponsee].value_or(ctx.tx[sfAccount]);
 
-    if (sponseeAccountID == sponsorAccountID)
+    if (sponseeAccountID == sponsorID)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // check Sponsor
-    auto const sponsorAccSle = ctx.view.read(keylet::account(sponsorAccountID));
+    auto const sponsorAccSle = ctx.view.read(keylet::account(sponsorID));
     if (!sponsorAccSle)
         return tecNO_DST;
 
@@ -170,8 +170,7 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // check if object exists
-    auto const sponsorObjSle =
-        ctx.view.read(keylet::sponsorship(sponsorAccountID, sponseeAccountID));
+    auto const sponsorObjSle = ctx.view.read(keylet::sponsorship(sponsorID, sponseeAccountID));
 
     if (ctx.tx.isFlag(tfDeleteObject) && !sponsorObjSle)
         return tecNO_ENTRY;
@@ -185,15 +184,15 @@ deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorAccountID = (*sle)[sfOwner];
+    auto const sponsorID = (*sle)[sfOwner];
     auto const sponseeAccountID = (*sle)[sfSponsee];
 
     // The reserve for the Sponsorship object is held by the sponsor (Owner).
-    auto sponsorAccSle = view.peek(keylet::account(sponsorAccountID));
+    auto sponsorAccSle = view.peek(keylet::account(sponsorID));
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(keylet::ownerDir(sponsorAccountID), (*sle)[sfOwnerNode], sle->key(), false))
+    if (!view.dirRemove(keylet::ownerDir(sponsorID), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Sponsorship from sponsor.";
@@ -223,20 +222,20 @@ deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
 TER
 SponsorshipSet::doApply()
 {
-    auto const sponsorAccountID = ctx_.tx[~sfCounterpartySponsor].value_or(accountID_);
+    auto const sponsorID = ctx_.tx[~sfCounterpartySponsor].value_or(accountID_);
     auto const sponseeAccountID = ctx_.tx[~sfSponsee].value_or(accountID_);
 
-    if (sponseeAccountID == sponsorAccountID)
+    if (sponseeAccountID == sponsorID)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorAccSle = ctx_.view().peek(keylet::account(sponsorAccountID));
+    auto const sponsorAccSle = ctx_.view().peek(keylet::account(sponsorID));
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (!ctx_.view().exists(keylet::account(sponseeAccountID)))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorKeylet = keylet::sponsorship(sponsorAccountID, sponseeAccountID);
+    auto const sponsorKeylet = keylet::sponsorship(sponsorID, sponseeAccountID);
     auto const sponsorObjSle = ctx_.view().peek(sponsorKeylet);
 
     if (ctx_.tx.isFlag(tfDeleteObject))
@@ -261,7 +260,7 @@ SponsorshipSet::doApply()
         // Create
         auto newSle = std::make_shared<SLE>(sponsorKeylet);
 
-        (*newSle)[sfOwner] = sponsorAccountID;
+        (*newSle)[sfOwner] = sponsorID;
         (*newSle)[sfSponsee] = sponseeAccountID;
         if (feeAmount && (*feeAmount).xrp() > (*sponsorAccSle)[sfBalance])
             return tecUNFUNDED;
@@ -299,7 +298,7 @@ SponsorshipSet::doApply()
         (*newSle)[sfFlags] = flags;
 
         auto const sponsorPage = view().dirInsert(
-            keylet::ownerDir(sponsorAccountID), sponsorKeylet, describeOwnerDir(sponsorAccountID));
+            keylet::ownerDir(sponsorID), sponsorKeylet, describeOwnerDir(sponsorID));
         if (!sponsorPage)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*newSle)[sfOwnerNode] = *sponsorPage;
