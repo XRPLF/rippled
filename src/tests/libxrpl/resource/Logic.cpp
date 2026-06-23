@@ -64,8 +64,12 @@ protected:
         {
             Gossip::Item item;
             item.balance = 100 + randInt(499);
-            beast::IP::AddressV4::bytes_type const d = {
-                {192, 0, 2, static_cast<std::uint8_t>(v + i)}};
+            beast::IP::AddressV4::bytes_type const d = {{
+                192,
+                0,
+                2,
+                static_cast<std::uint8_t>(v + i),
+            }};
             item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
             gossip.items.push_back(item);
         }
@@ -222,7 +226,12 @@ TEST_F(ResourceManagerTest, import)
     Gossip g;
     Gossip::Item item;
     item.balance = 100;
-    beast::IP::AddressV4::bytes_type const d = {{192, 0, 2, 1}};
+    beast::IP::AddressV4::bytes_type const d = {{
+        192,
+        0,
+        2,
+        1,
+    }};
     item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
     g.items.push_back(item);
 
