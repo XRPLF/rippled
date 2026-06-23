@@ -1,14 +1,22 @@
-import glob
 import os
 
 from conan import ConanFile
-from conan.tools.files import copy, download
+from conan.errors import ConanInvalidConfiguration
+from conan.tools.files import copy, get
 
-ELAN_INIT_URL = "https://elan.lean-lang.org/elan-init.sh"
+# sha256-pinned Lean releases per platform (no elan installer) (bump with the lean-toolchain pin)
+_SHA256 = {
+    ("Macos", "x86_64"): "47010e6040ab2441dc96c1d9a3aca1721576fdbe4da566d938b29a26502fd378",
+    ("Macos", "armv8"): "d63a34d12978b035f871c8448d7243eb16711b8f5b27d7e9b093a210c1117e8d",
+    ("Linux", "x86_64"): "b02b74bb23e93e5b05f03f51ad06274814337d107718a02b6f89dc4db1387416",
+    ("Linux", "armv8"): "c608141afb645c7faa3845cc5dc503890ae329a82359f9bf37358d1fab499f81",
+}
+
+RELEASE_URL = "https://github.com/leanprover/lean4/releases/download/v{version}/lean-{version}-{os_tag}{arch_suffix}.zip"
 
 
 class Lean(ConanFile):
-    """Lean 4 toolchain (lean, lake, headers, runtime), installed via elan.
+    """Lean 4 toolchain (lean, lake, headers, runtime) from the pinned leanprover/lean4 release.
 
     Version defaults from formal_verification/lean-toolchain, pass --version
     when exporting outside the repo layout (e.g. the CI image).
@@ -29,19 +37,30 @@ class Lean(ConanFile):
                 self.version = f.read().strip().split(":v")[1]  # "leanprover/lean4:vX" -> "X"
 
     def build(self):
-        elan_home = os.path.join(self.build_folder, "elan")
-        script = os.path.join(self.build_folder, "elan-init.sh")
-        download(self, ELAN_INIT_URL, script)
-        # elan-init only records the default toolchain (install is lazy), so do it.
-        self.run(f'ELAN_HOME="{elan_home}" sh "{script}" -y --no-modify-path --default-toolchain none')
-        elan = os.path.join(elan_home, "bin", "elan")
-        self.run(f'ELAN_HOME="{elan_home}" "{elan}" toolchain install leanprover/lean4:v{self.version}')
+        os_name, arch = str(self.settings.os), str(self.settings.arch)
+        sha256 = _SHA256.get((os_name, arch))
+        if sha256 is None:
+            raise ConanInvalidConfiguration(f"lean4: unsupported platform {os_name}/{arch}")
+        os_tag = "darwin" if os_name == "Macos" else "linux"
+        arch_suffix = "_aarch64" if arch == "armv8" else ""
+        url = RELEASE_URL.format(
+            version=self.version, os_tag=os_tag, arch_suffix=arch_suffix
+        )
+        get(
+            self,
+            url,
+            sha256=sha256,
+            strip_root=True,
+            destination=os.path.join(self.build_folder, "toolchain"),
+        )
 
     def package(self):
-        toolchains = glob.glob(os.path.join(self.build_folder, "elan", "toolchains", "*"))
-        if len(toolchains) != 1:
-            raise RuntimeError(f"expected exactly one toolchain, got {toolchains}")
-        copy(self, "*", src=toolchains[0], dst=self.package_folder)
+        copy(
+            self,
+            "*",
+            src=os.path.join(self.build_folder, "toolchain"),
+            dst=self.package_folder,
+        )
 
     def package_info(self):
         self.cpp_info.includedirs = ["include"]
