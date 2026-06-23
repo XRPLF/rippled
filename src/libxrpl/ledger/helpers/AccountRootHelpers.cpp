@@ -18,13 +18,13 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
 #include <algorithm>
 #include <cstdint>
 #include <expected>
-#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -288,23 +288,6 @@ xrpLiquid(ReadView const& view, SLE::const_ref accSle, std::int32_t ownerCountAd
     return x.negative() ? XRPAmount() : x;
 }
 
-XRPAmount
-xrpLiquid(
-    ApplyView const& view,
-    STTx const& tx,
-    SLE::const_ref accSle,
-    std::int32_t ownerCountAdj,
-    beast::Journal j)
-{
-    if (!accSle)
-        return beast::kZero;
-
-    XRPAmount const feePayed(tx[sfFee].xrp());
-    AccountID const feePayer = getFeePayer(view, tx).id;
-    auto const x = xrpLiquidHlp(view, accSle, ownerCountAdj, 0, {feePayer, feePayed}, j);
-    return x.negative() ? XRPAmount() : x;
-}
-
 Rate
 transferRate(ReadView const& view, AccountID const& issuer)
 {
@@ -367,8 +350,8 @@ adjustOwnerCount(
         Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid account sle");  // LCOV_EXCL_LINE
 
     auto const sleType = accountSle->getType();
-    bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
-                                      : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
+    bool const validType = sponsorSle ? (sleType == ltACCOUNT_ROOT)
+                                      : (sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT);
     if (!validType)
     {
         Throw<std::logic_error>(
@@ -404,8 +387,7 @@ adjustOwnerCount(
             // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
             // Removing/reassigning ownership of the object doesn't increase ReserveCount back.
             // Don't call hook because this counter is not something that require reserve (like
-            // other sf...OwnerCounts do). If sfRemainingOwnerCount goes < 0, it just set to 0. It
-            // means tx is co-signed, checkXrpBalance verify that
+            // other sf...OwnerCounts do).
             adjustOwnerCountHlp(
                 view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -ownerCountAdj, j, true);
         }
@@ -432,8 +414,10 @@ adjustOwnerCountDeleteObj(
             "xrpl::adjustOwnerCountDeleteObj : valid object sle type");  // LCOV_EXCL_LINE
     }
     if (ownerCountAdj >= 0)
+    {
         Throw<std::logic_error>(
             "xrpl::adjustOwnerCountDeleteObj : adjustment >= 0");  // LCOV_EXCL_LINE
+    }
 
     XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCount : nonzero adjustment input");
     if (ownerCountAdj == 0)

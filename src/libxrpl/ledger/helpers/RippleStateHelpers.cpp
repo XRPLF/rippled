@@ -230,7 +230,7 @@ trustCreate(
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     bool const bSetDst = saLimit.getIssuer() == uDstAccountID;
-    bool const bSetHigh = bSrcHigh != bSetDst;
+    bool const bSetHigh = bSrcHigh ^ bSetDst;
 
     XRPL_ASSERT(sleAccount, "xrpl::trustCreate : non-null SLE");
     if (!sleAccount)

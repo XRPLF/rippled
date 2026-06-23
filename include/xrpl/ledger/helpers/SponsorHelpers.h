@@ -14,6 +14,24 @@
 
 namespace xrpl {
 
+SLE::pointer
+getTxReserveSponsor(ApplyView& view, STTx const& tx, std::optional<AccountID> const& acc = {});
+
+SLE::const_pointer
+getTxReserveSponsor(ReadView const& view, STTx const& tx, std::optional<AccountID> const& acc = {});
+
+SLE::pointer
+getLedgerEntryReserveSponsor(
+    ApplyView& view,
+    SLE::const_ref sle,
+    SF_ACCOUNT const& field = sfSponsor);
+
+SLE::const_pointer
+getLedgerEntryReserveSponsor(
+    ReadView const& view,
+    SLE::const_ref sle,
+    SF_ACCOUNT const& field = sfSponsor);
+
 inline bool
 isFeeSponsored(STTx const& tx)
 {
@@ -44,62 +62,12 @@ getTxReserveSponsorAccountID(STTx const& tx, std::optional<AccountID> const& acc
     return std::nullopt;
 }
 
-inline SLE::pointer
-getTxReserveSponsor(ApplyView& view, STTx const& tx, std::optional<AccountID> const& acc = {})
-{
-    if (auto const sponsorID = getTxReserveSponsorAccountID(tx, acc))
-    {
-        auto sle = view.peek(keylet::account(*sponsorID));
-        if (!sle)
-            Throw<std::runtime_error>("Empty sponsor");  // LCOV_EXCL_LINE
-        return sle;
-    }
-    return {};
-}
-
-inline SLE::const_pointer
-getTxReserveSponsor(ReadView const& view, STTx const& tx, std::optional<AccountID> const& acc = {})
-{
-    if (auto const sponsorID = getTxReserveSponsorAccountID(tx, acc))
-    {
-        auto sle = view.read(keylet::account(*sponsorID));
-        if (!sle)
-            Throw<std::runtime_error>("Empty sponsor");  // LCOV_EXCL_LINE
-        return sle;
-    }
-    return {};
-}
-
 inline std::optional<AccountID>
 getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor)
 {
     if (sle->isFieldPresent(field))
         return sle->at(field);
     return std::nullopt;
-}
-
-inline SLE::pointer
-getLedgerEntryReserveSponsor(
-    ApplyView& view,
-    SLE::const_ref sle,
-    SF_ACCOUNT const& field = sfSponsor)
-{
-    auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
-    if (sponsorID)
-        return view.peek(keylet::account(*sponsorID));
-    return {};
-}
-
-inline SLE::const_pointer
-getLedgerEntryReserveSponsor(
-    ReadView const& view,
-    SLE::const_ref sle,
-    SF_ACCOUNT const& field = sfSponsor)
-{
-    auto const sponsorID = getLedgerEntryReserveSponsorAccountID(sle, field);
-    if (sponsorID)
-        return view.read(keylet::account(*sponsorID));
-    return {};
 }
 
 inline void
