@@ -291,11 +291,14 @@ STTx::checkBatchSign(Rules const& rules) const
     try
     {
         XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSign : not a batch transaction");
+        // LCOV_EXCL_START - defensive: the assert above guarantees ttBATCH;
+        // this guard only protects release builds where asserts are no-ops.
         if (getTxnType() != ttBATCH)
         {
             JLOG(debugLog().fatal()) << "not a batch transaction";
             return std::unexpected("Not a batch transaction.");
         }
+        // LCOV_EXCL_STOP
         if (!isFieldPresent(sfBatchSigners))
             return std::unexpected("Missing BatchSigners field.");
         STArray const& signers{getFieldArray(sfBatchSigners)};
@@ -569,6 +572,9 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 void
 STTx::buildBatchTxnIds()
 {
+    // Precondition: applyTemplate() must have run first, so the fields
+    // (including sfRawTransactions) are canonical before the inner txns
+    // are hashed. The constructors call this immediately after applyTemplate().
     if (getTxnType() != ttBATCH || !isFieldPresent(sfRawTransactions))
         return;
 
@@ -728,13 +734,13 @@ invalidMPTAmountInTx(STObject const& tx)
 }
 
 static bool
-isRawTransactionOkay(STObject const& st, std::string& reason)
+isBatchRawTransactionOkay(STObject const& st, std::string& reason)
 {
     if (!st.isFieldPresent(sfRawTransactions))
         return true;
 
     if (st.isFieldPresent(sfBatchSigners) &&
-        st.getFieldArray(sfBatchSigners).size() > kMaxBatchTxCount)
+        st.getFieldArray(sfBatchSigners).size() > kMaxBatchSigners)
     {
         reason = "Batch Signers array exceeds max entries.";
         return false;
@@ -795,7 +801,7 @@ passesLocalChecks(STObject const& st, std::string& reason)
         return false;
     }
 
-    if (!isRawTransactionOkay(st, reason))
+    if (!isBatchRawTransactionOkay(st, reason))
         return false;
 
     return true;

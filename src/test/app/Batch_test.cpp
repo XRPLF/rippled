@@ -4928,6 +4928,160 @@ class Batch_test : public beast::unit_test::Suite
             // Net: Bob sends 1 to Alice, receives 2 from Alice.
             BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
         }
+
+        // Principal signs instead of the delegate. Bob delegates Payment to
+        // Carol and an inner pays from Bob with Delegate=Carol, so Carol -- not
+        // Bob -- is the required batch signer. Bob's own signature (the account
+        // holder) does not satisfy the delegate-consent requirement.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+            env.fund(XRP(10000), alice, bob, carol);
+            env.close();
+
+            env(delegate::set(bob, carol, {"Payment"}));
+            env.close();
+
+            auto const preAlice = env.balance(alice);
+
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+
+            auto inner = batch::Inner(pay(bob, alice, XRP(1)), bobSeq);
+            inner[jss::Delegate] = carol.human();
+
+            // Bob (the principal) signs in place of Carol (the delegate).
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                inner,
+                batch::Inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
+                batch::Sig(bob),
+                Ter(temBAD_SIGNER));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice) == preAlice);
+        }
+
+        // Control for the revocation case below: identical setup, but inner 1
+        // is a benign payment instead of a revocation. With Alice's delegation
+        // intact, the delegated inner 2 succeeds -- proving the failure in the
+        // revocation case is caused by the revocation, not the setup.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const mallory = Account("mallory");
+            env.fund(XRP(10000), alice, bob, mallory);
+            env.close();
+
+            env(delegate::set(bob, alice, {"Payment"}));
+            env.close();
+
+            auto const preMallory = env.balance(mallory);
+
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const seq = env.seq(bob);
+
+            auto inner2 = batch::Inner(pay(bob, mallory, XRP(1000)), seq + 2);
+            inner2[jss::Delegate] = alice.human();
+
+            // Inner 1 is Bob's own payment (no revocation); Alice co-signs for
+            // the delegated inner 2.
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(bob, seq, batchFee, tfIndependent),
+                batch::Inner(pay(bob, alice, XRP(1)), seq + 1),
+                inner2,
+                batch::Sig(alice));
+            env.close();
+
+            std::vector<TestLedgerData> const testCases = {
+                {.index = 0,
+                 .txType = "Batch",
+                 .result = "tesSUCCESS",
+                 .txHash = batchID,
+                 .batchID = std::nullopt},
+                {.index = 1,
+                 .txType = "Payment",
+                 .result = "tesSUCCESS",
+                 .txHash = txIDs[0],
+                 .batchID = batchID},
+                {.index = 2,
+                 .txType = "Payment",
+                 .result = "tesSUCCESS",
+                 .txHash = txIDs[1],
+                 .batchID = batchID},
+            };
+            validateClosedLedger(env, testCases);
+
+            // The delegated payment applied: Mallory received the funds.
+            BEAST_EXPECT(env.balance(mallory) == preMallory + XRP(1000));
+        }
+
+        // Revocation within the same batch. Bob grants Alice Payment permission
+        // beforehand; an earlier inner revokes it before a later delegated
+        // inner tries to use it. Alice must still co-sign (delegate consent is
+        // derived from the static tx), but the revoked permission makes the
+        // delegated inner fail at apply time -- a grant cannot be used after it
+        // is removed earlier in the same batch.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const mallory = Account("mallory");
+            env.fund(XRP(10000), alice, bob, mallory);
+            env.close();
+
+            env(delegate::set(bob, alice, {"Payment"}));
+            env.close();
+
+            auto const preMallory = env.balance(mallory);
+
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const seq = env.seq(bob);
+
+            // Inner 2: Alice acts as Bob's delegate, so Alice is the required
+            // batch signer.
+            auto inner2 = batch::Inner(pay(bob, mallory, XRP(1000)), seq + 2);
+            inner2[jss::Delegate] = alice.human();
+
+            // tfIndependent: inner 1 (the revocation) applies; inner 2 then
+            // fails for lack of permission without reverting inner 1. An empty
+            // permission list deletes the Delegate object.
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(bob, seq, batchFee, tfIndependent),
+                batch::Inner(delegate::set(bob, alice, {}), seq + 1),
+                inner2,
+                batch::Sig(alice));
+            env.close();
+
+            std::vector<TestLedgerData> const testCases = {
+                {.index = 0,
+                 .txType = "Batch",
+                 .result = "tesSUCCESS",
+                 .txHash = batchID,
+                 .batchID = std::nullopt},
+                {.index = 1,
+                 .txType = "DelegateSet",
+                 .result = "tesSUCCESS",
+                 .txHash = txIDs[0],
+                 .batchID = batchID},
+                // inner 2 fails: Alice's permission was revoked in inner 1.
+            };
+            validateClosedLedger(env, testCases);
+
+            // The delegated payment never applied.
+            BEAST_EXPECT(env.balance(mallory) == preMallory);
+            BEAST_EXPECT(env.rpc("tx", txIDs[1])[jss::result][jss::error] == "txnNotFound");
+        }
     }
 
     void
