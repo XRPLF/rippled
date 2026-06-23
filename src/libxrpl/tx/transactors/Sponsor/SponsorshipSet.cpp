@@ -170,9 +170,9 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // check if object exists
-    auto const sponsorObjSle = ctx.view.read(keylet::sponsorship(sponsorID, sponseeID));
+    auto const sponsorshipSle = ctx.view.read(keylet::sponsorship(sponsorID, sponseeID));
 
-    if (ctx.tx.isFlag(tfDeleteObject) && !sponsorObjSle)
+    if (ctx.tx.isFlag(tfDeleteObject) && !sponsorshipSle)
         return tecNO_ENTRY;
 
     return tesSUCCESS;
@@ -235,15 +235,15 @@ SponsorshipSet::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsorKeylet = keylet::sponsorship(sponsorID, sponseeID);
-    auto const sponsorObjSle = ctx_.view().peek(sponsorKeylet);
+    auto const sponsorshipSle = ctx_.view().peek(sponsorKeylet);
 
     if (ctx_.tx.isFlag(tfDeleteObject))
     {
         // Delete
-        if (!sponsorObjSle)
+        if (!sponsorshipSle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        return deleteSponsorship(ctx_.view(), sponsorObjSle, ctx_.journal);
+        return deleteSponsorship(ctx_.view(), sponsorshipSle, ctx_.journal);
     }
 
     auto const feeAmount = ctx_.tx[~sfFeeAmount];
@@ -254,7 +254,7 @@ SponsorshipSet::doApply()
     if (!reserveSponsorAccSle)
         return reserveSponsorAccSle.error();  // LCOV_EXCL_LINE
 
-    if (!sponsorObjSle)
+    if (!sponsorshipSle)
     {
         // Create
         auto newSle = std::make_shared<SLE>(sponsorKeylet);
@@ -319,7 +319,7 @@ SponsorshipSet::doApply()
     // Update
     if (feeAmount)
     {
-        auto const currentFeeAmount = (*sponsorObjSle)[~sfFeeAmount].valueOr(XRPAmount(0));
+        auto const currentFeeAmount = (*sponsorshipSle)[~sfFeeAmount].valueOr(XRPAmount(0));
         auto feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
 
         if (feeAmountDelta > beast::kZero && feeAmountDelta > (*sponsorAccSle)[sfBalance])
@@ -332,11 +332,11 @@ SponsorshipSet::doApply()
 
             if (*feeAmount == XRPAmount(0))
             {
-                (*sponsorObjSle).makeFieldAbsent(sfFeeAmount);
+                (*sponsorshipSle).makeFieldAbsent(sfFeeAmount);
             }
             else
             {
-                (*sponsorObjSle).setFieldAmount(sfFeeAmount, *feeAmount);
+                (*sponsorshipSle).setFieldAmount(sfFeeAmount, *feeAmount);
             }
 
             if (auto const ret = checkInsufficientReserve(
@@ -357,19 +357,19 @@ SponsorshipSet::doApply()
     {
         if (*maxFee == XRPAmount(0))
         {
-            (*sponsorObjSle).makeFieldAbsent(sfMaxFee);
+            (*sponsorshipSle).makeFieldAbsent(sfMaxFee);
         }
         else
         {
-            (*sponsorObjSle)[sfMaxFee] = *maxFee;
+            (*sponsorshipSle)[sfMaxFee] = *maxFee;
         }
     }
 
     if (remainingOwnerCount)
-        sponsorObjSle->at(sfRemainingOwnerCount) = *remainingOwnerCount;
+        sponsorshipSle->at(sfRemainingOwnerCount) = *remainingOwnerCount;
 
     // update Flags
-    auto flags = sponsorObjSle->getFieldU32(sfFlags);
+    auto flags = sponsorshipSle->getFieldU32(sfFlags);
     if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
         flags |= lsfSponsorshipRequireSignForFee;
 
@@ -382,10 +382,10 @@ SponsorshipSet::doApply()
     if (ctx_.tx.isFlag(tfSponsorshipClearRequireSignForReserve))
         flags &= ~lsfSponsorshipRequireSignForReserve;
 
-    if (flags != (*sponsorObjSle)[sfFlags])
-        (*sponsorObjSle)[sfFlags] = flags;
+    if (flags != (*sponsorshipSle)[sfFlags])
+        (*sponsorshipSle)[sfFlags] = flags;
 
-    view().update(sponsorObjSle);
+    view().update(sponsorshipSle);
 
     return tesSUCCESS;
 }
