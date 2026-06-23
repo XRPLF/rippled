@@ -1518,7 +1518,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
             {
                 if (nodeIDs.size() >= Tuning::kSoftMaxReplyNodes)
                 {
-                    // Charge the peer for sending too many node IDs, but continue processing the
+                    // Charge the peer for requesting too many node IDs, but continue processing the
                     // received node IDs up to the limit. If the request is legitimate then at least
                     // they will get a response and won't have to resend these nodes in their next
                     // request.
@@ -3464,8 +3464,8 @@ PeerImp::processLedgerRequest(
         }
 
         JLOG(pJournal_.info()) << "processLedgerRequest: Got request for " << m->nodeids_size()
-                               << " node IDs (processed " << nodeIDs.size() << ") at depth "
-                               << queryDepth << ", return " << ledgerData.nodes_size() << " nodes";
+                               << " node IDs at depth " << queryDepth << ", return "
+                               << ledgerData.nodes_size() << " nodes";
     }
 
     if (ledgerData.nodes_size() == 0)
