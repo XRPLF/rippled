@@ -45,8 +45,10 @@ ManagerImp::missingBackend()
 // the Factory classes is an undefined behaviour.
 void
 registerNuDBFactory(Manager& manager);
+#if XRPL_ROCKSDB_AVAILABLE
 void
 registerRocksDBFactory(Manager& manager);
+#endif
 void
 registerNullFactory(Manager& manager);
 void
@@ -55,7 +57,9 @@ registerMemoryFactory(Manager& manager);
 ManagerImp::ManagerImp()
 {
     registerNuDBFactory(*this);
+#if XRPL_ROCKSDB_AVAILABLE
     registerRocksDBFactory(*this);
+#endif
     registerNullFactory(*this);
     registerMemoryFactory(*this);
 }

@@ -4,7 +4,6 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/envconfig.h>
@@ -5423,110 +5422,12 @@ protected:
     }
 
     void
-    testCoverDepositWithdrawNonTransferableMPT(FeatureBitset feature)
+    testLendingCanTradeDisabledNoImpact()
     {
-        testcase("CoverDeposit blocked, CoverWithdraw allowed when CanTransfer cleared");
-        using namespace jtx;
-        using namespace loanBroker;
-
-        Env env(*this, feature);
-
-        Account const issuer{"issuer"};
-        Account const alice{"alice"};
-
-        env.fund(XRP(100'000), issuer, alice);
-        env.close();
-
-        MPTTester mpt(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {alice},
-             .pay = 100,
-             .flags = tfMPTCanTransfer,
-             .mutableFlags = tmfMPTCanMutateCanTransfer});
-        PrettyAsset const asset = mpt["MPT"];
-
-        Vault const vault{env};
-        auto const [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
-        env(createTx);
-        env.close();
-
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
-        env(set(alice, vaultKeylet.key));
-        env.close();
-
-        auto const brokerSle = env.le(brokerKeylet);
-        if (!BEAST_EXPECT(brokerSle))
-            return;
-
-        Account const pseudoAccount{"Loan Broker pseudo-account", brokerSle->at(sfAccount)};
-
-        // First, deposit some cover while CanTransfer is set so we have an
-        // existing position to withdraw from after the governance action.
-        auto const depositAmount = asset(1);
-        env(coverDeposit(alice, brokerKeylet.key, depositAmount));
-        env.close();
-
-        if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
-        {
-            BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 1);
-            env.require(Balance(pseudoAccount, depositAmount));
-        }
-
-        // Issuer governance: clear CanTransfer.
-        mpt.set({.mutableFlags = tmfMPTClearCanTransfer});
-        env.close();
-
-        // Standard Payment path still forbids third-party transfers.
-        auto const err = feature[featureMPTokensV2] ? tecNO_PERMISSION : tecNO_AUTH;
-        env(pay(alice, pseudoAccount, asset(1)), Ter(err));
-        env.close();
-
-        // New cover deposits are blocked - this would create new exposure.
-        env(coverDeposit(alice, brokerKeylet.key, depositAmount), Ter{tecNO_AUTH});
-        env.close();
-
-        if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
-        {
-            BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 1);
-            env.require(Balance(pseudoAccount, depositAmount));
-        }
-
-        bool const postAmendment = feature[fixCleanup3_2_0];
-        if (postAmendment)
-        {
-            // Post-fixCleanup3_2_0: existing cover can always be withdrawn
-            // even when CanTransfer is cleared, so the broker is not trapped.
-            env(coverWithdraw(alice, brokerKeylet.key, depositAmount));
-            env.close();
-
-            if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
-            {
-                BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 0);
-                env.require(Balance(pseudoAccount, asset(0)));
-            }
-        }
-        else
-        {
-            // Pre-fixCleanup3_2_0 regression: cover withdraw was blocked,
-            // trapping the broker's first-loss capital.
-            env(coverWithdraw(alice, brokerKeylet.key, depositAmount), Ter{tecNO_AUTH});
-            env.close();
-
-            if (auto const refreshed = env.le(brokerKeylet); BEAST_EXPECT(refreshed))
-            {
-                BEAST_EXPECT(refreshed->at(sfCoverAvailable) == 1);
-                env.require(Balance(pseudoAccount, depositAmount));
-            }
-        }
-    }
-
-    void
-    testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared()
-    {
-        testcase("LoanSet blocked, LoanPay allowed when CanTransfer cleared");
+        testcase("Lending: CanTrade disabled has no impact");
         using namespace jtx;
         using namespace loan;
+        using namespace loanBroker;
 
         Env env(*this, all_);
 
@@ -5542,67 +5443,7 @@ protected:
              .issuer = issuer,
              .holders = {lender, borrower},
              .flags = tfMPTCanTransfer | tfMPTCanLock,
-             .mutableFlags = tmfMPTCanMutateCanTransfer});
-        PrettyAsset const asset = mpt.issuanceID();
-        env(pay(issuer, lender, asset(10'000'000)));
-        // Fund the borrower with enough to cover principal+interest+fees
-        env(pay(issuer, borrower, asset(100'000)));
-        env.close();
-
-        // Create vault and broker while CanTransfer is set.
-        auto const broker = createVaultAndBroker(env, asset, lender);
-
-        auto const loanSetFee = Fee(env.current()->fees().base * 2);
-
-        // Create an existing loan while CanTransfer is set.
-        env(set(borrower, broker.brokerID, 1'000),
-            Sig(sfCounterpartySignature, lender),
-            loanSetFee);
-        env.close();
-        auto const loanKeylet = keylet::loan(broker.brokerID, 1);
-        BEAST_EXPECT(env.le(loanKeylet));
-
-        // Issuer governance: clear CanTransfer.
-        mpt.set({.mutableFlags = tmfMPTClearCanTransfer});
-        env.close();
-
-        // Issuing a NEW loan is blocked - it would create new exposure into
-        // a pool the issuer is restricting.
-        env(set(borrower, broker.brokerID, 1'000),
-            Sig(sfCounterpartySignature, lender),
-            loanSetFee,
-            Ter{tecNO_AUTH});
-        env.close();
-
-        // Repaying an existing loan is always allowed - blocking it would
-        // create irrecoverable bad debt and trap SAV depositor principal.
-        env(pay(borrower, loanKeylet.key, asset(1'000)));
-        env.close();
-    }
-
-    void
-    testLendingCanTradeClearedNoImpact()
-    {
-        testcase("Lending: CanTrade cleared has no impact");
-        using namespace jtx;
-        using namespace loan;
-        using namespace loanBroker;
-
-        Env env(*this, all_);
-
-        Account const issuer{"issuer"};
-        Account const lender{"lender"};
-        Account const borrower{"borrower"};
-
-        env.fund(XRP(1'000'000), issuer, lender, borrower);
-        env.close();
-
-        MPTTester mpt(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {lender, borrower},
-             .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
-             .mutableFlags = tmfMPTCanMutateCanTrade});
+             .mutableFlags = tmfMPTCanEnableCanTrade});
         PrettyAsset const asset = mpt.issuanceID();
         env(pay(issuer, lender, asset(10'000'000)));
         env(pay(issuer, borrower, asset(100'000)));
@@ -5610,16 +5451,7 @@ protected:
 
         auto const broker = createVaultAndBroker(env, asset, lender);
 
-        // Sanity: while CanTrade is set, the asset can be placed on the DEX.
-        env(offer(lender, XRP(1), asset(10)));
-        env.close();
-
-        // Issuer governance: clear CanTrade. Loan origination and repayment
-        // are not trades: nothing in the Lending Protocol should be impacted.
-        mpt.set({.mutableFlags = tmfMPTClearCanTrade});
-        env.close();
-
-        // Control: clearing CanTrade is observable on the DEX path.
+        // CanTrade is not set
         env(offer(lender, XRP(1), asset(10)), Ter{tecNO_PERMISSION});
         env.close();
 
@@ -5643,6 +5475,13 @@ protected:
 
         // Cover withdrawal still works.
         env(coverWithdraw(lender, broker.brokerID, asset(100)));
+        env.close();
+
+        // Enable CanTrade and verify the DEX path is restored.
+        mpt.set({.mutableFlags = tmfMPTSetCanTrade});
+        env.close();
+
+        env(offer(lender, XRP(1), asset(10)));
         env.close();
     }
 
@@ -8716,8 +8555,7 @@ protected:
         testRIPD3901();
         testBorrowerIsBroker();
         testLimitExceeded();
-        testLoanSetBlockedLoanPayAllowedWhenCanTransferCleared();
-        testLendingCanTradeClearedNoImpact();
+        testLendingCanTradeDisabledNoImpact();
         testBugOverpaymentPrincipalChange();
         testBugOverpayUnroundedAmount();
 
@@ -8747,7 +8585,6 @@ protected:
         testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(features);
         testBatchBypassCounterparty(features);
         testLoanNextPaymentDueDateOverflow(features);
-        testCoverDepositWithdrawNonTransferableMPT(features);
         testSequentialFLCDepletion(features);
 
         // Invariants

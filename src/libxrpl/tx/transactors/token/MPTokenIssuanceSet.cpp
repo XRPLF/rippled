@@ -5,7 +5,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -16,14 +15,12 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
 #include <array>
 #include <cstdint>
-#include <unordered_set>
 
 namespace xrpl {
 
@@ -41,35 +38,34 @@ MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
     return tfMPTokenIssuanceSetMask;
 }
 
-// Maps set/clear mutable flags in an MPTokenIssuanceSet transaction to the
-// corresponding ledger mutable flags that control whether the change is
-// allowed.
+// Maps each MPTokenIssuanceSet MutableFlags to the corresponding mutable
+// flag and the target ledger flag to mutate.
 struct MPTMutabilityFlags
 {
     std::uint32_t setFlag;
-    std::uint32_t clearFlag;
-    std::uint32_t canMutateFlag;
+    std::uint32_t canEnableFlag;
+    std::uint32_t ledgerFlag;
 };
 
 static constexpr std::array<MPTMutabilityFlags, 6> kMptMutabilityFlags = {
     {{.setFlag = tmfMPTSetCanLock,
-      .clearFlag = tmfMPTClearCanLock,
-      .canMutateFlag = lsmfMPTCanMutateCanLock},
+      .canEnableFlag = lsmfMPTCanEnableCanLock,
+      .ledgerFlag = lsfMPTCanLock},
      {.setFlag = tmfMPTSetRequireAuth,
-      .clearFlag = tmfMPTClearRequireAuth,
-      .canMutateFlag = lsmfMPTCanMutateRequireAuth},
+      .canEnableFlag = lsmfMPTCanEnableRequireAuth,
+      .ledgerFlag = lsfMPTRequireAuth},
      {.setFlag = tmfMPTSetCanEscrow,
-      .clearFlag = tmfMPTClearCanEscrow,
-      .canMutateFlag = lsmfMPTCanMutateCanEscrow},
+      .canEnableFlag = lsmfMPTCanEnableCanEscrow,
+      .ledgerFlag = lsfMPTCanEscrow},
      {.setFlag = tmfMPTSetCanTrade,
-      .clearFlag = tmfMPTClearCanTrade,
-      .canMutateFlag = lsmfMPTCanMutateCanTrade},
+      .canEnableFlag = lsmfMPTCanEnableCanTrade,
+      .ledgerFlag = lsfMPTCanTrade},
      {.setFlag = tmfMPTSetCanTransfer,
-      .clearFlag = tmfMPTClearCanTransfer,
-      .canMutateFlag = lsmfMPTCanMutateCanTransfer},
+      .canEnableFlag = lsmfMPTCanEnableCanTransfer,
+      .ledgerFlag = lsfMPTCanTransfer},
      {.setFlag = tmfMPTSetCanClawback,
-      .clearFlag = tmfMPTClearCanClawback,
-      .canMutateFlag = lsmfMPTCanMutateCanClawback}}};
+      .canEnableFlag = lsmfMPTCanEnableCanClawback,
+      .ledgerFlag = lsfMPTCanClawback}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -121,52 +117,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         {
             if ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceSetMutableMask) != 0u))
                 return temINVALID_FLAG;
-
-            // Can not set and clear the same flag
-            if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags](auto const& f) {
-                    return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
-                }))
-                return temINVALID_FLAG;
-
-            // Trying to set a non-zero TransferFee and clear MPTCanTransfer
-            // in the same transaction is not allowed.
-            if ((transferFee.value_or(0) != 0u) && ((*mutableFlags & tmfMPTClearCanTransfer) != 0u))
-                return temMALFORMED;
         }
     }
-
-    return tesSUCCESS;
-}
-
-NotTEC
-MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
-{
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    // this is added in case more flags will be added for MPTokenIssuanceSet
-    // in the future. Currently unreachable.
-    if ((tx.getFlags() & tfMPTokenIssuanceSetMask) != 0u)
-        return terNO_DELEGATE_PERMISSION;  // LCOV_EXCL_LINE
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttMPTOKEN_ISSUANCE_SET, granularPermissions);
-
-    if (tx.isFlag(tfMPTLock) && !granularPermissions.contains(MPTokenIssuanceLock))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFlag(tfMPTUnlock) && !granularPermissions.contains(MPTokenIssuanceUnlock))
-        return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
 }
@@ -232,15 +184,8 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
     {
         if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
-                return !isMutableFlag(f.canMutateFlag) &&
-                    ((*mutableFlags & (f.setFlag | f.clearFlag)));
+                return !isMutableFlag(f.canEnableFlag) && ((*mutableFlags & f.setFlag) != 0u);
             }))
-            return tecNO_PERMISSION;
-
-        // Clearing lsfMPTRequireAuth is invalid when the issuance already has
-        // a DomainID set, because a DomainID requires RequireAuth to be active.
-        if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u &&
-            sleMptIssuance->isFieldPresent(sfDomainID))
             return tecNO_PERMISSION;
     }
 
@@ -301,19 +246,8 @@ MPTokenIssuanceSet::doApply()
         {
             if ((mutableFlags & f.setFlag) != 0u)
             {
-                flagsOut |= f.canMutateFlag;
+                flagsOut |= f.ledgerFlag;
             }
-            else if ((mutableFlags & f.clearFlag) != 0u)
-            {
-                flagsOut &= ~f.canMutateFlag;
-            }
-        }
-
-        if ((mutableFlags & tmfMPTClearCanTransfer) != 0u)
-        {
-            // If the lsfMPTCanTransfer flag is being cleared, then also clear
-            // the TransferFee field.
-            sle->makeFieldAbsent(sfTransferFee);
         }
     }
 
