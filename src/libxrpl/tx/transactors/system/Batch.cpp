@@ -215,7 +215,7 @@ Batch::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfSponsorFlags))
     {
         auto const sponsorFlags = ctx.tx.getFieldU32(sfSponsorFlags);
-        if ((sponsorFlags & spfSponsorReserve) != 0u)
+        if (isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
                                 << "spfSponsorReserve is not allowed on outer Batch.";

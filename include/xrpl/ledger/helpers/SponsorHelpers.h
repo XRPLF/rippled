@@ -13,6 +13,12 @@
 namespace xrpl {
 
 inline bool
+isFeeSponsored(STTx const& tx)
+{
+    return (tx.getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u;
+}
+
+inline bool
 isReserveSponsored(STTx const& tx)
 {
     return (tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve) != 0u;

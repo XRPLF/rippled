@@ -180,13 +180,6 @@ preflight1Sponsor(PreflightContext const& ctx, AccountID const& id)
     if ((hasSponsor || hasSponsorFlags || hasSponsorSig) && !ctx.rules.enabled(featureSponsor))
         return temDISABLED;
 
-    if (hasSponsorFlags &&
-        ((ctx.tx.getFieldU32(sfSponsorFlags) & ~(spfSponsorFee | spfSponsorReserve)) != 0u))
-    {
-        JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
-        return temINVALID_FLAG;
-    }
-
     if (!hasSponsor)
     {
         if (hasSponsorFlags)
@@ -204,7 +197,7 @@ preflight1Sponsor(PreflightContext const& ctx, AccountID const& id)
     else if (hasSponsorFlags)
     {
         auto const sponsorFlags = ctx.tx.getFieldU32(sfSponsorFlags);
-        if (((sponsorFlags & ~(spfSponsorFee | spfSponsorReserve)) != 0u) || sponsorFlags == 0)
+        if (((sponsorFlags & spfSponsorFlagMask) != 0u) || sponsorFlags == 0)
         {
             JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
             return temINVALID_FLAG;
@@ -420,14 +413,10 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     if (!sponsorshipSle)
         return terNO_SPONSORSHIP;
 
-    auto const sponsorFlags = tx.getFieldU32(sfSponsorFlags);
-
-    if (((sponsorFlags & spfSponsorFee) != 0u) &&
-        sponsorshipSle->isFlag(lsfSponsorshipRequireSignForFee))
+    if (isFeeSponsored(tx) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForFee))
         return terNO_SPONSORSHIP;
 
-    if (((sponsorFlags & spfSponsorReserve) != 0u) &&
-        sponsorshipSle->isFlag(lsfSponsorshipRequireSignForReserve))
+    if (isReserveSponsored(tx) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForReserve))
         return terNO_SPONSORSHIP;
 
     return tesSUCCESS;
@@ -1325,7 +1314,7 @@ Transactor::reset(XRPAmount fee)
 FeePayer
 Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 {
-    if (tx.isFieldPresent(sfSponsor) && ((tx.getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u))
+    if (tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx))
     {
         auto const sponsorAccountID = tx.getAccountID(sfSponsor);
         auto const sponseeAccountID = tx.getAccountID(sfAccount);
