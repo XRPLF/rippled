@@ -1,8 +1,9 @@
 #include <test/jtx/TestSuite.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/rdb/SociDB.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -32,10 +33,10 @@ private:
     static void
     setupSQLiteConfig(BasicConfig& config, boost::filesystem::path const& dbPath)
     {
-        config.overwrite("sqdb", "backend", "sqlite");
+        config.overwrite(Sections::kSqdb, Keys::kBackend, "sqlite");
         auto value = dbPath.string();
         if (!value.empty())
-            config.legacy("database_path", value);
+            config.legacy(Sections::kDatabasePath, value);
     }
 
     static void

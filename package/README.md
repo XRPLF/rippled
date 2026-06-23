@@ -15,32 +15,30 @@ package/
     xrpld.sysusers      sysusers.d config (used by both RPM and DEB)
     xrpld.tmpfiles      tmpfiles.d config (used by both RPM and DEB)
     xrpld.logrotate     logrotate config (installed to /etc/logrotate.d/xrpld)
-    update-xrpld        auto-update script (installed to /usr/libexec/xrpld/, run by update-xrpld.timer)
 ```
 
 ## Prerequisites
 
 Packaging targets and their container images are declared in
 [`.github/scripts/strategy-matrix/linux.json`](../.github/scripts/strategy-matrix/linux.json)
-via a `"package": true` field on specific os entries. Today only
-`linux/amd64` is emitted; the architecture is hardcoded in `generate.py`
-and the workflow runner. The package format
+inside `package_configs` configurations. Today only
+`linux/amd64` is emitted. The package format
 (deb or rpm) is inferred at build time from the container's package manager
 (`apt-get` -> deb, `dnf`/`yum` -> rpm). The image tag is composed as
-`ghcr.io/xrplf/ci/{distro}-{version}:{compiler}-{cver}-sha-{image_sha}` —
+`ghcr.io/xrplf/xrpld/packaging-<distro>:sha-<git_sha>` —
 the same scheme used by `reusable-build-test.yml`. Bump `image_sha` in
 `linux.json` and both CI and local builds pick up the new image with no
 workflow edits.
 
 | Package type | Image (derived from `linux.json`)                    | Tool required                                                   |
 | ------------ | ---------------------------------------------------- | --------------------------------------------------------------- |
-| RPM          | `ghcr.io/xrplf/ci/rhel-9:gcc-12-sha-<git_sha>`       | `rpmbuild`                                                      |
-| DEB          | `ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12-sha-<git_sha>` | `dpkg-buildpackage`, `debhelper (>= 13)`, `dh-sequence-systemd` |
+| RPM          | `ghcr.io/xrplf/xrpld/packaging-rhel:sha-<git_sha>`   | `rpmbuild`                                                      |
+| DEB          | `ghcr.io/xrplf/xrpld/packaging-debian:sha-<git_sha>` | `dpkg-buildpackage`, `debhelper (>= 13)`, `dh-sequence-systemd` |
 
 To print the exact image tags for the current `linux.json`:
 
 ```bash
-./.github/scripts/strategy-matrix/generate.py --packaging --config=.github/scripts/strategy-matrix/linux.json
+./.github/scripts/strategy-matrix/generate.py --packaging
 ```
 
 ## Building packages

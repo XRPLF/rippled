@@ -794,9 +794,8 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                     BEAST_EXPECT(sink.messages().str().starts_with("Invariant failed:"));
                     // uncomment to log the invariant failure message
                     // log << "   --> " << sink.messages().str() << std::endl;
-                    BEAST_EXPECT(
-                        sink.messages().str().find(
-                            "Last NFT page deleted with non-empty directory") != std::string::npos);
+                    BEAST_EXPECT(sink.messages().str().contains(
+                        "Last NFT page deleted with non-empty directory"));
                 }
             }
             {
@@ -831,8 +830,7 @@ class NFTokenBurn_test : public beast::unit_test::Suite
                     BEAST_EXPECT(sink.messages().str().starts_with("Invariant failed:"));
                     // uncomment to log the invariant failure message
                     // log << "   --> " << sink.messages().str() << std::endl;
-                    BEAST_EXPECT(
-                        sink.messages().str().find("Lost NextMinPage link") != std::string::npos);
+                    BEAST_EXPECT(sink.messages().str().contains("Lost NextMinPage link"));
                 }
             }
         }
