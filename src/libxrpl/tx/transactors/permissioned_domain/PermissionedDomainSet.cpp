@@ -108,10 +108,10 @@ PermissionedDomainSet::doApply()
         // Check reserve availability for new object creation
         auto const balance = ownerSle->at(sfBalance)->xrp();
         auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, ownerSle, balance, sponsorSle, 1, 0, j_);
+        if (auto const ret =
+                checkXrpBalance(ctx_.view(), ctx_.tx, ownerSle, balance, sponsorSle, 1, j_);
             !isTesSuccess(ret))
-            return ret;
+            return tecINSUFFICIENT_RESERVE;
 
         bool const fixEnabled = view().rules().enabled(fixCleanup3_1_3);
         auto const seq = fixEnabled ? ctx_.tx.getSeqValue() : ctx_.tx.getFieldU32(sfSequence);

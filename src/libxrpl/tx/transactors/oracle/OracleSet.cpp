@@ -120,7 +120,9 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         return !v || *v == (*sle)[field];
     };
 
-    std::int8_t adjustReserve = 0;
+    std::int32_t adjustReserve = 0;
+    SLE::const_pointer sponsorSle;
+
     if (sle)
     {
         // update
@@ -151,29 +153,32 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         if (!pairsDel.empty())
             return tecTOKEN_PAIR_NOT_FOUND;
 
-        auto const oldCount = calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
-        auto const newCount = calculateOracleReserve(pairs.size());
+        int32_t const oldCount =
+            calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
+        int32_t const newCount = calculateOracleReserve(pairs.size());
 
         // if different sponsors, check with newCount
-        auto const currentSponsor = getLedgerEntryReserveSponsorAccountID(sle);
-        auto const newSponsor = getTxReserveSponsorAccountID(ctx.tx);
-        if ((!currentSponsor && !newSponsor) ||
-            (currentSponsor && newSponsor && *currentSponsor == *newSponsor))
-        {
-            adjustReserve = newCount - oldCount;
+        auto const objSponsorID = getLedgerEntryReserveSponsorAccountID(sle);
+        auto const txSponsorID = getTxReserveSponsorAccountID(ctx.tx);
+
+        if ((newCount > oldCount) && (txSponsorID != objSponsorID))
+        {  // Sponsor change
+            adjustReserve = newCount;
+            sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);  // tx sfSponsor or empty
         }
         else
-        {
-            adjustReserve = newCount;
+        {  // Sponsor remain
+            adjustReserve = newCount - oldCount;
+            sponsorSle = getLedgerEntryReserveSponsor(ctx.view, sle);  // obj sfSponsor or empty
         }
     }
     else
     {
         // create
-
         if (!ctx.tx.isFieldPresent(sfProvider) || !ctx.tx.isFieldPresent(sfAssetClass))
             return temMALFORMED;
         adjustReserve = calculateOracleReserve(pairs.size());
+        sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
     }
 
     if (pairs.empty())
@@ -181,10 +186,8 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     if (pairs.size() > kMaxOracleDataSeries)
         return tecARRAY_TOO_LARGE;
 
-    auto const& balance = sleSetter->getFieldAmount(sfBalance);
-    auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-    if (auto const ret = checkInsufficientReserve(
-            ctx.view, ctx.tx, sleSetter, balance, sponsorSle, adjustReserve, 0, ctx.j);
+    if (auto const ret =
+            checkXrpBalance(ctx.view, ctx.tx, sleSetter, sponsorSle, adjustReserve, ctx.j, false);
         !isTesSuccess(ret))
         return ret;
 
@@ -229,7 +232,9 @@ OracleSet::doApply()
             priceData.setFieldCurrency(sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
             pairs.emplace(tokenPairKey(entry), std::move(priceData));
         }
-        auto const oldCount = calculateOracleReserve(pairs.size());
+
+        int32_t const oldCount = calculateOracleReserve(pairs.size());
+
         // update/add/delete pairs
         for (auto const& entry : ctx_.tx.getFieldArray(sfPriceDataSeries))
         {
@@ -267,7 +272,7 @@ OracleSet::doApply()
             (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
         }
 
-        auto const newCount = calculateOracleReserve(pairs.size());
+        int32_t const newCount = calculateOracleReserve(pairs.size());
         int32_t const adjust = newCount - oldCount;
 
         auto const accountSle = ctx_.view().peek(keylet::account(ctx_.tx[sfAccount]));

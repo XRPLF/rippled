@@ -5,7 +5,6 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -22,7 +21,6 @@
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <cstdint>
 #include <optional>
 #include <utility>
 
@@ -372,11 +370,8 @@ NFTokenAcceptOffer::transferNFToken(
     if (!sleBuyer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    std::uint32_t const buyerOwnerCountBefore = sleBuyer->getFieldU32(sfOwnerCount);
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-
-    auto const insertRet =
-        nft::insertToken(view(), ctx_.tx, sleBuyer, sponsorSle, std::move(tokenAndPage->token));
+    auto const sponsorSle =
+        buyer == accountID_ ? getTxReserveSponsor(view(), ctx_.tx) : SLE::pointer();
 
     // if fixNFTokenReserve is enabled, check if the buyer has sufficient
     // reserve to own a new object, if their OwnerCount changed.
@@ -384,27 +379,17 @@ NFTokenAcceptOffer::transferNFToken(
     // There was an issue where the buyer accepts a sell offer, the ledger
     // didn't check if the buyer has enough reserve, meaning that buyer can get
     // NFTs free of reserve.
-    if (view().rules().enabled(fixNFTokenReserve))
-    {
-        // To check if there is sufficient reserve, we cannot use preFeeBalance_
-        // because NFT is sold for a price. So we must use the balance after
-        // the deduction of the potential offer price. A small caveat here is
-        // that the balance has already deducted the transaction fee, meaning
-        // that the reserve requirement is a few drops higher.
-        auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
 
-        auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
-        if (buyerOwnerCountAfter > buyerOwnerCountBefore)
-        {
-            SLE::const_pointer buyerSponsorSle;
-            if (accountID_ == buyer)
-                buyerSponsorSle = sponsorSle;
-            if (auto const ret = checkInsufficientReserve(
-                    ctx_.view(), ctx_.tx, sleBuyer, buyerBalance, buyerSponsorSle, 0, 0, j_);
-                !isTesSuccess(ret))
-                return ret;
-        }
-    }
+    // To check if there is sufficient reserve, we cannot use preFeeBalance_
+    // because NFT is sold for a price. So we must use the balance after
+    // the deduction of the potential offer price. A small caveat here is
+    // that the balance has already deducted the transaction fee, meaning
+    // that the reserve requirement is a few drops higher.
+
+    auto const balance = sleBuyer->at(sfBalance)->xrp();
+    bool const fixEnable = view().rules().enabled(fixNFTokenReserve);
+    auto const insertRet = nft::insertToken(
+        view(), ctx_.tx, sleBuyer, balance, sponsorSle, std::move(tokenAndPage->token), fixEnable);
 
     return insertRet;
 }

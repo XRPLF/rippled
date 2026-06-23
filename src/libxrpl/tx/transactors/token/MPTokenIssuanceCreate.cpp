@@ -117,10 +117,9 @@ MPTokenIssuanceCreate::create(
 
     if (args.priorBalance)
     {
-        if (auto const ret = checkInsufficientReserve(
-                view, tx, acct, *(args.priorBalance), sponsorSle, 1, 0, journal);
+        if (auto const ret = checkXrpBalance(view, tx, acct, sponsorSle, 1, journal);
             !isTesSuccess(ret))
-            return std::unexpected(ret);  // tecINSUFFICIENT_RESERVE
+            return std::unexpected(tecINSUFFICIENT_RESERVE);
     }
 
     auto const mptId = makeMptID(args.sequence, args.account);

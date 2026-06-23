@@ -93,17 +93,22 @@ CredentialAccept::doApply()
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleSubject, preFeeBalance_, sponsorSle, 1, 0, ctx_.journal);
-        !isTesSuccess(ret))
-        return ret;
-
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    int32_t adjustment = 1;
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (sponsorSle && sleCred->isFieldPresent(sfSponsor) &&
+        sleCred->at(sfSponsor) == sponsorSle->at(sfAccount))
+        adjustment = 0;  // the same sponsor
+
+    if (auto const ret =
+            checkXrpBalance(view(), ctx_.tx, sleSubject, sponsorSle, adjustment, ctx_.journal);
+        !isTesSuccess(ret))
+        return tecINSUFFICIENT_RESERVE;
 
     if (checkExpired(*sleCred, view().header().parentCloseTime))
     {

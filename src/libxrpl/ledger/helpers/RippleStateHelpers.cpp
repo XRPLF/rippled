@@ -230,7 +230,7 @@ trustCreate(
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     bool const bSetDst = saLimit.getIssuer() == uDstAccountID;
-    bool const bSetHigh = bSrcHigh ^ bSetDst;
+    bool const bSetHigh = bSrcHigh != bSetDst;
 
     XRPL_ASSERT(sleAccount, "xrpl::trustCreate : non-null SLE");
     if (!sleAccount)
@@ -667,8 +667,7 @@ addEmptyHolding(
         !isPseudoAccount(sleDst) ? getTxReserveSponsor(view, tx, dstId) : SLE::pointer();
 
     // Can the account cover the trust line reserve ?
-    if (auto const ret =
-            checkInsufficientReserve(view, tx, sleDst, priorBalance, sponsorSle, 1, 0, journal);
+    if (auto const ret = checkXrpBalance(view, tx, sleDst, sponsorSle, 1, journal);
         !isTesSuccess(ret))
         return tecNO_LINE_INSUF_RESERVE;
 

@@ -435,21 +435,12 @@ EscrowCreate::doApply()
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
 
-    auto const balance = sle->getFieldAmount(sfBalance).xrp();
+    auto const balanceAdj = isXRP(amount) ? -amount.xrp() : XRPAmount();
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret =
-            checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsorSle, 1, 0, j_);
+    if (auto const ret = checkXrpBalance(
+            static_cast<ReadView const&>(ctx_.view()), ctx_.tx, sle, sponsorSle, 1, balanceAdj, j_);
         !isTesSuccess(ret))
-        return ret;
-
-    // Check reserve and funds availability
-    if (isXRP(amount))
-    {
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, balance - STAmount(amount).xrp(), {}, 1, 0, j_);
-            !isTesSuccess(ret))
-            return tecUNFUNDED;
-    }
+        return ret == tecINSUFFICIENT_RESERVE ? tecINSUFFICIENT_RESERVE : tecUNFUNDED;
 
     // Check destination account
     {

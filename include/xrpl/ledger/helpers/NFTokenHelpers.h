@@ -43,8 +43,10 @@ insertToken(
     ApplyView& view,
     STTx const& tx,
     SLE::ref ownerSle,
+    XRPAmount priorBalance,
     SLE::ref sponsorSle,
-    STObject&& nft);
+    STObject&& nft,
+    bool checkBalance = true);
 
 /** Remove the token from the owner's token directory. */
 TER

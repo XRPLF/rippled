@@ -95,10 +95,9 @@ DelegateSet::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleOwner, preFeeBalance_, sponsorSle, 1, 0, ctx_.journal);
+    if (auto const ret = checkXrpBalance(view(), ctx_.tx, sleOwner, sponsorSle, 1, ctx_.journal);
         !isTesSuccess(ret))
-        return ret;
+        return tecINSUFFICIENT_RESERVE;
 
     sle = std::make_shared<SLE>(delegateKey);
     sle->setAccountID(sfAccount, accountID_);

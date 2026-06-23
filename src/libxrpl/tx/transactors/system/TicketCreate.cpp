@@ -77,8 +77,8 @@ TicketCreate::doApply()
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleAccountRoot, preFeeBalance_, sponsorSle, ticketCount, 0, j_);
+    if (auto const ret =
+            checkXrpBalance(view(), ctx_.tx, sleAccountRoot, sponsorSle, ticketCount, j_);
         !isTesSuccess(ret))
         return ret;
 

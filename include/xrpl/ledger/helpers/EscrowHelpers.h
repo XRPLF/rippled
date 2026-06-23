@@ -60,13 +60,13 @@ escrowUnlockApplyHelper<Issue>(
     {
         // Can the account cover the trust line's reserve?
         auto const sponsorSle = getTxReserveSponsor(view, tx, sleDest->at(sfAccount));
-        if (auto const ret =
-                checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1, 0, journal);
+        if (auto const ret = checkXrpBalance(view, tx, sleDest, sponsorSle, 1, journal);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficient reserve to create line.";
-
+            if (ret == tecINTERNAL && !view.rules().enabled(fixCleanup3_2_0))
+                return tefEXCEPTION;
             return tecNO_LINE_INSUF_RESERVE;
         }
 
@@ -187,8 +187,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
         auto const sponsorSle = getTxReserveSponsor(view, tx, sleDest->at(sfAccount));
-        if (auto const ret =
-                checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1, 0, journal);
+        if (auto const ret = checkXrpBalance(view, tx, sleDest, sponsorSle, 1, journal);
             !isTesSuccess(ret))
             return ret;
 

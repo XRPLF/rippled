@@ -394,8 +394,7 @@ CheckCash::doApply()
             // otherwise return nullptr.
             auto checkReserve = [&]() -> SLE::pointer {
                 // Can the account cover the trust line's or MPT reserve?
-                if (auto const ret = checkInsufficientReserve(
-                        psb, ctx_.tx, sleDst, preFeeBalance_, sponsorSle, 1, 0, j_);
+                if (auto const ret = checkXrpBalance(psb, ctx_.tx, sleDst, sponsorSle, 1, j_);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "

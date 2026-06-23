@@ -834,7 +834,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto const sponsorSle = getTxReserveSponsor(sb, ctx_.tx);
     if (auto const ret =
-            checkInsufficientReserve(sb, ctx_.tx, sleCreator, preFeeBalance_, sponsorSle, 1, 0, j_);
+            checkXrpBalance(sb, ctx_.tx, sleCreator, preFeeBalance_, sponsorSle, 1, j_);
         !isTesSuccess(ret))
     {
         // If we are here, the signing account had an insufficient reserve

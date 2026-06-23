@@ -196,8 +196,7 @@ CheckCreate::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sle, preFeeBalance_, sponsorSle, 1, 0, ctx_.journal);
+    if (auto const ret = checkXrpBalance(view(), ctx_.tx, sle, sponsorSle, 1, ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 

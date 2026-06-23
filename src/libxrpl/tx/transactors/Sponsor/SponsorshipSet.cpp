@@ -227,7 +227,10 @@ SponsorshipSet::doApply()
         (*newSle)[sfOwner] = sponsorID;
         (*newSle)[sfSponsee] = sponseeID;
 
-        if (feeAmount && (*feeAmount).xrp() > (*sponsorSle)[sfBalance])
+        STAmount const balanceAdj = feeAmount ? *feeAmount : STAmount();
+        if (auto const ret = checkXrpBalance(
+                ctx_.view(), ctx_.tx, sponsorSle, txSponsorSle, 1, -balanceAdj.xrp(), ctx_.journal);
+            !isTesSuccess(ret))
             return tecUNFUNDED;
 
         if (feeAmount && *feeAmount > XRPAmount(0))
@@ -235,18 +238,6 @@ SponsorshipSet::doApply()
             (*sponsorSle)[sfBalance] -= *feeAmount;
             (*newSle)[sfFeeAmount] = *feeAmount;
         }
-
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
-                sponsorSle,
-                STAmount{(*sponsorSle)[sfBalance]}.xrp(),
-                txSponsorSle,
-                1,
-                0,
-                ctx_.journal);
-            !isTesSuccess(ret))
-            return tecUNFUNDED;
 
         if (maxFee && *maxFee > XRPAmount(0))
             (*newSle)[sfMaxFee] = *maxFee;
@@ -288,7 +279,9 @@ SponsorshipSet::doApply()
         auto const currentFeeAmount = (*sponsorshipSle)[~sfFeeAmount].valueOr(XRPAmount(0));
         auto feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
 
-        if (feeAmountDelta > beast::kZero && feeAmountDelta > (*sponsorSle)[sfBalance])
+        if (auto const ret = checkXrpBalance(
+                ctx_.view(), ctx_.tx, sponsorSle, txSponsorSle, 0, -feeAmountDelta, ctx_.journal);
+            !isTesSuccess(ret))
             return tecUNFUNDED;
 
         // transfer feeAmount to ledger entry
@@ -304,18 +297,6 @@ SponsorshipSet::doApply()
             {
                 (*sponsorshipSle).setFieldAmount(sfFeeAmount, *feeAmount);
             }
-
-            if (auto const ret = checkInsufficientReserve(
-                    ctx_.view(),
-                    ctx_.tx,
-                    sponsorSle,
-                    STAmount{(*sponsorSle)[sfBalance]}.xrp(),
-                    txSponsorSle,
-                    0,
-                    0,
-                    ctx_.journal);
-                !isTesSuccess(ret))
-                return tecUNFUNDED;
         }
     }
 

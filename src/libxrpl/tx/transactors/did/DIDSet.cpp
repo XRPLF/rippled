@@ -73,10 +73,10 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
     // Check reserve availability for new object creation
     auto const sponsorSle = getTxReserveSponsor(ctx.view(), ctx.tx);
     auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-    if (auto const ret = checkInsufficientReserve(
-            ctx.view(), ctx.tx, sleAccount, balance, sponsorSle, 1, 0, ctx.journal);
+    if (auto const ret =
+            checkXrpBalance(ctx.view(), ctx.tx, sleAccount, balance, sponsorSle, 1, ctx.journal);
         !isTesSuccess(ret))
-        return ret;
+        return tecINSUFFICIENT_RESERVE;
 
     // Add ledger object to ledger
     ctx.view().insert(sle);

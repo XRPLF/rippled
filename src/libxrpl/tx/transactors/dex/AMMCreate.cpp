@@ -151,22 +151,24 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     // Check the reserve for LPToken trustline
     if (ctx.view.rules().enabled(featureSponsor))
     {
-        auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+        XRPAmount const balanceAdj = [&]() {
+            if (isXRP(amount))
+                return amount.xrp();
+            if (isXRP(amount2))
+                return amount2.xrp();
+            return XRPAmount();
+        }();
 
-        // Check the reserve for LPToken trustline
-        // Insufficient reserve
-        auto const accountSle = ctx.view.read(keylet::account(accountID));
-        if (auto const ret = checkInsufficientReserve(
-                ctx.view,
-                ctx.tx,
-                accountSle,
-                accountSle->getFieldAmount(sfBalance),
-                sponsorSle,
-                1,
-                0,
-                ctx.j);
+        if (auto const ret = checkXrpBalance(ctx.view, ctx.tx, accountID, 1, -balanceAdj, ctx.j);
             !isTesSuccess(ret))
         {
+            if (ret == tecINSUFFICIENT_FUNDS)
+            {
+                JLOG(ctx.j.debug())
+                    << "AMM Instance: insufficient funds, " << amount << " " << amount2;
+                return tecUNFUNDED_AMM;
+            }
+
             JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
             return tecINSUF_RESERVE_LINE;
         }
@@ -184,11 +186,17 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const ownerCountAdj = isReserveSponsored(ctx.tx) ? 0 : 1;
-    STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, ownerCountAdj, ctx.j);
     auto insufficientBalance = [&](STAmount const& amount) {
         if (isXRP(amount))
+        {
+            // featureSponsor already check both amount and reserve
+            if (ctx.view.rules().enabled(featureSponsor))
+                return false;
+
+            auto const ownerCountAdj = isReserveSponsored(ctx.tx) ? 0 : 1;
+            STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, ownerCountAdj, ctx.j);
             return xrpBalance < amount;
+        }
 
         auto const funds = accountFunds(
             ctx.view,
@@ -197,7 +205,6 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             FreezeHandling::ZeroIfFrozen,
             AuthHandling::ZeroIfUnauthorized,
             ctx.j);
-
         return funds < amount;
     };
 

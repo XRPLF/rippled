@@ -79,17 +79,12 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 
     // Check reserve and funds availability
     {
-        auto const balance = (*sle)[sfBalance];
         auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+        auto const xrpAmount = ctx.tx[sfAmount].xrp();
         if (auto const ret =
-                checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, sponsorSle, 1, 0, ctx.j);
+                checkXrpBalance(ctx.view, ctx.tx, sle, sponsorSle, 1, -xrpAmount, ctx.j);
             !isTesSuccess(ret))
-            return ret;
-
-        if (auto const ret = checkInsufficientReserve(
-                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], sponsorSle, 1, 0, ctx.j);
-            !isTesSuccess(ret))
-            return tecUNFUNDED;
+            return ret == tecINSUFFICIENT_RESERVE ? tecINSUFFICIENT_RESERVE : tecUNFUNDED;
     }
 
     auto const dst = ctx.tx[sfDestination];

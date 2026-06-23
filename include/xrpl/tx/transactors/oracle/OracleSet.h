@@ -22,7 +22,7 @@ public:
     {
     }
 
-    static uint32_t
+    static uint8_t
     calculateOracleReserve(std::size_t count)
     {
         return count > 5 ? 2 : 1;

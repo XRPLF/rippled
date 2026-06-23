@@ -89,17 +89,11 @@ PaymentChannelFund::doApply()
 
     {
         // Check reserve and funds availability
-        auto const balance = (*sle)[sfBalance];
+        auto const balance = (sle->at(sfBalance) - ctx_.tx[sfAmount]).xrp();
         auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-        if (auto const ret =
-                checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsorSle, 0, 0, j_);
+        if (auto const ret = checkXrpBalance(ctx_.view(), ctx_.tx, sle, balance, sponsorSle, 0, j_);
             !isTesSuccess(ret))
-            return ret;
-
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, balance - ctx_.tx[sfAmount], {}, 0, 0, j_);
-            !isTesSuccess(ret))
-            return tecUNFUNDED;
+            return ret == tecINSUFFICIENT_RESERVE ? tecINSUFFICIENT_RESERVE : tecUNFUNDED;
     }
 
     // do not allow adding funds if dst does not exist

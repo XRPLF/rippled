@@ -693,6 +693,15 @@ private:
         remove(SeqProxy seqProx);
     };
 
+    // potentialSpend, totalFee
+    static std::pair<XRPAmount, XRPAmount>
+    calcSpendAndFee(
+        OpenView const& view,
+        TxQAccount::TxMap::iterator const& begin,
+        TxQAccount::TxMap::iterator const& end,
+        PreflightResult const& pfResult,
+        SeqProxy const& txSeqProx);
+
     // Helper function returns requiredFeeLevel.
     static FeeLevel64
     getRequiredFeeLevel(

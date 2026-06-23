@@ -440,6 +440,8 @@ Payment::doApply()
     // Open a ledger for editing.
     auto const k = keylet::account(dstAccountID);
     SLE::pointer sleDst = view().peek(k);
+    SLE::pointer sleSrc;
+    bool dstSponsored = false;
 
     if (!sleDst)
     {
@@ -451,21 +453,22 @@ Payment::doApply()
 
         if (ctx_.tx.isFlag(tfSponsorCreatedAccount))
         {
-            auto const sponsor = view().peek(keylet::account(accountID_));
-            if (!sponsor)
+            dstSponsored = true;
+            sleSrc = view().peek(keylet::account(accountID_));
+            if (!sleSrc)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const currentSponsoringAccountCount =
-                sponsor->getFieldU32(sfSponsoringAccountCount);
+                sleSrc->getFieldU32(sfSponsoringAccountCount);
             if (currentSponsoringAccountCount == std::numeric_limits<std::uint32_t>::max())
             {
                 JLOG(j_.error()) << "Sponsoring account count overflow for account "
                                  << to_string(accountID_);
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             }
-            sponsor->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
+            sleSrc->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
 
-            addSponsorToLedgerEntry(sleDst, sponsor);
-            view().update(sponsor);
+            addSponsorToLedgerEntry(sleDst, sleSrc);
+            view().update(sleSrc);
         }
 
         view().insert(sleDst);
@@ -482,6 +485,23 @@ Payment::doApply()
 
     // Direct MPT payment is handled by payment engine if MPTokensV2 is enabled
     bool const ripple = (hasPaths || sendMax || !dstAmount.native()) && (!isDstMPT || mpTokensV2);
+
+    if (dstSponsored)
+    {
+        if (!sleSrc)
+            sleSrc = view().peek(keylet::account(accountID_));
+        if (!sleSrc)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const balanceAdj = ripple ? XRPAmount() : -dstAmount.xrp();
+        if (auto const ret = checkXrpBalance(view(), ctx_.tx, sleSrc, 0, balanceAdj, j_);
+            !isTesSuccess(ret))
+        {
+            if (ret == tecINSUFFICIENT_FUNDS || ret == tecINSUFFICIENT_RESERVE)
+                return tecNO_DST_INSUF_XRP;
+            return ret;
+        }
+    }
 
     if (ripple)
     {
@@ -629,34 +649,39 @@ Payment::doApply()
     XRPL_ASSERT(dstAmount.native(), "xrpl::Payment::doApply : amount is XRP");
 
     // Direct XRP payment.
-
-    auto const sleSrc = view().peek(keylet::account(accountID_));
+    if (!sleSrc)
+        sleSrc = view().peek(keylet::account(accountID_));
     if (!sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // the number of reserves in this ledger for this account that require a
-    // reserve.
-    auto const reserve = accountReserve(view(), sleSrc, j_);
-
-    // In a delegated or sponsored payment, the fee payer can be another account,
-    // not the source account (accountID_).
-    bool const accountIsPayer = (getFeePayer(view(), ctx_.tx).id == accountID_);
-
-    // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
-    // were charged. If source account is the fee payer, it must also cover the fee.
-    // The final spend may use the reserve to cover fees.
-    auto const minRequiredFunds =
-        accountIsPayer ? std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp()) : reserve;
-
-    if (preFeeBalance_ < dstAmount.xrp() + minRequiredFunds)
+    // in case of new sponsored dst account balance already checked
+    if (!dstSponsored)
     {
-        // Vote no. However the transaction might succeed, if applied in
-        // a different order.
-        JLOG(j_.trace()) << "Delay transaction: Insufficient funds: " << to_string(preFeeBalance_)
-                         << " / " << to_string(dstAmount.xrp() + minRequiredFunds) << " ("
-                         << to_string(reserve) << ")";
+        // the number of reserves in this ledger for this account that require a
+        // reserve.
+        auto const reserve = accountReserve(view(), sleSrc, j_);
 
-        return tecUNFUNDED_PAYMENT;
+        // In a delegated or sponsored payment, the fee payer can be another account,
+        // not the source account (accountID_).
+        bool const accountIsPayer = (getFeePayer(view(), ctx_.tx).id == accountID_);
+
+        // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
+        // were charged. If source account is the fee payer, it must also cover the fee.
+        // The final spend may use the reserve to cover fees.
+        auto const minRequiredFunds =
+            accountIsPayer ? std::max(reserve, ctx_.tx.getFieldAmount(sfFee).xrp()) : reserve;
+
+        if (preFeeBalance_ < dstAmount.xrp() + minRequiredFunds)
+        {
+            // Vote no. However the transaction might succeed, if applied in
+            // a different order.
+            JLOG(j_.trace()) << "Delay transaction: Insufficient funds: "
+                             << to_string(preFeeBalance_) << " / "
+                             << to_string(dstAmount.xrp() + minRequiredFunds) << " ("
+                             << to_string(reserve) << ")";
+
+            return tecUNFUNDED_PAYMENT;
+        }
     }
 
     // Pseudo-accounts cannot receive payments, other than these native to

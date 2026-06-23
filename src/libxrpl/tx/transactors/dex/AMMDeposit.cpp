@@ -235,28 +235,10 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             // Adjust the reserve if LP doesn't have LPToken trustline
             bool const tlExists =
                 ctx.view.exists(keylet::line(accountID, lpIssue.account, lpIssue.currency));
-            auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-            auto const accountSle = ctx.view.read(keylet::account(accountID));
-            auto const reserveAdj = (sponsorSle || tlExists) ? 0 : 1;
-
-            if (xrpLiquid(ctx.view, accountID, reserveAdj, ctx.j) < deposit)
-            {
-                if (tlExists)
-                    return tecUNFUNDED_AMM;
-                return tecINSUF_RESERVE_LINE;
-            }
-
-            if (auto const ret = checkInsufficientReserve(
-                    ctx.view,
-                    ctx.tx,
-                    accountSle,
-                    accountSle->getFieldAmount(sfBalance) - deposit,
-                    sponsorSle,
-                    1,
-                    !tlExists,
-                    ctx.j);
-                sponsorSle && !isTesSuccess(ret))
-                return tecINSUF_RESERVE_LINE;
+            auto const ter =
+                checkXrpBalance(ctx.view, ctx.tx, accountID, !tlExists, -deposit.xrp(), ctx.j);
+            if (!isTesSuccess(ter))
+                return tlExists ? tecUNFUNDED_AMM : tecINSUF_RESERVE_LINE;
 
             return tesSUCCESS;
         }
@@ -381,22 +363,11 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     {
         if (ctx.view.rules().enabled(featureSponsor))
         {
-            auto const accountSle = ctx.view.read(keylet::account(accountID));
-            auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-            // Insufficient reserve
-            if (auto const ret = checkInsufficientReserve(
-                    ctx.view,
-                    ctx.tx,
-                    accountSle,
-                    accountSle->getFieldAmount(sfBalance),
-                    sponsorSle,
-                    1,
-                    0,
-                    ctx.j);
-                !isTesSuccess(ret))
+            if (auto const ter = checkXrpBalance(ctx.view, ctx.tx, accountID, 1, ctx.j);
+                !isTesSuccess(ter))
             {
                 JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
-                return tecINSUF_RESERVE_LINE;
+                return tecINSUFFICIENT_RESERVE == ter ? tecINSUF_RESERVE_LINE : ter;
             }
         }
         else
@@ -580,8 +551,9 @@ AMMDeposit::deposit(
             // Adjust the reserve if LP doesn't have LPToken trustline
             bool const tlExists =
                 view.exists(keylet::line(accountID_, lpIssue.account, lpIssue.currency));
-            auto const reserveAdj = (sponsorSle || tlExists) ? 0 : 1;
-            if (xrpLiquid(view, accountID_, reserveAdj, j_) >= depositAmount)
+            auto const ter = checkXrpBalance(
+                view, ctx_.tx, accountID_, sponsorSle, !tlExists, -depositAmount.xrp(), j_);
+            if (isTesSuccess(ter))
                 return tesSUCCESS;
         }
         else if (

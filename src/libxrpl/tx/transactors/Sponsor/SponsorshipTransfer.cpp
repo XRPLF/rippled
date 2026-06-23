@@ -25,8 +25,41 @@
 #include <limits>
 #include <memory>
 #include <optional>
+#include <stdexcept>
+#include <type_traits>
 
 namespace xrpl {
+
+// SponsorshipTransfer can break dependency tx[sfAccount] === accSle to use sponsor.
+template <class V>
+[[nodiscard]] inline TER
+checkXrpBalanceTransfer(
+    V const& view,
+    STTx const& tx,
+    SLE::const_ref accSle,
+    SLE::const_ref sponsorSle,
+    std::int32_t ownerCountAdj,
+    std::int32_t reserveCountAdj = 0,
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+{
+    bool apply = false;  // NOLINT
+    if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
+        apply = true;
+    return checkXrpBalanceHlp(
+        view,
+        apply,
+        tx,
+        {},
+        accSle,
+        XRPAmount(),
+        sponsorSle,
+        ownerCountAdj,
+        reserveCountAdj,
+        XRPAmount(),
+        false,
+        j,
+        false);
+}
 
 static std::optional<std::uint32_t>
 applyCountDelta(std::uint32_t current, std::int64_t delta)
@@ -348,18 +381,10 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         }
 
         // check new sponsor have sufficient balance
-        // NOLINTNEXTLINE(readability-suspicious-call-argument)
-        if (auto const ter = checkInsufficientReserve(
-                ctx.view,
-                ctx.tx,
-                sponseeSle,
-                sponseeSle->getFieldAmount(sfBalance),
-                newSponsorSle,
-                ownerCountDelta,
-                0,
-                ctx.j);
-            !isTesSuccess(ter))
-            return ter;
+        if (auto const ret = checkXrpBalanceTransfer(
+                ctx.view, ctx.tx, sponseeSle, newSponsorSle, ownerCountDelta, 0, ctx.j);
+            !isTesSuccess(ret))
+            return ret;
     }
     else
     {
@@ -400,18 +425,10 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         // In the case of removing an account sponsor, accSle should have no sfSponsor set
         // (AccountReserve = 0). However, by setting reserveCountAdj = 1 here, we are able to
         // calculate the actual required Account Reserve.
-        // NOLINTNEXTLINE(readability-suspicious-call-argument)
-        if (auto const ter = checkInsufficientReserve(
-                ctx.view,
-                ctx.tx,
-                sponseeSle,
-                sponseeSle->getFieldAmount(sfBalance),
-                newSponsorSle,
-                0,
-                1,
-                ctx.j);
-            !isTesSuccess(ter))
-            return ter;
+        if (auto const ret =
+                checkXrpBalanceTransfer(ctx.view, ctx.tx, sponseeSle, newSponsorSle, 0, 1, ctx.j);
+            !isTesSuccess(ret))
+            return ret;
     }
 
     return tesSUCCESS;

@@ -19,6 +19,53 @@
 
 namespace xrpl {
 
+struct OwnerCounts
+{
+    std::uint32_t owner = 0;
+    std::uint32_t sponsored = 0;
+    std::uint32_t sponsoring = 0;
+
+    OwnerCounts() = default;
+    OwnerCounts(SLE const& sle)
+        : owner(sle[sfOwnerCount])
+        , sponsored(sle[sfSponsoredOwnerCount])
+        , sponsoring(sle[sfSponsoringOwnerCount])
+    {
+    }
+
+    [[nodiscard]] std::uint32_t
+    count() const
+    {
+        int64_t const x = static_cast<int64_t>(owner) - sponsored + sponsoring;
+        if (x < 0)
+            return 0;
+        if (x > std::numeric_limits<std::uint32_t>::max())
+            return std::numeric_limits<std::uint32_t>::max();
+        return static_cast<std::uint32_t>(x);
+    }
+
+    auto
+    operator<=>(OwnerCounts const& o) const
+    {
+        return count() <=> o.count();
+    }
+
+    bool
+    operator==(OwnerCounts const& o) const
+    {
+        return this == &o || count() == o.count();
+    }
+
+    [[nodiscard]] bool
+    valid() const
+    {
+        int64_t const x = static_cast<int64_t>(owner) - sponsored + sponsoring;
+        if (x < 0 || x > std::numeric_limits<std::uint32_t>::max())
+            return false;
+        return owner >= sponsored;
+    }
+};
+
 //------------------------------------------------------------------------------
 
 /** A view into a ledger.
@@ -182,8 +229,8 @@ public:
     // changes that accounts make during a payment. `ownerCountHook` adjusts the
     // ownerCount so it returns the max value of the ownerCount so far.
     // This is required to support PaymentSandbox.
-    [[nodiscard]] virtual std::uint32_t
-    ownerCountHook(AccountID const& account, std::uint32_t count) const
+    [[nodiscard]] virtual OwnerCounts
+    ownerCountHook(AccountID const& account, OwnerCounts const& count) const
     {
         return count;
     }

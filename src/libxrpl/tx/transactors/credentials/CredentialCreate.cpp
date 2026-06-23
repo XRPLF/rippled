@@ -131,10 +131,9 @@ CredentialCreate::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleIssuer, preFeeBalance_, sponsorSle, 1, 0, ctx_.journal);
+    if (auto const ret = checkXrpBalance(view(), ctx_.tx, sleIssuer, sponsorSle, 1, ctx_.journal);
         !isTesSuccess(ret))
-        return ret;
+        return tecINSUFFICIENT_RESERVE;
 
     sleCred->setAccountID(sfSubject, subject);
     sleCred->setAccountID(sfIssuer, accountID_);

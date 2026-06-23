@@ -15,6 +15,7 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -607,6 +608,57 @@ TxQ::tryClearAccountQueueUpThruTx(
     return txResult;
 }
 
+std::pair<XRPAmount, XRPAmount>
+TxQ::calcSpendAndFee(
+    OpenView const& view,
+    TxQAccount::TxMap::iterator const& begin,
+    TxQAccount::TxMap::iterator const& end,
+    PreflightResult const& pfResult,
+    SeqProxy const& txSeqProx)
+{
+    XRPAmount potentialSpend = beast::kZero;
+    XRPAmount totalFee = beast::kZero;
+    for (auto iter = begin; iter != end; ++iter)
+    {
+        bool accPayFee = true;
+        auto const& tx = iter->second.txn;
+        if (tx)
+        {
+            try
+            {
+                auto const feePayer = getFeePayer(view, *tx);
+                accPayFee = tx->at(sfAccount) == feePayer.id;
+            }
+            catch (...)
+            {
+                // if a pre-funded sponsorship is deleted between tx creation and queue admission,
+                // getFeePayer can throw
+                accPayFee = true;
+            }
+        }
+
+        // If we're replacing this transaction don't include
+        // the replaced transaction's XRP spend.  Otherwise add
+        // it to potentialSpend.
+        if (iter->first != txSeqProx)
+        {
+            if (accPayFee)
+                totalFee += iter->second.consequences().fee();
+            potentialSpend += iter->second.consequences().potentialSpend();
+        }
+        else if (std::next(iter) != end)
+        {
+            // The fee for the candidate transaction _should_ be
+            // counted if it's replacing a transaction in the middle
+            // of the queue.
+            if (accPayFee)
+                totalFee += pfResult.consequences.fee();
+            potentialSpend += pfResult.consequences.potentialSpend();
+        }
+    }
+
+    return {potentialSpend, totalFee};
+}
 // Overview of considerations for when a transaction is accepted into the TxQ:
 //
 // These rules apply to the transactions in the queue owned by a single
@@ -1026,27 +1078,9 @@ TxQ::apply(
             // Sum fees and spending for all of the queued transactions
             // so we know how much to remove from the account balance
             // for the trial preclaim.
-            XRPAmount potentialSpend = beast::kZero;
-            XRPAmount totalFee = beast::kZero;
-            for (auto iter = txIter->first; iter != txIter->end; ++iter)
-            {
-                // If we're replacing this transaction don't include
-                // the replaced transaction's XRP spend.  Otherwise add
-                // it to potentialSpend.
-                if (iter->first != txSeqProx)
-                {
-                    totalFee += iter->second.consequences().fee();
-                    potentialSpend += iter->second.consequences().potentialSpend();
-                }
-                else if (std::next(iter) != txIter->end)
-                {
-                    // The fee for the candidate transaction _should_ be
-                    // counted if it's replacing a transaction in the middle
-                    // of the queue.
-                    totalFee += pfResult.consequences.fee();
-                    potentialSpend += pfResult.consequences.potentialSpend();
-                }
-            }
+            auto [potentialSpend, totalFee] =
+                calcSpendAndFee(view, txIter->first, txIter->end, pfResult, txSeqProx);
+
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             /* Check if the total fees in flight are greater

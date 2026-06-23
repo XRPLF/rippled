@@ -267,7 +267,14 @@ changeTokenURI(
 
 /** Insert the token in the owner's token directory. */
 TER
-insertToken(ApplyView& view, STTx const& tx, SLE::ref ownerSle, SLE::ref sponsorSle, STObject&& nft)
+insertToken(
+    ApplyView& view,
+    STTx const& tx,
+    SLE::ref ownerSle,
+    XRPAmount priorBalance,
+    SLE::ref sponsorSle,
+    STObject&& nft,
+    bool checkBalance)
 {
     if (!ownerSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -277,13 +284,12 @@ insertToken(ApplyView& view, STTx const& tx, SLE::ref ownerSle, SLE::ref sponsor
     // if necessary. This operation may fail if it is impossible to insert
     // the NFT.
     auto createCallback = [&](SLE::ref newPage) -> TER {
-        if (isReserveSponsored(tx))
+        if (checkBalance)
         {
-            auto const ownerBalance = ownerSle->getFieldAmount(sfBalance);
-            if (auto const ret =
-                    checkInsufficientReserve(view, tx, ownerSle, ownerBalance, sponsorSle, 1);
+            // using balance as NFTokens doesn't allow fee into reserve
+            if (auto const ret = checkXrpBalance(view, tx, ownerSle, priorBalance, sponsorSle, 1);
                 !isTesSuccess(ret))
-                return ret;
+                return view.rules().enabled(featureSponsor) ? ret : tecINSUFFICIENT_RESERVE;
         }
 
         adjustOwnerCount(view, ownerSle, sponsorSle, 1);
@@ -928,7 +934,7 @@ tokenOfferCreateApply(
     std::optional<std::uint32_t> const& expiration,
     SeqProxy seqProxy,
     uint256 const& nftokenID,
-    XRPAmount const& priorBalance,
+    XRPAmount const&,
     beast::Journal j,
     std::uint32_t txFlags)
 {
@@ -937,9 +943,7 @@ tokenOfferCreateApply(
 
     AccountID const acctID = accSle->at(sfAccount);
     auto const sponsorSle = getTxReserveSponsor(view, tx);
-    if (auto const ret =
-            checkInsufficientReserve(view, tx, accSle, priorBalance, sponsorSle, 1, 0, j);
-        !isTesSuccess(ret))
+    if (auto const ret = checkXrpBalance(view, tx, accSle, sponsorSle, 1, j); !isTesSuccess(ret))
         return ret;
 
     auto const offerID = keylet::nftoffer(acctID, seqProxy.value());

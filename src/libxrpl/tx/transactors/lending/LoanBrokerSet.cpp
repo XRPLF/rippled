@@ -238,17 +238,15 @@ LoanBrokerSet::doApply()
             return ter;  // LCOV_EXCL_LINE
 
         auto const sponsorSle = getTxReserveSponsor(view, tx);
-        if (auto const ret = checkInsufficientReserve(
-                view, tx, owner, preFeeBalance_, {}, sponsorSle ? 1 : 2, 0, j_);
+        if (auto const ret = checkXrpBalance(view, tx, owner, {}, sponsorSle ? 1 : 2, j_);
             !isTesSuccess(ret))
-            return ret;
+            return tecINSUFFICIENT_RESERVE;
 
         if (sponsorSle)
         {
-            if (auto const ret =
-                    checkInsufficientReserve(view, tx, owner, preFeeBalance_, sponsorSle, 1, 0, j_);
+            if (auto const ret = checkXrpBalance(view, tx, owner, sponsorSle, 1, j_);
                 !isTesSuccess(ret))
-                return ret;
+                return tecINSUFFICIENT_RESERVE;
         }
 
         // Increases the owner count by two: one for the LoanBroker object, and
