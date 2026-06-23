@@ -213,7 +213,7 @@ STTx::getSeqValue() const
 }
 
 AccountID
-STTx::getFeePayer() const
+STTx::getInitiator() const
 {
     // If sfDelegate is present, the delegate account is the payer
     // note: if a delegate is specified, its authorization to act on behalf of the account is
@@ -546,7 +546,7 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
     // For delegated transactions sfDelegate is the account whose signer list is checked,
     // the delegate account itself can not be among the signers.
     auto const txnAccountID =
-        &sigObject != this ? std::nullopt : std::optional<AccountID>(getFeePayer());
+        &sigObject != this ? std::nullopt : std::optional<AccountID>(getInitiator());
 
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer

@@ -1341,7 +1341,7 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
             .type = FeePayerType::SponsorPreFunded};
     }
 
-    auto const payerAccountKeylet = keylet::account(tx.getFeePayer());
+    auto const payerAccountKeylet = keylet::account(tx.getInitiator());
     auto const payerType =
         tx.isFieldPresent(sfDelegate) ? FeePayerType::Delegate : FeePayerType::Account;
 
