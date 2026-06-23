@@ -1,5 +1,7 @@
 import os
+import shutil
 from io import StringIO
+from pathlib import Path
 
 from conan import ConanFile
 from conan.errors import ConanException
@@ -20,7 +22,7 @@ MIN_OBJECTS = 7000
 
 
 class Lean4Deps(ConanFile):
-    """Prebuilt Lean4 dependency objects (mathlib + transitive deps).
+    """Prebuilt Lean4 mathlib and transitive deps bundled into lib/libLeanDeps.a.
 
     Downloads the mathlib olean cache and compiles the dependency :static
     objects (oleans + .c.o.export) once. It rebuilds when the mathlib pin changes,
@@ -32,16 +34,15 @@ class Lean4Deps(ConanFile):
 
     def set_version(self):
         if self.version is None:
-            path = os.path.join(
+            toolchain = Path(
                 self.recipe_folder, "..", "..", "formal_verification", "lean-toolchain"
             )
-            with open(path, encoding="utf-8") as f:
-                self.version = f.read().strip().split(":v")[1]
+            self.version = toolchain.read_text(encoding="utf-8").strip().split(":v")[1]
 
     def export_sources(self):
-        src = os.path.join(self.recipe_folder, "..", "..", "formal_verification")
-        for f in ("lakefile.toml", "lake-manifest.json", "lean-toolchain"):
-            copy(self, f, src=src, dst=self.export_sources_folder)
+        source_dir = Path(self.recipe_folder, "..", "..", "formal_verification")
+        for filename in ("lakefile.toml", "lake-manifest.json", "lean-toolchain"):
+            copy(self, filename, src=source_dir, dst=self.export_sources_folder)
 
     def build_requirements(self):
         self.tool_requires(f"lean4/{self.version}")
@@ -59,28 +60,52 @@ class Lean4Deps(ConanFile):
                 stderr=log,
                 ignore_errors=True,
             )
-            n = self._object_count()
+            objects = self._dep_objects()
+            n = len(objects)
             if n < MIN_OBJECTS:
                 raise ConanException(
                     f"lean4-deps: Lean4 only {n} objects compiled (expected >= {MIN_OBJECTS})"
                 )
+            self._bundle_deps(objects)
         except Exception:
             self.output.error(log.getvalue())
             raise
-        self.output.info(f"lean4-deps: Lean4 compiled {n} objects")
+        self.output.info(
+            f"lean4-deps: Lean4 compiled {n} objects, bundled into libLeanDeps.a"
+        )
 
-    def _object_count(self):
-        pkgs = os.path.join(self.build_folder, ".lake", "packages")
-        n = 0
-        for root, _dirs, files in os.walk(pkgs):
-            if "/ir/Cache/" not in (root.replace("\\", "/") + "/"):
-                n += sum(1 for f in files if f.endswith(".c.o.export"))
-        return n
+    def _dep_objects(self):
+        # Native objects from `lake build :static` (cache get only fetches .olean/.c)
+        packages_dir = Path(self.build_folder) / ".lake" / "packages"
+        objects = []
+        for dirpath, _dirs, filenames in os.walk(packages_dir):
+            if "/ir/Cache/" in (dirpath.replace("\\", "/") + "/"):
+                continue
+            objects += [Path(dirpath) / name for name in filenames if name.endswith(".c.o.export")]
+        return objects
+
+    def _bundle_deps(self, objects):
+        # short-named symlinks let the toolchain's llvm-ar bundle 8000+ objects (cap error on long names)
+        # @file avoids ARG_MAX (command line too long) error.
+        build_dir = Path(self.build_folder)
+        symlink_dir = build_dir / "lean_deps_symlinks"
+        shutil.rmtree(symlink_dir, ignore_errors=True)
+        symlink_dir.mkdir()
+
+        symlinks = [symlink_dir / f"obj{i}.o" for i in range(len(objects))]
+        for symlink, target in zip(symlinks, objects):
+            symlink.symlink_to(target)
+
+        response_file = build_dir / "lean_deps_objects.rsp"
+        response_file.write_text(
+            "".join(f"{symlink}\n" for symlink in symlinks), encoding="utf-8"
+        )
+
+        archive = build_dir / "libLeanDeps.a"
+        self.run(f'llvm-ar qcs "{archive}" "@{response_file}"')
 
     def package(self):
-        copy(
-            self,
-            "*",
-            src=os.path.join(self.build_folder, ".lake", "packages"),
-            dst=os.path.join(self.package_folder, "packages"),
-        )
+        build_dir = Path(self.build_folder)
+        package_dir = Path(self.package_folder)
+        copy(self, "*", src=build_dir / ".lake" / "packages", dst=package_dir / "packages")
+        copy(self, "libLeanDeps.a", src=build_dir, dst=package_dir / "lib")

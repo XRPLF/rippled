@@ -181,6 +181,9 @@ class Xrpl(ConanFile):
             lean4_deps = self.dependencies["lean4-deps"].package_folder
             tc.variables["LEAN4_BINDIR"] = lean4.bindirs[0]
             tc.variables["LEAN4_DEPS_PACKAGES"] = os.path.join(lean4_deps, "packages")
+            tc.variables["LEAN4_DEPS_ARCHIVE"] = os.path.join(
+                lean4_deps, "lib", "libLeanDeps.a"
+            )
         tc.variables["jemalloc"] = self.options.jemalloc
         tc.variables["rocksdb"] = self.options.rocksdb
         tc.variables["BUILD_SHARED_LIBS"] = self.options.shared
