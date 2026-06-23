@@ -173,7 +173,7 @@ public:
     setLedgerSeq(std::uint32_t lseq);
 
     bool
-    fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter);
+    fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter const* filter);
 
     // normal hash access functions
 
@@ -260,7 +260,7 @@ public:
         @param return The nodes known to be missing
     */
     std::vector<std::pair<SHAMapNodeID, uint256>>
-    getMissingNodes(int maxNodes, SHAMapSyncFilter* filter);
+    getMissingNodes(int maxNodes, SHAMapSyncFilter const* filter);
 
     [[nodiscard]] bool
     getNodeFat(
@@ -506,7 +506,7 @@ private:
 
         // basic parameters
         int max;
-        SHAMapSyncFilter* filter;
+        SHAMapSyncFilter const* filter;
         int const maxDefer;
         std::uint32_t generation;
 
@@ -545,7 +545,11 @@ private:
         // reads
         std::map<SHAMapInnerNode*, SHAMapNodeID> resumes;
 
-        MissingNodes(int max, SHAMapSyncFilter* filter, int maxDefer, std::uint32_t generation)
+        MissingNodes(
+            int max,
+            SHAMapSyncFilter const* filter,
+            int maxDefer,
+            std::uint32_t generation)
             : max(max), filter(filter), maxDefer(maxDefer), generation(generation), deferred(0)
         {
             missingNodes.reserve(max);

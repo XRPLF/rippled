@@ -406,6 +406,16 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (!isTesSuccess(result))
         return {result, false};
 
+    if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
+    {
+        if (auto const ter = checkAMMPrecisionLoss(
+                sb, ammAccountID, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], newLPTokenBalance, j_);
+            !isTesSuccess(ter))
+        {
+            return {ter, false};
+        }
+    }
+
     auto const res = deleteAMMAccountIfEmpty(
         sb, ammSle, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
     // LCOV_EXCL_START
@@ -1091,10 +1101,13 @@ AMMWithdraw::singleWithdrawEPrice(
     // t = T*(T + A*E*(f - 2))/(T*f - A*E)
     Number const ae = amountBalance * ePrice;
     auto const f = getFee(tfee);
-    auto tokNoRoundCb = [&] {
-        return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / (lptAMMBalance * f - ae);
-    };
-    auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / (lptAMMBalance * f - ae); };
+    auto const denom = lptAMMBalance * f - ae;
+    // fixCleanup3_3_0: guard against division by zero
+    // when ePrice == lptAMMBalance*f/amountBalance
+    if (view.rules().enabled(fixCleanup3_3_0) && denom == beast::kZero)
+        return {tecAMM_FAILED, STAmount{}};
+    auto tokNoRoundCb = [&] { return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom; };
+    auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
     auto const tokensAdj =
         getRoundedLPTokens(view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::No);
     if (tokensAdj <= beast::kZero)

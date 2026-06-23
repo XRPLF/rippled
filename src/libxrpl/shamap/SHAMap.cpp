@@ -885,7 +885,7 @@ SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem cons
 }
 
 bool
-SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter)
+SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter const* filter)
 {
     if (hash == root_->getHash())
         return true;

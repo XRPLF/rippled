@@ -305,7 +305,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
     nodes that are not permanently stored locally
 */
 std::vector<std::pair<SHAMapNodeID, uint256>>
-SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
+SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
 {
     XRPL_ASSERT(root_->getHash().isNonZero(), "xrpl::SHAMap::getMissingNodes : nonzero root hash");
     XRPL_ASSERT(max > 0, "xrpl::SHAMap::getMissingNodes : valid max input");

@@ -129,7 +129,7 @@ private:
     pmDowncast() override;
 
     int
-    processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& data);
+    processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData const& data);
 
     bool
     takeHeader(std::string_view data);
@@ -137,7 +137,7 @@ private:
     void
     receiveNode(
         std::shared_ptr<Peer> const& peer,
-        protocol::TMLedgerData& packet,
+        protocol::TMLedgerData const& packet,
         SHAMapAddNode& san);
 
     bool
@@ -147,10 +147,10 @@ private:
     takeAsRootNode(std::string_view data, SHAMapAddNode& san);
 
     std::vector<uint256>
-    neededTxHashes(int max, SHAMapSyncFilter* filter) const;
+    neededTxHashes(int max, SHAMapSyncFilter const* filter) const;
 
     std::vector<uint256>
-    neededStateHashes(int max, SHAMapSyncFilter* filter) const;
+    neededStateHashes(int max, SHAMapSyncFilter const* filter) const;
 
     clock_type& clock_;
     clock_type::time_point lastAction_;
