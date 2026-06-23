@@ -53,8 +53,9 @@ struct Barrier
     std::condition_variable cv;
     int count;
     int const initial;
+    std::size_t generation{0};
 
-    Barrier(int n) : count(n), initial(n)
+    explicit Barrier(int n) : count(n), initial(n)
     {
     }
 
@@ -62,14 +63,16 @@ struct Barrier
     arriveAndWait()
     {
         std::unique_lock lock(mtx);
+        auto const currentGeneration = generation;
         if (--count == 0)
         {
+            ++generation;
             count = initial;
             cv.notify_all();
         }
         else
         {
-            cv.wait(lock, [&] { return count == initial; });
+            cv.wait(lock, [&] { return generation != currentGeneration; });
         }
     }
 };
