@@ -102,25 +102,32 @@ getAPIVersionNumber(json::Value const& jv, bool betaEnabled)
     json::Value const maxVersion(
         betaEnabled ? RPC::kApiBetaVersion : RPC::kApiMaximumSupportedVersion);
 
-    if (jv.isObject())
+    if (!jv.isObject() || !jv.isMember(jss::api_version))
+        return RPC::kApiVersionIfUnspecified;
+
+    try
     {
-        if (jv.isMember(jss::api_version))
+        auto const& rawVersion = jv[jss::api_version];
+        switch (rawVersion.type())
         {
-            auto const specifiedVersion = jv[jss::api_version];
-            if (!specifiedVersion.isInt() && !specifiedVersion.isUInt())
-            {
-                return RPC::kApiInvalidVersion;
+            case json::ValueType::Int:
+                if (rawVersion.asInt() < 0)
+                    return RPC::kApiInvalidVersion;
+                [[fallthrough]];
+            case json::ValueType::UInt: {
+                auto const apiVersion = rawVersion.asUInt();
+                if (apiVersion < kMinVersion || apiVersion > maxVersion)
+                    return RPC::kApiInvalidVersion;
+                return apiVersion;
             }
-            auto const specifiedVersionInt = specifiedVersion.asInt();
-            if (specifiedVersionInt < kMinVersion || specifiedVersionInt > maxVersion)
-            {
+            default:
                 return RPC::kApiInvalidVersion;
-            }
-            return specifiedVersionInt;
         }
     }
-
-    return RPC::kApiVersionIfUnspecified;
+    catch (...)
+    {
+        return RPC::kApiInvalidVersion;
+    }
 }
 
 }  // namespace RPC

@@ -84,6 +84,7 @@ words:
   - coro
   - coros
   - cowid
+  - cpack
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
@@ -108,6 +109,7 @@ words:
   - enabled
   - enablerepo
   - endmacro
+  - envrc
   - exceptioned
   - EXPECT_STREQ
   - Falco
@@ -232,8 +234,10 @@ words:
   - pyenv
   - pyparsing
   - qalloc
+  - qbsprofile
   - queuable
   - Raphson
+  - rcflags
   - replayer
   - rerere
   - retriable

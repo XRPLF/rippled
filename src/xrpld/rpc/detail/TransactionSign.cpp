@@ -14,7 +14,6 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
@@ -57,6 +56,7 @@
 #include <chrono>
 #include <cstdint>
 #include <exception>
+#include <expected>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -407,23 +407,23 @@ checkTxJsonFields(
     return ret;
 }
 
-static Expected<void, json::Value>
+static std::expected<void, json::Value>
 checkNetworkID(json::Value const& txJson, uint32_t appNetworkId)
 {
     if (appNetworkId > 1024)
     {
         if (!txJson.isMember(jss::NetworkID))
         {
-            return Unexpected(
+            return std::unexpected(
                 RPC::makeError(RpcInvalidParams, RPC::missingFieldMessage("tx_json.NetworkID")));
         }
         if (!txJson[jss::NetworkID].isIntegral() || txJson[jss::NetworkID].asUInt() != appNetworkId)
         {
-            return Unexpected(
+            return std::unexpected(
                 RPC::makeError(RpcInvalidParams, RPC::invalidFieldMessage("tx_json.NetworkID")));
         }
     }
-    return Expected<void, json::Value>();
+    return std::expected<void, json::Value>();
 }
 
 //------------------------------------------------------------------------------

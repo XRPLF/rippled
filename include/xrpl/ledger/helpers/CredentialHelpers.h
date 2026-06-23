@@ -36,13 +36,13 @@ checkFields(STTx const& tx, beast::Journal j);
 TER
 valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal j);
 
-// Check if subject has any credential maching the given domain. If you call it
+// Check if subject has any credential matching the given domain. If you call it
 // in preclaim and it returns tecEXPIRED, you should call verifyValidDomain in
 // doApply. This will ensure that expired credentials are deleted.
 TER
 validDomain(ReadView const& view, uint256 domainID, AccountID const& subject);
 
-// This function is only called when we about to return tecNO_PERMISSION
+// This function is only called when we are about to return tecNO_PERMISSION
 // because all the checks for the DepositPreauth authorization failed.
 TER
 authorizedDepositPreauth(ReadView const& view, STVector256 const& ctx, AccountID const& dst);
@@ -58,7 +58,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 
 }  // namespace credentials
 
-// Check expired credentials and for credentials maching DomainID of the ledger
+// Check expired credentials and for credentials matching DomainID of the ledger
 // object
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j);

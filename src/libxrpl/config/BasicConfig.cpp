@@ -1,4 +1,4 @@
-#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/config/BasicConfig.h>
 
 #include <xrpl/basics/StringUtilities.h>
 
