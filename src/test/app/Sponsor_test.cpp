@@ -6050,24 +6050,24 @@ public:
     void
     testSponsorReserve(bool cosigning)
     {
-        // testRequireFlag();
-        // testSponsorReserveSimple(cosigning);
-        // testAMM(cosigning);
-        // testCheck(cosigning);
-        // testOffer(cosigning);
-        // testTicket(cosigning);
-        // testCredentials(cosigning);
-        // testDelegate(cosigning);
-        // testDepositPreauth(cosigning);
-        // testDID(cosigning);
-        // testEscrow(cosigning);
-        // testMPToken(cosigning);
-        // testNFToken(cosigning);
-        // testNFTokenOffer(cosigning);
-        // testPayChan(cosigning);
-        // testPermissionedDomain(cosigning);
-        // testOracle(cosigning);
-        // testSignerList(cosigning);
+        testRequireFlag();
+        testSponsorReserveSimple(cosigning);
+        testAMM(cosigning);
+        testCheck(cosigning);
+        testOffer(cosigning);
+        testTicket(cosigning);
+        testCredentials(cosigning);
+        testDelegate(cosigning);
+        testDepositPreauth(cosigning);
+        testDID(cosigning);
+        testEscrow(cosigning);
+        testMPToken(cosigning);
+        testNFToken(cosigning);
+        testNFTokenOffer(cosigning);
+        testPayChan(cosigning);
+        testPermissionedDomain(cosigning);
+        testOracle(cosigning);
+        testSignerList(cosigning);
         testTrustSet(cosigning);
         testVault(cosigning);
         testXChain(cosigning);
