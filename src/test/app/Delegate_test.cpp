@@ -1218,22 +1218,22 @@ class Delegate_test : public beast::unit_test::Suite
             mpt.authorize({.account = alice});
             mpt.authorize({.account = bob});
 
-            auto const MPT = mpt["MPT"];  // NOLINT(readability-identifier-naming)
-            env(pay(gw, alice, MPT(500)));
-            env(pay(gw, bob, MPT(500)));
+            auto const gwMPT = mpt["MPT"];
+            env(pay(gw, alice, gwMPT(500)));
+            env(pay(gw, bob, gwMPT(500)));
             env.close();
-            auto aliceMPT = env.balance(alice, MPT);
-            auto bobMPT = env.balance(bob, MPT);
+            auto aliceMPT = env.balance(alice, gwMPT);
+            auto bobMPT = env.balance(bob, gwMPT);
 
             // PaymentMint
             {
                 env(delegate::set(gw, bob, {"PaymentMint"}));
                 env.close();
 
-                env(pay(gw, alice, MPT(50)), delegate::As(bob));
-                BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT + MPT(50));
-                BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
-                aliceMPT = env.balance(alice, MPT);
+                env(pay(gw, alice, gwMPT(50)), delegate::As(bob));
+                BEAST_EXPECT(env.balance(alice, gwMPT) == aliceMPT + gwMPT(50));
+                BEAST_EXPECT(env.balance(bob, gwMPT) == bobMPT);
+                aliceMPT = env.balance(alice, gwMPT);
             }
 
             // PaymentBurn
@@ -1241,23 +1241,23 @@ class Delegate_test : public beast::unit_test::Suite
                 env(delegate::set(alice, bob, {"PaymentBurn"}));
                 env.close();
 
-                env(pay(alice, gw, MPT(50)), delegate::As(bob));
-                BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(50));
-                BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
-                aliceMPT = env.balance(alice, MPT);
+                env(pay(alice, gw, gwMPT(50)), delegate::As(bob));
+                BEAST_EXPECT(env.balance(alice, gwMPT) == aliceMPT - gwMPT(50));
+                BEAST_EXPECT(env.balance(bob, gwMPT) == bobMPT);
+                aliceMPT = env.balance(alice, gwMPT);
             }
 
             // Grant both granular permissions and tx level permission.
             {
                 env(delegate::set(alice, bob, {"PaymentBurn", "PaymentMint", "Payment"}));
                 env.close();
-                env(pay(alice, gw, MPT(50)), delegate::As(bob));
-                BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(50));
-                BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
-                aliceMPT = env.balance(alice, MPT);
-                env(pay(alice, bob, MPT(100)), delegate::As(bob));
-                BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(100));
-                BEAST_EXPECT(env.balance(bob, MPT) == bobMPT + MPT(100));
+                env(pay(alice, gw, gwMPT(50)), delegate::As(bob));
+                BEAST_EXPECT(env.balance(alice, gwMPT) == aliceMPT - gwMPT(50));
+                BEAST_EXPECT(env.balance(bob, gwMPT) == bobMPT);
+                aliceMPT = env.balance(alice, gwMPT);
+                env(pay(alice, bob, gwMPT(100)), delegate::As(bob));
+                BEAST_EXPECT(env.balance(alice, gwMPT) == aliceMPT - gwMPT(100));
+                BEAST_EXPECT(env.balance(bob, gwMPT) == bobMPT + gwMPT(100));
             }
         }
 
@@ -1320,6 +1320,82 @@ class Delegate_test : public beast::unit_test::Suite
                 env(pay(alice, gw, gwUSD(50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
                 env.require(Balance(alice, gwUSD(100)));
             }
+        }
+
+        // Neither account nor destination is issuer.
+        // PaymentMint and PaymentBurn will be rejected.
+        {
+            // IOU
+            {
+                Env env(*this);
+                Account const alice{"alice"};
+                Account const bob{"bob"};
+                Account const gw{"gateway"};
+                Account const gw2{"gateway2"};
+                auto const gwUSD = gw["USD"];
+
+                env.fund(XRP(10000), alice, bob, gw, gw2);
+                env.close();
+
+                env.trust(gwUSD(200), alice);
+                env.close();
+
+                env(pay(gw, alice, gwUSD(100)));
+                env.close();
+
+                env(delegate::set(alice, bob, {"PaymentMint", "PaymentBurn"}));
+                env.close();
+
+                env(pay(alice, gw, gw2["USD"](50)),
+                    delegate::As(bob),
+                    Ter(terNO_DELEGATE_PERMISSION));
+            }
+
+            // MPT
+            {
+                Env env(*this, features);
+                Account const alice{"alice"};
+                Account const bob{"bob"};
+                Account const gw{"gateway"};
+                Account const gw2{"gateway2"};
+
+                env.fund(XRP(10000), gw2);
+                env.close();
+
+                MPTTester mpt(env, gw, {.holders = {alice, bob}});
+                mpt.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+
+                mpt.authorize({.account = alice});
+                mpt.authorize({.account = bob});
+
+                auto const gwMPT = mpt["MPT"];
+                env(pay(gw, alice, gwMPT(500)));
+                env(pay(gw, bob, gwMPT(500)));
+                env.close();
+
+                env(delegate::set(alice, bob, {"PaymentMint", "PaymentBurn"}));
+                env.close();
+
+                env(pay(alice, gw2, gwMPT(50)), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
+            }
+        }
+
+        // IOU issuer is an endpoint, but no trustline exists.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+
+            env.fund(XRP(10000), alice, bob, gw);
+            env.close();
+
+            env(delegate::set(alice, bob, {"PaymentMint", "PaymentBurn"}));
+            env.close();
+
+            env(pay(alice, gw, alice["USD"](50)),
+                delegate::As(bob),
+                Ter(terNO_DELEGATE_PERMISSION));
         }
 
         // Both trust limits (who is the designated issuer) and balance direction
