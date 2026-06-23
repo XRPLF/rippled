@@ -55,7 +55,7 @@ protected:
     //--------------------------------------------------------------------------
 
     static void
-    createGossip(Gossip& gossip)
+    populateGossip(Gossip& gossip)
     {
         std::uint8_t const v(10 + randInt(9));
         std::uint8_t const n(10 + randInt(9));
@@ -209,7 +209,7 @@ TEST_F(ResourceManagerTest, imports)
     Gossip g[5];
 
     for (int i = 0; i < 5; ++i)
-        createGossip(g[i]);
+        populateGossip(g[i]);
 
     for (int i = 0; i < 5; ++i)
         logic.importConsumers(std::to_string(i), g[i]);
