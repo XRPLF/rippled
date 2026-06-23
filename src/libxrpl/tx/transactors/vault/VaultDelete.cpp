@@ -204,7 +204,7 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    adjustOwnerCountObj(view(), owner, vault, -2, j_);
+    adjustOwnerCountDeleteObj(view(), owner, vault, -2, j_);
 
     // Destroy the vault.
     view().erase(vault);

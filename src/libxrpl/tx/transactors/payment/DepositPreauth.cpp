@@ -287,7 +287,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCountObj(view, sleOwner, slePreauth, -1, j);
+    adjustOwnerCountDeleteObj(view, sleOwner, slePreauth, -1, j);
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);
 

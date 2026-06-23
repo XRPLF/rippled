@@ -726,7 +726,7 @@ finalizeClaimHelper(
                 return result;
             }
 
-            adjustOwnerCountObj(outerSb, sleOwner, sleClaimID, -1, j);
+            adjustOwnerCountDeleteObj(outerSb, sleOwner, sleClaimID, -1, j);
 
             // Remove the claim id from the ledger
             outerSb.erase(sleClaimID);

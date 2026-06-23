@@ -414,7 +414,7 @@ adjustOwnerCount(
 }
 
 void
-adjustOwnerCountObj(
+adjustOwnerCountDeleteObj(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref objectSle,
@@ -424,15 +424,16 @@ adjustOwnerCountObj(
     if (!objectSle)
     {
         Throw<std::runtime_error>(
-            "xrpl::adjustOwnerCountObj : valid object sle");  // LCOV_EXCL_LINE
+            "xrpl::adjustOwnerCountDeleteObj : valid object sle");  // LCOV_EXCL_LINE
     }
     if (objectSle->getType() == ltACCOUNT_ROOT)
     {
         Throw<std::logic_error>(
-            "xrpl::adjustOwnerCountObj : valid object sle type");  // LCOV_EXCL_LINE
+            "xrpl::adjustOwnerCountDeleteObj : valid object sle type");  // LCOV_EXCL_LINE
     }
     if (ownerCountAdj >= 0)
-        Throw<std::logic_error>("xrpl::adjustOwnerCountObj : adjustment >= 0");  // LCOV_EXCL_LINE
+        Throw<std::logic_error>(
+            "xrpl::adjustOwnerCountDeleteObj : adjustment >= 0");  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCount : nonzero adjustment input");
     if (ownerCountAdj == 0)

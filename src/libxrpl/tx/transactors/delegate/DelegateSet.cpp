@@ -167,7 +167,7 @@ DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCountObj(view, sleOwner, sle, -1, j);
+    adjustOwnerCountDeleteObj(view, sleOwner, sle, -1, j);
 
     view.erase(sle);
 

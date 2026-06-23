@@ -192,7 +192,7 @@ LoanBrokerDelete::doApply()
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
         // LoanBroker object can be sponsored
-        adjustOwnerCountObj(view(), owner, broker, -1, j_);
+        adjustOwnerCountDeleteObj(view(), owner, broker, -1, j_);
 
         // pseudo-account cannot be sponsored
         adjustOwnerCount(view(), owner, {}, -1, j_);

@@ -766,7 +766,7 @@ Transactor::ticketDelete(
     }
 
     // Update the Ticket owner's reserve.
-    adjustOwnerCountObj(view, sleAccount, sleTicket, -1, j);
+    adjustOwnerCountDeleteObj(view, sleAccount, sleTicket, -1, j);
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);

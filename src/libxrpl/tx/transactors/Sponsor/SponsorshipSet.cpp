@@ -221,7 +221,7 @@ deleteSponsorshipHlp(
         // LCOV_EXCL_STOP
     }
 
-    adjustOwnerCountObj(view, sponsorSle, sponsorshipSle, -1, j);
+    adjustOwnerCountDeleteObj(view, sponsorSle, sponsorshipSle, -1, j);
 
     // transfer feeAmount back to the sponsor
     if (sponsorshipSle->isFieldPresent(sfFeeAmount))

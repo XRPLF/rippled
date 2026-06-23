@@ -127,7 +127,7 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    adjustOwnerCountObj(view, borrowerSle, loanSle, -1, j_);
+    adjustOwnerCountDeleteObj(view, borrowerSle, loanSle, -1, j_);
 
     // Delete the Loan object
     view.erase(loanSle);

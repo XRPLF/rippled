@@ -216,7 +216,7 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    adjustOwnerCountObj(
+    adjustOwnerCountDeleteObj(
         view, view.peek(accountKeylet), signers, removeFromOwnerCount, registry.getJournal("View"));
 
     view.erase(signers);

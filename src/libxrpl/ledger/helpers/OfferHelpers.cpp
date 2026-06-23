@@ -55,7 +55,7 @@ offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
         }
     }
 
-    adjustOwnerCountObj(view, owner, sle, -1, j);
+    adjustOwnerCountDeleteObj(view, owner, sle, -1, j);
 
     view.erase(sle);
 

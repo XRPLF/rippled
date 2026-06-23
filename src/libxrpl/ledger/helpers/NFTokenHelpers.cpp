@@ -434,10 +434,10 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
         view.update(curr);
 
         if (prev && mergePages(view, prev, curr))
-            adjustOwnerCountObj(view, owner, prev, -1);
+            adjustOwnerCountDeleteObj(view, owner, prev, -1);
 
         if (next && mergePages(view, curr, next))
-            adjustOwnerCountObj(view, owner, curr, -1);
+            adjustOwnerCountDeleteObj(view, owner, curr, -1);
 
         return tesSUCCESS;
     }
@@ -471,7 +471,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
-            adjustOwnerCountObj(view, owner, prev, -1);
+            adjustOwnerCountDeleteObj(view, owner, prev, -1);
 
             view.update(curr);
             view.erase(prev);
@@ -507,7 +507,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
         view.update(next);
     }
 
-    adjustOwnerCountObj(view, owner, curr, -1);
+    adjustOwnerCountDeleteObj(view, owner, curr, -1);
 
     view.erase(curr);
 
@@ -525,7 +525,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
             view.peek(Keylet(ltNFTOKEN_PAGE, prev->key())),
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
     {
-        adjustOwnerCountObj(view, owner, prev, -1);
+        adjustOwnerCountDeleteObj(view, owner, prev, -1);
     }
 
     return tesSUCCESS;
@@ -642,7 +642,7 @@ deleteTokenOffer(ApplyView& view, SLE::ref offer)
             false))
         return false;
 
-    adjustOwnerCountObj(view, owner, offer, -1);
+    adjustOwnerCountDeleteObj(view, owner, offer, -1);
 
     view.erase(offer);
     return true;

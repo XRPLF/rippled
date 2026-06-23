@@ -138,7 +138,7 @@ adjustOwnerCount(
 // If |adjustment| > 0 then object is complex (like SignerList).
 // ownerCountAdj < 0
 void
-adjustOwnerCountObj(
+adjustOwnerCountDeleteObj(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref objectSle,
@@ -146,7 +146,7 @@ adjustOwnerCountObj(
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 inline void
-adjustOwnerCountObj(
+adjustOwnerCountDeleteObj(
     ApplyView& view,
     AccountID const& account,
     SLE::ref objectSle,
@@ -154,7 +154,7 @@ adjustOwnerCountObj(
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
     SLE::ref accountSle = view.peek(keylet::account(account));
-    adjustOwnerCountObj(view, accountSle, objectSle, ownerCountAdj, j);
+    adjustOwnerCountDeleteObj(view, accountSle, objectSle, ownerCountAdj, j);
 }
 
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
