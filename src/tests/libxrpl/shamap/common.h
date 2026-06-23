@@ -108,7 +108,7 @@ public:
         (*tnCache_).reset();
     }
 
-    beast::ManualClock<std::chrono::steady_clock>
+    TestStopwatch&
     clock()
     {
         return clock_;
