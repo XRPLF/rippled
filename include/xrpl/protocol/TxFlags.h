@@ -353,9 +353,6 @@ getAllTxFlags()
 inline constexpr FlagValue tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
 inline constexpr FlagValue tfTrustSetPermissionMask =
     ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
-inline constexpr FlagValue tfSponsorshipSetPermissionMask =
-    ~(tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipSetRequireSignForReserve |
-      tfSponsorshipClearRequireSignForFee | tfSponsorshipClearRequireSignForReserve);
 
 // MPTokenIssuanceCreate MutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
