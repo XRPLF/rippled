@@ -8,22 +8,18 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
 #include <memory>
-#include <unordered_set>
 
 namespace xrpl {
 
@@ -101,48 +97,6 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
         if (auto const ret = checkOptionalAmountField(sfMaxFee); !isTesSuccess(ret))
             return ret;
     }
-
-    return tesSUCCESS;
-}
-
-NotTEC
-SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
-{
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (checkTxPermission(sle, tx) == tesSUCCESS)
-        return tesSUCCESS;
-
-    auto const txFlags = tx.getFlags();
-
-    // this is added in case more flags will be added for SponsorshipSet
-    // in the future. Currently unreachable.
-    if ((txFlags & tfSponsorshipSetPermissionMask) != 0u)
-        return terNO_DELEGATE_PERMISSION;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
-
-    auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) ||
-        ((txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee)) !=
-         0u);
-    auto const sponsoringReserve = tx.isFieldPresent(sfRemainingOwnerCount) ||
-        ((txFlags &
-          (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve)) != 0u);
-
-    if (sponsoringFee && !granularPermissions.contains(SponsorFee))
-        return terNO_DELEGATE_PERMISSION;
-
-    if (sponsoringReserve && !granularPermissions.contains(SponsorReserve))
-        return terNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
 }

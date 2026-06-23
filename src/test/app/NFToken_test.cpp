@@ -1142,6 +1142,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         if (features[fixCleanup3_1_3])
         {
             buyerCount--;
+            BEAST_EXPECT(!env.closed()->exists(keylet::nftoffer(buyerExpOfferIndex)));
         }
         BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
@@ -1165,6 +1166,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         if (features[fixCleanup3_1_3])
         {
             aliceCount--;
+            BEAST_EXPECT(!env.closed()->exists(keylet::nftoffer(aliceExpOfferIndex)));
         }
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
         BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);

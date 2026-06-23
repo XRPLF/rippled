@@ -116,7 +116,7 @@ TYPED_SFIELD(sfOverpaymentInterestRate,  UINT32,    68) // 1/10 basis points (bi
 TYPED_SFIELD(sfSponsoredOwnerCount,      UINT32,    69)
 TYPED_SFIELD(sfSponsoringOwnerCount,     UINT32,    70)
 TYPED_SFIELD(sfSponsoringAccountCount,   UINT32,    71)
-TYPED_SFIELD(sfRemainingOwnerCount,             UINT32,    72)
+TYPED_SFIELD(sfRemainingOwnerCount,      UINT32,    72)
 TYPED_SFIELD(sfSponsorFlags,             UINT32,    73)
 
 // 64-bit integers (common)
