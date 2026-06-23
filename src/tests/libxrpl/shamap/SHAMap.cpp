@@ -111,7 +111,7 @@ protected:
     static Buffer
     intToVuc(int v)
     {
-        Buffer vuc(32);
+        Buffer vuc{32};
         std::fill_n(vuc.data(), vuc.size(), static_cast<std::uint8_t>(v));
         return vuc;
     }
@@ -120,7 +120,7 @@ protected:
 TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
 {
     auto const testMode = GetParam();
-    tests::TestNodeFamily f(j_);
+    tests::TestNodeFamily f{j_};
 
     // h3 and h4 differ only in the leaf, same terminal node (level 19)
     constexpr uint256 kH1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
@@ -128,7 +128,7 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
     constexpr uint256 kH3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
     constexpr uint256 kH4("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
 
-    SHAMap sMap(SHAMapType::FREE, f);
+    SHAMap sMap{SHAMapType::FREE, f};
     sMap.invariants();
     if (!testMode.backed)
         sMap.setUnbacked();
@@ -242,7 +242,7 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
                 "DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA0"
                 "2BBE7230E5")};
 
-        SHAMap map(SHAMapType::FREE, f);
+        SHAMap map{SHAMapType::FREE, f};
         if (!testMode.backed)
             map.setUnbacked();
 

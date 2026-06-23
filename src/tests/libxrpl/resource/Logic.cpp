@@ -74,13 +74,13 @@ protected:
 
 TEST_F(ResourceManagerTest, limited_warn_drop)
 {
-    TestLogic logic(j_);
+    TestLogic logic{j_};
 
-    Charge const fee(kDropThreshold + 1);
-    beast::IP::Endpoint const addr(beast::IP::Endpoint::fromString("192.0.2.2"));
+    Charge const fee{kDropThreshold + 1};
+    beast::IP::Endpoint const addr{beast::IP::Endpoint::fromString("192.0.2.2")};
 
     {
-        Consumer c(logic.newInboundEndpoint(addr));
+        Consumer c{logic.newInboundEndpoint(addr)};
 
         // Create load until we get a warning
         int n = 10000;
@@ -117,7 +117,7 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
 
     // Make sure the consumer is on the blacklist for a while.
     {
-        Consumer const c(logic.newInboundEndpoint(addr));
+        Consumer const c{logic.newInboundEndpoint(addr)};
         logic.periodicActivity();
         EXPECT_EQ(c.disposition(), Disposition::Drop) << "Dropped consumer not put on blacklist";
     }
@@ -133,7 +133,7 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
         {
             ++logic.clock();
             logic.periodicActivity();
-            Consumer const c(logic.newInboundEndpoint(addr));
+            Consumer const c{logic.newInboundEndpoint(addr)};
             if (c.disposition() != Disposition::Drop)
             {
                 readmitted = true;
@@ -146,11 +146,11 @@ TEST_F(ResourceManagerTest, limited_warn_drop)
 
 TEST_F(ResourceManagerTest, unlimited_warn_drop)
 {
-    TestLogic logic(j_);
+    TestLogic logic{j_};
 
-    Charge const fee(kDropThreshold + 1);
-    beast::IP::Endpoint const addr(beast::IP::Endpoint::fromString("192.0.2.2"));
-    Consumer c(logic.newUnlimitedEndpoint(addr));
+    Charge const fee{kDropThreshold + 1};
+    beast::IP::Endpoint const addr{beast::IP::Endpoint::fromString("192.0.2.2")};
+    Consumer c{logic.newUnlimitedEndpoint(addr)};
 
     // Create load until we get a warning
     int n = 10000;
@@ -171,12 +171,12 @@ TEST_F(ResourceManagerTest, unlimited_warn_drop)
 
 TEST_F(ResourceManagerTest, charges)
 {
-    TestLogic logic(j_);
+    TestLogic logic{j_};
 
     {
-        beast::IP::Endpoint const address(beast::IP::Endpoint::fromString("192.0.2.1"));
-        Consumer c(logic.newInboundEndpoint(address));
-        Charge const fee(1000);
+        beast::IP::Endpoint const address{beast::IP::Endpoint::fromString("192.0.2.1")};
+        Consumer c{logic.newInboundEndpoint(address)};
+        Charge const fee{1000};
         JLOG(j_.info()) << "Charging " << c.toString() << " " << fee << " per second";
         c.charge(fee);
         for (int i = 0; i < 128; ++i)
@@ -188,9 +188,9 @@ TEST_F(ResourceManagerTest, charges)
     }
 
     {
-        beast::IP::Endpoint const address(beast::IP::Endpoint::fromString("192.0.2.2"));
-        Consumer c(logic.newInboundEndpoint(address));
-        Charge const fee(1000);
+        beast::IP::Endpoint const address{beast::IP::Endpoint::fromString("192.0.2.2")};
+        Consumer c{logic.newInboundEndpoint(address)};
+        Charge const fee{1000};
         JLOG(j_.info()) << "Charging " << c.toString() << " " << fee << " per second";
         for (int i = 0; i < 128; ++i)
         {
@@ -204,7 +204,7 @@ TEST_F(ResourceManagerTest, charges)
 
 TEST_F(ResourceManagerTest, imports)
 {
-    TestLogic logic(j_);
+    TestLogic logic{j_};
 
     Gossip g[5];
 
@@ -217,7 +217,7 @@ TEST_F(ResourceManagerTest, imports)
 
 TEST_F(ResourceManagerTest, import)
 {
-    TestLogic logic(j_);
+    TestLogic logic{j_};
 
     Gossip g;
     Gossip::Item item;

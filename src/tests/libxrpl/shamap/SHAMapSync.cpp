@@ -84,9 +84,9 @@ protected:
 
 TEST_F(SHAMapSyncTest, sync)
 {
-    TestNodeFamily f(j_), f2(j_);
-    SHAMap source(SHAMapType::FREE, f);
-    SHAMap destination(SHAMapType::FREE, f2);
+    TestNodeFamily f{j_}, f2{j_};
+    SHAMap source{SHAMapType::FREE, f};
+    SHAMap destination{SHAMapType::FREE, f2};
 
     int const items = 10000;
     for (int i = 0; i < items; ++i)
