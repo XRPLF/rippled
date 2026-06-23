@@ -1906,6 +1906,78 @@ class LoanBroker_test : public beast::unit_test::Suite
         }
     }
 
+    // Focused demonstration: a cover-withdraw submitter under a regular
+    // individual IOU freeze can still withdraw to themselves (self-withdrawal).
+    //
+    // Pre-fixCleanup3_3_0: the old code only checked the pseudo-account source
+    // and the destination for deep-freeze; it did not check the submitter's
+    // individual freeze at all. Self-withdrawal therefore always succeeded.
+    // Post-fixCleanup3_3_0: checkWithdrawFreeze explicitly skips the submitter
+    // freeze check when submitter == destination, preserving the same result.
+    void
+    testCoverWithdrawSelfWhileFrozen()
+    {
+        testcase("LoanBrokerCoverWithdraw IOU self-withdrawal while individually frozen");
+
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const dest{"dest"};
+        Env env{*this};
+        Vault const vault{env};
+
+        env.fund(XRP(100'000), issuer, alice, dest);
+        env(trust(alice, issuer["IOU"](1'000'000)));
+        env(trust(dest, issuer["IOU"](1'000'000)));
+        env.close();
+
+        PrettyAsset const asset(issuer["IOU"]);
+        env(pay(issuer, alice, asset(100'000)));
+        env.close();
+
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(vaultTx);
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key));
+        env.close();
+
+        env(coverDeposit(alice, brokerKeylet.key, asset(10)));
+        env.close();
+
+        auto runTests = [&]() {
+            auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
+
+            // Set a regular individual freeze on alice's IOU trustline.
+            env(trust(issuer, asset(0), alice, tfSetFreeze));
+            env.close();
+
+            // Self-withdrawal: submitter == destination (no sfDestination in tx).
+            // Both pre- and post-fixCleanup3_3_0 this succeeds:
+            //   pre-fix:  old code never checked the submitter's freeze.
+            //   post-fix: checkWithdrawFreeze skips submitter when submitter==dst.
+            env(coverWithdraw(alice, brokerKeylet.key, asset(1)), Ter(tesSUCCESS));
+
+            // Withdrawal to a third party is blocked by the submitter freeze
+            // under fixCleanup3_3_0; pre-fix it was not checked.
+            env(coverWithdraw(alice, brokerKeylet.key, asset(1)),
+                kDestination(dest),
+                Ter(fix330Enabled ? TER(tecFROZEN) : TER(tesSUCCESS)));
+
+            env(trust(issuer, asset(0), alice, tfClearFreeze));
+            env.close();
+        };
+
+        runTests();
+        env.disableFeature(fixCleanup3_3_0);
+        runTests();
+        env.enableFeature(fixCleanup3_3_0);
+    }
+
     void
     testCoverWithdrawFreezes()
     {
@@ -2596,6 +2668,7 @@ public:
         testInvalidLoanBrokerCoverWithdraw();
         testCoverDepositFreezes();
         testCoverWithdrawFreezes();
+        testCoverWithdrawSelfWhileFrozen();
 
         testCoverPrecisionGuard();
 

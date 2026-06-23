@@ -7667,6 +7667,79 @@ class Vault_test : public beast::unit_test::Suite
         }
     }
 
+    // Focused demonstration: a depositor under a regular individual IOU freeze
+    // can still withdraw to themselves (self-withdrawal), but is blocked from
+    // withdrawing to a third party.
+    //
+    // Pre-fixCleanup3_3_0: both the self-withdrawal AND the third-party
+    // withdrawal were blocked because the old code checked checkFrozen on the
+    // destination regardless of whether it was the submitter.
+    // Post-fixCleanup3_3_0: checkWithdrawFreeze skips the submitter freeze
+    // check when submitter == destination, so self-withdrawal succeeds.
+    void
+    testVaultSelfWithdrawWhileFrozen()
+    {
+        testcase("VaultWithdraw IOU self-withdrawal while individually frozen");
+
+        using namespace test::jtx;
+
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const charlie{"charlie"};
+        Env env{*this};
+        Vault vault{env};
+
+        env.fund(XRP(100'000), issuer, owner, charlie);
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const asset = issuer["IOU"];
+        env.trust(asset(1'000'000), owner);
+        env.trust(asset(1'000'000), charlie);
+        env(pay(issuer, owner, asset(100'000)));
+        env.close();
+
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(10)}));
+        env.close();
+
+        auto runTests = [&]() {
+            auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
+
+            // Set a regular individual freeze on the owner's IOU trustline.
+            env(trust(issuer, asset(0), owner, tfSetFreeze));
+            env.close();
+
+            // Self-withdrawal: submitter == destination, so the submitter
+            // freeze check is skipped.
+            // Post-fix: tesSUCCESS.  Pre-fix: tecFROZEN.
+            env(vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(1)}),
+                Ter(fix330Enabled ? TER(tesSUCCESS) : TER(tecFROZEN)));
+
+            // Withdrawal to a third party is blocked: submitter != destination
+            // so the submitter freeze check applies.
+            {
+                auto withdrawToCharlie =
+                    vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(1)});
+                withdrawToCharlie[sfDestination] = charlie.human();
+                // Post-fix: tecFROZEN (checkIndividualFrozen on submitter).
+                // Pre-fix: tecLOCKED (isFrozen on the vault share).
+                env(withdrawToCharlie, Ter(fix330Enabled ? TER(tecFROZEN) : TER(tecLOCKED)));
+            }
+
+            env(trust(issuer, asset(0), owner, tfClearFreeze));
+            env.close();
+        };
+
+        runTests();
+        env.disableFeature(fixCleanup3_3_0);
+        runTests();
+        env.enableFeature(fixCleanup3_3_0);
+    }
+
     void
     testVaultWithdrawFreeze()
     {
@@ -8012,6 +8085,7 @@ public:
 
         testVaultDepositFreeze();
         testVaultWithdrawFreeze();
+        testVaultSelfWithdrawWhileFrozen();
 
         testReferenceHolding();
         testHoldingDeletionBlocked();
