@@ -190,7 +190,7 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
 
     sMap.dump();
     {
-        constexpr std::array kEYS{
+        constexpr std::array kKeys{
             uint256(
                 "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                 "5a772c6ca8"),
@@ -216,7 +216,7 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
                 "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                 "5a772c6ca8")};
 
-        constexpr std::array kHASHES{
+        constexpr std::array kHashes{
             uint256(
                 "B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C"
                 "64B6281F7F"),
@@ -247,25 +247,25 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
             map.setUnbacked();
 
         EXPECT_EQ(map.getHash(), beast::kZero);
-        for (std::size_t k = 0; k < kEYS.size(); ++k)
+        for (std::size_t k = 0; k < kKeys.size(); ++k)
         {
             EXPECT_TRUE(map.addItem(
                 SHAMapNodeType::TnTransactionNm,
-                makeShamapitem(kEYS[k], intToVuc(static_cast<std::uint8_t>(k)))));
-            EXPECT_EQ(map.getHash().asUInt256(), kHASHES[k]);
+                makeShamapitem(kKeys[k], intToVuc(static_cast<std::uint8_t>(k)))));
+            EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
             map.invariants();
         }
-        for (std::size_t k = kEYS.size(); k-- > 0;)
+        for (std::size_t k = kKeys.size(); k-- > 0;)
         {
-            EXPECT_EQ(map.getHash().asUInt256(), kHASHES[k]);
-            EXPECT_TRUE(map.delItem(kEYS[k]));
+            EXPECT_EQ(map.getHash().asUInt256(), kHashes[k]);
+            EXPECT_TRUE(map.delItem(kKeys[k]));
             map.invariants();
         }
         EXPECT_EQ(map.getHash(), beast::kZero);
     }
 
     {
-        constexpr std::array kEYS{
+        constexpr std::array kKeys{
             uint256(
                 "f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
                 "5a772c6ca8"),
@@ -295,7 +295,7 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
         SHAMap map{SHAMapType::FREE, tf};
         if (!testMode.backed)
             map.setUnbacked();
-        for (auto const& k : kEYS)
+        for (auto const& k : kKeys)
         {
             map.addItem(SHAMapNodeType::TnTransactionNm, makeShamapitem(k, intToVuc(0)));
             map.invariants();
@@ -304,7 +304,7 @@ TEST_P(SHAMapTest, add_traverse_snapshot_build_tear_and_iterate)
         int h = 7;
         for (auto const& k : map)
         {
-            EXPECT_EQ(k.key(), kEYS[h]);
+            EXPECT_EQ(k.key(), kKeys[h]);
             --h;
         }
     }
