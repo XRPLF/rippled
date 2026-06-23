@@ -458,7 +458,7 @@ getAsfFlagMap()
 
 inline constexpr FlagValue spfSponsorFee = 1;
 inline constexpr FlagValue spfSponsorReserve = 2;
-inline constexpr spfSponsorFlagMask = ~(spfSponsorFee | spfSponsorReserve);
+inline constexpr FlagValue spfSponsorFlagMask = ~(spfSponsorFee | spfSponsorReserve);
 
 }  // namespace xrpl
 
