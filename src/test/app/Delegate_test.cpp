@@ -1323,7 +1323,7 @@ class Delegate_test : public beast::unit_test::Suite
         }
 
         // Neither account nor destination is issuer.
-        // PaymentMint and PaymentBurn will be rejected.
+        // PaymentMint and PaymentBurn do not authorize these payments.
         {
             // IOU
             {
