@@ -21,7 +21,10 @@ public:
     preflight(PreflightContext const& ctx);
 
     static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
+    checkGranularSemantics(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType> const& heldGranularPermissions);
 
     static TER
     preclaim(PreclaimContext const& ctx);
