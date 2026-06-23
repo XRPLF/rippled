@@ -180,7 +180,7 @@ reserveCountHlp(SLE::const_ref sle, std::int32_t reserveCountAdj, beast::Journal
     std::int64_t const sponsoringCount = sle->at(sfSponsoringAccountCount);
     std::int64_t const reserveCount = (isSponsored ? 0 : 1) + sponsoringCount;
 
-    // Fix like confineOwnerCount
+    // Ensure adjusted value fit limits. Behave like confineOwnerCount
     std::int64_t adjusted = reserveCount + reserveCountAdj;
     if (adjusted > std::numeric_limits<std::uint32_t>::max())
     {
