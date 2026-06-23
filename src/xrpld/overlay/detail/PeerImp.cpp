@@ -1481,8 +1481,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
-    // Cheap structural checks on node IDs; full parsing is deferred to the job
-    // so the IO thread is not burdened with SHAMapNodeID deserialization.
+    // Verify ledger node counts. Full parsing of the node IDs is deferred to the job, so the I/O
+    // thread is not burdened with SHAMapNodeID deserialization for every TMGetLedger message.
     if (itype != protocol::liBASE && m->nodeids_size() <= 0)
     {
         badData("Invalid ledger node IDs");
@@ -1506,9 +1506,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
-    // Queue a job to process the request. Full parsing of the node IDs is
-    // performed inside the job so the IO thread is not burdened with
-    // SHAMapNodeID deserialization for every TMGetLedger.
+    // Queue a job to process the request.
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(JtLedgerReq, "RcvGetLedger", [weak, m, itype]() {
         auto peer = weak.lock();
@@ -1518,13 +1516,23 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         std::vector<SHAMapNodeID> nodeIDs;
         if (itype != protocol::liBASE)
         {
-            nodeIDs.reserve(m->nodeids_size());
+            nodeIDs.reserve(std::min(m->nodeids_size(), Tuning::kSoftMaxReplyNodes));
             for (auto const& nodeId : m->nodeids())
             {
+                if (nodeIDs.size() >= Tuning::kSoftMaxReplyNodes)
+                {
+                    // Charge the peer for requesting too many node IDs, but continue processing the
+                    // received node IDs up to the limit. If the request is legitimate then at least
+                    // they will get a response and won't have to resend these nodes in their next
+                    // request.
+                    peer->charge(
+                        Resource::kFeeModerateBurdenPeer, "TMGetLedger: too many node IDs");
+                    break;
+                }
                 auto parsed = deserializeSHAMapNodeID(nodeId);
                 if (!parsed)
                 {
-                    peer->charge(Resource::kFeeInvalidData, "get_ledger invalid node ID");
+                    peer->charge(Resource::kFeeInvalidData, "TMGetLedger: Invalid node ID");
                     return;
                 }
                 nodeIDs.push_back(std::move(*parsed));
@@ -3448,7 +3456,6 @@ PeerImp::processLedgerRequest(
                             break;
 
                         protocol::TMLedgerNode* node{ledgerData.add_nodes()};
-
                         node->set_nodedata(d.data.data(), d.data.size());
 
                         // When the LedgerNodeDepth protocol feature is not supported by the peer,

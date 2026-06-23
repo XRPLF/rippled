@@ -449,16 +449,17 @@ SHAMap::getNodeFat(
     std::stack<std::tuple<SHAMapTreeNode*, SHAMapNodeID, int>> stack;
     stack.emplace(node, nodeID, depth);
 
+    Serializer s(8192);
+
     while (!stack.empty())
     {
         std::tie(node, nodeID, depth) = stack.top();
         stack.pop();
 
-        // Use a fresh Serializer per node and move its buffer into `data` rather than copying it
-        // via Serializer::getData(): the move is O(1) whereas the copy was O(node size).
-        Serializer s(256);
+        // Add this node to the reply
+        s.erase();
         node->serializeForWire(s);
-        data.emplace_back(nodeID, node->isLeaf(), std::move(s.modData()));
+        data.emplace_back(nodeID, node->isLeaf(), s.getData());
 
         if (node->isInner())
         {
@@ -486,10 +487,9 @@ SHAMap::getNodeFat(
                         else if (childNode->isInner() || fatLeaves)
                         {
                             // Just include this node
-                            Serializer cs(256);
-                            childNode->serializeForWire(cs);
-                            data.emplace_back(
-                                childID, childNode->isLeaf(), std::move(cs.modData()));
+                            s.erase();
+                            childNode->serializeForWire(s);
+                            data.emplace_back(childID, childNode->isLeaf(), s.getData());
                         }
                     }
                 }
