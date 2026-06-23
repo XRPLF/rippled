@@ -160,7 +160,7 @@ getLedgerEntryOwnerCount(SLE const& sle)
     }
 }
 
-static TER
+[[nodiscard]] static TER
 reduceReserveCount(
     ApplyView& view,
     AccountID const& account,
@@ -191,7 +191,7 @@ reduceReserveCount(
     return tesSUCCESS;
 }
 
-TER
+[[nodiscard]] static TER
 setSponsorFieldU32(SLE& sle, SF_UINT32 const& field, std::int64_t delta)
 {
     auto const newValue = applyCountDelta(sle[field], delta);
