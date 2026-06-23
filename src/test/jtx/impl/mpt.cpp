@@ -522,13 +522,7 @@ MPTTester::set(MPTSet const& arg)
                         }
 
                         if (*arg.mutableFlags & tmfMPTSetCanConfidentialAmount)
-                        {
                             flags |= lsfMPTCanConfidentialAmount;
-                        }
-                        else if (*arg.mutableFlags & tmfMPTClearCanConfidentialAmount)
-                        {
-                            flags &= ~lsfMPTCanConfidentialAmount;
-                        }
                     }
                 }
                 env_.require(MptFlags(*this, flags, holder));

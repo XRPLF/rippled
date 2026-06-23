@@ -368,11 +368,9 @@ inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000008;
 inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000010;
 inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000020;
 inline constexpr FlagValue tmfMPTSetCanConfidentialAmount = 0x00000040;
-inline constexpr FlagValue tmfMPTClearCanConfidentialAmount = 0x00000080;
 inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask =
     ~(tmfMPTSetCanLock | tmfMPTSetRequireAuth | tmfMPTSetCanEscrow | tmfMPTSetCanTrade |
-      tmfMPTSetCanTransfer | tmfMPTSetCanClawback | tmfMPTSetCanConfidentialAmount |
-      tmfMPTClearCanConfidentialAmount);
+      tmfMPTSetCanTransfer | tmfMPTSetCanClawback | tmfMPTSetCanConfidentialAmount);
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
 // TrustLine to be added to the issuer of that token without explicit permission from that issuer.

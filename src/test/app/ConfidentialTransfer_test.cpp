@@ -751,14 +751,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 .err = temMALFORMED,
             });
 
-            // Cannot set keys while clearing confidential amount
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearCanConfidentialAmount,
-                .issuerPubKey = mptAlice.getPubKey(alice),
-                .err = temINVALID_FLAG,
-            });
-
             // Cannot set Holder and auditor Keys in the same transaction
             mptAlice.set({
                 .account = alice,
@@ -4911,10 +4903,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ct.mpt.pay(alice, carol, 50);
 
             ct.mpt.convertBack({.account = bob, .amt = 50});
-            ct.mpt.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearCanConfidentialAmount,
-            });
 
             runPublicPayments(ct.mpt);
             drainAndDeleteBobMPToken(env, ct.mpt);
@@ -4951,10 +4939,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
             mptAlice.mergeInbox({.account = bob});
             mptAlice.convertBack({.account = bob, .amt = 50});
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearCanConfidentialAmount,
-            });
 
             runPublicPayments(mptAlice);
             drainAndDeleteBobMPToken(env, mptAlice);
@@ -4975,10 +4959,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             ct.mpt.pay(alice, carol, 50);
 
             ct.mpt.confidentialClaw({.account = alice, .holder = bob, .amt = 50});
-            ct.mpt.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearCanConfidentialAmount,
-            });
 
             runPublicPayments(ct.mpt);
             drainAndDeleteBobMPToken(env, ct.mpt);
@@ -5038,12 +5018,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             mptAlice.set({
                 .account = alice,
                 .mutableFlags = tmfMPTSetCanConfidentialAmount,
-                .err = tecNO_PERMISSION,
-            });
-
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearCanConfidentialAmount,
                 .err = tecNO_PERMISSION,
             });
         }
@@ -5114,21 +5088,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             });
             verifyToggle(tesSUCCESS, 10);
 
-            // clear lsfMPTCanConfidentialAmount
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearCanConfidentialAmount,
-            });
-            verifyToggle(tecNO_PERMISSION, 10);
-
-            // can clear lsfMPTCanConfidentialAmount again but has no effect
-            // for privacy settings
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearCanConfidentialAmount | tmfMPTSetCanLock,
-            });
-            verifyToggle(tecNO_PERMISSION, 20);
-
             // set lsfMPTCanConfidentialAmount again
             mptAlice.set({
                 .account = alice,
@@ -5164,55 +5123,12 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // bob convert 50 to confidential
             mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
 
-            // set or clear lsfMPTCanConfidentialAmount should fail because of
+            // set lsfMPTCanConfidentialAmount should fail because of
             // confidential outstanding balance
             mptAlice.set({
                 .account = alice,
                 .mutableFlags = tmfMPTSetCanConfidentialAmount,
                 .err = tecNO_PERMISSION,
-            });
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearCanConfidentialAmount,
-                .err = tecNO_PERMISSION,
-            });
-
-            // bob merge inbox
-            mptAlice.mergeInbox({
-                .account = bob,
-            });
-
-            // bob convert back all confidential balance
-            mptAlice.convertBack({
-                .account = bob,
-                .amt = 50,
-            });
-
-            // now clear lsfMPTCanConfidentialAmount should succeed,
-            // because there's no confidential outstanding balance
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTClearCanConfidentialAmount,
-            });
-
-            // bob can not convert because lsfMPTCanConfidentialAmount was cleared
-            // successfully
-            mptAlice.convert({
-                .account = bob,
-                .amt = 10,
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .err = tecNO_PERMISSION,
-            });
-
-            // can set lsfMPTCanConfidentialAmount again when there's no confidential
-            // outstanding balance
-            mptAlice.set({
-                .account = alice,
-                .mutableFlags = tmfMPTSetCanConfidentialAmount,
-            });
-            mptAlice.convert({
-                .account = bob,
-                .amt = 10,
             });
         }
     }
