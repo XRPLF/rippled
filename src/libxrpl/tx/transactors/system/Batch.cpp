@@ -26,6 +26,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <unordered_map>
