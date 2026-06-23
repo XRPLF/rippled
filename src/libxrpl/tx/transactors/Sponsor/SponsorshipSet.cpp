@@ -248,7 +248,7 @@ SponsorshipSet::doApply()
 
     auto const feeAmount = ctx_.tx[~sfFeeAmount];
     auto const maxFee = ctx_.tx[~sfMaxFee];
-    auto const reserveCount = ctx_.tx[~sfRemainingOwnerCount];
+    auto const remainingOwnerCount = ctx_.tx[~sfRemainingOwnerCount];
 
     auto reserveSponsorAccSle = getTxReserveSponsor(view(), ctx_.tx);
     if (!reserveSponsorAccSle)
@@ -284,8 +284,8 @@ SponsorshipSet::doApply()
 
         if (maxFee && *maxFee > XRPAmount(0))
             (*newSle)[sfMaxFee] = *maxFee;
-        if (reserveCount && *reserveCount > 0)
-            (*newSle)[sfRemainingOwnerCount] = *reserveCount;
+        if (remainingOwnerCount && *remainingOwnerCount > 0)
+            (*newSle)[sfRemainingOwnerCount] = *remainingOwnerCount;
 
         auto flags = 0;
         if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
@@ -365,8 +365,8 @@ SponsorshipSet::doApply()
         }
     }
 
-    if (reserveCount)
-        sponsorObjSle->at(sfRemainingOwnerCount) = *reserveCount;
+    if (remainingOwnerCount)
+        sponsorObjSle->at(sfRemainingOwnerCount) = *remainingOwnerCount;
 
     // update Flags
     auto flags = sponsorObjSle->getFieldU32(sfFlags);
