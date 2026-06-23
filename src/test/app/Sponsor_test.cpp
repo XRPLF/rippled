@@ -336,6 +336,37 @@ public:
     }
 
     void
+    testSponsorshipSetFeeAmountReserveFloor()
+    {
+        testcase("SponsorshipSet FeeAmount keeps grantor reserve floor");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const outer("outer");
+        Account const grantor("grantor");
+        Account const sponsee("sponsee");
+        env.fund(XRP(10000), outer, grantor, sponsee);
+        env.close();
+
+        env(sponsor::set(outer, 0, 1, XRP(1)), sponsor::SponseeAcc(grantor));
+        env.close();
+
+        auto const feeAmount = XRP(5);
+        auto const grantorBalance = accountReserve(env, 1) + feeAmount - drops(1);
+        adjustAccountXRPBalance(env, grantor, grantorBalance);
+
+        env(sponsor::set_fee(grantor, 0, feeAmount),
+            sponsor::SponseeAcc(sponsee),
+            sponsor::As(outer, spfSponsorReserve | spfSponsorFee),
+            Sig(sfSponsorSignature, outer),
+            Ter(tecUNFUNDED));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet::sponsorship(grantor, sponsee)));
+        BEAST_EXPECT(env.balance(grantor) == grantorBalance);
+    }
+
+    void
     testPseudoAccountSponsorship()
     {
         testcase("Pseudo account sponsorship");
@@ -5043,10 +5074,10 @@ public:
                     sponsor::As(sponsor, spfSponsorReserve));
                 env.close();
 
-                auto const sponsorshipSle = env.le(keylet::sponsor(sponsor, alice));
+                auto const sponsorshipSle = env.le(keylet::sponsorship(sponsor, alice));
                 if (!BEAST_EXPECT(sponsorshipSle))
                     return;
-                BEAST_EXPECT(sponsorshipSle->getFieldU32(sfReserveCount) == 0);
+                BEAST_EXPECT(sponsorshipSle->getFieldU32(sfRemainingOwnerCount) == 0);
             }
 
             BEAST_EXPECT(env.le(vaultKeylet)->getAccountID(sfSponsor) == sponsor.id());
@@ -6080,6 +6111,7 @@ protected:
     {
         testDisabled();
         testInvalidSponsorshipSet();
+        testSponsorshipSetFeeAmountReserveFloor();
         testPseudoAccountSponsorship();
 
         testSingleSigning();

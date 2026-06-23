@@ -220,6 +220,18 @@ deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
     return tesSUCCESS;
 }
 
+static TER
+checkOwnReserveFloor(ReadView const& view, SLE::const_ref accountSle, beast::Journal j)
+{
+    STAmount const balance = accountSle->getFieldAmount(sfBalance);
+    STAmount const reserve = accountReserve(view, accountSle, j);
+
+    if (balance < reserve)
+        return tecINSUFFICIENT_RESERVE;
+
+    return tesSUCCESS;
+}
+
 TER
 SponsorshipSet::doApply()
 {
@@ -270,6 +282,10 @@ SponsorshipSet::doApply()
         {
             (*sponsorAccSle)[sfBalance] -= *feeAmount;
             (*newSle)[sfFeeAmount] = *feeAmount;
+
+            if (auto const ret = checkOwnReserveFloor(ctx_.view(), sponsorAccSle, ctx_.journal);
+                !isTesSuccess(ret))
+                return tecUNFUNDED;
         }
 
         if (auto const ret = checkInsufficientReserve(
@@ -339,6 +355,13 @@ SponsorshipSet::doApply()
             else
             {
                 (*sponsorObjSle).setFieldAmount(sfFeeAmount, *feeAmount);
+            }
+
+            if (feeAmountDelta > beast::kZero)
+            {
+                if (auto const ret = checkOwnReserveFloor(ctx_.view(), sponsorAccSle, ctx_.journal);
+                    !isTesSuccess(ret))
+                    return tecUNFUNDED;
             }
 
             if (auto const ret = checkInsufficientReserve(
