@@ -23,15 +23,15 @@ namespace xrpl {
 isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 
 /**  Calculate liquid XRP balance for an account.
-* This function may be used to calculate the amount of XRP that
-* the holder is able to freely spend. It subtracts reserve requirements.
-*
-* ownerCountAdj adjusts the owner count in case the caller calculates
-* before ledger entries are added or removed. Positive to add, negative
-* to subtract.
-*
-* @param ownerCountAdj positive to add to count, negative to reduce count.
-*/
+ * This function may be used to calculate the amount of XRP that
+ * the holder is able to freely spend. It subtracts reserve requirements.
+ *
+ * ownerCountAdj adjusts the owner count in case the caller calculates
+ * before ledger entries are added or removed. Positive to add, negative
+ * to subtract.
+ *
+ * @param ownerCountAdj positive to add to count, negative to reduce count.
+ */
 [[nodiscard]] XRPAmount
 xrpLiquid(
     ReadView const& view,
@@ -46,11 +46,11 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 }
 
 /**  Returns the account reserve.
-* Actual owner count and reserve count can be adjusted
-* The reserve is calculated as
-*   (ownerCount + "sponsoring count" - "sponsored count" + "owner adjustment") * increment
-*   + ("1 if not sponsored account else 0" + "sponsoring account count") * "reserve base"
-*/
+ * Actual owner count and reserve count can be adjusted
+ * The reserve is calculated as
+ *   (ownerCount + "sponsoring count" - "sponsored count" + "owner adjustment") * increment
+ *   + ("1 if not sponsored account else 0" + "sponsoring account count") * "reserve base"
+ */
 [[nodiscard]] XRPAmount
 accountReserve(
     ReadView const& view,
@@ -71,8 +71,8 @@ accountReserve(
 }
 
 /**  Returns basic reserve for abstract account for given objects count
-* Mostly used by tests
-*/
+ * Mostly used by tests
+ */
 XRPAmount
 baseAccountReserve(ReadView const& view, std::int32_t ownerCount);
 
@@ -110,9 +110,9 @@ ownerCount(
     beast::Journal j,
     std::int32_t ownerCountAdj = 0);
 
-/**  Adjust the owner count up or down for Account, Sponsor Account(if set) and Sponsorship object(if
-* exists)
-*/
+/**  Adjust the owner count up or down for Account, Sponsor Account(if set) and Sponsorship
+ * object(if exists)
+ */
 void
 adjustOwnerCount(
     ApplyView& view,
@@ -138,9 +138,9 @@ adjustOwnerCount(
 }
 
 /** Wrappers for adjustOwnerCount, retrive Sponsor(if exists) from the object.
-* If |adjustment| > 0 then object is complex (like SignerList).
-* ownerCountAdj < 0
-*/
+ * If |adjustment| > 0 then object is complex (like SignerList).
+ * ownerCountAdj < 0
+ */
 void
 adjustOwnerCountDeleteObj(
     ApplyView& view,

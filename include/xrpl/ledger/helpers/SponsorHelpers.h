@@ -78,29 +78,6 @@ getTxReserveSponsor(V&& view, STTx const& tx, std::optional<AccountID> const& ac
     }
 }
 
-inline SF_ACCOUNT const&
-getLedgerEntrySponsorField(SLE const& sle, AccountID const& owner)
-{
-    switch (sle.getType())
-    {
-        case ltRIPPLE_STATE: {
-            if (sle.isFlag(lsfHighReserve))
-            {
-                auto const highAccount = sle.getFieldAmount(sfHighLimit).getIssuer();
-                if (highAccount == owner)
-                    return sfHighSponsor;
-            }
-
-            XRPL_ASSERT(sle.isFlag(lsfLowReserve), "getLedgerEntrySponsorField lsfLowReserve flag");
-            [[maybe_unused]] auto const lowAccount = sle.getFieldAmount(sfLowLimit).getIssuer();
-            XRPL_ASSERT(lowAccount == owner, "getLedgerEntrySponsorField lowAccount == owner");
-            return sfLowSponsor;
-        }
-        default:
-            return sfSponsor;
-    }
-}
-
 inline std::optional<AccountID>
 getLedgerEntryReserveSponsorAccountID(SLE::const_ref sle, SF_ACCOUNT const& field = sfSponsor)
 {
