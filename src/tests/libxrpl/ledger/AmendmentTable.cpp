@@ -39,8 +39,6 @@
 
 namespace xrpl::test {
 
-using ::testing::ThrowsMessage;
-
 /**
  * @brief Test fixture for the AmendmentTable.
  *
