@@ -72,6 +72,9 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& 
 [[nodiscard]] TER
 checkIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
+[[nodiscard]] TER
+checkIndividualDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
+
 /**
  *   isFrozen check is recursive for MPT shares in a vault, descending to
  *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is

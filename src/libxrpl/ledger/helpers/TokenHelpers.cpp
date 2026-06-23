@@ -79,6 +79,14 @@ checkIndividualFrozen(ReadView const& view, AccountID const& account, Asset cons
     return tesSUCCESS;
 }
 
+TER
+checkIndividualDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    if (isDeepFrozen(view, account, asset))
+        return asset.holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
+    return tesSUCCESS;
+}
+
 bool
 isFrozen(ReadView const& view, AccountID const& account, Asset const& asset, std::uint8_t depth)
 {
@@ -176,25 +184,29 @@ checkWithdrawFreeze(
         isPseudoAccount(view, srcAcct),
         "xrpl::checkWithdrawFreeze : source must be a pseudo-account");
 
-    // No matter what, funds can be sent to the issuer
+    // Funds can always be sent to the issuer
     if (dstAcct == asset.getIssuer())
         return tesSUCCESS;
 
+    // If the asset is globally frozen, other checks are redundant
+    if (auto const ret = checkGlobalFrozen(view, asset))
+        return ret;
+
     // The transfer is from Submitter to Destination via Source (pseudo-account)
     // Both Source and Submitter must not be frozen to allow sending funds
-    if (auto const ret = checkFrozen(view, srcAcct, asset))
+    if (auto const ret = checkIndividualFrozen(view, srcAcct, asset))
         return ret;
 
     // Check submitter's individual freeze only when Submitter != Destination (a regular freeze
     // should not block self-withdrawal).
     if (submitterAcct != dstAcct)
     {
-        if (auto const ret = checkFrozen(view, submitterAcct, asset))
+        if (auto const ret = checkIndividualFrozen(view, submitterAcct, asset))
             return ret;
     }
 
     // The destination account must not be deep frozen to receive the funds
-    return checkDeepFrozen(view, dstAcct, asset);
+    return checkIndividualDeepFrozen(view, dstAcct, asset);
 }
 
 [[nodiscard]] TER
@@ -208,12 +220,22 @@ checkDepositFreeze(
         isPseudoAccount(view, dstAcct),
         "xrpl::checkDepositFreeze : destination must be a pseudo-account");
 
-    if (auto const ret = checkFrozen(view, srcAcct, asset))
+    // An Issuer cannot deposit when:
+    // 1. Asset is globally frozen
+    // 2. The trustline of the pseudo-account is frozen
+
+    if (auto const ret = checkGlobalFrozen(view, asset))
         return ret;
+
+    if (srcAcct != asset.getIssuer())
+    {
+        if (auto const ret = checkIndividualFrozen(view, srcAcct, asset))
+            return ret;
+    }
 
     // Unlike regular accounts, pseudo-accounts cannot receive deposits under a regular freeze
     // because those funds cannot be later withdrawn
-    return checkFrozen(view, dstAcct, asset);
+    return checkIndividualFrozen(view, dstAcct, asset);
 }
 
 //------------------------------------------------------------------------------
