@@ -1319,9 +1319,9 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
     if (tx.isFieldPresent(sfSponsor) && ((tx.getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u))
     {
         auto const sponsorID = tx.getAccountID(sfSponsor);
-        auto const sponseeAccountID = tx.getAccountID(sfAccount);
+        auto const sponseeID = tx.getAccountID(sfAccount);
         auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
-        auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeAccountID);
+        auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeID);
 
         // if pre-funded sponsorship exists, prefer it
         if (hasSponsorSignature && !view.exists(sponsorshipKeylet))

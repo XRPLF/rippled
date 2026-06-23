@@ -254,8 +254,8 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
     auto const account = ctx.tx[sfAccount];
 
-    auto const sponseeAccountID = ctx.tx[~sfSponsee].value_or(account);
-    auto const sponseeSle = ctx.view.read(keylet::account(sponseeAccountID));
+    auto const sponseeID = ctx.tx[~sfSponsee].value_or(account);
+    auto const sponseeSle = ctx.view.read(keylet::account(sponseeID));
     if (!sponseeSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -267,8 +267,8 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
         auto const ownerCountDelta = getLedgerEntryOwnerCount(sle);
 
-        auto const owner = getLedgerEntryOwner(ctx.view, sle, sponseeAccountID);
-        if (!owner || owner != sponseeAccountID)
+        auto const owner = getLedgerEntryOwner(ctx.view, sle, sponseeID);
+        if (!owner || owner != sponseeID)
             return tecNO_PERMISSION;
 
         auto const& sponsorField = getLedgerEntrySponsorField(sle, *owner);
@@ -302,7 +302,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
             // only the sponsor or sponsee can end sponsorship
             auto const sponsor = sle->getAccountID(sponsorField);
-            if (account != sponsor && account != sponseeAccountID)
+            if (account != sponsor && account != sponseeID)
                 return tecNO_PERMISSION;
         }
 
@@ -351,7 +351,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
             // only the sponsor or sponsee can end sponsorship
             auto const sponsor = sponseeSle->getAccountID(sfSponsor);
-            if (account != sponsor && account != sponseeAccountID)
+            if (account != sponsor && account != sponseeID)
                 return tecNO_PERMISSION;
         }
 
@@ -415,8 +415,8 @@ SponsorshipTransfer::doApply()
     auto const index = tx[~sfObjectID];
     bool const isObjectSponsor = index != std::nullopt;
 
-    auto const sponseeAccountID = tx[~sfSponsee].value_or(accountID_);
-    auto const sponseeSle = view().peek(keylet::account(sponseeAccountID));
+    auto const sponseeID = tx[~sfSponsee].value_or(accountID_);
+    auto const sponseeSle = view().peek(keylet::account(sponseeID));
     if (!sponseeSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -442,7 +442,7 @@ SponsorshipTransfer::doApply()
         if (!objSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        auto const ownerAccountID = getLedgerEntryOwner(view(), objSle, sponseeAccountID);
+        auto const ownerAccountID = getLedgerEntryOwner(view(), objSle, sponseeID);
         if (!ownerAccountID)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -484,7 +484,7 @@ SponsorshipTransfer::doApply()
             {
                 // use ReserveCount for pre-funded sponsoring
                 if (auto const ter = reduceReserveCount(
-                        view(), sponseeAccountID, newSponsorAccountID, -ownerCountDelta);
+                        view(), sponseeID, newSponsorAccountID, -ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
@@ -527,7 +527,7 @@ SponsorshipTransfer::doApply()
             {
                 // use ReserveCount for pre-funded sponsoring
                 if (auto const ter = reduceReserveCount(
-                        view(), sponseeAccountID, newSponsorAccountID, -ownerCountDelta);
+                        view(), sponseeID, newSponsorAccountID, -ownerCountDelta);
                     !isTesSuccess(ter))
                     return ter;
             }
