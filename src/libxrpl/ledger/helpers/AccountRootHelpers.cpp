@@ -46,82 +46,42 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
     return false;
 }
 
-static FeePayer
-getFeePayerHlp(
-    ReadView const& view,
-    STTx const& tx,
-    std::optional<std::reference_wrapper<SLE::const_pointer const>> const& sponsorshipSle)
-{
-    if (tx.isFieldPresent(sfDelegate))
-    {
-        AccountID const payerID = tx[sfDelegate];
-        return FeePayer{
-            .id = payerID,
-            .keylet = keylet::account(payerID),
-            .balanceField = sfBalance,
-            .type = FeePayerType::Delegate};
-    }
-
-    if (tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx))
-    {
-        AccountID const sponsorID = tx.getAccountID(sfSponsor);
-        AccountID const sponseeID = tx.getAccountID(sfAccount);
-        auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeID);
-
-        if (sponsorshipSle)
-        {
-            if (sponsorshipSle->get())
-            {
-                // pre funded
-                if (!sponsorshipKeylet.check(*(sponsorshipSle->get())))
-                {
-                    Throw<std::logic_error>(
-                        "getFeePayerHlp Invalid sponsorship");  // LCOV_EXCL_LINE
-                }
-
-                return FeePayer{
-                    .id = sponsorID,
-                    .keylet = sponsorshipKeylet,
-                    .balanceField = sfFeeAmount,
-                    .type = FeePayerType::SponsorPreFunded};
-            }
-        }
-        else if (view.exists(sponsorshipKeylet))
-        {
-            // pre funded
-            return FeePayer{
-                .id = sponsorID,
-                .keylet = sponsorshipKeylet,
-                .balanceField = sfFeeAmount,
-                .type = FeePayerType::SponsorPreFunded};
-        }
-
-        if (!tx.isFieldPresent(sfSponsorSignature))
-        {
-            Throw<std::logic_error>(
-                "Transactor::getFeePayer valid sponsor signature");  // LCOV_EXCL_LINE
-        }
-
-        // co-signed
-        return FeePayer{
-            .id = sponsorID,
-            .keylet = keylet::account(sponsorID),
-            .balanceField = sfBalance,
-            .type = FeePayerType::SponsorCoSigned};
-    }
-
-    AccountID const payerID = tx[sfAccount];
-    return FeePayer{
-        .id = payerID,
-        .keylet = keylet::account(payerID),
-        .balanceField = sfBalance,
-        .type = FeePayerType::Account};
-}
-
 FeePayer
 getFeePayer(ReadView const& view, STTx const& tx)
 {
-    return getFeePayerHlp(view, tx, {});
+    if (tx.isFieldPresent(sfSponsor) && ((tx.getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u))
+    {
+        auto const sponsorAccountID = tx.getAccountID(sfSponsor);
+        auto const sponseeAccountID = tx.getAccountID(sfAccount);
+        auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
+        auto const sponsorshipKeylet = keylet::sponsorship(sponsorAccountID, sponseeAccountID);
+
+        // if pre-funded sponsorship exists, prefer it
+        if (hasSponsorSignature && !view.exists(sponsorshipKeylet))
+        {
+            // co-signed
+            return FeePayer{
+                .id = sponsorAccountID,
+                .keylet = keylet::account(sponsorAccountID),
+                .balanceField = sfBalance,
+                .type = FeePayerType::SponsorCoSigned};
+        }
+
+        // pre funded
+        return FeePayer{
+            .id = sponsorAccountID,
+            .keylet = sponsorshipKeylet,
+            .balanceField = sfFeeAmount,
+            .type = FeePayerType::SponsorPreFunded};
+    }
+
+    auto const payerAccountKeylet = keylet::account(tx.getInitiator());
+    auto const payerType =
+        tx.isFieldPresent(sfDelegate) ? FeePayerType::Delegate : FeePayerType::Account;
+    AccountID const id = tx.isFieldPresent(sfDelegate) ? tx[sfDelegate] : tx[sfAccount];
+
+    return FeePayer{
+        .id = id, .keylet = payerAccountKeylet, .balanceField = sfBalance, .type = payerType};
 }
 
 // An owner count cannot be negative. If ownerCountAdj would cause a negative
@@ -340,7 +300,7 @@ xrpLiquid(
         return beast::kZero;
 
     XRPAmount const feePayed(tx[sfFee].xrp());
-    AccountID const feePayer = getFeePayerHlp(view, tx, {}).id;
+    AccountID const feePayer = getFeePayer(view, tx).id;
     auto const x = xrpLiquidHlp(view, accSle, ownerCountAdj, 0, {feePayer, feePayed}, j);
     return x.negative() ? XRPAmount() : x;
 }
