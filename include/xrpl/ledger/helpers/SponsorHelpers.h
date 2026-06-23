@@ -131,13 +131,4 @@ removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor)
         sle->makeFieldAbsent(field);
 }
 
-// namespace sponsor
-// {
-// // Accessing the ledger to check if provided sponsor is valid.
-// [[nodiscard]] TER
-// valid(ReadView const& view, STTx const& tx, beast::Journal j)
-// {
-// }
-// }
-
 }  // namespace xrpl
