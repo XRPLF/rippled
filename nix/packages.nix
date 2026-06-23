@@ -9,6 +9,7 @@ in
 {
   commonPackages = with pkgs; [
     ccache
+    clangbuildanalyzer
     cmake
     conan
     curlMinimal # needed for codecov/codecov-action
@@ -18,8 +19,10 @@ in
     gh
     git
     git-cliff
+    git-lfs
     gnumake
     gnupg # needed for signing commits & codecov/codecov-action
+    graphviz
     llvmPackages_22.clang-tools
     less # needed for git diff
     mold
@@ -32,5 +35,6 @@ in
     python3
     runClangTidy
     vim
+    zip
   ];
 }

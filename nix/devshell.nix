@@ -1,26 +1,6 @@
 { pkgs, ... }:
 let
-  # conan is in the binary cache for Linux but not for Darwin, so on Darwin
-  # it is always built from source — and its bundled test suite is unreliable
-  # in the sandbox: `test_qbsprofile_rcflags` needs gcc (absent on Darwin, see
-  # https://github.com/NixOS/nixpkgs/pull/528995) and the patch tests are
-  # flaky from source. We only use conan as a build tool, so skip its tests on
-  # Darwin. Scoped to the dev shell (not the CI env, which builds conan on
-  # Linux from the cache). Drop once the fix reaches nixos-unstable and the
-  # lock is bumped.
-  pkgs_patched =
-    if pkgs.stdenv.isDarwin then
-      pkgs.extend (
-        final: prev: {
-          conan = prev.conan.overridePythonAttrs (_: {
-            doCheck = false;
-          });
-        }
-      )
-    else
-      pkgs;
-
-  inherit (import ./packages.nix { pkgs = pkgs_patched; }) commonPackages;
+  inherit (import ./packages.nix { inherit pkgs; }) commonPackages;
 
   # Supported compiler versions
   gccVersion = pkgs.lib.range 13 15;
