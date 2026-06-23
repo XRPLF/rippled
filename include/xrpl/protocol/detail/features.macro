@@ -24,7 +24,7 @@ XRPL_FEATURE(LendingProtocol,             Supported::Yes, VoteBehavior::DefaultN
 XRPL_FEATURE(PermissionDelegationV1_1,    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,              Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (IncludeKeyletFields,         Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(DynamicMPT,                  Supported::No,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(DynamicMPT,                  Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (TokenEscrowV1,               Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (PriceOracleOrder,            Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (MPTDeliveredAmount,          Supported::Yes, VoteBehavior::DefaultNo)

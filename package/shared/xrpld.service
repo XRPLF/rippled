@@ -17,6 +17,10 @@ ProtectHome=true
 PrivateTmp=true
 User=xrpld
 Group=xrpld
+StateDirectory=xrpld
+StateDirectoryMode=0750
+LogsDirectory=xrpld
+LogsDirectoryMode=0750
 LimitNOFILE=65536
 SystemCallArchitectures=native
 
