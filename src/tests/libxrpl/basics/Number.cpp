@@ -1907,8 +1907,7 @@ TEST(NumberTest, upward_division_returns_value_not_below_exact_on_large_scale)
                 break;
 
             case MantissaRange::MantissaScale::Small:
-                // Small mantissa doesn't have the correction for dropped
-                // remainders.
+                // Small mantissa doesn't have the correction for dropped remainders.
                 EXPECT_TRUE(stored < exact) << message();
                 break;
         }
@@ -1965,8 +1964,7 @@ TEST(NumberTest, downward_division_returns_value_not_above_exact_on_large_scale)
                 break;
 
             case MantissaRange::MantissaScale::Small:
-                // Small mantissa doesn't have the correction for dropped
-                // remainders.
+                // Small mantissa doesn't have the correction for dropped remainders.
                 EXPECT_TRUE(stored < exact) << message();
                 break;
         }
@@ -2033,8 +2031,7 @@ TEST(NumberTest, to_nearest_division_uses_dropped_digits_on_large_scale)
                 break;
 
             case MantissaRange::MantissaScale::Small:
-                // Small mantissa doesn't have the correction for dropped
-                // remainders.
+                // Small mantissa doesn't have the correction for dropped remainders.
                 EXPECT_TRUE(stored < exact) << message();
                 break;
         }

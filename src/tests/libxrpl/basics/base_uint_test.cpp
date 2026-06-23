@@ -169,6 +169,7 @@ TEST_F(BaseUintTest, base_uint)
     EXPECT_FALSE(!v);
     EXPECT_FALSE(v.isZero());
     EXPECT_TRUE(v.isNonZero());
+
     t = 0xff;
     for (auto& d : v)
     {
@@ -344,7 +345,8 @@ TEST_F(BaseUintTest, base_uint)
             "fedcba9876543210ABCDEF91",
             "19FEDCBA0123456789abcdef",
             "800000000000000000000000",
-            "fFfFfFfFfFfFfFfFfFfFfFfF"};
+            "fFfFfFfFfFfFfFfFfFfFfFfF",
+        };
 
         for (StrBaseUInt const& t : kTestCases)
         {
