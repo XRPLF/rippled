@@ -36,12 +36,35 @@ SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --src-dir)            need_arg "$@"; SRC_DIR="$2";           shift 2 ;;
-        --build-dir)          need_arg "$@"; BUILD_DIR="$2";         shift 2 ;;
-        --pkg-version)        need_arg "$@"; PKG_VERSION="$2";       shift 2 ;;
-        --pkg-release)        need_arg "$@"; PKG_RELEASE="$2";       shift 2 ;;
-        --source-date-epoch)  need_arg "$@"; SOURCE_DATE_EPOCH="$2"; shift 2 ;;
-        -h|--help)            usage; exit 0 ;;
+        --src-dir)
+            need_arg "$@"
+            SRC_DIR="$2"
+            shift 2
+            ;;
+        --build-dir)
+            need_arg "$@"
+            BUILD_DIR="$2"
+            shift 2
+            ;;
+        --pkg-version)
+            need_arg "$@"
+            PKG_VERSION="$2"
+            shift 2
+            ;;
+        --pkg-release)
+            need_arg "$@"
+            PKG_RELEASE="$2"
+            shift 2
+            ;;
+        --source-date-epoch)
+            need_arg "$@"
+            SOURCE_DATE_EPOCH="$2"
+            shift 2
+            ;;
+        -h | --help)
+            usage
+            exit 0
+            ;;
         *)
             echo "Unknown argument: $1" >&2
             usage >&2
@@ -91,10 +114,11 @@ VER_BASE="${VERSION%%-*}"
 VER_SUFFIX="${VERSION#*-}"
 [[ "${VER_SUFFIX}" == "${VERSION}" ]] && VER_SUFFIX=""
 
-# Reject multi-segment suffixes (e.g. "beta-1", "rc1-15-gabc123"). The RPM
-# Release field forbids '-', and the convention here is single-token suffixes
-# like b1 or rc2. Fail early with a clear message rather than letting either
-# rpmbuild blow up or silently mangling dashes into dots.
+# Reject multi-segment suffixes (e.g. "beta-1", "rc1-15-gabc123"). Neither an
+# RPM Version nor a Debian upstream version may contain '-' (it's the NVR /
+# version-revision separator), and the convention here is single-token
+# suffixes like b1 or rc2. Fail early with a clear message rather than letting
+# the package tooling blow up or silently mangle dashes.
 if [[ "${VER_SUFFIX}" == *-* ]]; then
     echo "build_pkg.sh: multi-segment pre-release in VERSION='${VERSION}' (suffix '${VER_SUFFIX}')." >&2
     echo "Use single-token suffixes like 3.2.0-b1 or 3.2.0-rc2." >&2
@@ -109,20 +133,17 @@ stage_common() {
     local dest="$1"
     mkdir -p "${dest}"
 
-    cp "${BUILD_DIR}/xrpld"                     "${dest}/xrpld"
-    cp "${SRC_DIR}/cfg/xrpld-example.cfg"       "${dest}/xrpld.cfg"
-    cp "${SRC_DIR}/cfg/validators-example.txt"  "${dest}/validators.txt"
-    cp "${SRC_DIR}/LICENSE.md"                  "${dest}/LICENSE.md"
-    cp "${SRC_DIR}/README.md"                   "${dest}/README.md"
+    cp "${BUILD_DIR}/xrpld" "${dest}/xrpld"
+    cp "${SRC_DIR}/cfg/xrpld-example.cfg" "${dest}/xrpld.cfg"
+    cp "${SRC_DIR}/cfg/validators-example.txt" "${dest}/validators.txt"
+    cp "${SRC_DIR}/LICENSE.md" "${dest}/LICENSE.md"
+    cp "${SRC_DIR}/README.md" "${dest}/README.md"
 
-    cp "${SHARED}/xrpld.service"                "${dest}/xrpld.service"
-    cp "${SHARED}/xrpld.sysusers"               "${dest}/xrpld.sysusers"
-    cp "${SHARED}/xrpld.tmpfiles"               "${dest}/xrpld.tmpfiles"
-    cp "${SHARED}/xrpld.logrotate"              "${dest}/xrpld.logrotate"
-    cp "${SHARED}/update-xrpld"                 "${dest}/update-xrpld"
-    cp "${SHARED}/update-xrpld.service"         "${dest}/update-xrpld.service"
-    cp "${SHARED}/update-xrpld.timer"           "${dest}/update-xrpld.timer"
-    cp "${SHARED}/50-xrpld.preset"              "${dest}/50-xrpld.preset"
+    cp "${SHARED}/xrpld.service" "${dest}/xrpld.service"
+    cp "${SHARED}/xrpld.sysusers" "${dest}/xrpld.sysusers"
+    cp "${SHARED}/xrpld.tmpfiles" "${dest}/xrpld.tmpfiles"
+    cp "${SHARED}/xrpld.logrotate" "${dest}/xrpld.logrotate"
+    cp "${SHARED}/50-xrpld.preset" "${dest}/50-xrpld.preset"
 }
 
 build_rpm() {
@@ -133,16 +154,18 @@ build_rpm() {
     cp "${SRC_DIR}/package/rpm/xrpld.spec" "${topdir}/SPECS/xrpld.spec"
     stage_common "${topdir}/SOURCES"
 
-    # RPM Version can't contain '-'. A pre-release goes in Release with a
-    # leading "0." so 3.2.0-b1 sorts before the final 3.2.0-<pkg_release>.
-    local rpm_release="${PKG_RELEASE}"
-    [[ -n "${VER_SUFFIX}" ]] && rpm_release="0.${VER_SUFFIX}.${PKG_RELEASE}"
+    # Pre-releases use the modern rpm '~' convention (rpm >= 4.10): the suffix
+    # goes in Version (e.g. 3.2.0~b1), which rpmvercmp sorts *before* the final
+    # 3.2.0 — identical semantics to Debian's '~'. Release is just the package
+    # release number. This replaces the older "0.<release>.<suffix>" Release
+    # hack and keeps the RPM and DEB version strings symmetric.
+    local rpm_version="${VER_BASE}${VER_SUFFIX:+~${VER_SUFFIX}}"
 
     set -x
     rpmbuild -bb \
         --define "_topdir ${topdir}" \
-        --define "xrpld_version ${VER_BASE}" \
-        --define "xrpld_release ${rpm_release}" \
+        --define "xrpld_version ${rpm_version}" \
+        --define "xrpld_release ${PKG_RELEASE}" \
         "${topdir}/SPECS/xrpld.spec"
 }
 
@@ -154,13 +177,10 @@ build_deb() {
     stage_common "${staging}"
     cp -r "${DEBIAN_DIR}" "${staging}/debian"
 
-    # Debhelper auto-discovers these only from debian/.
-    cp "${staging}/xrpld.service"        "${staging}/debian/xrpld.service"
-    cp "${staging}/xrpld.sysusers"       "${staging}/debian/xrpld.sysusers"
-    cp "${staging}/xrpld.tmpfiles"       "${staging}/debian/xrpld.tmpfiles"
-    cp "${staging}/xrpld.logrotate"      "${staging}/debian/xrpld.logrotate"
-    cp "${staging}/update-xrpld.service" "${staging}/debian/xrpld.update-xrpld.service"
-    cp "${staging}/update-xrpld.timer"   "${staging}/debian/xrpld.update-xrpld.timer"
+    cp "${staging}/xrpld.service" "${staging}/debian/xrpld.service"
+    cp "${staging}/xrpld.sysusers" "${staging}/debian/xrpld.sysusers"
+    cp "${staging}/xrpld.tmpfiles" "${staging}/debian/xrpld.tmpfiles"
+    cp "${staging}/xrpld.logrotate" "${staging}/debian/xrpld.logrotate"
 
     # Debian '~' marks a pre-release; 3.2.0~b1 sorts before 3.2.0.
     local deb_full_version="${VER_BASE}${VER_SUFFIX:+~${VER_SUFFIX}}-${PKG_RELEASE}"
@@ -171,12 +191,12 @@ build_deb() {
     #   b<N>, rc<N> -> unstable  (pre-release)
     local deb_distribution
     case "${VER_SUFFIX}" in
-        "")   deb_distribution="stable" ;;
-        b0)   deb_distribution="develop" ;;
-        *)    deb_distribution="unstable" ;;
+        "") deb_distribution="stable" ;;
+        b0) deb_distribution="develop" ;;
+        *) deb_distribution="unstable" ;;
     esac
 
-    cat > "${staging}/debian/changelog" <<EOF
+    cat >"${staging}/debian/changelog" <<EOF
 xrpld (${deb_full_version}) ${deb_distribution}; urgency=medium
   * Release ${VERSION}.
 
@@ -186,7 +206,7 @@ EOF
     chmod +x "${staging}/debian/rules"
 
     set -x
-    ( cd "${staging}" && dpkg-buildpackage -b --no-sign -d )
+    (cd "${staging}" && dpkg-buildpackage -b --no-sign -d)
 }
 
 "build_${pkg_type}"

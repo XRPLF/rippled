@@ -453,7 +453,7 @@ public:
 
         // Vary the time it takes to process validations to exercise detecting
         // the wrong LCL at different phases of consensus
-        for (auto validationDelay : {0ms, parms.ledgerMIN_CLOSE})
+        for (auto validationDelay : {0ms, parms.ledgerMinClose})
         {
             // Consider 10 peers:
             // 0 1         2 3 4       5 6 7 8 9
@@ -492,7 +492,7 @@ public:
             CollectByNode<JumpCollector> jumps;
             sim.collectors.add(jumps);
 
-            BEAST_EXPECT(sim.trustGraph.canFork(parms.minCONSENSUS_PCT / 100.));
+            BEAST_EXPECT(sim.trustGraph.canFork(parms.minConsensusPct / 100.));
 
             // initial round to set prior state
             sim.run(1);
@@ -1296,14 +1296,11 @@ public:
                 auto const s = clog->str();
                 expect(s.find("stalled"), s, __FILE__, line);
                 expect(s.starts_with("Transaction "s + std::to_string(txid)), s, __FILE__, line);
-                expect(s.find("voting "s + (ourVote ? "YES" : "NO")) != s.npos, s, __FILE__, line);
+                expect(s.contains("voting "s + (ourVote ? "YES" : "NO")), s, __FILE__, line);
                 expect(
-                    s.find("for "s + std::to_string(ourTime) + " rounds."s) != s.npos,
-                    s,
-                    __FILE__,
-                    line);
+                    s.contains("for "s + std::to_string(ourTime) + " rounds."s), s, __FILE__, line);
                 expect(
-                    s.find("votes in "s + std::to_string(peerTime) + " rounds.") != s.npos,
+                    s.contains("votes in "s + std::to_string(peerTime) + " rounds."),
                     s,
                     __FILE__,
                     line);

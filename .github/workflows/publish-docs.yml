@@ -41,13 +41,13 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/ci/tools-rippled-documentation:sha-a8c7be1
+    container: ghcr.io/xrplf/xrpld/nix-ubuntu:sha-fe4c8ae
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
+        uses: XRPLF/actions/prepare-runner@c47daebb2f9db64ffbac71b47d68a661498d5ce8
         with:
           enable_ccache: false
 
@@ -57,19 +57,11 @@ jobs:
         with:
           subtract: ${{ env.NPROC_SUBTRACT }}
 
-      - name: Check configuration
-        run: |
-          echo 'Checking path.'
-          echo ${PATH} | tr ':' '\n'
+      - name: Print build environment
+        uses: XRPLF/actions/print-build-env@59dec886e4afb05a1724443af08baccbc045b574
 
-          echo 'Checking environment variables.'
-          env | sort
-
-          echo 'Checking CMake version.'
-          cmake --version
-
-          echo 'Checking Doxygen version.'
-          doxygen --version
+      - name: Check Doxygen version
+        run: doxygen --version
 
       - name: Build documentation
         env:

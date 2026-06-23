@@ -122,4 +122,15 @@ private:
     std::optional<Rules> saved_;
 };
 
+class NumberMantissaScaleGuard;
+
+bool
+useRulesGuards(Rules const& rules);
+
+void
+createGuards(
+    Rules const& rules,
+    std::optional<CurrentTransactionRulesGuard>& rulesGuard,
+    std::optional<NumberMantissaScaleGuard>& mantissaScaleGuard);
+
 }  // namespace xrpl

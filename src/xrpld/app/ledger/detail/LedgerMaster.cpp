@@ -56,6 +56,7 @@
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <boost/icl/concept/interval_associator.hpp>
 #include <boost/icl/concept/interval_set.hpp>
 
 #include <xrpl.pb.h>
@@ -127,10 +128,10 @@ LedgerMaster::LedgerMaster(
     , journal_(journal)
     , ledgerHistory_(collector, app)
     , standalone_(app_.config().standalone())
-    , fetch_depth_(app_.getSHAMapStore().clampFetchDepth(app_.config().FETCH_DEPTH))
-    , ledger_history_(app_.config().LEDGER_HISTORY)
-    , ledger_fetch_size_(app_.config().getValueFor(SizedItem::LedgerFetch))
-    , fetch_packs_(
+    , fetchDepth_(app_.getSHAMapStore().clampFetchDepth(app_.config().fetchDepth))
+    , ledgerHistorySize_(app_.config().ledgerHistory)
+    , ledgerFetchSize_(app_.config().getValueFor(SizedItem::LedgerFetch))
+    , fetchPacks_(
           "FetchPack",
           65536,
           std::chrono::seconds{45},
@@ -286,9 +287,9 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     validLedgerSign_ = signTime.time_since_epoch().count();
     XRPL_ASSERT(
         validLedgerSeq_ || !app_.getMaxDisallowedLedger() ||
-            l->header().seq + max_ledger_difference_ > app_.getMaxDisallowedLedger(),
+            l->header().seq + maxLedgerDifference_ > app_.getMaxDisallowedLedger(),
         "xrpl::LedgerMaster::setValidLedger : valid ledger sequence");
-    (void)max_ledger_difference_;
+    (void)maxLedgerDifference_;
     validLedgerSeq_ = l->header().seq;
 
     app_.getOPs().updateLocalTx(*l);
@@ -629,9 +630,9 @@ LedgerMaster::getEarliestFetch()
     // unless that creates a larger range than allowed
     std::uint32_t e = getClosedLedger()->header().seq;
 
-    if (e > fetch_depth_)
+    if (e > fetchDepth_)
     {
-        e -= fetch_depth_;
+        e -= fetchDepth_;
     }
     else
     {
@@ -1277,10 +1278,10 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
                 ledger = ledgerHistory_.getLedgerByHash(*hash);
             }
 
-            if (!app_.config().LEDGER_REPLAY)
+            if (!app_.config().ledgerReplay)
             {
                 // Can we try to acquire the ledger we need?
-                if (!ledger && (++acqCount < ledger_fetch_size_))
+                if (!ledger && (++acqCount < ledgerFetchSize_))
                 {
                     ledger = app_.getInboundLedgers().acquire(
                         *hash, seq, InboundLedger::Reason::GENERIC);
@@ -1304,7 +1305,7 @@ LedgerMaster::findNewLedgersToPublish(std::unique_lock<std::recursive_mutex>& sl
                                << ex.what();
     }
 
-    if (app_.config().LEDGER_REPLAY)
+    if (app_.config().ledgerReplay)
     {
         /* Narrow down the gap of ledgers, and try to replay them.
          * When replaying a ledger gap, if the local node has
@@ -1577,23 +1578,14 @@ LedgerMaster::getCompleteLedgers() const
 std::size_t
 LedgerMaster::missingFromCompleteLedgerRange(LedgerIndex first, LedgerIndex last) const
 {
-    // Make a copy of the range to avoid holding the lock
-    auto const range = [&] {
+    RangeSet<LedgerIndex> const target{range(first, last)};
+
+    auto const missing = [&target, this] {
         std::scoped_lock const sl(completeLock_);
-        return completeLedgers_;
+        return target - completeLedgers_;
     }();
 
-    std::size_t missing = 0;
-
-    for (LedgerIndex idx = first; idx <= last; ++idx)
-    {
-        if (!boost::icl::contains(range, idx))
-        {
-            ++missing;
-        }
-    }
-
-    return missing;
+    return boost::icl::size(missing);
 }
 
 std::optional<NetClock::time_point>
@@ -1759,7 +1751,7 @@ void
 LedgerMaster::sweep()
 {
     ledgerHistory_.sweep();
-    fetch_packs_.sweep();
+    fetchPacks_.sweep();
 }
 
 float
@@ -1811,11 +1803,11 @@ LedgerMaster::fetchForHistory(
             if (!app_.getInboundLedgers().isFailure(*hash))
             {
                 ledger = app_.getInboundLedgers().acquire(*hash, missing, reason);
-                if (!ledger && missing != fetch_seq_ &&
+                if (!ledger && missing != fetchSeq_ &&
                     missing > app_.getNodeStore().earliestLedgerSeq())
                 {
                     JLOG(journal_.trace()) << "fetchForHistory want fetch pack " << missing;
-                    fetch_seq_ = missing;
+                    fetchSeq_ = missing;
                     getFetchPack(missing, reason);
                 }
                 else
@@ -1855,8 +1847,7 @@ LedgerMaster::fetchForHistory(
             // Do not fetch ledger sequences lower
             // than the earliest ledger sequence
             fetchSz = app_.getNodeStore().earliestLedgerSeq();
-            fetchSz =
-                missing >= fetchSz ? std::min(ledger_fetch_size_, (missing - fetchSz) + 1) : 0;
+            fetchSz = missing >= fetchSz ? std::min(ledgerFetchSize_, (missing - fetchSz) + 1) : 0;
             try
             {
                 for (std::uint32_t i = 0; i < fetchSz; ++i)
@@ -1925,7 +1916,7 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                     if ((fillInProgress_ == 0 || *missing > fillInProgress_) &&
                         shouldAcquire(
                             validLedgerSeq_,
-                            ledger_history_,
+                            ledgerHistorySize_,
                             app_.getSHAMapStore().minimumOnline(),
                             *missing,
                             journal_))
@@ -1984,16 +1975,16 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
 void
 LedgerMaster::addFetchPack(uint256 const& hash, std::shared_ptr<Blob> data)
 {
-    fetch_packs_.canonicalizeReplaceClient(hash, data);
+    fetchPacks_.canonicalizeReplaceClient(hash, data);
 }
 
 std::optional<Blob>
 LedgerMaster::getFetchPack(uint256 const& hash)
 {
     Blob data;
-    if (fetch_packs_.retrieve(hash, data))
+    if (fetchPacks_.retrieve(hash, data))
     {
-        fetch_packs_.del(hash, false);
+        fetchPacks_.del(hash, false);
         if (hash == sha512Half(makeSlice(data)))
             return data;
     }
@@ -2192,7 +2183,7 @@ LedgerMaster::makeFetchPack(
 std::size_t
 LedgerMaster::getFetchPackCacheSize() const
 {
-    return fetch_packs_.getCacheSize();
+    return fetchPacks_.getCacheSize();
 }
 
 // Returns the minimum ledger sequence in SQL database, if any.

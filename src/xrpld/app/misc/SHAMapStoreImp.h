@@ -7,6 +7,8 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/State.h>
+#include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/TreeNodeCache.h>
 
 #include <atomic>
 #include <chrono>
@@ -66,7 +68,7 @@ private:
     NodeStore::Scheduler& scheduler_;
     beast::Journal const journal_;
     NodeStore::DatabaseRotating* dbRotating_ = nullptr;
-    SavedStateDB state_db_;
+    SavedStateDB stateDb_;
     std::thread thread_;
     bool stop_ = false;
     bool healthy_ = true;
@@ -92,12 +94,14 @@ private:
     /// available during an online_delete healthWait() call, sleep
     /// the thread for this time, and continue checking until recovery.
     /// See also: "recovery_wait_seconds" in xrpld-example.cfg
-    std::chrono::seconds recoveryWaitTime_{1};
+    std::chrono::seconds recoveryWaitTime_{2};
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of run() or before
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
+    FullBelowCache* fullBelowCache_ = nullptr;
+    TreeNodeCache* treeNodeCache_ = nullptr;
 
     static constexpr auto kNodeStoreName = "NodeStore";
 
@@ -118,7 +122,7 @@ public:
     {
         if (advisoryDelete_)
             canDelete_ = seq;
-        return state_db_.setCanDelete(seq);
+        return stateDb_.setCanDelete(seq);
     }
 
     bool
@@ -132,7 +136,7 @@ public:
     LedgerIndex
     getLastRotated() override
     {
-        return state_db_.getState().lastRotated;
+        return stateDb_.getState().lastRotated;
     }
 
     // All ledgers before and including this are unprotected
@@ -146,8 +150,8 @@ public:
     void
     onLedgerClosed(std::shared_ptr<Ledger const> const& ledger) override;
 
-    void
-    rendezvous() const override;
+    bool
+    rendezvous(std::optional<std::chrono::milliseconds> const& timeout = {}) const override;
     int
     fdRequired() const override;
 
@@ -209,8 +213,6 @@ private:
     enum class HealthResult { Stopping, KeepGoing };
     [[nodiscard]] HealthResult
     healthWait();
-    bool
-    hasCompleteRange(LedgerIndex first, LedgerIndex last);
 
 public:
     void

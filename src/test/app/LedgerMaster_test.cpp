@@ -31,9 +31,9 @@ class LedgerMaster_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
-            cfg->NETWORK_ID = networkID;
+            cfg->networkId = networkID;
             // This test relies on ledger hash so must lock it to fee 10.
-            cfg->FEES.reference_fee = 10;
+            cfg->fees.referenceFee = 10;
             return cfg;
         });
     }
@@ -129,7 +129,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
         auto const deleteInterval = 8;
 
         Env env{*this, envconfig([](auto cfg) {
-                    return online_delete(std::move(cfg), deleteInterval);
+                    return onlineDelete(std::move(cfg), deleteInterval);
                 })};
 
         auto const alice = Account("alice");
@@ -140,7 +140,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
         LedgerIndex minSeq = 2;
         LedgerIndex maxSeq = env.closed()->header().seq;
         auto& store = env.app().getSHAMapStore();
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
         LedgerIndex lastRotated = store.getLastRotated();
         BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
@@ -159,7 +159,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
                 env(noop(alice));
             }
             env.close();
-            store.rendezvous();
+            BEAST_EXPECT(store.rendezvous());
 
             ++maxSeq;
 

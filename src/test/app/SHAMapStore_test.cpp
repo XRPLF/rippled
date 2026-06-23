@@ -9,12 +9,13 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
@@ -27,6 +28,7 @@
 #include <boost/filesystem/path.hpp>
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <map>
@@ -46,15 +48,14 @@ class SHAMapStore_test : public beast::unit_test::Suite
     static auto
     onlineDelete(std::unique_ptr<Config> cfg)
     {
-        using namespace jtx;
-        return online_delete(std::move(cfg), kDeleteInterval);
+        return jtx::onlineDelete(std::move(cfg), kDeleteInterval);
     }
 
     static auto
     advisoryDelete(std::unique_ptr<Config> cfg)
     {
         cfg = onlineDelete(std::move(cfg));
-        cfg->section(ConfigSection::nodeDatabase()).set("advisory_delete", "1");
+        cfg->section(Sections::kNodeDatabase).set(Keys::kAdvisoryDelete, "1");
         return cfg;
     }
 
@@ -145,11 +146,11 @@ class SHAMapStore_test : public beast::unit_test::Suite
         auto& store = env.app().getSHAMapStore();
 
         int ledgerSeq = 3;
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
         BEAST_EXPECT(!store.getLastRotated());
 
         env.close();
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         auto ledger = env.rpc("ledger", "validated");
         BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++)));
@@ -229,7 +230,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(kDeleteInterval + 4)));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(env.closed()->header().seq == kDeleteInterval + 3);
         lastRotated = store.getLastRotated();
@@ -259,7 +260,7 @@ public:
                 !getHash(ledgers[i]).empty());
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(store.getLastRotated() == kDeleteInterval + lastRotated + 2);
 
@@ -297,7 +298,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         // The database will always have back to ledger 2,
         // regardless of lastRotated.
@@ -312,7 +313,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
         BEAST_EXPECT(lastRotated != store.getLastRotated());
@@ -328,7 +329,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, kDeleteInterval + 1, lastRotated);
         BEAST_EXPECT(lastRotated != store.getLastRotated());
@@ -367,7 +368,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - 2, 2);
         BEAST_EXPECT(lastRotated == store.getLastRotated());
@@ -377,7 +378,7 @@ public:
         BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + (kDeleteInterval / 2));
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - 2, 2);
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
@@ -390,7 +391,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
@@ -406,7 +407,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
@@ -418,7 +419,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - firstBatch - 2, firstBatch + 2);
 
@@ -440,7 +441,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
@@ -452,7 +453,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
@@ -473,7 +474,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         BEAST_EXPECT(store.getLastRotated() == lastRotated);
 
@@ -485,7 +486,7 @@ public:
             BEAST_EXPECT(goodLedger(env, ledger, std::to_string(ledgerSeq++), true));
         }
 
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
@@ -496,13 +497,13 @@ public:
     std::unique_ptr<NodeStore::Backend>
     makeBackendRotating(jtx::Env& env, NodeStoreScheduler& scheduler, std::string path)
     {
-        Section section{env.app().config().section(ConfigSection::nodeDatabase())};
+        Section section{env.app().config().section(Sections::kNodeDatabase)};
         boost::filesystem::path newPath;
 
         if (!BEAST_EXPECT(path.size()))
             return {};
         newPath = path;
-        section.set("path", newPath.string());
+        section.set(Keys::kPath, newPath.string());
 
         auto backend{NodeStore::Manager::instance().makeBackend(
             section,
@@ -526,6 +527,25 @@ public:
         /////////////////////////////////////////////////////////////
         // Create NodeStore with two backends to allow online deletion of data.
         // Normally, SHAMapStoreImp handles all these details.
+        auto nscfg = env.app().config().section(Sections::kNodeDatabase);
+
+        // Provide default values.
+        if (!nscfg.exists(Keys::kCacheSize))
+        {
+            nscfg.set(
+                Keys::kCacheSize,
+                std::to_string(
+                    env.app().config().getValueFor(SizedItem::TreeCacheSize, std::nullopt)));
+        }
+
+        if (!nscfg.exists(Keys::kCacheAge))
+        {
+            nscfg.set(
+                Keys::kCacheAge,
+                std::to_string(
+                    env.app().config().getValueFor(SizedItem::TreeCacheAge, std::nullopt)));
+        }
+
         NodeStoreScheduler scheduler(env.app().getJobQueue());
 
         std::string const writableDb = "write";
@@ -534,7 +554,6 @@ public:
         auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
 
         static constexpr int kReadThreads = 4;
-        auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
         auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
             scheduler,
             kReadThreads,
@@ -627,7 +646,7 @@ public:
         LedgerIndex minSeq = 2;
         LedgerIndex maxSeq = env.closed()->header().seq;
         auto& store = env.app().getSHAMapStore();
-        store.rendezvous();
+        BEAST_EXPECT(store.rendezvous());
         LedgerIndex lastRotated = store.getLastRotated();
         BEAST_EXPECTS(maxSeq == 3, std::to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
@@ -647,7 +666,7 @@ public:
             }
             env.close();
             storeHash();
-            store.rendezvous();
+            BEAST_EXPECT(store.rendezvous());
 
             ++maxSeq;
 
@@ -659,9 +678,13 @@ public:
                 // current ledger from LedgerMaster.
                 std::this_thread::sleep_for(100ms);
                 LedgerIndex const deleteSeq = maxSeq;
-                while (!lm.haveLedger(deleteSeq))
                 {
-                    std::this_thread::sleep_for(100ms);
+                    std::size_t iterations = 30;
+                    while (!lm.haveLedger(deleteSeq) && --iterations > 0)
+                    {
+                        std::this_thread::sleep_for(100ms);
+                    }
+                    BEAST_EXPECTS(iterations > 25, to_string(iterations));
                 }
                 lm.clearLedger(deleteSeq);
 
@@ -690,7 +713,8 @@ public:
                 // rotation will be stuck until the missing ledger is filled in.
                 env.close();
                 storeHash();
-                // DO NOT CALL rendezvous()! You'll end up with a deadlock.
+                // DO NOT CALL rendezvous() without a timeout parameter! You'll end up with a
+                // deadlock.
                 ++maxSeq;
 
                 // Nothing has changed
@@ -704,7 +728,7 @@ public:
                         expectedRange(minSeq, deleteSeq, maxSeq),
                         lm.getCompleteLedgers()));
 
-                // Close 5 more ledgers, waiting one second in between to
+                // Close 5 more ledgers, waiting a little bit in between to
                 // simulate the ledger making progress while online delete waits
                 // for the missing ledger to be filled in.
                 // This ensures the healthWait check has time to run and
@@ -713,7 +737,6 @@ public:
                 {
                     env.close();
                     storeHash();
-                    // DO NOT CALL rendezvous()! You'll end up with a deadlock.
                     ++maxSeq;
                     // Nothing has changed
                     BEAST_EXPECTS(
@@ -725,14 +748,16 @@ public:
                             "Complete Ledgers",
                             expectedRange(minSeq, deleteSeq, maxSeq),
                             lm.getCompleteLedgers()));
-                    std::this_thread::sleep_for(1s);
+                    // The Store is "stuck" in healthWait() and won't finish the run() loop until
+                    // it's backfilled
+                    BEAST_EXPECT(!store.rendezvous(100ms));
                 }
 
                 // Put the missing ledger back in LedgerMaster
                 lm.setLedgerRangePresent(deleteSeq, deleteSeq);
 
                 // Wait for the rotation to finish
-                store.rendezvous();
+                BEAST_EXPECT(store.rendezvous());
 
                 minSeq = lastRotated;
                 lastRotated = maxSeq + 2;

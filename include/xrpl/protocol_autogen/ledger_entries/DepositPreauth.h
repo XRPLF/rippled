@@ -33,7 +33,7 @@ public:
      * @brief Construct a DepositPreauth ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit DepositPreauth(std::shared_ptr<SLE const> sle)
+    explicit DepositPreauth(SLE::const_pointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -170,7 +170,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    DepositPreauthBuilder(std::shared_ptr<SLE const> sle)
+    DepositPreauthBuilder(SLE::const_pointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltDEPOSIT_PREAUTH)
         {

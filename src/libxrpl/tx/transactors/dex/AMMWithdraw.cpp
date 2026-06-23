@@ -7,7 +7,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -26,7 +25,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -34,7 +32,6 @@
 #include <bit>
 #include <cstdint>
 #include <exception>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <utility>
@@ -242,24 +239,21 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                 return ter;
             }
             // AMM account or currency frozen
-            if (isFrozen(ctx.view, ammAccountID, amount->asset()))
+            if (auto const ter = checkFrozen(ctx.view, ammAccountID, amount->asset());
+                !isTesSuccess(ter))
             {
-                JLOG(ctx.j.debug())
-                    << "AMM Withdraw: AMM account or currency is frozen, " << to_string(accountID);
-                return tecFROZEN;
+                JLOG(ctx.j.debug()) << "AMM Withdraw: AMM account or currency is frozen or locked, "
+                                    << to_string(accountID);
+                return ter;
             }
             // Account frozen
-            if (isIndividualFrozen(ctx.view, accountID, amount->asset()))
-            {
-                JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen, " << to_string(accountID)
-                                    << " " << to_string(amount->asset());
-                return tecFROZEN;
-            }
-
-            if (auto const ter =
-                    checkMPTTxAllowed(ctx.view, ttAMM_WITHDRAW, amount->asset(), accountID);
+            if (auto const ter = checkIndividualFrozen(ctx.view, accountID, amount->asset());
                 !isTesSuccess(ter))
+            {
+                JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen or locked, "
+                                    << to_string(accountID) << " " << to_string(amount->asset());
                 return ter;
+            }
         }
         return tesSUCCESS;
     };
@@ -411,6 +405,16 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 
     if (!isTesSuccess(result))
         return {result, false};
+
+    if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
+    {
+        if (auto const ter = checkAMMPrecisionLoss(
+                sb, ammAccountID, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], newLPTokenBalance, j_);
+            !isTesSuccess(ter))
+        {
+            return {ter, false};
+        }
+    }
 
     auto const res = deleteAMMAccountIfEmpty(
         sb, ammSle, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
@@ -635,10 +639,6 @@ AMMWithdraw::withdraw(
             auto const balanceAdj = isIssue ? std::max(priorBalance, balance.xrp()) : priorBalance;
             if (balanceAdj < reserve)
                 return tecINSUFFICIENT_RESERVE;
-
-            // Update owner count.
-            if (!isIssue)
-                adjustOwnerCount(view, sleAccount, 1, journal);
         }
         return tesSUCCESS;
     };
@@ -767,7 +767,7 @@ AMMWithdraw::equalWithdrawTokens(
 std::pair<TER, bool>
 AMMWithdraw::deleteAMMAccountIfEmpty(
     Sandbox& sb,
-    std::shared_ptr<SLE> const ammSle,
+    SLE::pointer const ammSle,
     STAmount const& lpTokenBalance,
     Asset const& asset1,
     Asset const& asset2,
@@ -1101,10 +1101,13 @@ AMMWithdraw::singleWithdrawEPrice(
     // t = T*(T + A*E*(f - 2))/(T*f - A*E)
     Number const ae = amountBalance * ePrice;
     auto const f = getFee(tfee);
-    auto tokNoRoundCb = [&] {
-        return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / (lptAMMBalance * f - ae);
-    };
-    auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / (lptAMMBalance * f - ae); };
+    auto const denom = lptAMMBalance * f - ae;
+    // fixCleanup3_3_0: guard against division by zero
+    // when ePrice == lptAMMBalance*f/amountBalance
+    if (view.rules().enabled(fixCleanup3_3_0) && denom == beast::kZero)
+        return {tecAMM_FAILED, STAmount{}};
+    auto tokNoRoundCb = [&] { return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom; };
+    auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
     auto const tokensAdj =
         getRoundedLPTokens(view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::No);
     if (tokensAdj <= beast::kZero)
@@ -1146,10 +1149,7 @@ AMMWithdraw::isWithdrawAll(STTx const& tx)
     return WithdrawAll::No;
 }
 void
-AMMWithdraw::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+AMMWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }
