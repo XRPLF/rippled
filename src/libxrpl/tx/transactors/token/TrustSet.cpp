@@ -6,7 +6,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -21,7 +20,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -124,51 +122,21 @@ TrustSet::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-TrustSet::checkPermission(ReadView const& view, STTx const& tx)
+TrustSet::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    // Currently we only support TrustlineAuthorize, TrustlineFreeze and
-    // TrustlineUnfreeze granular permission. Setting other flags returns
-    // error.
-    if ((tx.getFlags() & tfTrustSetPermissionMask) != 0u)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
-        return terNO_DELEGATE_PERMISSION;
-
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(
         keylet::line(
             tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.get<Issue>().currency));
 
-    // if the trustline does not exist, granular permissions are
-    // not allowed to create trustline
+    // granular permissions are not allowed to create a trustline
     if (!sleRippleState)
         return terNO_DELEGATE_PERMISSION;
 
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
-
-    if (tx.isFlag(tfSetfAuth) && !granularPermissions.contains(TrustlineAuthorize))
-        return terNO_DELEGATE_PERMISSION;
-    if (tx.isFlag(tfSetFreeze) && !granularPermissions.contains(TrustlineFreeze))
-        return terNO_DELEGATE_PERMISSION;
-    if (tx.isFlag(tfClearFreeze) && !granularPermissions.contains(TrustlineUnfreeze))
-        return terNO_DELEGATE_PERMISSION;
-
-    // updating LimitAmount is not allowed only with granular permissions,
+    // updating LimitAmount is not allowed with granular permissions,
     // unless there's a new granular permission for this in the future.
     auto const curLimit = tx[sfAccount] > saLimitAmount.getIssuer()
         ? sleRippleState->getFieldAmount(sfHighLimit)

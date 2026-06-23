@@ -15,6 +15,9 @@
 
 #include <secp256k1_mpt.h>
 
+#include <cstdint>
+#include <limits>
+
 namespace xrpl {
 
 /**
@@ -61,10 +64,12 @@ struct EcPair
 inline void
 incrementConfidentialVersion(STObject& mptoken)
 {
-    // Retrieve current version and increment.
-    // Unsigned integer overflow is defined behavior in C++ (wraps to 0),
-    // which is acceptable here.
-    mptoken[sfConfidentialBalanceVersion] = mptoken[~sfConfidentialBalanceVersion].valueOr(0u) + 1u;
+    // Retrieve current version and increment, wrapping back to 0 at UINT32_MAX.
+    // The wrap is computed explicitly rather than relying on unsigned overflow
+    // of `+ 1u`, as it trips the unsigned-integer-overflow sanitizer in the UBSan CI build.
+    auto const current = mptoken[~sfConfidentialBalanceVersion].valueOr(0u);
+    mptoken[sfConfidentialBalanceVersion] =
+        current == std::numeric_limits<std::uint32_t>::max() ? 0u : current + 1u;
 }
 
 /**

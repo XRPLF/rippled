@@ -506,10 +506,16 @@ ValidConfidentialMPToken::visitEntry(
         return beast::kZero;
     };
 
+    // Clamp to the cap (== INT64_MAX) before the signed conversion. We do INT64_MAX + 1
+    // which the invariant tests inject, which would result in undefined behavior (under UBSan).
+    auto const toSignedAmount = [](std::uint64_t v) -> std::int64_t {
+        return static_cast<std::int64_t>(std::min(v, kMaxMpTokenAmount));
+    };
+
     if (before && before->getType() == ltMPTOKEN)
     {
         uint192 const id = getMptID(before);
-        changes_[id].mptAmountDelta -= before->getFieldU64(sfMPTAmount);
+        changes_[id].mptAmountDelta -= toSignedAmount(before->getFieldU64(sfMPTAmount));
 
         // Cannot delete MPToken with non-zero confidential state or non-zero public amount
         if (isDelete)
@@ -527,7 +533,7 @@ ValidConfidentialMPToken::visitEntry(
     if (after && after->getType() == ltMPTOKEN)
     {
         uint192 const id = getMptID(after);
-        changes_[id].mptAmountDelta += after->getFieldU64(sfMPTAmount);
+        changes_[id].mptAmountDelta += toSignedAmount(after->getFieldU64(sfMPTAmount));
 
         // Encrypted field existence consistency
         bool const hasIssuerBalance = after->isFieldPresent(sfIssuerEncryptedBalance);
@@ -563,8 +569,11 @@ ValidConfidentialMPToken::visitEntry(
     {
         uint192 const id = getMptID(before);
         if (before->isFieldPresent(sfConfidentialOutstandingAmount))
-            changes_[id].coaDelta -= before->getFieldU64(sfConfidentialOutstandingAmount);
-        changes_[id].outstandingDelta -= before->getFieldU64(sfOutstandingAmount);
+        {
+            changes_[id].coaDelta -=
+                toSignedAmount(before->getFieldU64(sfConfidentialOutstandingAmount));
+        }
+        changes_[id].outstandingDelta -= toSignedAmount(before->getFieldU64(sfOutstandingAmount));
     }
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
@@ -577,9 +586,9 @@ ValidConfidentialMPToken::visitEntry(
         std::uint64_t const oa = after->getFieldU64(sfOutstandingAmount);
 
         if (hasCOA)
-            change.coaDelta += coa;
+            change.coaDelta += toSignedAmount(coa);
 
-        change.outstandingDelta += oa;
+        change.outstandingDelta += toSignedAmount(oa);
         change.issuance = after;
 
         // COA <= OutstandingAmount
