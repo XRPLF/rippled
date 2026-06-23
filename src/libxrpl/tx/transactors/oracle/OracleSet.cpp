@@ -181,14 +181,17 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     if (pairs.size() > kMaxOracleDataSeries)
         return tecARRAY_TOO_LARGE;
 
-    auto const& balance = sleSetter->getFieldAmount(sfBalance);
-    auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-    if (auto const ret = checkInsufficientReserve(
-            ctx.view, ctx.tx, sleSetter, balance, *sponsorSle, adjustReserve, 0, ctx.j);
-        !isTesSuccess(ret))
-        return ret;
+    if (!ctx.view.rules().enabled(featureSponsor))
+    {
+        auto const& balance = sleSetter->getFieldAmount(sfBalance);
+        auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
+        if (auto const ret = checkInsufficientReserve(
+                ctx.view, ctx.tx, sleSetter, balance, *sponsorSle, adjustReserve, 0, ctx.j);
+            !isTesSuccess(ret))
+            return ret;
+    }
 
     return tesSUCCESS;
 }
@@ -276,6 +279,28 @@ OracleSet::doApply()
         if (!accountSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
+        if (ctx_.view().rules().enabled(featureSponsor))
+        {
+            auto const sponsorSle = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+            if (!sponsorSle)
+                return sponsorSle.error();  // LCOV_EXCL_LINE
+            auto const delta = (getLedgerEntryReserveSponsorAccountID(sle) ==
+                                getTxReserveSponsorAccountID(ctx_.tx))
+                ? adjust
+                : static_cast<std::int32_t>(newCount);
+            if (auto const ret = checkInsufficientReserve(
+                    ctx_.view(),
+                    ctx_.tx,
+                    accountSle,
+                    STAmount{preFeeBalance_},
+                    *sponsorSle,
+                    delta,
+                    0,
+                    j_);
+                !isTesSuccess(ret))
+                return ret;
+        }
+
         if (adjust > 0)
         {
             // To continue receiving sponsorship from the same account after the
@@ -353,6 +378,21 @@ OracleSet::doApply()
         auto const accountSle = ctx_.view().peek(keylet::account(ctx_.tx[sfAccount]));
         if (!accountSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        if (ctx_.view().rules().enabled(featureSponsor))
+        {
+            if (auto const ret = checkInsufficientReserve(
+                    ctx_.view(),
+                    ctx_.tx,
+                    accountSle,
+                    STAmount{preFeeBalance_},
+                    *sponsorSle,
+                    count,
+                    0,
+                    j_);
+                !isTesSuccess(ret))
+                return ret;
+        }
 
         adjustOwnerCount(ctx_.view(), accountSle, *sponsorSle, count, ctx_.journal);
         addSponsorToLedgerEntry(sle, *sponsorSle);

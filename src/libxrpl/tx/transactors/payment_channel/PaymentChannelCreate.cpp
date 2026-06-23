@@ -78,6 +78,7 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
 
     // Check reserve and funds availability
+    if (!ctx.view.rules().enabled(featureSponsor))
     {
         auto const balance = (*sle)[sfBalance];
         auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
@@ -135,6 +136,28 @@ PaymentChannelCreate::doApply()
         auto const closeTime = ctx_.view().header().parentCloseTime;
         if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
             return tecEXPIRED;
+    }
+
+    if (ctx_.view().rules().enabled(featureSponsor))
+    {
+        auto const sponsorSle = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();  // LCOV_EXCL_LINE
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(), ctx_.tx, sle, STAmount{preFeeBalance_}, *sponsorSle, 1, 0, j_);
+            !isTesSuccess(ret))
+            return ret;
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(),
+                ctx_.tx,
+                sle,
+                STAmount{preFeeBalance_ - ctx_.tx[sfAmount].xrp()},
+                *sponsorSle,
+                1,
+                0,
+                j_);
+            !isTesSuccess(ret))
+            return tecUNFUNDED;
     }
 
     auto const dst = ctx_.tx[sfDestination];
