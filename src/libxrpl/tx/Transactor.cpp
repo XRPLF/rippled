@@ -45,8 +45,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <map>
 #include <optional>
 #include <stdexcept>
+#include <tuple>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -1078,26 +1080,6 @@ removeDeletedTrustLines(
     }
 }
 
-static void
-removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Journal viewJ)
-{
-    // There could be at most two MPTs - one for each side of AMM pool
-    if (mpts.size() > 2)
-    {
-        JLOG(viewJ.error()) << "removeDeletedMPTs: deleted mpts exceed 2 " << mpts.size();
-        return;
-    }
-
-    for (auto const& index : mpts)
-    {
-        if (auto const sleState = view.peek({ltMPTOKEN, index}); sleState &&
-            deleteAMMMPToken(view, sleState, (*sleState)[sfIssuer], viewJ) != tesSUCCESS)
-        {
-            JLOG(viewJ.error()) << "removeDeletedMPTs: failed to delete AMM MPT";
-        }
-    }
-}
-
 /** Reset the context, discarding any changes made and adjust the fee.
 
     @param fee The transaction fee to be charged.
@@ -1160,6 +1142,118 @@ Transactor::trapTransaction(uint256 txHash) const
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
 
+std::tuple<TER, XRPAmount, bool>
+Transactor::processPersistentChanges(TER result, XRPAmount fee)
+{
+    JLOG(j_.trace()) << "reapplying because of " << transToken(result);
+
+    // FIXME: This mechanism for doing work while returning a `tec` is
+    //        awkward and very limiting. A more general purpose approach
+    //        should be used, making it possible to do more useful work
+    //        when transactions fail with a `tec` code.
+
+    auto typesForResult = [](TER const ter) {
+        std::unordered_set<LedgerEntryType> types;
+        if ((ter == tecOVERSIZE) || (ter == tecKILLED))
+        {
+            types.insert(ltOFFER);
+        }
+        else if (ter == tecINCOMPLETE)
+        {
+            types.insert(ltRIPPLE_STATE);
+        }
+        else if (ter == tecEXPIRED)
+        {
+            types.insert(ltNFTOKEN_OFFER);
+            types.insert(ltCREDENTIAL);
+        }
+        return types;
+    };
+
+    // Build a list of ledger entry types to collect, based on the
+    // result code. Only deleted objects of these types will be
+    // re-applied after the context is reset.
+    auto const typesToCollect = typesForResult(result);
+
+    std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+    if (!typesToCollect.empty())
+    {
+        ctx_.visit(
+            [&typesToCollect, &deletedObjects](
+                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+                if (isDelete)
+                {
+                    XRPL_ASSERT(
+                        before && after,
+                        "xrpl::Transactor::processPersistentChanges : non-null "
+                        "SLE inputs");
+                    if (before && after)
+                    {
+                        auto const type = before->getType();
+                        if (typesToCollect.contains(type))
+                        {
+                            // For offers, only collect unfunded removals
+                            // (where TakerPays is unchanged)
+                            if (type == ltOFFER &&
+                                before->getFieldAmount(sfTakerPays) !=
+                                    after->getFieldAmount(sfTakerPays))
+                                return;
+
+                            deletedObjects[type].push_back(index);
+                        }
+                    }
+                }
+            });
+    }
+
+    // Reset the context, potentially adjusting the fee.
+    {
+        auto const resetResult = reset(fee);
+        if (!isTesSuccess(resetResult.first))
+            result = resetResult.first;
+
+        fee = resetResult.second;
+    }
+
+    // Re-apply the collected deletions, but only if the reset succeeded
+    // and the post-reset result still allows the same deletion type.
+    auto const typesToApply = typesForResult(result);
+    if (isTecClaim(result) && !typesToApply.empty())
+    {
+        auto const viewJ = ctx_.registry.get().getJournal("View");
+        for (auto const& [type, ids] : deletedObjects)
+        {
+            if (ids.empty() || !typesToApply.contains(type))
+                continue;
+
+            switch (type)
+            {
+                case ltOFFER:
+                    removeUnfundedOffers(view(), ids, viewJ);
+                    break;
+                case ltNFTOKEN_OFFER:
+                    removeExpiredNFTokenOffers(view(), ids, viewJ);
+                    break;
+                case ltRIPPLE_STATE:
+                    removeDeletedTrustLines(view(), ids, viewJ);
+                    break;
+                case ltCREDENTIAL:
+                    removeExpiredCredentials(view(), ids, viewJ);
+                    break;
+                // LCOV_EXCL_START
+                default:
+                    UNREACHABLE(
+                        "xrpl::Transactor::processPersistentChanges() : "
+                        "unexpected type");
+                    break;
+                    // LCOV_EXCL_STOP
+            }
+        }
+    }
+
+    return {result, fee, isTecClaim(result)};
+}
+
 [[nodiscard]] TER
 Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
 {
@@ -1209,6 +1303,7 @@ Transactor::checkInvariants(TER result, XRPAmount fee)
      */
     return ctx_.checkInvariants(result, fee);
 }
+
 //------------------------------------------------------------------------------
 ApplyResult
 Transactor::operator()()
@@ -1275,108 +1370,7 @@ Transactor::operator()()
         (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
         (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
     {
-        JLOG(j_.trace()) << "reapplying because of " << transToken(result);
-
-        // FIXME: This mechanism for doing work while returning a `tec` is
-        //        awkward and very limiting. A more general purpose approach
-        //        should be used, making it possible to do more useful work
-        //        when transactions fail with a `tec` code.
-        std::vector<uint256> removedOffers;
-        std::vector<uint256> removedTrustLines;
-        std::vector<uint256> removedMPTs;
-        std::vector<uint256> expiredNFTokenOffers;
-        std::vector<uint256> expiredCredentials;
-
-        bool const doOffers = ((result == tecOVERSIZE) || (result == tecKILLED));
-        bool const doLinesOrMPTs = (result == tecINCOMPLETE);
-        bool const doNFTokenOffers = (result == tecEXPIRED);
-        bool const doCredentials = (result == tecEXPIRED);
-        if (doOffers || doLinesOrMPTs || doNFTokenOffers || doCredentials)
-        {
-            ctx_.visit([doOffers,
-                        &removedOffers,
-                        doLinesOrMPTs,
-                        &removedTrustLines,
-                        &removedMPTs,
-                        doNFTokenOffers,
-                        &expiredNFTokenOffers,
-                        doCredentials,
-                        &expiredCredentials](
-                           uint256 const& index,
-                           bool isDelete,
-                           SLE::const_ref before,
-                           SLE::const_ref after) {
-                if (isDelete)
-                {
-                    XRPL_ASSERT(
-                        before && after,
-                        "xrpl::Transactor::operator()::visit : non-null SLE "
-                        "inputs");
-                    if (doOffers && before && after && (before->getType() == ltOFFER) &&
-                        (before->getFieldAmount(sfTakerPays) == after->getFieldAmount(sfTakerPays)))
-                    {
-                        // Removal of offer found or made unfunded
-                        removedOffers.push_back(index);
-                    }
-
-                    if (doLinesOrMPTs && before && after)
-                    {
-                        // Removal of obsolete AMM trust line
-                        if (before->getType() == ltRIPPLE_STATE)
-                        {
-                            removedTrustLines.push_back(index);
-                        }
-                        else if (before->getType() == ltMPTOKEN)
-                        {
-                            removedMPTs.push_back(index);
-                        }
-                    }
-
-                    if (doNFTokenOffers && before && after &&
-                        (before->getType() == ltNFTOKEN_OFFER))
-                        expiredNFTokenOffers.push_back(index);
-
-                    if (doCredentials && before && after && (before->getType() == ltCREDENTIAL))
-                        expiredCredentials.push_back(index);
-                }
-            });
-        }
-
-        // Reset the context, potentially adjusting the fee.
-        {
-            auto const resetResult = reset(fee);
-            if (!isTesSuccess(resetResult.first))
-                result = resetResult.first;
-
-            fee = resetResult.second;
-        }
-
-        // If necessary, remove any offers found unfunded during processing
-        if ((result == tecOVERSIZE) || (result == tecKILLED))
-        {
-            removeUnfundedOffers(view(), removedOffers, ctx_.registry.get().getJournal("View"));
-        }
-
-        if (result == tecEXPIRED)
-        {
-            removeExpiredNFTokenOffers(
-                view(), expiredNFTokenOffers, ctx_.registry.get().getJournal("View"));
-        }
-
-        if (result == tecINCOMPLETE)
-        {
-            removeDeletedTrustLines(
-                view(), removedTrustLines, ctx_.registry.get().getJournal("View"));
-            removeDeletedMPTs(view(), removedMPTs, ctx_.registry.get().getJournal("View"));
-        }
-
-        if (result == tecEXPIRED)
-        {
-            removeExpiredCredentials(
-                view(), expiredCredentials, ctx_.registry.get().getJournal("View"));
-        }
-
-        applied = isTecClaim(result);
+        std::tie(result, fee, applied) = processPersistentChanges(result, fee);
     }
 
     if (applied)
