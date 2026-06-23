@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -91,7 +92,7 @@ operator!=(SHAMapItem const& a, SHAMapItem const& b)
 struct SHAMapBackingMode
 {
     bool backed;
-    char const* testName;
+    std::string_view testName;
 };
 
 constexpr SHAMapBackingMode kBackedMode{.backed = true, .testName = "backed"};
