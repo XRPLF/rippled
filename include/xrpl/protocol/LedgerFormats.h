@@ -180,12 +180,12 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfMPTCanClawback, 0x00000040))                                                                                   \
                                                                                                                                    \
     LEDGER_OBJECT(MPTokenIssuanceMutable,                                                                                          \
-        LSF_FLAG(lsmfMPTCanMutateCanLock, 0x00000002)                                                                              \
-        LSF_FLAG(lsmfMPTCanMutateRequireAuth, 0x00000004)                                                                          \
-        LSF_FLAG(lsmfMPTCanMutateCanEscrow, 0x00000008)                                                                            \
-        LSF_FLAG(lsmfMPTCanMutateCanTrade, 0x00000010)                                                                             \
-        LSF_FLAG(lsmfMPTCanMutateCanTransfer, 0x00000020)                                                                          \
-        LSF_FLAG(lsmfMPTCanMutateCanClawback, 0x00000040)                                                                          \
+        LSF_FLAG(lsmfMPTCanEnableCanLock, 0x00000002)                                                                              \
+        LSF_FLAG(lsmfMPTCanEnableRequireAuth, 0x00000004)                                                                          \
+        LSF_FLAG(lsmfMPTCanEnableCanEscrow, 0x00000008)                                                                            \
+        LSF_FLAG(lsmfMPTCanEnableCanTrade, 0x00000010)                                                                             \
+        LSF_FLAG(lsmfMPTCanEnableCanTransfer, 0x00000020)                                                                          \
+        LSF_FLAG(lsmfMPTCanEnableCanClawback, 0x00000040)                                                                          \
         LSF_FLAG(lsmfMPTCanMutateMetadata, 0x00010000)                                                                             \
         LSF_FLAG(lsmfMPTCanMutateTransferFee, 0x00020000))                                                                         \
                                                                                                                                    \
