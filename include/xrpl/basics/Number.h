@@ -334,6 +334,8 @@ public:
     static constexpr internalrep kMaxRep = std::numeric_limits<rep>::max();
     static_assert(kMaxRep == 9'223'372'036'854'775'807);
     static_assert(-kMaxRep == std::numeric_limits<rep>::min() + 1);
+    static constexpr internalrep kMaxRepUp = ((kMaxRep / 10) + 1) * 10;
+    static_assert(kMaxRepUp == 9'223'372'036'854'775'810ULL);
 
     // May need to make unchecked private
     struct Unchecked

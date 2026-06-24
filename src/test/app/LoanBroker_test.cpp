@@ -1452,18 +1452,54 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(tx2, Ter(temINVALID));
         }
 
+        if (Number::getMantissaScale() == MantissaRange::MantissaScale::Large330)
         {
-            auto const dm = power(2, 63) - 1;
-            BEAST_EXPECTS(dm > kMaxMpTokenAmount, to_string(dm));
-            tx2[sfDebtMaximum] = dm;
-            env(tx2, Ter(temINVALID));
-        }
+            // For the Large330 scale, 2^63 rounds _down_ to Number::kMaxRep
+            {
+                auto const dm = power(2, 63);
+                BEAST_EXPECTS(dm == kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(tesSUCCESS));
+            }
 
+            {
+                auto const dm = power(2, 63) - 1;
+                BEAST_EXPECTS(dm < kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(tesSUCCESS));
+            }
+
+            {
+                auto const dm = power(2, 63) - 3;
+                BEAST_EXPECTS(dm < kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(tesSUCCESS));
+            }
+
+            {
+                auto const dm = power(2, 63) + 3;
+                BEAST_EXPECTS(dm > kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(temINVALID));
+            }
+        }
+        else
         {
-            auto const dm = power(2, 63) - 3;
-            BEAST_EXPECTS(dm == kMaxMpTokenAmount, to_string(dm));
-            tx2[sfDebtMaximum] = dm;
-            env(tx2, Ter(tesSUCCESS));
+            // For other scales, 2^63 rounds _up_ to Number::kMaxRepUp. Subtracting 1 rounds up
+            // again.
+            {
+                auto const dm = power(2, 63) - 1;
+                BEAST_EXPECTS(dm > kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(temINVALID));
+            }
+
+            {
+                auto const dm = power(2, 63) - 3;
+                BEAST_EXPECTS(dm == kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(tesSUCCESS));
+            }
         }
 
         {

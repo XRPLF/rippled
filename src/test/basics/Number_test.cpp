@@ -188,6 +188,8 @@ public:
         auto const scale = Number::getMantissaScale();
         testcase << "test_add " << to_string(scale);
 
+        BEAST_EXPECT(Number::getround() == Number::RoundingMode::ToNearest);
+
         using Case = std::tuple<Number, Number, Number, int>;
         auto const cSmall = std::to_array<Case>({
             {Number{1'000'000'000'000'000, -15},
@@ -299,11 +301,14 @@ public:
         auto const cLargeLegacy = std::to_array<Case>({
             {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep / 10, 1}, __LINE__},
         });
-        auto const cLargeCorrected = std::to_array<Case>({
+        auto const cLarge320 = std::to_array<Case>({
             {Number{Number::kMaxRep},
              Number{6, -1},
              Number{(Number::kMaxRep / 10) + 1, 1},
              __LINE__},
+        });
+        auto const cLargeCorrected = std::to_array<Case>({
+            {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep}, __LINE__},
         });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z, line] : c)
@@ -324,6 +329,10 @@ public:
             if (scale == MantissaRange::MantissaScale::LargeLegacy)
             {
                 test(cLargeLegacy);
+            }
+            else if (scale == MantissaRange::MantissaScale::Large320)
+            {
+                test(cLarge320);
             }
             else
             {
@@ -373,7 +382,7 @@ public:
               Number{1'000'000'000'000'000, -15},
               Number{1'000'000'000'000'000, -30},
               __LINE__}});
-        auto const cLarge = std::to_array<Case>(
+        auto const cLargeAll = std::to_array<Case>(
             // Note that items with extremely large mantissas need to be
             // calculated, because otherwise they overflow uint64. Items from C
             // with larger mantissa
@@ -420,16 +429,55 @@ public:
                  Number{1'000'000'000'000'000'000, -36},
                  __LINE__},
                 {Number{Number::kMaxRep}, Number{6, -1}, Number{Number::kMaxRep - 1}, __LINE__},
-                {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
-                 Number{1, 0},
-                 Number{(Number::kMaxRep / 10) + 1, 1},
-                 __LINE__},
-                {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
-                 Number{3, 0},
-                 Number{Number::kMaxRep},
-                 __LINE__},
-                {power(2, 63), Number{3, 0}, Number{Number::kMaxRep}, __LINE__},
             });
+        // Note that items with extremely large mantissas need to be
+        // calculated, because otherwise they overflow uint64. Items from C
+        // with larger mantissa
+        auto const cLarge = std::to_array<Case>({
+            // Anything larger than kMaxRep rounds up
+            {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
+             Number{1, 0},
+             Number{(Number::kMaxRep / 10) + 1, 1},
+             __LINE__},
+            {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
+             Number{3, 0},
+             Number{Number::kMaxRep},
+             __LINE__},
+            {Number{false, Number::kMaxRep + 2, 0, Number::Normalized{}},
+             Number{1, 0},
+             Number{(Number::kMaxRep / 10) + 1, 1},
+             __LINE__},
+            {Number{false, Number::kMaxRep + 2, 0, Number::Normalized{}},
+             Number{3, 0},
+             Number{Number::kMaxRep},
+             __LINE__},
+            {power(2, 63), Number{3, 0}, Number{Number::kMaxRep}, __LINE__},
+        });
+        auto const cLarge330 = std::to_array<Case>({
+            // kMaxRep + 1 is below the half-way point, so it rounds down to kMaxRep when the Number
+            // is created.
+            {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
+             Number{1, 0},
+             Number{Number::kMaxRep - 1},
+             __LINE__},
+            {Number{false, Number::kMaxRep + 1, 0, Number::Normalized{}},
+             Number{3, 0},
+             Number{Number::kMaxRep - 3},
+             __LINE__},
+            // kMaxRepUp -1 is above the half-way point, so it rounds up to kMaxRepUp when the
+            // Number is created. Subtracting 1 from that rounds up again. A little non-intuitive.
+            {Number{false, Number::kMaxRepUp - 1, 0, Number::Normalized{}},
+             Number{1, 0},
+             Number{(Number::kMaxRep / 10) + 1, 1},
+             __LINE__},
+            // Subtracting 3 gets back down to kMaxRep
+            {Number{false, Number::kMaxRepUp - 1, 0, Number::Normalized{}},
+             Number{3, 0},
+             Number{Number::kMaxRep},
+             __LINE__},
+            // 2^63 is the same as kMaxRep+1
+            {power(2, 63), Number{3, 0}, Number{Number::kMaxRep - 3}, __LINE__},
+        });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z, line] : c)
             {
@@ -439,13 +487,23 @@ public:
                 expect(result == z, ss.str(), __FILE__, line);
             }
         };
-        if (scale == MantissaRange::MantissaScale::Small)
+        switch (scale)
         {
-            test(cSmall);
-        }
-        else
-        {
-            test(cLarge);
+            case MantissaRange::MantissaScale::Small:
+                test(cSmall);
+                break;
+            case MantissaRange::MantissaScale::LargeLegacy:
+            case MantissaRange::MantissaScale::Large320:
+                test(cLargeAll);
+                test(cLarge);
+                break;
+            case MantissaRange::MantissaScale::Large330:
+                test(cLargeAll);
+                test(cLarge330);
+                break;
+            default:
+                BEAST_EXPECT(false);
+                break;
         }
     }
 
@@ -1345,38 +1403,38 @@ public:
         auto const scale = Number::getMantissaScale();
         testcase << "testToString " << to_string(scale);
 
-        auto test = [this](Number const& n, std::string const& expected) {
+        auto test = [this](Number const& n, std::string const& expected, int line) {
             auto const result = to_string(n);
             std::stringstream ss;
             ss << "to_string(" << result << "). Expected: " << expected;
-            BEAST_EXPECTS(result == expected, ss.str());
+            expect(result == expected, ss.str(), __FILE__, line);
         };
 
-        test(Number(-2, 0), "-2");
-        test(Number(0, 0), "0");
-        test(Number(2, 0), "2");
-        test(Number(25, -3), "0.025");
-        test(Number(-25, -3), "-0.025");
-        test(Number(25, 1), "250");
-        test(Number(-25, 1), "-250");
-        test(Number(2, 20), "2e20");
-        test(Number(-2, -20), "-2e-20");
+        test(Number(-2, 0), "-2", __LINE__);
+        test(Number(0, 0), "0", __LINE__);
+        test(Number(2, 0), "2", __LINE__);
+        test(Number(25, -3), "0.025", __LINE__);
+        test(Number(-25, -3), "-0.025", __LINE__);
+        test(Number(25, 1), "250", __LINE__);
+        test(Number(-25, 1), "-250", __LINE__);
+        test(Number(2, 20), "2e20", __LINE__);
+        test(Number(-2, -20), "-2e-20", __LINE__);
         // Test the edges
         // ((exponent < -(25)) || (exponent > -(5)))))
         // or ((exponent < -(28)) || (exponent > -(8)))))
-        test(Number(2, -10), "0.0000000002");
-        test(Number(2, -11), "2e-11");
+        test(Number(2, -10), "0.0000000002", __LINE__);
+        test(Number(2, -11), "2e-11", __LINE__);
 
-        test(Number(-2, 10), "-20000000000");
-        test(Number(-2, 11), "-2e11");
+        test(Number(-2, 10), "-20000000000", __LINE__);
+        test(Number(-2, 11), "-2e11", __LINE__);
 
         switch (scale)
         {
             case MantissaRange::MantissaScale::Small:
 
-                test(Number::min(), "1e-32753");
-                test(Number::max(), "9999999999999999e32768");
-                test(Number::lowest(), "-9999999999999999e32768");
+                test(Number::min(), "1e-32753", __LINE__);
+                test(Number::max(), "9999999999999999e32768", __LINE__);
+                test(Number::lowest(), "-9999999999999999e32768", __LINE__);
                 {
                     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
@@ -1384,61 +1442,132 @@ public:
                     BEAST_EXPECT(maxMantissa == 9'999'999'999'999'999);
                     test(
                         Number{false, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
-                        "9999999999999999");
+                        "9999999999999999",
+                        __LINE__);
                     test(
                         Number{true, (maxMantissa * 1000) + 999, -3, Number::Normalized()},
-                        "-9999999999999999");
+                        "-9999999999999999",
+                        __LINE__);
 
-                    test(Number{std::numeric_limits<std::int64_t>::max(), -3}, "9223372036854775");
+                    test(
+                        Number{std::numeric_limits<std::int64_t>::max(), -3},
+                        "9223372036854775",
+                        __LINE__);
                     test(
                         -(Number{std::numeric_limits<std::int64_t>::max(), -3}),
-                        "-9223372036854775");
+                        "-9223372036854775",
+                        __LINE__);
 
                     test(
-                        Number{std::numeric_limits<std::int64_t>::min(), 0}, "-9223372036854775e3");
+                        Number{std::numeric_limits<std::int64_t>::min(), 0},
+                        "-9223372036854775e3",
+                        __LINE__);
                     test(
                         -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
-                        "9223372036854775e3");
+                        "9223372036854775e3",
+                        __LINE__);
                 }
                 break;
             default:
                 // Test the edges
                 // ((exponent < -(28)) || (exponent > -(8)))))
-                test(Number::min(), "1e-32750");
-                test(Number::max(), "9223372036854775807e32768");
-                test(Number::lowest(), "-9223372036854775807e32768");
+                test(Number::min(), "1e-32750", __LINE__);
+                test(Number::max(), "9223372036854775807e32768", __LINE__);
+                test(Number::lowest(), "-9223372036854775807e32768", __LINE__);
                 {
                     NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
 
                     auto const maxMantissa = Number::maxMantissa();
                     BEAST_EXPECT(maxMantissa == 9'999'999'999'999'999'999ULL);
                     test(
-                        Number{false, maxMantissa, 0, Number::Normalized{}}, "9999999999999999990");
+                        Number{false, maxMantissa, 0, Number::Normalized{}},
+                        "9999999999999999990",
+                        __LINE__);
                     test(
-                        Number{true, maxMantissa, 0, Number::Normalized{}}, "-9999999999999999990");
+                        Number{true, maxMantissa, 0, Number::Normalized{}},
+                        "-9999999999999999990",
+                        __LINE__);
 
                     test(
-                        Number{std::numeric_limits<std::int64_t>::max(), 0}, "9223372036854775807");
+                        Number{std::numeric_limits<std::int64_t>::max(), 0},
+                        "9223372036854775807",
+                        __LINE__);
                     test(
                         -(Number{std::numeric_limits<std::int64_t>::max(), 0}),
-                        "-9223372036854775807");
+                        "-9223372036854775807",
+                        __LINE__);
 
-                    // Because the absolute value of min is larger than max, it
-                    // will be scaled down to fit under max. Since we're
-                    // rounding towards zero, the 8 at the end is dropped.
-                    test(
-                        Number{std::numeric_limits<std::int64_t>::min(), 0},
-                        "-9223372036854775800");
-                    test(
-                        -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
-                        "9223372036854775800");
+                    switch (scale)
+                    {
+                        case MantissaRange::MantissaScale::Large330:
+                            // Because the absolute value of min() is larger than max(), it
+                            // will be rounded down toward max()
+                            test(
+                                Number{std::numeric_limits<std::int64_t>::min(), 0},
+                                "-9223372036854775807",
+                                __LINE__);
+                            test(
+                                -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
+                                "9223372036854775807",
+                                __LINE__);
+                            break;
+                        default:
+                            // Because the absolute value of min() is larger than max(), it
+                            // will be scaled down to fit under max(). Since we're
+                            // rounding towards zero, the 8 at the end is dropped.
+                            test(
+                                Number{std::numeric_limits<std::int64_t>::min(), 0},
+                                "-9223372036854775800",
+                                __LINE__);
+                            test(
+                                -(Number{std::numeric_limits<std::int64_t>::min(), 0}),
+                                "9223372036854775800",
+                                __LINE__);
+                            break;
+                    }
                 }
 
+                switch (scale)
+                {
+                    case MantissaRange::MantissaScale::Large330:
+                        // Rounding to nearest, since the mantissa is below the halfway point from
+                        // kMaxRep to kMaxRep up, it will be rounded down to kMaxRep
+                        test(
+                            Number{std::numeric_limits<std::int64_t>::max(), 0} + 1,
+                            "9223372036854775807",
+                            __LINE__);
+                        test(
+                            -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 1),
+                            "-9223372036854775807",
+                            __LINE__);
+                        break;
+                    default:
+                        // Rounding to nearest, since the mantissa is bigger than kMaxRep, the 8
+                        // will be dropped, and since that is bigger than 5, the result will be
+                        // rounded up from 0 to 1.
+                        test(
+                            Number{std::numeric_limits<std::int64_t>::max(), 0} + 1,
+                            "9223372036854775810",
+                            __LINE__);
+                        test(
+                            -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 1),
+                            "-9223372036854775810",
+                            __LINE__);
+                        break;
+                }
+                // Rounding to nearest, will be rounded up to kMaxRepUp, but for different reasons
+                // depending on the scale. If older than "Large", it rounds up for the same reason
+                // "+1" rounds up. For "Large", since the mantissa is above the halfway point from
+                // kMaxRep to kMaxRepUp, it will be rounded up to kMaxRepUp.
                 test(
-                    Number{std::numeric_limits<std::int64_t>::max(), 0} + 1, "9223372036854775810");
+                    Number{std::numeric_limits<std::int64_t>::max(), 0} + 2,
+                    "9223372036854775810",
+                    __LINE__);
                 test(
-                    -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 1),
-                    "-9223372036854775810");
+                    -(Number{std::numeric_limits<std::int64_t>::max(), 0} + 2),
+                    "-9223372036854775810",
+                    __LINE__);
+                break;
         }
     }
 
@@ -1776,7 +1905,7 @@ public:
     }
 
     void
-    testUpwardRoundsDown()
+    testEdgeCases()
     {
         auto const scale = Number::getMantissaScale();
         {
@@ -1800,15 +1929,14 @@ public:
 
             BigInt const signedDifference = storedValue - exactProduct;
 
-            log << "\n"
-                << "  a              = " << fmt(BigInt(kAValue)) << "\n"
+            log << "  a              = " << fmt(BigInt(kAValue)) << "\n"
                 << "  b              = " << fmt(BigInt(kBValue)) << "\n"
                 << "  exact a*b      = " << fmt(exactProduct) << "\n"
                 << "  stored         = " << fmt(storedValue) << "\n"
                 << "  stored - exact = " << fmt(signedDifference) << "\n"
                 << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n"
                 << " stored.mantissa = " << product.mantissa() << "\n"
-                << " stored.exponent = " << product.exponent() << "\n";
+                << " stored.exponent = " << product.exponent() << "\n\n";
             log.flush();
 
             switch (scale)
@@ -1882,15 +2010,14 @@ public:
             dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
             dec const diff = stored - exact;
 
-            log << "\n"
-                << "  a                 = " << aValue << "\n"
+            log << "  a                 = " << aValue << "\n"
                 << "  b                 = " << bValue << "\n"
                 << "  exact a/b         = " << fmt(exact) << "\n"
                 << "  stored a/b        = " << fmt(stored) << "\n"
                 << "  stored - exact    = " << fmt(diff)
                 << "    (negative => Upward gave value BELOW truth)\n"
                 << "  quotient.mantissa = " << quotient.mantissa() << "\n"
-                << "  quotient.exponent = " << quotient.exponent() << "\n";
+                << "  quotient.exponent = " << quotient.exponent() << "\n\n";
             log.flush();
 
             // Upward invariant: stored >= exact. Bug: stored < exact.
@@ -1933,15 +2060,14 @@ public:
             dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
             dec const diff = stored - exact;
 
-            log << "\n"
-                << "  a                 = " << aValue << "\n"
+            log << "  a                 = " << aValue << "\n"
                 << "  b                 = " << bValue << "\n"
                 << "  exact a/b         = " << fmt(exact) << "\n"
                 << "  stored a/b        = " << fmt(stored) << "\n"
                 << "  stored - exact    = " << fmt(diff)
                 << "    (positive => Downward gave value ABOVE truth)\n"
                 << "  quotient.mantissa = " << quotient.mantissa() << "\n"
-                << "  quotient.exponent = " << quotient.exponent() << "\n";
+                << "  quotient.exponent = " << quotient.exponent() << "\n\n";
             log.flush();
 
             // invariant: stored <= exact. Bug: stored > exact.
@@ -1991,15 +2117,14 @@ public:
             dec const stored = dec(quotient.mantissa()) * pow10(quotient.exponent());
             dec const diff = stored - exact;
 
-            log << "\n"
-                << "  a                 = " << aValue << "\n"
+            log << "  a                 = " << aValue << "\n"
                 << "  b                 = " << bValue << "\n"
                 << "  exact a/b         = " << fmt(exact) << "\n"
                 << "  stored a/b        = " << fmt(stored) << "\n"
                 << "  stored - exact    = " << fmt(diff)
                 << "    (negative => ToNearest gave value BELOW truth)\n"
                 << "  quotient.mantissa = " << quotient.mantissa() << "\n"
-                << "  quotient.exponent = " << quotient.exponent() << "\n";
+                << "  quotient.exponent = " << quotient.exponent() << "\n\n";
             log.flush();
 
             // invariant: stored >= exact. Bug: stored < exact.
@@ -2086,7 +2211,7 @@ public:
                     return sums;
                 }();
 
-                log << "\n              a = " << a << " (" << fmt(bigA)
+                log << "              a = " << a << " (" << fmt(bigA)
                     << ")\n              b = " << b << " (" << fmt(bigB)
                     << ")\n    exact a + b = " << fmt(exact) << "\n";
                 for (auto const& [r, sum] : sums)
@@ -2096,6 +2221,7 @@ public:
                     log << std::string(15 - rLabel.length(), ' ') << rLabel << " = "
                         << fmt(sum.first) << "\n     difference = " << fmt(diff) << "\n";
                 }
+                log << "\n";
                 log.flush();
 
                 auto const expectedExponent =
@@ -2144,6 +2270,83 @@ public:
                         }
                     }
                 }
+            }
+        }
+
+        {
+            testcase << "normalization cusp: ToNearest and Downward behavior " << to_string(scale);
+            constexpr auto kMaxRep = Number::kMaxRep;
+
+            // Both ToNearest and Downward should round to `below`
+            auto constexpr actual = static_cast<std::uint64_t>(kMaxRep) + 1;
+            Number const below{static_cast<std::int64_t>(kMaxRep), 0};
+            Number const above{
+                false, static_cast<std::uint64_t>(kMaxRep) + 3, 0, Number::Normalized{}};
+
+            auto construct = [](Number::RoundingMode mode) {
+                NumberRoundModeGuard const roundGuard{mode};
+                return Number(false, actual, 0, Number::Normalized{});
+            };
+            Number const upward = construct(Number::RoundingMode::Upward);
+
+            Number const toNearest = construct(Number::RoundingMode::ToNearest);
+
+            Number const downward = construct(Number::RoundingMode::Downward);
+
+            log << "  actual     = " << actual << "  (kMaxRep + 1)\n"
+                << "  below      = " << below << "  (kMaxRep, distance 1)\n"
+                << "  above      = " << above << "  (kMaxRep + 3, distance 2)\n"
+                << "  Upward     = " << upward << "\n"
+                << "  ToNearest  = " << toNearest << "\n"
+                << "  Downward   = " << downward << "\n\n";
+            log.flush();
+
+            switch (scale)
+            {
+                case MantissaRange::MantissaScale::Small:
+                    // With the small mantissa, everything but Downward rounds UP, including the
+                    // reference values, "above" and "below"
+
+                    BEAST_EXPECT(below == above);
+                    BEAST_EXPECT(upward == above);
+                    BEAST_EXPECT(toNearest == above);
+
+                    BEAST_EXPECT(downward < below);
+
+                    break;
+
+                case MantissaRange::MantissaScale::LargeLegacy:
+                case MantissaRange::MantissaScale::Large320:
+                    // Upward round UP
+                    BEAST_EXPECT(upward == above);
+
+                    // ToNearest rounds UP when the DOWN neighbor is strictly closer
+                    BEAST_EXPECT(toNearest == above);
+                    BEAST_EXPECT(toNearest > below);
+
+                    // Downward undershoots: it returns a value below `below`
+                    BEAST_EXPECT(downward < below);
+
+                    // Both should have given the same answer, but they differ
+                    BEAST_EXPECT(toNearest > downward);
+
+                    break;
+                default:
+                    // Covers "Large" and any newly added scales
+
+                    // Upward round UP
+                    BEAST_EXPECT(upward == above);
+
+                    // ToNearest rounds to the strictly closer DOWN neighbor
+                    BEAST_EXPECT(toNearest != above);
+                    BEAST_EXPECT(toNearest == below);
+
+                    // Downward also rounds to `below`
+                    BEAST_EXPECT(downward == below);
+
+                    // ToNearest rounds to downward
+                    BEAST_EXPECT(toNearest == downward);
+                    break;
             }
         }
     }
@@ -2360,6 +2563,166 @@ public:
     }
 
     void
+    testNumberRoundCuspWithFractionalParts()
+    {
+        auto const scale = Number::getMantissaScale();
+
+        testcase << "normalization cusp: rounding behavior with fractional parts "
+                 << to_string(scale);
+        NumberRoundModeGuard const roundGuard{Number::RoundingMode::ToNearest};
+
+        Number const below{static_cast<std::int64_t>(Number::kMaxRep), 0};
+        Number const above{false, Number::kMaxRepUp, 0, Number::Normalized{}};
+
+        log << "Below: " << below << ", Above: " << above << "\n";
+
+        auto const zeroPointFour = Number(4, -1);
+        auto const zeroPointSix = Number(6, -1);
+        auto const onePointFour = Number(14, -1);
+        auto const onePointFive = Number(15, -1);
+        auto const onePointSix = Number(16, -1);
+        auto const twoPointFour = Number(24, -1);
+        auto const twoPointSix = Number(26, -1);
+
+        auto const operands = std::to_array<Number>({
+            zeroPointFour,
+            zeroPointSix,
+            onePointFour,
+            onePointFive,
+            onePointSix,
+            twoPointFour,
+            twoPointSix,
+        });
+
+        auto const modes = std::to_array<Number::RoundingMode>({
+            Number::RoundingMode::ToNearest,
+            Number::RoundingMode::TowardsZero,
+            Number::RoundingMode::Downward,
+            Number::RoundingMode::Upward,
+        });
+
+        // Addition cases test kMaxRep + Operand
+        for (auto const& mode : modes)
+        {
+            for (auto const& operand : operands)
+            {
+                NumberRoundModeGuard const rg{mode};
+
+                auto const expectedValue = [&]() {
+                    if (scale >= MantissaRange::MantissaScale::Large330)
+                    {
+                        if (mode == Number::RoundingMode::ToNearest && operand < onePointFive)
+                            return below;
+                        if (mode == Number::RoundingMode::TowardsZero ||
+                            mode == Number::RoundingMode::Downward)
+                            return below;
+                    }
+                    if (scale == MantissaRange::MantissaScale::Large320)
+                    {
+                        if (mode == Number::RoundingMode::ToNearest)
+                        {
+                            if (operand < zeroPointSix)
+                                return below;
+                        }
+                        if (mode == Number::RoundingMode::TowardsZero ||
+                            mode == Number::RoundingMode::Downward)
+                        {
+                            if (operand >= onePointFour)
+                                return below - 7;
+                            return below;
+                        }
+                    }
+                    if (scale == MantissaRange::MantissaScale::LargeLegacy)
+                    {
+                        if (mode == Number::RoundingMode::ToNearest)
+                        {
+                            if (operand < zeroPointSix)
+                                return below;
+                            if (operand == zeroPointSix)
+                                return below - 7;
+                        }
+                        if (mode == Number::RoundingMode::TowardsZero ||
+                            mode == Number::RoundingMode::Downward)
+                        {
+                            if (operand >= onePointFour)
+                                return below - 7;
+                            return below;
+                        }
+                        if (mode == Number::RoundingMode::Upward && operand <= zeroPointSix)
+                            return below - 7;
+                    }
+                    if (scale == MantissaRange::MantissaScale::Small &&
+                        mode == Number::RoundingMode::Upward)
+                        return above + 1000;
+                    return above;
+                }();
+
+                Number const actual = below + operand;
+
+                std::stringstream ss;
+                ss << "kMaxRep + " << operand << " rounded " << to_string(mode) << " to " << actual
+                   << ". Expected: " << expectedValue;
+                BEAST_EXPECTS(actual == expectedValue, ss.str());
+            }
+        }
+
+        // Subtraction cases test kMaxRepUp - Operand
+        for (auto const& mode : modes)
+        {
+            for (auto const& operand : operands)
+            {
+                NumberRoundModeGuard const rg{mode};
+
+                auto const expectedValue = [&]() {
+                    if (scale >= MantissaRange::MantissaScale::Large330)
+                    {
+                        if (mode == Number::RoundingMode::ToNearest && operand > onePointFive)
+                            return below;
+                        if (mode == Number::RoundingMode::TowardsZero ||
+                            mode == Number::RoundingMode::Downward)
+                            return below;
+                    }
+                    if (scale == MantissaRange::MantissaScale::LargeLegacy ||
+                        scale == MantissaRange::MantissaScale::Large320)
+                    {
+                        if (mode == Number::RoundingMode::ToNearest)
+                        {
+                            if (operand >= twoPointSix)
+                                return below;
+                        }
+                        if (mode == Number::RoundingMode::TowardsZero)
+                        {
+                            if (operand >= onePointFour)
+                                return below - 7;
+                        }
+                        if (mode == Number::RoundingMode::Downward)
+                        {
+                            if (operand <= onePointSix)
+                                return below - 7;
+                            return below;
+                        }
+                    }
+                    if (scale == MantissaRange::MantissaScale::Small)
+                    {
+                        if (mode == Number::RoundingMode::Downward)
+                            return below - 1000;
+                        if (mode == Number::RoundingMode::Upward)
+                            return below;
+                    }
+                    return above;
+                }();
+
+                Number const actual = above - operand;
+
+                std::stringstream ss;
+                ss << "kMaxRepUp - " << operand << " rounded " << to_string(mode) << " to "
+                   << actual << ". Expected: " << expectedValue;
+                BEAST_EXPECTS(actual == expectedValue, ss.str());
+            }
+        }
+    }
+
+    void
     run() override
     {
         for (auto const scale : MantissaRange::getAllScales())
@@ -2388,9 +2751,10 @@ public:
             testRounding();
             testInt64();
 
-            testUpwardRoundsDown();
+            testEdgeCases();
             testNumberAddDirectedSignWrong();
             testNumberAddToNearestPicksFarther();
+            testNumberRoundCuspWithFractionalParts();
         }
     }
 };

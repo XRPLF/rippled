@@ -5606,9 +5606,9 @@ class Vault_test : public beast::unit_test::Suite
         BEAST_EXPECT(maxInt64 == "9223372036854775807");
 
         // Naming things is hard
-        auto const maxInt64Plus1 = std::to_string(
-            static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) + 1);
-        BEAST_EXPECT(maxInt64Plus1 == "9223372036854775808");
+        auto const maxInt64Plus2 = std::to_string(
+            static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) + 2);
+        BEAST_EXPECT(maxInt64Plus2 == "9223372036854775809");
 
         auto const initialXRP = to_string(kInitialXrp);
         BEAST_EXPECT(initialXRP == "100000000000000000");
@@ -5636,15 +5636,15 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
-            tx[sfAssetsMaximum] = maxInt64Plus1;
+            tx[sfAssetsMaximum] = maxInt64Plus2;
             env(tx, Ter(tefEXCEPTION));
             env.close();
 
             // This value will be rounded
-            auto const insertAt = maxInt64Plus1.size() - 3;
-            auto const decimalTest = maxInt64Plus1.substr(0, insertAt) + "." +
-                maxInt64Plus1.substr(insertAt);  // (max int64+1) / 1000
-            BEAST_EXPECT(decimalTest == "9223372036854775.808");
+            auto const insertAt = maxInt64Plus2.size() - 3;
+            auto const decimalTest = maxInt64Plus2.substr(0, insertAt) + "." +
+                maxInt64Plus2.substr(insertAt);  // (max int64+2) / 1000
+            BEAST_EXPECT(decimalTest == "9223372036854775.809");
             tx[sfAssetsMaximum] = decimalTest;
             auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
             env(tx);
@@ -5688,15 +5688,15 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
-            tx[sfAssetsMaximum] = maxInt64Plus1;
+            tx[sfAssetsMaximum] = maxInt64Plus2;
             env(tx, Ter(tefEXCEPTION));
             env.close();
 
             // This value will be rounded
-            auto const insertAt = maxInt64Plus1.size() - 1;
-            auto const decimalTest = maxInt64Plus1.substr(0, insertAt) + "." +
-                maxInt64Plus1.substr(insertAt);  // (max int64+1) / 10
-            BEAST_EXPECT(decimalTest == "922337203685477580.8");
+            auto const insertAt = maxInt64Plus2.size() - 1;
+            auto const decimalTest = maxInt64Plus2.substr(0, insertAt) + "." +
+                maxInt64Plus2.substr(insertAt);  // (max int64+2) / 10
+            BEAST_EXPECT(decimalTest == "922337203685477580.9");
             tx[sfAssetsMaximum] = decimalTest;
             auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
             env(tx);
@@ -5733,7 +5733,7 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
-            tx[sfAssetsMaximum] = maxInt64Plus1;
+            tx[sfAssetsMaximum] = maxInt64Plus2;
             env(tx);
             env.close();
 
@@ -5745,10 +5745,10 @@ class Vault_test : public beast::unit_test::Suite
 
             // These values will be rounded to 15 significant digits
             {
-                auto const insertAt = maxInt64Plus1.size() - 1;
-                auto const decimalTest = maxInt64Plus1.substr(0, insertAt) + "." +
-                    maxInt64Plus1.substr(insertAt);  // (max int64+1) / 10
-                BEAST_EXPECT(decimalTest == "922337203685477580.8");
+                auto const insertAt = maxInt64Plus2.size() - 1;
+                auto const decimalTest = maxInt64Plus2.substr(0, insertAt) + "." +
+                    maxInt64Plus2.substr(insertAt);  // (max int64+2) / 10
+                BEAST_EXPECT(decimalTest == "922337203685477580.9");
                 tx[sfAssetsMaximum] = decimalTest;
                 auto const newKeylet = keylet::vault(owner.id(), env.seq(owner));
                 env(tx);
