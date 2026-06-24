@@ -90,7 +90,7 @@ ownerCountHlp(
     ReadView const& view,
     SLE::const_ref sle,
     std::int32_t adjustment,
-    bool reportConfine,
+    std::optional<AccountID> reportId,
     beast::Journal j)
 {
     AccountID const id = sle->getAccountID(sfAccount);
@@ -124,40 +124,16 @@ ownerCountHlp(
                         << ", sponsoringCount: " << sponsoringCount;
     }
 
-    std::uint32_t const confinedCount = reportConfine
-        ? confineOwnerCount(hookedCount, deltaCount, id, j)
-        : confineOwnerCount(hookedCount, deltaCount);
-
-    return confinedCount;
+    return confineOwnerCount(hookedCount, static_cast<std::int32_t>(deltaCount), reportId, j);
 }
 
 static std::uint32_t
-reserveCountHlp(SLE::const_ref sle, std::int32_t adjustment, beast::Journal j)
+reserveCountHlp(SLE::const_ref sle, std::int32_t adjustment)
 {
     bool const isSponsored = sle->isFieldPresent(sfSponsor);
     std::uint32_t const sponsoringCount = sle->getFieldU32(sfSponsoringAccountCount);
     std::uint32_t const reserveCount = (isSponsored ? 0 : 1) + sponsoringCount;
-
-    std::uint32_t adjusted{reserveCount + adjustment};
-    if (adjustment > 0)
-    {
-        // Overflow is well defined on unsigned
-        if (adjusted < reserveCount)
-        {
-            JLOG(j.fatal()) << "Reserve count exceeds max!";
-            adjusted = std::numeric_limits<std::uint32_t>::max();
-        }
-    }
-    else
-    {
-        // Underflow is well defined on unsigned
-        if (adjusted > reserveCount)
-        {
-            JLOG(j.fatal()) << "Reserve count set below 0!";
-            adjusted = 0;
-        }
-    }
-    return adjusted;
+    return confineOwnerCount(reserveCount, adjustment);
 }
 
 static inline XRPAmount
@@ -185,7 +161,7 @@ reserveHlp(
 std::uint32_t
 ownerCount(ReadView const& view, SLE::const_ref sle, beast::Journal j, std::int32_t adjustment)
 {
-    return ownerCountHlp(view, sle, adjustment, true, j);
+    return ownerCountHlp(view, sle, adjustment, sle->getAccountID(sfAccount), j);
 }
 
 XRPAmount
@@ -195,8 +171,8 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     if (sle == nullptr)
         return beast::kZero;
 
-    std::uint32_t const ownerCount = ownerCountHlp(view, sle, ownerCountAdj, false, j);
-    std::uint32_t const reserveCount = reserveCountHlp(sle, 0, j);
+    std::uint32_t const ownerCount = ownerCountHlp(view, sle, ownerCountAdj, std::nullopt, j);
+    std::uint32_t const reserveCount = reserveCountHlp(sle, 0);
     auto const reserve = reserveHlp(view, sle, ownerCount, reserveCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
@@ -232,12 +208,11 @@ adjustOwnerCountHlp(
     SF_UINT32 const& sfield,
     AccountID const& accID,
     std::int32_t adjustment,
-    beast::Journal j,
-    bool callHook = true)
+    beast::Journal j)
 {
     std::uint32_t const current = sle->at(sfield);
     std::uint32_t const adjusted = confineOwnerCount(current, adjustment, accID, j);
-    if (callHook)
+    if (sle->getType() == ltACCOUNT_ROOT)
         view.adjustOwnerCountHook(accID, current, adjusted);
     sle->at(sfield) = adjusted;
     view.update(sle);
@@ -281,7 +256,7 @@ adjustOwnerCount(
             // Remaining owner count moves opposite to adjustment:
             // +adjustment => consume reserve (-),
             adjustOwnerCountHlp(
-                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j);
         }
     }
     adjustOwnerCountHlp(view, accountSle, sfOwnerCount, accountID, adjustment, j);
@@ -317,8 +292,9 @@ accountReserve(
     if (sle->getType() != ltACCOUNT_ROOT)
         Throw<std::logic_error>("xrpl::accountReserve : valid sle type");
 
-    std::uint32_t const ownerCount = ownerCountHlp(view, sle, ownerCountAdj, true, j);
-    std::uint32_t const reserveCount = reserveCountHlp(sle, reserveCountAdj, j);
+    std::uint32_t const ownerCount =
+        ownerCountHlp(view, sle, ownerCountAdj, sle->getAccountID(sfAccount), j);
+    std::uint32_t const reserveCount = reserveCountHlp(sle, reserveCountAdj);
 
     return reserveHlp(view, sle, ownerCount, reserveCount);
 }
