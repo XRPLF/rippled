@@ -323,15 +323,16 @@ AMMWithdraw::issuerFreezeHandling() const
     // When the withdrawer is the issuer of a pool asset, the issuer can
     // always receive their own token — even when the pool is frozen.
     // Use IgnoreFreeze so ammHolds returns real balances instead of zero.
-    if (ctx_.view().rules().enabled(fixCleanup3_3_0))
-    {
-        auto const asset1 = Asset{ctx_.tx[sfAsset]};
-        auto const asset2 = Asset{ctx_.tx[sfAsset2]};
-        if (!asset1.native() && accountID_ == asset1.getIssuer())
-            return FreezeHandling::IgnoreFreeze;
-        if (!asset2.native() && accountID_ == asset2.getIssuer())
-            return FreezeHandling::IgnoreFreeze;
-    }
+    if (!ctx_.view().rules().enabled(fixCleanup3_3_0))
+        return FreezeHandling::ZeroIfFrozen;
+
+    auto const asset1 = Asset{ctx_.tx[sfAsset]};
+    auto const asset2 = Asset{ctx_.tx[sfAsset2]};
+    if (!asset1.native() && accountID_ == asset1.getIssuer())
+        return FreezeHandling::IgnoreFreeze;
+    if (!asset2.native() && accountID_ == asset2.getIssuer())
+        return FreezeHandling::IgnoreFreeze;
+
     return FreezeHandling::ZeroIfFrozen;
 }
 
