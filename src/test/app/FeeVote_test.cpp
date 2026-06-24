@@ -47,7 +47,7 @@ struct FeeSettingsFields
 };
 
 STTx
-createFeeTx(Rules const& rules, std::uint32_t seq, FeeSettingsFields const& fields)
+createFeeTx(std::uint32_t seq, FeeSettingsFields const& fields)
 {
     auto fill = [&](auto& obj) {
         obj.setAccountID(sfAccount, AccountID());
@@ -67,7 +67,6 @@ createFeeTx(Rules const& rules, std::uint32_t seq, FeeSettingsFields const& fiel
 
 STTx
 createInvalidFeeTx(
-    Rules const& rules,
     std::uint32_t seq,
     bool missingRequiredFields = true,
     bool wrongFeatureFields = false,
@@ -105,10 +104,7 @@ applyFeeAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx)
 }
 
 bool
-verifyFeeObject(
-    std::shared_ptr<Ledger const> const& ledger,
-    Rules const& rules,
-    FeeSettingsFields const& expected)
+verifyFeeObject(std::shared_ptr<Ledger const> const& ledger, FeeSettingsFields const& expected)
 {
     auto const feeObject = ledger->read(keylet::fees());
     if (!feeObject)
@@ -229,14 +225,14 @@ class FeeVote_test : public beast::unit_test::Suite
             .reserveBaseDrops = XRPAmount{200000},
             .reserveIncrementDrops = XRPAmount{50000}};
         // Test successful fee transaction with new fields
-        auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
+        auto feeTx = createFeeTx(ledger->seq(), fields);
 
         OpenView accum(ledger.get());
         BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx));
         accum.apply(*ledger);
 
         // Verify fee object was created/updated correctly
-        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
+        BEAST_EXPECT(verifyFeeObject(ledger, fields));
     }
 
     void
@@ -256,12 +252,12 @@ class FeeVote_test : public beast::unit_test::Suite
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
         // Test transaction with missing required new fields
-        auto invalidTx = createInvalidFeeTx(ledger->rules(), ledger->seq(), true, false, 3);
+        auto invalidTx = createInvalidFeeTx(ledger->seq(), true, false, 3);
         OpenView accum(ledger.get());
         BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
 
         // Test transaction with legacy fields. XRPFees is retired
-        auto disallowedTx = createInvalidFeeTx(ledger->rules(), ledger->seq(), false, true, 4);
+        auto disallowedTx = createInvalidFeeTx(ledger->seq(), false, true, 4);
         BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
     }
 
@@ -282,7 +278,6 @@ class FeeVote_test : public beast::unit_test::Suite
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
         auto feeTx = createFeeTx(
-            ledger->rules(),
             ledger->seq(),
             {.baseFeeDrops = XRPAmount{10},
              .reserveBaseDrops = XRPAmount{200000},
@@ -323,7 +318,7 @@ class FeeVote_test : public beast::unit_test::Suite
             .baseFeeDrops = XRPAmount{10},
             .reserveBaseDrops = XRPAmount{200000},
             .reserveIncrementDrops = XRPAmount{50000}};
-        auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
+        auto feeTx1 = createFeeTx(ledger->seq(), fields1);
 
         {
             OpenView accum(ledger.get());
@@ -331,7 +326,7 @@ class FeeVote_test : public beast::unit_test::Suite
             accum.apply(*ledger);
         }
 
-        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields1));
+        BEAST_EXPECT(verifyFeeObject(ledger, fields1));
 
         // Apply second fee transaction with different values
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
@@ -340,7 +335,7 @@ class FeeVote_test : public beast::unit_test::Suite
             .baseFeeDrops = XRPAmount{20},
             .reserveBaseDrops = XRPAmount{300000},
             .reserveIncrementDrops = XRPAmount{75000}};
-        auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
+        auto feeTx2 = createFeeTx(ledger->seq(), fields2);
 
         {
             OpenView accum(ledger.get());
@@ -349,7 +344,7 @@ class FeeVote_test : public beast::unit_test::Suite
         }
 
         // Verify second update overwrote the first
-        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields2));
+        BEAST_EXPECT(verifyFeeObject(ledger, fields2));
     }
 
     void
@@ -369,7 +364,6 @@ class FeeVote_test : public beast::unit_test::Suite
 
         // Test transaction with wrong ledger sequence
         auto feeTx = createFeeTx(
-            ledger->rules(),
             ledger->seq() + 5,  // Wrong sequence (should be ledger->seq())
             {.baseFeeDrops = XRPAmount{10},
              .reserveBaseDrops = XRPAmount{200000},
@@ -402,7 +396,7 @@ class FeeVote_test : public beast::unit_test::Suite
             .baseFeeDrops = XRPAmount{10},
             .reserveBaseDrops = XRPAmount{200000},
             .reserveIncrementDrops = XRPAmount{50000}};
-        auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
+        auto feeTx1 = createFeeTx(ledger->seq(), fields1);
 
         {
             OpenView accum(ledger.get());
@@ -410,14 +404,14 @@ class FeeVote_test : public beast::unit_test::Suite
             accum.apply(*ledger);
         }
 
-        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields1));
+        BEAST_EXPECT(verifyFeeObject(ledger, fields1));
 
         ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
 
         // Apply partial update (only some fields)
         FeeSettingsFields const fields2{
             .baseFeeDrops = XRPAmount{20}, .reserveBaseDrops = XRPAmount{200000}};
-        auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
+        auto feeTx2 = createFeeTx(ledger->seq(), fields2);
 
         {
             OpenView accum(ledger.get());
@@ -426,7 +420,7 @@ class FeeVote_test : public beast::unit_test::Suite
         }
 
         // Verify the partial update worked
-        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields2));
+        BEAST_EXPECT(verifyFeeObject(ledger, fields2));
     }
 
     void
