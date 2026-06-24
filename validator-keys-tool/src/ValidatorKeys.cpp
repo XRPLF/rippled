@@ -11,7 +11,13 @@
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 
+#include <algorithm>
+#include <array>
 #include <fstream>
+#include <iterator>
+#include <limits>
+#include <stdexcept>
+#include <utility>
 
 namespace xrpl {
 
@@ -98,7 +104,7 @@ ValidatorKeys::make_ValidatorKeys(boost::filesystem::path const& keyFile)
 
         tokenSequence = jKeys["token_sequence"].asUInt();
     }
-    catch (std::runtime_error&)
+    catch (std::runtime_error const&)
     {
         throw std::runtime_error(
             "Key file '" + keyFile.string() + "' contains invalid \"token_sequence\" field: " +

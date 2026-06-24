@@ -22,6 +22,10 @@ jobs:
       - name: Set up Conan
         uses: ./.github/actions/setup-conan
 
+      - name: Detect build parallelism
+        uses: XRPLF/actions/get-nproc@cf0433aa74563aead044a1e395610c96d65a37cf
+        id: nproc
+
       - name: Export Conan package under test
         run: conan export . --version=head
 
@@ -32,4 +36,4 @@ jobs:
               --profile:all ci \
               --build=missing \
               --settings:all build_type=Release \
-              --conf:all tools.build:jobs="$(nproc)"
+              --conf:all tools.build:jobs="${{ steps.nproc.outputs.nproc }}"

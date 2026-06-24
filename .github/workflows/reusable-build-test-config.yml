@@ -256,21 +256,31 @@ jobs:
               curl ${CCACHE_REMOTE_STORAGE%|*}/status || true
           fi
 
-      - name: Stage binary artifacts (Linux)
-        if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
-        run: |
-          mkdir -p "${BUILD_DIR}/artifacts"
-          cp "${BUILD_DIR}/xrpld" "${BUILD_DIR}/artifacts/xrpld"
-          if [ -x "${BUILD_DIR}/validator-keys" ]; then
-              cp "${BUILD_DIR}/validator-keys" "${BUILD_DIR}/artifacts/validator-keys"
-          fi
-
       - name: Upload the binary (Linux)
         if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: xrpld-${{ inputs.config_name }}
-          path: ${{ env.BUILD_DIR }}/artifacts/*
+          path: ${{ env.BUILD_DIR }}/xrpld
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Check validator-keys binary (Linux)
+        id: validator_keys_binary
+        if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
+        run: |
+          if [ -x "${BUILD_DIR}/validator-keys" ]; then
+              echo "present=true" >>"${GITHUB_OUTPUT}"
+          else
+              echo "present=false" >>"${GITHUB_OUTPUT}"
+          fi
+
+      - name: Upload validator-keys binary (Linux)
+        if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' && steps.validator_keys_binary.outputs.present == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: validator-keys-${{ inputs.config_name }}
+          path: ${{ env.BUILD_DIR }}/validator-keys
           retention-days: 3
           if-no-files-found: error
 

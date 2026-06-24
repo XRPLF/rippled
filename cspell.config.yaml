@@ -116,8 +116,10 @@ words:
   - fcontext
   - finalizers
   - firewalled
+  - fprofile
   - fmtdur
   - fsanitize
+  - ftest
   - funclets
   - gcov
   - gcovr
@@ -127,9 +129,11 @@ words:
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hvssbqmgz
   - hwaddress
   - hwrap
   - ifndef
+  - Iiwib
   - inequation
   - insuf
   - insuff
@@ -275,6 +279,7 @@ words:
   - sslws
   - statsd
   - STATSDCOLLECTOR
+  - STRINGIZE
   - stissue
   - stnum
   - stobj
@@ -335,10 +340,12 @@ words:
   - writeme
   - wsrch
   - wthread
+  - Wsuggest
   - xbridge
   - xchain
   - ximinez
   - XMACRO
+  - xcrun
   - xrpkuwait
   - xrpl
   - xrpld

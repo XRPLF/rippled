@@ -2,7 +2,7 @@
    rippled compile options/settings via an interface library
 #]===================================================================]
 
-# cspell: words Wsuggest fprofile ftest
+include_guard(GLOBAL)
 
 add_library(keys_opts INTERFACE)
 add_library(Keys::opts ALIAS keys_opts)

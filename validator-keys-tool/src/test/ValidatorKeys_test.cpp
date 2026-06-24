@@ -5,7 +5,17 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Sign.h>
 
+#include <boost/filesystem.hpp>
+
 #include <ValidatorKeys.h>
+
+#include <array>
+#include <cstdint>
+#include <fstream>
+#include <limits>
+#include <map>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
@@ -31,9 +41,9 @@ private:
             ValidatorKeys::make_ValidatorKeys(keyFile);
             BEAST_EXPECT(expectedError.empty());
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const& e)
         {
-            BEAST_EXPECT(e.what() == expectedError);
+            BEAST_EXPECT(std::string{e.what()} == expectedError);
         }
     }
 
@@ -71,7 +81,7 @@ private:
             {
                 ValidatorKeys::make_ValidatorKeys(keyFile);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -89,7 +99,7 @@ private:
             {
                 ValidatorKeys::make_ValidatorKeys(keyFile);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -332,7 +342,7 @@ private:
             {
                 keys.writeToFile(badKeyFile);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -347,7 +357,7 @@ private:
             {
                 keys.writeToFile(conflictingPath);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }

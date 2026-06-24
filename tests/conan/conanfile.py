@@ -9,7 +9,9 @@ from conan import ConanFile
 class ValidatorKeysConanTest(ConanFile):
     name = "validator-keys-conan-test"
     license = "ISC"
-    author = "John Freeman <jfreeman08@gmail.com>, Michael Legleux <mlegleux@ripple.com"
+    author = (
+        "John Freeman <jfreeman08@gmail.com>, Michael Legleux <mlegleux@ripple.com>"
+    )
 
     settings = "os", "compiler", "build_type", "arch"
 

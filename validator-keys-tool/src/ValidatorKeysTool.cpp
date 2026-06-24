@@ -1,7 +1,5 @@
 #include <ValidatorKeysTool.h>
 
-// cspell: words STRINGIZE
-
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/beast/core/SemanticVersion.h>
@@ -14,9 +12,11 @@
 
 #include <ValidatorKeys.h>
 
-#ifdef BOOST_MSVC
-#include <Windows.h>
-#endif
+#include <cstddef>
+#include <cstdlib>
+#include <iostream>
+#include <map>
+#include <stdexcept>
 
 //------------------------------------------------------------------------------
 //  The build version number. You must edit this for each release
@@ -41,6 +41,8 @@ char const* const versionString =
 
     //--------------------------------------------------------------------------
     ;
+
+static constexpr std::size_t kConfigLineLength = 72;
 
 static int
 runUnitTests()
@@ -94,9 +96,8 @@ createToken(boost::filesystem::path const& keyFile)
     std::cout << "[validator_token]\n";
 
     auto const tokenStr = token->toString();
-    auto const len = 72;
-    for (auto i = 0; i < tokenStr.size(); i += len)
-        std::cout << tokenStr.substr(i, len) << std::endl;
+    for (std::size_t i = 0; i < tokenStr.size(); i += kConfigLineLength)
+        std::cout << tokenStr.substr(i, kConfigLineLength) << std::endl;
 
     std::cout << std::endl;
 }
@@ -123,9 +124,8 @@ createRevocation(boost::filesystem::path const& keyFile)
               << "\n\n";
     std::cout << "[validator_key_revocation]\n";
 
-    auto const len = 72;
-    for (auto i = 0; i < revocation.size(); i += len)
-        std::cout << revocation.substr(i, len) << std::endl;
+    for (std::size_t i = 0; i < revocation.size(); i += kConfigLineLength)
+        std::cout << revocation.substr(i, kConfigLineLength) << std::endl;
 
     std::cout << std::endl;
 }
@@ -213,9 +213,8 @@ setDomain(std::string const& domain, boost::filesystem::path const& keyFile)
     std::cout << "[validator_token]\n";
 
     auto const tokenStr = token->toString();
-    auto const len = 72;
-    for (auto i = 0; i < tokenStr.size(); i += len)
-        std::cout << tokenStr.substr(i, len) << std::endl;
+    for (std::size_t i = 0; i < tokenStr.size(); i += kConfigLineLength)
+        std::cout << tokenStr.substr(i, kConfigLineLength) << std::endl;
 
     std::cout << "\n";
 }

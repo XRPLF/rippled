@@ -1,7 +1,5 @@
 # Validator Keys Tool Guide
 
-<!-- cspell: words Iiwib hvssbqmgz -->
-
 This guide explains how to set up a validator so its public key does not have to
 change if the xrpld config and/or server are compromised.
 

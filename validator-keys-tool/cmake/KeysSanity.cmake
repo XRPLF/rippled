@@ -2,6 +2,15 @@
    convenience variables and sanity checks
 #]===================================================================]
 
+include_guard(GLOBAL)
+
+get_directory_property(has_parent PARENT_DIRECTORY)
+if(has_parent)
+    set(is_root_project OFF)
+else()
+    set(is_root_project ON)
+endif()
+
 if(NOT ep_procs)
     include(ProcessorCount)
     ProcessorCount(ep_procs)
@@ -21,8 +30,10 @@ if(is_multiconfig STREQUAL "NOTFOUND")
     endif()
 endif()
 
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
-if(NOT is_multiconfig)
+if(is_root_project)
+    set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
+endif()
+if(is_root_project AND NOT is_multiconfig)
     if(NOT CMAKE_BUILD_TYPE)
         message(STATUS "Build type not specified - defaulting to Release")
         set(CMAKE_BUILD_TYPE Release CACHE STRING "build type" FORCE)
@@ -36,13 +47,6 @@ if(NOT is_multiconfig)
             " *** Only Debug or Release build types are currently supported ***"
         )
     endif()
-endif()
-
-get_directory_property(has_parent PARENT_DIRECTORY)
-if(has_parent)
-    set(is_root_project OFF)
-else()
-    set(is_root_project ON)
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" MATCHES ".*Clang") # both Clang and AppleClang

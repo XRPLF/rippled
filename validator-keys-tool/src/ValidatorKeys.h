@@ -1,3 +1,5 @@
+#pragma once
+
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SecretKey.h>
 
@@ -5,6 +7,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace boost {

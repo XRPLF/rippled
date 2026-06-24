@@ -5,6 +5,14 @@
 #include <ValidatorKeys.h>
 #include <ValidatorKeysTool.h>
 
+#include <exception>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
 namespace xrpl {
 
 namespace tests {
@@ -82,7 +90,7 @@ private:
             }
             catch (std::exception const& e)
             {
-                BEAST_EXPECT(e.what() == expectedError);
+                BEAST_EXPECT(std::string{e.what()} == expectedError);
             }
         };
 
@@ -137,7 +145,7 @@ private:
         {
             createRevocation(keyFile);
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const& e)
         {
             error = e.what();
         }
@@ -169,7 +177,7 @@ private:
                 }
                 catch (std::exception const& e)
                 {
-                    BEAST_EXPECT(e.what() == expectedError);
+                    BEAST_EXPECT(std::string{e.what()} == expectedError);
                 }
             };
 
@@ -224,7 +232,7 @@ private:
             }
             catch (std::exception const& e)
             {
-                BEAST_EXPECT(e.what() == expectedError);
+                BEAST_EXPECT(std::string{e.what()} == expectedError);
             }
         };
 

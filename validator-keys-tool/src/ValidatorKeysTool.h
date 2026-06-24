@@ -1,5 +1,6 @@
-#include <boost/optional.hpp>
+#pragma once
 
+#include <string>
 #include <vector>
 
 namespace boost {
