@@ -24,11 +24,11 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
@@ -496,7 +496,7 @@ public:
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
                 return cfg;
             }),
             features);
@@ -1121,8 +1121,8 @@ public:
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception].asString().find(
-                    "Invalid signature on account r") != std::string::npos);
+                info[jss::result][jss::error_exception].asString().contains(
+                    "Invalid signature on account r"));
         }
         {
             // Multisign with an empty signers array should fail.
@@ -1308,7 +1308,7 @@ public:
         Env env(
             *this,
             envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
+                cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
                 return cfg;
             }),
             features);

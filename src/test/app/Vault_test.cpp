@@ -1708,7 +1708,7 @@ class Vault_test : public beast::unit_test::Suite
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
                      (args.enableClawback ? tfMPTCanClawback : kNone) |
                      (args.requireAuth ? tfMPTRequireAuth : kNone),
-                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+                 .mutableFlags = tmfMPTCanEnableCanTransfer});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
@@ -2668,56 +2668,6 @@ class Vault_test : public beast::unit_test::Suite
         }
 
         {
-            testcase("MPT non-transferable: pre-fixCleanup3_2_0 share transfer succeeds");
-
-            // Regression: before fixCleanup3_2_0 a peer-to-peer share Payment
-            // succeeded even when the underlying asset's lsfMPTCanTransfer
-            // was cleared. Verify that the legacy (non-inheriting) behavior
-            // is preserved when the amendment is disabled.
-            Env env{*this, testableAmendments() - fixCleanup3_2_0};
-            Account const issuer{"issuer"};
-            Account const owner{"owner"};
-            Account const alice{"alice"};
-            Account const bob{"bob"};
-            env.fund(XRP(10'000), issuer, owner, alice, bob);
-            env.close();
-            Vault const vault{env};
-
-            MPTTester mptt{env, issuer, kMptInitNoFund};
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanMutateCanTransfer});
-            PrettyAsset const asset = mptt.issuanceID();
-            mptt.authorize({.account = owner});
-            mptt.authorize({.account = alice});
-            mptt.authorize({.account = bob});
-            env(pay(issuer, alice, asset(1'000)));
-            env(pay(issuer, bob, asset(1'000)));
-            env.close();
-
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
-            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
-            env.close();
-
-            auto const shares = [&]() -> PrettyAsset {
-                auto const sle = env.le(keylet);
-                BEAST_EXPECT(sle != nullptr);
-                return MPTIssue(sle->at(sfShareMPTID));
-            }();
-
-            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
-            env.close();
-
-            // Pre-amendment: share transfer leaks past underlying restriction.
-            env(pay(alice, bob, shares(1)));
-            env.close();
-        }
-
-        {
             testcase("MPT CanTrade governance: share inherits underlying on DEX and AMM");
 
             Env env{*this, testableAmendments()};
@@ -2731,8 +2681,8 @@ class Vault_test : public beast::unit_test::Suite
 
             MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanMutateCanTrade});
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanEnableCanTrade});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = alice});
@@ -2756,38 +2706,18 @@ class Vault_test : public beast::unit_test::Suite
                 return MPTIssue(sle->at(sfShareMPTID));
             }();
 
-            // Sanity: while CanTrade is set on the underlying, both the asset
-            // and the vault share can be placed on the DEX.
-            env(offer(alice, XRP(1), asset(10)));
-            env(offer(alice, XRP(1), shares(1)));
-            env.close();
-
-            // Issuer governance: clear CanTrade on the underlying.
-            mptt.set({.mutableFlags = tmfMPTClearCanTrade});
-            env.close();
-
-            // Control: clearing CanTrade on the underlying is observable on
-            // the DEX path for that asset.
+            // CanTrade is not set on the underlying, both the asset and
+            // the vault share are blocked on the DEX.
             env(offer(alice, XRP(1), asset(10)), Ter{tecNO_PERMISSION});
+            env(offer(alice, XRP(1), shares(1)), Ter{tecNO_PERMISSION});
             env.close();
 
-            // Control: clearing CanTrade on the underlying is also observable
-            // on the AMM path for that asset.
-            AMM const ammUnderlyingFails(
+            // The inherited CanTrade restriction also blocks AMM creation.
+            AMM const ammUnderlyingFail(
                 env, alice, XRP(1'000), asset(1'000), Ter{tecNO_PERMISSION});
-
-            // Post-fixCleanup3_2_0: vault shares inherit the underlying's
-            // CanTrade restriction on the DEX path (canTrade reads the
-            // share's sfReferenceHolding and dispatches to the underlying).
-            env(offer(bob, XRP(1), shares(1)), Ter{tecNO_PERMISSION});
-            env.close();
-
-            // checkMPTAllowed mirrors the inheritance for AMM/Offer-
-            // crossing/Check paths, so a share AMM also cannot be created
-            // when the underlying CanTrade is cleared.
             AMM const ammShares(env, alice, XRP(1'000), shares(100), Ter{tecNO_PERMISSION});
 
-            // Deposit still works (canAddHolding does not consult the field).
+            // Deposit still works before enabling CanTrade.
             env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
             env.close();
 
@@ -2796,9 +2726,19 @@ class Vault_test : public beast::unit_test::Suite
             env(pay(alice, bob, shares(1)));
             env.close();
 
-            // Withdraw still works.
+            // Withdraw still works before enabling CanTrade.
             env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
             env.close();
+
+            // Enable CanTrade on the underlying.
+            mptt.set({.mutableFlags = tmfMPTSetCanTrade});
+            env.close();
+
+            env(offer(alice, XRP(1), asset(10)));
+            env(offer(alice, XRP(1), shares(1)));
+            env.close();
+
+            AMM const ammUnderlying(env, alice, XRP(1'000), asset(1'000));
         }
 
         {
@@ -8552,8 +8492,8 @@ class Vault_test : public beast::unit_test::Suite
             env.disableFeature(featureLendingProtocolV1_1);
             delTx[sfMemoData] = strHex(std::string(kMaxDataPayloadLength, 'A'));
             env(delTx, Ter(temDISABLED));
-            env.close();
             env.enableFeature(featureLendingProtocolV1_1);
+            env.close();
         }
 
         // Transaction fails if the data field is too large

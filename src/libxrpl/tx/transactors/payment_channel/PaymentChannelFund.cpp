@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -29,6 +30,9 @@ PaymentChannelFund::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PaymentChannelFund::preflight(PreflightContext const& ctx)
 {
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfChannel] == beast::kZero)
+        return temMALFORMED;
+
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::kZero))
         return temBAD_AMOUNT;
 
@@ -45,13 +49,12 @@ PaymentChannelFund::doApply()
 
     AccountID const src = (*slep)[sfAccount];
     auto const txAccount = ctx_.tx[sfAccount];
-    auto const expiration = (*slep)[~sfExpiration];
+    auto const curExpiration = (*slep)[~sfExpiration];
 
+    if (isChannelExpired(ctx_.view(), (*slep)[~sfCancelAfter]) ||
+        isChannelExpired(ctx_.view(), curExpiration))
     {
-        auto const cancelAfter = (*slep)[~sfCancelAfter];
-        auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
-        if ((cancelAfter && closeTime >= *cancelAfter) || (expiration && closeTime >= *expiration))
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+        return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
     }
 
     if (src != txAccount)
@@ -60,16 +63,21 @@ PaymentChannelFund::doApply()
         return tecNO_PERMISSION;
     }
 
-    if (auto extend = ctx_.tx[~sfExpiration])
+    if (auto newExpiration = ctx_.tx[~sfExpiration])
     {
-        auto minExpiration = ctx_.view().header().parentCloseTime.time_since_epoch().count() +
-            (*slep)[sfSettleDelay];
-        if (expiration && *expiration < minExpiration)
-            minExpiration = *expiration;
+        auto minExpiration = saturatingAdd(
+            ctx_.view().rules(),
+            ctx_.view().header().parentCloseTime.time_since_epoch().count(),
+            (*slep)[sfSettleDelay]);
+        if (curExpiration && *curExpiration < minExpiration)
+            minExpiration = *curExpiration;
 
-        if (*extend < minExpiration)
-            return temBAD_EXPIRATION;
-        (*slep)[~sfExpiration] = *extend;
+        if (*newExpiration < minExpiration)
+        {
+            return ctx_.view().rules().enabled(fixCleanup3_2_0) ? TER{tecNO_PERMISSION}
+                                                                : TER{temBAD_EXPIRATION};
+        }
+        (*slep)[~sfExpiration] = *newExpiration;
         ctx_.view().update(slep);
     }
 
