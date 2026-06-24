@@ -39,7 +39,7 @@ estimateEntropy(std::string const& input)
     {
         (void)_;
         auto x = f / input.length();
-        se += (x)*log2(x);
+        se += x * log2(x);
     }
 
     // We multiply it by the length, to get an estimate of

@@ -143,7 +143,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
         for (uint256 const& nftID : nftIDs)
         {
             offers.emplace_back(keylet::nftoffer(issuer, env.seq(issuer)).key);
-            env(token::createOffer(issuer, nftID, XRP(0)), Txflags((tfSellNFToken)));
+            env(token::createOffer(issuer, nftID, XRP(0)), Txflags(tfSellNFToken));
             env.close();
         }
 
@@ -217,7 +217,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
                 offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
                 env(token::createOffer(account, nftID, XRP(0)),
                     token::Destination(buyer),
-                    Txflags((tfSellNFToken)));
+                    Txflags(tfSellNFToken));
             }
             env.close();
 
@@ -421,7 +421,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
                 offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
                 env(token::createOffer(account, nftID, XRP(0)),
                     token::Destination(buyer),
-                    Txflags((tfSellNFToken)));
+                    Txflags(tfSellNFToken));
             }
             env.close();
 
@@ -651,7 +651,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
             offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
             env(token::createOffer(account, nftID, XRP(0)),
                 token::Destination(buyer),
-                Txflags((tfSellNFToken)));
+                Txflags(tfSellNFToken));
         }
         env.close();
 
@@ -823,7 +823,7 @@ class NFTokenDir_test : public beast::unit_test::Suite
                 offers[i].emplace_back(keylet::nftoffer(account, env.seq(account)).key);
                 env(token::createOffer(account, nftID, XRP(0)),
                     token::Destination(buyer),
-                    Txflags((tfSellNFToken)));
+                    Txflags(tfSellNFToken));
             }
         }
         env.close();

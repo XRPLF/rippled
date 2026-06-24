@@ -657,13 +657,13 @@ inline bool
 isTesSuccess(TER x) noexcept
 {
     // Makes use of TERSubset::operator bool()
-    return !(x);
+    return !x;
 }
 
 inline bool
 isTecClaim(TER x) noexcept
 {
-    return ((x) >= tecCLAIM);
+    return (x >= tecCLAIM);
 }
 
 std::unordered_map<TERUnderlyingType, std::pair<char const* const, char const* const>> const&

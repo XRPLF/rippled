@@ -102,7 +102,7 @@ Result
 split(FwdIt first, FwdIt last, Char delim)
 {
     using namespace detail;
-    using string = typename Result::value_type;
+    using string = Result::value_type;
 
     Result result;
 

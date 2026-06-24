@@ -125,7 +125,7 @@ makeLedgerDBs(
             std::size_t notnull = 0, dfltValue = 0, pk = 0;
             soci::indicator ind = soci::i_null;
             soci::statement st =
-                (tx->getSession().prepare << ("PRAGMA table_info(AccountTransactions);"),
+                (tx->getSession().prepare << "PRAGMA table_info(AccountTransactions);",
                  soci::into(cid),
                  soci::into(name),
                  soci::into(type),
@@ -1065,10 +1065,10 @@ accountTxPage(
     if (findLedger == 0)
     {
         sql = boost::str(
-            boost::format(kPrefix + (R"(AccountTransactions.LedgerSeq BETWEEN %u AND %u
+            boost::format(kPrefix + R"(AccountTransactions.LedgerSeq BETWEEN %u AND %u
              ORDER BY AccountTransactions.LedgerSeq %s,
              AccountTransactions.TxnSeq %s
-             LIMIT %u;)")) %
+             LIMIT %u;)") %
             toBase58(options.account) % options.ledgerRange.min % options.ledgerRange.max % order %
             order % queryLimit);
     }
@@ -1080,7 +1080,7 @@ accountTxPage(
 
         auto b58acct = toBase58(options.account);
         sql = boost::str(
-            boost::format((
+            boost::format(
                 R"(SELECT AccountTransactions.LedgerSeq,AccountTransactions.TxnSeq,
             Status,RawTxn,TxnMeta
             FROM AccountTransactions, Transactions WHERE
@@ -1097,7 +1097,7 @@ accountTxPage(
             ORDER BY AccountTransactions.LedgerSeq %s,
             AccountTransactions.TxnSeq %s
             LIMIT %u;
-            )")) %
+            )") %
             b58acct % minLedger % maxLedger % b58acct % findLedger % compare % findSeq % order %
             order % queryLimit);
     }
