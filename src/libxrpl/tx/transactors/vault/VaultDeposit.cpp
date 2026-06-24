@@ -1,9 +1,5 @@
 #include <xrpl/tx/transactors/vault/VaultDeposit.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/beast/utility/instrumentation.h>
+//
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -21,11 +17,9 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 #include <cstdint>
-#include <stdexcept>
 
 namespace xrpl {
 
@@ -110,7 +104,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (isVaultDonate(ctx.view.rules(), ctx.tx))
+    if (vault::isVaultDonate(ctx.view.rules(), ctx.tx))
     {
         if (account != vault->at(sfOwner))
         {
@@ -119,7 +113,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         }
 
         // Cannot donate to a vault with no shares
-        if (sleIssuance->at(sfOutstandingAmount) == 0)
+        if (sleShareIssuance->at(sfOutstandingAmount) == 0)
         {
             JLOG(ctx.j.debug()) << "VaultDeposit: empty vault cannot receive donations.";
             return tecNO_PERMISSION;
@@ -139,7 +133,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // Perform these checks early to avoid unnecessary processing
 
         // The Vault is insolvent, deposits are not allowed
-        if (isVaultInsolvent(vault, sleShareIssuance))
+        if (vault::isVaultInsolvent(vault, sleShareIssuance))
         {
             JLOG(ctx.j.debug()) << "VaultDeposit: Vault is insolvent, deposits are not allowed";
             return tecLOCKED;
@@ -260,7 +254,7 @@ VaultDeposit::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto const isDonate = isVaultDonate(ctx_.view().rules(), ctx_.tx);
+    auto const isDonate = vault::isVaultDonate(ctx_.view().rules(), ctx_.tx);
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
@@ -310,45 +304,13 @@ VaultDeposit::doApply()
     }
     else
     {
-        try
-        {
-            // Compute exchange before transferring any amounts.
-            {
-                auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
-                if (!maybeShares)
-                    return tecINTERNAL;  // LCOV_EXCL_LINE
-                sharesCreated = *maybeShares;
-            }
-            if (sharesCreated == beast::kZero)
-                return tecPRECISION_LOSS;
-
-            auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
-            if (!maybeAssets)
-            {
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            }
-
-            if (*maybeAssets > amount)
-            {
-                // LCOV_EXCL_START
-                JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
-                return tecINTERNAL;
-                // LCOV_EXCL_STOP
-            }
-            assetsDeposited = *maybeAssets;
-        }
-        catch (std::overflow_error const&)
-        {
-            // It's easy to hit this exception from Number with large enough Scale
-            // so we avoid spamming the log and only use debug here.
-            JLOG(j_.debug())  //
-                << "VaultDeposit: overflow error with"
-                << " scale=" << (int)vault->at(sfScale).value()  //
-                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
-                << ", amount=" << amount;
-            return tecPATH_DRY;
-        }
+        // Compute exchange before transferring any amounts.
+        auto const& rules = ctx_.view().rules();
+        auto const result = vault::computeDeposit(rules, vault, sleIssuance, amount, j_);
+        if (!result)
+            return result.error();
+        assetsDeposited = result->assets;
+        sharesCreated = result->shares;
     }
 
     XRPL_ASSERT(

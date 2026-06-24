@@ -45,6 +45,7 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.interestUnrealized = from.at(sfInterestUnrealized);
     return self;
 }
 
@@ -493,6 +494,48 @@ ValidVault::finalize(
         result = false;
     }
 
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        if (afterVault.interestUnrealized < kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: interest unrealized must be non-negative";
+            result = false;
+        }
+
+        // InterestUnrealized <= AssetsTotal - AssetsAvailable (the lent portion)
+        if (afterVault.interestUnrealized > afterVault.assetsTotal - afterVault.assetsAvailable)
+        {
+            JLOG(j.fatal()) << "Invariant failed: interest unrealized exceeds lent assets";
+            result = false;
+        }
+
+        // Deposit net asset value = AssetsTotal - InterestUnrealized must be > 0 when vault
+        // has assets.
+        if (afterVault.assetsTotal > kZero &&
+            afterVault.assetsTotal - afterVault.interestUnrealized <= kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: deposit net asset value must be positive";
+            result = false;
+        }
+
+        // Withdrawal net asset value = AssetsTotal - InterestUnrealized - LossUnrealized
+        // must not go negative.
+        if (afterVault.assetsTotal - afterVault.interestUnrealized - afterVault.lossUnrealized <
+            kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: withdrawal net asset value must not be negative";
+            result = false;
+        }
+
+        // If there's unrealized interest, shares must be outstanding.
+        if (updatedShares && afterVault.interestUnrealized > kZero &&
+            updatedShares->sharesTotal == 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: interest unrealized with no outstanding shares";
+            result = false;
+        }
+    }
+
     // Thanks to this check we can simply do `assert(!beforeVault_.empty()` when
     // enforcing invariants on transaction types other than ttVAULT_CREATE
     if (beforeVault_.empty() && txnType != ttVAULT_CREATE)
@@ -507,8 +550,17 @@ ValidVault::finalize(
         txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY)
     {
         JLOG(j.fatal()) <<  //
-            "Invariant failed: vault transaction must not change loss "
-            "unrealized";
+            "Invariant failed: vault transaction must not change loss unrealized";
+        result = false;
+    }
+
+    // Interest unrealized must only change via loan transactions.
+    if (view.rules().enabled(featureLendingProtocolV1_1) && !beforeVault_.empty() &&
+        afterVault.interestUnrealized != beforeVault_[0].interestUnrealized &&
+        txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY && txnType != ttLOAN_SET)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: vault transaction must not change interest unrealized";
         result = false;
     }
 
@@ -525,7 +577,7 @@ ValidVault::finalize(
         return std::nullopt;
     }();
 
-    bool const isDonate = isVaultDonate(view.rules(), tx);
+    bool const isDonate = vault::isVaultDonate(view.rules(), tx);
     bool const shouldUpdateShares =
         // Vault Asset donation is the only operation that can succeed without updating shares
         ((tx.getTxnType() == ttVAULT_DEPOSIT && !isDonate) ||  //

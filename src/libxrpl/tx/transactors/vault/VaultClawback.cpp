@@ -237,6 +237,7 @@ VaultClawback::assetsToClawback(
     auto const assetsAvailable = vault->at(sfAssetsAvailable);
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
+    auto const& rules = ctx_.view().rules();
 
     // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
     // clamping to assetsAvailable, allowing more assets to be recovered
@@ -246,86 +247,19 @@ VaultClawback::assetsToClawback(
     {
         auto const sharesDestroyed = accountHolds(
             view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
-        auto const maybeAssets = sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
-        if (!maybeAssets)
-            return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+        auto const result =
+            vault::computeWithdrawByShares(rules, vault, sleShareIssuance, sharesDestroyed, j_);
+        if (!result)
+            return std::unexpected(result.error());
 
-        return std::make_pair(*maybeAssets, sharesDestroyed);
+        return std::make_pair(result->assets, result->shares);
     }
 
-    STAmount sharesDestroyed;
-    STAmount assetsRecovered;
-
-    try
-    {
-        if (clawbackAmount == beast::kZero)
-        {
-            sharesDestroyed = accountHolds(
-                view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
-            if (!maybeAssets)
-                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-
-            assetsRecovered = *maybeAssets;
-        }
-        else
-        {
-            auto const maybeShares =
-                assetsToSharesWithdraw(vault, sleShareIssuance, clawbackAmount);
-            if (!maybeShares)
-                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-            sharesDestroyed = *maybeShares;
-
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
-            if (!maybeAssets)
-                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-            assetsRecovered = *maybeAssets;
-        }
-        // Clamp to maximum.
-        if (assetsRecovered > *assetsAvailable)
-        {
-            assetsRecovered = *assetsAvailable;
-            // Note, it is important to truncate the number of shares,
-            // otherwise the corresponding assets might breach the
-            // AssetsAvailable
-            {
-                auto const maybeShares = assetsToSharesWithdraw(
-                    vault, sleShareIssuance, assetsRecovered, TruncateShares::Yes);
-                if (!maybeShares)
-                    return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-                sharesDestroyed = *maybeShares;
-            }
-
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
-            if (!maybeAssets)
-                return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-            assetsRecovered = *maybeAssets;
-            if (assetsRecovered > *assetsAvailable)
-            {
-                // LCOV_EXCL_START
-                JLOG(j_.error()) << "VaultClawback: invalid rounding of shares.";
-                return std::unexpected(tecINTERNAL);
-                // LCOV_EXCL_STOP
-            }
-        }
-    }
-    catch (std::overflow_error const&)
-    {
-        // It's easy to hit this exception from Number with large enough
-        // Scale so we avoid spamming the log and only use debug here.
-        JLOG(j_.debug())  //
-            << "VaultClawback: overflow error with"
-            << " scale=" << (int)vault->at(sfScale).value()  //
-            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << sleShareIssuance->at(sfOutstandingAmount)
-            << ", amount=" << clawbackAmount.value();
-        return std::unexpected(tecPATH_DRY);
-    }
-
-    return std::make_pair(assetsRecovered, sharesDestroyed);
+    auto const result = vault::computeClawback(
+        rules, vault, sleShareIssuance, clawbackAmount, Number{assetsAvailable}, j_);
+    if (!result)
+        return std::unexpected(result.error());
+    return std::make_pair(result->assets, result->shares);
 }
 
 TER
