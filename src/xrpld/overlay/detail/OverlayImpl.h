@@ -202,16 +202,16 @@ public:
     findPeerByPublicKey(PublicKey const& pubKey) override;
 
     void
-    broadcast(protocol::TMProposeSet& m) override;
+    broadcast(protocol::TMProposeSet const& m) override;
 
     void
-    broadcast(protocol::TMValidation& m) override;
+    broadcast(protocol::TMValidation const& m) override;
 
     std::set<Peer::id_t>
-    relay(protocol::TMProposeSet& m, uint256 const& uid, PublicKey const& validator) override;
+    relay(protocol::TMProposeSet const& m, uint256 const& uid, PublicKey const& validator) override;
 
     std::set<Peer::id_t>
-    relay(protocol::TMValidation& m, uint256 const& uid, PublicKey const& validator) override;
+    relay(protocol::TMValidation const& m, uint256 const& uid, PublicKey const& validator) override;
 
     void
     relay(
@@ -433,7 +433,7 @@ private:
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
         address_type remoteAddress,
-        std::string msg);
+        std::string const& msg);
 
     /** Handles crawl requests. Crawl returns information about the
         node and its peers so crawlers can map the network.

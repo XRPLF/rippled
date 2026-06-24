@@ -22,9 +22,6 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
-
     static TER
     preclaim(PreclaimContext const& ctx);
 
