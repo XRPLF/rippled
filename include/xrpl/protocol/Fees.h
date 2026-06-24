@@ -33,6 +33,17 @@ struct Fees
         : base(base), reserve(reserve), increment(increment)
     {
     }
+
+    /** Returns the account reserve given the owner count, in drops.
+
+        The reserve is calculated as the reserve base plus
+        the reserve increment times the number of increments.
+    */
+    [[nodiscard]] XRPAmount
+    accountReserve(std::size_t ownerCount) const
+    {
+        return reserve + ownerCount * increment;
+    }
 };
 
 }  // namespace xrpl

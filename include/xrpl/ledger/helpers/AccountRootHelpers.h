@@ -91,6 +91,16 @@ adjustOwnerCount(
 inline void
 adjustOwnerCount(
     ApplyView& view,
+    SLE::ref accountSle,
+    std::int32_t amount,
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+{
+    adjustOwnerCount(view, accountSle, SLE::pointer(), amount, j);
+}
+
+inline void
+adjustOwnerCount(
+    ApplyView& view,
     AccountID const& account,
     std::optional<AccountID> const& sponsor,
     std::int32_t amount,
