@@ -1267,9 +1267,9 @@ Transactor::processPersistentChanges(TER result, XRPAmount fee)
 }
 
 [[nodiscard]] TER
-Transactor::checkInvariants(TER result, XRPAmount fee, SkipTxInvariants skip)
+Transactor::checkInvariants(TER result, XRPAmount fee, CheckTxInvariants check)
 {
-    if (skip == SkipTxInvariants::Yes)
+    if (check == CheckTxInvariants::No)
         return xrpl::checkInvariants(ctx_, result, fee);
 
     return xrpl::checkInvariants(ctx_, result, fee, std::ref(invariantCheck_));
@@ -1348,7 +1348,7 @@ Transactor::operator()()
     {
         // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
         // proceed to apply the tx
-        result = checkInvariants(result, fee, SkipTxInvariants::No);
+        result = checkInvariants(result, fee, CheckTxInvariants::Yes);
         if (result == tecINVARIANT_FAILED)
         {
             // Reset to fee-claim only
@@ -1363,7 +1363,7 @@ Transactor::operator()()
             // the transaction's effects have been rolled back, so the
             // transaction-specific invariants are no longer meaningful.
             if (isTesSuccess(result) || isTecClaim(result))
-                result = checkInvariants(result, fee, SkipTxInvariants::Yes);
+                result = checkInvariants(result, fee, CheckTxInvariants::No);
         }
 
         // We ran through the invariant checker, which can, in some cases,

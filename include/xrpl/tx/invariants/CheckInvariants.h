@@ -67,7 +67,8 @@ public:
      *                 newly created entries).
      * @param after    the entry's state after the transaction.  For deletions
      *                 this is the SLE being erased; use @p isDelete rather than
-     *                 `after == nullptr` to detect deletions.
+     *                 `after == nullptr` to detect deletions.  @p after is
+     *                 never null.
      */
     virtual void
     visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
@@ -99,8 +100,13 @@ public:
  * Both layers share one walk of the modified-entry set: @p txCheck's
  * `visitEntry` accumulates state on the same traversal that drives the
  * protocol checkers, then both layers' `finalize` run on the complete state.
- * Protocol faults (tefINVARIANT_FAILED) take precedence over transaction
- * faults (tecINVARIANT_FAILED).
+ *
+ * On the first invariant pass both a protocol fault and a transaction fault
+ * return @c tecINVARIANT_FAILED.  If that result triggers a fee-claim reset
+ * and invariants are checked again, the incoming @p result is already
+ * @c tecINVARIANT_FAILED; a second failure then escalates to
+ * @c tefINVARIANT_FAILED (via @c failInvariantCheck), which excludes the
+ * transaction from the ledger entirely.
  *
  * Every transaction is guaranteed to supply a @p txCheck (either a real check
  * or a no-op stub).  The invariant contract requires @c finalize to handle

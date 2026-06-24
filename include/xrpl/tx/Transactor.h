@@ -147,27 +147,27 @@ public:
     /** Whether to run the transaction-specific invariant check.
      *
      *  After a fee-claim reset the transaction's effects have been rolled back,
-     *  so only the protocol invariants are meaningful; pass @c Yes to skip the
+     *  so only the protocol invariants are meaningful; pass @c No to omit the
      *  transaction-specific check in that case.
      */
-    enum class SkipTxInvariants : bool { No = false, Yes = true };
+    enum class CheckTxInvariants : bool { No = false, Yes = true };
 
     /** Check all invariants for the current transaction.
      *
-     *  Delegates to the free @c xrpl::checkInvariants runner.  Unless @p skip is
-     *  @c SkipTxInvariants::Yes, the transaction-specific adapter is passed so
+     *  Delegates to the free @c xrpl::checkInvariants runner.  When @p check is
+     *  @c CheckTxInvariants::Yes, the transaction-specific adapter is passed so
      *  both layers share a single walk of the modified ledger entries.
      *  Protocol faults (tefINVARIANT_FAILED) take priority over transaction
      *  faults (tecINVARIANT_FAILED).
      *
      *  @param result  the tentative TER from transaction processing.
      *  @param fee     the fee consumed by the transaction.
-     *  @param skip    whether to skip the transaction-specific invariant check.
+     *  @param check   whether to include the transaction-specific invariant check.
      *
      *  @return the final TER after all invariant checks.
      */
     [[nodiscard]] TER
-    checkInvariants(TER result, XRPAmount fee, SkipTxInvariants skip);
+    checkInvariants(TER result, XRPAmount fee, CheckTxInvariants check);
 
     /////////////////////////////////////////////////////
     /*
