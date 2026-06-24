@@ -133,7 +133,7 @@ maxOut(T const& out, Asset const& asset)
 
 template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
-AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const
+AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& /*rules*/) const
 {
     auto const out = maxOut<TOut>(balances.out, assetOut());
     if (out <= TOut{0} || out >= balances.out)

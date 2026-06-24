@@ -6214,8 +6214,6 @@ private:
                     Txflags(tfPartialPayment));
                 env.close();
 
-                auto const failUsdGH = features[fixAMMv1_1] ? input.failUsdGHr : input.failUsdGH;
-                auto const failUsdBIT = features[fixAMMv1_1] ? input.failUsdBITr : input.failUsdBIT;
                 auto const goodUsdGH = features[fixAMMv1_1] ? input.goodUsdGHr : input.goodUsdGH;
                 auto const goodUsdBIT = features[fixAMMv1_1] ? input.goodUsdBITr : input.goodUsdBIT;
                 auto const lpTokenBalance = [&] {
