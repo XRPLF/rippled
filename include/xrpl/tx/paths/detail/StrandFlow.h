@@ -788,11 +788,7 @@ flow(
         }
         if (!partialPayment)
         {
-            // If we're offerCrossing a !partialPayment, then we're handling tfFillOrKill.
-            // Pre-fixFillOrKill amendment:
-            //   That case is handled below; not here.
-            // fixFillOrKill amendment:
-            //   That case is handled here if tfSell is also not set; i.e, case 1.
+            // If we're offerCrossing a !partialPayment, then we're handling a FillOrKill.
             if (offerCrossing == OfferCrossing::No || offerCrossing != OfferCrossing::Sell)
             {
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
@@ -807,12 +803,7 @@ flow(
         (!partialPayment && offerCrossing == OfferCrossing::Sell))
     {
         // If we're offer crossing and partialPayment is *not* true, then
-        // we're handling a FillOrKill offer.  In this case remainingIn must
-        // be zero (all funds must be consumed) or else we kill the offer.
-        // Pre-fixFillOrKill amendment:
-        //   Handles both cases 1. and 2.
-        // fixFillOrKill amendment:
-        //   Handles 2. 1. is handled above and falls through for tfSell.
+        // we're handling a FillOrKill offer.
         XRPL_ASSERT(remainingIn, "xrpl::flow : nonzero remainingIn");
         if (remainingIn && *remainingIn != beast::kZero)
             return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
