@@ -222,7 +222,7 @@ checkDepositFreeze(
 
     // An Issuer cannot deposit when:
     // 1. Asset is globally frozen
-    // 2. The trustline of the pseudo-account is frozen
+    // 2. The trustline/mptoken of the pseudo-account is frozen
 
     if (auto const ret = checkGlobalFrozen(view, asset))
         return ret;
