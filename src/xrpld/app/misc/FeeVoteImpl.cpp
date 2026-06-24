@@ -116,7 +116,7 @@ FeeVoteImpl::FeeVoteImpl(FeeSetup const& setup, beast::Journal journal)
 }
 
 void
-FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation& v)
+FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& /*rules*/, STValidation& v)
 {
     // Values should always be in a valid range (because the voting process
     // will ignore out-of-range values) but if we detect such a case, we do
