@@ -28,6 +28,7 @@ on:
       - ".github/workflows/reusable-upload-recipe.yml"
       - ".clang-tidy"
       - ".codecov.yml"
+      - "bin/check-tools.sh"
       - "cfg/**"
       - "cmake/**"
       - "conan/**"

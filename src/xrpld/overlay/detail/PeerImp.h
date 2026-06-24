@@ -293,7 +293,7 @@ public:
     /** Send a set of PeerFinder endpoints as a protocol message. */
     template <
         class FwdIt,
-        class = typename std::enable_if_t<
+        class = std::enable_if_t<
             std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>>>
     void
     sendEndpoints(FwdIt first, FwdIt last);

@@ -17,9 +17,91 @@
 #include <iterator>
 #include <limits>
 #include <stdexcept>
+#include <string>
 #include <utility>
 
+#ifndef _WIN32
+#include <sys/stat.h>
+
+#include <fcntl.h>
+#include <unistd.h>
+
+#include <cerrno>
+#endif
+
 namespace xrpl {
+
+namespace {
+
+void
+writeKeyFile(boost::filesystem::path const& keyFile, std::string const& contents)
+{
+#ifdef _WIN32
+    std::ofstream o(keyFile.string(), std::ios_base::trunc);
+    if (o.fail())
+        throw std::runtime_error("Cannot open key file: " + keyFile.string());
+
+    o << contents;
+    o.close();
+    if (o.fail())
+        throw std::runtime_error("Failed to write key file: " + keyFile.string());
+#else
+    auto const path = keyFile.string();
+    int fd = ::open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd == -1)
+        throw std::runtime_error("Cannot open key file: " + path);
+
+    auto closeFile = [&path, &fd]() {
+        if (fd != -1 && ::close(fd) == -1)
+        {
+            fd = -1;
+            throw std::runtime_error("Failed to close key file: " + path);
+        }
+        fd = -1;
+    };
+
+    if (::fchmod(fd, S_IRUSR | S_IWUSR) == -1)
+    {
+        auto const error = errno;
+        ::close(fd);
+        fd = -1;
+        errno = error;
+        throw std::runtime_error("Cannot set key file permissions: " + path);
+    }
+
+    auto const* data = contents.data();
+    auto bytesLeft = contents.size();
+    while (bytesLeft != 0)
+    {
+        auto const written = ::write(fd, data, bytesLeft);
+        if (written == -1)
+        {
+            if (errno == EINTR)
+                continue;
+
+            auto const error = errno;
+            ::close(fd);
+            fd = -1;
+            errno = error;
+            throw std::runtime_error("Failed to write key file: " + path);
+        }
+        if (written == 0)
+        {
+            ::close(fd);
+            fd = -1;
+            throw std::runtime_error("Failed to write key file: " + path);
+        }
+
+        auto const bytesWritten = static_cast<std::size_t>(written);
+        data += bytesWritten;
+        bytesLeft -= bytesWritten;
+    }
+
+    closeFile();
+#endif
+}
+
+}  // namespace
 
 std::string
 ValidatorToken::toString() const
@@ -176,11 +258,7 @@ ValidatorKeys::writeToFile(boost::filesystem::path const& keyFile) const
             throw std::runtime_error("Cannot create directory: " + keyFile.parent_path().string());
     }
 
-    std::ofstream o(keyFile.string(), std::ios_base::trunc);
-    if (o.fail())
-        throw std::runtime_error("Cannot open key file: " + keyFile.string());
-
-    o << jv.toStyledString();
+    writeKeyFile(keyFile, jv.toStyledString());
 }
 
 boost::optional<ValidatorToken>

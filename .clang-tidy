@@ -11,6 +11,7 @@ Checks: "-*,
   bugprone-copy-constructor-init,
   bugprone-crtp-constructor-accessibility,
   bugprone-dangling-handle,
+  bugprone-derived-method-shadowing-base-method,
   bugprone-dynamic-static-initializers,
   bugprone-empty-catch,
   bugprone-fold-init-type,
@@ -21,6 +22,7 @@ Checks: "-*,
   bugprone-incorrect-roundings,
   bugprone-infinite-loop,
   bugprone-integer-division,
+  bugprone-invalid-enum-default-initialization,
   bugprone-lambda-function-name,
   bugprone-macro-parentheses,
   bugprone-macro-repeated-side-effects,
@@ -137,6 +139,7 @@ Checks: "-*,
   readability-enum-initial-value,
   readability-identifier-naming,
   readability-implicit-bool-conversion,
+  readability-inconsistent-ifelse-braces,
   readability-make-member-function-const,
   readability-math-missing-parentheses,
   readability-misleading-indentation,
@@ -145,7 +148,9 @@ Checks: "-*,
   readability-redundant-declaration,
   readability-redundant-inline-specifier,
   readability-redundant-member-init,
+  readability-redundant-parentheses,
   readability-redundant-string-init,
+  readability-redundant-typename,
   readability-reference-to-constructed-temporary,
   readability-simplify-boolean-expr,
   readability-static-definition-in-anonymous-namespace,
@@ -153,7 +158,8 @@ Checks: "-*,
   readability-use-std-min-max
   "
 # ---
-# bugprone-narrowing-conversions,                      # this will break a lot of code but we should enable it in the future because it can eliminate a lot of bugs
+# bugprone-narrowing-conversions,                      # This will break a lot of code but we should enable it in the future because it can eliminate a lot of bugs
+# misc-override-with-different-visibility,             # Will be addressed in a future PR, but for now it generates too many warnings
 # readability-inconsistent-declaration-parameter-name, # In this codebase this check will break a lot of arg names
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. It makes the code less readable
 # ---

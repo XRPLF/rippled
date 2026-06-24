@@ -17,6 +17,10 @@
 #include <stdexcept>
 #include <string>
 
+#ifndef _WIN32
+#include <sys/stat.h>
+#endif
+
 namespace xrpl {
 
 namespace tests {
@@ -48,6 +52,16 @@ private:
     }
 
     std::array<KeyType, 2> const keyTypes{{KeyType::Ed25519, KeyType::Secp256k1}};
+
+#ifndef _WIN32
+    void
+    expectOwnerOnlyKeyFile(boost::filesystem::path const& keyFile)
+    {
+        struct stat fileStatus;
+        BEAST_EXPECT(::stat(keyFile.string().c_str(), &fileStatus) == 0);
+        BEAST_EXPECT((fileStatus.st_mode & 0777) == (S_IRUSR | S_IWUSR));
+    }
+#endif
 
     void
     testMakeValidatorKeys()
@@ -292,13 +306,23 @@ private:
 
             keys.writeToFile(keyFile);
             BEAST_EXPECT(exists(keyFile));
+#ifndef _WIN32
+            expectOwnerOnlyKeyFile(keyFile);
+#endif
 
             auto fileKeys = ValidatorKeys::make_ValidatorKeys(keyFile);
             BEAST_EXPECT(keys == fileKeys);
 
             // Overwrite file with new sequence
+#ifndef _WIN32
+            BEAST_EXPECT(
+                ::chmod(keyFile.string().c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) == 0);
+#endif
             keys.createValidatorToken(KeyType::Secp256k1);
             keys.writeToFile(keyFile);
+#ifndef _WIN32
+            expectOwnerOnlyKeyFile(keyFile);
+#endif
 
             fileKeys = ValidatorKeys::make_ValidatorKeys(keyFile);
             BEAST_EXPECT(keys == fileKeys);
