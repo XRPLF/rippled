@@ -1567,6 +1567,35 @@ class Batch_test : public beast::unit_test::Suite
             env.close();
         }
 
+        // Regression: the relay-boundary local check (isBatchRawTransactionOkay)
+        // caps the signers array at kMaxBatchSigners, matching Batch::preflight -
+        // not kMaxBatchTxCount. A batch with more than kMaxBatchTxCount but at
+        // most kMaxBatchSigners signers must get past local checks and reach
+        // signer validation. Before the cap was aligned it was wrongly rejected
+        // at the boundary (telENV_RPC_FAILED) before preflight ran; now it
+        // reaches preflightSigValidated and fails there as extra signers
+        // (temBAD_SIGNER) rather than being dropped pre-engine.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            // Over kMaxBatchTxCount (8) but within kMaxBatchSigners (24).
+            std::size_t const signerCount = kMaxBatchTxCount + 1;
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, signerCount, 2);
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
+                batch::Inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
+                batch::Sig(std::vector<Reg>(signerCount, bob)),
+                Ter(temBAD_SIGNER));
+            env.close();
+        }
+
         // temARRAY_TOO_LARGE: Batch preflight: signers array exceeds
         // kMaxBatchSigners entries.
         {
