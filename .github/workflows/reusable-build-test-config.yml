@@ -82,7 +82,7 @@ jobs:
     name: ${{ inputs.config_name }}
     runs-on: ${{ fromJSON(inputs.runs_on) }}
     container: ${{ inputs.image != '' && inputs.image || null }}
-    timeout-minutes: ${{ inputs.sanitizers != '' && 360 || 90 }}
+    timeout-minutes: ${{ inputs.sanitizers != '' && 360 || 180 }}
     env:
       # Use a namespace to keep the objects separate for each configuration.
       CCACHE_NAMESPACE: ${{ inputs.config_name }}
@@ -163,7 +163,7 @@ jobs:
           CMAKE_ARGS: ${{ inputs.cmake_args }}
         run: |
           cmake \
-              -G '${{ runner.os == 'Windows' && 'Visual Studio 17 2022' || 'Ninja' }}' \
+              -G '${{ runner.os == 'Windows' && 'Visual Studio 18 2026' || 'Ninja' }}' \
               -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
               -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
               ${CMAKE_ARGS} \

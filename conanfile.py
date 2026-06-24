@@ -28,7 +28,7 @@ class Xrpl(ConanFile):
 
     requires = [
         "ed25519/2015.03",
-        "grpc/1.78.1",
+        "grpc/1.81.0",
         "libarchive/3.8.7",
         "nudb/2.0.9",
         "openssl/3.6.2",

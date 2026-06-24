@@ -7,6 +7,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <tuple>
 #include <utility>
 
 namespace xrpl {
@@ -419,8 +420,13 @@ private:
 
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);
+
     TER
     payFee();
+
+    std::tuple<TER, XRPAmount, bool>
+    processPersistentChanges(TER result, XRPAmount fee);
+
     static NotTEC
     checkSingleSign(
         ReadView const& view,
@@ -428,6 +434,7 @@ private:
         AccountID const& idAccount,
         SLE::const_pointer sleAccount,
         beast::Journal const j);
+
     static NotTEC
     checkMultiSign(
         ReadView const& view,
