@@ -339,8 +339,10 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
             JLOG(j_.warn()) << "Request for " << site.activeResource->uri << " took too long";
         }
         else
+        {
             JLOG(j_.error()) << "Request took too long, but a response has "
                                 "already been processed";
+        }
     }
 
     std::scoped_lock const lockState{stateMutex_};

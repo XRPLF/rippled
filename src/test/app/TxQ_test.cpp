@@ -1176,7 +1176,7 @@ public:
         // bankrupt Alice. Fails, because an account can't have
         // more than the minimum reserve in flight before the
         // last queued transaction
-        aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops() - (62);
+        aliceFee = env.le(alice)->getFieldAmount(sfBalance).xrp().drops() - 62;
         env(noop(alice), Seq(aliceSeq), Fee(aliceFee), Ter(telCAN_NOT_QUEUE_BALANCE));
         checkMetrics(*this, env, 4, 10, 6, 5);
 

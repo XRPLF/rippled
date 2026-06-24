@@ -16,15 +16,15 @@ template <bool IsConst, class Iterator>
 class AgedContainerIterator
 {
 public:
-    using iterator_category = typename std::iterator_traits<Iterator>::iterator_category;
+    using iterator_category = std::iterator_traits<Iterator>::iterator_category;
     using value_type = std::conditional_t<
         IsConst,
         typename Iterator::value_type::Stashed::value_type const,
         typename Iterator::value_type::Stashed::value_type>;
-    using difference_type = typename std::iterator_traits<Iterator>::difference_type;
+    using difference_type = std::iterator_traits<Iterator>::difference_type;
     using pointer = value_type*;
     using reference = value_type&;
-    using time_point = typename Iterator::value_type::Stashed::time_point;
+    using time_point = Iterator::value_type::Stashed::time_point;
 
     AgedContainerIterator() = default;
 
