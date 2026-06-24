@@ -24,7 +24,6 @@
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
 #include <xrpld/overlay/Overlay.h>
@@ -54,6 +53,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/Job.h>
@@ -313,7 +313,7 @@ public:
         , consensus_(
               registry_.get().getApp(),
               makeFeeVote(
-                  setupFeeVote(registry_.get().getApp().config().section("voting")),
+                  setupFeeVote(registry_.get().getApp().config().section(Sections::kVoting)),
                   registry_.get().getJournal("FeeVote")),
               ledgerMaster,
               *localTX_,
@@ -527,6 +527,8 @@ public:
     updateLocalTx(ReadView const& view) override;
     std::size_t
     getLocalTxCount() override;
+    std::size_t
+    getBookSubscribersCount() override;
 
     //
     // Monitoring: publisher side.
@@ -586,7 +588,9 @@ public:
     bool
     subBook(InfoSub::ref ispListener, Book const&) override;
     bool
-    unsubBook(std::uint64_t uListener, Book const&) override;
+    unsubBook(InfoSub::ref ispListener, Book const&) override;
+    bool
+    unsubBookInternal(std::uint64_t uListener, Book const&) override;
 
     bool
     subManifests(InfoSub::ref ispListener) override;
@@ -628,6 +632,12 @@ public:
     addRpcSub(std::string const& strUrl, InfoSub::ref) override;
     bool
     tryRemoveRpcSub(std::string const& strUrl) override;
+
+    beast::Journal const&
+    journal() const override
+    {
+        return journal_;
+    }
 
     void
     stop() override
@@ -704,6 +714,32 @@ private:
         std::shared_ptr<ReadView const> const& ledger,
         AcceptedLedgerTx const& transaction,
         bool last);
+
+    /**
+     * Fan transaction notifications out to all book subscribers.
+     *
+     * Extracts the set of order books affected by @p transaction, then
+     * delivers @p jvObj to every live subscriber of those books.
+     *
+     * Uses a two-pass design to keep subLock_ hold time short:
+     *   1. Under subLock_, collect strong InfoSub pointers for all live
+     *      subscribers and prune any expired weak_ptrs encountered.
+     *   2. Release subLock_, then call send() on each collected pointer.
+     *
+     * @param transaction The accepted ledger transaction to inspect.
+     * @param jvObj JSON representation of the transaction to deliver.
+     *
+     * @note Thread-safety: acquires subLock_ for the collection pass only.
+     *       send() is intentionally called outside the lock to avoid blocking
+     *       all other sub/unsub/publish paths while I/O is in progress.
+     * @note Contention: subLock_ is shared with all other subscription types.
+     *       On high-throughput nodes processing multi-hop payments that touch
+     *       many offer nodes, this pass holds subLock_ longer than the old
+     *       per-book BookListeners locks did. This is an accepted trade-off
+     *       for lock-domain simplicity.
+     */
+    void
+    pubBookTransaction(AcceptedLedgerTx const& transaction, MultiApiJson const& jvObj);
 
     void
     pubProposedAccountTransaction(
@@ -802,8 +838,19 @@ private:
 
     LedgerMaster& ledgerMaster_;
 
+    /** Maps each order book to its current set of subscribers.
+     *  Outer key: the Book (currency pair + optional domain).
+     *  Inner key: InfoSub::seq (unique per connection).
+     *  Inner value: weak_ptr so that a dropped connection does not prevent
+     *  the InfoSub from being destroyed; expired entries are pruned lazily
+     *  by pubBookTransaction and eagerly by unsubBookInternal (~InfoSub path).
+     *  Guarded by subLock_.
+     */
+    using SubBookMapType = hash_map<Book, SubMapType>;
+
     SubInfoMapType subAccount_;
     SubInfoMapType subRTAccount_;
+    SubBookMapType subBook_;  ///< Guarded by subLock_.
 
     subRpcMapType rpcSubMap_;
 
@@ -2973,11 +3020,12 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-        if (registry_.get().getApp().config().exists(SECTION_PORT_GRPC))
+        if (registry_.get().getApp().config().exists(Sections::kPortGrpc))
         {
-            auto const& grpcSection = registry_.get().getApp().config().section(SECTION_PORT_GRPC);
-            auto const optPort = grpcSection.get("port");
-            if (optPort && grpcSection.get("ip"))
+            auto const& grpcSection =
+                registry_.get().getApp().config().section(Sections::kPortGrpc);
+            auto const optPort = grpcSection.get(Keys::kPort);
+            if (optPort && grpcSection.get(Keys::kIp))
             {
                 auto& jv = ports.append(json::Value(json::ValueType::Object));
                 jv[jss::port] = *optPort;
@@ -3191,6 +3239,16 @@ NetworkOPsImp::getLocalTxCount()
     return localTX_->size();
 }
 
+std::size_t
+NetworkOPsImp::getBookSubscribersCount()
+{
+    std::scoped_lock const sl(subLock_);
+    std::size_t total = 0;
+    for (auto const& [_, subs] : subBook_)
+        total += subs.size();
+    return total;
+}
+
 // This routine should only be used to publish accepted or validated
 // transactions.
 MultiApiJson
@@ -3352,9 +3410,87 @@ NetworkOPsImp::pubValidatedTransaction(
     }
 
     if (transaction.getResult() == tesSUCCESS)
-        registry_.get().getOrderBookDB().processTxn(ledger, transaction, jvObj);
+        pubBookTransaction(transaction, jvObj);
 
     pubAccountTransaction(ledger, transaction, last);
+}
+
+void
+NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson const& jvObj)
+{
+    auto const books = affectedBooks(alTx, journal_);
+    if (books.empty())
+        return;
+
+    // Two-pass design:
+    //
+    //   1. Under subLock_, walk subBook_, collect a strong pointer for each
+    //      unique listener (and prune any expired weak_ptrs we encounter).
+    //   2. Release subLock_, then send to each collected listener.
+    //
+    // Reasoning:
+    //   * send() can be slow / blocking, so holding subLock_ across it would
+    //     stall every other sub/unsub/pub path on this server (see the matching
+    //     TODO above pubServer at line ~2275).
+    //   * A strong pointer destructed while subLock_ is held risks running
+    //     ~InfoSub() in-line, which re-enters unsubBook() and mutates the very
+    //     subBook_/SubMapType being iterated -> dangling iterator UB.
+    //
+    // Releasing subLock_ before any InfoSub::pointer can decay solves both.
+    // ~InfoSub() reacquires subLock_ via unsubBook() on its own and serializes
+    // safely with concurrent traffic.
+
+    std::vector<InfoSub::pointer> listeners;
+    hash_set<std::uint64_t> seen;
+
+    // Sized for the common case where every affected book has at most
+    // one subscriber. Multi-subscriber books trigger reallocation, but
+    // that is rare and the upper-bound estimate (sum of per-book sizes)
+    // would itself require walking subBook_ twice.
+    listeners.reserve(books.size());
+    seen.reserve(books.size());
+
+    {
+        std::scoped_lock const sl(subLock_);
+
+        for (auto const& book : books)
+        {
+            auto it = subBook_.find(book);
+            if (it == subBook_.end())
+                continue;
+
+            for (auto sit = it->second.begin(); sit != it->second.end();)
+            {
+                if (auto p = sit->second.lock())
+                {
+                    // Defensive: subBook_ entries are normally cleared by
+                    // ~InfoSub() -> unsubBook(), so we rarely see expired
+                    // weak_ptrs here. The else branch covers the narrow race
+                    // where the last strong ref is dropped between insertion
+                    // and our lock() call.
+                    if (seen.emplace(p->getSeq()).second)
+                        listeners.emplace_back(std::move(p));
+                    ++sit;
+                }
+                else
+                {
+                    JLOG(journal_.debug())
+                        << "pubBookTransaction: pruning expired weak_ptr for seq=" << sit->first;
+                    sit = it->second.erase(sit);
+                }
+            }
+
+            if (it->second.empty())
+                subBook_.erase(it);
+        }
+    }
+
+    for (auto const& p : listeners)
+    {
+        jvObj.visit(p->getApiVersion(), [&](json::Value const& jv) { p->send(jv, true); });
+    }
+    // listeners destructs here, outside subLock_; ~InfoSub (if any fires)
+    // will reacquire subLock_ via unsubBook with no iterator hazard.
 }
 
 void
@@ -4010,26 +4146,39 @@ NetworkOPsImp::unsubAccountHistoryInternal(
 bool
 NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
 {
-    if (auto listeners = registry_.get().getOrderBookDB().makeBookListeners(book))
+    // Server-side insert first, then InfoSub bookkeeping. If the InfoSub-side
+    // insert throws, the orphan in subBook_ is cleared by the expired-weak_ptr
+    // prune in pubBookTransaction. With the reverse ordering, ~InfoSub would
+    // call unsubBookInternal for a key that was never inserted server-side.
     {
-        listeners->addSubscriber(isrListener);
+        std::scoped_lock const sl(subLock_);
+        subBook_[book].try_emplace(isrListener->getSeq(), isrListener);
     }
-    else
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::NetworkOPsImp::subBook : null book listeners");
-        // LCOV_EXCL_STOP
-    }
+    isrListener->insertBookSubscription(book);
     return true;
 }
 
 bool
-NetworkOPsImp::unsubBook(std::uint64_t uSeq, Book const& book)
+NetworkOPsImp::unsubBook(InfoSub::ref isrListener, Book const& book)
 {
-    if (auto listeners = registry_.get().getOrderBookDB().getBookListeners(book))
-        listeners->removeSubscriber(uSeq);
+    // Mirrors unsubAccount: clear the per-subscriber tracking set first so
+    // ~InfoSub does not re-issue an unsubBookInternal for a book the caller
+    // already removed, then erase the server-side entry.
+    isrListener->deleteBookSubscription(book);
+    return unsubBookInternal(isrListener->getSeq(), book);
+}
 
-    return true;
+bool
+NetworkOPsImp::unsubBookInternal(std::uint64_t uSeq, Book const& book)
+{
+    std::scoped_lock const sl(subLock_);
+    auto it = subBook_.find(book);
+    if (it == subBook_.end())
+        return false;
+    bool const erased = it->second.erase(uSeq) != 0u;
+    if (it->second.empty())
+        subBook_.erase(it);
+    return erased;
 }
 
 std::uint32_t

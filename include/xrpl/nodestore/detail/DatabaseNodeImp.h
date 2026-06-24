@@ -2,6 +2,8 @@
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/nodestore/Database.h>
 
 namespace xrpl::NodeStore {
@@ -24,16 +26,16 @@ public:
     {
         std::optional<int> cacheSize, cacheAge;
 
-        if (config.exists("cache_size"))
+        if (config.exists(Keys::kCacheSize))
         {
-            cacheSize = get<int>(config, "cache_size");
+            cacheSize = get<int>(config, Keys::kCacheSize);
             if (cacheSize.value() < 0)
                 Throw<std::runtime_error>("Specified negative value for cache_size");
         }
 
-        if (config.exists("cache_age"))
+        if (config.exists(Keys::kCacheAge))
         {
-            cacheAge = get<int>(config, "cache_age");
+            cacheAge = get<int>(config, Keys::kCacheAge);
             if (cacheAge.value() < 0)
                 Throw<std::runtime_error>("Specified negative value for cache_age");
         }

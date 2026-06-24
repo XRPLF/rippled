@@ -32,7 +32,7 @@ public:
 
         @param v The validation to wrap.
     */
-    RCLValidation(std::shared_ptr<STValidation> const& v) : val_{v}
+    RCLValidation(std::shared_ptr<STValidation> v) : val_{std::move(v)}
     {
     }
 

@@ -16,7 +16,6 @@
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/Slice.h>
@@ -36,6 +35,8 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/BuildInfo.h>
@@ -96,7 +97,7 @@ static constexpr auto kDisabled = 0;
 static constexpr auto kOverlay = (1 << 0);
 static constexpr auto kServerInfo = (1 << 1);
 static constexpr auto kServerCounts = (1 << 2);
-static constexpr auto kUNL = (1 << 3);
+static constexpr auto kUnl = (1 << 3);
 }  // namespace CrawlOptions
 
 //------------------------------------------------------------------------------
@@ -885,7 +886,7 @@ OverlayImpl::processCrawl(http_request_type const& req, Handoff& handoff)
     {
         msg.body()["counts"] = getServerCounts();
     }
-    if ((setup_.crawlOptions & CrawlOptions::kUNL) != 0u)
+    if ((setup_.crawlOptions & CrawlOptions::kUnl) != 0u)
     {
         msg.body()["unl"] = getUnlInfo();
     }
@@ -1516,7 +1517,7 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
     Overlay::Setup setup;
 
     {
-        auto const& section = config.section("overlay");
+        auto const& section = config.section(Sections::kOverlay);
         setup.context = makeSslContext("");
 
         set(setup.ipLimit, "ip_limit", section);
@@ -1543,7 +1544,7 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
     }
 
     {
-        auto const& section = config.section("crawl");
+        auto const& section = config.section(Sections::kCrawl);
         auto const& values = section.values();
 
         if (values.size() > 1)
@@ -1569,33 +1570,33 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
 
         if (crawlEnabled)
         {
-            if (get<bool>(section, "overlay", true))
+            if (get<bool>(section, Keys::kOverlay, true))
             {
                 setup.crawlOptions |= CrawlOptions::kOverlay;
             }
-            if (get<bool>(section, "server", true))
+            if (get<bool>(section, Keys::kServer, true))
             {
                 setup.crawlOptions |= CrawlOptions::kServerInfo;
             }
-            if (get<bool>(section, "counts", false))
+            if (get<bool>(section, Keys::kCounts, false))
             {
                 setup.crawlOptions |= CrawlOptions::kServerCounts;
             }
-            if (get<bool>(section, "unl", true))
+            if (get<bool>(section, Keys::kUnl, true))
             {
-                setup.crawlOptions |= CrawlOptions::kUNL;
+                setup.crawlOptions |= CrawlOptions::kUnl;
             }
         }
     }
     {
-        auto const& section = config.section("vl");
+        auto const& section = config.section(Sections::kVl);
 
         set(setup.vlEnabled, "enabled", section);
     }
 
     try
     {
-        auto id = config.legacy("network_id");
+        auto id = config.legacy(Sections::kNetworkId);
 
         if (!id.empty())
         {

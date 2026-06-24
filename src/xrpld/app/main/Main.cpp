@@ -1,6 +1,5 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
@@ -12,6 +11,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite_info.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/git/Git.h>
 #include <xrpl/json/json_writer.h>
@@ -362,10 +362,10 @@ run(int argc, char** argv)
     std::string importText;
     {
         importText += "Import an existing node database (specified in the [";
-        importText += ConfigSection::importNodeDatabase();
+        importText += Sections::kImportNodeDatabase;
         importText += "] configuration file section) into the current ";
         importText += "node database (specified in the [";
-        importText += ConfigSection::nodeDatabase();
+        importText += Sections::kNodeDatabase;
         importText += "] configuration file section).";
     }
 
