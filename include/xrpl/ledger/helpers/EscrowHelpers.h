@@ -193,11 +193,19 @@ escrowUnlockApplyHelper<MPTIssue>(
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
+        if (sle->getType() != ltACCOUNT_ROOT)  // only possible without fixCleanup3_2_0
+        {
+            return tefEXCEPTION;
+        }
         if (auto const ret =
                 checkInsufficientReserve(view, tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
             return ret;
 
+        if (sle->getType() != ltACCOUNT_ROOT)  // only possible without fixCleanup3_2_0
+        {
+            return tefEXCEPTION;
+        }
         if (auto const ter = createMPToken(view, mptID, receiver, *sponsorSle, 0);
             !isTesSuccess(ter))
         {

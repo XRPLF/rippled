@@ -136,7 +136,7 @@ adjustOwnerCountObj(
     std::int32_t amount,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
-    SLE::pointer accountSle = view.peek(keylet::account(account));
+    SLE::pointer const accountSle = view.peek(keylet::account(account));
     adjustOwnerCountObj(view, accountSle, objectSle, amount, j);
 }
 

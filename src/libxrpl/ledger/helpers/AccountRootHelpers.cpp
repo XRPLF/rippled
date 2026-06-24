@@ -201,7 +201,7 @@ adjustOwnerCountObj(
     if (objectSle->getType() == ltACCOUNT_ROOT)
         Throw<std::logic_error>("xrpl::adjustOwnerCount : valid object sle type");
 
-    SLE::pointer sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
+    SLE::pointer const sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
     adjustOwnerCount(view, accountSle, sponsorSle, amount, j);
 }
 
