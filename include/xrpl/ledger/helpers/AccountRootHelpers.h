@@ -33,33 +33,56 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 [[nodiscard]] XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j);
 
-/** Returns the account reserve, in drops.
-    Actual owner count can be adjusted by delta in ownerCountAdj
-    The reserve is calculated as
-       (ownerCount + "sponsoring object count" - "sponsored object count" + additionalOwnerCount) *
-   increment + (1 if not sponsored account + sponsoringAccountCount) * "reserve base"
+/*  Calculates the number of objects that the account is responsible for reserve-wise
+    sfOwnerCount - sfSponsoredOwnerCount + sfSponsoringOwnerCount
 */
-[[nodiscard]] XRPAmount
-accountReserve(
-    ReadView const& view,
-    SLE::const_ref sle,
-    beast::Journal j,
-    std::int32_t ownerCountAdj = 0,
-    std::int32_t reserveCountAdj = 0);
-
-[[nodiscard]] inline XRPAmount
-accountReserve(
-    ReadView const& view,
-    AccountID const& id,
-    beast::Journal j,
-    std::int32_t ownerCountAdj = 0,
-    std::int32_t reserveCountAdj = 0)
+inline std::uint32_t
+objectOwnerCount(SLE::const_pointer accountSle, std::int32_t delta = 0)
 {
-    return accountReserve(view, view.read(keylet::account(id)), j, ownerCountAdj, reserveCountAdj);
+    XRPL_ASSERT(
+        accountSle && accountSle->getType() == ltACCOUNT_ROOT,
+        "xrpl::objectOwnerCount : valid account sle");
+    return accountSle->at(sfOwnerCount) - accountSle->at(sfSponsoredOwnerCount) +
+        accountSle->at(sfSponsoringOwnerCount) + delta;
 }
 
-XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount);
+/*  Calculates the number of accounts that the account is responsible for reserve-wise
+    (accountIsSponsored ? 0 : 1) + sfSponsoringAccountCount
+*/
+inline std::uint32_t
+accountOwnerCount(SLE::const_pointer accountSle, std::int32_t delta = 0)
+{
+    XRPL_ASSERT(
+        accountSle && accountSle->getType() == ltACCOUNT_ROOT,
+        "xrpl::accountOwnerCount : valid account sle");
+    return (accountSle->isFieldPresent(sfSponsor) ? 0 : 1) +
+        accountSle->getFieldU32(sfSponsoringAccountCount) + delta;
+}
+
+/*  Calculates the total reserve, in XRP, that the account is currently responsible for
+ */
+inline XRPAmount
+totalAccountReserve(
+    ReadView const& view,
+    SLE::const_pointer accountSle,
+    std::int32_t objectDelta = 0,
+    std::int32_t accountDelta = 0)
+{
+    auto const& fees = view.fees();
+    return (fees.reserve * accountOwnerCount(accountSle, accountDelta)) +
+        (fees.increment * objectOwnerCount(accountSle, objectDelta));
+}
+
+[[nodiscard]] inline XRPAmount
+totalAccountReserve(
+    ReadView const& view,
+    AccountID const& id,
+    std::int32_t ownerCountDelta = 0,
+    std::int32_t accountCountDelta = 0)
+{
+    return totalAccountReserve(
+        view, view.read(keylet::account(id)), ownerCountDelta, accountCountDelta);
+}
 
 [[nodiscard]] TER
 checkInsufficientReserve(
@@ -72,19 +95,12 @@ checkInsufficientReserve(
     std::int32_t reserveCountDelta = 0,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
-std::uint32_t
-ownerCount(
-    ReadView const& view,
-    SLE::const_ref sle,
-    beast::Journal j,
-    std::int32_t ownerCountAdj = 0);
-
 /** Adjust the owner count up or down. */
 void
 adjustOwnerCount(
     ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref sponsorSle,
+    SLE::pointer accountSle,
+    SLE::pointer sponsorSle,
     std::int32_t amount,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
@@ -107,8 +123,8 @@ adjustOwnerCount(
 void
 adjustOwnerCountObj(
     ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref objectSle,
+    SLE::pointer accountSle,
+    SLE::pointer objectSle,
     std::int32_t amount,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
@@ -116,11 +132,11 @@ inline void
 adjustOwnerCountObj(
     ApplyView& view,
     AccountID const& account,
-    SLE::ref objectSle,
+    SLE::pointer objectSle,
     std::int32_t amount,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
-    SLE::ref accountSle = view.peek(keylet::account(account));
+    SLE::pointer accountSle = view.peek(keylet::account(account));
     adjustOwnerCountObj(view, accountSle, objectSle, amount, j);
 }
 
@@ -158,7 +174,7 @@ getPseudoAccountFields();
     - null pointer
 */
 [[nodiscard]] bool
-isPseudoAccount(SLE::const_ref sleAcct, std::set<SField const*> const& pseudoFieldFilter = {});
+isPseudoAccount(SLE::const_pointer sleAcct, std::set<SField const*> const& pseudoFieldFilter = {});
 
 /** Convenience overload that reads the account from the view. */
 [[nodiscard]] inline bool

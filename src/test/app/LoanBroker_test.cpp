@@ -1094,8 +1094,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 env.close();
             }
 
-            auto const amt =
-                env.balance(alice) - accountReserve(*env.current(), alice.id(), env.journal);
+            auto const amt = env.balance(alice) - accountReserve(*env.current(), alice.id());
             env(pay(alice, issuer, amt));
 
             // preclaim:: tecINSUFFICIENT_RESERVE

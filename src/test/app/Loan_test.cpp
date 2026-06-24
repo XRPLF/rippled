@@ -861,7 +861,7 @@ protected:
         auto const totalNeeded = state.totalValue + (serviceFee * state.paymentRemaining) +
             (broker.asset.native() ? Number(
                                          baseFee * state.paymentRemaining +
-                                         accountReserve(*env.current(), borrower.id(), env.journal))
+                                         accountReserve(*env.current(), borrower.id()))
                                    : broker.asset(15).number());
 
         auto const shortage = totalNeeded - borrowerBalance.number();
@@ -4545,8 +4545,7 @@ protected:
                         BrokerInfo const& brokerInfo,
                         jtx::Fee const& loanSetFee,
                         Number const& debtMaximumRequest) {
-            auto const amt =
-                env.balance(borrower) - accountReserve(*env.current(), borrower.id(), env.journal);
+            auto const amt = env.balance(borrower) - accountReserve(*env.current(), borrower.id());
             env(pay(borrower, issuer, amt));
 
             // tecINSUFFICIENT_RESERVE

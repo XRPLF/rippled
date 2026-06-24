@@ -437,7 +437,7 @@ transferHelper(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         {
-            auto const reserve = accountReserve(psb, sleSrc, j, 0, 0);
+            auto const reserve = totalAccountReserve(psb, sleSrc);
 
             auto const availableBalance = [&]() -> STAmount {
                 STAmount curBal = (*sleSrc)[sfBalance];

@@ -6,7 +6,10 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/Units.h>
@@ -515,6 +518,21 @@ txFee(Env const& env, std::uint16_t n);
 
 PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount);
+
+/** Returns the base reserve for a non-sponsored account with `count` owned objects. */
+inline XRPAmount
+baseAccountReserve(ReadView const& view, std::uint32_t count = 0)
+{
+    auto const& fees = view.fees();
+    return fees.reserve + fees.increment * count;
+}
+
+/** Returns the total reserve for an account, read from the ledger. */
+inline XRPAmount
+accountReserve(ReadView const& view, AccountID const& id)
+{
+    return totalAccountReserve(view, view.read(keylet::account(id)));
+}
 
 bool
 expectHolding(

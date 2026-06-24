@@ -206,8 +206,7 @@ authorizeMPToken(
         // items. This is similar to the reserve requirements of trust lines.
         // If PreFunded Sponsor, it must be checked whether sufficient
         // ReserveCount exists.
-        if (ownerCount(view, *sponsorSle ? *sponsorSle : sleAcct, journal) >= 2 ||
-            isSponsoredAndPreFunded)
+        if (objectOwnerCount(*sponsorSle ? *sponsorSle : sleAcct) >= 2 || isSponsoredAndPreFunded)
         {
             if (auto const ret = checkInsufficientReserve(
                     view, tx, sleAcct, priorBalance, *sponsorSle, 1, 0, journal);

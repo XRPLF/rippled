@@ -553,8 +553,8 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
         if (feePayer.type == FeePayerType::SponsorCoSigned)
         {
-            STAmount const sponsorReserve = accountReserve(ctx.view, payerSle, ctx.j);
-            maxSpendable = payerSle->getFieldAmount(sfBalance).xrp() - sponsorReserve.xrp();
+            auto const sponsorReserve = totalAccountReserve(ctx.view, payerSle);
+            maxSpendable = payerSle->getFieldAmount(sfBalance).xrp() - sponsorReserve;
         }
         else
         {

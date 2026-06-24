@@ -332,7 +332,7 @@ TrustSet::doApply()
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 
-    std::uint32_t const uOwnerCount = ownerCount(view(), *sponsorSle ? *sponsorSle : sle, j_);
+    std::uint32_t const uOwnerCount = objectOwnerCount(*sponsorSle ? *sponsorSle : sle);
 
     bool const isSponsoredAndPreFunded = *sponsorSle && !isSponsorReserveCoSigning(ctx_.tx);
     // If PreFunded Sponsor, it must be checked whether sufficient
