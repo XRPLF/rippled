@@ -111,7 +111,15 @@ class Lean4Deps(ConanFile):
     def package(self):
         build_dir = Path(self.build_folder)
         package_dir = Path(self.package_folder)
-        copy(self, "*", src=build_dir / ".lake" / PACKAGES_DIR, dst=package_dir / PACKAGES_DIR)
+        # Copy the whole lake build tree (.olean, .c files). Exclude .c.o.export files
+        # as those are bundled into libLeanDeps.a and the model build never requests them
+        copy(
+            self,
+            "*",
+            src=build_dir / ".lake" / PACKAGES_DIR,
+            dst=package_dir / PACKAGES_DIR,
+            excludes=["*.c.o.export"],
+        )
         copy(self, ARCHIVE_NAME, src=build_dir, dst=package_dir / LIB_DIR)
 
     def package_info(self):

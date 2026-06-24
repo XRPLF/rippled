@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from conan import ConanFile
 from conan.errors import ConanInvalidConfiguration
@@ -30,11 +30,11 @@ class Lean(ConanFile):
 
     def set_version(self):
         if self.version is None:
-            toolchain = os.path.join(
+            toolchain = Path(
                 self.recipe_folder, "..", "..", "formal_verification", "lean-toolchain"
             )
-            with open(toolchain, encoding="utf-8") as f:
-                self.version = f.read().strip().split(":v")[1]  # "leanprover/lean4:vX" -> "X"
+            # "leanprover/lean4:vX" -> "X"
+            self.version = toolchain.read_text(encoding="utf-8").strip().split(":v")[1]
 
     def build(self):
         os_name, arch = str(self.settings.os), str(self.settings.arch)
@@ -52,20 +52,20 @@ class Lean(ConanFile):
             sha256=sha256,
             strip_root=True,
             keep_permissions=True,
-            destination=os.path.join(self.build_folder, "toolchain"),
+            destination=Path(self.build_folder) / "toolchain",
         )
 
     def package(self):
         copy(
             self,
             "*",
-            src=os.path.join(self.build_folder, "toolchain"),
+            src=Path(self.build_folder) / "toolchain",
             dst=self.package_folder,
         )
 
     def package_info(self):
         self.cpp_info.includedirs = ["include"]
-        self.cpp_info.libdirs = [os.path.join("lib", "lean")]
+        self.cpp_info.libdirs = [str(Path("lib") / "lean")]
         self.cpp_info.libs = ["Lake", "leanshared"]  # order matters: Lake before the runtime
         self.cpp_info.bindirs = ["bin"]
-        self.buildenv_info.prepend_path("PATH", os.path.join(self.package_folder, "bin"))
+        self.buildenv_info.prepend_path("PATH", str(Path(self.package_folder) / "bin"))
