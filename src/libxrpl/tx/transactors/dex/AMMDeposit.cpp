@@ -470,6 +470,19 @@ AMMDeposit::applyGuts(Sandbox& sb)
         XRPL_ASSERT(
             newLPTokenBalance > beast::kZero,
             "xrpl::AMMDeposit::applyGuts : valid new LP token balance");
+        // Defensive check: deposit formulas with fixAMMv1_3 round LP tokens
+        // down and asset amounts up, so sqrt(pool1*pool2) >= newLPTokenBalance
+        // is guaranteed to hold. A precision loss failure is not expected.
+        if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
+        {
+            if (auto const ter = checkAMMPrecisionLoss(
+                    sb, ammAccountID, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], newLPTokenBalance, j_);
+                !isTesSuccess(ter))
+            {
+                UNREACHABLE("xrpl::AMMDeposit::applyGuts : AMM precision loss");
+                return {ter, false};  // LCOV_EXCL_LINE
+            }
+        }
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         // LP depositing into AMM empty state gets the auction slot
         // and the voting

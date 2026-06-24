@@ -9,6 +9,7 @@
 #include <xrpl/beast/insight/Insight.h>
 
 #include <atomic>
+#include <cstddef>
 #include <functional>
 #include <mutex>
 #include <thread>
@@ -16,6 +17,22 @@
 #include <vector>
 
 namespace xrpl {
+
+namespace detail {
+
+// Replace-policy tags selecting how TaggedCache::canonicalizeImpl resolves a
+// collision when the key already exists (defined in TaggedCache.ipp):
+//   - ReplaceCached: always replace the cached value with `data`. `data` is
+//     never written back and may be const.
+//   - ReplaceClient: keep the cached value and write it back into `data` (the
+//     client's pointer), which must therefore be writable.
+//   - ReplaceDynamically: call the supplied callback to decide per call; `data`
+//     is written back when the cached value is kept, so it must be writable.
+struct ReplaceCached;
+struct ReplaceClient;
+struct ReplaceDynamically;
+
+}  // namespace detail
 
 /** Map/cache combination.
     This class implements a cache and a map. The cache keeps objects alive
@@ -96,6 +113,32 @@ public:
     bool
     del(key_type const& key, bool valid);
 
+private:
+    // Selects the `data` parameter type of canonicalizeImpl from the replace
+    // policy: const for detail::ReplaceCached (never written back), otherwise
+    // writable.
+    template <typename Policy>
+    using CanonicalizeClientPointerType = std::conditional_t<
+        std::is_same_v<detail::ReplaceCached, Policy>,
+        SharedPointerType const&,
+        SharedPointerType&>;
+
+    /** Shared implementation of the canonicalize family.
+
+        `policy` selects how a collision is resolved when `key` already exists:
+        detail::ReplaceCached, detail::ReplaceClient or
+        detail::ReplaceDynamically. For ReplaceDynamically `replaceCallback` is
+        invoked with the existing strong pointer and returns whether to replace
+        the cached value with `data`; for the tag policies it is unused.
+    */
+    template <class Policy, class Callback = std::nullptr_t>
+    bool
+    canonicalizeImpl(
+        key_type const& key,
+        CanonicalizeClientPointerType<Policy> data,
+        Policy policy,
+        Callback&& replaceCallback = nullptr);
+
 public:
     /** Replace aliased objects with originals.
 
@@ -104,19 +147,52 @@ public:
         This routine eliminates the duplicate and performs a replacement
         on the callers shared pointer if needed.
 
+        `replaceCallback` is a callable taking the existing strong pointer and
+        returning whether to replace the cached value with `data` (true) or to
+        keep the cached value and write it back into `data` (false). Because the
+        write-back case mutates `data`, `data` must be writable.
+
         @param key The key corresponding to the object
         @param data A shared pointer to the data corresponding to the object.
-        @param replace Function that decides if cache should be replaced
+        @param replaceCallback A callable (existing strong pointer -> bool).
 
-        @return `true` If the key already existed.
-    */
-    template <class R>
+        @return `true` if an existing live entry was found and used; `false` if a new entry was
+                inserted or an expired tracked entry was re-cached.
+    **/
+    template <class Callback>
     bool
-    canonicalize(key_type const& key, SharedPointerType& data, R&& replaceCallback);
+    canonicalize(key_type const& key, SharedPointerType& data, Callback&& replaceCallback);
 
+    /** Insert/update the canonical entry for `key`, always replacing the
+        cached value with `data`.
+
+        If an entry already exists for `key`, the cached value is unconditionally
+        replaced with `data`; otherwise `data` is inserted. `data` is never
+        written back, so it may be const.
+
+        @param key The key corresponding to the object.
+        @param data A shared pointer to the data corresponding to the object.
+
+        @return `true` if an existing live entry was found and used; `false` if a new entry was
+                inserted or an expired tracked entry was re-cached.
+    **/
     bool
     canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data);
 
+    /** Insert the canonical entry for `key`, keeping any existing cached value.
+
+        If an entry already exists for `key`, the cached value is kept and
+        written back into `data` so the caller ends up with the canonical
+        object; otherwise `data` is inserted. Because `data` may be overwritten
+        it must be writable.
+
+        @param key The key corresponding to the object.
+        @param data A shared pointer to the data corresponding to the object;
+                    updated to the canonical value when one already exists.
+
+        @return `true` if an existing live entry was found and used; `false` if a new entry was
+                inserted or an expired tracked entry was re-cached.
+    **/
     bool
     canonicalizeReplaceClient(key_type const& key, SharedPointerType& data);
 
