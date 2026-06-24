@@ -3,9 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -306,12 +304,7 @@ NFTokenMint::doApply()
             object.setFieldVL(sfURI, *uri);
     });
 
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-
-    if (TER const ret =
-            nft::insertToken(ctx_.view(), ctx_.tx, accountID_, *sponsorSle, std::move(newToken));
+    if (TER const ret = nft::insertToken(ctx_.view(), accountID_, std::move(newToken));
         !isTesSuccess(ret))
         return ret;
 
@@ -322,7 +315,6 @@ NFTokenMint::doApply()
         // because a Mint is only allowed to create a sell offer.
         if (TER const ter = nft::tokenOfferCreateApply(
                 view(),
-                ctx_.tx,
                 ctx_.tx[sfAccount],
                 ctx_.tx[sfAmount],
                 ctx_.tx[~sfDestination],
@@ -343,17 +335,9 @@ NFTokenMint::doApply()
             view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
-                view().read(keylet::account(accountID_)),
-                preFeeBalance_,
-                *sponsorSle,
-                0,
-                0,
-                j_);
-            !isTesSuccess(ret))
-            return ret;
+        if (auto const reserve = view().fees().accountReserve(ownerCountAfter);
+            preFeeBalance_ < reserve)
+            return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
 }
