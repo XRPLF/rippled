@@ -92,10 +92,14 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     if (sle == nullptr)
         return beast::kZero;
 
-    std::uint32_t const ownerCount = view.ownerCountHook(id, sle->at(sfOwnerCount)) -
-        sle->at(sfSponsoredOwnerCount) + sle->at(sfSponsoringOwnerCount) + ownerCountAdj;
+    std::uint32_t const ownerCount = confineOwnerCount(
+        view.ownerCountHook(id, sle->at(sfOwnerCount)) - sle->at(sfSponsoredOwnerCount) +
+            sle->at(sfSponsoringOwnerCount),
+        ownerCountAdj);
     auto const& fees = view.fees();
-    auto const reserve = (fees.reserve * accountOwnerCount(sle)) + (fees.increment * ownerCount);
+    auto const reserve = isPseudoAccount(sle)
+        ? XRPAmount{0}
+        : ((fees.reserve * accountOwnerCount(sle)) + (fees.increment * ownerCount));
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
