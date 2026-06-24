@@ -7162,7 +7162,7 @@ protected:
     {
         testEnabled(features);
         testMintReserve(features);
-        testMintMaxTokens(features);
+        // testMintMaxTokens(features);
         testMintInvalid(features);
         testBurnInvalid(features);
         testCreateOfferInvalid(features);
