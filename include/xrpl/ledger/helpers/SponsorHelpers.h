@@ -13,6 +13,12 @@
 namespace xrpl {
 
 inline bool
+isFeeSponsored(STTx const& tx)
+{
+    return (tx.getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u;
+}
+
+inline bool
 isReserveSponsored(STTx const& tx)
 {
     return (tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve) != 0u;
@@ -124,14 +130,5 @@ removeSponsorFromLedgerEntry(SLE::ref sle, SF_ACCOUNT const& field = sfSponsor)
     if (sle->isFieldPresent(field))
         sle->makeFieldAbsent(field);
 }
-
-// namespace sponsor
-// {
-// // Accessing the ledger to check if provided sponsor is valid.
-// [[nodiscard]] TER
-// valid(ReadView const& view, STTx const& tx, beast::Journal j)
-// {
-// }
-// }
 
 }  // namespace xrpl
