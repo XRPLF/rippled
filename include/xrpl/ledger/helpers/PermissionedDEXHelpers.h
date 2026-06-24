@@ -1,4 +1,5 @@
 #pragma once
+
 #include <xrpl/ledger/View.h>
 
 namespace xrpl::permissioned_dex {

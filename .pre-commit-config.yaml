@@ -15,6 +15,7 @@ repos:
     hooks:
       - id: check-added-large-files
         args: [--maxkb=400, --enforce-all]
+      - id: check-executables-have-shebangs
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-merge-conflict
@@ -35,13 +36,18 @@ repos:
         language: python
         types_or: [c++, c]
         exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
+      - id: fix-pragma-once
+        name: fix missing '#pragma once' declarations in header files
+        language: python
+        entry: ./bin/pre-commit/fix_pragma_once.py
+        files: \.(h|hpp)$
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: dd18dad857d6133e90bbe478f4f2f22ec0030269 # frozen: v22.1.5
     hooks:
       - id: clang-format
         args: [--style=file]
-        "types_or": [c++, c, proto]
+        types_or: [c++, c, proto]
         exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
 
   - repo: https://github.com/BlankSpruce/gersemi-pre-commit
