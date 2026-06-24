@@ -365,8 +365,13 @@ ConfidentialMPTSend::doApply()
     // Add to auditor's balance if present
     if (auditorEc)
     {
+        auto rerandomizedAuditorEc = rerandomizeCiphertext(
+            *auditorEc, (*sleIssuance)[sfAuditorEncryptionKey], sendChallenge);
+        if (!rerandomizedAuditorEc)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
         auto const curAuditorEnc = (*sleDestinationMPToken)[sfAuditorEncryptedBalance];
-        auto newAuditorEnc = homomorphicAdd(curAuditorEnc, *auditorEc);
+        auto newAuditorEnc = homomorphicAdd(curAuditorEnc, *rerandomizedAuditorEc);
         if (!newAuditorEnc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
