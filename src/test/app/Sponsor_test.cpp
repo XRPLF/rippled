@@ -732,7 +732,8 @@ public:
             env.close();
 
             Account const bob("bob");
-            env.fund(XRP(1000), bob);
+            Account const charlie("charlie");
+            env.fund(XRP(1000), bob, charlie);
             env.close();
 
             // Fee insufficient
