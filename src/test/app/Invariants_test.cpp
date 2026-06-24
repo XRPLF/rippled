@@ -3776,6 +3776,21 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
+            Env{*this, testableAmendments() - featureLendingProtocolV1_1},
+            {"deposit must change depositor shares"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
+                                   sample.accountShares.reset();
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
             {"deposit must change depositor shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
@@ -3858,6 +3873,45 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject& tx) { tx[sfAmount] = XRPAmount(10); }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
+            {"donation must not change depositor shares"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
+                                   sample.accountShares->amount = 10;
+                               }));
+            },
+            XRPAmount{},
+            STTx{
+                ttVAULT_DEPOSIT,
+                [](STObject& tx) {
+                    tx[sfAmount] = XRPAmount(10);
+                    tx[sfFlags] = tfVaultDonate;
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
+            {"donation must not change vault shares"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), ac.view().seq());
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
+                                   sample.sharesTotal = 10;
+                                   sample.accountShares = std::nullopt;
+                               }));
+            },
+            XRPAmount{},
+            STTx{
+                ttVAULT_DEPOSIT,
+                [](STObject& tx) {
+                    tx[sfAmount] = XRPAmount(10);
+                    tx[sfFlags] = tfVaultDonate;
+                }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);

@@ -4,6 +4,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 
 #include <optional>
 
@@ -98,5 +99,8 @@ sharesToAssetsWithdraw(
 */
 [[nodiscard]] bool
 isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
+
+[[nodiscard]] bool
+isVaultDonate(Rules const& rules, STTx const& tx);
 
 }  // namespace xrpl
