@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -524,6 +525,8 @@ ValidMPTTransfer::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    auto const fix330Enabled = view.rules().enabled(fixCleanup3_3_0);
+
     if (hasPrivilege(tx, OverrideFreeze))
         return true;
 
@@ -584,12 +587,18 @@ ValidMPTTransfer::finalize(
                     ++senders;
                 }
 
-                // Check once: if any involved account is frozen, the whole
-                // issuance transfer is considered frozen. Only need to check for
-                // frozen if there is a transfer of funds.
+                // Check once: if any involved account is frozen, the whole issuance transfer is
+                // considered frozen. Only need to check for frozen if there is a transfer of funds.
+                //
+                // The isVaultPseudoAccountFrozen check (transitive freeze via vault underlying) is
+                // only enforced post-fixCleanup3_3_0; pre-amendment, AMM withdrawals of vault
+                // shares are permitted even when the underlying asset is individually frozen.
+                bool const accountFrozen = isGlobalFrozen(view, MPTIssue{mptID}) ||
+                    isIndividualFrozen(view, account, MPTIssue{mptID}) ||
+                    (fix330Enabled &&
+                     isVaultPseudoAccountFrozen(view, account, MPTIssue{mptID}, 0));
                 if (!invalidTransfer &&
-                    (isFrozen(view, account, MPTIssue{mptID}) ||
-                     !isAuthorized(view, mptID, account, reqAuth)))
+                    (accountFrozen || !isAuthorized(view, mptID, account, reqAuth)))
                 {
                     invalidTransfer = true;
                 }

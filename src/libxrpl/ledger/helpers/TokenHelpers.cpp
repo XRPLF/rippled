@@ -35,14 +35,6 @@
 
 namespace xrpl {
 
-// Forward declaration for function that remains in View.h/cpp
-bool
-isLPTokenFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Asset const& asset,
-    Asset const& asset2);
-
 //------------------------------------------------------------------------------
 //
 // Freeze checking (Asset-based)
@@ -76,14 +68,6 @@ TER
 checkIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 {
     if (isIndividualFrozen(view, account, asset))
-        return asset.holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
-    return tesSUCCESS;
-}
-
-TER
-checkIndividualDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
-{
-    if (isDeepFrozen(view, account, asset))
         return asset.holds<MPTIssue>() ? tecLOCKED : tecFROZEN;
     return tesSUCCESS;
 }
@@ -182,39 +166,44 @@ checkWithdrawFreeze(
     Asset const& asset)
 {
     XRPL_ASSERT(
-        isPseudoAccount(view, srcAcct),
-        "xrpl::checkWithdrawFreeze : source must be a pseudo-account");
+        isPseudoAccount(view, srcAcct), "xrpl::checkWithdrawFreeze : source is a pseudo-account");
+    XRPL_ASSERT(
+        !isPseudoAccount(view, submitterAcct),
+        "xrpl::checkWithdrawFreeze : submitter is not a pseudo-account");
+    XRPL_ASSERT(
+        !isPseudoAccount(view, dstAcct),
+        "xrpl::checkWithdrawFreeze : destination is not a pseudo-account");
 
     // Funds can always be sent to the issuer
     if (dstAcct == asset.getIssuer())
         return tesSUCCESS;
 
     // If the asset is globally frozen, other checks are redundant
-    if (auto const ret = checkGlobalFrozen(view, asset))
+    if (auto const ret = checkGlobalFrozen(view, asset); !isTesSuccess(ret))
         return ret;
 
     // Special case for shares - check if the shares (and the transitive asset) is not frozen
     if (asset.holds<MPTIssue>() &&
-        isVaultPseudoAccountFrozen(view, dstAcct, asset.get<MPTIssue>(), 0))
+        isVaultPseudoAccountFrozen(view, srcAcct, asset.get<MPTIssue>(), 0))
     {
         return tecLOCKED;
     }
 
     // The transfer is from Submitter to Destination via Source (pseudo-account)
     // Both Source and Submitter must not be frozen to allow sending funds
-    if (auto const ret = checkIndividualFrozen(view, srcAcct, asset))
+    if (auto const ret = checkIndividualFrozen(view, srcAcct, asset); !isTesSuccess(ret))
         return ret;
 
     // Check submitter's individual freeze only when Submitter != Destination (a regular freeze
     // should not block self-withdrawal).
     if (submitterAcct != dstAcct)
     {
-        if (auto const ret = checkIndividualFrozen(view, submitterAcct, asset))
+        if (auto const ret = checkIndividualFrozen(view, submitterAcct, asset); !isTesSuccess(ret))
             return ret;
     }
 
     // The destination account must not be deep frozen to receive the funds
-    return checkIndividualDeepFrozen(view, dstAcct, asset);
+    return checkDeepFrozen(view, dstAcct, asset);
 }
 
 [[nodiscard]] TER
@@ -226,7 +215,10 @@ checkDepositFreeze(
 {
     XRPL_ASSERT(
         isPseudoAccount(view, dstAcct),
-        "xrpl::checkDepositFreeze : destination must be a pseudo-account");
+        "xrpl::checkDepositFreeze : destination is a pseudo-account");
+    XRPL_ASSERT(
+        !isPseudoAccount(view, srcAcct),
+        "xrpl::checkWithdrawFreeze : source is not a pseudo-account");
 
     // An Issuer cannot deposit when:
     // 1. Asset is globally frozen
@@ -244,7 +236,7 @@ checkDepositFreeze(
 
     if (srcAcct != asset.getIssuer())
     {
-        if (auto const ret = checkIndividualFrozen(view, srcAcct, asset))
+        if (auto const ret = checkIndividualFrozen(view, srcAcct, asset); !isTesSuccess(ret))
             return ret;
     }
 
@@ -865,7 +857,8 @@ directSendNoLimitMultiIOU(
         if (senderID == issuer || receiverID == issuer || issuer == noAccount())
         {
             // Direct send: redeeming IOUs and/or sending own IOUs.
-            if (auto const ter = directSendNoFeeIOU(view, senderID, receiverID, amount, false, j))
+            if (auto const ter = directSendNoFeeIOU(view, senderID, receiverID, amount, false, j);
+                !isTesSuccess(ter))
                 return ter;
             actual += amount;
             // Do not add amount to takeFromSender, because directSendNoFeeIOU took

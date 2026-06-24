@@ -375,7 +375,6 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (!expected)
         return {expected.error(), false};
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
-
     auto const subTxType = ctx_.tx.getFlags() & tfWithdrawSubTx;
 
     auto const [result, newLPTokenBalance] = [&,

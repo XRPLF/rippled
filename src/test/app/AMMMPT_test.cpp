@@ -18,6 +18,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -45,7 +46,6 @@
 
 #include <array>
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>
@@ -65,21 +65,6 @@ namespace xrpl::test {
 struct AMMMPT_test : public jtx::AMMTest
 {
 private:
-    // All 2^N permutations of testableAmendments() with each subset of the
-    // given features excluded.
-    static std::vector<FeatureBitset>
-    amendmentCombinations(std::initializer_list<uint256> features)
-    {
-        std::vector<FeatureBitset> result{jtx::testableAmendments()};
-        for (auto const& f : features)
-        {
-            auto const n = result.size();
-            for (std::size_t i = 0; i < n; ++i)
-                result.push_back(result[i] - f);
-        }
-        return result;
-    }
-
     void
     testInstanceCreate()
     {
@@ -6909,18 +6894,30 @@ private:
     {
         testcase("AMM with vault shares — underlying freeze blocks share withdrawal");
         using namespace jtx;
-        FeatureBitset const all{testableAmendments()};
+        // AMMTestBase::testableAmendments() strips featureSingleAssetVault,
+        // but vault shares require it. Use the global jtx set directly.
+        FeatureBitset const all{jtx::testableAmendments()};
 
-        // Withdrawing vault shares from an AMM is blocked when the vault's
-        // underlying asset is frozen for the withdrawer (post-fixCleanup3_3_0).
-        // Pre-fix, the old checkFrozen path only checks the AMM account's lock
-        // state on the share MPT, which is unset, so withdrawal succeeds.
+        // When alice's underlying asset is individually frozen:
+        //
+        // Deposit (post-fixCleanup3_3_0): checkDepositFreeze checks the AMM
+        //   pseudo-account's underlying, not alice's — deposit is allowed.
+        //   Pre-fix: featureAMMClawback calls isFrozen(alice, share) which
+        //   descends via isVaultPseudoAccountFrozen(alice,...) and finds the
+        //   frozen underlying — deposit is blocked.
+        //
+        // Withdrawal (post-fixCleanup3_3_0): checkWithdrawFreeze ends with
+        //   checkDeepFrozen(alice, share) which calls isFrozen(alice, share)
+        //   and finds the frozen underlying — withdrawal is blocked.
+        //   Pre-fix: the old path only checks the AMM account's MPToken lock,
+        //   which is unset — withdrawal succeeds.
 
         auto runIOU = [&](FeatureBitset const& features) {
             bool const fix330 = features[fixCleanup3_3_0];
             Env env{*this, features};
 
             env.fund(XRP(100'000), gw_, alice_);
+            env(fset(gw_, asfDefaultRipple));
             env.close();
 
             PrettyAsset const iou = gw_["IOU"];
@@ -6928,27 +6925,39 @@ private:
             env(pay(gw_, alice_, iou(10'000)));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [createTx, vaultKeylet] = vault.create({.owner = alice_, .asset = iou});
             env(createTx);
             env.close();
 
-            // 100 IOU → 100,000,000 vault shares (IOU vault scale = 6)
-            env(vault.deposit({.depositor = alice_, .id = vaultKeylet.key, .amount = iou(100)}));
+            // 200 IOU → 200,000,000 vault shares (IOU vault scale = 6)
+            env(vault.deposit({.depositor = alice_, .id = vaultKeylet.key, .amount = iou(200)}));
             env.close();
 
             auto const shareMPTID = env.le(vaultKeylet)->at(sfShareMPTID);
+            // Use half the shares for the AMM; alice keeps the other half.
             STAmount const shareAmt{MPTIssue{shareMPTID}, 100'000'000};
+            // Pool: XRP(100) = 1e8 drops, shares = 1e8 → LP ≈ 1e8
             AMM amm{env, alice_, XRP(100), shareAmt};
             env.close();
 
-            // Freeze alice's IOU trustline (individual freeze on underlying)
+            // Freeze alice's IOU trustline (individual freeze on underlying).
             env(trust(gw_, iou(0), alice_, tfSetFreeze));
             env.close();
 
-            // post-fix330: isVaultPseudoAccountFrozen(alice, share) detects
-            //              alice's frozen underlying → tecLOCKED
-            // pre-fix330:  checkFrozen(ammAccount, share) → no lock → tesSUCCESS
+            // post-fix330: checkDepositFreeze checks AMM pseudo's underlying
+            //              (not alice's) → deposit is allowed
+            // pre-fix330:  featureAMMClawback path calls isFrozen(alice, share)
+            //              which descends to alice's frozen IOU → tecLOCKED
+            amm.deposit(
+                {.account = alice_,
+                 .asset1In = XRP(1),
+                 .err = Ter(fix330 ? TER(tesSUCCESS) : TER(tecLOCKED))});
+
+            // post-fix330: checkDeepFrozen(alice, share) descends to alice's
+            //              frozen IOU → tecLOCKED
+            // pre-fix330:  old path checks AMM account's MPToken lock only
+            //              (unset) → tesSUCCESS
             amm.withdraw(
                 {.account = alice_,
                  .tokens = 1'000,
@@ -6957,6 +6966,8 @@ private:
             env(trust(gw_, iou(0), alice_, tfClearFreeze));
             env.close();
 
+            // Confirm both operations succeed once the freeze is lifted.
+            amm.deposit({.account = alice_, .asset1In = XRP(1)});
             amm.withdraw({.account = alice_, .tokens = 1'000});
         };
 
@@ -6971,39 +6982,48 @@ private:
             env.close();
 
             MPTTester mptt{env, gw_, kMptInitNoFund};
-            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            mptt.create({.flags = kMptDexFlags | tfMPTCanLock});
             PrettyAsset const mpt = mptt.issuanceID();
             mptt.authorize({.account = alice_});
-            env(pay(gw_, alice_, mpt(1'000)));
+            env(pay(gw_, alice_, mpt(30'000)));
             env.close();
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [createTx, vaultKeylet] = vault.create({.owner = alice_, .asset = mpt});
             env(createTx);
             env.close();
 
-            // 100 MPT → 100 vault shares (MPT vault scale = 0)
-            env(vault.deposit({.depositor = alice_, .id = vaultKeylet.key, .amount = mpt(100)}));
+            // 20000 MPT → 20000 vault shares (MPT vault scale = 0)
+            env(vault.deposit({.depositor = alice_, .id = vaultKeylet.key, .amount = mpt(20'000)}));
             env.close();
 
             auto const shareMPTID = env.le(vaultKeylet)->at(sfShareMPTID);
-            STAmount const shareAmt{MPTIssue{shareMPTID}, 100};
+            // Use half the shares for the AMM; alice keeps the other half.
+            // Pool: XRP(100) = 1e8 drops, shares = 10000 → LP ≈ 1e6
+            STAmount const shareAmt{MPTIssue{shareMPTID}, 10'000};
             AMM amm{env, alice_, XRP(100), shareAmt};
             env.close();
 
-            // Lock alice's underlying MPT
+            // Lock alice's underlying MPT (individual lock).
             mptt.set({.holder = alice_, .flags = tfMPTLock});
 
-            // post-fix330: isVaultPseudoAccountFrozen finds alice locked → tecLOCKED
-            // pre-fix330:  checkFrozen(ammAccount, share) → tesSUCCESS
+            // Same pre/post-fix330 semantics as the IOU case above.
+            amm.deposit(
+                {.account = alice_,
+                 .asset1In = XRP(1),
+                 .err = Ter(fix330 ? TER(tesSUCCESS) : TER(tecLOCKED))});
+
+            // {.tokens = 1'000} → frac = 1000/1e6 = 0.001
+            // XRP out = 1e8 * 0.001 = 1e5 drops, shares out = 10000 * 0.001 = 10
             amm.withdraw(
                 {.account = alice_,
-                 .tokens = 10,
+                 .tokens = 1'000,
                  .err = Ter(fix330 ? TER(tecLOCKED) : TER(tesSUCCESS))});
 
             mptt.set({.holder = alice_, .flags = tfMPTUnlock});
 
-            amm.withdraw({.account = alice_, .tokens = 10});
+            amm.deposit({.account = alice_, .asset1In = XRP(1)});
+            amm.withdraw({.account = alice_, .tokens = 1'000});
         };
 
         runMPT(all);
@@ -7232,7 +7252,7 @@ private:
         FeatureBitset const all{jtx::testableAmendments()};
         testInstanceCreate();
         testInvalidInstance();
-        for (auto const& f : amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
+        for (auto const& f : jtx::amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
             testInvalidDeposit(f);
         testDeposit();
         testInvalidWithdraw();

@@ -321,6 +321,17 @@ requireAuth(
 
     bool const featureSAVEnabled = view.rules().enabled(featureSingleAssetVault);
 
+    bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
+    if (featureSAVEnabled || featureMPTV2Enabled)
+    {
+        // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of
+        // their participants and do not have trustlines to underlying assets.
+        // They are implicitly authorized for any MPT they hold, including vault
+        // shares whose underlying asset would otherwise require auth.
+        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
+            return tesSUCCESS;
+    }
+
     if (featureSAVEnabled)
     {
         if (depth >= kMaxAssetCheckDepth)
@@ -380,14 +391,6 @@ requireAuth(
         }
         // We ignore error from validDomain if we found sleToken, as it could
         // belong to someone who is explicitly authorized e.g. a vault owner.
-    }
-
-    bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
-    if (featureSAVEnabled || featureMPTV2Enabled)
-    {
-        // Implicitly authorize Vault, LoanBroker, and AMM pseudo-accounts
-        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
-            return tesSUCCESS;
     }
 
     // mptoken must be authorized if issuance enabled requireAuth
