@@ -133,7 +133,6 @@ struct base_uint_test : beast::unit_test::Suite
             BEAST_EXPECTS(resultText.substr(0, 16) == "0102030405060708", resultText);
         }
 
-#if 0
         // Container larger than the base_uint (16 bytes vs 12 bytes for
         // test96). Only the first 12 bytes are copied; the extra bytes are
         // ignored.
@@ -143,7 +142,6 @@ struct base_uint_test : beast::unit_test::Suite
             auto const resultText = to_string(result);
             BEAST_EXPECTS(resultText == "0102030405060708090A0B0C", resultText);
         }
-#endif
     }
 #endif
 
