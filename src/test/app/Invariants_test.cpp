@@ -4592,6 +4592,78 @@ class Invariants_test : public beast::unit_test::Suite
                 }
             }
         }
+
+        // Vault-share transfer: ValidMPTTransfer gates isVaultPseudoAccountFrozen
+        // on fixCleanup3_3_0.  Pre-amendment, vault-share transfers are allowed
+        // even when the underlying asset is individually frozen for the sender;
+        // post-amendment they are blocked.
+        {
+            Account const gw{"gw"};
+            MPTID shareID{};
+
+            auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                env.fund(XRP(1'000), gw);
+                env.trust(gw["IOU"](10'000), a1);
+                env.trust(gw["IOU"](10'000), a2);
+                env.close();
+                env(pay(gw, a1, gw["IOU"](500)));
+                env(pay(gw, a2, gw["IOU"](500)));
+                env.close();
+
+                PrettyAsset const iou = gw["IOU"];
+                Vault const vault{env};
+                auto [createTx, vaultKeylet] = vault.create({.owner = a1, .asset = iou});
+                env(createTx);
+                env.close();
+                // Both a1 and a2 deposit IOU, each receiving vault shares.
+                env(vault.deposit({.depositor = a1, .id = vaultKeylet.key, .amount = iou(100)}));
+                env(vault.deposit({.depositor = a2, .id = vaultKeylet.key, .amount = iou(100)}));
+                env.close();
+
+                shareID = env.le(vaultKeylet)->at(sfShareMPTID);
+
+                // Freeze a1's IOU trustline from the issuer side.
+                env(trust(gw, gw["IOU"](0), a1, tfSetFreeze));
+                env.close();
+                return true;
+            };
+
+            // Simulate a vault-share transfer: a1 sends 10 shares to a2.
+            auto const precheck =
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) -> bool {
+                auto sle1 = ac.view().peek(keylet::mptoken(shareID, a1.id()));
+                auto sle2 = ac.view().peek(keylet::mptoken(shareID, a2.id()));
+                if (!sle1 || !sle2)
+                    return false;
+                (*sle1)[sfMPTAmount] -= 10;
+                (*sle2)[sfMPTAmount] += 10;
+                ac.view().update(sle1);
+                ac.view().update(sle2);
+                return true;
+            };
+
+            // post-fixCleanup3_3_0: isVaultPseudoAccountFrozen finds a1's
+            // underlying IOU frozen → invalidTransfer → invariant fires.
+            doInvariantCheck(
+                Env{*this, defaultAmendments()},
+                {{"invalid MPToken transfer between holders"}},
+                precheck,
+                XRPAmount{},
+                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                preclose);
+
+            // pre-fixCleanup3_3_0: isVaultPseudoAccountFrozen is not called;
+            // transfer is allowed even though the underlying IOU is frozen.
+            doInvariantCheck(
+                Env{*this, defaultAmendments() - fixCleanup3_3_0},
+                {},
+                precheck,
+                XRPAmount{},
+                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                preclose);
+        }
     }
 
     void
