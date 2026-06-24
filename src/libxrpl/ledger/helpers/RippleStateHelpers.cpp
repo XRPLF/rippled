@@ -634,8 +634,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 
 TER
 addEmptyHolding(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
@@ -647,40 +646,40 @@ addEmptyHolding(
 
     auto const& issuerId = issue.getIssuer();
     auto const& currency = issue.currency;
-    if (isGlobalFrozen(view, issuerId))
+    if (isGlobalFrozen(ctx.view, issuerId))
         return tecFROZEN;  // LCOV_EXCL_LINE
 
     auto const& srcId = issuerId;
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
     auto const index = keylet::line(srcId, dstId, currency);
-    auto const sleSrc = view.peek(keylet::account(srcId));
-    auto const sleDst = view.peek(keylet::account(dstId));
+    auto const sleSrc = ctx.view.peek(keylet::account(srcId));
+    auto const sleDst = ctx.view.peek(keylet::account(dstId));
     if (!sleDst || !sleSrc)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (!sleSrc->isFlag(lsfDefaultRipple))
         return tecINTERNAL;  // LCOV_EXCL_LINE
     // If the line already exists, don't create it again.
-    if (view.read(index))
+    if (ctx.view.read(index))
         return tecDUPLICATE;
 
     SLE::pointer sponsorSle;
     if (!isPseudoAccount(sleDst))
     {
-        auto sle = getTxReserveSponsor(view, tx);
+        auto sle = getTxReserveSponsor(ctx.view, ctx.tx);
         if (!sle)
             return sle.error();  // LCOV_EXCL_LINE
         sponsorSle = std::move(*sle);
     }
 
     // Can the account cover the trust line reserve ?
-    if (auto const ret =
-            checkInsufficientReserve(view, tx, sleDst, priorBalance, sponsorSle, 1, 0, journal);
+    if (auto const ret = checkInsufficientReserve(
+            ctx.view, ctx.tx, sleDst, priorBalance, sponsorSle, 1, 0, journal);
         !isTesSuccess(ret))
         return tecNO_LINE_INSUF_RESERVE;
 
     return trustCreate(
-        view,
+        ctx.view,
         high,
         srcId,
         dstId,

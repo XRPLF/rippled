@@ -348,7 +348,7 @@ VaultWithdraw::doApply()
     if (accountID_ != vault->at(sfOwner))
     {
         if (auto const ter =
-                removeEmptyHolding(view(), ctx_.tx, accountID_, sharesRedeemed.asset(), j_);
+                removeEmptyHolding({view(), ctx_.tx}, accountID_, sharesRedeemed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
@@ -375,7 +375,13 @@ VaultWithdraw::doApply()
     associateAsset(*vault, vaultAsset);
 
     return doWithdraw(
-        view(), ctx_.tx, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
+        ctx_.getApplyViewContext(),
+        accountID_,
+        dstAcct,
+        vaultAccount,
+        preFeeBalance_,
+        assetsWithdrawn,
+        j_);
 }
 
 void

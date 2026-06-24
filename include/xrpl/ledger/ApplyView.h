@@ -398,6 +398,12 @@ public:
     emptyDirDelete(Keylet const& directory);
 };
 
+struct ApplyViewContext
+{
+    ApplyView& view;
+    STTx const& tx;
+};
+
 namespace directory {
 /** Helper functions for managing low-level directory operations.
     These are not part of the ApplyView interface.
@@ -437,4 +443,5 @@ insertPage(
     std::function<void(SLE::ref)> const& describe);
 
 }  // namespace directory
+
 }  // namespace xrpl

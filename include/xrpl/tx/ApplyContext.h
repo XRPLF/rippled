@@ -112,6 +112,12 @@ public:
     TER
     checkInvariants(TER const result, XRPAmount const fee);
 
+    inline ApplyViewContext
+    getApplyViewContext()
+    {
+        return {view(), tx};
+    }
+
 private:
     static TER
     failInvariantCheck(TER const result);

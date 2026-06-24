@@ -229,8 +229,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 /// canAddHolding() in preflight with the same View and Asset
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
@@ -238,7 +237,7 @@ addEmptyHolding(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyView& view,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal);
