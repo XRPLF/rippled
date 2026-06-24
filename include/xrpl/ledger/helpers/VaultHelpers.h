@@ -103,4 +103,14 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref
 [[nodiscard]] bool
 isVaultDonate(Rules const& rules, STTx const& tx);
 
+/** Determine if a vault is insolvent. A vault is considered insolvent when
+    the total assets in the vault are zero, and outstanding shares are non-zero.
+
+    @param vault The vault SLE.
+    @param shareIssuance The MPTokenIssuance SLE for the vault's shares.
+
+    @return True if the vault is insolvent, false otherwise.
+*/
+[[nodiscard]] bool
+isVaultInsolvent(SLE::const_ref vault, SLE::const_ref shareIssuance);
 }  // namespace xrpl
