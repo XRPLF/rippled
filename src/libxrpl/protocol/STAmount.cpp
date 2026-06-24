@@ -1138,16 +1138,34 @@ hasInvalidAmount(STBase const& field, int depth, beast::Journal j)
         return true;
     }
 
-    if (auto const amount = dynamic_cast<STAmount const*>(&field))
-        return !isLegalMPT(*amount) || !isLegalNet(*amount);
+    // Dispatch on the serialized type tag rather than RTTI: this is on the invariant-checking path
+    // and a dynamic_cast chain over every field of every modified entry is measurably expensive.
+    // The object-like tags below all denote STObject subclasses (STLedgerEntry, STTx), so the
+    // downcast is sound; nested fields are only ever plain STI_OBJECT / STI_ARRAY containers.
+    // safeDowncast keeps a dynamic_cast validity assert in debug builds while compiling to
+    // static_cast in release.
+    switch (field.getSType())
+    {
+        case STI_AMOUNT: {
+            auto const& amount = safeDowncast<STAmount const&>(field);
+            return !isLegalMPT(amount) || !isLegalNet(amount);
+        }
 
-    if (auto const object = dynamic_cast<STObject const*>(&field))
-        return hasInvalidAmount(*object, depth + 1, j);
+        case STI_OBJECT:
+        case STI_LEDGERENTRY:
+        case STI_TRANSACTION:
+            return hasInvalidAmount(safeDowncast<STObject const&>(field), depth + 1, j);
 
-    if (auto const array = dynamic_cast<STArray const*>(&field))
-        return hasInvalidAmount(*array, depth + 1, j);
+        case STI_ARRAY:
+            return hasInvalidAmount(safeDowncast<STArray const&>(field), depth + 1, j);
 
-    return false;
+        default: {
+            XRPL_ASSERT(
+                dynamic_cast<STObject const*>(&field) == nullptr,
+                "xrpl::hasInvalidAmount : unhandled STObject type");
+            return false;
+        }
+    }
 }
 
 bool
