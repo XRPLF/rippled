@@ -506,7 +506,7 @@ checkXrpBalanceGeneral(
     std::int32_t ownerCountAdj,
     std::int32_t reserveCountAdj,
     XRPAmount balanceAdj,
-    bool moreThan2,
+    bool skipIfOwnerCountBelow2,
     beast::Journal j,
     bool checkApplicability)
 {
@@ -517,7 +517,8 @@ checkXrpBalanceGeneral(
     if (balanceAcc && balanceAcc->negative())
         return tecINSUFFICIENT_FUNDS;
 
-    XRPL_ASSERT(!moreThan2 || (!balanceAcc && !balanceAdj), "small owner count with balance");
+    XRPL_ASSERT(
+        !skipIfOwnerCountBelow2 || (!balanceAcc && !balanceAdj), "small owner count with balance");
 
     // With sponsored account reserve requirements can be 0. But some checks for liquidity assume we
     // have reserve and we can borrow fee from it in edge cases. We can end up in potential negative
@@ -573,7 +574,7 @@ checkXrpBalanceGeneral(
     {
         // Special case for amm/trustlines/authorizeMPtoken -  to not to demand reserve if
         // ownerCount less than 2. Sponsor still check reserve for full count.
-        if (moreThan2 && (ownerCountHlp(view, accSle, 0, true, j) < 2))
+        if (skipIfOwnerCountBelow2 && (ownerCountHlp(view, accSle, 0, true, j) < 2))
             return tesSUCCESS;
 
         feePayer = getFeePayerHlp(view, tx, {}).id;
@@ -618,7 +619,7 @@ checkXrpBalanceHlp(
     std::int32_t ownerCountAdj,
     std::int32_t reserveCountAdj,
     XRPAmount balanceAdj,
-    bool moreThan2,
+    bool skipIfOwnerCountBelow2,
     beast::Journal j,
     bool checkApplicability)
 {
@@ -646,7 +647,7 @@ checkXrpBalanceHlp(
         ownerCountAdj,
         reserveCountAdj,
         balanceAdj,
-        moreThan2,
+        skipIfOwnerCountBelow2,
         j,
         checkApplicability);
 }

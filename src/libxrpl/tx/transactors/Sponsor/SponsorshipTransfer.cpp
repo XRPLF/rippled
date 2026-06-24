@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SignerListHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -187,6 +188,8 @@ getLedgerEntryOwnerCount(SLE const& sle)
         // Vaults require 2 owner counts (the vault and a pseudo-account)
         case ltVAULT:
             return 2;
+        case ltSIGNER_LIST:
+            return signerListOwnerCount(sle);
         default:
             return 1;
     }

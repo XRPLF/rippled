@@ -107,7 +107,7 @@ checkXrpBalanceHlp(
     std::int32_t ownerCountAdj,
     std::int32_t reserveCountAdj,
     XRPAmount balanceAdj,
-    bool moreThan2,  // special case, reserve doesn't check if current ownerCount < 2
+    bool skipIfOwnerCountBelow2,  // special case, reserve doesn't check if current ownerCount < 2
     beast::Journal j,
     bool checkApplicability = true  // SponsorTransfer can break relations tx[sfAccount] === accSle
 );
@@ -226,7 +226,7 @@ checkXrpBalance(
         j);
 }
 
-// simple/accountSle + balance(passed manually) + sponsor(re-usage, checks on caller) + moreThan2
+// simple/accountSle + balance(passed manually) + sponsor(re-usage, checks on caller) + skipIfOwnerCountBelow2
 // check
 template <class V>
 [[nodiscard]] TER
@@ -236,7 +236,7 @@ checkXrpBalance(
     SLE::const_ref accSle,
     SLE::const_ref sponsorSle,
     std::int32_t ownerCountAdj,
-    bool moreThan2,
+    bool skipIfOwnerCountBelow2,
     beast::Journal j)
 {
     static XRPAmount const kA;
@@ -245,7 +245,7 @@ checkXrpBalance(
     if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
         apply = true;
     return checkXrpBalanceHlp(
-        view, apply, tx, {}, accSle, std::nullopt, sponsorSle, ownerCountAdj, 0, kA, moreThan2, j);
+        view, apply, tx, {}, accSle, std::nullopt, sponsorSle, ownerCountAdj, 0, kA, skipIfOwnerCountBelow2, j);
 }
 
 // simple/accountSle + sponsor(re-usage, checks on caller)

@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SignerListHelpers.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
@@ -68,6 +69,11 @@ SponsorshipOwnerCountsMatch::visitEntry(
                 if (!sle->isFieldPresent(sfSponsor))
                     return 0;
                 return 2;
+            }
+            case ltSIGNER_LIST: {
+                if (!sle->isFieldPresent(sfSponsor))
+                    return 0;
+                return signerListOwnerCount(*sle);
             }
             default: {
                 if (sle->isFieldPresent(sfSponsor))

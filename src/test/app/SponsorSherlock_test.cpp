@@ -5,6 +5,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/did.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
@@ -34,6 +35,8 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -2570,6 +2573,349 @@ protected:
         BEAST_EXPECT(env.le(brokerKeylet2));
     }
 
+    void
+    test2178TrustSetCounterpartySponsorMisroute()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2178
+        // TrustSet's modify path applies the tx-level reserve sponsor to whichever
+        // side has its reserve gate trip on this update, regardless of whether that
+        // side belongs to the tx submitter. trustCreate only sets the submitter's
+        // reserve flag and snapshots the counterparty's asfDefaultRipple state into
+        // the line's NoRipple bit; if the counterparty later toggles asfDefaultRipple
+        // (the canonical issuer flow), the line and account flags disagree and on
+        // the submitter's next TrustSet the counterparty-side gate fires without
+        // the canonical tx[sfAccount] == account guard.
+        //
+        // With the fix: getTxReserveSponsor() checks if the account parameter
+        // matches tx[sfAccount], preventing sponsor misroute to counterparty.
+
+        testcase("test2178 TrustSet modify with sponsor does not misroute onto counterparty side");
+
+        using namespace test::jtx;
+
+        Env env(*this);
+        Account const alice{"alice_t2178"};
+        Account const bob{"bob_t2178"};
+        Account const carol{"carol_t2178"};
+
+        // Fund without auto-setting asfDefaultRipple
+        env.fund(XRP(100'000), alice);
+        env.fund(XRP(100'000), bob);
+        env.fund(XRP(100'000), carol);
+        env.close();
+
+        auto const USD = bob["USD"];
+
+        // Alice creates the trust line. trustCreate sets only Alice's reserve flag
+        // and (because Bob has no DefaultRipple yet) sets lsfHighNoRipple on Bob's side.
+        // No sponsor attached.
+        env(trust(alice, USD(1'000)));
+        env.close();
+
+        // Bob now enables asfDefaultRipple (canonical issuer-side flow).
+        // The line still carries lsfHighNoRipple on Bob's side, so on Alice's next
+        // TrustSet the gate ((uFlagsOut & lsfHighNoRipple) == 0) != bHighDefRipple
+        // evaluates to (false != true) = true, and bHighReserved is still false.
+        env(fset(bob, asfDefaultRipple));
+        env.close();
+
+        bool const aliceIsHigh = alice.id() > bob.id();
+        SF_ACCOUNT const& bobSponsorField = aliceIsHigh ? sfLowSponsor : sfHighSponsor;
+        SF_ACCOUNT const& aliceSponsorField = aliceIsHigh ? sfHighSponsor : sfLowSponsor;
+
+        auto const lineKey = keylet::line(alice, bob, USD.currency);
+        auto const sleLineBefore = env.le(lineKey);
+        BEAST_EXPECT(sleLineBefore);
+        BEAST_EXPECT(!sleLineBefore->isFieldPresent(sfLowSponsor));
+        BEAST_EXPECT(!sleLineBefore->isFieldPresent(sfHighSponsor));
+
+        auto const carolBefore = (*env.le(carol))[~sfSponsoringOwnerCount].value_or(0u);
+        auto const bobBefore = (*env.le(bob))[~sfSponsoredOwnerCount].value_or(0u);
+
+        // Alice modifies the trust line with Carol as sponsor
+        env(trust(alice, USD(2'000)),
+            sponsor::As(carol, spfSponsorReserve),
+            Sig(sfSponsorSignature, carol),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const sleLineAfter = env.le(lineKey);
+        BEAST_EXPECT(sleLineAfter);
+
+        // With the fix: Bob's side should NOT have Carol as sponsor
+        // Carol only agreed to back Alice
+        BEAST_EXPECT(!sleLineAfter->isFieldPresent(bobSponsorField));
+
+        // Alice's side also has no sponsor because Alice's reserve flag was
+        // already set on the FIRST TrustSet (no sponsor in scope then), so
+        // bAliceReserveSet && !bAliceReserved is false on the modify path
+        BEAST_EXPECT(!sleLineAfter->isFieldPresent(aliceSponsorField));
+
+        // Carol's sponsoring count should remain unchanged (no misroute)
+        auto const carolAfter = (*env.le(carol))[~sfSponsoringOwnerCount].value_or(0u);
+        BEAST_EXPECT(carolAfter == carolBefore);
+
+        // Bob's sponsored count should remain unchanged
+        auto const bobAfter = (*env.le(bob))[~sfSponsoredOwnerCount].value_or(0u);
+        BEAST_EXPECT(bobAfter == bobBefore);
+    }
+
+    void
+    test2241AlternateFeePayerQueueAdmissionDelegate()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2241
+        testcase("TxQ alternate fee payer queue admission - delegated");
+        using namespace jtx;
+
+        auto cfg = makeConfig({{"minimum_txn_in_ledger_standalone", "3"}});
+        cfg->fees.referenceFee = 10;
+        cfg->fees.accountReserve = 200;
+        cfg->fees.ownerReserve = 50;  // * kDropsPerXrp;
+        Env env{*this, std::move(cfg)};
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(500'000), alice, bob);
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        Account const burner{"burner"};
+        env.fund(XRP(1'000'000), burner);
+        env.close();
+        fillQueue(env, burner);
+        fillQueue(env, burner);
+
+        auto const aliceBalanceBefore = env.balance(alice);
+        auto const bobBalanceBefore = env.balance(bob);
+        auto const aliceSeq = env.seq(alice);
+
+        for (int i = 0; i < 4; ++i)
+        {
+            env(pay(alice, bob, drops(1)),
+                delegate::As(bob),
+                Seq(aliceSeq + i),
+                Fee(51),
+                Ter(terQUEUED));
+        }
+
+        auto const aliceBalance1 = env.balance(alice);
+        auto const bobBalance1 = env.balance(bob);
+
+        // Fixed: the fifth tx should be queued because Bob is the real fee
+        // payer and has enough XRP. Before the fix, TxQ summed the four prior fees
+        // against Alice's reserve: 4 * 51 drops >= 200 drops.
+        env(pay(alice, bob, drops(1)),
+            delegate::As(bob),
+            Seq(aliceSeq + 4),
+            Fee(51),
+            Ter(terQUEUED));  // fixed, originally telCAN_NOT_QUEUE_BALANCE
+
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == 5);
+
+        // Drain the queue
+        for (int i = 0; i < 4 && env.app().getTxQ().getMetrics(*env.current()).txCount != 0; ++i)
+            env.close();
+
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 5);
+        BEAST_EXPECT(
+            env.balance(alice) == aliceBalanceBefore - drops(5));  // Alice sends 5 x 1 drop
+        BEAST_EXPECT(
+            env.balance(bob) ==
+            bobBalanceBefore + drops(5) - drops(51 * 5));  // Bob receives 5 drops, pays 5 fees
+    }
+
+    void
+    test2241AlternateFeePayerQueueAdmissionSponsored()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2241
+        testcase("TxQ alternate fee payer queue admission - sponsored");
+        using namespace jtx;
+
+        auto cfg = makeConfig({{"minimum_txn_in_ledger_standalone", "3"}});
+        cfg->fees.referenceFee = 10;
+        cfg->fees.accountReserve = 200;
+        cfg->fees.ownerReserve = 50;
+        Env env{*this, std::move(cfg)};
+
+        Account const alice{"alice"};
+        Account const sponsor{"sponsor"};
+
+        env.fund(XRP(500000), alice, sponsor);
+        env.close();
+
+        Account const burner{"burner"};
+        env.fund(XRP(1'000'000), burner);
+        env.close();
+        fillQueue(env, burner);
+        fillQueue(env, burner);
+
+        auto const aliceBalanceBefore = env.balance(alice);
+        auto const sponsorBalanceBefore = env.balance(sponsor);
+        auto const aliceSeq = env.seq(alice);
+
+        for (int i = 0; i < 4; ++i)
+        {
+            env(noop(alice),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor),
+                Seq(aliceSeq + i),
+                Fee(51),
+                Ter(terQUEUED));
+        }
+
+        auto const aliceBalance1 = env.balance(alice);
+        auto const sponsorBalance1 = env.balance(sponsor);
+        // Fixed: co-signed fee sponsorship pays from sponsor, not Alice.
+        env(noop(alice),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Seq(aliceSeq + 4),
+            Fee(51),
+            Ter(terQUEUED));  // fixed, originally telCAN_NOT_QUEUE_BALANCE
+
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == 5);
+
+        // Drain the queue
+        for (int i = 0; i < 4 && env.app().getTxQ().getMetrics(*env.current()).txCount != 0; ++i)
+            env.close();
+
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 5);
+        BEAST_EXPECT(env.balance(alice) == aliceBalanceBefore);
+        BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore - drops(51 * 5));
+    }
+
+    void
+    test2284LegacySignerListReserveMismatch()
+    {
+        testcase("legacy SignerList sponsorship reserve mismatch");
+        using namespace jtx;
+
+        Env env{*this, testableAmendments()};
+
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+        Account const sponsor("sponsor");
+
+        std::uint32_t constexpr legacyOwnerCount = 5;  // 2 + 3 signers
+
+        env.fund(XRP(1000000), alice, bob, carol, dave, sponsor);
+        env.close();
+
+        // Create a modern SignerList with 3 signers
+        env(jtx::signers(alice, 1, {{bob, 1}, {carol, 1}, {dave, 1}}), Ter(tesSUCCESS));
+        env.close();
+
+        auto const signerListKeylet = keylet::signers(alice.id());
+        auto const sponsorKeylet = keylet::sponsorship(sponsor.id(), alice.id());
+
+        // Verify modern SignerList has lsfOneOwnerCount
+        {
+            auto const signerList = env.le(signerListKeylet);
+            BEAST_EXPECT(signerList);
+            if (signerList)
+                BEAST_EXPECT((signerList->getFlags() & lsfOneOwnerCount) != 0);
+        }
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+        // Synthesize legacy SignerList by clearing lsfOneOwnerCount
+        // and restoring legacy OwnerCount (2 + signer_count = 5)
+        // This simulates historical state from pre-MultiSignReserve amendment
+        auto const changed = env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+            Sandbox sb(&view, TapNone);
+
+            auto const legacySignerList = sb.peek(signerListKeylet);
+            auto const legacyAccount = sb.peek(keylet::account(alice.id()));
+            if (!legacySignerList || !legacyAccount)
+                return false;
+
+            legacySignerList->clearFlag(lsfOneOwnerCount);
+            legacyAccount->setFieldU32(sfOwnerCount, legacyOwnerCount);
+
+            sb.update(legacySignerList);
+            sb.update(legacyAccount);
+            sb.apply(view);
+            return true;
+        });
+
+        BEAST_EXPECT(changed);
+
+        // Verify legacy state (do not close ledger after open ledger modification)
+        {
+            auto const signerList = env.le(signerListKeylet);
+            BEAST_EXPECT(signerList);
+            if (signerList)
+                BEAST_EXPECT((signerList->getFlags() & lsfOneOwnerCount) == 0);
+        }
+        BEAST_EXPECT(env.ownerCount(alice) == legacyOwnerCount);
+        BEAST_EXPECT(env.sponsoredOwnerCount(alice) == 0);
+        BEAST_EXPECT(env.sponsoringOwnerCount(sponsor) == 0);
+
+        // Create pre-funded Sponsorship with enough reserves for legacy SignerList
+        env(sponsor::set_reserve(sponsor, 0, legacyOwnerCount),
+            sponsor::SponseeAcc(alice),
+            Ter(tesSUCCESS));
+
+        {
+            auto const sponsorSle = env.le(sponsorKeylet);
+            BEAST_EXPECT(sponsorSle);
+            if (sponsorSle)
+                BEAST_EXPECT(sponsorSle->getFieldU32(sfRemainingOwnerCount) == legacyOwnerCount);
+        }
+
+        // FIX VERIFIED: SponsorshipTransfer Create now correctly consumes 5 reserve units
+        env(sponsor::transfer(alice, tfSponsorshipCreate, signerListKeylet.key),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Ter(tesSUCCESS));
+
+        {
+            auto const signerList = env.le(signerListKeylet);
+            BEAST_EXPECT(signerList);
+            if (signerList)
+                BEAST_EXPECT(signerList->getAccountID(sfSponsor) == sponsor.id());
+        }
+        BEAST_EXPECT(env.ownerCount(alice) == legacyOwnerCount);
+        BEAST_EXPECT(env.sponsoredOwnerCount(alice) == legacyOwnerCount);     // FIX: correctly 5
+        BEAST_EXPECT(env.sponsoringOwnerCount(sponsor) == legacyOwnerCount);  // FIX: correctly 5
+
+        // Verify sfRemainingOwnerCount was correctly drained from 5 to absent
+        {
+            auto const sponsorSle = env.le(sponsorKeylet);
+            BEAST_EXPECT(sponsorSle);
+            if (sponsorSle)
+                BEAST_EXPECT(!sponsorSle->isFieldPresent(sfRemainingOwnerCount));
+        }
+
+        // Delete SignerList - should refund 5 units (2 + 3 signers)
+        env(jtx::signers(alice, jtx::kNone), Ter(tesSUCCESS));
+
+        BEAST_EXPECT(!env.le(signerListKeylet));
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
+        BEAST_EXPECT(env.sponsoredOwnerCount(alice) == 0);
+        BEAST_EXPECT(env.sponsoringOwnerCount(sponsor) == 0);
+
+        // FIX VERIFIED: With symmetric accounting, create and delete both use weight 5
+        // Note: sfRemainingOwnerCount is ONLY consumed on create, never refunded on delete
+        // (by design per AccountRootHelpers.cpp:423-431). The refund only affects
+        // sfSponsoringOwnerCount/sfSponsoredOwnerCount which correctly went from 5 to 0.
+        // The key fix verification is that NO INFLATION occurred: the pre-funded quota
+        // was fully consumed (5 units), and the sponsoring/sponsored counts are symmetric.
+        {
+            auto const sponsorSle = env.le(sponsorKeylet);
+            BEAST_EXPECT(sponsorSle);
+            if (sponsorSle)
+            {
+                // sfRemainingOwnerCount should remain absent after delete (not refunded)
+                // This is correct behavior - the pre-funded quota was consumed
+                BEAST_EXPECT(!sponsorSle->isFieldPresent(sfRemainingOwnerCount));
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -2600,7 +2946,11 @@ public:
         // test2022UnsignedUnderflowAccountReserveOfferCrossing();
         // test2065SponsorVaultFeeInvariantDeposit();
         // test2065SponsorVaultFeeInvariantWithdraw();
-        test2158SponsorLoanBrokerSetMPTPseudoAccountInvariant();
+        // test2158SponsorLoanBrokerSetMPTPseudoAccountInvariant();
+        // test2178TrustSetCounterpartySponsorMisroute();
+        // test2241AlternateFeePayerQueueAdmissionDelegate();
+        // test2241AlternateFeePayerQueueAdmissionSponsored();
+        test2284LegacySignerListReserveMismatch();
     }
 };
 

@@ -1152,8 +1152,10 @@ TxQ::apply(
             // inserted in the middle from fouling up later transactions.
             auto const potentialTotalSpend =
                 totalFee + std::min(balance - std::min(balance, reserve), potentialSpend);
+
+            // totalFee == XRPAmount(0) means sponsored / delegated
             XRPL_ASSERT(
-                potentialTotalSpend > XRPAmount{0} ||
+                potentialTotalSpend > XRPAmount{0} || totalFee == XRPAmount(0) ||
                     (potentialTotalSpend == XRPAmount{0} && multiTxn->applyView.fees().base == 0),
                 "xrpl::TxQ::apply : total spend check");
             sleBump->setFieldAmount(sfBalance, balance - potentialTotalSpend);
