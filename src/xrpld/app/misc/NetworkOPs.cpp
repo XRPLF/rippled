@@ -1687,11 +1687,13 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         e.transaction->setKept();
                     }
                     else
+                    {
                         JLOG(journal_.debug())
                             << "Not holding transaction " << e.transaction->getID() << ": "
                             << (e.local ? "local" : "network") << ", "
                             << "result: " << e.result << " ledgers left: "
                             << (ledgersLeft ? to_string(*ledgersLeft) : "unspecified");
+                    }
                 }
             }
             else

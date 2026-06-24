@@ -1,3 +1,5 @@
+#pragma once
+
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 
