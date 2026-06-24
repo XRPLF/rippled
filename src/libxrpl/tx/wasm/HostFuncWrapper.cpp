@@ -3,6 +3,7 @@
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
@@ -31,6 +32,8 @@
 #include <exception>
 #include <functional>
 #include <optional>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -43,7 +46,10 @@ using SFieldCRef = std::reference_wrapper<SField const>;
 
 constexpr int64_t unalignedGas = 50;
 
-static inline Expected<std::int64_t, HostFunctionError>
+// Charge `delta` gas; returns the remaining gas. Out-of-gas throws hfErrOutOfGas
+// (-> tecOUT_OF_GAS); a failed setGas is an xrpld bug, throws hfErrInternal
+// (-> tecINTERNAL). HostFuncMain_wrap turns both into traps.
+static inline std::int64_t
 checkGas(WasmRuntimeWrapper& rt, int64_t delta)
 {
     int64_t const gas = rt.getGas();
@@ -53,36 +59,16 @@ checkGas(WasmRuntimeWrapper& rt, int64_t delta)
     int64_t const x = gas >= delta ? gas - delta : 0;
 
     if (rt.setGas(x) < 0)
-        return Unexpected(HostFunctionError::Internal);  // LCOV_EXCL_LINE
+        Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
     if (gas < delta)
-        return Unexpected(HostFunctionError::OutOfGas);
+        Throw<std::runtime_error>(std::string(hfErrOutOfGas));
 
     return x;
 }
 
-static inline Expected<std::int64_t, wasm_trap_t*>
-checkGas(WasmRuntimeWrapper& rt, WasmImportFunc const& impFunc)
-{
-    auto g = checkGas(rt, impFunc.gas);
-
-    if (!g)
-    {
-        if (g.error() == HostFunctionError::OutOfGas)
-        {
-            wasm_trap_t* const trap =  // NOLINT
-                reinterpret_cast<wasm_trap_t*>(WasmEngine::instance().newTrap("hf out of gas"));
-            return Unexpected(trap);
-        }
-
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(    // NOLINT
-            WasmEngine::instance().newTrap("can't set gas"));  // LCOV_EXCL_LINE
-        return Unexpected(trap);                               // LCOV_EXCL_LINE
-    }
-
-    return *g;
-}
-
+// Transfer limit is a separate soft budget: exceeding it is a normal guest-facing
+// return code, not a trap. Only a failed setTransferLimit (an xrpld bug) throws.
 static inline Expected<std::int64_t, HostFunctionError>
 checkTransfer(WasmRuntimeWrapper& rt, int64_t delta)
 {
@@ -90,7 +76,7 @@ checkTransfer(WasmRuntimeWrapper& rt, int64_t delta)
     int64_t const x = transLimit >= delta ? transLimit - delta : 0;
 
     if (rt.setTransferLimit(x) < 0)
-        return Unexpected(HostFunctionError::Internal);  // LCOV_EXCL_LINE
+        Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
     if (transLimit < delta)
         return Unexpected(HostFunctionError::OutOfTransferLimit);
@@ -98,37 +84,27 @@ checkTransfer(WasmRuntimeWrapper& rt, int64_t delta)
     return x;
 }
 
-static Expected<std::tuple<HostFunctions&, WasmImportFunc const&>, wasm_trap_t*>
+// On any failure here a C++ exception is thrown; HostFuncMain_wrap's catch-all
+// turns it into tecINTERNAL. These conditions are all xrpld-side invariants.
+static std::tuple<HostFunctions&, WasmImportFunc const&>
 mainCheck(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     if (env == nullptr)
-    {
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(     // NOLINT
-            WasmEngine::instance().newTrap("no environment"));  // LCOV_EXCL_LINE
-        return Unexpected(trap);                                // LCOV_EXCL_LINE
-    }
+        Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
     if (params == nullptr)
-    {
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(  // NOLINT
-            WasmEngine::instance().newTrap("no params"));    // LCOV_EXCL_LINE
-        return Unexpected(trap);                             // LCOV_EXCL_LINE
-    }
+        Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
     if (results == nullptr)
-    {
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(  // NOLINT
-            WasmEngine::instance().newTrap("no results"));   // LCOV_EXCL_LINE
-        return Unexpected(trap);                             // LCOV_EXCL_LINE
-    }
+        Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
     WasmUserData const* udata = reinterpret_cast<WasmUserData*>(env);
     HostFunctions& hf = udata->first;
     WasmRuntimeWrapper& rt = hf.getRT();
     WasmImportFunc const& impFunc = udata->second;
 
-    if (auto g = checkGas(rt, impFunc); !g)
-        return Unexpected(g.error());  // LCOV_EXCL_LINE
+    // Charge the per-call gas. Throws (and terminates) if out of gas.
+    checkGas(rt, impFunc.gas);
 
     return std::tie(hf, impFunc);
 }
@@ -387,9 +363,10 @@ getDataLocator(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_
     if ((p & (alignof(int32_t) - 1)) != 0u)
     {  // unaligned
 
-        // Use gas and transfer limit for copying
-        if (auto g = checkGas(runtime, unalignedGas); !g)
-            return Unexpected(g.error());
+        // Use gas and transfer limit for copying. checkGas throws (and
+        // terminates execution) if out of gas; checkTransfer keeps returning a
+        // guest-facing code when the transfer limit is exceeded.
+        checkGas(runtime, unalignedGas);
         if (auto t = checkTransfer(runtime, slice->size()); !t)
             return Unexpected(t.error());
 
@@ -435,7 +412,7 @@ returnResult(
     if constexpr (std::is_same_v<T, Bytes>)
     {
         if (index < 0 || index + 1 >= params->size)
-            return hfResult(results, HostFunctionError::Internal);  // LCOV_EXCL_LINE
+            Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
         auto const dataResult = setData(
             runtime,
@@ -448,7 +425,7 @@ returnResult(
     else if constexpr (std::is_same_v<T, Hash>)
     {
         if (index < 0 || index + 1 >= params->size)
-            return hfResult(results, HostFunctionError::Internal);  // LCOV_EXCL_LINE
+            Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
         auto const dataResult = setData(
             runtime,
@@ -465,7 +442,7 @@ returnResult(
     else if constexpr (std::is_same_v<T, std::uint32_t>)
     {
         if (index < 0 || index + 1 >= params->size)
-            return hfResult(results, HostFunctionError::Internal);  // LCOV_EXCL_LINE
+            Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
         auto const resultValue = adjustWasmEndianess(res.value());
         auto const dataResult = setData(
@@ -479,7 +456,7 @@ returnResult(
     else if constexpr (std::is_same_v<T, int64_t>)
     {
         if (index < 0 || index + 1 >= params->size)
-            return hfResult(results, HostFunctionError::Internal);  // LCOV_EXCL_LINE
+            Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
         auto const resultValue = adjustWasmEndianess(res.value());
         auto const dataResult = setData(
@@ -493,7 +470,7 @@ returnResult(
     else if constexpr (std::is_same_v<T, FloatPair>)
     {
         if (index < 0 || index + 3 >= params->size)
-            return hfResult(results, HostFunctionError::Internal);  // LCOV_EXCL_LINE
+            Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 
         auto const mantissa = adjustWasmEndianess(res->first);
         auto const r1 = setData(
@@ -533,11 +510,7 @@ HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
 
     try
     {
-        auto const mc = mainCheck(env, params, results);
-        if (!mc)
-            return mc.error();
-
-        auto& [hf, impFunc] = *mc;
+        auto [hf, impFunc] = mainCheck(env, params, results);
         hfName = impFunc.name;
         auto* fWrap = reinterpret_cast<wasmSecondaryCbFuncType*>(impFunc.wrap);
         return fWrap(hf, params, results);
@@ -547,8 +520,11 @@ HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
 #ifdef DEBUG_OUTPUT
         std::cerr << "Hostfunction " << hfName << " exception: " << e.what() << std::endl;
 #endif
+        // Normalize to the two boundary signals: explicit out-of-gas, else any
+        // exception (including stray ones from helpers) is an internal fault.
+        bool const oog = std::string_view(e.what()) == hfErrOutOfGas;
         wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(  // NOLINT
-            WasmEngine::instance().newTrap(e.what()));       // LCOV_EXCL_LINE
+            WasmEngine::instance().newTrap(std::string(oog ? hfErrOutOfGas : hfErrInternal)));
         return trap;
     }
     catch (...)
@@ -556,12 +532,12 @@ HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
 #ifdef DEBUG_OUTPUT
         std::cerr << "Hostfunction " << hfName << " unknown exception." << std::endl;
 #endif
-        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(        // NOLINT
-            WasmEngine::instance().newTrap("Unknown exception"));  // LCOV_EXCL_LINE
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(               // NOLINT
+            WasmEngine::instance().newTrap(std::string(hfErrInternal)));  // LCOV_EXCL_LINE
         return trap;
     }
 
-    return nullptr;
+    return nullptr;  // LCOV_EXCL_LINE
 }
 
 //----------------------------------------------------------------------------------------------------------------------

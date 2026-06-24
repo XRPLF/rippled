@@ -53,13 +53,13 @@ struct Wasm_test : public beast::unit_test::Suite
 {
     void
     checkResult(
-        Expected<WasmResult<int32_t>, TER> re,
+        Expected<WasmResult<int32_t>, WasmTER> re,
         int32_t expectedResult,
         int64_t expectedCost,
         std::source_location const location = std::source_location::current())
     {
         auto const lineStr = " (" + std::to_string(location.line()) + ")";
-        if (BEAST_EXPECTS(re.has_value(), transToken(re.error()) + lineStr))
+        if (BEAST_EXPECTS(re.has_value(), transToken(re.error().ter) + lineStr))
         {
             BEAST_EXPECTS(re->result == expectedResult, std::to_string(re->result) + lineStr);
             BEAST_EXPECTS(re->cost == expectedCost, std::to_string(re->cost) + lineStr);
@@ -258,8 +258,10 @@ struct Wasm_test : public beast::unit_test::Suite
 
             if (BEAST_EXPECT(!re))
             {
+                // Running out of gas now terminates with tecOUT_OF_GAS (was
+                // previously collapsed into tecFAILED_PROCESSING).
                 BEAST_EXPECTS(
-                    re.error() == tecFAILED_PROCESSING, std::to_string(TERtoInt(re.error())));
+                    re.error().ter == tecOUT_OF_GAS, std::to_string(TERtoInt(re.error().ter)));
             }
 
             env.close();
@@ -286,7 +288,7 @@ struct Wasm_test : public beast::unit_test::Suite
             TestHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, -1, escrowFunctionName, {});
             BEAST_EXPECT(!re.has_value());
-            BEAST_EXPECT(re.error() == temBAD_AMOUNT);
+            BEAST_EXPECT(re.error().ter == temBAD_AMOUNT);
         }
 
         {
@@ -294,7 +296,7 @@ struct Wasm_test : public beast::unit_test::Suite
             TestHostFunctions hfs(env);
             auto re = runEscrowWasm(allHFWasm, hfs, 0, escrowFunctionName, {});
             BEAST_EXPECT(!re.has_value());
-            BEAST_EXPECT(re.error() == temBAD_AMOUNT);
+            BEAST_EXPECT(re.error().ter == temBAD_AMOUNT);
         }
 
         {
@@ -379,7 +381,7 @@ struct Wasm_test : public beast::unit_test::Suite
             auto& engine = WasmEngine::instance();
 
             auto re = engine.run(badAlignWasm, hfs, 1'000'000, "test", {}, imports, env.journal);
-            if (BEAST_EXPECTS(re, transToken(re.error())))
+            if (BEAST_EXPECTS(re, transToken(re.error().ter)))
             {
                 BEAST_EXPECTS(re->result == 0x47308594, std::to_string(re->result));
             }
