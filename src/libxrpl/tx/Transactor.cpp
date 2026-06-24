@@ -35,6 +35,7 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/LoadFeeTrack.h>
@@ -201,6 +202,51 @@ preflight1Sponsor(PreflightContext const& ctx, AccountID const& id)
         {
             JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
             return temINVALID_FLAG;
+        }
+
+        // Reserve sponsorship is only permitted for an explicit allow-list of
+        // transaction types, for v1. All other tx types reject spfSponsorReserve here.
+        if ((sponsorFlags & spfSponsorReserve) != 0u)
+        {
+            static std::unordered_set<TxType> const kReserveSponsorAllowed = {
+                // Explicitly allow-listed for v1.
+                ttACCOUNT_DELETE,
+                ttDELEGATE_SET,
+                ttDEPOSIT_PREAUTH,
+                ttPAYMENT,
+                ttMPTOKEN_AUTHORIZE,
+                ttMPTOKEN_ISSUANCE_CREATE,
+                ttMPTOKEN_ISSUANCE_DESTROY,
+                ttMPTOKEN_ISSUANCE_SET,
+                ttTRUST_SET,
+                ttCREDENTIAL_ACCEPT,
+                ttCREDENTIAL_CREATE,
+                ttCREDENTIAL_DELETE,
+                ttLOAN_SET,
+                ttLOAN_PAY,
+                ttVAULT_CLAWBACK,
+                ttVAULT_DEPOSIT,
+                ttVAULT_WITHDRAW,
+                ttACCOUNT_SET,
+                ttCHECK_CANCEL,
+                ttCHECK_CASH,
+                ttCHECK_CREATE,
+                ttESCROW_CANCEL,
+                ttESCROW_CREATE,
+                ttESCROW_FINISH,
+                ttPAYCHAN_CLAIM,
+                ttPAYCHAN_CREATE,
+                ttPAYCHAN_FUND,
+                ttREGULAR_KEY_SET,
+                ttCLAWBACK,
+                ttSPONSORSHIP_TRANSFER,
+            };
+            if (!kReserveSponsorAllowed.contains(ctx.tx.getTxnType()))
+            {
+                JLOG(ctx.j.debug())
+                    << "preflight1: spfSponsorReserve not allowed for this transaction type";
+                return temINVALID_FLAG;
+            }
         }
     }
     else
