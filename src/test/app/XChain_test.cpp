@@ -143,7 +143,7 @@ struct SEnv
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return baseAccountReserve(*env.current(), count);
+        return jtx::baseAccountReserve(*env.current(), count);
     }
 
     XRPAmount
