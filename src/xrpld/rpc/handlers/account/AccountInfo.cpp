@@ -296,7 +296,9 @@ doAccountInfo(RPC::JsonContext& context)
                         jvTx[jss::LastLedgerSequence] = *tx.lastValid;
 
                     jvTx[jss::fee] = to_string(tx.consequences.fee());
-                    auto const spend = tx.consequences.potentialSpend() + tx.consequences.fee();
+                    auto const spend = tx.consequences.potentialSpend() +
+                        (tx.feePayer == accountID ? tx.consequences.fee()
+                                                  : XRPAmount{beast::kZero});
                     jvTx[jss::max_spend_drops] = to_string(spend);
                     totalSpend += spend;
                     bool const authChanged = tx.consequences.isBlocker();

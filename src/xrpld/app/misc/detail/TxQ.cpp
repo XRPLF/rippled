@@ -292,6 +292,7 @@ TxQ::MaybeTx::MaybeTx(
     , feeLevel(feeLevel)
     , txID(txId)
     , account(txn->getAccountID(sfAccount))
+    , feePayer(txn->getFeePayer())
     , lastValid(getLastLedgerSequence(*txn))
     , seqProxy(txn->getSeqProxy())
     , flags(flags)
@@ -757,6 +758,12 @@ TxQ::apply(
     if (!sleAccount)
         return {terNO_ACCOUNT, false};
 
+    auto const feePayer = tx->getFeePayer();
+    Keylet const feePayerKey{keylet::account(feePayer)};
+    auto const sleFeePayer = feePayer == account ? sleAccount : view.read(feePayerKey);
+    if (!sleFeePayer)
+        return {terNO_ACCOUNT, false};
+
     // If the transaction needs a Ticket is that Ticket in the ledger?
     SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
@@ -1027,7 +1034,6 @@ TxQ::apply(
             // so we know how much to remove from the account balance
             // for the trial preclaim.
             XRPAmount potentialSpend = beast::kZero;
-            XRPAmount totalFee = beast::kZero;
             for (auto iter = txIter->first; iter != txIter->end; ++iter)
             {
                 // If we're replacing this transaction don't include
@@ -1035,17 +1041,27 @@ TxQ::apply(
                 // it to potentialSpend.
                 if (iter->first != txSeqProx)
                 {
-                    totalFee += iter->second.consequences().fee();
                     potentialSpend += iter->second.consequences().potentialSpend();
                 }
                 else if (std::next(iter) != txIter->end)
                 {
-                    // The fee for the candidate transaction _should_ be
-                    // counted if it's replacing a transaction in the middle
-                    // of the queue.
-                    totalFee += pfResult.consequences.fee();
                     potentialSpend += pfResult.consequences.potentialSpend();
                 }
+            }
+            XRPAmount totalFee{beast::kZero};
+            for (auto const& txn : byFee_)
+            {
+                if (txn.feePayer != feePayer)
+                    continue;
+
+                if (replacedTxIter && &txn == &(*replacedTxIter)->second)
+                    continue;
+
+                totalFee += txn.consequences().fee();
+            }
+            if (replacedTxIter && std::next(*replacedTxIter) != txIter->end)
+            {
+                totalFee += pfResult.consequences.fee();
             }
             // NOLINTEND(bugprone-unchecked-optional-access)
 
@@ -1078,7 +1094,7 @@ TxQ::apply(
                 Transactions stuck in the queue are mitigated by
                 LastLedgerSeq and MaybeTx::retriesRemaining.
             */
-            auto const balance = (*sleAccount)[sfBalance].xrp();
+            auto const balance = (*sleFeePayer)[sfBalance].xrp();
             /* Get the minimum possible account reserve. If it
                is at least 10 * the base fee, and fees exceed
                this amount, the transaction can't be queued.
@@ -1109,26 +1125,38 @@ TxQ::apply(
             // Create the test view from the current view.
             multiTxn.emplace(view, flags);
 
-            auto const sleBump = multiTxn->applyView.peek(accountKey);
-            if (!sleBump)
+            auto const sleAccountBump = multiTxn->applyView.peek(accountKey);
+            auto const sleFeePayerBump =
+                feePayer == account ? sleAccountBump : multiTxn->applyView.peek(feePayerKey);
+            if (!sleAccountBump || !sleFeePayerBump)
                 return {tefINTERNAL, false};
 
             // Subtract the fees and XRP spend from all of the other
             // transactions in the queue.  That prevents a transaction
             // inserted in the middle from fouling up later transactions.
-            auto const potentialTotalSpend =
-                totalFee + std::min(balance - std::min(balance, reserve), potentialSpend);
+            auto const accountBalance = (*sleAccount)[sfBalance].xrp();
+            auto const potentialAccountSpend =
+                std::min(accountBalance - std::min(accountBalance, reserve), potentialSpend);
+            auto const potentialTotalSpend = totalFee + potentialAccountSpend;
             XRPL_ASSERT(
                 potentialTotalSpend > XRPAmount{0} ||
                     (potentialTotalSpend == XRPAmount{0} && multiTxn->applyView.fees().base == 0),
                 "xrpl::TxQ::apply : total spend check");
-            sleBump->setFieldAmount(sfBalance, balance - potentialTotalSpend);
+            if (feePayer == account)
+            {
+                sleAccountBump->setFieldAmount(sfBalance, accountBalance - potentialTotalSpend);
+            }
+            else
+            {
+                sleAccountBump->setFieldAmount(sfBalance, accountBalance - potentialAccountSpend);
+                sleFeePayerBump->setFieldAmount(sfBalance, balance - totalFee);
+            }
             // The transaction's sequence/ticket will be valid when the other
             // transactions in the queue have been processed. If the tx has a
             // sequence, set the account to match it. If it has a ticket, use
             // the next queueable sequence, which is the closest approximation
             // to the most successful case.
-            sleBump->at(sfSequence) = txSeqProx.isSeq()
+            sleAccountBump->at(sfSequence) = txSeqProx.isSeq()
                 ? txSeqProx.value()
                 : nextQueuableSeqImpl(sleAccount, lock).value();
         }

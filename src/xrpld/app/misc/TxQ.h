@@ -178,6 +178,7 @@ public:
             std::optional<LedgerIndex> const& lastValid,
             TxConsequences const& consequences,
             AccountID const& account,
+            AccountID const& feePayer,
             SeqProxy seqProxy,
             std::shared_ptr<STTx const> const& txn,
             int retriesRemaining,
@@ -187,6 +188,7 @@ public:
             , lastValid(lastValid)
             , consequences(consequences)
             , account(account)
+            , feePayer(feePayer)
             , seqProxy(seqProxy)
             , txn(txn)
             , retriesRemaining(retriesRemaining)
@@ -205,6 +207,8 @@ public:
         TxConsequences consequences;
         /// The account the transaction is queued for
         AccountID account;
+        /// The account that pays the transaction fee
+        AccountID feePayer;
         /// SeqProxy of the transaction
         SeqProxy seqProxy;
         /// The full transaction
@@ -494,8 +498,10 @@ private:
         FeeLevel64 const feeLevel;
         /// Transaction ID.
         TxID const txID;
-        /// Account submitting the transaction.
+        /// Account the transaction acts on.
         AccountID const account;
+        /// Account that pays the transaction fee.
+        AccountID const feePayer;
         /// Expiration ledger for the transaction
         /// (`sfLastLedgerSequence` field).
         std::optional<LedgerIndex> const lastValid;
@@ -589,6 +595,7 @@ private:
                 lastValid,
                 consequences(),
                 account,
+                feePayer,
                 seqProxy,
                 txn,
                 retriesRemaining,

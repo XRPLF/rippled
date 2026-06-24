@@ -5,6 +5,7 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -2336,6 +2337,138 @@ public:
     }
 
     void
+    testDelegatedFeePayerInFlightBalance()
+    {
+        using namespace jtx;
+        testcase("delegated fee payer in-flight balance");
+
+        Env env(
+            *this,
+            makeConfig(
+                {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
+                {{Keys::kAccountReserve, "200"}, {Keys::kOwnerReserve, "50"}}));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const filler = Account("filler");
+
+        env.fund(XRP(50000), alice, bob);
+        env.close();
+        env.fund(XRP(50000), carol, filler);
+        env.close();
+
+        auto const initQueueMax = initFee(env, 3, 2, 10, 200, 50);
+        checkMetrics(*this, env, 0, initQueueMax, 0, 3);
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        auto const currentQueueMax = 6;
+        fillQueue(env, filler);
+        checkMetrics(*this, env, 0, currentQueueMax, 4, 3);
+
+        auto const aliceSeq = env.seq(alice);
+        env(pay(alice, carol, drops(1)),
+            Seq(aliceSeq),
+            Fee(drops(300)),
+            delegate::As(bob),
+            Ter(terQUEUED));
+
+        {
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::queue] = true;
+            auto const result = env.rpc("json", "account_info", to_string(params))[jss::result];
+            auto const& queueData = result[jss::queue_data];
+            BEAST_EXPECT(queueData[jss::txn_count] == 1u);
+            BEAST_EXPECT(queueData[jss::max_spend_drops_total] == "1");
+            BEAST_EXPECT(queueData[jss::transactions][0u][jss::max_spend_drops] == "1");
+        }
+
+        // Bob's delegated fee must not consume Alice's queued-fee budget
+        // and this transaction should be queued successfully.
+        env(noop(alice), Seq(aliceSeq + 1), Fee(drops(50)), Ter(terQUEUED));
+        checkMetrics(*this, env, 2, currentQueueMax, 4, 3);
+    }
+
+    void
+    testDelegateFeePayerAggregateInFlightFees()
+    {
+        using namespace jtx;
+        testcase("delegate fee payer aggregate in-flight fees");
+
+        Env env(
+            *this,
+            makeConfig(
+                {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
+                {{Keys::kAccountReserve, "200"}, {Keys::kOwnerReserve, "50"}}));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const dave = Account("dave");
+        auto const ed = Account("ed");
+        auto const filler = Account("filler");
+
+        env.fund(XRP(50000), alice, bob);
+        env.close();
+        env.fund(XRP(50000), carol, dave);
+        env.close();
+        env.fund(XRP(50000), ed, filler);
+        env.close();
+
+        auto const initQueueMax = initFee(env, 3, 2, 10, 200, 50);
+        checkMetrics(*this, env, 0, initQueueMax, 0, 3);
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env(delegate::set(carol, bob, {"Payment"}));
+        env(delegate::set(dave, bob, {"Payment"}));
+        env.close();
+
+        auto const currentQueueMax = 6;
+        fillQueue(env, filler);
+        checkMetrics(*this, env, 0, currentQueueMax, 4, 3);
+
+        // bob sends tx on behalf of others. Bob will pay the fee for those
+        // transactions. We will test when bob does not have enough
+        // balance to pay for all the fees of the queued transactions.
+        env(pay(alice, ed, drops(1)),
+            Seq(env.seq(alice)),
+            Fee(drops(100)),
+            delegate::As(bob),
+            Ter(terQUEUED));
+        env(pay(carol, ed, drops(1)),
+            Seq(env.seq(carol)),
+            Fee(drops(90)),
+            delegate::As(bob),
+            Ter(terQUEUED));
+        auto const daveSeq = env.seq(dave);
+        env(pay(dave, ed, drops(1)),
+            Seq(daveSeq),
+            Fee(drops(20)),
+            delegate::As(bob),
+            Ter(terQUEUED));
+        checkMetrics(*this, env, 3, currentQueueMax, 4, 3);
+        {
+            auto const queuedTxs = env.app().getTxQ().getTxs();
+            BEAST_EXPECT(queuedTxs.size() == 3);
+            BEAST_EXPECT(std::all_of(queuedTxs.begin(), queuedTxs.end(), [&](auto const& tx) {
+                return tx.feePayer == bob.id();
+            }));
+        }
+
+        // The first three queued transactions already put 210 drops of Bob-paid fees in
+        // flight, which is above this test's 200-drop limit. This will be rejected.
+        env(pay(dave, ed, drops(1)),
+            Seq(daveSeq + 1),
+            Fee(drops(50)),
+            delegate::As(bob),
+            Ter(telCAN_NOT_QUEUE_BALANCE));
+        checkMetrics(*this, env, 3, currentQueueMax, 4, 3);
+    }
+
+    void
     testConsequences()
     {
         using namespace jtx;
@@ -4662,6 +4795,8 @@ public:
         testBlockersSeq();
         testBlockersTicket();
         testInFlightBalance();
+        testDelegatedFeePayerInFlightBalance();
+        testDelegateFeePayerAggregateInFlightFees();
         testConsequences();
     }
 
