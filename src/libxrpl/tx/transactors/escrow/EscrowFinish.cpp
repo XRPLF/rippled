@@ -14,6 +14,7 @@
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
@@ -352,11 +353,13 @@ EscrowFinish::doApply()
         if (!ctx_.view().rules().enabled(featureTokenEscrow))
             return temDISABLED;  // LCOV_EXCL_LINE
 
+        auto const escrowObjSponsor = getLedgerEntryReserveSponsorAccountID(slep);
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
             ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
             : kParityRate;
         auto const issuer = amount.getIssuer();
         bool const createAsset = destID == accountID_;
+
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
@@ -370,6 +373,7 @@ EscrowFinish::doApply()
                         account,
                         destID,
                         createAsset,
+                        escrowObjSponsor,
                         j_);
                 },
                 amount.asset().value());

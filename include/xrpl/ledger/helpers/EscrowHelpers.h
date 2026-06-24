@@ -27,6 +27,7 @@ escrowUnlockApplyHelper(
     AccountID const& sender,
     AccountID const& receiver,
     bool createAsset,
+    std::optional<AccountID> const& escrowObjSponsor,
     beast::Journal journal);
 
 template <>
@@ -42,6 +43,7 @@ escrowUnlockApplyHelper<Issue>(
     AccountID const& sender,
     AccountID const& receiver,
     bool createAsset,
+    std::optional<AccountID> const& escrowObjSponsor,
     beast::Journal journal)
 {
     Issue const& issue = amount.get<Issue>();
@@ -60,7 +62,10 @@ escrowUnlockApplyHelper<Issue>(
     {
         // Can the account cover the trust line's reserve?
         auto const sponsorSle = getTxReserveSponsor(view, tx, sleDest->at(sfAccount));
-        if (auto const ret = checkXrpBalance(view, tx, sleDest, sponsorSle, 1, journal);
+        bool const sameSponsor =
+            !sponsorSle ? false : escrowObjSponsor == sponsorSle->at(sfAccount).value();
+        std::int32_t const adj = sameSponsor ? 0 : 1;
+        if (auto const ret = checkXrpBalance(view, tx, sleDest, sponsorSle, adj, journal);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -176,6 +181,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     AccountID const& sender,
     AccountID const& receiver,
     bool createAsset,
+    std::optional<AccountID> const& escrowObjSponsor,
     beast::Journal journal)
 {
     bool const senderIssuer = issuer == sender;
@@ -187,7 +193,10 @@ escrowUnlockApplyHelper<MPTIssue>(
     if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
         auto const sponsorSle = getTxReserveSponsor(view, tx, sleDest->at(sfAccount));
-        if (auto const ret = checkXrpBalance(view, tx, sleDest, sponsorSle, 1, journal);
+        bool const sameSponsor =
+            !sponsorSle ? false : escrowObjSponsor == sponsorSle->at(sfAccount).value();
+        std::int32_t const adj = sameSponsor ? 0 : 1;
+        if (auto const ret = checkXrpBalance(view, tx, sleDest, sponsorSle, adj, journal);
             !isTesSuccess(ret))
             return ret;
 

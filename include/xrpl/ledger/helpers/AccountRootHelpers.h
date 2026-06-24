@@ -226,8 +226,8 @@ checkXrpBalance(
         j);
 }
 
-// simple/accountSle + balance(passed manually) + sponsor(re-usage, checks on caller) + skipIfOwnerCountBelow2
-// check
+// simple/accountSle + balance(passed manually) + sponsor(re-usage, checks on caller) +
+// skipIfOwnerCountBelow2 check
 template <class V>
 [[nodiscard]] TER
 checkXrpBalance(
@@ -245,7 +245,18 @@ checkXrpBalance(
     if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
         apply = true;
     return checkXrpBalanceHlp(
-        view, apply, tx, {}, accSle, std::nullopt, sponsorSle, ownerCountAdj, 0, kA, skipIfOwnerCountBelow2, j);
+        view,
+        apply,
+        tx,
+        {},
+        accSle,
+        std::nullopt,
+        sponsorSle,
+        ownerCountAdj,
+        0,
+        kA,
+        skipIfOwnerCountBelow2,
+        j);
 }
 
 // simple/accountSle + sponsor(re-usage, checks on caller)

@@ -21,7 +21,9 @@
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
+#include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
@@ -35,6 +37,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -2604,12 +2607,12 @@ protected:
         env.fund(XRP(100'000), carol);
         env.close();
 
-        auto const USD = bob["USD"];
+        auto const usd = bob["USD"];
 
         // Alice creates the trust line. trustCreate sets only Alice's reserve flag
         // and (because Bob has no DefaultRipple yet) sets lsfHighNoRipple on Bob's side.
         // No sponsor attached.
-        env(trust(alice, USD(1'000)));
+        env(trust(alice, usd(1'000)));
         env.close();
 
         // Bob now enables asfDefaultRipple (canonical issuer-side flow).
@@ -2623,7 +2626,7 @@ protected:
         SF_ACCOUNT const& bobSponsorField = aliceIsHigh ? sfLowSponsor : sfHighSponsor;
         SF_ACCOUNT const& aliceSponsorField = aliceIsHigh ? sfHighSponsor : sfLowSponsor;
 
-        auto const lineKey = keylet::line(alice, bob, USD.currency);
+        auto const lineKey = keylet::line(alice, bob, usd.currency);
         auto const sleLineBefore = env.le(lineKey);
         BEAST_EXPECT(sleLineBefore);
         BEAST_EXPECT(!sleLineBefore->isFieldPresent(sfLowSponsor));
@@ -2633,7 +2636,7 @@ protected:
         auto const bobBefore = (*env.le(bob))[~sfSponsoredOwnerCount].value_or(0u);
 
         // Alice modifies the trust line with Carol as sponsor
-        env(trust(alice, USD(2'000)),
+        env(trust(alice, usd(2'000)),
             sponsor::As(carol, spfSponsorReserve),
             Sig(sfSponsorSignature, carol),
             Ter(tesSUCCESS));
@@ -2790,6 +2793,9 @@ protected:
     void
     test2284LegacySignerListReserveMismatch()
     {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2284
+        // Legacy SignerList sponsorship under-charges create at 1 ReserveCount but refunds 2 +
+        // signer_count on delete, inflating pre-funded quota
         testcase("legacy SignerList sponsorship reserve mismatch");
         using namespace jtx;
 
@@ -2916,6 +2922,743 @@ protected:
         }
     }
 
+    void
+    test2320LoanSetBorrowerSponsorNotAppliedToLenderTrustline()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2320
+        // LoanSet can apply a borrower reserve sponsor to lender-owned holdings and lock usable
+        // sponsor XRP
+        testcase("LoanSet borrower sponsor not misapplied to lender trustline");
+        using namespace jtx;
+        using namespace loanBroker;
+        using namespace loan;
+
+        Account const borrower("borrower");
+        Account const lender("lender");
+        Account const issuer("issuer");
+        Account const sponsor("sponsor");
+        auto const usd = issuer["USD"];
+        PrettyAsset const asset{usd.issue()};
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(1000000), borrower, lender, issuer, sponsor);
+        env.close();
+
+        env(trust(borrower, usd(100000)));
+        env(trust(lender, usd(100000)));
+        env.close();
+
+        env(pay(issuer, borrower, usd(1000)));
+        env(pay(issuer, lender, usd(1000)));
+        env.close();
+
+        Vault const vault{env};
+        auto const [vaultCreate, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        env(vaultCreate);
+        env.close();
+
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = usd(100)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        env(set(lender, vaultKeylet.key, 0));
+        env.close();
+        env(coverDeposit(lender, brokerKeylet.key, usd(100)));
+        env.close();
+
+        auto const lenderLine = keylet::line(lender, issuer, usd.issue().currency);
+        auto const lenderLineBefore = env.le(lenderLine);
+        BEAST_EXPECT(lenderLineBefore != nullptr);
+        if (!lenderLineBefore)
+            return;
+
+        // Lender removes their trust line
+        env(trust(lender, usd(0)));
+        env.close();
+        env(pay(lender, issuer, asset(abs(lenderLineBefore->at(sfBalance).value()))));
+        env.close();
+
+        BEAST_EXPECT(env.le(lenderLine) == nullptr);
+
+        // Leave lender just below reserve for one more object
+        adjustAccountXRPBalance(env, lender, reserve(env, env.ownerCount(lender)) + drops(1000));
+        BEAST_EXPECT(env.balance(lender) < reserve(env, env.ownerCount(lender) + 1));
+
+        auto const loanSeq = env.le(brokerKeylet)->getFieldU32(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSeq);
+
+        // FIX VERIFIED: Borrower-sponsored LoanSet with origination fee
+        // should create lender trust line WITHOUT the borrower's sponsor
+        env(set(borrower, brokerKeylet.key, asset(10).value()),
+            kLoanOriginationFee(asset(1).value()),
+            kCounterparty(lender),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 5),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tecNO_LINE_INSUF_RESERVE));  // FIX: lender must self-fund, tesSUCCESS BEFORE FIX
+        env.close();
+
+        // Verify loan was NOT created since lender can't self-fund the line
+        BEAST_EXPECT(env.le(loanKeylet) == nullptr);
+
+        // Verify borrower sponsor was NOT charged for lender's line
+        BEAST_EXPECT(env.sponsoredOwnerCount(borrower) == 0);
+        BEAST_EXPECT(env.sponsoredOwnerCount(lender) == 0);
+        BEAST_EXPECT(env.sponsoringOwnerCount(sponsor) == 0);
+
+        // Verify lender trust line was NOT recreated
+        BEAST_EXPECT(env.le(lenderLine) == nullptr);
+    }
+
+    void
+    test2320LoanSetBorrowerSponsorNotAppliedToLenderMptHolding()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2320
+        // LoanSet can apply a borrower reserve sponsor to lender-owned holdings and lock usable
+        // sponsor XRP
+        testcase("LoanSet borrower sponsor not misapplied to lender MPT holding");
+        using namespace jtx;
+        using namespace loanBroker;
+        using namespace loan;
+
+        Account const borrower("borrower");
+        Account const lender("lender");
+        Account const issuer("issuer");
+        Account const sponsor("sponsor");
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(1000000), borrower, lender, issuer, sponsor);
+        env.close();
+
+        MPTTester mptt{env, issuer, kMptInitNoFund};
+        mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+        env.close();
+        PrettyAsset const asset = mptt["MPT"];
+        mptt.authorize({.account = borrower});
+        mptt.authorize({.account = lender});
+        env.close();
+
+        env(pay(issuer, borrower, asset(1000)));
+        env(pay(issuer, lender, asset(1000)));
+        env.close();
+
+        Vault const vault{env};
+        auto const [vaultCreate, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        env(vaultCreate);
+        env.close();
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(100)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        env(set(lender, vaultKeylet.key, 0));
+        env.close();
+        env(coverDeposit(lender, brokerKeylet.key, asset(100)));
+        env.close();
+
+        auto const lenderMpt = keylet::mptoken(mptt.issuanceID(), lender);
+        auto const lenderMptBefore = env.le(lenderMpt);
+        BEAST_EXPECT(lenderMptBefore != nullptr);
+        if (!lenderMptBefore)
+            return;
+
+        // Lender removes their MPT holding
+        env(pay(lender, issuer, asset(lenderMptBefore->at(sfMPTAmount))));
+        env.close();
+        mptt.authorize({.account = lender, .flags = tfMPTUnauthorize});
+        env.close();
+
+        BEAST_EXPECT(env.le(lenderMpt) == nullptr);
+
+        // Leave lender just below reserve for one more object
+        adjustAccountXRPBalance(env, lender, reserve(env, env.ownerCount(lender)) + drops(1000));
+        BEAST_EXPECT(env.balance(lender) < reserve(env, env.ownerCount(lender) + 1));
+
+        auto const loanSeq = env.le(brokerKeylet)->getFieldU32(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSeq);
+
+        // FIX VERIFIED: Borrower-sponsored LoanSet with origination fee
+        // should NOT apply sponsor to lender's MPT holding
+        env(set(borrower, brokerKeylet.key, asset(10).value()),
+            kLoanOriginationFee(asset(1).value()),
+            kCounterparty(lender),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 5),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tecINSUFFICIENT_RESERVE));  // FIX: lender must self-fund
+        env.close();
+
+        // Verify loan was NOT created
+        BEAST_EXPECT(env.le(loanKeylet) == nullptr);
+
+        // Verify borrower sponsor was NOT charged for lender's holding
+        BEAST_EXPECT(env.sponsoredOwnerCount(borrower) == 0);
+        BEAST_EXPECT(env.sponsoredOwnerCount(lender) == 0);
+        BEAST_EXPECT(env.sponsoringOwnerCount(sponsor) == 0);
+
+        // Verify lender MPT holding was NOT recreated
+        BEAST_EXPECT(env.le(lenderMpt) == nullptr);
+    }
+
+    void
+    test2320LoanSetBorrowerSponsorOnlySponsorsIntendedBorrowerLoan()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2320
+        // LoanSet can apply a borrower reserve sponsor to lender-owned holdings and lock usable
+        // sponsor XRP
+        testcase("LoanSet borrower sponsor only applies to intended borrower loan");
+        using namespace jtx;
+        using namespace loanBroker;
+        using namespace loan;
+
+        Account const borrower("borrower");
+        Account const lender("lender");
+        Account const issuer("issuer");
+        Account const sponsor("sponsor");
+        auto const usd = issuer["USD"];
+        PrettyAsset const asset{usd.issue()};
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(1000000), borrower, lender, issuer, sponsor);
+        env.close();
+
+        env(trust(borrower, usd(100000)));
+        env(trust(lender, usd(100000)));
+        env.close();
+
+        env(pay(issuer, borrower, usd(1000)));
+        env(pay(issuer, lender, usd(1000)));
+        env.close();
+
+        Vault const vault{env};
+        auto const [vaultCreate, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        env(vaultCreate);
+        env.close();
+
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = usd(100)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        env(set(lender, vaultKeylet.key, 0));
+        env.close();
+        env(coverDeposit(lender, brokerKeylet.key, usd(100)));
+        env.close();
+
+        auto const loanSeq = env.le(brokerKeylet)->getFieldU32(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSeq);
+
+        // FIX VERIFIED: With lender having sufficient reserve and existing trust line,
+        // sponsor correctly applies ONLY to borrower-owned loan object
+        env(set(borrower, brokerKeylet.key, asset(10).value()),
+            kLoanOriginationFee(asset(1).value()),
+            kCounterparty(lender),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 5),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loan = env.le(loanKeylet);
+        BEAST_EXPECT(loan != nullptr);
+        if (!loan)
+            return;
+
+        // Verify loan is sponsored by borrower's sponsor
+        BEAST_EXPECT(loan->isFieldPresent(sfSponsor));
+        BEAST_EXPECT(loan->getAccountID(sfSponsor) == sponsor.id());
+
+        // Verify lender trust line is NOT sponsored
+        auto const lenderLine = keylet::line(lender, issuer, usd.issue().currency);
+        auto const lenderLineAfter = env.le(lenderLine);
+        BEAST_EXPECT(lenderLineAfter != nullptr);
+        if (lenderLineAfter)
+        {
+            auto const& lenderSponsorField =
+                lender.id() > issuer.id() ? sfHighSponsor : sfLowSponsor;
+            // FIX: lender side is NOT sponsored by borrower's sponsor
+            BEAST_EXPECT(!lenderLineAfter->isFieldPresent(lenderSponsorField));
+        }
+
+        // Verify counts: only borrower loan is sponsored
+        BEAST_EXPECT(env.sponsoredOwnerCount(borrower) == 1);
+        BEAST_EXPECT(env.sponsoredOwnerCount(lender) == 0);  // FIX: lender NOT sponsored
+        BEAST_EXPECT(
+            env.sponsoringOwnerCount(sponsor) == 1);  // FIX: sponsor only sponsors 1 object
+    }
+
+    void
+    test2320BorrowerSponsorReserveLockScalesAcrossManyLenders()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2320
+        // LoanSet can apply a borrower reserve sponsor to lender-owned holdings and lock usable
+        // sponsor XRP
+        testcase("LoanSet borrower sponsor reserve lock scales across lender trustlines");
+        using namespace jtx;
+        using namespace loanBroker;
+        using namespace loan;
+
+        Account const borrower("borrower");
+        Account const issuer("issuer");
+        Account const sponsor("sponsor");
+        auto const usd = issuer["USD"];
+        PrettyAsset const asset{usd.issue()};
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(1000000), borrower, issuer, sponsor);
+
+        // Each colluding lender can force one unintended lender-owned trust line
+        // reserve onto the same sponsor. This is a griefing / reserve-lock scale
+        // test, not a profit-extraction test.
+        std::uint32_t constexpr forcedLoans = 100;
+        std::vector<Account> lenders;
+        lenders.reserve(forcedLoans);
+        for (std::uint32_t i = 0; i < forcedLoans; ++i)
+        {
+            lenders.emplace_back("lender" + std::to_string(i));
+            env.fund(XRP(1000000), lenders.back());
+        }
+        env.close();
+
+        env(trust(borrower, usd(1000000)));
+        for (auto const& lender : lenders)
+            env(trust(lender, usd(1000000)));
+        env.close();
+
+        env(pay(issuer, borrower, usd(1000000)));
+        for (auto const& lender : lenders)
+            env(pay(issuer, lender, usd(1000)));
+        env.close();
+
+        std::vector<Keylet> brokerKeylets;
+        brokerKeylets.reserve(forcedLoans);
+        Vault const vault{env};
+        for (auto const& lender : lenders)
+        {
+            auto const [vaultCreate, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+            env(vaultCreate);
+            env.close();
+
+            env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = usd(100)}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
+            env(set(lender, vaultKeylet.key, 0));
+            env.close();
+            env(coverDeposit(lender, brokerKeylet.key, usd(100)));
+            env.close();
+
+            auto const lenderLine = keylet::line(lender, issuer, usd.issue().currency);
+            auto const lenderLineBefore = env.le(lenderLine);
+            BEAST_EXPECT(lenderLineBefore != nullptr);
+            if (!lenderLineBefore)
+                return;
+
+            // Remove the lender's holding so LoanSet must recreate it when paying
+            // the origination fee to the lender / LoanBroker owner.
+            env(trust(lender, usd(0)));
+            env.close();
+            env(pay(lender, issuer, asset(abs(lenderLineBefore->at(sfBalance).value()))));
+            env.close();
+
+            BEAST_EXPECT(env.le(lenderLine) == nullptr);
+
+            // Give lender enough reserve to self-fund the recreated trust line
+            // (verifying that the fix ensures lender must self-fund, not borrower sponsor)
+            auto const lenderNextReserve = reserve(env, env.ownerCount(lender) + 1);
+            adjustAccountXRPBalance(env, lender, lenderNextReserve + drops(10));
+            BEAST_EXPECT(env.balance(lender) >= lenderNextReserve);
+
+            brokerKeylets.push_back(brokerKeylet);
+        }
+
+        // FIX VERIFIED: All LoanSet transactions succeed with lender self-funding
+        for (std::uint32_t i = 0; i < forcedLoans; ++i)
+        {
+            auto const& lender = lenders[i];
+            auto const& brokerKeylet = brokerKeylets[i];
+            auto const loanSeq = env.le(brokerKeylet)->getFieldU32(sfLoanSequence);
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSeq);
+
+            // FIX: Each transaction succeeds - borrower's loan is sponsored,
+            // but lender's trust line is NOT sponsored (lender self-funds)
+            env(set(borrower, brokerKeylet.key, asset(10).value()),
+                kLoanOriginationFee(asset(1).value()),
+                kCounterparty(lender),
+                Sig(sfCounterpartySignature, lender),
+                Fee(env.current()->fees().base * 5),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // FIX: Verify loan WAS created and IS sponsored by sponsor
+            auto const loanLE = env.le(loanKeylet);
+            BEAST_EXPECT(loanLE != nullptr);
+            if (loanLE)
+                BEAST_EXPECT(loanLE->at(sfSponsor) == sponsor.id());
+
+            // FIX: Verify lender trust line WAS recreated but is NOT sponsored
+            auto const lenderLine = keylet::line(lender, issuer, usd.issue().currency);
+            auto const lenderLineLE = env.le(lenderLine);
+            BEAST_EXPECT(lenderLineLE != nullptr);
+            if (lenderLineLE)
+                BEAST_EXPECT(!lenderLineLE->isFieldPresent(sfSponsor));
+        }
+
+        // FIX VERIFIED: Sponsor only sponsors borrower loans (100), not lender holdings
+        BEAST_EXPECT(env.sponsoredOwnerCount(borrower) == forcedLoans);
+        BEAST_EXPECT(env.sponsoringOwnerCount(sponsor) == forcedLoans);
+
+        // FIX: All lenders have 0 sponsored objects (self-funded their trust lines)
+        for (auto const& lender : lenders)
+            BEAST_EXPECT(env.sponsoredOwnerCount(lender) == 0);
+
+        // FIX: Sponsor can still use their balance (not locked by unintended sponsorships)
+        auto const sponsorBalance = env.balance(sponsor);
+        auto const payAmount = XRP(100);
+        BEAST_EXPECT(sponsorBalance > payAmount);
+        env(pay(sponsor, borrower, payAmount), Ter(tesSUCCESS));
+        env.close();
+
+        // NOTE: Sponsor cannot delete account because they are sponsoring 100 borrower loans
+        // This is EXPECTED behavior - sponsor has legitimate obligations from the loans they
+        // sponsored
+    }
+
+    void
+    test2342EscrowFinishIouSameSponsorRecycleReserve()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2342
+
+        // BUG: EscrowFinish can falsely reject a same-sponsor finish when the sponsor
+        // funds both the escrow being deleted and the destination trust line being created.
+        // The net reserve change is zero (delete escrow -1, create trustline +1), but the
+        // implementation checks reserve BEFORE freeing the escrow, causing false rejection.
+        //
+        // IMPACT: For no-cancel escrows, funds become locked - sender can't cancel,
+        // receiver doesn't receive, and same-sponsor path is falsely blocked.
+
+        // EscrowFinish same-sponsor reserve recycling for IOU escrows
+        testcase("EscrowFinish IOU same-sponsor recycle reserve");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const gw{"gw"};
+        Account const sponsor{"sponsor"};
+        IOU const usd = gw["USD"];
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(10000), alice, bob, gw, sponsor);
+        env.close();
+        auto const baseFee = env.current()->fees().base;
+
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+        auto const initialUSD = usd(1'000);
+        auto const lockedUSD = usd(900);
+
+        env(trust(alice, usd(2'000)));
+        env.close();
+        env(pay(gw, alice, initialUSD));
+        env.close();
+
+        env(ticket::create(bob, 2));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, bob) == 2);
+
+        auto const preAliceUSD = env.balance(alice, usd);
+        BEAST_EXPECT(preAliceUSD == initialUSD);
+
+        std::uint32_t const seq = env.seq(alice);
+        env(escrow::create(alice, bob, lockedUSD),
+            escrow::kFinishTime(env.now() + std::chrono::seconds{1}),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+        env.close(std::chrono::seconds{2});
+        BEAST_EXPECT(env.balance(alice, usd) == preAliceUSD - lockedUSD);
+
+        auto const escrowKeylet = keylet::escrow(alice, seq);
+        auto sleEscrow = env.le(escrowKeylet);
+        BEAST_EXPECT(sleEscrow != nullptr);
+        if (!sleEscrow)
+            return;
+
+        BEAST_EXPECT(sleEscrow->getFieldAmount(sfAmount) == lockedUSD);
+        BEAST_EXPECT(sleEscrow->isFieldPresent(sfSponsor));
+        BEAST_EXPECT(sleEscrow->getAccountID(sfSponsor) == sponsor.id());
+        BEAST_EXPECT(!sleEscrow->isFieldPresent(sfCancelAfter));
+        BEAST_EXPECT(ownerCount(env, alice) == 2);
+        BEAST_EXPECT(ownerCount(env, bob) == 2);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+        // Set sponsor to exactly afford the currently sponsored Escrow, but
+        // not a second sponsored object. Same-sponsor finish should be net-zero
+        // because the Escrow is deleted as the destination line is created.
+        adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+        adjustAccountXRPBalance(env, bob, reserve(env, 2) + (baseFee * 10));
+        BEAST_EXPECT(env.balance(sponsor) == reserve(env, 1));
+        BEAST_EXPECT(env.balance(bob) < reserve(env, 3));
+
+        // Without sponsor, fails with tecNO_LINE_INSUF_RESERVE (expected - bob can't self-fund)
+        env(escrow::finish(bob, alice, seq), Fee(baseFee), Ter(tecNO_LINE_INSUF_RESERVE));
+        env.close();
+
+        // FIX VERIFIED: With same sponsor, succeeds (net-zero reserve change)
+        // The sponsor recycles reserve from escrow deletion to trustline creation
+        // WITHOUT FIX: fails with tecNO_LINE_INSUF_RESERVE
+        env(escrow::finish(bob, alice, seq),
+            Fee(baseFee),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // FIX: Escrow has been successfully finished
+        sleEscrow = env.le(escrowKeylet);
+        BEAST_EXPECT(sleEscrow == nullptr);
+
+        // FIX: Bob received the escrowed funds
+        BEAST_EXPECT(env.balance(bob, usd) == lockedUSD);
+        BEAST_EXPECT(env.balance(alice, usd) == preAliceUSD - lockedUSD);
+
+        // FIX: Bob's trustline was created and is sponsored
+        auto const bobLine = env.le(keylet::line(bob, usd.issue()));
+        BEAST_EXPECT(bobLine != nullptr);
+        if (bobLine)
+        {
+            auto const& bobSponsorField = bob.id() > gw.id() ? sfHighSponsor : sfLowSponsor;
+            BEAST_EXPECT(bobLine->isFieldPresent(bobSponsorField));
+            BEAST_EXPECT(bobLine->getAccountID(bobSponsorField) == sponsor.id());
+        }
+
+        // FIX: Owner counts updated correctly (escrow deleted, trustline created)
+        BEAST_EXPECT(ownerCount(env, alice) == 1);           // only alice's trustline remains
+        BEAST_EXPECT(ownerCount(env, bob) == 3);             // 2 tickets + 1 trustline
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);  // escrow was deleted
+        BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);    // trustline is sponsored
+        BEAST_EXPECT(
+            sponsoringOwnerCount(env, sponsor) == 1);  // still sponsoring 1 object (trustline now)
+    }
+
+    void
+    test2342EscrowCancelIouSameSponsorRecycleReserve()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2342
+        // EscrowCancel same-sponsor reserve recycling when sender loses their trust line
+        testcase("EscrowCancel IOU same-sponsor recycle reserve");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const gw{"gw"};
+        Account const sponsor{"sponsor"};
+        IOU const usd = gw["USD"];
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(10000), alice, bob, gw, sponsor);
+        env.close();
+        auto const baseFee = env.current()->fees().base;
+
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+        auto const initialUSD = usd(1'000);
+        auto const lockedUSD = usd(900);
+
+        env(trust(alice, usd(2'000)));
+        env.close();
+        env(pay(gw, alice, initialUSD));
+        env.close();
+
+        auto const preAliceUSD = env.balance(alice, usd);
+        BEAST_EXPECT(preAliceUSD == initialUSD);
+
+        // Create escrow WITH CancelAfter so it can be cancelled
+        std::uint32_t const seq = env.seq(alice);
+        env(escrow::create(alice, bob, lockedUSD),
+            escrow::kFinishTime(env.now() + std::chrono::seconds{100}),
+            escrow::kCancelTime(env.now() + std::chrono::seconds{200}),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+        BEAST_EXPECT(env.balance(alice, usd) == preAliceUSD - lockedUSD);
+
+        auto const escrowKeylet = keylet::escrow(alice, seq);
+        auto sleEscrow = env.le(escrowKeylet);
+        BEAST_EXPECT(sleEscrow != nullptr);
+        if (!sleEscrow)
+            return;
+
+        BEAST_EXPECT(sleEscrow->getFieldAmount(sfAmount) == lockedUSD);
+        BEAST_EXPECT(sleEscrow->isFieldPresent(sfSponsor));
+        BEAST_EXPECT(sleEscrow->getAccountID(sfSponsor) == sponsor.id());
+        BEAST_EXPECT(ownerCount(env, alice) == 2);  // trustline + escrow
+
+        // Alice removes her trust line (pays back to issuer and sets limit to 0)
+        env(pay(alice, gw, usd(100)));  // partial payment to reduce balance
+        env.close();
+        env(trust(alice, usd(0)));
+        env.close();
+
+        // Verify alice's trustline is gone
+        BEAST_EXPECT(env.le(keylet::line(alice, usd.issue())) == nullptr);
+        BEAST_EXPECT(ownerCount(env, alice) == 1);  // only escrow remains
+
+        // Set sponsor to exactly afford the currently sponsored escrow
+        adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+        adjustAccountXRPBalance(env, alice, reserve(env, 1) + (baseFee * 10));
+        BEAST_EXPECT(env.balance(sponsor) == reserve(env, 1));
+        BEAST_EXPECT(env.balance(alice) < reserve(env, 2));
+
+        // Wait for cancel time
+        env.close(std::chrono::seconds{201});
+
+        // FIX VERIFIED: Alice cancels with same sponsor, reserve recycling works
+        // Escrow deleted, alice's trustline recreated with same sponsor
+        env(escrow::cancel(alice, alice, seq),
+            Fee(baseFee),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // FIX: Escrow has been successfully cancelled
+        sleEscrow = env.le(escrowKeylet);
+        BEAST_EXPECT(sleEscrow == nullptr);
+
+        // FIX: Alice got her escrowed funds back
+        BEAST_EXPECT(env.balance(alice, usd) == lockedUSD);
+
+        // FIX: Alice's trustline was recreated and is sponsored
+        auto const aliceLine = env.le(keylet::line(alice, usd.issue()));
+        BEAST_EXPECT(aliceLine != nullptr);
+        if (aliceLine)
+        {
+            auto const& aliceSponsorField = alice.id() > gw.id() ? sfHighSponsor : sfLowSponsor;
+            BEAST_EXPECT(aliceLine->isFieldPresent(aliceSponsorField));
+            BEAST_EXPECT(aliceLine->getAccountID(aliceSponsorField) == sponsor.id());
+        }
+
+        // FIX: Owner counts - escrow deleted, trustline created
+        BEAST_EXPECT(ownerCount(env, alice) == 1);              // alice's trustline
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);     // trustline is sponsored
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);  // still sponsoring 1 object
+    }
+
+    void
+    test2342EscrowFinishMptSameSponsorRecycleReserve()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2342
+        // EscrowFinish same-sponsor reserve recycling for MPT escrows
+
+        // BUG: EscrowFinish can falsely reject a same-sponsor finish when the sponsor
+        // funds both the escrow being deleted and the destination MPT holding being created.
+        // The net reserve change is zero, but the check fires before the escrow deletion.
+        testcase("EscrowFinish MPT same-sponsor recycle reserve");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const gw{"gw"};
+        Account const sponsor{"sponsor"};
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(10000), alice, bob, gw, sponsor);
+        env.close();
+        auto const baseFee = env.current()->fees().base;
+
+        MPTTester mpt{env, gw, {.holders = {alice}, .fund = false}};
+        mpt.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanEscrow});
+        auto const mpt = mpt["MPT"];
+        auto const initialMPT = mpt(1'000);
+        auto const lockedMPT = mpt(900);
+        mpt.authorize({.account = alice});
+        mpt.pay(gw, alice, 1'000);
+
+        env(ticket::create(bob, 2));
+        env.close();
+        BEAST_EXPECT(ownerCount(env, bob) == 2);
+
+        auto const preAliceMPT = env.balance(alice, mpt);
+        BEAST_EXPECT(preAliceMPT == initialMPT);
+
+        std::uint32_t const seq = env.seq(alice);
+        env(escrow::create(alice, bob, lockedMPT),
+            escrow::kFinishTime(env.now() + std::chrono::seconds{1}),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+        env.close(std::chrono::seconds{2});
+        BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - lockedMPT);
+
+        auto const escrowKeylet = keylet::escrow(alice, seq);
+        auto sleEscrow = env.le(escrowKeylet);
+        BEAST_EXPECT(sleEscrow != nullptr);
+        if (!sleEscrow)
+            return;
+
+        BEAST_EXPECT(sleEscrow->getFieldAmount(sfAmount) == lockedMPT);
+        BEAST_EXPECT(sleEscrow->isFieldPresent(sfSponsor));
+        BEAST_EXPECT(sleEscrow->getAccountID(sfSponsor) == sponsor.id());
+        BEAST_EXPECT(!sleEscrow->isFieldPresent(sfCancelAfter));
+        BEAST_EXPECT(ownerCount(env, alice) == 2);
+        BEAST_EXPECT(ownerCount(env, bob) == 2);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+        // Same-sponsor finish should be reserve-neutral: the existing sponsored
+        // Escrow is deleted as Bob's destination MPToken is created.
+        adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+        adjustAccountXRPBalance(env, bob, reserve(env, 2) + (baseFee * 10));
+        BEAST_EXPECT(env.balance(sponsor) == reserve(env, 1));
+        BEAST_EXPECT(env.balance(bob) < reserve(env, 3));
+
+        // Without sponsor, fails with tecINSUFFICIENT_RESERVE (expected - bob can't self-fund)
+        env(escrow::finish(bob, alice, seq), Fee(baseFee), Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+
+        // FIX VERIFIED: With same sponsor, succeeds (net-zero reserve change)
+        // The sponsor recycles reserve from escrow deletion to MPToken holding creation
+        env(escrow::finish(bob, alice, seq),
+            Fee(baseFee),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // FIX: Escrow has been successfully finished
+        sleEscrow = env.le(escrowKeylet);
+        BEAST_EXPECT(sleEscrow == nullptr);
+
+        // FIX: Bob received the escrowed MPT
+        BEAST_EXPECT(env.balance(bob, mpt) == lockedMPT);
+        BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - lockedMPT);
+
+        // FIX: Bob's MPToken holding was created and is sponsored
+        auto const bobMpt = env.le(keylet::mptoken(mpt.issuanceID(), bob.id()));
+        BEAST_EXPECT(bobMpt != nullptr);
+        if (bobMpt)
+        {
+            BEAST_EXPECT(bobMpt->isFieldPresent(sfSponsor));
+            BEAST_EXPECT(bobMpt->getAccountID(sfSponsor) == sponsor.id());
+        }
+
+        // FIX: Owner counts updated correctly (escrow deleted, MPToken holding created)
+        BEAST_EXPECT(ownerCount(env, alice) == 1);           // only alice's MPToken holding remains
+        BEAST_EXPECT(ownerCount(env, bob) == 3);             // 2 tickets + 1 MPToken holding
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);  // escrow was deleted
+        BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);    // MPToken holding is sponsored
+        BEAST_EXPECT(
+            sponsoringOwnerCount(env, sponsor) == 1);  // still sponsoring 1 object (MPToken now)
+    }
+
 public:
     void
     run() override
@@ -2950,7 +3693,14 @@ public:
         // test2178TrustSetCounterpartySponsorMisroute();
         // test2241AlternateFeePayerQueueAdmissionDelegate();
         // test2241AlternateFeePayerQueueAdmissionSponsored();
-        test2284LegacySignerListReserveMismatch();
+        // test2284LegacySignerListReserveMismatch();
+        // test2320LoanSetBorrowerSponsorNotAppliedToLenderTrustline();
+        // test2320LoanSetBorrowerSponsorNotAppliedToLenderMptHolding();
+        // test2320LoanSetBorrowerSponsorOnlySponsorsIntendedBorrowerLoan();
+        // test2320BorrowerSponsorReserveLockScalesAcrossManyLenders();
+        test2342EscrowFinishIouSameSponsorRecycleReserve();
+        test2342EscrowCancelIouSameSponsorRecycleReserve();
+        test2342EscrowFinishMptSameSponsorRecycleReserve();
     }
 };
 

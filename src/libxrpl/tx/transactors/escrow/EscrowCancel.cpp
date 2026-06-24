@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
@@ -176,8 +177,10 @@ EscrowCancel::doApply()
         if (!ctx_.view().rules().enabled(featureTokenEscrow))
             return temDISABLED;  // LCOV_EXCL_LINE
 
+        auto const escrowObjSponsor = getLedgerEntryReserveSponsorAccountID(slep);
         auto const issuer = amount.getIssuer();
         bool const createAsset = account == accountID_;
+
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
@@ -191,6 +194,7 @@ EscrowCancel::doApply()
                         account,  // sender and receiver are the same
                         account,
                         createAsset,
+                        escrowObjSponsor,
                         j_);
                 },
                 amount.asset().value());
