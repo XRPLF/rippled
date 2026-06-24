@@ -161,6 +161,8 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         auto const objSponsorID = getLedgerEntryReserveSponsorAccountID(sle);
         auto const txSponsorID = getTxReserveSponsorAccountID(ctx.tx);
 
+        // newCount == oldCount doesn't allow sponsor switch. One should use
+        // SponsorshipTransfer, and not OracleSet.
         if ((newCount > oldCount) && (txSponsorID != objSponsorID))
         {  // Sponsor change
             adjustReserve = newCount;

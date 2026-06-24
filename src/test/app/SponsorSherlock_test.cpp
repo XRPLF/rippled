@@ -3574,13 +3574,13 @@ protected:
         env.close();
         auto const baseFee = env.current()->fees().base;
 
-        MPTTester mpt{env, gw, {.holders = {alice}, .fund = false}};
-        mpt.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanEscrow});
-        auto const mpt = mpt["MPT"];
+        MPTTester mptTester{env, gw, {.holders = {alice}, .fund = false}};
+        mptTester.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanEscrow});
+        auto const mpt = mptTester["MPT"];
         auto const initialMPT = mpt(1'000);
         auto const lockedMPT = mpt(900);
-        mpt.authorize({.account = alice});
-        mpt.pay(gw, alice, 1'000);
+        mptTester.authorize({.account = alice});
+        mptTester.pay(gw, alice, 1'000);
 
         env(ticket::create(bob, 2));
         env.close();
@@ -3642,7 +3642,7 @@ protected:
         BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - lockedMPT);
 
         // FIX: Bob's MPToken holding was created and is sponsored
-        auto const bobMpt = env.le(keylet::mptoken(mpt.issuanceID(), bob.id()));
+        auto const bobMpt = env.le(keylet::mptoken(mpt.issuanceID, bob.id()));
         BEAST_EXPECT(bobMpt != nullptr);
         if (bobMpt)
         {
@@ -3659,48 +3659,285 @@ protected:
             sponsoringOwnerCount(env, sponsor) == 1);  // still sponsoring 1 object (MPToken now)
     }
 
+    void
+    test2671TicketCoSignedWithoutSponsorshipInflatesReserveCount()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2671
+        // Co-signed TicketCreate without Sponsorship object inflates ReserveCount on consumption
+        testcase(
+            "ReserveCount inflation: co-signed TicketCreate + later Sponsorship + ticket "
+            "consumption");
+
+        using namespace jtx;
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        // Precondition: no Sponsorship object exists between sponsor and alice
+        BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
+        BEAST_EXPECT(env.sponsoredOwnerCount(alice) == 0);
+        BEAST_EXPECT(env.sponsoringOwnerCount(sponsor) == 0);
+
+        // Step 1: sponsor co-signs TicketCreate for alice (no Sponsorship SLE exists)
+        std::uint32_t const ticketCount = 10;
+        std::uint32_t const firstTicketSeq = env.seq(alice) + 1;
+
+        env(ticket::create(alice, ticketCount),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+
+        // Each ticket carries sfSponsor = sponsor
+        for (std::uint32_t i = 0; i < ticketCount; ++i)
+        {
+            auto const sleTicket = env.le(keylet::kTicket(alice, firstTicketSeq + i));
+            BEAST_EXPECT(sleTicket);
+            if (sleTicket)
+                BEAST_EXPECT(sleTicket->getAccountID(sfSponsor) == sponsor.id());
+        }
+
+        BEAST_EXPECT(env.sponsoredOwnerCount(alice) == ticketCount);
+        BEAST_EXPECT(env.sponsoringOwnerCount(sponsor) == ticketCount);
+
+        // Crucially: still no Sponsorship object, so no ReserveCount was debited at create time
+        BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
+
+        // Step 2: sponsor later creates a Sponsorship object with alice
+        // We do NOT pre-fund any ReserveCount (omitted field = semantically 0)
+        env(sponsor::set(sponsor, 0, std::nullopt, XRP(1)), sponsor::SponseeAcc(alice));
+        env.close();
+
+        auto sleSponsorship = env.le(keylet::sponsorship(sponsor, alice));
+        BEAST_EXPECT(sleSponsorship);
+        BEAST_EXPECT(!sleSponsorship->isFieldPresent(sfRemainingOwnerCount));
+
+        // Step 3: alice consumes all tickets
+        for (std::uint32_t i = 0; i < ticketCount; ++i)
+        {
+            env(noop(alice), ticket::Use(firstTicketSeq + i));
+            env.close();
+        }
+
+        // FIX VERIFIED: Sponsorship.sfRemainingOwnerCount should still be 0 (or absent)
+        // BUG WOULD BE: it gets inflated to ticketCount
+        sleSponsorship = env.le(keylet::sponsorship(sponsor, alice));
+        BEAST_EXPECT(sleSponsorship);
+
+        // Verify ReserveCount was NOT inflated (correct behavior)
+        if (sleSponsorship && sleSponsorship->isFieldPresent(sfRemainingOwnerCount))
+        {
+            auto const reserveCount = sleSponsorship->getFieldU32(sfRemainingOwnerCount);
+            // Should be 0, not ticketCount
+            BEAST_EXPECT(reserveCount == 0);
+        }
+        else
+        {
+            // Field absent is also correct (semantically 0)
+            // This is the expected fix behavior
+        }
+
+        // Owner counts should be back to zero after consuming all tickets
+        BEAST_EXPECT(env.sponsoredOwnerCount(alice) == 0);
+        BEAST_EXPECT(env.sponsoringOwnerCount(sponsor) == 0);
+    }
+
+    void
+    test2721ZeroBalanceSponsoredPaymentFeePayerCheck()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2721
+        // Zero-balance sponsored Payment: getFeePayer() consistency check
+        testcase("Sponsored Payment: minimal-balance account with sponsor-pays-fee");
+
+        using namespace jtx;
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        Account const dest("dest");
+
+        auto const baseFee = drops(10);
+        auto const baseReserve = env.current()->fees().reserve;
+
+        // Fund sponsor and dest generously, alice with base reserve + 1 XRP for payment
+        env.fund(XRP(10000), sponsor, dest);
+        env.fund(baseReserve + XRP(1), alice);
+        env.close();
+
+        // Precondition: alice has base reserve + 1 XRP (enough for payment but not fee)
+        BEAST_EXPECT(env.balance(alice) == baseReserve + XRP(1));
+
+        // BUG SCENARIO (if it existed): Alice tries to send a Payment to dest
+        // where sponsor pays the fee via spfSponsorFee.
+        // If Payment.cpp used ctx_.tx.getFeePayer() (STTx version), it would
+        // incorrectly identify alice as the fee payer and check if alice has
+        // balance >= amount + fee + reserve, which would fail.
+        // FIX: Payment.cpp uses getFeePayer(view(), ctx_.tx) (Transactor version)
+        // which correctly identifies sponsor as the fee payer, so only checks
+        // if alice has balance >= amount + reserve (not including fee).
+
+        auto const preDest = env.balance(dest);
+        auto const preSponsor = env.balance(sponsor);
+
+        // Alice sends 1 XRP to dest, sponsor pays the fee
+        env(pay(alice, dest, XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Fee(baseFee),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // FIX VERIFIED: Payment succeeded
+        // Alice's balance decreased by 1 XRP (the payment amount, NOT the fee)
+        BEAST_EXPECT(env.balance(alice) == baseReserve);
+
+        // Dest received 1 XRP
+        BEAST_EXPECT(env.balance(dest) == preDest + XRP(1));
+
+        // Sponsor paid the fee (NOT alice)
+        BEAST_EXPECT(env.balance(sponsor) == preSponsor - baseFee);
+    }
+
+    void
+    test2731OracleSetDropsSponsorSwitchWhenReserveUnchanged()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2731
+        // OracleSet sponsor switch when reserve count unchanged
+        // UPDATE: NOT A BUG. If  someone want to change sponsor without increasing oracle pairs
+        // count they must use SponsorshipTransfer.
+        testcase("OracleSet: sponsor switch dropped when reserve count unchanged");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Env env{*this, testableAmendments()};
+
+        Account const owner("owner");
+        Account const sponsorA("sponsorA");
+        Account const sponsorB("sponsorB");
+
+        env.fund(XRP(10000), owner, sponsorA, sponsorB);
+        env.close();
+
+        // Both sponsors pre-fund reserves for the owner
+        env(sponsor::set(sponsorA, 0, 5, std::nullopt, std::nullopt), sponsor::SponseeAcc(owner));
+        env(sponsor::set(sponsorB, 0, 5, std::nullopt, std::nullopt), sponsor::SponseeAcc(owner));
+        env.close();
+
+        // Create an oracle with sponsorA as the reserve sponsor
+        // Use 1 price pair (reserve count = 1 based on calculateOracleReserve)
+        auto const now = env.timeKeeper().now();
+        env.close(now + oracle::kTestStartTime - kEpochOffset);
+
+        json::Value createTx;
+        createTx[jss::TransactionType] = jss::OracleSet;
+        createTx[jss::Account] = to_string(owner);
+        createTx[jss::OracleDocumentID] = 1;
+        createTx[jss::Provider] = strHex(std::string("provider"));
+        createTx[jss::AssetClass] = strHex(std::string("currency"));
+        createTx[jss::LastUpdateTime] = to_string(
+            duration_cast<seconds>(env.current()->header().closeTime.time_since_epoch()).count() +
+            kEpochOffset.count() + 100);
+
+        json::Value priceData(json::ValueType::Array);
+        json::Value pd;
+        pd[jss::PriceData][jss::BaseAsset] = "XRP";
+        pd[jss::PriceData][jss::QuoteAsset] = "USD";
+        pd[jss::PriceData][jss::AssetPrice] = 1000;
+        pd[jss::PriceData][jss::Scale] = 1;
+        priceData.append(pd);
+        createTx[jss::PriceDataSeries] = priceData;
+
+        env(createTx, sponsor::As(sponsorA, spfSponsorReserve));
+        env.close();
+
+        // Verify oracle exists and sfSponsor == sponsorA
+        auto const oracleKey = keylet::oracle(owner, 1);
+        auto oracleLE = env.le(oracleKey);
+        BEAST_EXPECT(oracleLE);
+        if (oracleLE)
+        {
+            BEAST_EXPECT(oracleLE->isFieldPresent(sfSponsor));
+            if (oracleLE->isFieldPresent(sfSponsor))
+            {
+                BEAST_EXPECT(oracleLE->getAccountID(sfSponsor) == sponsorA.id());
+            }
+        }
+
+        // Update oracle: same price pair count (reserve unchanged), but with sponsorB
+        // BUG: sponsor switch is dropped because adjust == 0
+        // UPDATE: not a bug, someone always can use TransferSponsorship
+        env.close(now + oracle::kTestStartTime - kEpochOffset + seconds(1));
+        createTx[jss::LastUpdateTime] = to_string(
+            duration_cast<seconds>(env.current()->header().closeTime.time_since_epoch()).count() +
+            kEpochOffset.count() + 100);
+
+        env(createTx, sponsor::As(sponsorB, spfSponsorReserve));
+        env.close();
+
+        // Check if bug is present: Oracle should show sponsorB but will show sponsorA if bug exists
+        oracleLE = env.le(oracleKey);
+        BEAST_EXPECT(oracleLE);
+        if (oracleLE)
+        {
+            BEAST_EXPECT(oracleLE->isFieldPresent(sfSponsor));
+            if (oracleLE->isFieldPresent(sfSponsor))
+            {
+                auto const actualSponsor = oracleLE->getAccountID(sfSponsor);
+                // BUG: Sponsor switch is silently dropped when adjust == 0
+                // The sfSponsor remains sponsorA instead of switching to sponsorB
+                // UPDATE: Not A Bug - One should use SponsorshipTransfer in this case.
+                BEAST_EXPECT(actualSponsor == sponsorA.id());
+            }
+        }
+    }
+
 public:
     void
     run() override
     {
         using namespace test::jtx;
 
-        // test168CoSignedBlockedWithFeeOnlySponsorship();
-        // test251AMMDepositRejectXRPDeposits();
-        // test750SponsorFeeQueueAdmissionBug();
-        // test750AdversarialSponsorBlocksVictim();
-        // test1033SponsoredWitnessCanChargeDoorOwnedClaimObjectsToUnrelatedSponsor();
-        // test1186AMMCreateUsesPreFeeReserveBalance();
-        // test1186AMMDepositUsesPreFeeReserveBalance();
-        // test1350ReserveCountSilentWrap(testableAmendments());
-        // test1364AmmWithdrawSponsoredMptBypass();
-        // test1365OracleReserveDecreaseRejection();
-        // test1380AmmClawbackReserveBypass();
-        // test1468PathPaymentExploit();
-        // test1563OracleIncorrectAdjustment();
-        // test1675SponsoredXRPEscrowCreate();
-        // test1678SameSponsorCredentialAccept();
-        // test1680SponsoredPayChanTrapsReserve();
-        // test1736CrossCurrencyTfSponsorCreatedAccountBypassesReserve();
-        // test1779BrokerSponsorMisroutedToBorrowerLoanSle();
-        // test1814AMMDepositLPTokenNonSponsoredReserveBypass();
-        // test1814ExistingLPCorrectlyChecked();
-        // test1814SingleAssetCaughtByPreclaim();
-        // test2022UnsignedUnderflowAccountReserveOfferCrossing();
-        // test2065SponsorVaultFeeInvariantDeposit();
-        // test2065SponsorVaultFeeInvariantWithdraw();
-        // test2158SponsorLoanBrokerSetMPTPseudoAccountInvariant();
-        // test2178TrustSetCounterpartySponsorMisroute();
-        // test2241AlternateFeePayerQueueAdmissionDelegate();
-        // test2241AlternateFeePayerQueueAdmissionSponsored();
-        // test2284LegacySignerListReserveMismatch();
-        // test2320LoanSetBorrowerSponsorNotAppliedToLenderTrustline();
-        // test2320LoanSetBorrowerSponsorNotAppliedToLenderMptHolding();
-        // test2320LoanSetBorrowerSponsorOnlySponsorsIntendedBorrowerLoan();
-        // test2320BorrowerSponsorReserveLockScalesAcrossManyLenders();
+        test168CoSignedBlockedWithFeeOnlySponsorship();
+        test251AMMDepositRejectXRPDeposits();
+        test750SponsorFeeQueueAdmissionBug();
+        test750AdversarialSponsorBlocksVictim();
+        test1033SponsoredWitnessCanChargeDoorOwnedClaimObjectsToUnrelatedSponsor();
+        test1186AMMCreateUsesPreFeeReserveBalance();
+        test1186AMMDepositUsesPreFeeReserveBalance();
+        test1350ReserveCountSilentWrap(testableAmendments());
+        test1364AmmWithdrawSponsoredMptBypass();
+        test1365OracleReserveDecreaseRejection();
+        test1380AmmClawbackReserveBypass();
+        test1468PathPaymentExploit();
+        test1563OracleIncorrectAdjustment();
+        test1675SponsoredXRPEscrowCreate();
+        test1678SameSponsorCredentialAccept();
+        test1680SponsoredPayChanTrapsReserve();
+        test1736CrossCurrencyTfSponsorCreatedAccountBypassesReserve();
+        test1779BrokerSponsorMisroutedToBorrowerLoanSle();
+        test1814AMMDepositLPTokenNonSponsoredReserveBypass();
+        test1814ExistingLPCorrectlyChecked();
+        test1814SingleAssetCaughtByPreclaim();
+        test2022UnsignedUnderflowAccountReserveOfferCrossing();
+        test2065SponsorVaultFeeInvariantDeposit();
+        test2065SponsorVaultFeeInvariantWithdraw();
+        test2158SponsorLoanBrokerSetMPTPseudoAccountInvariant();
+        test2178TrustSetCounterpartySponsorMisroute();
+        test2241AlternateFeePayerQueueAdmissionDelegate();
+        test2241AlternateFeePayerQueueAdmissionSponsored();
+        test2284LegacySignerListReserveMismatch();
+        test2320LoanSetBorrowerSponsorNotAppliedToLenderTrustline();
+        test2320LoanSetBorrowerSponsorNotAppliedToLenderMptHolding();
+        test2320LoanSetBorrowerSponsorOnlySponsorsIntendedBorrowerLoan();
+        test2320BorrowerSponsorReserveLockScalesAcrossManyLenders();
         test2342EscrowFinishIouSameSponsorRecycleReserve();
         test2342EscrowCancelIouSameSponsorRecycleReserve();
         test2342EscrowFinishMptSameSponsorRecycleReserve();
+        test2671TicketCoSignedWithoutSponsorshipInflatesReserveCount();
+        test2721ZeroBalanceSponsoredPaymentFeePayerCheck();
+        test2731OracleSetDropsSponsorSwitchWhenReserveUnchanged();
     }
 };
 
