@@ -18,7 +18,7 @@
 namespace xrpl {
 namespace test {
 
-class VaultHelpers_test : public beast::unit_test::suite
+class VaultHelpers_test : public beast::unit_test::Suite
 {
     jtx::Env* env_ = nullptr;
     AccountID const issuerID{0x2};
@@ -338,7 +338,7 @@ class VaultHelpers_test : public beast::unit_test::suite
                 .lossUnrealized = 0,
                 .shareTotal = 100'000'000,
                 .withdrawAssets = 50,
-                .truncate = TruncateShares::no,
+                .truncate = TruncateShares::No,
                 // NAV = 100
                 .expectedShares = shares(Number{100'000'000LL * 50} / 100),
             },
@@ -349,7 +349,7 @@ class VaultHelpers_test : public beast::unit_test::suite
                 .lossUnrealized = 3,
                 .shareTotal = 10,
                 .withdrawAssets = 1,
-                .truncate = TruncateShares::yes,
+                .truncate = TruncateShares::Yes,
                 // NAV = 7; shares = floor(10 * 1 / 7)
                 .expectedShares = shares(Number{(10 * 1) / 7}.truncate()),
             },
@@ -360,7 +360,7 @@ class VaultHelpers_test : public beast::unit_test::suite
                 .lossUnrealized = 3,
                 .shareTotal = 10,
                 .withdrawAssets = Number{11, -1},
-                .truncate = TruncateShares::yes,
+                .truncate = TruncateShares::Yes,
                 // NAV = 7; shares = floor(10 * 1.1 / 7)
                 .expectedShares = shares(((Number{10} * Number{11, -1}) / 7).truncate()),
             },
@@ -371,7 +371,7 @@ class VaultHelpers_test : public beast::unit_test::suite
                 .lossUnrealized = 0,
                 .shareTotal = 10,
                 .withdrawAssets = Number{15, -1},
-                .truncate = TruncateShares::yes,
+                .truncate = TruncateShares::Yes,
                 // NAV = 10; shares = floor(10 * 1.5 / 10)
                 .expectedShares = shares(((Number{10} * Number{15, -1}) / 10).truncate()),
             },
@@ -382,7 +382,7 @@ class VaultHelpers_test : public beast::unit_test::suite
                 .lossUnrealized = 50,
                 .shareTotal = 500,
                 .withdrawAssets = 10,
-                .truncate = TruncateShares::no,
+                .truncate = TruncateShares::No,
                 .expectedShares = shares(0),
             },
             {
@@ -392,7 +392,7 @@ class VaultHelpers_test : public beast::unit_test::suite
                 .lossUnrealized = 2,
                 .shareTotal = 10,
                 .withdrawAssets = 3,
-                .truncate = TruncateShares::yes,
+                .truncate = TruncateShares::Yes,
                 // NAV = 8; shares = floor(10 * 3 / 8)
                 .expectedShares = shares(Number{(10 * 3) / 8}.truncate()),
             },
@@ -403,7 +403,7 @@ class VaultHelpers_test : public beast::unit_test::suite
                 .lossUnrealized = 100,
                 .shareTotal = 500,
                 .withdrawAssets = 100,
-                .truncate = TruncateShares::no,
+                .truncate = TruncateShares::No,
                 // NAV = 800; raw = 62.5, assigned to MPT STAmount
                 .expectedShares = shares(Number{500 * 100} / 800),
             },
@@ -414,7 +414,7 @@ class VaultHelpers_test : public beast::unit_test::suite
                 .lossUnrealized = 100,
                 .shareTotal = 500,
                 .withdrawAssets = 100,
-                .truncate = TruncateShares::yes,
+                .truncate = TruncateShares::Yes,
                 // NAV = 800; shares = floor(500 * 100 / 800)
                 .expectedShares = shares(Number{(500 * 100) / 800}.truncate()),
             },
@@ -585,7 +585,7 @@ class VaultHelpers_test : public beast::unit_test::suite
             BEAST_EXPECT(result.has_value());
             if (result)
             {
-                BEAST_EXPECT(result->shares != beast::zero);
+                BEAST_EXPECT(result->shares != beast::kZero);
                 BEAST_EXPECT(result->assets <= asset(50));
             }
         }
@@ -600,7 +600,7 @@ class VaultHelpers_test : public beast::unit_test::suite
             BEAST_EXPECT(result.has_value());
             if (result)
             {
-                BEAST_EXPECT(result->shares != beast::zero);
+                BEAST_EXPECT(result->shares != beast::kZero);
                 BEAST_EXPECT(result->assets == asset(100));
             }
         }
@@ -634,8 +634,8 @@ class VaultHelpers_test : public beast::unit_test::suite
             BEAST_EXPECT(result.has_value());
             if (result)
             {
-                BEAST_EXPECT(result->shares != beast::zero);
-                BEAST_EXPECT(result->assets != beast::zero);
+                BEAST_EXPECT(result->shares != beast::kZero);
+                BEAST_EXPECT(result->assets != beast::kZero);
             }
         }
 
@@ -667,7 +667,7 @@ class VaultHelpers_test : public beast::unit_test::suite
             BEAST_EXPECT(result.has_value());
             if (result)
             {
-                BEAST_EXPECT(result->assets != beast::zero);
+                BEAST_EXPECT(result->assets != beast::kZero);
                 BEAST_EXPECT(result->shares == shares(50));
             }
         }
@@ -688,8 +688,8 @@ class VaultHelpers_test : public beast::unit_test::suite
             BEAST_EXPECT(result.has_value());
             if (result)
             {
-                BEAST_EXPECT(result->assets != beast::zero);
-                BEAST_EXPECT(result->shares != beast::zero);
+                BEAST_EXPECT(result->assets != beast::kZero);
+                BEAST_EXPECT(result->shares != beast::kZero);
             }
         }
 
@@ -711,7 +711,7 @@ class VaultHelpers_test : public beast::unit_test::suite
     Sandbox
     makeSandbox(SLE::pointer vault, SLE::pointer issuance)
     {
-        Sandbox sb(env_->current().get(), tapNONE);
+        Sandbox sb(env_->current().get(), TapNone);
         sb.insert(vault);
         sb.insert(issuance);
         return sb;

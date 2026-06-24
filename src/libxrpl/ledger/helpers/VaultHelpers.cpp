@@ -353,7 +353,7 @@ computeDeposit(
     try
     {
         auto const shares = assetsToSharesDeposit(rules, vault, issuance, assets);
-        if (shares == beast::zero)
+        if (shares == beast::kZero)
             return std::unexpected(tecPRECISION_LOSS);
 
         auto const assetsOut = sharesToAssetsDeposit(rules, vault, issuance, shares);
@@ -365,7 +365,7 @@ computeDeposit(
             // LCOV_EXCL_STOP
         }
 
-        return ExchangeResult{assetsOut, shares};
+        return ExchangeResult{.assets = assetsOut, .shares = shares};
     }
     catch (std::overflow_error const&)
     {
@@ -408,11 +408,11 @@ computeWithdrawByAssets(
     try
     {
         auto const shares = assetsToSharesWithdraw(rules, vault, issuance, assets);
-        if (shares == beast::zero)
+        if (shares == beast::kZero)
             return std::unexpected(tecPRECISION_LOSS);
 
         auto const assetsOut = sharesToAssetsWithdraw(rules, vault, issuance, shares);
-        return ExchangeResult{assetsOut, shares};
+        return ExchangeResult{.assets = assetsOut, .shares = shares};
     }
     catch (std::overflow_error const&)
     {
@@ -455,7 +455,7 @@ computeWithdrawByShares(
     try
     {
         auto const assets = sharesToAssetsWithdraw(rules, vault, issuance, shares);
-        return ExchangeResult{assets, shares};
+        return ExchangeResult{.assets = assets, .shares = shares};
     }
     catch (std::overflow_error const&)
     {
@@ -520,7 +520,7 @@ computeClawback(
             }
         }
 
-        return ExchangeResult{assetsRecovered, sharesDestroyed};
+        return ExchangeResult{.assets = assetsRecovered, .shares = sharesDestroyed};
     }
     catch (std::overflow_error const&)
     {

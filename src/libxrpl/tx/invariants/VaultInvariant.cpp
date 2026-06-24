@@ -495,7 +495,7 @@ ValidVault::finalize(
 
     if (view.rules().enabled(featureLendingProtocolV1_1))
     {
-        if (afterVault.interestUnrealized < zero)
+        if (afterVault.interestUnrealized < kZero)
         {
             JLOG(j.fatal()) << "Invariant failed: interest unrealized must be non-negative";
             result = false;
@@ -510,8 +510,8 @@ ValidVault::finalize(
 
         // Deposit net asset value = AssetsTotal - InterestUnrealized must be > 0 when vault
         // has assets.
-        if (afterVault.assetsTotal > zero &&
-            afterVault.assetsTotal - afterVault.interestUnrealized <= zero)
+        if (afterVault.assetsTotal > kZero &&
+            afterVault.assetsTotal - afterVault.interestUnrealized <= kZero)
         {
             JLOG(j.fatal()) << "Invariant failed: deposit net asset value must be positive";
             result = false;
@@ -520,14 +520,14 @@ ValidVault::finalize(
         // Withdrawal net asset value = AssetsTotal - InterestUnrealized - LossUnrealized
         // must not go negative.
         if (afterVault.assetsTotal - afterVault.interestUnrealized - afterVault.lossUnrealized <
-            zero)
+            kZero)
         {
             JLOG(j.fatal()) << "Invariant failed: withdrawal net asset value must not be negative";
             result = false;
         }
 
         // If there's unrealized interest, shares must be outstanding.
-        if (updatedShares && afterVault.interestUnrealized > zero &&
+        if (updatedShares && afterVault.interestUnrealized > kZero &&
             updatedShares->sharesTotal == 0)
         {
             JLOG(j.fatal()) << "Invariant failed: interest unrealized with no outstanding shares";

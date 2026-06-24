@@ -185,6 +185,9 @@ VaultWithdraw::doApply()
     // to deposit into it, and this means you are also indefinitely authorized
     // to withdraw from it.
 
+    STAmount assetsWithdrawn;
+    STAmount sharesRedeemed;
+
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
 
@@ -200,7 +203,8 @@ VaultWithdraw::doApply()
     }();
     if (!result)
         return result.error();
-    auto const& [assetsWithdrawn, sharesRedeemed] = *result;
+    assetsWithdrawn = result.value().assets;
+    sharesRedeemed = result.value().shares;
 
     if (accountHolds(
             view(), accountID_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <

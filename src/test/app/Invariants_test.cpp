@@ -3356,9 +3356,9 @@ class Invariants_test : public beast::unit_test::Suite
             {"interest unrealized must be non-negative"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
-                           adj.interestUnrealized = -1;
-                       }));
+                kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [](Adjustments& adj) {
+                            adj.interestUnrealized = -1;
+                        }));
 
                 return true;
             },
@@ -3375,10 +3375,10 @@ class Invariants_test : public beast::unit_test::Suite
             {"interest unrealized exceeds lent assets"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
-                           adj.assetsAvailable = (DROPS_PER_XRP * -10).value();
-                           adj.interestUnrealized = (DROPS_PER_XRP * 20).value();
-                       }));
+                kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [](Adjustments& adj) {
+                            adj.assetsAvailable = (kDropsPerXrp * -10).value();
+                            adj.interestUnrealized = (kDropsPerXrp * 20).value();
+                        }));
 
                 return true;
             },
@@ -3394,10 +3394,10 @@ class Invariants_test : public beast::unit_test::Suite
             {"deposit net asset value must be positive"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
-                           adj.assetsAvailable = (DROPS_PER_XRP * -20).value();
-                           adj.interestUnrealized = (DROPS_PER_XRP * 30 + 10).value();
-                       }));
+                kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [](Adjustments& adj) {
+                            adj.assetsAvailable = (kDropsPerXrp * -20).value();
+                            adj.interestUnrealized = (kDropsPerXrp * 30 + 10).value();
+                        }));
 
                 return true;
             },
@@ -3413,11 +3413,11 @@ class Invariants_test : public beast::unit_test::Suite
             {"withdrawal net asset value must not be negative"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
-                           adj.assetsAvailable = (DROPS_PER_XRP * -20).value();
-                           adj.interestUnrealized = (DROPS_PER_XRP * 15).value();
-                           adj.lossUnrealized = (DROPS_PER_XRP * 20).value();
-                       }));
+                kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [](Adjustments& adj) {
+                            adj.assetsAvailable = (kDropsPerXrp * -20).value();
+                            adj.interestUnrealized = (kDropsPerXrp * 15).value();
+                            adj.lossUnrealized = (kDropsPerXrp * 20).value();
+                        }));
 
                 return true;
             },
@@ -3432,10 +3432,10 @@ class Invariants_test : public beast::unit_test::Suite
             {"interest unrealized with no outstanding shares"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
-                           adj.assetsAvailable = (DROPS_PER_XRP * -10).value();
-                           adj.interestUnrealized = (DROPS_PER_XRP * 5).value();
-                       }));
+                kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [](Adjustments& adj) {
+                            adj.assetsAvailable = (kDropsPerXrp * -10).value();
+                            adj.interestUnrealized = (kDropsPerXrp * 5).value();
+                        }));
 
                 // Zero out shares
                 auto sleVault = ac.view().peek(keylet);
@@ -3459,10 +3459,10 @@ class Invariants_test : public beast::unit_test::Suite
             {"vault transaction must not change interest unrealized"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
-                adjust(ac.view(), keylet, args(A2.id(), 10, [](Adjustments& adj) {
-                           adj.assetsAvailable = (DROPS_PER_XRP * -10).value();
-                           adj.interestUnrealized = (DROPS_PER_XRP * 5).value();
-                       }));
+                kAdjust(ac.view(), keylet, kArgs(A2.id(), 10, [](Adjustments& adj) {
+                            adj.assetsAvailable = (kDropsPerXrp * -10).value();
+                            adj.interestUnrealized = (kDropsPerXrp * 5).value();
+                        }));
 
                 return true;
             },
