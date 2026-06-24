@@ -1,10 +1,10 @@
 #include <test/jtx/utility.h>
 
 #include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
 
 #include <xrpld/rpc/RPCCall.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -12,6 +12,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -22,6 +23,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
+#include <initializer_list>
 #include <utility>
 #include <vector>
 
