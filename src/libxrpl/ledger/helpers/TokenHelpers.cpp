@@ -218,7 +218,7 @@ checkDepositFreeze(
         "xrpl::checkDepositFreeze : destination is a pseudo-account");
     XRPL_ASSERT(
         !isPseudoAccount(view, srcAcct),
-        "xrpl::checkWithdrawFreeze : source is not a pseudo-account");
+        "xrpl::checkDepositFreeze : source is not a pseudo-account");
 
     // An Issuer cannot deposit when:
     // 1. Asset is globally frozen
