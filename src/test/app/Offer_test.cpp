@@ -797,11 +797,13 @@ public:
             // The offer expires (it's not removed yet).
             env.close();
             env.require(Owners(bob, 1), offers(bob, 1));
+            auto const expiredBobOffer = keylet::offer(bob, env.seq(bob) - 1);
 
             // bob creates the offer that will be crossed.
             env(offer(bob, usd(500), XRP(500)), Ter(tesSUCCESS));
             env.close();
             env.require(Owners(bob, 2), offers(bob, 2));
+            auto const crossedBobOffer = keylet::offer(bob, env.seq(bob) - 1);
 
             env(trust(alice, usd(1000)), Ter(tesSUCCESS));
             env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));
@@ -820,6 +822,8 @@ public:
                 Balance(bob, usd(kNone)),
                 Owners(bob, 1),
                 offers(bob, 1));
+            BEAST_EXPECT(!env.current()->exists(expiredBobOffer));
+            BEAST_EXPECT(env.current()->exists(crossedBobOffer));
 
             // Order that can be filled
             env(offer(alice, XRP(500), usd(500)), Txflags(tfFillOrKill), Ter(tesSUCCESS));
@@ -833,6 +837,27 @@ public:
                 Balance(bob, usd(500)),
                 Owners(bob, 1),
                 offers(bob, 0));
+        }
+
+        // A failed Fill-or-Kill may tentatively consume a funded offer before
+        // the transaction is reset. That offer must not be treated as an
+        // unfunded offer cleanup.
+        {
+            Env env{*this, features};
+
+            env.fund(startBalance, gw, alice, bob);
+            env.close();
+
+            env(offer(bob, usd(500), XRP(500)), Ter(tesSUCCESS));
+            env.close();
+            auto const bobOffer = keylet::offer(bob, env.seq(bob) - 1);
+
+            env(trust(alice, usd(1000)), Ter(tesSUCCESS));
+            env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));
+            env(offer(alice, XRP(1000), usd(1000)), Txflags(tfFillOrKill), Ter(tecKILLED));
+
+            env.require(offers(alice, 0), offers(bob, 1), Balance(alice, usd(1000)));
+            BEAST_EXPECT(env.current()->exists(bobOffer));
         }
 
         // Immediate or Cancel - cross as much as possible
@@ -1973,54 +1998,36 @@ public:
 
         using namespace jtx;
 
-        for (auto numberSwitchOver : {false, true})
-        {
-            Env env{*this, features};
-            if (numberSwitchOver)
-            {
-                env.enableFeature(fixUniversalNumber);
-            }
-            else
-            {
-                env.disableFeature(fixUniversalNumber);
-            }
+        Env env{*this, features};
 
-            auto const gw = Account{"gateway"};
-            auto const alice = Account{"alice"};
-            auto const bob = Account{"bob"};
-            auto const usd = gw["USD"];
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const usd = gw["USD"];
 
-            env.fund(XRP(10000), gw, alice, bob);
-            env.close();
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
 
-            env(rate(gw, 1.005));
+        env(rate(gw, 1.005));
 
-            env(trust(alice, usd(1000)));
-            env(trust(bob, usd(1000)));
-            env(trust(gw, alice["USD"](50)));
+        env(trust(alice, usd(1000)));
+        env(trust(bob, usd(1000)));
+        env(trust(gw, alice["USD"](50)));
 
-            env(pay(gw, bob, bob["USD"](1)));
-            env(pay(alice, gw, usd(50)));
+        env(pay(gw, bob, bob["USD"](1)));
+        env(pay(alice, gw, usd(50)));
 
-            env(trust(gw, alice["USD"](0)));
+        env(trust(gw, alice["USD"](0)));
 
-            env(offer(alice, usd(50), XRP(150000)));
-            env(offer(bob, XRP(100), usd(0.1)));
+        env(offer(alice, usd(50), XRP(150000)));
+        env(offer(bob, XRP(100), usd(0.1)));
 
-            auto jrr = ledgerEntryState(env, alice, gw, "USD");
-            BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "49.96666666666667");
+        auto jrr = ledgerEntryState(env, alice, gw, "USD");
+        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "49.96666666666667");
 
-            jrr = ledgerEntryState(env, bob, gw, "USD");
-            json::Value const bobUSD = jrr[jss::node][sfBalance.fieldName][jss::value];
-            if (!numberSwitchOver)
-            {
-                BEAST_EXPECT(bobUSD == "-0.966500000033334");
-            }
-            else
-            {
-                BEAST_EXPECT(bobUSD == "-0.9665000000333333");
-            }
-        }
+        jrr = ledgerEntryState(env, bob, gw, "USD");
+        json::Value const bobUSD = jrr[jss::node][sfBalance.fieldName][jss::value];
+        BEAST_EXPECT(bobUSD == "-0.9665000000333333");
     }
 
     void

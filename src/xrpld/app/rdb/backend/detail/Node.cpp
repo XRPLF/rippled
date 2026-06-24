@@ -17,6 +17,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
@@ -1291,7 +1292,7 @@ bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 {
     boost::filesystem::space_info const space =
-        boost::filesystem::space(config.legacy("database_path"));
+        boost::filesystem::space(config.legacy(Sections::kDatabasePath));
 
     if (space.available < megabytes(512))
     {
