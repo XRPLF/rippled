@@ -443,5 +443,4 @@ insertPage(
     std::function<void(SLE::ref)> const& describe);
 
 }  // namespace directory
-
 }  // namespace xrpl
