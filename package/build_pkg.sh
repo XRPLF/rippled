@@ -10,11 +10,11 @@ usage() {
 Usage: build_pkg.sh [options]
 
 Options (each can also be set via the env var shown):
-  --src-dir DIR             repo root                     [SRC_DIR;           default: ${PWD}]
-  --build-dir DIR           directory holding xrpld       [BUILD_DIR;         default: ${PWD}/build]
-  --pkg-release N           package release iteration     [PKG_RELEASE;       default: 1]
-  --source-date-epoch SECS  reproducibility timestamp     [SOURCE_DATE_EPOCH; latest git ctime; fallback: current time]
-  -h, --help                show this help and exit
+  --src-dir DIR            repo root                 [SRC_DIR;           default: ${PWD}]
+  --build-dir DIR          directory holding xrpld   [BUILD_DIR;         default: ${PWD}/build]
+  --pkg-release N          package release iteration [PKG_RELEASE;       default: 1]
+  --source-date-epoch SECS reproducibility timestamp [SOURCE_DATE_EPOCH; latest git ctime; fallback: current time]
+  -h, --help               show this help and exit
 EOF
 }
 

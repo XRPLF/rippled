@@ -50,7 +50,6 @@ install -Dm0644 %{_sourcedir}/xrpld.sysusers       %{buildroot}%{_sysusersdir}/x
 install -Dm0644 %{_sourcedir}/xrpld.tmpfiles       %{buildroot}%{_tmpfilesdir}/xrpld.conf
 install -Dm0644 /dev/null %{buildroot}%{_presetdir}/50-xrpld.preset
 cat >%{buildroot}%{_presetdir}/50-xrpld.preset <<'EOF'
-# /usr/lib/systemd/system-preset/50-xrpld.preset
 enable xrpld.service
 EOF
 

@@ -106,17 +106,6 @@ release defaults to 1 and is overridable with `-Dpkg_release=N`.
 
 ## How `build_pkg.sh` works
 
-`build_pkg.sh` accepts long-form flags, each of which can also be set via an
-environment variable. Flags override env vars; env vars override the built-in
-defaults. Run `./package/build_pkg.sh --help` for the same table:
-
-| Flag                       | Env var             | Default/source                                  | Purpose                             |
-| -------------------------- | ------------------- | ----------------------------------------------- | ----------------------------------- |
-| `--src-dir DIR`            | `SRC_DIR`           | `${PWD}`                                        | repo root                           |
-| `--build-dir DIR`          | `BUILD_DIR`         | `${PWD}/build`                                  | directory holding pre-built `xrpld` |
-| `--pkg-release N`          | `PKG_RELEASE`       | `1`                                             | package release iteration           |
-| `--source-date-epoch SECS` | `SOURCE_DATE_EPOCH` | latest git commit ctime; fallback: current time | reproducibility timestamp           |
-
 `build_pkg.sh` derives the `xrpld` software version from
 `${BUILD_DIR}/xrpld --version` in both package formats.
 
