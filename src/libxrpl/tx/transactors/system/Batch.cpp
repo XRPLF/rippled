@@ -214,7 +214,6 @@ Batch::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfSponsorFlags))
     {
-        auto const sponsorFlags = ctx.tx.getFieldU32(sfSponsorFlags);
         if (isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
