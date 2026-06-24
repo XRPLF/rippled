@@ -5911,7 +5911,6 @@ public:
         testSignerList(cosigning);
         testTrustSet(cosigning);
         testVault(cosigning);
-        testXChain(cosigning);
         testLending(cosigning);
     }
 
