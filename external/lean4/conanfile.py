@@ -51,6 +51,7 @@ class Lean(ConanFile):
             url,
             sha256=sha256,
             strip_root=True,
+            keep_permissions=True,
             destination=os.path.join(self.build_folder, "toolchain"),
         )
 
