@@ -6,7 +6,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/check.h>
-#include <test/jtx/did.h>
+#include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/noop.h>
@@ -445,14 +445,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             env(token::burn(alice, nftId0));
             env.close();
 
-            env(did::set(alice),
-                did::Uri("uri"),
+            // Use DepositPreauth here because it is in the v1 reserve-sponsor
+            // allow-list; DIDSet is not.
+            env(deposit::auth(alice, bob),
                 sponsor::As(bob, spfSponsorReserve),
                 Sig(sfSponsorSignature, bob));
             env.close();
 
-            env(did::set(bob),
-                did::Uri("uri"),
+            env(deposit::auth(bob, alice),
                 sponsor::As(alice, spfSponsorReserve),
                 Sig(sfSponsorSignature, alice));
             env.close();

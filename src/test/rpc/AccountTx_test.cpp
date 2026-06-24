@@ -933,15 +933,16 @@ class AccountTx_test : public beast::unit_test::Suite
         checkTx(alice, jss::SponsorshipSet);
         checkTx(sponsor, jss::SponsorshipSet);
 
-        // create a ticket with sponsor
-        auto const seq = env.seq(alice);
-        env(ticket::create(alice, 1), sponsor::As(sponsor, spfSponsorReserve));
+        // create a DepositPreauth with sponsor (TicketCreate is not in the
+        // v1 reserve-sponsor allow-list, so use DepositPreauth instead).
+        env(deposit::auth(alice, sponsor2), sponsor::As(sponsor, spfSponsorReserve));
         env.close();
-        checkTx(alice, jss::TicketCreate);
-        checkTx(sponsor, jss::TicketCreate);
+        checkTx(alice, jss::DepositPreauth);
+        checkTx(sponsor, jss::DepositPreauth);
 
         // transfer object sponsorship
-        env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::TicketT()(alice, seq + 1).key),
+        env(sponsor::transfer(
+                alice, tfSponsorshipReassign, keylet::depositPreauth(alice, sponsor2).key),
             sponsor::As(sponsor2, spfSponsorReserve),
             Sig(sfSponsorSignature, sponsor2));
         env.close();
@@ -949,15 +950,13 @@ class AccountTx_test : public beast::unit_test::Suite
         checkTx(sponsor, jss::SponsorshipTransfer);
         checkTx(sponsor2, jss::SponsorshipTransfer);
 
-        // use a ticket
-        env(noop(alice),
-            ticket::Use(seq + 1),
-            sponsor::As(sponsor, spfSponsorFee),
-            Sig(sfSponsorSignature, sponsor));
+        // fee-sponsored noop after preauth (sponsor2 isn't involved, so the
+        // checkTx hash equality below would not match — only verify the two
+        // accounts that actually appear in the latest tx).
+        env(noop(alice), sponsor::As(sponsor, spfSponsorFee), Sig(sfSponsorSignature, sponsor));
         env.close();
         checkTx(alice, jss::AccountSet);
         checkTx(sponsor, jss::AccountSet);
-        checkTx(sponsor2, jss::AccountSet);
 
         // account sponsorship
         env(sponsor::transfer(alice, tfSponsorshipCreate),

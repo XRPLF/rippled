@@ -2,7 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
-#include <test/jtx/did.h>
+#include <test/jtx/deposit.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
@@ -443,14 +443,14 @@ public:
                 env(token::burn(gw, nftId0));
                 env.close();
 
-                env(did::set(gw),
-                    did::Uri("uri"),
+                // Use DepositPreauth here because it is in the v1
+                // reserve-sponsor allow-list; DIDSet is not.
+                env(deposit::auth(gw, alice),
                     sponsor::As(alice, spfSponsorReserve),
                     Sig(sfSponsorSignature, alice));
                 env.close();
 
-                env(did::set(alice),
-                    did::Uri("uri"),
+                env(deposit::auth(alice, gw),
                     sponsor::As(gw, spfSponsorReserve),
                     Sig(sfSponsorSignature, gw));
                 env.close();
