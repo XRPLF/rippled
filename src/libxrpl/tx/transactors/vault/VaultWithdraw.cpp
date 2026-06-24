@@ -272,7 +272,10 @@ VaultWithdraw::doApply()
         return tecPATH_DRY;
     }
 
-    // Post-fixCleanup3_3_0: preclaim already handles freeze checks
+    // Post-fixCleanup3_3_0: preclaim already validated all freeze conditions
+    // (checkWithdrawFreeze), so IgnoreFreeze avoids a redundant check that
+    // would incorrectly return zero for vault pseudo-accounts whose shares
+    // are frozen via a transitively frozen underlying asset.
     auto const freezeHandling = view().rules().enabled(fixCleanup3_3_0)
         ? FreezeHandling::IgnoreFreeze
         : FreezeHandling::ZeroIfFrozen;

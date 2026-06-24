@@ -1,12 +1,16 @@
 #pragma once
 
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STObject.h>
 
+#include <initializer_list>
 #include <stdexcept>
+#include <vector>
 
 namespace xrpl::test::jtx {
 
@@ -50,5 +54,17 @@ fillSeq(json::Value& jv, ReadView const& view);
 /** Given an xrpld unit test rpc command, return the corresponding JSON. */
 json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion);
+
+/**
+ * Returns all 2^N permutations of a seed FeatureBitset with each subset of
+ * the given features excluded.  The seed is included as the first element.
+ *
+ * Useful for running a test over every combination of optional amendments
+ * so that each case is exercised both with and without each feature.
+ */
+std::vector<FeatureBitset>
+amendmentCombinations(
+    std::initializer_list<uint256> features,
+    FeatureBitset seed = testableAmendments());
 
 }  // namespace xrpl::test::jtx

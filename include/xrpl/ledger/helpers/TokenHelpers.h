@@ -72,9 +72,6 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& 
 [[nodiscard]] TER
 checkIndividualFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
-[[nodiscard]] TER
-checkIndividualDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
-
 /**
  *   isFrozen check is recursive for MPT shares in a vault, descending to
  *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
@@ -149,6 +146,9 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& ass
  * Otherwise checks, in order:
  *   1. checkFrozen(sourceAcct, asset)   — the pseudo-account's trustline /
  *      global freeze must not block sending.
+ *   1a. For MPT assets: isVaultPseudoAccountFrozen(sourceAcct, asset) —
+ *       the pseudo-account's vault share must not be transitively frozen
+ *       via its underlying asset.
  *   2. checkFrozen(submitterAcct, asset) — skipped when submitter == dst
  *      (self-withdrawal); a regular freeze should not prevent recovering
  *      one's own funds.
@@ -176,6 +176,9 @@ checkWithdrawFreeze(
  * Checks, in order:
  *   1. checkFrozen(srcAcct, asset)  — the depositor must not be frozen
  *      (global or individual) for the asset.
+ *   1a. For MPT assets: isVaultPseudoAccountFrozen(dstAcct, asset) —
+ *       the pseudo-account's vault share must not be transitively frozen
+ *       via its underlying asset.
  *   2. checkFrozen(dstAcct, asset)  — the pseudo-account must not be
  *      frozen for the asset.  Unlike regular accounts, pseudo-accounts
  *      cannot receive deposits under a regular freeze because the

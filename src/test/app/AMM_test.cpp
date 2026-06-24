@@ -19,6 +19,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/utility.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -86,19 +87,11 @@ private:
         return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
     }
 
-    // All 2^N permutations of testableAmendments() with each subset of the
-    // given features excluded.
+    // Seed from the local testableAmendments() which strips SAV and Lending.
     static std::vector<FeatureBitset>
     amendmentCombinations(std::initializer_list<uint256> features)
     {
-        std::vector<FeatureBitset> result{testableAmendments()};
-        for (auto const& f : features)
-        {
-            auto const n = result.size();
-            for (std::size_t i = 0; i < n; ++i)
-                result.push_back(result[i] - f);
-        }
-        return result;
+        return jtx::amendmentCombinations(features, testableAmendments());
     }
 
     void
