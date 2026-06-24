@@ -6457,10 +6457,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         }
 
         // Test the behavior when the seller accepts a buy offer.
-        // The behavior should not change regardless whether fixNFTokenReserve
-        // is enabled or not, since the ledger is able to guard against
-        // free NFTokenPages when buy offer is accepted. This is merely an
-        // additional test to exercise existing offer behavior.
         {
             Account const alice{"alice"};
             Account const bob{"bob"};
@@ -6505,10 +6501,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         }
 
         // Test the reserve behavior in brokered mode.
-        // The behavior should not change regardless whether fixNFTokenReserve
-        // is enabled or not, since the ledger is able to guard against
-        // free NFTokenPages in brokered mode. This is merely an
-        // additional test to exercise existing offer behavior.
         {
             Account const alice{"alice"};
             Account const bob{"bob"};
