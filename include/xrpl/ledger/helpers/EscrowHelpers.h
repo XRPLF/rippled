@@ -193,7 +193,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
-        if (sle->getType() != ltACCOUNT_ROOT)  // only possible without fixCleanup3_2_0
+        if (sleDest->getType() != ltACCOUNT_ROOT)  // only possible without fixCleanup3_2_0
         {
             return tefEXCEPTION;
         }
@@ -202,7 +202,7 @@ escrowUnlockApplyHelper<MPTIssue>(
             !isTesSuccess(ret))
             return ret;
 
-        if (sle->getType() != ltACCOUNT_ROOT)  // only possible without fixCleanup3_2_0
+        if (sleDest->getType() != ltACCOUNT_ROOT)  // only possible without fixCleanup3_2_0
         {
             return tefEXCEPTION;
         }
