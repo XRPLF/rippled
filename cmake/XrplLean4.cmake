@@ -4,13 +4,6 @@ if(NOT formal_verification)
     return()
 endif()
 
-if(WIN32)
-    message(
-        FATAL_ERROR
-        "formal_verification is unsupported on native Windows; use WSL, macOS, or Linux."
-    )
-endif()
-
 if(NOT TARGET xrpld OR NOT tests)
     message(FATAL_ERROR "formal_verification=ON requires xrpld and tests")
 endif()
