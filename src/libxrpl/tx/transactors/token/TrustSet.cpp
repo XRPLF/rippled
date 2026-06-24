@@ -216,7 +216,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (sleDst->isFlag(lsfDisallowIncomingTrustline))
+    if (sleDst && sleDst->isFlag(lsfDisallowIncomingTrustline))
     {
         // The original implementation of featureDisallowIncoming was
         // too restrictive. If
