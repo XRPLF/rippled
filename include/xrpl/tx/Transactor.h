@@ -7,6 +7,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <cstdint>
 #include <tuple>
 #include <utility>
 
@@ -185,6 +186,10 @@ public:
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
+
+    // Returns the base fee plus extra base fee units, not scaled for load.
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx, std::uint32_t extraBaseFeeMultiplier);
 
     /* Do NOT define an invokePreflight function in a derived class.
        Instead, define:

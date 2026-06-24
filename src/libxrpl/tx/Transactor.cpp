@@ -356,6 +356,15 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     return baseFee + (signerCount * baseFee);
 }
 
+XRPAmount
+Transactor::calculateBaseFee(
+    ReadView const& view,
+    STTx const& tx,
+    std::uint32_t extraBaseFeeMultiplier)
+{
+    return calculateBaseFee(view, tx) + view.fees().base * extraBaseFeeMultiplier;
+}
+
 // Returns the fee in fee units, not scaled for load.
 XRPAmount
 Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)

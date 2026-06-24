@@ -52,10 +52,7 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
 XRPAmount
 ConfidentialMPTConvertBack::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    // Transactor::calculateBaseFee = baseFee + (signerCount * baseFee).
-    // We charge kConfidentialFeeMultiplier extra base fees so the total is
-    // 10 * baseFee + (signerCount * baseFee).
-    return Transactor::calculateBaseFee(view, tx) + view.fees().base * kConfidentialFeeMultiplier;
+    return Transactor::calculateBaseFee(view, tx, kConfidentialFeeMultiplier);
 }
 
 /**
@@ -155,7 +152,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount) ||
+    if (!sleIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) ||
         !sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
 

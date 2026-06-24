@@ -80,7 +80,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const txFlags = ctx.tx.getFlags();
 
     bool const enablePrivacy =
-        mutableFlags && (*mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u;
+        mutableFlags && (*mutableFlags & tmfMPTSetCanHoldConfidentialBalance) != 0u;
 
     auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
     auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
@@ -218,7 +218,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
     // Whether the transaction is enabling confidential amounts.
     bool const enablesConfidentialAmount =
-        mutableFlags && (*mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u;
+        mutableFlags && (*mutableFlags & tmfMPTSetCanHoldConfidentialBalance) != 0u;
     if (mutableFlags)
     {
         if (std::ranges::any_of(kMptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
@@ -226,7 +226,8 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             }))
             return tecNO_PERMISSION;
 
-        if (enablesConfidentialAmount && isMutableFlag(lsmfMPTCannotMutateCanConfidentialAmount))
+        if (enablesConfidentialAmount &&
+            isMutableFlag(lsmfMPTCannotEnableCanHoldConfidentialBalance))
             return tecNO_PERMISSION;
     }
 
@@ -244,7 +245,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
         // Cannot set a non-zero TransferFee on an issuance that has confidential
         // transfer enabled
-        if (fee > 0u && sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount))
+        if (fee > 0u && sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance))
             return tecNO_PERMISSION;
 
         if (!isMutableFlag(lsmfMPTCanMutateTransferFee))
@@ -272,13 +273,13 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     // Encryption keys can only be set if confidential amounts are already
     // enabled on the issuance OR if the transaction is enabling it
     if (ctx.tx.isFieldPresent(sfIssuerEncryptionKey) &&
-        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount) && !enablesConfidentialAmount)
+        !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) && !enablesConfidentialAmount)
     {
         return tecNO_PERMISSION;
     }
 
     if (ctx.tx.isFieldPresent(sfAuditorEncryptionKey) &&
-        !sleMptIssuance->isFlag(lsfMPTCanConfidentialAmount) && !enablesConfidentialAmount)
+        !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) && !enablesConfidentialAmount)
     {
         return tecNO_PERMISSION;
     }
@@ -336,8 +337,8 @@ MPTokenIssuanceSet::doApply()
             }
         }
 
-        if ((mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u)
-            flagsOut |= lsfMPTCanConfidentialAmount;
+        if ((mutableFlags & tmfMPTSetCanHoldConfidentialBalance) != 0u)
+            flagsOut |= lsfMPTCanHoldConfidentialBalance;
     }
 
     if (flagsIn != flagsOut)

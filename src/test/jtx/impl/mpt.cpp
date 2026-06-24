@@ -521,8 +521,8 @@ MPTTester::set(MPTSet const& arg)
                             }
                         }
 
-                        if (*arg.mutableFlags & tmfMPTSetCanConfidentialAmount)
-                            flags |= lsfMPTCanConfidentialAmount;
+                        if (*arg.mutableFlags & tmfMPTSetCanHoldConfidentialBalance)
+                            flags |= tfMPTCanHoldConfidentialBalance;
                     }
                 }
                 env_.require(MptFlags(*this, flags, holder));
@@ -879,8 +879,9 @@ MPTTester::getConfidentialSendProof(
         {
             return std::nullopt;
         }
-        std::memcpy(participants[i].pubkey, r.publicKey.data(), kMPT_PUBKEY_SIZE);
-        std::memcpy(participants[i].ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
+        std::memcpy(participants[i].pubkey, r.publicKey.data(), kEcPubKeyLength);
+        std::memcpy(
+            participants[i].ciphertext, r.encryptedAmount.data(), kEcGamalEncryptedTotalLength);
     }
 
     size_t proofLen = kEcSendProofLength;
@@ -1396,10 +1397,17 @@ MPTTester::send(MPTConfidentialSend const& arg)
     auto const prevSenderInbox = getDecryptedBalance(*arg.account, holderEncryptedInbox);
     auto const prevSenderSpending = getDecryptedBalance(*arg.account, holderEncryptedSpending);
     auto const prevSenderIssuer = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
+    auto const prevSenderInboxEncrypted = getEncryptedBalance(*arg.account, holderEncryptedInbox);
+    auto const prevSenderSpendingEncrypted =
+        getEncryptedBalance(*arg.account, holderEncryptedSpending);
+    auto const prevSenderIssuerEncrypted =
+        getEncryptedBalance(*arg.account, issuerEncryptedBalance);
     if (!prevSenderInbox || !prevSenderSpending || !prevSenderIssuer)
         Throw<std::runtime_error>("Failed to get Pre-send balance");
 
     std::optional<uint64_t> prevSenderAuditor;
+    auto const prevSenderAuditorEncrypted =
+        getEncryptedBalance(*arg.account, auditorEncryptedBalance);
     if (arg.auditorEncryptedAmt || auditor_)
     {
         prevSenderAuditor = getDecryptedBalance(*arg.account, auditorEncryptedBalance);
@@ -1411,10 +1419,14 @@ MPTTester::send(MPTConfidentialSend const& arg)
     auto const prevDestInbox = getDecryptedBalance(*arg.dest, holderEncryptedInbox);
     auto const prevDestSpending = getDecryptedBalance(*arg.dest, holderEncryptedSpending);
     auto const prevDestIssuer = getDecryptedBalance(*arg.dest, issuerEncryptedBalance);
+    auto const prevDestInboxEncrypted = getEncryptedBalance(*arg.dest, holderEncryptedInbox);
+    auto const prevDestSpendingEncrypted = getEncryptedBalance(*arg.dest, holderEncryptedSpending);
+    auto const prevDestIssuerEncrypted = getEncryptedBalance(*arg.dest, issuerEncryptedBalance);
     if (!prevDestInbox || !prevDestSpending || !prevDestIssuer)
         Throw<std::runtime_error>("Failed to get Pre-send balance");
 
     std::optional<uint64_t> prevDestAuditor;
+    auto const prevDestAuditorEncrypted = getEncryptedBalance(*arg.dest, auditorEncryptedBalance);
     if (arg.auditorEncryptedAmt || auditor_)
     {
         prevDestAuditor = getDecryptedBalance(*arg.dest, auditorEncryptedBalance);
@@ -1512,16 +1524,13 @@ MPTTester::send(MPTConfidentialSend const& arg)
             }
         }
 
-        auto const prevEncryptedSenderSpending =
-            getEncryptedBalance(*arg.account, holderEncryptedSpending);
-
         std::optional<Buffer> proof;
 
         // Skip proof generation if encrypted balance is missing (e.g.,
         // feature disabled), when the sender and destination are the same
         // (malformed case causing pcm to be zero), or when spending balance
         // is 0
-        if (arg.account != arg.dest && prevEncryptedSenderSpending && *prevSenderSpending > 0)
+        if (arg.account != arg.dest && prevSenderSpendingEncrypted && *prevSenderSpending > 0)
         {
             proof = getConfidentialSendProof(
                 *arg.account,
@@ -1538,7 +1547,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
                 {
                     .pedersenCommitment = balanceCommitment,
                     .amt = *prevSenderSpending,
-                    .encryptedAmt = *prevEncryptedSenderSpending,
+                    .encryptedAmt = *prevSenderSpendingEncrypted,
                     .blindingFactor = balanceBlindingFactor,
                 });
         }
