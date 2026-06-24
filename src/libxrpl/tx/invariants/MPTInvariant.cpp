@@ -31,13 +31,37 @@
 
 namespace xrpl {
 
-static constexpr auto kConfidentialMptTxTypes = std::to_array<TxType>({
+namespace {
+constexpr auto kConfidentialMptTxTypes = std::to_array<TxType>({
     ttCONFIDENTIAL_MPT_SEND,
     ttCONFIDENTIAL_MPT_CONVERT,
     ttCONFIDENTIAL_MPT_CONVERT_BACK,
     ttCONFIDENTIAL_MPT_MERGE_INBOX,
     ttCONFIDENTIAL_MPT_CLAWBACK,
 });
+
+// Clamp to the cap (== INT64_MAX) before the signed conversion. Invariant
+// tests can inject INT64_MAX + 1, which would result in undefined behavior
+// under UBSan if converted directly.
+std::int64_t
+toSignedMPTAmount(std::uint64_t amount)
+{
+    return static_cast<std::int64_t>(std::min(amount, kMaxMpTokenAmount));
+}
+
+std::int64_t
+addMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
+{
+    return delta + toSignedMPTAmount(amount);
+}
+
+std::int64_t
+subtractMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
+{
+    return delta - toSignedMPTAmount(amount);
+}
+
+}  // namespace
 
 void
 ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
@@ -506,16 +530,12 @@ ValidConfidentialMPToken::visitEntry(
         return beast::kZero;
     };
 
-    // Clamp to the cap (== INT64_MAX) before the signed conversion. We do INT64_MAX + 1
-    // which the invariant tests inject, which would result in undefined behavior (under UBSan).
-    auto const toSignedAmount = [](std::uint64_t v) -> std::int64_t {
-        return static_cast<std::int64_t>(std::min(v, kMaxMpTokenAmount));
-    };
-
     if (before && before->getType() == ltMPTOKEN)
     {
         uint192 const id = getMptID(before);
-        changes_[id].mptAmountDelta -= toSignedAmount(before->getFieldU64(sfMPTAmount));
+        auto& change = changes_[id];
+        change.mptAmountDelta =
+            subtractMPTAmountDelta(change.mptAmountDelta, before->getFieldU64(sfMPTAmount));
 
         // Cannot delete MPToken with non-zero confidential state or non-zero public amount
         if (isDelete)
@@ -533,7 +553,9 @@ ValidConfidentialMPToken::visitEntry(
     if (after && after->getType() == ltMPTOKEN)
     {
         uint192 const id = getMptID(after);
-        changes_[id].mptAmountDelta += toSignedAmount(after->getFieldU64(sfMPTAmount));
+        auto& change = changes_[id];
+        change.mptAmountDelta =
+            addMPTAmountDelta(change.mptAmountDelta, after->getFieldU64(sfMPTAmount));
 
         // Encrypted field existence consistency
         bool const hasIssuerBalance = after->isFieldPresent(sfIssuerEncryptedBalance);
@@ -568,12 +590,14 @@ ValidConfidentialMPToken::visitEntry(
     if (before && before->getType() == ltMPTOKEN_ISSUANCE)
     {
         uint192 const id = getMptID(before);
+        auto& change = changes_[id];
         if (before->isFieldPresent(sfConfidentialOutstandingAmount))
         {
-            changes_[id].coaDelta -=
-                toSignedAmount(before->getFieldU64(sfConfidentialOutstandingAmount));
+            change.coaDelta = subtractMPTAmountDelta(
+                change.coaDelta, before->getFieldU64(sfConfidentialOutstandingAmount));
         }
-        changes_[id].outstandingDelta -= toSignedAmount(before->getFieldU64(sfOutstandingAmount));
+        change.outstandingDelta = subtractMPTAmountDelta(
+            change.outstandingDelta, before->getFieldU64(sfOutstandingAmount));
     }
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
@@ -586,9 +610,9 @@ ValidConfidentialMPToken::visitEntry(
         std::uint64_t const oa = after->getFieldU64(sfOutstandingAmount);
 
         if (hasCOA)
-            change.coaDelta += toSignedAmount(coa);
+            change.coaDelta = addMPTAmountDelta(change.coaDelta, coa);
 
-        change.outstandingDelta += toSignedAmount(oa);
+        change.outstandingDelta = addMPTAmountDelta(change.outstandingDelta, oa);
         change.issuance = after;
 
         // COA <= OutstandingAmount
