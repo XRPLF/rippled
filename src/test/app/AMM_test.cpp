@@ -6005,7 +6005,7 @@ private:
 
     void
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-    testFixOverflowOffer(FeatureBitset featuresInitial)
+    testOverflowOffer(FeatureBitset featuresInitial)
     {
         using namespace jtx;
         using namespace std::chrono;
@@ -6240,7 +6240,7 @@ private:
              })
         {
             testcase(input.testCase);
-            for (auto const& features : {all - fixAMMOverflowOffer - fixAMMv1_1 - fixAMMv1_3, all})
+            for (auto const& features : {all - fixAMMv1_1 - fixAMMv1_3, all})
             {
                 Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
 
@@ -6289,11 +6289,6 @@ private:
                     return input.lpTokenBalanceAlt.value_or(input.lpTokenBalance);
                 }();
 
-                if (!features[fixAMMOverflowOffer])
-                {
-                    BEAST_EXPECT(amm.expectBalances(failUsdGH, failUsdBIT, lpTokenBalance));
-                }
-                else
                 {
                     BEAST_EXPECT(amm.expectBalances(goodUsdGH, goodUsdBIT, lpTokenBalance));
 
@@ -7232,9 +7227,9 @@ private:
         testSelection(all - fixAMMv1_1 - fixAMMv1_3);
         testFixDefaultInnerObj();
         testMalformed();
-        testFixOverflowOffer(all);
-        testFixOverflowOffer(all - fixAMMv1_3);
-        testFixOverflowOffer(all - fixAMMv1_1 - fixAMMv1_3);
+        testOverflowOffer(all);
+        testOverflowOffer(all - fixAMMv1_3);
+        testOverflowOffer(all - fixAMMv1_1 - fixAMMv1_3);
         testSwapRounding();
         testFixChangeSpotPriceQuality(all);
         testFixChangeSpotPriceQuality(all - fixAMMv1_1 - fixAMMv1_3);
