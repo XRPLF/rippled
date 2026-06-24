@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -223,6 +224,9 @@ ValidVault::deltaAssetsTxAccount(STTx const& tx, XRPAmount fee) const
         return ret;
 
     if (auto const delegate = tx[~sfDelegate]; delegate.has_value() && *delegate != tx[sfAccount])
+        return ret;
+
+    if (isFeeSponsored(tx))
         return ret;
 
     ret->delta += fee.drops();

@@ -102,7 +102,7 @@ checkXrpBalanceHlp(
     STTx const& tx,
     std::optional<AccountID> const& accID,
     std::optional<std::reference_wrapper<SLE::const_pointer const>> const& accOpt,
-    XRPAmount balanceAcc,  // if set disable automatic balance calculation
+    std::optional<XRPAmount> const& balanceAcc,  // if set disable automatic balance calculation
     std::optional<std::reference_wrapper<SLE::const_pointer const>> const& sponsorOpt,
     std::int32_t ownerCountAdj,
     std::int32_t reserveCountAdj,
@@ -126,7 +126,8 @@ checkXrpBalance(
     bool apply = false;  // NOLINT
     if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
         apply = true;
-    return checkXrpBalanceHlp(view, apply, tx, accID, {}, kA, {}, ownerCountAdj, 0, kA, false, j);
+    return checkXrpBalanceHlp(
+        view, apply, tx, accID, {}, std::nullopt, {}, ownerCountAdj, 0, kA, false, j);
 }
 
 // simple + balance adjustment
@@ -140,12 +141,11 @@ checkXrpBalance(
     XRPAmount balanceAdj,
     beast::Journal j)
 {
-    static XRPAmount const kA;
     bool apply = false;  // NOLINT
     if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
         apply = true;
     return checkXrpBalanceHlp(
-        view, apply, tx, accID, {}, kA, {}, ownerCountAdj, 0, balanceAdj, false, j);
+        view, apply, tx, accID, {}, std::nullopt, {}, ownerCountAdj, 0, balanceAdj, false, j);
 }
 
 // simple/SLE + balance adjustment
@@ -159,12 +159,11 @@ checkXrpBalance(
     XRPAmount balanceAdj,
     beast::Journal j)
 {
-    static XRPAmount const kA;
     bool apply = false;  // NOLINT
     if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
         apply = true;
     return checkXrpBalanceHlp(
-        view, apply, tx, {}, accSle, kA, {}, ownerCountAdj, 0, balanceAdj, false, j);
+        view, apply, tx, {}, accSle, std::nullopt, {}, ownerCountAdj, 0, balanceAdj, false, j);
 }
 
 // simple/Sle + sponsor(re-usage, checks on caller) + balance adjustment
@@ -179,12 +178,22 @@ checkXrpBalance(
     XRPAmount balanceAdj,
     beast::Journal j)
 {
-    static XRPAmount const kA;
     bool apply = false;  // NOLINT
     if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
         apply = true;
     return checkXrpBalanceHlp(
-        view, apply, tx, {}, accSle, kA, sponsorSle, ownerCountAdj, 0, balanceAdj, false, j);
+        view,
+        apply,
+        tx,
+        {},
+        accSle,
+        std::nullopt,
+        sponsorSle,
+        ownerCountAdj,
+        0,
+        balanceAdj,
+        false,
+        j);
 }
 
 // simple + sponsor(re-usage, checks on caller) + balance adjustment
@@ -199,12 +208,22 @@ checkXrpBalance(
     XRPAmount balanceAdj,
     beast::Journal j)
 {
-    static XRPAmount const kA;
     bool apply = false;
     if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
         apply = true;
     return checkXrpBalanceHlp(
-        view, apply, tx, accID, {}, kA, sponsorSle, ownerCountAdj, 0, balanceAdj, false, j);
+        view,
+        apply,
+        tx,
+        accID,
+        {},
+        std::nullopt,
+        sponsorSle,
+        ownerCountAdj,
+        0,
+        balanceAdj,
+        false,
+        j);
 }
 
 // simple/accountSle + balance(passed manually) + sponsor(re-usage, checks on caller) + moreThan2
@@ -226,7 +245,7 @@ checkXrpBalance(
     if constexpr (std::is_base_of_v<ApplyView, std::remove_cvref_t<decltype(view)>>)
         apply = true;
     return checkXrpBalanceHlp(
-        view, apply, tx, {}, accSle, kA, sponsorSle, ownerCountAdj, 0, kA, moreThan2, j);
+        view, apply, tx, {}, accSle, std::nullopt, sponsorSle, ownerCountAdj, 0, kA, moreThan2, j);
 }
 
 // simple/accountSle + sponsor(re-usage, checks on caller)
@@ -253,7 +272,7 @@ checkXrpBalance(
         tx,
         {},
         accSle,
-        kA,
+        std::nullopt,
         sponsorSle,
         ownerCountAdj,
         0,

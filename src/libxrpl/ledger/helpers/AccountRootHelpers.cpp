@@ -18,7 +18,6 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
@@ -424,10 +423,11 @@ adjustOwnerCount(
         if (sponsorshipSle && ownerCountAdj > 0)
         {
             // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
-            // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount back.
-            // Don't call hook because this counter is not something that require reserve (like
-            // other sf...OwnerCounts do).
-            adjustOwnerCountHlp(view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -ownerCountAdj, j);
+            // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount
+            // back. Don't call hook because this counter is not something that require reserve
+            // (like other sf...OwnerCounts do).
+            adjustOwnerCountHlp(
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -ownerCountAdj, j);
         }
     }
 
@@ -501,7 +501,7 @@ checkXrpBalanceGeneral(
     bool apply,
     STTx const& tx,
     SLE::const_ref accSle,
-    XRPAmount balanceAcc,
+    std::optional<XRPAmount> const& balanceAcc,
     SLE::const_ref sponsorSle,
     std::int32_t ownerCountAdj,
     std::int32_t reserveCountAdj,
@@ -514,7 +514,7 @@ checkXrpBalanceGeneral(
     if (balanceAcc && balanceAdj)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (balanceAcc.negative())
+    if (balanceAcc && balanceAcc->negative())
         return tecINSUFFICIENT_FUNDS;
 
     XRPL_ASSERT(!moreThan2 || (!balanceAcc && !balanceAdj), "small owner count with balance");
@@ -541,8 +541,9 @@ checkXrpBalanceGeneral(
         AccountID const sponsorID = sponsorSle->at(sfAccount);
 
         bool const skipSponsorshipReserve = isDelegating || (ownerCountAdj <= 0);
-        auto const sponsorshipSle =
-            !skipSponsorshipReserve ? view.read(keylet::sponsorship(sponsorID, accID)) : SLE::pointer();
+        auto const sponsorshipSle = !skipSponsorshipReserve
+            ? view.read(keylet::sponsorship(sponsorID, accID))
+            : SLE::pointer();
 
         // Sponsorship have priority before co-signing
         if (!skipSponsorshipReserve)
@@ -586,7 +587,7 @@ checkXrpBalanceGeneral(
         // balance passed, fee checks on caller, just check for reserve
         [[maybe_unused]] auto [reserve, _1, _2] =
             accountReserveHlp(view, accSle, oca, rca, true, j);
-        XRPAmount const accLiquid = balanceAcc - reserve;
+        XRPAmount const accLiquid = *balanceAcc - reserve;
         if (accLiquid.negative())
             return tecINSUFFICIENT_RESERVE;
         return tesSUCCESS;
@@ -612,7 +613,7 @@ checkXrpBalanceHlp(
     STTx const& tx,
     std::optional<AccountID> const& accID,
     std::optional<std::reference_wrapper<SLE::const_pointer const>> const& accOpt,
-    XRPAmount balanceAcc,
+    std::optional<XRPAmount> const& balanceAcc,
     std::optional<std::reference_wrapper<SLE::const_pointer const>> const& sponsorOpt,
     std::int32_t ownerCountAdj,
     std::int32_t reserveCountAdj,

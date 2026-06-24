@@ -277,7 +277,7 @@ SponsorshipSet::doApply()
     if (feeAmount)
     {
         auto const currentFeeAmount = (*sponsorshipSle)[~sfFeeAmount].valueOr(XRPAmount(0));
-        auto feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
+        auto const feeAmountDelta = XRPAmount(*feeAmount - currentFeeAmount);
 
         if (auto const ret = checkXrpBalance(
                 ctx_.view(), ctx_.tx, sponsorSle, txSponsorSle, 0, -feeAmountDelta, ctx_.journal);

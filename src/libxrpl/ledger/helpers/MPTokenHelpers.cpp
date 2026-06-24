@@ -201,7 +201,8 @@ authorizeMPToken(
         // If PreFunded Sponsor, it must be checked whether sufficient
         // ReserveCount exists. See also TrustSet::doApply() and AMMWithdraw::withdraw()
 
-        auto const sponsorSle = getTxReserveSponsor(view, tx, account);
+        auto const sponsorSle =
+            isPseudoAccount(sleAcct) ? SLE::pointer() : getTxReserveSponsor(view, tx, account);
         if (auto const ter = checkXrpBalance(view, tx, sleAcct, sponsorSle, 1, true, journal);
             !isTesSuccess(ter))
             return tecINSUFFICIENT_RESERVE;

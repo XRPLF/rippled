@@ -25,7 +25,6 @@
 #include <limits>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <type_traits>
 
 namespace xrpl {
@@ -51,7 +50,7 @@ checkXrpBalanceTransfer(
         tx,
         {},
         accSle,
-        XRPAmount(),
+        std::nullopt,
         sponsorSle,
         ownerCountAdj,
         reserveCountAdj,

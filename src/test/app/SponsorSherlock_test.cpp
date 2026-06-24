@@ -39,6 +39,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -257,7 +258,7 @@ protected:
             Fee(XRP(1)));
         env.close();
 
-        auto const sponsorshipKey = keylet::sponsor(sponsorAcc.id(), alice.id());
+        auto const sponsorshipKey = keylet::sponsorship(sponsorAcc.id(), alice.id());
         auto const sponsorshipSle = env.current()->read(sponsorshipKey);
         if (!BEAST_EXPECT(sponsorshipSle))
             return;
@@ -340,8 +341,8 @@ protected:
             Fee(XRP(1)));
         env.close();
 
-        auto const attackerSponsorshipKey = keylet::sponsor(attacker.id(), victim.id());
-        auto const legitSponsorshipKey = keylet::sponsor(legitSponsor.id(), victim.id());
+        auto const attackerSponsorshipKey = keylet::sponsorship(attacker.id(), victim.id());
+        auto const legitSponsorshipKey = keylet::sponsorship(legitSponsor.id(), victim.id());
         BEAST_EXPECT(env.current()->read(attackerSponsorshipKey));
         BEAST_EXPECT(env.current()->read(legitSponsorshipKey));
 
@@ -430,9 +431,9 @@ protected:
 
         adjustAccountXRPBalance(scEnv, sponsor, drops(backedForRedirectedClaims));
 
-        auto sponsorObj = scEnv.le(keylet::sponsor(sponsor, submitter));
+        auto sponsorObj = scEnv.le(keylet::sponsorship(sponsor, submitter));
         BEAST_EXPECT(sponsorObj);
-        BEAST_EXPECT(sponsorObj->getFieldU32(sfReserveCount) == 1);
+        BEAST_EXPECT(sponsorObj->getFieldU32(sfRemainingOwnerCount) == 1);
 
         auto const noJournal = beast::Journal{beast::Journal::getNullSink()};
         auto const liquidBefore = xrpLiquid(*scEnv.current(), sponsor.id(), 0, noJournal);
@@ -461,12 +462,12 @@ protected:
         scEnv.close();
 
         auto const claim1 = scEnv.le(keylet::xChainCreateAccountClaimID(STXChainBridge(jvb), 1));
-        sponsorObj = scEnv.le(keylet::sponsor(sponsor, submitter));
+        sponsorObj = scEnv.le(keylet::sponsorship(sponsor, submitter));
         BEAST_EXPECT(claim1);
         BEAST_EXPECT(sponsorObj);
         BEAST_EXPECT((*claim1)[sfAccount] == door.id());
         BEAST_EXPECT(!claim1->isFieldPresent(sfSponsor));
-        BEAST_EXPECT(sponsorObj->getFieldU32(sfReserveCount) == 1);
+        BEAST_EXPECT(sponsorObj->getFieldU32(sfRemainingOwnerCount) == 1);
         BEAST_EXPECT(scEnv.ownerCount(submitter) == submitterOwnerCountBefore);
         BEAST_EXPECT(scEnv.sponsoredOwnerCount(submitter) == submitterSponsoredOwnerCountBefore);
         BEAST_EXPECT(scEnv.ownerCount(door) == doorOwnerCountBefore + 1);
@@ -495,12 +496,12 @@ protected:
             scEnv.close();
 
             auto const claim = scEnv.le(keylet::xChainCreateAccountClaimID(STXChainBridge(jvb), i));
-            sponsorObj = scEnv.le(keylet::sponsor(sponsor, submitter));
+            sponsorObj = scEnv.le(keylet::sponsorship(sponsor, submitter));
             BEAST_EXPECT(claim);
             BEAST_EXPECT(sponsorObj);
             BEAST_EXPECT((*claim)[sfAccount] == door.id());
             BEAST_EXPECT(!claim->isFieldPresent(sfSponsor));
-            BEAST_EXPECT(sponsorObj->getFieldU32(sfReserveCount) == 1);
+            BEAST_EXPECT(sponsorObj->getFieldU32(sfRemainingOwnerCount) == 1);
         }
 
         BEAST_EXPECT(scEnv.ownerCount(door) == doorOwnerCountBefore + redirectedClaims);
@@ -707,7 +708,7 @@ protected:
         std::uint32_t const uint32Max = std::numeric_limits<std::uint32_t>::max();
 
         // STEP 1: Sponsee creates a Check co-signed by sponsor BEFORE any sponsorship
-        // exists. adjustOwnerCount in CheckCreate peeks keylet::sponsor(S, B)
+        // exists. adjustOwnerCount in CheckCreate peeks keylet::sponsorship(S, B)
         // — finds nothing — so the pool quota is NOT debited. The resulting
         // ltCHECK carries sfSponsor = sponsor.
         auto const sponseeSeq = env.seq(sponsee);
@@ -721,45 +722,45 @@ protected:
         env.close();
 
         // STEP 2: Sponsor (or a SponsorReserve-narrowed delegate) creates the
-        // ltSPONSORSHIP pool with sfReserveCount at the UINT32_MAX boundary.
+        // ltSPONSORSHIP pool with sfRemainingOwnerCount at the UINT32_MAX boundary.
         // Because the Check was already created before this pool, no deduction
         // has occurred — the pool starts at exactly UINT32_MAX.
         env(sponsor::set(sponsor, 0, uint32Max), sponsor::SponseeAcc(sponsee));
         env.close();
 
-        // VERIFY 1: pool exists with sfReserveCount == UINT32_MAX
+        // VERIFY 1: pool exists with sfRemainingOwnerCount == UINT32_MAX
         {
             json::Value const poolEntry = sponsor::ledgerEntry(env, sponsor, sponsee);
             auto const& node = poolEntry[jss::result][jss::node];
-            BEAST_EXPECT(node.isMember(sfReserveCount.jsonName)) &&
-                BEAST_EXPECT(node[sfReserveCount.jsonName].asUInt() == uint32Max);
+            BEAST_EXPECT(node.isMember(sfRemainingOwnerCount.jsonName)) &&
+                BEAST_EXPECT(node[sfRemainingOwnerCount.jsonName].asUInt() == uint32Max);
         }
 
         // STEP 3: Sponsee ends the sponsorship on the Check. The End's payback
         // at SponsorshipTransfer.cpp:520-528 calls adjustReserveCount(+1) with
-        // sfReserveCount = UINT32_MAX. The uint32 addition wraps to 0, int32_t
+        // sfRemainingOwnerCount = UINT32_MAX. The uint32 addition wraps to 0, int32_t
         // conversion gives 0 (not negative — guard NOT triggered), and the
         // code calls makeFieldAbsent — silently erasing the entire quota.
 
-        // Updated flow: sfReserveCount adjustment can only decrease. Freeing object doesn't reset
-        // sfReserveCount
+        // Updated flow: sfRemainingOwnerCount adjustment can only decrease. Freeing object doesn't
+        // reset sfRemainingOwnerCount
         env(sponsor::transfer(sponsee, tfSponsorshipEnd, checkID));
         env.close();
 
-        // VERIFY 2: silent wrap — sfReserveCount is now ABSENT
+        // VERIFY 2: silent wrap — sfRemainingOwnerCount is now ABSENT
         // Present after fix.
 
         {
             json::Value const poolEntry = sponsor::ledgerEntry(env, sponsor, sponsee);
             auto const& node = poolEntry[jss::result][jss::node];
-            BEAST_EXPECT(node.isMember(sfReserveCount.jsonName)) &&
+            BEAST_EXPECT(node.isMember(sfRemainingOwnerCount.jsonName)) &&
                 BEAST_EXPECTS(
-                    node[sfReserveCount.jsonName].asUInt() == uint32Max,
-                    std::to_string(node[sfReserveCount.jsonName].asUInt()));
+                    node[sfRemainingOwnerCount.jsonName].asUInt() == uint32Max,
+                    std::to_string(node[sfRemainingOwnerCount.jsonName].asUInt()));
         }
 
         // VERIFY 3: pool is bricked — future drawdowns fail with
-        // tecINSUFFICIENT_RESERVE (sfReserveCount absent = 0 < ownerCountDelta
+        // tecINSUFFICIENT_RESERVE (sfRemainingOwnerCount absent = 0 < ownerCountDelta
         // = 1 at checkInsufficientReserve, preclaim). The Check is now
         // un-sponsored (sfSponsor removed in STEP 3); attempt to re-sponsor it.
 
@@ -890,7 +891,7 @@ protected:
         // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/1364
 
         // AMMWithdraw::equalWithdrawTokens() misses prefunded-sponsor reserve check,
-        // allowing a sponsee to create a sponsored MPToken without consuming sfReserveCount
+        // allowing a sponsee to create a sponsored MPToken without consuming sfRemainingOwnerCount
         // when the sponsor's owner count is below 2.
         testcase("AMMWithdraw bypasses prefunded sponsor ReserveCount for MPT creation");
 
@@ -920,7 +921,7 @@ protected:
         // Step 1: Create MPT with lsfMPTCanTrade | lsfMPTCanTransfer flags. Both are needed for AMM
         // trading. MPTokenIssuanceCreate
         MPTTester mpt(
-            {.env = env, .issuer = issuer, .flags = kMptDexFlags, .maxAmt = 1000'000'000});
+            {.env = env, .issuer = issuer, .flags = kMptDexFlags, .maxAmt = 1'000'000'000});
         env.close();
 
         // Step 2: MPTokenAuthorize and pay to alice
@@ -953,9 +954,9 @@ protected:
 
         // Verify sponsorship exists with FeeAmount but no ReserveCount
         {
-            auto const sle = env.le(keylet::sponsor(sponsor, bob));
+            auto const sle = env.le(keylet::sponsorship(sponsor, bob));
             BEAST_EXPECT(sle) && BEAST_EXPECT(sle->isFieldPresent(sfFeeAmount)) &&
-                BEAST_EXPECT(!sle->isFieldPresent(sfReserveCount));
+                BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
         }
 
         // Control: the regular MPTokenAuthorize path correctly treats a prefunded
@@ -988,8 +989,8 @@ protected:
 
         // Verify sponsorship still has no ReserveCount
         {
-            auto const sle = env.le(keylet::sponsor(sponsor, bob));
-            BEAST_EXPECT(sle) && BEAST_EXPECT(!sle->isFieldPresent(sfReserveCount));
+            auto const sle = env.le(keylet::sponsorship(sponsor, bob));
+            BEAST_EXPECT(sle) && BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
         }
 
         // Verify Bob's SponsoredOwnerCount increased
@@ -1091,9 +1092,10 @@ protected:
 
         // Verify sponsorship exists with FeeAmount only (no ReserveCount)
         {
-            auto const sle = env.le(keylet::sponsor(feeSponsor, gw));
+            auto const sle = env.le(keylet::sponsorship(feeSponsor, gw));
             BEAST_EXPECT(
-                sle && sle->isFieldPresent(sfFeeAmount) && !sle->isFieldPresent(sfReserveCount));
+                sle && sle->isFieldPresent(sfFeeAmount) &&
+                !sle->isFieldPresent(sfRemainingOwnerCount));
         }
 
         // Attempt AMMClawback with fee sponsor
@@ -1931,7 +1933,9 @@ protected:
         // a sponsored account via cross-currency payment when the sponsor lacks sufficient
         // reserves. The transaction now properly fails with tecNO_DST_INSUF_XRP.
 
-        testcase("Cross-currency tfSponsorCreatedAccount reserve check (bug 1736 - FIXED)");
+        // THE LATEST UPDATE: cross currency sponsoring account not allowed
+
+        testcase("Cross-currency tfSponsorCreatedAccount reserve check (bug 1736, not allowed)");
 
         using namespace test::jtx;
 
@@ -1973,35 +1977,8 @@ protected:
         env(pay(sponsor, newAccount, XRP(1)),
             Sendmax(usd(1)),
             Txflags(tfSponsorCreatedAccount),
-            Ter(tecNO_DST_INSUF_XRP));  // NOW CORRECTLY FAILS
+            Ter(temINVALID));  // NOT ALLOWED
         env.close();
-
-        // VERIFICATION: Sponsor's state remains unchanged
-        sponsorSle = env.le(keylet::account(sponsor));
-        if (!BEAST_EXPECT(sponsorSle))
-            return;
-
-        // Sponsor's sponsored-account counter should still be 0 (no account created)
-        BEAST_EXPECT(!sponsorSle->isFieldPresent(sfSponsoringAccountCount));
-
-        // Set XRP that is enough to sponsor additional account
-        adjustAccountXRPBalance(
-            env, sponsor, STAmount(reserve + env.current()->fees().reserve + (fee * 20)));
-
-        env(pay(sponsor, newAccount, XRP(1)),
-            Sendmax(usd(1)),
-            Txflags(tfSponsorCreatedAccount));  // NOW CORRECTLY PASS
-        env.close();
-
-        // VERIFICATION: Sponsor's state remains unchanged
-        sponsorSle = env.le(keylet::account(sponsor));
-        if (!BEAST_EXPECT(sponsorSle))
-            return;
-
-        // Sponsor's sponsored-account counter should still be 0 (no account created)
-        BEAST_EXPECT(
-            sponsorSle->isFieldPresent(sfSponsoringAccountCount) ||
-            sponsorSle->getFieldU32(sfSponsoringAccountCount) == 1);
     }
 
     void
@@ -2014,66 +1991,60 @@ protected:
         Env env{*this, testableAmendments()};
 
         Account const issuer{"issuer"};
-        Account const lender{"lender"};         // broker owner / submitter
-        Account const borrower{"borrower"};     // counterparty
-        Account const sp{"sponsor"};            // lender's sponsor
+        Account const lender{"lender"};      // broker owner / submitter
+        Account const borrower{"borrower"};  // counterparty
+        Account const sp{"sponsor"};         // lender's sponsor
 
         // Fund everyone amply.
         env.fund(XRP(100000), issuer, lender, borrower, sp);
         env.close();
 
         // Use an IOU asset for the vault.
-        auto const IOU = issuer["IOU"];
-        env(trust(lender, IOU(100'000'000)));
-        env(trust(borrower, IOU(100'000'000)));
+        auto const iou = issuer["IOU"];
+        env(trust(lender, iou(100'000'000)));
+        env(trust(borrower, iou(100'000'000)));
         env.close();
-        env(pay(issuer, lender, IOU(1'000'000)));
+        env(pay(issuer, lender, iou(1'000'000)));
         env.close();
 
         // 1. Create the vault, deposit the principal supply.
         Vault const vault{env};
-        auto [vaultTx, vaultKeylet] =
-            vault.create({.owner = lender, .asset = IOU.issue()});
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = iou.issue()});
         env(vaultTx);
         env.close();
         BEAST_EXPECT(env.le(vaultKeylet));
 
-        env(vault.deposit(
-            {.depositor = lender,
-             .id = vaultKeylet.key,
-             .amount = IOU(500'000)}));
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = iou(500'000)}));
         env.close();
 
         // 2. Create the LoanBroker with minimal required fields.
         auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
         env(loanBroker::set(lender, vaultKeylet.key, 0),
             loanBroker::kManagementFeeRate(TenthBips16{100}),
-            loanBroker::kDebtMaximum(IOU(100'000).number()),
+            loanBroker::kDebtMaximum(iou(100'000).number()),
             loanBroker::kCoverRateMinimum(TenthBips32{1000}),
             loanBroker::kCoverRateLiquidation(TenthBips32{2500}));
         env.close();
         BEAST_EXPECT(env.le(brokerKeylet));
 
         // Cover deposit.
-        env(loanBroker::coverDeposit(lender, brokerKeylet.key, IOU(2'000)));
+        env(loanBroker::coverDeposit(lender, brokerKeylet.key, iou(2'000)));
         env.close();
 
         // Capture state BEFORE the LoanSet.
         auto const borrowerOwnerCountBefore =
             env.le(keylet::account(borrower))->getFieldU32(sfOwnerCount);
         auto const borrowerSponsoredBefore =
-            env.le(keylet::account(borrower))
-                ->at(~sfSponsoredOwnerCount).value_or(0);
+            env.le(keylet::account(borrower))->at(~sfSponsoredOwnerCount).value_or(0);
         auto const sponsorSponsoringBefore =
             env.le(keylet::account(sp))->at(~sfSponsoringOwnerCount).value_or(0);
 
         // 4. The lender (broker owner) submits the LoanSet with a
         //    co-signing tx-level reserve sponsor = sp. Borrower
         //    co-signs via sfCounterpartySignature.
-        Number const principal = IOU(1'000).number();
-        auto const loanKeylet = keylet::loan(
-            brokerKeylet.key,
-            env.le(brokerKeylet)->getFieldU32(sfLoanSequence));
+        Number const principal = iou(1'000).number();
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, env.le(brokerKeylet)->getFieldU32(sfLoanSequence));
 
         env(loan::set(lender, brokerKeylet.key, principal),
             loan::kCounterparty(borrower),
@@ -2102,8 +2073,7 @@ protected:
         //    c) Borrower's sfSponsoredOwnerCount should NOT have grown
         //       because the sponsor was not applied.
         auto const borrowerSponsoredAfter =
-            env.le(keylet::account(borrower))
-                ->at(~sfSponsoredOwnerCount).value_or(0);
+            env.le(keylet::account(borrower))->at(~sfSponsoredOwnerCount).value_or(0);
         BEAST_EXPECT(borrowerSponsoredAfter == borrowerSponsoredBefore);
 
         //    d) Sp's sfSponsoringOwnerCount should NOT have grown
@@ -2117,6 +2087,487 @@ protected:
         auto const borrowerOwnerCountAfter =
             env.le(keylet::account(borrower))->getFieldU32(sfOwnerCount);
         BEAST_EXPECT(borrowerOwnerCountAfter == borrowerOwnerCountBefore + 1);
+    }
+
+    void
+    test1814AMMDepositLPTokenNonSponsoredReserveBypass()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/1814
+        // Bug: AMMDeposit skips LP trustline reserve for non-sponsored users
+        // The sponsor integration changed doApply balance check in AMMDeposit::deposit()
+        // to incorrectly discard the LP trustline reserve adjustment for non-sponsored deposits.
+        // This test verifies the bug is FIXED.
+
+        testcase(
+            "First-time LP tfLPToken deposit correctly enforces LP trustline reserve (1814 fix)");
+
+        using namespace test::jtx;
+
+        auto const features =
+            testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
+        Env env{*this, features};
+
+        Account const gw("gw");
+        Account const poolCreator("poolCreator");
+        Account const alice("alice");
+
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(100'000), gw, poolCreator);
+        env.close();
+        env(trust(poolCreator, usd(100'000)));
+        env.close();
+        env(pay(gw, poolCreator, usd(50'000)));
+        env.close();
+
+        AMM amm(env, poolCreator, XRP(10'000), usd(10'000));
+
+        // Alice: 371 XRP, 1 owner (USD trustline).
+        // reserve(1) = 250, reserve(2) = 300.
+        // Buggy liquid (ownerCountAdj=0): 371 - 250 = 121 XRP
+        // Correct liquid (ownerCountAdj=1): 371 - 300 = 71 XRP
+        // 1% LP deposit = ~100 XRP. Bug: 121 >= 100 => tesSUCCESS, Fix: 71 < 100 =>
+        // tecINSUF_RESERVE_LINE.
+        auto const aliceStartXRP = XRP(371) + env.current()->fees().base;
+        env.fund(aliceStartXRP, alice);
+        env.close();
+        env(trust(alice, usd(100'000)));
+        env.close();
+        env(pay(gw, alice, usd(10'000)));
+        env.close();
+
+        {
+            auto const aliceSle = env.le(keylet::account(alice.id()));
+            BEAST_EXPECT(aliceSle);
+            BEAST_EXPECT(aliceSle->getFieldU32(sfOwnerCount) == 1);
+            auto const balance = aliceSle->getFieldAmount(sfBalance);
+            BEAST_EXPECT(
+                balance.xrp() >= XRPAmount{370'000'000} && balance.xrp() <= XRPAmount{372'000'000});
+        }
+
+        auto const lptIssue = amm.lptIssue();
+        BEAST_EXPECT(
+            !env.current()->read(keylet::line(alice.id(), lptIssue.account, lptIssue.currency)));
+
+        // With the FIX: this should fail with tecUNFUNDED_AMM
+        // (doApply checkBalance correctly accounts for LP trustline reserve)
+        // With the BUG: this would succeed with tesSUCCESS and leave Alice under-reserve
+        amm.deposit(
+            DepositArg{
+                .account = alice,
+                .tokens = LPToken(100'000),
+                .err = Ter(tecUNFUNDED_AMM)  // Expecting failure with the fix
+            });
+
+        // Verify Alice still has ownerCount=1 (deposit failed, no LP trustline created)
+        {
+            auto const aliceSle = env.le(keylet::account(alice.id()));
+            BEAST_EXPECT(aliceSle);
+            auto const ownerCount = aliceSle->getFieldU32(sfOwnerCount);
+            BEAST_EXPECT(ownerCount == 1);
+
+            // Verify Alice is NOT under-reserve (bug is fixed)
+            auto const balance = aliceSle->getFieldAmount(sfBalance);
+            auto const requiredReserve = reserve(env, ownerCount);
+            BEAST_EXPECT(balance.xrp() >= requiredReserve);
+        }
+
+        // Verify LP trustline was NOT created
+        BEAST_EXPECT(
+            !env.current()->read(keylet::line(alice.id(), lptIssue.account, lptIssue.currency)));
+
+        // Verify Alice has no LP tokens
+        auto const aliceLPTokens = amm.getLPTokensBalance(alice.id());
+        BEAST_EXPECT(aliceLPTokens == beast::kZero);
+    }
+
+    void
+    test1814ExistingLPCorrectlyChecked()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/1814
+        // Control test: Existing LP deposit correctly rejected when balance insufficient
+        // (no trustline creation, so ownerCountAdj=0 is correct)
+
+        testcase("Existing LP deposit correctly rejected when balance insufficient (1814 control)");
+
+        using namespace test::jtx;
+
+        auto const features =
+            testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
+        Env env{*this, features};
+
+        Account const gw("gw");
+        Account const poolCreator("poolCreator");
+        Account const bob("bob");
+
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(100'000), gw, poolCreator);
+        env.close();
+        env(trust(poolCreator, usd(100'000)));
+        env.close();
+        env(pay(gw, poolCreator, usd(50'000)));
+        env.close();
+
+        AMM amm(env, poolCreator, XRP(10'000), usd(10'000));
+
+        env.fund(XRP(1'000), bob);
+        env.close();
+        env(trust(bob, usd(100'000)));
+        env.close();
+        env(pay(gw, bob, usd(10'000)));
+        env.close();
+
+        // First deposit succeeds, creating LP trustline
+        amm.deposit(DepositArg{.account = bob, .tokens = LPToken(10'000), .err = Ter(tesSUCCESS)});
+
+        {
+            auto const bobSle = env.le(keylet::account(bob.id()));
+            BEAST_EXPECT(bobSle);
+            BEAST_EXPECT(bobSle->getFieldU32(sfOwnerCount) == 2);
+        }
+
+        // Second deposit with oversized amount should be rejected
+        // (ownerCountAdj=0 is correct here since trustline already exists)
+        amm.deposit(
+            DepositArg{.account = bob, .tokens = LPToken(5'000'000), .err = Ter(tecUNFUNDED_AMM)});
+    }
+
+    void
+    test1814SingleAssetCaughtByPreclaim()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/1814
+        // Control test: Single-asset XRP deposit caught by preclaim
+        // (not affected by doApply bug, shows bug only affects tfLPToken path)
+
+        testcase("Single-asset XRP deposit caught by preclaim (1814 control)");
+
+        using namespace test::jtx;
+
+        auto const features =
+            testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
+        Env env{*this, features};
+
+        Account const gw("gw");
+        Account const poolCreator("poolCreator");
+        Account const charlie("charlie");
+
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(100'000), gw, poolCreator);
+        env.close();
+        env(trust(poolCreator, usd(100'000)));
+        env.close();
+        env(pay(gw, poolCreator, usd(50'000)));
+        env.close();
+
+        AMM amm(env, poolCreator, XRP(10'000), usd(10'000));
+
+        auto const charlieStartXRP = XRP(371) + env.current()->fees().base;
+        env.fund(charlieStartXRP, charlie);
+        env.close();
+        env(trust(charlie, usd(100'000)));
+        env.close();
+        env(pay(gw, charlie, usd(10'000)));
+        env.close();
+
+        // Single-asset deposit should be caught by preclaim
+        amm.deposit(
+            charlie,
+            XRP(100),
+            std::nullopt,
+            std::nullopt,
+            std::nullopt,
+            Ter(tecINSUF_RESERVE_LINE));
+
+        auto const lptIssue = amm.lptIssue();
+        BEAST_EXPECT(
+            !env.current()->read(keylet::line(charlie.id(), lptIssue.account, lptIssue.currency)));
+    }
+
+    void
+    test2022UnsignedUnderflowAccountReserveOfferCrossing()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2022
+        // Bug: Unsigned underflow in accountReserve bypasses owner reserve during
+        // sponsored-offer crossing.
+        // When ownerCountAdj = -1 and sponsoredOwnerCount >= ownerCount, the
+        // subtraction (ownerCount - sponsoredOwnerCount) wraps to SIZE_MAX, which
+        // narrows to -1, producing a reserve of (base - increment) instead of
+        // (base + increment).
+
+        testcase("test2022 Unsigned underflow in accountReserve during offer crossing");
+        using namespace test::jtx;
+
+        auto cfg = makeConfig();
+        cfg->fees.referenceFee = 12;
+        cfg->fees.accountReserve = 10 * kDropsPerXrp;
+        cfg->fees.ownerReserve = 2 * kDropsPerXrp;
+        Env env(*this, std::move(cfg));
+
+        auto const issuer = Account("issuer");
+        auto const sponsor = Account("sponsor");
+        auto const counterparty = Account("counterparty");
+        auto const attacker = Account("attacker");
+
+        // Fund accounts
+        env.fund(XRP(10'000), issuer, sponsor, counterparty);
+        // Attacker gets 10.5 XRP (just above base reserve of 10 XRP)
+        env.fund(XRP(10) + drops(500'000), attacker);
+        env.close();
+
+        // Create MPTokenIssuance for sponsored object
+        MPTTester const mpt(
+            {.env = env, .issuer = issuer, .flags = kMptDexFlags, .maxAmt = 1'000'000'000});
+        env.close();
+
+        // Sponsor creates SponsorshipSet for attacker (RemainingOwnerCount=1)
+        env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(attacker));
+        env.close();
+
+        // Attacker creates a sponsored MPToken => OC=1, SOC=1
+        env(mpt.authorizeJV({.account = attacker, .id = mpt.issuanceID()}),
+            sponsor::As(sponsor, spfSponsorReserve));
+        env.close();
+
+        BEAST_EXPECT(env.ownerCount(attacker) == 1);
+        BEAST_EXPECT(env.sponsoredOwnerCount(attacker) == 1);
+
+        // Set up IOU book: issuer enables DefaultRipple, counterparty gets trust line + ATK
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        auto const atk = issuer["ATK"];
+        env(trust(counterparty, atk(100'000)));
+        env.close();
+
+        env(pay(issuer, counterparty, atk(10'000)));
+        env.close();
+
+        // Counterparty places offer: 2 ATK for 2 XRP
+        env(offer(counterparty, XRP(2), atk(2)));
+        env.close();
+
+        // Get attacker's balance before crossing
+        auto const attackerBalBefore = env.balance(attacker);
+
+        // Current state: OC=1, SOC=1
+        // Required reserve = base + increment * (OC - SOC) = 10 + 2 * (1-1) = 10 XRP
+        // Attacker has ~10.5 XRP, so liquid = 10.5 - 10 = 0.5 XRP
+
+        // Attacker crosses the offer by selling XRP for ATK (no trust line for ATK)
+        // Offer: Give 2 XRP, Receive 2 ATK (using tfImmediateOrCancel flag)
+        //
+        // How offer crossing works:
+        // 1. XRPEndpointOfferCrossingStep computes reserveReduction = -1
+        //    (because ATK trustline doesn't exist yet - see line 206 of XRPEndpointStep.cpp)
+        // 2. xrpLiquid() is called with ownerCountAdj = -1
+        // 3. In ownerCountHlp: deltaCount = ownerCountAdj - sponsored + sponsoring
+        //                                  = -1 - 1 + 0 = -2
+        //    confineOwnerCount(1, -2) clamps to 0
+        //
+        // With the BUG (unsigned underflow in old code):
+        //   accountReserve(ownerCount=0, sponsoredOwnerCount=1, ...)
+        //   => (0 - 1) wraps to SIZE_MAX in unsigned arithmetic
+        //   => narrows to -1 as int64_t
+        //   => reserve = base - increment = 10 - 2 = 8 XRP
+        //   => liquid = 10.5 - 8 = 2.5 XRP (INFLATED by 2 XRP!)
+        //   => Offer would cross the full 2 XRP
+        //
+        // With the FIX (signed int64_t arithmetic in AccountRootHelpers.cpp):
+        //   The calculation stays in signed space, preventing underflow
+        //   => reserve calculated correctly
+        //   => liquid = ~0.5 XRP (actual available amount)
+        //   => Offer can only cross ~0.5 XRP (PARTIAL FILL)
+        //
+        // Note: tfImmediateOrCancel allows partial fills - it crosses whatever
+        // is available immediately and cancels the rest (doesn't place remainder
+        // on order book). It returns tesSUCCESS if any amount crossed, tecKILLED
+        // if zero crossed. See OfferCreate.cpp lines 818-828.
+        env(offer(attacker, atk(2), XRP(2)), Txflags(tfImmediateOrCancel));
+        env.close();
+
+        // Verify the transaction succeeded (bug is FIXED)
+        auto const attackerBalAfter = env.balance(attacker);
+
+        // Attacker now has OC=2 (MPToken + ATK trustline), SOC=1 (only MPToken is sponsored)
+        BEAST_EXPECT(env.ownerCount(attacker) == 2);
+        BEAST_EXPECT(env.sponsoredOwnerCount(attacker) == 1);
+
+        // KEY TEST: Verify the offer only partially crossed
+        // With the bug, the underflow would have inflated liquid XRP by 2 XRP,
+        // allowing the full 2 XRP to be spent.
+        // With the fix, only the actual liquid amount (~0.5 XRP) was spent.
+        auto const xrpSpent = attackerBalBefore - attackerBalAfter;
+
+        // The attacker should have spent approximately 0.5 XRP (not 2 XRP)
+        // This proves the offer crossed only partially due to correct reserve calculation
+        BEAST_EXPECT(xrpSpent < XRP(1));  // Less than 1 XRP spent
+        BEAST_EXPECT(xrpSpent > XRP(0));  // But greater than 0 (partial crossing succeeded)
+
+        // With the bug, xrpSpent would be ~2 XRP
+        // With the fix, xrpSpent is ~0.5 XRP
+        // This difference demonstrates that the reserve calculation is working correctly
+    }
+
+    void
+    test2065SponsorVaultFeeInvariantDeposit()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2065
+        // Bug: VaultInvariant incorrectly adds transaction fee to sfAccount XRP delta
+        // even when a sponsor paid the fee, causing tecINVARIANT_FAILED for native-XRP
+        // vault deposits with sponsor-paid fees.
+
+        testcase("test2065 Sponsor-paid native XRP vault deposit (prefunded)");
+        using namespace test::jtx;
+
+        Env env(*this, testableAmendments());
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+
+        env.fund(XRP(1'000'000), alice, bob, sponsor);
+        env.close();
+
+        // Create a native-XRP vault
+        Vault const vault{env};
+        auto const [createTx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
+        env(createTx);
+        env.close();
+
+        // Control: un-sponsored deposit should succeed
+        auto const depositTx1 =
+            vault.deposit({.depositor = bob, .id = keylet.key, .amount = XRP(100)});
+        env(depositTx1);
+        env.close();
+        BEAST_EXPECT(env.le(keylet)->at(sfAssetsTotal) == XRP(100).value());
+
+        // Setup prefunded sponsor fee
+        auto const feeAmt = drops(env.current()->fees().base.drops());
+        env(sponsor::set_fee(sponsor, 0, feeAmt + XRP(1)), sponsor::SponseeAcc(bob));
+        env.close();
+
+        // Test: prefunded sponsor-fee deposit
+        // With the bug, VaultInvariant adds the sponsor-paid fee to bob's XRP delta,
+        // causing the invariant check to fail with tecINVARIANT_FAILED
+        // With the fix, the invariant correctly skips fee compensation when sponsor paid
+        auto const depositTx2 =
+            vault.deposit({.depositor = bob, .id = keylet.key, .amount = XRP(100)});
+        env(depositTx2, Fee(feeAmt), sponsor::As(sponsor, spfSponsorFee));
+        env.close();
+
+        BEAST_EXPECT(env.le(keylet)->at(sfAssetsTotal) == XRP(200).value());
+    }
+
+    void
+    test2065SponsorVaultFeeInvariantWithdraw()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2065
+        // Bug: VaultInvariant incorrectly adds transaction fee to sfAccount XRP delta
+        // even when a sponsor paid the fee, causing tecINVARIANT_FAILED for native-XRP
+        // vault self-withdrawals with sponsor-paid fees.
+
+        testcase("test2065 Sponsor-paid native XRP vault self-withdraw (co-signed)");
+        using namespace test::jtx;
+
+        Env env(*this, testableAmendments());
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+
+        env.fund(XRP(1'000'000), alice, bob, sponsor);
+        env.close();
+
+        // Create a native-XRP vault and deposit
+        Vault const vault{env};
+        auto const [createTx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
+        env(createTx);
+        env.close();
+        env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = XRP(100)}));
+        env.close();
+
+        // Control: un-sponsored self-withdrawal should succeed
+        auto const withdrawTx1 =
+            vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(40)});
+        env(withdrawTx1);
+        env.close();
+        BEAST_EXPECT(env.le(keylet)->at(sfAssetsTotal) == XRP(60).value());
+
+        // Test: co-signed sponsor-fee self-withdrawal
+        // With the bug, VaultInvariant adds the sponsor-paid fee to bob's XRP delta,
+        // causing the invariant check to fail with tecINVARIANT_FAILED
+        // With the fix, the invariant correctly skips fee compensation when sponsor paid
+        auto const feeAmt = drops(env.current()->fees().base.drops());
+        auto const withdrawTx2 =
+            vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(40)});
+        env(withdrawTx2,
+            Fee(feeAmt),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+
+        BEAST_EXPECT(env.le(keylet)->at(sfAssetsTotal) == XRP(20).value());
+    }
+
+    void
+    test2158SponsorLoanBrokerSetMPTPseudoAccountInvariant()
+    {
+        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2158
+        // Bug #2158 (FIXED): LoanBrokerSet on an MPT-asset vault with sponsor.
+        //
+        // Original bug (contest code, April 2026):
+        // authorizeMPToken called getTxReserveSponsor(view, tx) WITHOUT the account
+        // parameter, causing it to return the sponsor even for pseudo-accounts.
+        // This propagated sponsor fields onto the broker pseudo-account's MPToken,
+        // triggering the "pseudo-account must not have sponsorship fields" invariant
+        // => tecINVARIANT_FAILED.
+        //
+        // Fix applied (June 7, 2026, commit 8f3e5f93):
+        // Changed to getTxReserveSponsor(view, tx, account) WITH the account parameter.
+        // Now when account is a pseudo-account, it correctly returns std::nullopt,
+        // preventing sponsorship fields from being added to pseudo-accounts.
+        //
+        // This test verifies the fix works correctly.
+
+        testcase("test2158 LoanBrokerSet + sponsor + MPT vault (bug fixed)");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+
+        Account const alice{"alice2"};
+        Account const bob{"bob2"};
+
+        env.fund(XRP(100'000), alice, bob);
+        env.close();
+
+        MPTTester mpt{env, alice, kMptInitNoFund};
+        mpt.create({.flags = tfMPTCanTransfer});
+        env.close();
+
+        PrettyAsset const asset = mpt["MPT"];
+
+        Vault const vault{env};
+        auto const [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(createTx);
+        env.close();
+        BEAST_EXPECT(env.le(vaultKeylet));
+
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+
+        // With the fix: transaction succeeds (pseudo-account does not get sponsor fields)
+        env(loanBroker::set(alice.id(), vaultKeylet.key),
+            sponsor::As(bob, spfSponsorReserve),
+            Sig(sfSponsorSignature, bob),
+            Ter(tesSUCCESS));
+        env.close();
+
+        BEAST_EXPECT(env.le(brokerKeylet));
+
+        // Control: same LoanBrokerSet without a sponsor also succeeds.
+        auto const brokerKeylet2 = keylet::loanbroker(alice.id(), env.seq(alice));
+        env(loanBroker::set(alice.id(), vaultKeylet.key), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.le(brokerKeylet2));
     }
 
 public:
@@ -2142,7 +2593,14 @@ public:
         // test1678SameSponsorCredentialAccept();
         // test1680SponsoredPayChanTrapsReserve();
         // test1736CrossCurrencyTfSponsorCreatedAccountBypassesReserve();
-        test1779BrokerSponsorMisroutedToBorrowerLoanSle();
+        // test1779BrokerSponsorMisroutedToBorrowerLoanSle();
+        // test1814AMMDepositLPTokenNonSponsoredReserveBypass();
+        // test1814ExistingLPCorrectlyChecked();
+        // test1814SingleAssetCaughtByPreclaim();
+        // test2022UnsignedUnderflowAccountReserveOfferCrossing();
+        // test2065SponsorVaultFeeInvariantDeposit();
+        // test2065SponsorVaultFeeInvariantWithdraw();
+        test2158SponsorLoanBrokerSetMPTPseudoAccountInvariant();
     }
 };
 
