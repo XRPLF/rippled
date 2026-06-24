@@ -1,5 +1,7 @@
 #include <xrpl/basics/TaggedCache.h>
 
+#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -10,6 +12,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -129,6 +132,114 @@ TEST(TaggedCacheTest, tagged_cache)
         c.sweep();
         EXPECT_EQ(c.getCacheSize(), 0);
         EXPECT_EQ(c.getTrackSize(), 0);
+    }
+
+    {
+        EXPECT_FALSE(c.insert(5, "five"));
+        EXPECT_EQ(c.getCacheSize(), 1);
+        EXPECT_EQ(c.size(), 1);
+
+        {
+            auto const p1 = c.fetch(5);
+            EXPECT_NE(p1, nullptr);
+            EXPECT_EQ(c.getCacheSize(), 1);
+            EXPECT_EQ(c.size(), 1);
+
+            // Advance the clock a lot
+            ++clock;
+            c.sweep();
+            EXPECT_EQ(c.getCacheSize(), 0);
+            EXPECT_EQ(c.size(), 1);
+
+            auto p2 = std::make_shared<std::string>("five_2");
+            EXPECT_TRUE(c.canonicalizeReplaceCache(5, p2));
+            EXPECT_EQ(c.getCacheSize(), 1);
+            EXPECT_EQ(c.size(), 1);
+            // Make sure the caller's original pointer is unchanged
+            EXPECT_NE(p1.get(), p2.get());
+            EXPECT_EQ(*p2, "five_2");
+
+            auto const p3 = c.fetch(5);
+            EXPECT_NE(p3, nullptr);
+            EXPECT_EQ(p3.get(), p2.get());
+            EXPECT_NE(p3.get(), p1.get());
+        }
+
+        ++clock;
+        c.sweep();
+        EXPECT_EQ(c.getCacheSize(), 0);
+        EXPECT_EQ(c.size(), 0);
+    }
+
+    {
+        struct MyRefCountObject : IntrusiveRefCounts
+        {
+            std::string data;
+
+            // Needed to support weak intrusive pointers
+            virtual void
+            partialDestructor()
+            {
+            }
+
+            MyRefCountObject() = default;
+            explicit MyRefCountObject(std::string data) : data(std::move(data))
+            {
+            }
+
+            bool
+            operator==(std::string const& other) const
+            {
+                return data == other;
+            }
+        };
+
+        using IntrPtrCache = TaggedCache<
+            Key,
+            MyRefCountObject,
+            /*IsKeyCache*/ false,
+            intr_ptr::SharedWeakUnionPtr<MyRefCountObject>,
+            intr_ptr::SharedPtr<MyRefCountObject>>;
+
+        IntrPtrCache intrPtrCache("IntrPtrTest", 1, 1s, clock, journal);
+
+        intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<MyRefCountObject>("one"));
+        EXPECT_EQ(intrPtrCache.getCacheSize(), 1);
+        EXPECT_EQ(intrPtrCache.size(), 1);
+
+        {
+            {
+                intrPtrCache.canonicalizeReplaceCache(
+                    1, intr_ptr::makeShared<MyRefCountObject>("one_replaced"));
+
+                auto p = intrPtrCache.fetch(1);
+                EXPECT_EQ(*p, "one_replaced");
+
+                // Advance the clock a lot
+                ++clock;
+                intrPtrCache.sweep();
+                EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
+                EXPECT_EQ(intrPtrCache.size(), 1);
+
+                intrPtrCache.canonicalizeReplaceCache(
+                    1, intr_ptr::makeShared<MyRefCountObject>("one_replaced_2"));
+
+                auto p2 = intrPtrCache.fetch(1);
+                EXPECT_EQ(*p2, "one_replaced_2");
+
+                intrPtrCache.del(1, true);
+            }
+
+            intrPtrCache.canonicalizeReplaceCache(
+                1, intr_ptr::makeShared<MyRefCountObject>("one_replaced_3"));
+            auto p3 = intrPtrCache.fetch(1);
+            EXPECT_EQ(*p3, "one_replaced_3");
+        }
+
+        ++clock;
+        intrPtrCache.sweep();
+        EXPECT_EQ(intrPtrCache.getCacheSize(), 0);
+        EXPECT_EQ(intrPtrCache.size(), 0);
     }
 }
 
