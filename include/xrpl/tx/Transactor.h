@@ -7,6 +7,9 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <tuple>
+#include <utility>
+
 namespace xrpl {
 
 /** State information when preflighting a tx. */
@@ -21,31 +24,31 @@ public:
     beast::Journal const j;
 
     PreflightContext(
-        ServiceRegistry& registry_,
-        STTx const& tx_,
-        uint256 parentBatchId_,
-        Rules const& rules_,
-        ApplyFlags flags_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_)
-        , tx(tx_)
-        , rules(rules_)
-        , flags(flags_)
-        , parentBatchId(parentBatchId_)
-        , j(j_)
+        ServiceRegistry& registry,
+        STTx const& tx,
+        uint256 parentBatchId,
+        Rules rules,
+        ApplyFlags flags,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : registry(registry)
+        , tx(tx)
+        , rules(std::move(rules))
+        , flags(flags)
+        , parentBatchId(parentBatchId)
+        , j(j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
+        XRPL_ASSERT((flags & TapBatch) == TapBatch, "Batch apply flag should be set");
     }
 
     PreflightContext(
-        ServiceRegistry& registry_,
-        STTx const& tx_,
-        Rules const& rules_,
-        ApplyFlags flags_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_), tx(tx_), rules(rules_), flags(flags_), j(j_)
+        ServiceRegistry& registry,
+        STTx const& tx,
+        Rules rules,
+        ApplyFlags flags,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : registry(registry), tx(tx), rules(std::move(rules)), flags(flags), j(j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
     }
 
     PreflightContext&
@@ -65,36 +68,36 @@ public:
     beast::Journal const j;
 
     PreclaimContext(
-        ServiceRegistry& registry_,
-        ReadView const& view_,
-        TER preflightResult_,
-        STTx const& tx_,
-        ApplyFlags flags_,
-        std::optional<uint256> parentBatchId_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_)
-        , view(view_)
-        , preflightResult(preflightResult_)
-        , flags(flags_)
-        , tx(tx_)
-        , parentBatchId(parentBatchId_)
-        , j(j_)
+        ServiceRegistry& registry,
+        ReadView const& view,
+        TER preflightResult,
+        STTx const& tx,
+        ApplyFlags flags,
+        std::optional<uint256> parentBatchId,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : registry(registry)
+        , view(view)
+        , preflightResult(preflightResult)
+        , flags(flags)
+        , tx(tx)
+        , parentBatchId(parentBatchId)
+        , j(j)
     {
         XRPL_ASSERT(
-            parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
+            parentBatchId.has_value() == ((flags & TapBatch) == TapBatch),
             "Parent Batch ID should be set if batch apply flag is set");
     }
 
     PreclaimContext(
-        ServiceRegistry& registry_,
-        ReadView const& view_,
-        TER preflightResult_,
-        STTx const& tx_,
-        ApplyFlags flags_,
-        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : PreclaimContext(registry_, view_, preflightResult_, tx_, flags_, std::nullopt, j_)
+        ServiceRegistry& registry,
+        ReadView const& view,
+        TER preflightResult,
+        STTx const& tx,
+        ApplyFlags flags,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : PreclaimContext(registry, view, preflightResult, tx, flags, std::nullopt, j)
     {
-        XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+        XRPL_ASSERT((flags & TapBatch) == 0, "Batch apply flag should not be set");
     }
 
     PreclaimContext&
@@ -113,16 +116,17 @@ protected:
     beast::WrappedSink sink_;
     beast::Journal const j_;
 
-    AccountID const account_;
+    AccountID const accountID_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
+public:
     virtual ~Transactor() = default;
     Transactor(Transactor const&) = delete;
     Transactor&
     operator=(Transactor const&) = delete;
 
-public:
-    enum ConsequencesFactoryType { Normal, Blocker, Custom };
+    enum class ConsequencesFactoryType { Normal, Blocker, Custom };
+
     /** Process the transaction. */
     ApplyResult
     operator()();
@@ -133,11 +137,25 @@ public:
         return ctx_.view();
     }
 
-    ApplyView const&
+    [[nodiscard]] ApplyView const&
     view() const
     {
         return ctx_.view();
     }
+
+    /** Check all invariants for the current transaction.
+     *
+     *  Runs transaction-specific invariants first (visitInvariantEntry +
+     *  finalizeInvariants), then protocol-level invariants.  Both layers
+     *  always run; the worst failure code is returned.
+     *
+     *  @param result  the tentative TER from transaction processing.
+     *  @param fee     the fee consumed by the transaction.
+     *
+     *  @return the final TER after all invariant checks.
+     */
+    [[nodiscard]] TER
+    checkInvariants(TER result, XRPAmount fee);
 
     /////////////////////////////////////////////////////
     /*
@@ -205,8 +223,63 @@ public:
         return tesSUCCESS;
     }
 
+    /**
+     * This function can be overridden to introduce additional semantic constraints beyond the
+     * granular template validation for granular permissions. It is called by the base
+     * invokeCheckPermission method only after the transaction has successfully passed
+     * checkGranularSandbox.
+     */
     static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
+    checkGranularSemantics(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
+    {
+        return tesSUCCESS;
+    }
+
+    /**
+     * Checks whether the transaction is authorized to be executed by the delegated account.
+     * This function enforces the strict permission check hierarchy. It is explicitly
+     * designed NOT to be overridden. Derived transactors must instead implement
+     * checkGranularSemantics to add custom validation logic for granular permissions.
+     *
+     * The evaluation proceeds as follows:
+     * - If transaction-level permission is granted, the function immediately returns tesSUCCESS.
+     * - If transaction-level permission is not granted, the function checks whether the transaction
+     * matches the granular permission template defined in permissions.macro. If it does, it then
+     * calls checkGranularSemantics to perform any additional, fine-grained validation.
+     *
+     */
+    template <class T>
+    static NotTEC
+    invokeCheckPermission(ReadView const& view, STTx const& tx)
+    {
+        // heldGranularPermissions is passed by reference into checkPermission.
+        // It is populated with the sender’s granular permissions only when the sender
+        // lacks tx-level permission but has granular permissions that satisfy the
+        // granular permission template.
+        //
+        // - result is terNO_DELEGATE_PERMISSION: return immediately.
+        // - result is tesSUCCESS and heldGranularPermissions is empty: tx-level permission was
+        // granted, so we returned success before populating it.
+        // - result is tesSUCCESS and heldGranularPermissions is not empty: tx-level permission was
+        // not granted, but the held granular permissions passed checkGranularSandbox, so we proceed
+        // to checkGranularSemantics.
+        //
+        // WARNING: Do not simplify checkPermission to return only
+        // heldGranularPermissions or the ter code. Both the result and the
+        // populated set are required to enforce the strict permission hierarchy
+        // described above.
+        std::unordered_set<GranularPermissionType> heldGranularPermissions;
+        if (NotTEC const result = checkPermission(view, tx, heldGranularPermissions);
+            !isTesSuccess(result) || heldGranularPermissions.empty())
+        {
+            return result;
+        }
+
+        return T::checkGranularSemantics(view, tx, heldGranularPermissions);
+    }
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
@@ -228,6 +301,49 @@ protected:
 
     virtual TER
     doApply() = 0;
+
+    /** Inspect a single ledger entry modified by this transaction.
+     *
+     *  Called once for every SLE created, modified, or deleted by the
+     *  transaction, before finalizeInvariants.  Implementations should
+     *  accumulate whatever state they need to verify transaction-specific
+     *  post-conditions.
+     *
+     *  @param isDelete  true if the entry was erased from the ledger.
+     *  @param before    the entry's state before the transaction (nullptr
+     *                   for newly created entries).
+     *  @param after     the entry's state as supplied by the apply logic
+     *                   for this transaction. For deletions, this is the
+     *                   SLE being erased and is not guaranteed to be null;
+     *                   callers must use isDelete rather than after == nullptr
+     *                   to detect deletions.
+     */
+    virtual void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
+
+    /** Check transaction-specific post-conditions after all entries have
+     *  been visited.
+     *
+     *  Called once after every modified ledger entry has been passed to
+     *  visitInvariantEntry.  Returns true if all transaction-specific
+     *  invariants hold, or false to fail the transaction with
+     *  tecINVARIANT_FAILED.
+     *
+     *  @param tx    the transaction being applied.
+     *  @param result the tentative TER result so far.
+     *  @param fee   the fee consumed by the transaction.
+     *  @param view  read-only view of the ledger after the transaction.
+     *  @param j     journal for logging invariant failures.
+     *
+     *  @return true if all invariants pass; false otherwise.
+     */
+    [[nodiscard]] virtual bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) = 0;
 
     /** Compute the minimum fee required to process a transaction
         with a given baseFee based on the current server load.
@@ -293,20 +409,32 @@ protected:
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
 private:
+    static NotTEC
+    checkPermission(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
+
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
 
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);
+
     TER
     payFee();
+
+    std::tuple<TER, XRPAmount, bool>
+    processPersistentChanges(TER result, XRPAmount fee);
+
     static NotTEC
     checkSingleSign(
         ReadView const& view,
         AccountID const& idSigner,
         AccountID const& idAccount,
-        std::shared_ptr<SLE const> sleAccount,
+        SLE::const_pointer sleAccount,
         beast::Journal const j);
+
     static NotTEC
     checkMultiSign(
         ReadView const& view,
@@ -334,6 +462,30 @@ private:
     */
     static NotTEC
     preflight2(PreflightContext const& ctx);
+
+    /** Universal validations
+       - Valid MPTAmount and XRPAmount
+
+        Do not try to call preflightUniversal from preflight() in derived classes. See
+        the description of invokePreflight for details.
+    */
+    static NotTEC
+    preflightUniversal(PreflightContext const& ctx);
+
+    /** Check transaction-specific invariants only.
+     *
+     *  Walks every modified ledger entry via visitInvariantEntry, then
+     *  calls finalizeInvariants on the derived transactor.  Returns
+     *  tecINVARIANT_FAILED if any transaction invariant is violated.
+     *
+     *  @param result  the tentative TER from transaction processing.
+     *  @param fee     the fee consumed by the transaction.
+     *
+     *  @return the original result if all invariants pass, or
+     *          tecINVARIANT_FAILED otherwise.
+     */
+    [[nodiscard]] TER
+    checkTransactionInvariants(TER result, XRPAmount fee);
 };
 
 inline bool
@@ -383,6 +535,9 @@ Transactor::invokePreflight(PreflightContext const& ctx)
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx, T::getFlagsMask(ctx)))
+        return ret;
+
+    if (auto const ret = preflightUniversal(ctx))
         return ret;
 
     if (auto const ret = T::preflight(ctx))

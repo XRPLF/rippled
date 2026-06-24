@@ -1,5 +1,7 @@
 #pragma once
 
+// NOLINTBEGIN(readability-identifier-naming)
+
 #include <xrpl/protocol/LedgerFormats.h>
 
 #include <cstdint>
@@ -235,7 +237,7 @@ XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT, NULL_MASK_ADJ)
 // The mask adjustment (maskAdj) allows adding flags back to the mask, making them invalid.
 // For example, Batch uses MASK_ADJ(tfInnerBatchTxn) to reject tfInnerBatchTxn on outer Batch.
 #define TO_MASK(name, values, maskAdj) \
-    inline constexpr FlagValue tf##name##Mask = ~(tfUniversal values) | maskAdj;
+    inline constexpr FlagValue tf##name##Mask = ~(tfUniversal values) | (maskAdj);
 #define VALUE_TO_MASK(name, value) | name
 #define MASK_ADJ_TO_MASK(value) value
 XMACRO(TO_MASK, VALUE_TO_MASK, VALUE_TO_MASK, MASK_ADJ_TO_MASK)
@@ -339,38 +341,32 @@ inline constexpr FlagValue tfTrustSetPermissionMask =
 
 // MPTokenIssuanceCreate MutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
-inline constexpr FlagValue tmfMPTCanMutateCanLock = lsmfMPTCanMutateCanLock;
-inline constexpr FlagValue tmfMPTCanMutateRequireAuth = lsmfMPTCanMutateRequireAuth;
-inline constexpr FlagValue tmfMPTCanMutateCanEscrow = lsmfMPTCanMutateCanEscrow;
-inline constexpr FlagValue tmfMPTCanMutateCanTrade = lsmfMPTCanMutateCanTrade;
-inline constexpr FlagValue tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTransfer;
-inline constexpr FlagValue tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
+inline constexpr FlagValue tmfMPTCanEnableCanLock = lsmfMPTCanEnableCanLock;
+inline constexpr FlagValue tmfMPTCanEnableRequireAuth = lsmfMPTCanEnableRequireAuth;
+inline constexpr FlagValue tmfMPTCanEnableCanEscrow = lsmfMPTCanEnableCanEscrow;
+inline constexpr FlagValue tmfMPTCanEnableCanTrade = lsmfMPTCanEnableCanTrade;
+inline constexpr FlagValue tmfMPTCanEnableCanTransfer = lsmfMPTCanEnableCanTransfer;
+inline constexpr FlagValue tmfMPTCanEnableCanClawback = lsmfMPTCanEnableCanClawback;
 inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
 inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
 inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
-    ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow |
-      tmfMPTCanMutateCanTrade | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback |
+    ~(tmfMPTCanEnableCanLock | tmfMPTCanEnableRequireAuth | tmfMPTCanEnableCanEscrow |
+      tmfMPTCanEnableCanTrade | tmfMPTCanEnableCanTransfer | tmfMPTCanEnableCanClawback |
       tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
 
 // MPTokenIssuanceSet MutableFlags:
-// Set or Clear flags.
+// Enable mutable capability flags. These flags are one-way: once enabled,
+// the corresponding capability cannot be disabled by MPTokenIssuanceSet.
 
 inline constexpr FlagValue tmfMPTSetCanLock = 0x00000001;
-inline constexpr FlagValue tmfMPTClearCanLock = 0x00000002;
-inline constexpr FlagValue tmfMPTSetRequireAuth = 0x00000004;
-inline constexpr FlagValue tmfMPTClearRequireAuth = 0x00000008;
-inline constexpr FlagValue tmfMPTSetCanEscrow = 0x00000010;
-inline constexpr FlagValue tmfMPTClearCanEscrow = 0x00000020;
-inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000040;
-inline constexpr FlagValue tmfMPTClearCanTrade = 0x00000080;
-inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000100;
-inline constexpr FlagValue tmfMPTClearCanTransfer = 0x00000200;
-inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000400;
-inline constexpr FlagValue tmfMPTClearCanClawback = 0x00000800;
-inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask = ~(
-    tmfMPTSetCanLock | tmfMPTClearCanLock | tmfMPTSetRequireAuth | tmfMPTClearRequireAuth |
-    tmfMPTSetCanEscrow | tmfMPTClearCanEscrow | tmfMPTSetCanTrade | tmfMPTClearCanTrade |
-    tmfMPTSetCanTransfer | tmfMPTClearCanTransfer | tmfMPTSetCanClawback | tmfMPTClearCanClawback);
+inline constexpr FlagValue tmfMPTSetRequireAuth = 0x00000002;
+inline constexpr FlagValue tmfMPTSetCanEscrow = 0x00000004;
+inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000008;
+inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000010;
+inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000020;
+inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask =
+    ~(tmfMPTSetCanLock | tmfMPTSetRequireAuth | tmfMPTSetCanEscrow | tmfMPTSetCanTrade |
+      tmfMPTSetCanTransfer | tmfMPTSetCanClawback);
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
 // TrustLine to be added to the issuer of that token without explicit permission from that issuer.
@@ -444,3 +440,5 @@ getAsfFlagMap()
 #pragma pop_macro("ACCOUNTSET_FLAGS")
 
 }  // namespace xrpl
+
+// NOLINTEND(readability-identifier-naming)

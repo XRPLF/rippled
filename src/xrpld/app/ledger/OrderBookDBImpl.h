@@ -1,10 +1,7 @@
 #pragma once
 
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/AcceptedLedgerTx.h>
-#include <xrpl/ledger/BookListeners.h>
 #include <xrpl/ledger/OrderBookDB.h>
-#include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <mutex>
@@ -26,7 +23,7 @@ struct OrderBookDBConfig
     @return A new OrderBookDB instance
 */
 std::unique_ptr<OrderBookDB>
-make_OrderBookDB(ServiceRegistry& registry, OrderBookDBConfig const& config);
+makeOrderBookDb(ServiceRegistry& registry, OrderBookDBConfig const& config);
 
 class OrderBookDBImpl final : public OrderBookDB
 {
@@ -41,52 +38,36 @@ public:
     addOrderBook(Book const& book) override;
 
     std::vector<Book>
-    getBooksByTakerPays(Issue const& issue, std::optional<Domain> const& domain = std::nullopt)
+    getBooksByTakerPays(Asset const& asset, std::optional<Domain> const& domain = std::nullopt)
         override;
 
     int
-    getBookSize(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) override;
+    getBookSize(Asset const& asset, std::optional<Domain> const& domain = std::nullopt) override;
 
     bool
-    isBookToXRP(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) override;
+    isBookToXRP(Asset const& asset, std::optional<Domain> const& domain = std::nullopt) override;
 
     // OrderBookDBImpl-specific methods
     void
     update(std::shared_ptr<ReadView const> const& ledger);
-
-    // see if this txn effects any orderbook
-    void
-    processTxn(
-        std::shared_ptr<ReadView const> const& ledger,
-        AcceptedLedgerTx const& alTx,
-        MultiApiJson const& jvObj) override;
-
-    BookListeners::pointer
-    getBookListeners(Book const&) override;
-    BookListeners::pointer
-    makeBookListeners(Book const&) override;
 
 private:
     std::reference_wrapper<ServiceRegistry> registry_;
     int const pathSearchMax_;
     bool const standalone_;
 
-    // Maps order books by "issue in" to "issue out":
-    hardened_hash_map<Issue, hardened_hash_set<Issue>> allBooks_;
+    // Maps order books by "asset in" to "asset out":
+    hardened_hash_map<Asset, hardened_hash_set<Asset>> allBooks_;
 
-    hardened_hash_map<std::pair<Issue, Domain>, hardened_hash_set<Issue>> domainBooks_;
-
-    // does an order book to XRP exist
-    hash_set<Issue> xrpBooks_;
+    hardened_hash_map<std::pair<Asset, Domain>, hardened_hash_set<Asset>> domainBooks_;
 
     // does an order book to XRP exist
-    hash_set<std::pair<Issue, Domain>> xrpDomainBooks_;
+    hash_set<Asset> xrpBooks_;
 
-    std::recursive_mutex mLock;
+    // does an order book to XRP exist
+    hash_set<std::pair<Asset, Domain>> xrpDomainBooks_;
 
-    using BookToListenersMap = hash_map<Book, BookListeners::pointer>;
-
-    BookToListenersMap mListeners;
+    std::recursive_mutex lock_;
 
     std::atomic<std::uint32_t> seq_;
 

@@ -1,14 +1,25 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-//
-#include <xrpl/protocol/LedgerFormats.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <cstdint>
+#include <functional>
 namespace xrpl {
 
 bool
 dirFirst(
     ApplyView& view,
     uint256 const& root,
-    std::shared_ptr<SLE>& page,
+    SLE::pointer& page,
     unsigned int& index,
     uint256& entry)
 {
@@ -19,7 +30,7 @@ bool
 dirNext(
     ApplyView& view,
     uint256 const& root,
-    std::shared_ptr<SLE>& page,
+    SLE::pointer& page,
     unsigned int& index,
     uint256& entry)
 {
@@ -30,7 +41,7 @@ bool
 cdirFirst(
     ReadView const& view,
     uint256 const& root,
-    std::shared_ptr<SLE const>& page,
+    SLE::const_pointer& page,
     unsigned int& index,
     uint256& entry)
 {
@@ -41,7 +52,7 @@ bool
 cdirNext(
     ReadView const& view,
     uint256 const& root,
-    std::shared_ptr<SLE const>& page,
+    SLE::const_pointer& page,
     unsigned int& index,
     uint256& entry)
 {
@@ -49,10 +60,7 @@ cdirNext(
 }
 
 void
-forEachItem(
-    ReadView const& view,
-    Keylet const& root,
-    std::function<void(std::shared_ptr<SLE const> const&)> const& f)
+forEachItem(ReadView const& view, Keylet const& root, std::function<void(SLE::const_ref)> const& f)
 {
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::forEachItem : valid root type");
 
@@ -82,7 +90,7 @@ forEachItemAfter(
     uint256 const& after,
     std::uint64_t const hint,
     unsigned int limit,
-    std::function<bool(std::shared_ptr<SLE const> const&)> const& f)
+    std::function<bool(SLE::const_ref)> const& f)
 {
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::forEachItemAfter : valid root type");
 
@@ -171,7 +179,7 @@ dirIsEmpty(ReadView const& view, Keylet const& k)
 std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account)
 {
-    return [account](std::shared_ptr<SLE> const& sle) { (*sle)[sfOwner] = account; };
+    return [account](SLE::ref sle) { (*sle)[sfOwner] = account; };
 }
 
 }  // namespace xrpl

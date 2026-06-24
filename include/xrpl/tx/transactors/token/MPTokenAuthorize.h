@@ -10,13 +10,13 @@ struct MPTAuthorizeArgs
     MPTID const& mptIssuanceID;
     AccountID const& account;
     std::uint32_t flags{};
-    std::optional<AccountID> holderID{};
+    std::optional<AccountID> holderID;
 };
 
 class MPTokenAuthorize : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit MPTokenAuthorize(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -31,15 +31,19 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    static TER
-    createMPToken(
-        ApplyView& view,
-        MPTID const& mptIssuanceID,
-        AccountID const& account,
-        std::uint32_t const flags);
-
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 };
 
 }  // namespace xrpl

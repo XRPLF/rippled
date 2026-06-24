@@ -26,7 +26,7 @@ public:
      *
      * @return The network ID this server is configured for
      */
-    virtual std::uint32_t
+    [[nodiscard]] virtual std::uint32_t
     getNetworkID() const noexcept = 0;
 };
 

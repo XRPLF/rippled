@@ -1,10 +1,19 @@
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 //
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+
+#include <cstdint>
 
 namespace xrpl::vault {
 
@@ -63,11 +72,13 @@ assetsToSharesWithdraw(
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& assets,
-    TruncateShares truncate)
+    TruncateShares truncate,
+    WaiveUnrealizedLoss waive)
 {
     Number const assetTotal = vault->at(sfAssetsTotal);
     Number const interestUnrealized = vault->at(sfInterestUnrealized);
-    Number const lossUnrealized = vault->at(sfLossUnrealized);
+    Number const lossUnrealized =
+        waive == WaiveUnrealizedLoss::No ? vault->at(sfLossUnrealized) : Number{0};
     Number const netAssetValue = assetTotal - interestUnrealized - lossUnrealized;
 
     STAmount shares{vault->at(sfShareMPTID)};
@@ -77,7 +88,7 @@ assetsToSharesWithdraw(
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     Number result = (shareTotal * assets) / netAssetValue;
-    if (truncate == TruncateShares::yes)
+    if (truncate == TruncateShares::Yes)
         result = result.truncate();
 
     shares = result;
@@ -85,11 +96,16 @@ assetsToSharesWithdraw(
 }
 
 STAmount
-sharesToAssetsWithdraw(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares)
+sharesToAssetsWithdraw(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    WaiveUnrealizedLoss waive)
 {
     Number const assetTotal = vault->at(sfAssetsTotal);
     Number const interestUnrealized = vault->at(sfInterestUnrealized);
-    Number const lossUnrealized = vault->at(sfLossUnrealized);
+    Number const lossUnrealized =
+        waive == WaiveUnrealizedLoss::No ? vault->at(sfLossUnrealized) : Number{0};
     Number const netAssetValue = assetTotal - interestUnrealized - lossUnrealized;
 
     STAmount assets{vault->at(sfAsset)};
@@ -141,26 +157,33 @@ assetsToSharesWithdraw(
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& assets,
-    TruncateShares truncate)
+    TruncateShares truncate,
+    WaiveUnrealizedLoss waive)
 {
     Number assetTotal = vault->at(sfAssetsTotal);
-    assetTotal -= vault->at(sfLossUnrealized);
+    if (waive == WaiveUnrealizedLoss::No)
+        assetTotal -= vault->at(sfLossUnrealized);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return shares;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     Number result = (shareTotal * assets) / assetTotal;
-    if (truncate == TruncateShares::yes)
+    if (truncate == TruncateShares::Yes)
         result = result.truncate();
     shares = result;
     return shares;
 }
 
 STAmount
-sharesToAssetsWithdraw(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares)
+sharesToAssetsWithdraw(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    WaiveUnrealizedLoss waive)
 {
     Number assetTotal = vault->at(sfAssetsTotal);
-    assetTotal -= vault->at(sfLossUnrealized);
+    if (waive == WaiveUnrealizedLoss::No)
+        assetTotal -= vault->at(sfLossUnrealized);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return assets;
@@ -280,11 +303,11 @@ assetsToSharesWithdraw(
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& assets,
-    TruncateShares truncate = TruncateShares::no)
+    TruncateShares truncate = TruncateShares::No)
 {
     if (rules.enabled(featureLendingProtocolV1_1))
         return detail::assetsToSharesWithdraw(vault, issuance, assets, truncate);
-    return v1::assetsToSharesWithdraw(vault, issuance, assets, truncate);
+    return v1::assetsToSharesWithdraw(vault, issuance, assets, truncate, WaiveUnrealizedLoss::No);
 }
 
 STAmount
@@ -295,13 +318,13 @@ sharesToAssetsWithdraw(
     STAmount const& shares)
 {
     if (rules.enabled(featureLendingProtocolV1_1))
-        return detail::sharesToAssetsWithdraw(vault, issuance, shares);
-    return v1::sharesToAssetsWithdraw(vault, issuance, shares);
+        return detail::sharesToAssetsWithdraw(vault, issuance, shares, WaiveUnrealizedLoss::No);
+    return v1::sharesToAssetsWithdraw(vault, issuance, shares, WaiveUnrealizedLoss::No);
 }
 
 }  // anonymous namespace
 
-[[nodiscard]] Expected<ExchangeResult, TER>
+[[nodiscard]] std::expected<ExchangeResult, TER>
 computeDeposit(
     Rules const& rules,
     SLE::const_ref vault,
@@ -315,30 +338,30 @@ computeDeposit(
     if (assets.negative())
     {
         JLOG(j.error()) << "computeDeposit: negative assets";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
     }
     if (assets.asset() != vault->at(sfAsset))
     {
         JLOG(j.error()) << "computeDeposit: asset mismatch";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
     }
     if (rules.enabled(featureLendingProtocolV1_1))
     {
         if (auto const ter = validateVaultState(vault, issuance, j))
-            return Unexpected(ter);
+            return std::unexpected(ter);
     }
     try
     {
         auto const shares = assetsToSharesDeposit(rules, vault, issuance, assets);
         if (shares == beast::zero)
-            return Unexpected(tecPRECISION_LOSS);
+            return std::unexpected(tecPRECISION_LOSS);
 
         auto const assetsOut = sharesToAssetsDeposit(rules, vault, issuance, shares);
         if (assetsOut > assets)
         {
             // LCOV_EXCL_START
             JLOG(j.error()) << "computeDeposit: would take more than offered.";
-            return Unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);
             // LCOV_EXCL_STOP
         }
 
@@ -351,11 +374,11 @@ computeDeposit(
                         << ", assetsTotal=" << vault->at(sfAssetsTotal)
                         << ", sharesTotal=" << issuance->at(sfOutstandingAmount)
                         << ", amount=" << assets;
-        return Unexpected(tecPATH_DRY);
+        return std::unexpected(tecPATH_DRY);
     }
 }
 
-[[nodiscard]] Expected<ExchangeResult, TER>
+[[nodiscard]] std::expected<ExchangeResult, TER>
 computeWithdrawByAssets(
     Rules const& rules,
     SLE::const_ref vault,
@@ -370,23 +393,23 @@ computeWithdrawByAssets(
     if (assets.negative())
     {
         JLOG(j.error()) << "computeWithdrawByAssets: negative assets";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
     }
     if (assets.asset() != vault->at(sfAsset))
     {
         JLOG(j.error()) << "computeWithdrawByAssets: asset mismatch";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
     }
     if (rules.enabled(featureLendingProtocolV1_1))
     {
         if (auto const ter = validateVaultState(vault, issuance, j))
-            return Unexpected(ter);
+            return std::unexpected(ter);
     }
     try
     {
         auto const shares = assetsToSharesWithdraw(rules, vault, issuance, assets);
         if (shares == beast::zero)
-            return Unexpected(tecPRECISION_LOSS);
+            return std::unexpected(tecPRECISION_LOSS);
 
         auto const assetsOut = sharesToAssetsWithdraw(rules, vault, issuance, shares);
         return ExchangeResult{assetsOut, shares};
@@ -398,11 +421,11 @@ computeWithdrawByAssets(
                         << ", assetsTotal=" << vault->at(sfAssetsTotal)
                         << ", sharesTotal=" << issuance->at(sfOutstandingAmount)
                         << ", amount=" << assets;
-        return Unexpected(tecPATH_DRY);
+        return std::unexpected(tecPATH_DRY);
     }
 }
 
-[[nodiscard]] Expected<ExchangeResult, TER>
+[[nodiscard]] std::expected<ExchangeResult, TER>
 computeWithdrawByShares(
     Rules const& rules,
     SLE::const_ref vault,
@@ -417,17 +440,17 @@ computeWithdrawByShares(
     if (shares.negative())
     {
         JLOG(j.error()) << "computeWithdrawByShares: negative shares";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
     }
     if (shares.asset() != vault->at(sfShareMPTID))
     {
         JLOG(j.error()) << "computeWithdrawByShares: share asset mismatch";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
     }
     if (rules.enabled(featureLendingProtocolV1_1))
     {
         if (auto const ter = validateVaultState(vault, issuance, j))
-            return Unexpected(ter);
+            return std::unexpected(ter);
     }
     try
     {
@@ -441,11 +464,11 @@ computeWithdrawByShares(
                         << ", assetsTotal=" << vault->at(sfAssetsTotal)
                         << ", sharesTotal=" << issuance->at(sfOutstandingAmount)
                         << ", shares=" << shares;
-        return Unexpected(tecPATH_DRY);
+        return std::unexpected(tecPATH_DRY);
     }
 }
 
-[[nodiscard]] Expected<ExchangeResult, TER>
+[[nodiscard]] std::expected<ExchangeResult, TER>
 computeClawback(
     Rules const& rules,
     SLE::const_ref vault,
@@ -460,17 +483,17 @@ computeClawback(
     if (clawbackAmount.negative())
     {
         JLOG(j.error()) << "computeClawback: negative clawbackAmount";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
     }
     if (clawbackAmount.asset() != vault->at(sfAsset))
     {
         JLOG(j.error()) << "computeClawback: asset mismatch";
-        return Unexpected(tecINTERNAL);
+        return std::unexpected(tecINTERNAL);
     }
     if (rules.enabled(featureLendingProtocolV1_1))
     {
         if (auto const ter = validateVaultState(vault, issuance, j))
-            return Unexpected(ter);
+            return std::unexpected(ter);
     }
     try
     {
@@ -485,14 +508,14 @@ computeClawback(
             // otherwise the corresponding assets might breach the
             // AssetsAvailable
             sharesDestroyed = assetsToSharesWithdraw(
-                rules, vault, issuance, assetsRecovered, TruncateShares::yes);
+                rules, vault, issuance, assetsRecovered, TruncateShares::Yes);
             assetsRecovered = sharesToAssetsWithdraw(rules, vault, issuance, sharesDestroyed);
 
             if (assetsRecovered > assetsAvailable)
             {
                 // LCOV_EXCL_START
                 JLOG(j.error()) << "computeClawback: invalid rounding of shares.";
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
                 // LCOV_EXCL_STOP
             }
         }
@@ -506,7 +529,7 @@ computeClawback(
                         << ", assetsTotal=" << vault->at(sfAssetsTotal)
                         << ", sharesTotal=" << issuance->at(sfOutstandingAmount)
                         << ", amount=" << clawbackAmount;
-        return Unexpected(tecPATH_DRY);
+        return std::unexpected(tecPATH_DRY);
     }
 }
 
@@ -556,4 +579,34 @@ borrowFromVault(
     view.update(vault);
     return tesSUCCESS;
 }
+[[nodiscard]] bool
+isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+{
+    XRPL_ASSERT(
+        issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::vault::isSoleShareholder : valid issuance SLE");
+
+    std::uint64_t const outstanding = issuance->at(sfOutstandingAmount);
+    if (outstanding == 0)
+        return false;
+
+    auto const shareMPTID =
+        makeMptID(issuance->getFieldU32(sfSequence), issuance->getAccountID(sfIssuer));
+    auto const sleToken = view.read(keylet::mptoken(shareMPTID, account));
+    if (!sleToken)
+        return false;  // LCOV_EXCL_LINE
+
+    return sleToken->getFieldU64(sfMPTAmount) == outstanding;
+}
+
+[[nodiscard]] STAmount
+sharesToAssetsWithdraw(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    WaiveUnrealizedLoss waive)
+{
+    return detail::sharesToAssetsWithdraw(vault, issuance, shares, waive);
+}
+
 }  // namespace xrpl::vault

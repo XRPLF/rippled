@@ -7,7 +7,7 @@ namespace xrpl {
 class SetRegularKey : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Blocker};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Blocker;
 
     explicit SetRegularKey(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -21,6 +21,17 @@ public:
 
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 };
 
 }  // namespace xrpl

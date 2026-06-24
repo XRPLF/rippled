@@ -1,15 +1,39 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-//
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <cstdint>
+#include <initializer_list>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <stdexcept>
 
 namespace xrpl {
 
@@ -30,7 +54,11 @@ isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue cons
 }
 
 bool
-isFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue, int depth)
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    std::uint8_t depth)
 {
     return isGlobalFrozen(view, mptIssue) || isIndividualFrozen(view, account, mptIssue) ||
         isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
@@ -41,7 +69,7 @@ isAnyFrozen(
     ReadView const& view,
     std::initializer_list<AccountID> const& accounts,
     MPTIssue const& mptIssue,
-    int depth)
+    std::uint8_t depth)
 {
     if (isGlobalFrozen(view, mptIssue))
         return true;
@@ -69,9 +97,13 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
     // which represents 50% of 1,000,000,000
     if (auto const sle = view.read(keylet::mptIssuance(issuanceID));
         sle && sle->isFieldPresent(sfTransferFee))
-        return Rate{1'000'000'000u + (10'000 * sle->getFieldU16(sfTransferFee))};
+    {
+        auto const fee = sle->getFieldU16(sfTransferFee);
+        XRPL_ASSERT(fee <= kMaxTransferFee, "xrpl::transferRate : fee is too large");
+        return Rate{1'000'000'000u + (10'000 * fee)};
+    }
 
-    return parityRate;
+    return kParityRate;
 }
 
 [[nodiscard]] TER
@@ -135,11 +167,13 @@ authorizeMPToken(
         // When a holder wants to unauthorize/delete a MPT, the ledger must
         //      - delete mptokenKey from owner directory
         //      - delete the MPToken
-        if ((flags & tfMPTUnauthorize) != 0)
+        if ((flags & tfMPTUnauthorize) != 0u)
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
-            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
+            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
+                (view.rules().enabled(fixCleanup3_1_3) &&
+                 (*sleMpt)[~sfLockedAmount].valueOr(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             if (!view.dirRemove(
@@ -163,7 +197,7 @@ authorizeMPToken(
         // items. This is similar to the reserve requirements of trust lines.
         std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
         XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::zero)
+            (uOwnerCount < 2) ? XRPAmount(beast::kZero)
                               : view.fees().accountReserve(uOwnerCount + 1));
 
         if (priorBalance < reserveCreate)
@@ -215,7 +249,7 @@ authorizeMPToken(
 
     // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
     // their MPToken
-    if ((flags & tfMPTUnauthorize) != 0)
+    if ((flags & tfMPTUnauthorize) != 0u)
     {
         flagsOut &= ~lsfMPTAuthorized;
     }
@@ -252,7 +286,8 @@ removeEmptyHolding(
     // balance, it can not just be deleted, because that will throw the issuance
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
-    if (mptoken->at(sfMPTAmount) != 0)
+    if (mptoken->at(sfMPTAmount) != 0 ||
+        (view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
         return tecHAS_OBLIGATIONS;
 
     return authorizeMPToken(
@@ -271,7 +306,7 @@ requireAuth(
     MPTIssue const& mptIssue,
     AccountID const& account,
     AuthType authType,
-    int depth)
+    std::uint8_t depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -288,8 +323,13 @@ requireAuth(
 
     if (featureSAVEnabled)
     {
-        if (depth >= maxAssetCheckDepth)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        if (depth >= kMaxAssetCheckDepth)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenHelpers::requireAuth : reached asset check depth");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         // requireAuth is recursive if the issuer is a vault pseudo-account
         auto const sleIssuer = view.read(keylet::account(mptIssuer));
@@ -303,18 +343,11 @@ requireAuth(
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             auto const asset = sleVault->at(sfAsset);
-            if (auto const err = std::visit(
-                    [&]<ValidIssueType TIss>(TIss const& issue) {
-                        if constexpr (std::is_same_v<TIss, Issue>)
-                        {
-                            return requireAuth(view, issue, account, authType);
-                        }
-                        else
-                        {
-                            return requireAuth(view, issue, account, authType, depth + 1);
-                        }
-                    },
-                    asset.value());
+            if (auto const err = asset.visit(
+                    [&](Issue const& issue) { return requireAuth(view, issue, account, authType); },
+                    [&](MPTIssue const& issue) {
+                        return requireAuth(view, issue, account, authType, depth + 1);
+                    });
                 !isTesSuccess(err))
                 return err;
         }
@@ -333,7 +366,7 @@ requireAuth(
     if (maybeDomainID)
     {
         XRPL_ASSERT(
-            sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
+            sleIssuance->isFlag(lsfMPTRequireAuth),
             "xrpl::requireAuth : issuance requires authorization");
         // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
         auto const ter = credentials::validDomain(view, *maybeDomainID, account);
@@ -349,10 +382,11 @@ requireAuth(
         // belong to someone who is explicitly authorized e.g. a vault owner.
     }
 
-    if (featureSAVEnabled)
+    bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
+    if (featureSAVEnabled || featureMPTV2Enabled)
     {
-        // Implicitly authorize Vault and LoanBroker pseudo-accounts
-        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID}))
+        // Implicitly authorize Vault, LoanBroker, and AMM pseudo-accounts
+        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
             return tesSUCCESS;
     }
 
@@ -464,46 +498,157 @@ enforceMPTokenAuthorization(
     // LCOV_EXCL_STOP
 }
 
+[[nodiscard]] Asset
+assetOfHolding(SLE const& sleShareIssuance, SLE const& sleHolding)
+{
+    XRPL_ASSERT_PARTS(
+        sleHolding.getType() == ltRIPPLE_STATE || sleHolding.getType() == ltMPTOKEN,
+        "xrpl::assetOfHolding",
+        "unexpected holding type");
+    XRPL_ASSERT_PARTS(
+        sleShareIssuance.getType() == ltMPTOKEN_ISSUANCE,
+        "xrpl::assetOfHolding",
+        "not SLE MPTokenIssuance");
+
+    if (sleHolding.getType() == ltMPTOKEN)
+        return MPTIssue{sleHolding.getFieldH192(sfMPTokenIssuanceID)};
+
+    auto const vaultPseudo = sleShareIssuance.at(sfIssuer);
+    auto const lowLimit = sleHolding.getFieldAmount(sfLowLimit);
+    auto const highLimit = sleHolding.getFieldAmount(sfHighLimit);
+    auto const& iouIssuer =
+        (lowLimit.getIssuer() != vaultPseudo) ? lowLimit.getIssuer() : highLimit.getIssuer();
+    return Issue{lowLimit.get<Issue>().currency, iouIssuer};
+}
+
 TER
 canTransfer(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& from,
-    AccountID const& to)
+    AccountID const& to,
+    WaiveMPTCanTransfer waive,
+    std::uint8_t depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
+    auto const issuer = (*sleIssuance)[sfIssuer];
+    if (waive == WaiveMPTCanTransfer::Yes || from == issuer || to == issuer)
+        return tesSUCCESS;
+
     if (!sleIssuance->isFlag(lsfMPTCanTransfer))
+        return TER{tecNO_AUTH};
+
+    // Post-fixCleanup3_2_0: vault shares carry sfReferenceHolding pointing
+    // to the vault pseudo's MPToken or RippleState for the underlying asset.
+    // Third-party transfers inherit the underlying's transferability.
+    // Issuer-involving transfers and waived callers returned tesSUCCESS above.
+    //
+    // The recursive call always passes WaiveMPTCanTransfer::No so that
+    // a waived outer caller does not transitively unlock the underlying.
+    if (view.rules().enabled(fixCleanup3_2_0) && sleIssuance->isFieldPresent(sfReferenceHolding))
     {
-        if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
-            return TER{tecNO_AUTH};
+        // Defensive depth bound on the inheritance recursion. Unreachable
+        // in practice (vault-of-vault-shares is forbidden at VaultCreate).
+        if (depth >= kMaxAssetCheckDepth)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::MPTokenHelpers::canTransfer : reached asset check depth");
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+
+        auto const sleHolding =
+            view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+        if (!sleHolding)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        return canTransfer(
+            view,
+            assetOfHolding(*sleIssuance, *sleHolding),
+            from,
+            to,
+            WaiveMPTCanTransfer::No,
+            depth + 1);
     }
+
     return tesSUCCESS;
 }
 
 TER
-rippleLockEscrowMPT(
-    ApplyView& view,
-    AccountID const& sender,
-    STAmount const& amount,
-    beast::Journal j)
+canTrade(ReadView const& view, Asset const& asset, std::uint8_t depth)
+{
+    return asset.visit(
+        [&](Issue const&) -> TER { return tesSUCCESS; },
+        [&](MPTIssue const& mptIssue) -> TER {
+            auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
+            if (!sleIssuance)
+                return tecOBJECT_NOT_FOUND;
+            if (!sleIssuance->isFlag(lsfMPTCanTrade))
+                return tecNO_PERMISSION;
+
+            // Post-fixCleanup3_2_0: vault shares inherit the underlying
+            // asset's tradability. A share whose underlying has been
+            // removed from trading cannot itself be placed on the DEX.
+            if (view.rules().enabled(fixCleanup3_2_0) &&
+                sleIssuance->isFieldPresent(sfReferenceHolding))
+            {
+                // Defensive depth bound on the inheritance recursion.
+                // Unreachable in practice (vault-of-vault-shares
+                // forbidden at VaultCreate).
+                if (depth >= kMaxAssetCheckDepth)
+                {
+                    // LCOV_EXCL_START
+                    UNREACHABLE("xrpl::MPTokenHelpers::canTrade : reached asset check depth");
+                    return tecINTERNAL;
+                    // LCOV_EXCL_STOP
+                }
+                auto const sleHolding =
+                    view.read(keylet::unchecked(sleIssuance->getFieldH256(sfReferenceHolding)));
+                if (!sleHolding)
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
+
+                return canTrade(view, assetOfHolding(*sleIssuance, *sleHolding), depth + 1);
+            }
+
+            return tesSUCCESS;
+        });
+}
+
+TER
+canMPTTradeAndTransfer(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& from,
+    AccountID const& to)
+{
+    if (!asset.holds<MPTIssue>())
+        return tesSUCCESS;
+
+    if (auto const ter = canTrade(view, asset); !isTesSuccess(ter))
+        return ter;
+
+    return canTransfer(view, asset, from, to);
+}
+
+TER
+lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, beast::Journal j)
 {
     auto const mptIssue = amount.get<MPTIssue>();
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleLockEscrowMPT: MPT issuance not found for "
-                        << mptIssue.getMptID();
+        JLOG(j.error()) << "lockEscrowMPT: MPT issuance not found for " << mptIssue.getMptID();
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
 
     if (amount.getIssuer() == sender)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleLockEscrowMPT: sender is the issuer, cannot lock MPTs.";
+        JLOG(j.error()) << "lockEscrowMPT: sender is the issuer, cannot lock MPTs.";
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
@@ -514,7 +659,7 @@ rippleLockEscrowMPT(
         auto sle = view.peek(mptokenID);
         if (!sle)
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleLockEscrowMPT: MPToken not found for " << sender;
+            JLOG(j.error()) << "lockEscrowMPT: MPToken not found for " << sender;
             return tecOBJECT_NOT_FOUND;
         }  // LCOV_EXCL_STOP
 
@@ -524,20 +669,20 @@ rippleLockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, amt), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleLockEscrowMPT: insufficient MPTAmount for "
-                            << to_string(sender) << ": " << amt << " < " << pay;
+            JLOG(j.error()) << "lockEscrowMPT: insufficient MPTAmount for " << to_string(sender)
+                            << ": " << amt << " < " << pay;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
         (*sle)[sfMPTAmount] = amt - pay;
 
         // Overflow check for addition
-        uint64_t const locked = (*sle)[~sfLockedAmount].value_or(0);
+        uint64_t const locked = (*sle)[~sfLockedAmount].valueOr(0);
 
         if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleLockEscrowMPT: overflow on locked amount for "
-                            << to_string(sender) << ": " << locked << " + " << pay;
+            JLOG(j.error()) << "lockEscrowMPT: overflow on locked amount for " << to_string(sender)
+                            << ": " << locked << " + " << pay;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -556,13 +701,13 @@ rippleLockEscrowMPT(
     // 1. Increase the Issuance EscrowedAmount
     // 2. DO NOT change the Issuance OutstandingAmount
     {
-        uint64_t const issuanceEscrowed = (*sleIssuance)[~sfLockedAmount].value_or(0);
+        uint64_t const issuanceEscrowed = (*sleIssuance)[~sfLockedAmount].valueOr(0);
         auto const pay = amount.mpt().value();
 
         // Overflow check for addition
         if (!canAdd(STAmount(mptIssue, issuanceEscrowed), STAmount(mptIssue, pay)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleLockEscrowMPT: overflow on issuance "
+            JLOG(j.error()) << "lockEscrowMPT: overflow on issuance "
                                "locked amount for "
                             << mptIssue.getMptID() << ": " << issuanceEscrowed << " + " << pay;
             return tecINTERNAL;
@@ -583,7 +728,7 @@ rippleLockEscrowMPT(
 }
 
 TER
-rippleUnlockEscrowMPT(
+unlockEscrowMPT(
     ApplyView& view,
     AccountID const& sender,
     AccountID const& receiver,
@@ -591,11 +736,10 @@ rippleUnlockEscrowMPT(
     STAmount const& grossAmount,
     beast::Journal j)
 {
-    if (!view.rules().enabled(fixTokenEscrowV1))
-    {
-        XRPL_ASSERT(
-            netAmount == grossAmount, "xrpl::rippleUnlockEscrowMPT : netAmount == grossAmount");
-    }
+    XRPL_ASSERT_IF(
+        !view.rules().enabled(fixTokenEscrowV1),
+        netAmount == grossAmount,
+        "xrpl::unlockEscrowMPT : netAmount == grossAmount");
 
     auto const& issuer = netAmount.getIssuer();
     auto const& mptIssue = netAmount.get<MPTIssue>();
@@ -603,8 +747,7 @@ rippleUnlockEscrowMPT(
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: MPT issuance not found for "
-                        << mptIssue.getMptID();
+        JLOG(j.error()) << "unlockEscrowMPT: MPT issuance not found for " << mptIssue.getMptID();
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
 
@@ -612,7 +755,7 @@ rippleUnlockEscrowMPT(
     {
         if (!sleIssuance->isFieldPresent(sfLockedAmount))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in issuance for "
+            JLOG(j.error()) << "unlockEscrowMPT: no locked amount in issuance for "
                             << mptIssue.getMptID();
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
@@ -623,7 +766,7 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, redeem)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for "
+            JLOG(j.error()) << "unlockEscrowMPT: insufficient locked amount for "
                             << mptIssue.getMptID() << ": " << locked << " < " << redeem;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
@@ -647,7 +790,7 @@ rippleUnlockEscrowMPT(
         auto sle = view.peek(mptokenID);
         if (!sle)
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << receiver;
+            JLOG(j.error()) << "unlockEscrowMPT: MPToken not found for " << receiver;
             return tecOBJECT_NOT_FOUND;
         }  // LCOV_EXCL_STOP
 
@@ -657,8 +800,8 @@ rippleUnlockEscrowMPT(
         // Overflow check for addition
         if (!canAdd(STAmount(mptIssue, current), STAmount(mptIssue, delta)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: overflow on MPTAmount for "
-                            << to_string(receiver) << ": " << current << " + " << delta;
+            JLOG(j.error()) << "unlockEscrowMPT: overflow on MPTAmount for " << to_string(receiver)
+                            << ": " << current << " + " << delta;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
 
@@ -674,7 +817,7 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, outstanding), STAmount(mptIssue, redeem)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient outstanding amount for "
+            JLOG(j.error()) << "unlockEscrowMPT: insufficient outstanding amount for "
                             << mptIssue.getMptID() << ": " << outstanding << " < " << redeem;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
@@ -685,7 +828,7 @@ rippleUnlockEscrowMPT(
 
     if (issuer == sender)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: sender is the issuer, "
+        JLOG(j.error()) << "unlockEscrowMPT: sender is the issuer, "
                            "cannot unlock MPTs.";
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
@@ -694,14 +837,13 @@ rippleUnlockEscrowMPT(
     auto sle = view.peek(mptokenID);
     if (!sle)
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: MPToken not found for " << sender;
+        JLOG(j.error()) << "unlockEscrowMPT: MPToken not found for " << sender;
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
 
     if (!sle->isFieldPresent(sfLockedAmount))
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: no locked amount in MPToken for "
-                        << to_string(sender);
+        JLOG(j.error()) << "unlockEscrowMPT: no locked amount in MPToken for " << to_string(sender);
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
@@ -711,8 +853,8 @@ rippleUnlockEscrowMPT(
     // Underflow check for subtraction
     if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
     {  // LCOV_EXCL_START
-        JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient locked amount for "
-                        << to_string(sender) << ": " << locked << " < " << delta;
+        JLOG(j.error()) << "unlockEscrowMPT: insufficient locked amount for " << to_string(sender)
+                        << ": " << locked << " < " << delta;
         return tecINTERNAL;
     }  // LCOV_EXCL_STOP
 
@@ -738,7 +880,7 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, outstanding), STAmount(mptIssue, diff)))
         {  // LCOV_EXCL_START
-            JLOG(j.error()) << "rippleUnlockEscrowMPT: insufficient outstanding amount for "
+            JLOG(j.error()) << "unlockEscrowMPT: insufficient outstanding amount for "
                             << mptIssue.getMptID() << ": " << outstanding << " < " << diff;
             return tecINTERNAL;
         }  // LCOV_EXCL_STOP
@@ -747,6 +889,116 @@ rippleUnlockEscrowMPT(
         view.update(sleIssuance);
     }
     return tesSUCCESS;
+}
+
+TER
+createMPToken(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t const flags)
+{
+    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+
+    auto const ownerNode =
+        view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
+
+    if (!ownerNode)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    auto mptoken = std::make_shared<SLE>(mptokenKey);
+    (*mptoken)[sfAccount] = account;
+    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
+    (*mptoken)[sfFlags] = flags;
+    (*mptoken)[sfOwnerNode] = *ownerNode;
+
+    view.insert(mptoken);
+
+    return tesSUCCESS;
+}
+
+TER
+checkCreateMPT(
+    xrpl::ApplyView& view,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
+    beast::Journal j)
+{
+    if (mptIssue.getIssuer() == holder)
+        return tesSUCCESS;
+
+    auto const mptIssuanceID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
+    if (!view.exists(mptokenID))
+    {
+        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, 0);
+            !isTesSuccess(err))
+        {
+            return err;
+        }
+        auto const sleAcct = view.peek(keylet::account(holder));
+        if (!sleAcct)
+        {
+            return tecINTERNAL;
+        }
+        adjustOwnerCount(view, sleAcct, 1, j);
+    }
+    return tesSUCCESS;
+}
+
+std::int64_t
+maxMPTAmount(SLE const& sleIssuance)
+{
+    return sleIssuance[~sfMaximumAmount].value_or(kMaxMpTokenAmount);
+}
+
+std::int64_t
+availableMPTAmount(SLE const& sleIssuance)
+{
+    auto const max = maxMPTAmount(sleIssuance);
+    auto const outstanding = sleIssuance[sfOutstandingAmount];
+    return max - outstanding;
+}
+
+std::int64_t
+availableMPTAmount(ReadView const& view, MPTID const& mptID)
+{
+    auto const sle = view.read(keylet::mptIssuance(mptID));
+    if (!sle)
+        Throw<std::runtime_error>(transHuman(tecINTERNAL));
+    return availableMPTAmount(*sle);
+}
+
+bool
+isMPTOverflow(
+    std::int64_t sendAmount,
+    std::uint64_t outstandingAmount,
+    std::int64_t maximumAmount,
+    AllowMPTOverflow allowOverflow)
+{
+    std::uint64_t const limit = (allowOverflow == AllowMPTOverflow::Yes)
+        ? std::numeric_limits<std::uint64_t>::max()
+        : maximumAmount;
+    return (sendAmount > maximumAmount || outstandingAmount > (limit - sendAmount));
+}
+
+STAmount
+issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue)
+{
+    STAmount amount{issue};
+
+    auto const sle = view.read(keylet::mptIssuance(issue));
+    if (!sle)
+        return amount;
+    auto const available = availableMPTAmount(*sle);
+    return view.balanceHookSelfIssueMPT(issue, available);
+}
+
+void
+issuerSelfDebitHookMPT(ApplyView& view, MPTIssue const& issue, std::uint64_t amount)
+{
+    auto const available = availableMPTAmount(view, issue);
+    view.issuerSelfDebitHookMPT(issue, amount, available);
 }
 
 }  // namespace xrpl

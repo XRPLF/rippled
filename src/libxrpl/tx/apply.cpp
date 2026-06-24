@@ -1,19 +1,35 @@
+#include <xrpl/tx/apply.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/apply.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/applySteps.h>
+
+#include <exception>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
 // These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
 // HashRouter.h
-constexpr HashRouterFlags SF_SIGBAD = HashRouterFlags::PRIVATE1;     // Signature is bad
-constexpr HashRouterFlags SF_SIGGOOD = HashRouterFlags::PRIVATE2;    // Signature is good
-constexpr HashRouterFlags SF_LOCALBAD = HashRouterFlags::PRIVATE3;   // Local checks failed
-constexpr HashRouterFlags SF_LOCALGOOD = HashRouterFlags::PRIVATE4;  // Local checks passed
+constexpr HashRouterFlags kSfSigbad = HashRouterFlags::PRIVATE1;     // Signature is bad
+constexpr HashRouterFlags kSfSiggood = HashRouterFlags::PRIVATE2;    // Signature is good
+constexpr HashRouterFlags kSfLocalbad = HashRouterFlags::PRIVATE3;   // Local checks failed
+constexpr HashRouterFlags kSfLocalgood = HashRouterFlags::PRIVATE4;  // Local checks passed
 
 //------------------------------------------------------------------------------
 
@@ -40,41 +56,41 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
             std::string reason;
             if (!passesLocalChecks(tx, reason))
             {
-                router.setFlags(id, SF_LOCALBAD);
+                router.setFlags(id, kSfLocalbad);
                 return {Validity::SigGoodOnly, reason};
             }
 
-            router.setFlags(id, SF_SIGGOOD);
+            router.setFlags(id, kSfSiggood);
             return {Validity::Valid, ""};
         }
     }
 
-    if (any(flags & SF_SIGBAD))
+    if (any(flags & kSfSigbad))
     {
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};
     }
 
-    if (!any(flags & SF_SIGGOOD))
+    if (!any(flags & kSfSiggood))
     {
         auto const sigVerify = tx.checkSign(rules);
         if (!sigVerify)
         {
-            router.setFlags(id, SF_SIGBAD);
+            router.setFlags(id, kSfSigbad);
             return {Validity::SigBad, sigVerify.error()};
         }
-        router.setFlags(id, SF_SIGGOOD);
+        router.setFlags(id, kSfSiggood);
     }
 
     // Signature is now known good
-    if (any(flags & SF_LOCALBAD))
+    if (any(flags & kSfLocalbad))
     {
         // ...but the local checks
         // are known bad.
         return {Validity::SigGoodOnly, "Local checks failed."};
     }
 
-    if (any(flags & SF_LOCALGOOD))
+    if (any(flags & kSfLocalgood))
     {
         // ...and the local checks
         // are known good.
@@ -85,10 +101,10 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     std::string reason;
     if (!passesLocalChecks(tx, reason))
     {
-        router.setFlags(id, SF_LOCALBAD);
+        router.setFlags(id, kSfLocalbad);
         return {Validity::SigGoodOnly, reason};
     }
-    router.setFlags(id, SF_LOCALGOOD);
+    router.setFlags(id, kSfLocalgood);
     return {Validity::Valid, ""};
 }
 
@@ -99,10 +115,10 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
     switch (validity)
     {
         case Validity::Valid:
-            flags |= SF_LOCALGOOD;
+            flags |= kSfLocalgood;
             [[fallthrough]];
         case Validity::SigGoodOnly:
-            flags |= SF_SIGGOOD;
+            flags |= kSfSiggood;
             [[fallthrough]];
         case Validity::SigBad:
             // would be silly to call directly
@@ -116,7 +132,6 @@ template <typename PreflightChecks>
 ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChecks)
 {
-    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
     return doApply(preclaim(preflightChecks(), registry, view), registry, view);
 }
 
@@ -156,9 +171,9 @@ applyBatchTransactions(
     auto const mode = batchTxn.getFlags();
 
     auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx const& tx) {
-        OpenView perTxBatchView(batch_view, batchView);
+        OpenView perTxBatchView(kBatchView, batchView);
 
-        auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, tapBATCH, j);
+        auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, TapBatch, j);
         XRPL_ASSERT(
             ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
             "Inner transaction should not be applied");
@@ -214,7 +229,7 @@ applyTransaction(
 {
     // Returns false if the transaction has need not be retried.
     if (retryAssured)
-        flags = flags | tapRETRY;
+        flags = flags | TapRetry;
 
     JLOG(j.debug()) << "TXN " << txn.getTransactionID() << (retryAssured ? "/retry" : "/final");
 
@@ -230,7 +245,7 @@ applyTransaction(
             // its inner transactions as necessary.
             if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
             {
-                OpenView wholeBatchView(batch_view, view);
+                OpenView wholeBatchView(kBatchView, view);
 
                 if (applyBatchTransactions(registry, wholeBatchView, txn, j))
                     wholeBatchView.apply(view);

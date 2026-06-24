@@ -1,5 +1,7 @@
 #pragma once
 
+// NOLINTBEGIN(readability-identifier-naming)
+
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 
@@ -19,6 +21,8 @@ using TERUnderlyingType = int;
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TELcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
@@ -50,6 +54,8 @@ enum TELcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TEMcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
@@ -121,10 +127,13 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
+    temBAD_MPT,
 };
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TEFcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
@@ -169,6 +178,8 @@ enum TEFcodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TERcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
@@ -208,10 +219,13 @@ enum TERcodes : TERUnderlyingType {
     terADDRESS_COLLISION,       // Failed to allocate AccountID when trying to
                                 // create a pseudo-account
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
+    terLOCKED,                  // MPT is locked
 };
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TEScodes : TERUnderlyingType {
     // Note: Exact number must stay stable.  This code is stored by value
     // in metadata for historic transactions.
@@ -227,6 +241,8 @@ enum TEScodes : TERUnderlyingType {
 
 //------------------------------------------------------------------------------
 
+// Protocol-critical, mixed with custom TER wrapper type, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum TECcodes : TERUnderlyingType {
     // Note: Exact numbers must stay stable.  These codes are stored by
     // value in metadata for historic transactions.
@@ -342,10 +358,6 @@ enum TECcodes : TERUnderlyingType {
     tecLIMIT_EXCEEDED = 195,
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
-    // DEPRECATED: This error code tecNO_DELEGATE_PERMISSION is reserved for
-    // backward compatibility with historical data on non-prod networks, can be
-    // reclaimed after those networks reset.
-    tecNO_DELEGATE_PERMISSION = 198,
 };
 
 //------------------------------------------------------------------------------
@@ -354,37 +366,37 @@ enum TECcodes : TERUnderlyingType {
 constexpr TERUnderlyingType
 TERtoInt(TELcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEMcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEFcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TERcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEScodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TECcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 //------------------------------------------------------------------------------
@@ -445,11 +457,11 @@ public:
         return code_ != tesSUCCESS;
     }
 
-    // Conversion to Json::Value allows assignment to Json::Objects
+    // Conversion to json::Value allows assignment to json::Objects
     // without casting.
-    operator Json::Value() const
+    operator json::Value() const
     {
-        return Json::Value{code_};
+        return json::Value{code_};
     }
 
     // Streaming operator.
@@ -487,8 +499,7 @@ public:
 template <typename L, typename R>
 constexpr auto
 operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) == TERtoInt(rhs);
@@ -497,8 +508,7 @@ operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) != TERtoInt(rhs);
@@ -507,8 +517,7 @@ operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) < TERtoInt(rhs);
@@ -517,8 +526,7 @@ operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) <= TERtoInt(rhs);
@@ -527,8 +535,7 @@ operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) > TERtoInt(rhs);
@@ -537,8 +544,7 @@ operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator>=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) >= TERtoInt(rhs);
@@ -676,3 +682,5 @@ std::optional<TER>
 transCode(std::string const& token);
 
 }  // namespace xrpl
+
+// NOLINTEND(readability-identifier-naming)

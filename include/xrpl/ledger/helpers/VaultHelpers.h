@@ -1,16 +1,21 @@
 #pragma once
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
+#include <expected>
+
 namespace xrpl::vault {
 
-enum class TruncateShares : bool { no = false, yes = true };
+enum class TruncateShares : bool { No = false, Yes = true };
+
+enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 
 // Low-level v2 math — exposed for unit testing.
 namespace detail {
@@ -26,14 +31,29 @@ assetsToSharesWithdraw(
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& assets,
-    TruncateShares truncate = TruncateShares::no);
+    TruncateShares truncate = TruncateShares::No,
+    WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
 [[nodiscard]] STAmount
-sharesToAssetsWithdraw(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
+sharesToAssetsWithdraw(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
 }  // namespace detail
 
 // High-level API — orchestrates forward+reverse conversions, handles overflow.
+
+[[nodiscard]] bool
+isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
+
+[[nodiscard]] STAmount
+sharesToAssetsWithdraw(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
 /** The actual amounts exchanged after the forward+reverse round-trip.
  *  Both values reflect post-rounding quantities: assets is the amount
@@ -57,7 +77,7 @@ struct ExchangeResult
  *         is always <= assets. Returns tecPRECISION_LOSS if shares
  *         truncate to zero, tecPATH_DRY on overflow.
  */
-[[nodiscard]] Expected<ExchangeResult, TER>
+[[nodiscard]] std::expected<ExchangeResult, TER>
 computeDeposit(
     Rules const& rules,
     SLE::const_ref vault,
@@ -81,7 +101,7 @@ computeDeposit(
  *         tecPRECISION_LOSS if shares truncate to zero, tecPATH_DRY
  *         on overflow.
  */
-[[nodiscard]] Expected<ExchangeResult, TER>
+[[nodiscard]] std::expected<ExchangeResult, TER>
 computeWithdrawByAssets(
     Rules const& rules,
     SLE::const_ref vault,
@@ -98,7 +118,7 @@ computeWithdrawByAssets(
  * @return {assetsWithdrawn, shares} on success. Returns tecPATH_DRY
  *         on overflow.
  */
-[[nodiscard]] Expected<ExchangeResult, TER>
+[[nodiscard]] std::expected<ExchangeResult, TER>
 computeWithdrawByShares(
     Rules const& rules,
     SLE::const_ref vault,
@@ -119,7 +139,7 @@ computeWithdrawByShares(
  * @return {assetsRecovered, sharesDestroyed} on success. assetsRecovered
  *         is always <= assetsAvailable. Returns tecPATH_DRY on overflow.
  */
-[[nodiscard]] Expected<ExchangeResult, TER>
+[[nodiscard]] std::expected<ExchangeResult, TER>
 computeClawback(
     Rules const& rules,
     SLE::const_ref vault,

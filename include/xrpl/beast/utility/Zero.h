@@ -27,8 +27,8 @@ struct Zero
 };
 
 namespace {
-static constexpr Zero zero{};
-}
+constexpr Zero kZero{};
+}  // namespace
 
 /** Default implementation of signum calls the method on the class. */
 template <typename T>
@@ -38,20 +38,18 @@ signum(T const& t)
     return t.signum();
 }
 
-namespace detail {
-namespace zero_helper {
+namespace detail::zero_helper {
 
 // For argument dependent lookup to function properly, calls to signum must
 // be made from a namespace that does not include overloads of the function..
 template <class T>
 auto
-call_signum(T const& t)
+callSignum(T const& t)
 {
     return signum(t);
 }
 
-}  // namespace zero_helper
-}  // namespace detail
+}  // namespace detail::zero_helper
 
 // Handle operators where T is on the left side using signum.
 
@@ -59,42 +57,42 @@ template <typename T>
 bool
 operator==(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) == 0;
+    return detail::zero_helper::callSignum(t) == 0;
 }
 
 template <typename T>
 bool
 operator!=(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) != 0;
+    return detail::zero_helper::callSignum(t) != 0;
 }
 
 template <typename T>
 bool
 operator<(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) < 0;
+    return detail::zero_helper::callSignum(t) < 0;
 }
 
 template <typename T>
 bool
 operator>(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) > 0;
+    return detail::zero_helper::callSignum(t) > 0;
 }
 
 template <typename T>
 bool
 operator>=(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) >= 0;
+    return detail::zero_helper::callSignum(t) >= 0;
 }
 
 template <typename T>
 bool
 operator<=(T const& t, Zero)
 {
-    return detail::zero_helper::call_signum(t) <= 0;
+    return detail::zero_helper::callSignum(t) <= 0;
 }
 
 // Handle operators where T is on the right side by
@@ -104,42 +102,42 @@ template <typename T>
 bool
 operator==(Zero, T const& t)
 {
-    return t == zero;
+    return t == kZero;
 }
 
 template <typename T>
 bool
 operator!=(Zero, T const& t)
 {
-    return t != zero;
+    return t != kZero;
 }
 
 template <typename T>
 bool
 operator<(Zero, T const& t)
 {
-    return t > zero;
+    return t > kZero;
 }
 
 template <typename T>
 bool
 operator>(Zero, T const& t)
 {
-    return t < zero;
+    return t < kZero;
 }
 
 template <typename T>
 bool
 operator>=(Zero, T const& t)
 {
-    return t <= zero;
+    return t <= kZero;
 }
 
 template <typename T>
 bool
 operator<=(Zero, T const& t)
 {
-    return t >= zero;
+    return t >= kZero;
 }
 
 }  // namespace beast

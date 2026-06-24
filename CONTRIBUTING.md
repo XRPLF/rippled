@@ -14,9 +14,9 @@ The following branches exist in the main project repository:
 
 - `develop`: The latest set of unreleased features, and the most common
   starting point for contributions.
-- `release`: The latest beta release or release candidate.
-- `master`: The latest stable release.
-- `gh-pages`: The documentation for this project, built by Doxygen.
+- `release/*` (e.g. `release/3.2.x`): Release branches, one per release line,
+  holding the latest release candidate, or stable release for that line.
+  Stable releases are published as [tagged releases](https://github.com/XRPLF/rippled/releases).
 
 The tip of each branch must be signed. In order for GitHub to sign a
 squashed commit that it builds from your pull request, GitHub must know
@@ -130,11 +130,9 @@ tl;dr
 ## Pull requests
 
 In general, pull requests use `develop` as the base branch.
-The exceptions are
 
-- Fixes and improvements to a release candidate use `release` as the
-  base.
-- Hotfixes use `master` as the base.
+The exceptions are fixes, improvements, and hotfixes for an existing release,
+which use that release's branch (e.g. `release/3.2.x`) as the base.
 
 If your changes are not quite ready, but you want to make it easily available
 for preliminary examination or review, you can create a "Draft" pull request.
@@ -216,7 +214,7 @@ coherent rather than a set of _thou shalt not_ commandments.
 
 ## Formatting
 
-All code must conform to `clang-format` version 21,
+All code must conform to `clang-format` version 22,
 according to the settings in [`.clang-format`](./.clang-format),
 unless the result would be unreasonably difficult to read or maintain.
 To demarcate lines that should be left as-is, surround them with comments like
@@ -261,23 +259,43 @@ This ensures that configuration changes don't introduce new warnings across the 
 
 ### Installing clang-tidy
 
-See the [environment setup guide](./docs/build/environment.md#clang-tidy) for platform-specific installation instructions.
+See the [environment setup guide](./docs/build/environment.md#clang-tidy) for how to get clang-tidy.
 
 ### Running clang-tidy locally
 
 Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). Refer to [`BUILD.md`](./BUILD.md) for build instructions.
 
+#### Via pre-commit (recommended)
+
+If you have already installed the pre-commit hooks (see above), you can run clang-tidy on your staged files using:
+
+```
+TIDY=1 pre-commit run clang-tidy
+```
+
+This runs clang-tidy locally with the same configuration/flags as CI, scoped to your staged C++ files. The `TIDY=1` environment variable is required to opt in — without it the hook is skipped.
+
+You can also have clang-tidy run automatically on every `git commit` by setting `TIDY=1` in your shell environment:
+
+```
+export TIDY=1
+```
+
+With this set, the hook will run as part of `git commit` alongside the other pre-commit checks.
+
+#### Manually
+
 Then run clang-tidy on your local changes:
 
 ```
-run-clang-tidy -p build src include tests
+run-clang-tidy -p build -allow-no-checks src tests
 ```
 
 This will check all source files in the `src`, `include` and `tests` directories using the compile commands from your `build` directory.
 If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix` to the above command:
 
 ```
-run-clang-tidy -p build -fix src include tests
+run-clang-tidy -p build -quiet -fix -allow-no-checks src tests
 ```
 
 ## Contracts and instrumentation
@@ -328,8 +346,8 @@ For this reason:
 - Contract description for `UNREACHABLE` should describe the _unexpected_
   situation which caused the line to have been reached.
 - Example good name for an
-  `UNREACHABLE` macro `"Json::operator==(Value, Value) : invalid type"`; example
-  good name for an `XRPL_ASSERT` macro `"Json::Value::asCString : valid type"`.
+  `UNREACHABLE` macro `"json::operator==(Value, Value) : invalid type"`; example
+  good name for an `XRPL_ASSERT` macro `"json::Value::asCString : valid type"`.
 - Example **bad** name
   `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
   (missing namespace, unnecessary full function signature, description too verbose).
@@ -533,7 +551,7 @@ All releases, including release candidates and betas, are handled
 differently from typical PRs. Most importantly, never use
 the Github UI to merge a release.
 
-Rippled uses a linear workflow model that can be summarized as:
+Xrpld uses a linear workflow model that can be summarized as:
 
 1. In between releases, developers work against the `develop` branch.
 2. Periodically, a maintainer will build and tag a beta version from
