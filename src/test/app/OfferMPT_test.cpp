@@ -58,7 +58,7 @@ class OfferMPT_test : public beast::unit_test::Suite
     static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
-        return baseAccountReserve(*env.current(), count);
+        return jtx::baseAccountReserve(*env.current(), count);
     }
 
     static std::uint32_t

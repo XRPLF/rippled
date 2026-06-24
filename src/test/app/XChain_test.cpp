@@ -1,5 +1,6 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/attester.h>
@@ -372,7 +373,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return baseAccountReserve(*XEnv(*this).env.current(), count);
+        return jtx::baseAccountReserve(*XEnv(*this).env.current(), count);
     }
 
     XRPAmount

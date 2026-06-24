@@ -4,6 +4,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/mpt.h>

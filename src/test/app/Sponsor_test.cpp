@@ -85,7 +85,7 @@ accountReserve(jtx::Env& env, std::uint32_t count = 1)
 static STAmount
 reserve(jtx::Env& env, std::uint32_t count)
 {
-    return baseAccountReserve(*env.current(), count);
+    return jtx::baseAccountReserve(*env.current(), count);
 }
 
 static void

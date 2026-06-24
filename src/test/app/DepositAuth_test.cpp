@@ -52,7 +52,7 @@ namespace xrpl::test {
 static XRPAmount
 reserve(jtx::Env& env, std::uint32_t count)
 {
-    return baseAccountReserve(*env.current(), count);
+    return jtx::baseAccountReserve(*env.current(), count);
 }
 
 // Helper function that returns true if acct has the lsfDepositAuth flag set.
