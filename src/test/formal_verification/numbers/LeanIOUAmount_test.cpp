@@ -442,7 +442,7 @@ public:
     test_known_construction()
     {
         beginCase("LeanIOUAmount.known_construction");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         constexpr int64_t kMinValue = static_cast<int64_t>(STAmount::kMinValue);  // 10^15
         constexpr int64_t kMaxValue = static_cast<int64_t>(STAmount::kMaxValue);  // 10^16 - 1
@@ -512,7 +512,7 @@ public:
     test_fuzz_construction()
     {
         beginCase("LeanIOUAmount.fuzz_construction", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -533,7 +533,7 @@ public:
     test_fuzz_conversion()
     {
         beginCase("LeanIOUAmount.fuzz_conversion", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -550,7 +550,7 @@ public:
     test_known_comparison()
     {
         beginCase("LeanIOUAmount.known_comparison");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         constexpr int64_t kMinValue = static_cast<int64_t>(STAmount::kMinValue);
         constexpr int64_t kMaxValue = static_cast<int64_t>(STAmount::kMaxValue);
@@ -590,7 +590,7 @@ public:
     test_fuzz_comparison()
     {
         beginCase("LeanIOUAmount.fuzz_comparison", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -611,7 +611,7 @@ public:
     test_known_arithmetic()
     {
         beginCase("LeanIOUAmount.known_arithmetic");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         constexpr int64_t kMinValue = static_cast<int64_t>(STAmount::kMinValue);
         constexpr int64_t kMaxValue = static_cast<int64_t>(STAmount::kMaxValue);
@@ -714,7 +714,7 @@ public:
     test_fuzz_arithmetic()
     {
         beginCase("LeanIOUAmount.fuzz_arithmetic", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -739,7 +739,7 @@ public:
     test_fuzz_mul_ratio()
     {
         beginCase("LeanIOUAmount.fuzz_mul_ratio", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         constexpr uint32_t u32Max = std::numeric_limits<uint32_t>::max();
         std::uniform_int_distribution<uint32_t> numDist(0u, u32Max);
@@ -766,7 +766,7 @@ public:
     test_extreme_values()
     {
         beginCase("LeanIOUAmount.extreme_values");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         constexpr int64_t kMin = static_cast<int64_t>(STAmount::kMinValue);
         constexpr int64_t kMax = static_cast<int64_t>(STAmount::kMaxValue);

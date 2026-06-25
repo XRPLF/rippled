@@ -376,7 +376,7 @@ public:
     test_fuzz_of_number()
     {
         beginCase("LeanXRPAmount.fuzz_of_number", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         // exp ∈ [-18, 0] keeps the int64 result strictly representable.
         for (auto mode :
@@ -394,7 +394,7 @@ public:
     test_fuzz_to_number()
     {
         beginCase("LeanXRPAmount.fuzz_to_number", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         for (auto mode :
              {Number::RoundingMode::ToNearest,
               Number::RoundingMode::TowardsZero,
@@ -499,7 +499,7 @@ public:
     test_known_values()
     {
         beginCase("LeanXRPAmount.known_values");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         SaveNumberRoundMode save{Number::setround(Number::RoundingMode::ToNearest)};
 
         constexpr int64_t int64Max = std::numeric_limits<int64_t>::max();
@@ -575,7 +575,7 @@ public:
     test_extreme_values()
     {
         beginCase("LeanXRPAmount.extreme_values");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         SaveNumberRoundMode save{Number::setround(Number::RoundingMode::ToNearest)};
 
         constexpr int64_t int64Max = std::numeric_limits<int64_t>::max();

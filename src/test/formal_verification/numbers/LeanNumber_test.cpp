@@ -53,8 +53,6 @@ using namespace formal_verification;
 
 class LeanNumber_test : public LeanSuite
 {
-    static constexpr std::uint64_t kMaxRepUp = ((Number::kMaxRep / 10) + 1) * 10;
-
     static std::string
     fmtNum(bool neg, uint64_t m, int e)
     {
@@ -196,7 +194,7 @@ class LeanNumber_test : public LeanSuite
             minM + 1,
             maxRep - 1,
             maxRep,
-            kMaxRepUp,
+            Number::kMaxRepUp,
             maxM - maxM % 10,
         };
     }
@@ -239,7 +237,7 @@ class LeanNumber_test : public LeanSuite
     void
     runOperandEdges(LeanBinOp leanOp, char opChar, CppBinOp cppOp)
     {
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         auto operandsAt = [this](int e) {
             std::vector<NumberPair> ops;
@@ -269,7 +267,7 @@ class LeanNumber_test : public LeanSuite
     void
     runFuzzBinOp(LeanBinOp leanOp, char opChar, CppBinOp cppOp, int iterations = 10'000)
     {
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         for (auto mode :
              {Number::RoundingMode::ToNearest,
               Number::RoundingMode::TowardsZero,
@@ -315,7 +313,7 @@ class LeanNumber_test : public LeanSuite
         CppBinOp cppOp,
         std::vector<ResultRegion> const& regions)
     {
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         uint64_t const m = Number::minMantissa();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -406,7 +404,7 @@ class LeanNumber_test : public LeanSuite
         uint64_t hi,
         int resultExp)
     {
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         std::uniform_int_distribution<uint64_t> mantDist(Number::minMantissa(), Number::kMaxRep);
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -430,7 +428,7 @@ class LeanNumber_test : public LeanSuite
     void
     runSumCusp(char opChar, LeanBinOp leanOp, CppBinOp cppOp, bool flipB)
     {
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         uint64_t const minM = Number::minMantissa();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -440,7 +438,7 @@ class LeanNumber_test : public LeanSuite
         {
             SaveNumberRoundMode save{Number::setround(mode)};
             for (int e : {0, 40, -40})
-                for (uint64_t t = Number::kMaxRep - 7; t <= kMaxRepUp + 13; ++t)
+                for (uint64_t t = Number::kMaxRep - 7; t <= Number::kMaxRepUp + 13; ++t)
                     for (bool aNeg : {false, true})
                     {
                         auto a = makeNumberPair(aNeg, minM, e);
@@ -582,7 +580,13 @@ public:
         // Sweep the result mantissa across the cusp, at mid, top, and bottom exponents.
         for (int e : {0, Number::kMaxExponent, Number::kMinExponent})
             runResultMantissaSweep(
-                '*', lean_number_mul, mul, mulFactor, Number::kMaxRep - 7, kMaxRepUp + 13, e);
+                '*',
+                lean_number_mul,
+                mul,
+                mulFactor,
+                Number::kMaxRep - 7,
+                Number::kMaxRepUp + 13,
+                e);
 
         // Land at maxMantissa (top of range) at kMax: there a round-up carries past
         // it, and only at kMax does that carry tip the exponent into overflow.
@@ -626,7 +630,13 @@ public:
         uint64_t const maxM = Number::maxMantissa();
         for (int e : {0, Number::kMaxExponent, Number::kMinExponent})
             runResultMantissaSweep(
-                '/', lean_number_div, div, divFactor, Number::kMaxRep - 7, kMaxRepUp + 13, e);
+                '/',
+                lean_number_div,
+                div,
+                divFactor,
+                Number::kMaxRep - 7,
+                Number::kMaxRepUp + 13,
+                e);
 
         runResultMantissaSweep(
             '/', lean_number_div, div, divFactor, maxM - 20, maxM, Number::kMaxExponent);
@@ -689,7 +699,7 @@ public:
     testNeg()
     {
         beginCase("LeanNumber.neg", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto const neg = [](Number const& x) { return -x; };
 
         for (uint64_t m : edgeMantissas())
@@ -711,7 +721,7 @@ public:
     testSignum()
     {
         beginCase("LeanNumber.signum", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         for (uint64_t m : edgeMantissas())
             for (bool n : {false, true})
@@ -730,7 +740,7 @@ public:
     testNormalize()
     {
         beginCase("LeanNumber.normalize", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         uint64_t const minM = Number::minMantissa();
 
         for (auto mode :
@@ -741,7 +751,7 @@ public:
         {
             SaveNumberRoundMode save{Number::setround(mode)};
 
-            for (uint64_t m = Number::kMaxRep - 7; m <= kMaxRepUp + 13; ++m)
+            for (uint64_t m = Number::kMaxRep - 7; m <= Number::kMaxRepUp + 13; ++m)
                 for (bool neg : {false, true})
                     for (int e : {0, 1, -1, 40})
                         checkNormalize("normalize(" + fmtNum(neg, m, e) + ")", neg, m, e, mode);
@@ -780,7 +790,7 @@ public:
     testCompare()
     {
         beginCase("LeanNumber.compare", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto const ms = edgeMantissas();
         auto const exps = edgeExpPairs();
 
@@ -815,7 +825,7 @@ public:
     testNegativeComparison()
     {
         beginCase("LeanNumber.negative_comparison");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         auto a = makeNumberPair(true, 3'000'000'000'000'000'000ULL, 0);
         auto b = makeNumberPair(true, 7'000'000'000'000'000'000ULL, 0);
@@ -842,7 +852,7 @@ public:
     testRangeBoundaryArithmetic()
     {
         beginCase("LeanNumber.range_boundary_arithmetic");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         SaveNumberRoundMode save{Number::setround(Number::RoundingMode::ToNearest)};
         auto const maxRep = Number::kMaxRep;  // 9223372036854775807 = 2^63-1
 
@@ -889,7 +899,7 @@ public:
     testAdditionRounding()
     {
         beginCase("LeanNumber.addition_rounding");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         // Bug 1: directed-rounding sign swap.
         {
@@ -929,7 +939,7 @@ public:
     testDivisionRounding()
     {
         beginCase("LeanNumber.division_rounding");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         SaveNumberRoundMode save{Number::setround(Number::RoundingMode::Upward)};
 
         // 2 / (1e18 + 7), Upward.
@@ -949,7 +959,7 @@ public:
     testMultiplicationRounding()
     {
         beginCase("LeanNumber.multiplication_rounding");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         SaveNumberRoundMode save{Number::setround(Number::RoundingMode::Downward)};
 
         checkBinOp(
@@ -965,10 +975,10 @@ public:
     testCuspRounding()
     {
         beginCase("LeanNumber.cusp_rounding");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
-        constexpr uint64_t kMaxRep = 9'223'372'036'854'775'807ULL;    // 2^63 - 1
-        constexpr uint64_t kMaxRepUp = 9'223'372'036'854'775'810ULL;  // next multiple of 10
+        constexpr uint64_t kMaxRep = Number::kMaxRep;      // 2^63 - 1
+        constexpr uint64_t kMaxRepUp = Number::kMaxRepUp;  // next multiple of 10
 
         auto modeName = [](Number::RoundingMode m) -> char const* {
             switch (m)
@@ -1045,7 +1055,7 @@ public:
     testToRep()
     {
         beginCase("LeanNumber.to_rep", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         std::vector<std::pair<bool, std::pair<uint64_t, int>>> const fractions = {
             {false, {15, -1}},
@@ -1095,18 +1105,18 @@ private:
         // testSub();
         testNeg();
         testSignum();
-        // testNormalize();
-        // testCompare();
+        testNormalize();
+        testCompare();
         testToRep();
 
         // Issues identified during formal verification.
         // Kept here to ensure there are no regression bugs.
         testNegativeComparison();
-        // testRangeBoundaryArithmetic();
-        // testAdditionRounding();
+        testRangeBoundaryArithmetic();
+        testAdditionRounding();
         testDivisionRounding();
-        // testMultiplicationRounding();
-        // testCuspRounding();
+        testMultiplicationRounding();
+        testCuspRounding();
     }
 };
 

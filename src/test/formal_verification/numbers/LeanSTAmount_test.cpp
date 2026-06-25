@@ -955,7 +955,7 @@ public:
     test_known_construction()
     {
         beginCase("LeanSTAmount.known_construction");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         Number::RoundingMode const m = Number::RoundingMode::ToNearest;
 
         constexpr uint64_t kMin = STAmount::kMinValue;
@@ -1129,7 +1129,7 @@ public:
     test_known_comparison()
     {
         beginCase("LeanSTAmount.known_comparison");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         checkLt(makeSTAmountPair(kKindXRP, 1, 0, 0), makeSTAmountPair(kKindXRP, 2, 0, 0));
         checkLt(makeSTAmountPair(kKindXRP, 2, 0, 0), makeSTAmountPair(kKindXRP, 1, 0, 0));
         checkLt(makeSTAmountPair(kKindXRP, 1, 0, 1), makeSTAmountPair(kKindXRP, 1, 0, 0));
@@ -1158,7 +1158,7 @@ public:
     test_known_arithmetic()
     {
         beginCase("LeanSTAmount.known_arithmetic");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         Number::RoundingMode const m = Number::RoundingMode::ToNearest;
 
         checkAddSub(
@@ -1319,7 +1319,7 @@ public:
     test_known_rounding()
     {
         beginCase("LeanSTAmount.known_rounding");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         Number::RoundingMode const m = Number::RoundingMode::ToNearest;
 
         auto const mulRoundFn =
@@ -1465,7 +1465,7 @@ public:
     test_known_predicates()
     {
         beginCase("LeanSTAmount.known_predicates");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         Number::RoundingMode const m = Number::RoundingMode::ToNearest;
 
         // canAdd at the native max ± 1 (overflow on both signs), zero
@@ -1528,7 +1528,7 @@ public:
     test_known_round_to_scale()
     {
         beginCase("LeanSTAmount.known_round_to_scale");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
 
         // XRP / MPT / IOU-zero: no-op short-circuits.
         checkRoundToScale(
@@ -1565,7 +1565,7 @@ public:
     test_known_get_rate()
     {
         beginCase("LeanSTAmount.known_get_rate");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         Number::RoundingMode const m = Number::RoundingMode::ToNearest;
 
         // offerOut == 0 → 0.
@@ -1605,7 +1605,7 @@ public:
     test_fuzz_accessors()
     {
         beginCase("LeanSTAmount.fuzz_accessors", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -1622,7 +1622,7 @@ public:
     test_fuzz_constructors()
     {
         beginCase("LeanSTAmount.fuzz_constructors", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -1650,7 +1650,7 @@ public:
     test_fuzz_add_sub()
     {
         beginCase("LeanSTAmount.fuzz_add_sub", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -1673,7 +1673,7 @@ public:
     test_fuzz_multiply_divide()
     {
         beginCase("LeanSTAmount.fuzz_multiply_divide", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -1701,7 +1701,7 @@ public:
     test_fuzz_mul_round()
     {
         beginCase("LeanSTAmount.fuzz_mul_round", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         std::bernoulli_distribution ruDist(0.5);
         std::bernoulli_distribution strictDist(0.5);
@@ -1744,7 +1744,7 @@ public:
     test_fuzz_div_round()
     {
         beginCase("LeanSTAmount.fuzz_div_round", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         std::bernoulli_distribution ruDist(0.5);
         std::bernoulli_distribution strictDist(0.5);
@@ -1787,7 +1787,7 @@ public:
     test_fuzz_predicates()
     {
         beginCase("LeanSTAmount.fuzz_predicates", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -1813,7 +1813,7 @@ public:
     test_fuzz_round_to_scale()
     {
         beginCase("LeanSTAmount.fuzz_round_to_scale", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         std::uniform_int_distribution<int32_t> scaleDist(-110, 10);
         for (auto mode :
@@ -1835,7 +1835,7 @@ public:
     test_fuzz_get_rate()
     {
         beginCase("LeanSTAmount.fuzz_get_rate", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         for (auto mode :
              {Number::RoundingMode::ToNearest,
@@ -1856,7 +1856,7 @@ public:
     test_fuzz_compare()
     {
         beginCase("LeanSTAmount.fuzz_compare", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         runFuzz(20'000, [&] {
             auto a = randomSTAmountPair(rng);
@@ -1877,7 +1877,7 @@ public:
     test_fuzz_is_legal_net()
     {
         beginCase("LeanSTAmount.fuzz_is_legal_net", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         runFuzz(20'000, [&] { return checkIsLegalNet(randomSTAmountPair(rng)); });
     }
@@ -1886,7 +1886,7 @@ public:
     test_fuzz_neg()
     {
         beginCase("LeanSTAmount.fuzz_neg", true);
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         auto& rng = nextRng();
         runFuzz(20'000, [&] { return checkNeg(randomSTAmountPair(rng)); });
     }
@@ -1921,7 +1921,7 @@ public:
     test_extreme_values()
     {
         beginCase("LeanSTAmount.extreme_values");
-        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large);
+        NumberMantissaScaleGuard sg(MantissaRange::MantissaScale::Large330);
         Number::RoundingMode const m = Number::RoundingMode::ToNearest;
 
         constexpr uint64_t xrpMax = STAmount::kMaxNativeN;
