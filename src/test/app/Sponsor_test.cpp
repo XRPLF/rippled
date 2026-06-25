@@ -2079,10 +2079,11 @@ public:
         std::optional<std::function<void()>> expected = std::nullopt)
     {
         using namespace test::jtx;
-        // auto const sponsorOwnerCountBefore = ownerCount(env, sponsor);
         auto const sponseeOwnerCountBefore = ownerCount(env, sponsee);
         auto const sponseeSponsoredOwnerCountBefore = sponsoredOwnerCount(env, sponsee);
         auto const sponseeSponsoringOwnerCountBefore = sponsoringOwnerCount(env, sponsee);
+        auto const sponsorOwnerCountBefore = ownerCount(env, sponsor);
+        auto const sponsorSponsoredOwnerCountBefore = sponsoredOwnerCount(env, sponsor);
         auto const sponsorSponsoringOwnerCountBefore = sponsoringOwnerCount(env, sponsor);
 
         std::optional<Sig> sponsorSig =
@@ -2122,7 +2123,7 @@ public:
                     env.close();
                 }
 
-                if (sponsorReserveCount - 1 > 0)
+                if (sponsorReserveCount > 1)
                 {
                     env(sponsor::set(sponsor, 0, sponsorReserveCount - 1, XRP(1)),
                         sponsor::SponseeAcc(sponsee));
@@ -2135,8 +2136,51 @@ public:
                 }
                 env.close();
             }
+
+            // A failed sponsored create must not consume prefunded reserve or mutate owner counts.
+            auto const sponseeOwnerCountBeforeAttempt = ownerCount(env, sponsee);
+            auto const sponseeSponsoredOwnerCountBeforeAttempt = sponsoredOwnerCount(env, sponsee);
+            auto const sponseeSponsoringOwnerCountBeforeAttempt =
+                sponsoringOwnerCount(env, sponsee);
+            auto const sponsorOwnerCountBeforeAttempt = ownerCount(env, sponsor);
+            auto const sponsorSponsoredOwnerCountBeforeAttempt = sponsoredOwnerCount(env, sponsor);
+            auto const sponsorSponsoringOwnerCountBeforeAttempt =
+                sponsoringOwnerCount(env, sponsor);
+            auto const sponsorshipSleBeforeAttempt = env.le(keylet::sponsorship(sponsor, sponsee));
+            bool const reserveCountPresentBeforeAttempt = sponsorshipSleBeforeAttempt &&
+                sponsorshipSleBeforeAttempt->isFieldPresent(sfRemainingOwnerCount);
+            std::uint32_t const reserveCountBeforeAttempt = reserveCountPresentBeforeAttempt
+                ? sponsorshipSleBeforeAttempt->getFieldU32(sfRemainingOwnerCount)
+                : 0;
+
             callback(env, submit(insufficientReserveResult));
             env.close();
+
+            BEAST_EXPECT(ownerCount(env, sponsee) == sponseeOwnerCountBeforeAttempt);
+            BEAST_EXPECT(
+                sponsoredOwnerCount(env, sponsee) == sponseeSponsoredOwnerCountBeforeAttempt);
+            BEAST_EXPECT(
+                sponsoringOwnerCount(env, sponsee) == sponseeSponsoringOwnerCountBeforeAttempt);
+            BEAST_EXPECT(ownerCount(env, sponsor) == sponsorOwnerCountBeforeAttempt);
+            BEAST_EXPECT(
+                sponsoredOwnerCount(env, sponsor) == sponsorSponsoredOwnerCountBeforeAttempt);
+            BEAST_EXPECT(
+                sponsoringOwnerCount(env, sponsor) == sponsorSponsoringOwnerCountBeforeAttempt);
+
+            auto const sponsorshipSleAfterAttempt = env.le(keylet::sponsorship(sponsor, sponsee));
+            BEAST_EXPECT(
+                static_cast<bool>(sponsorshipSleAfterAttempt) ==
+                static_cast<bool>(sponsorshipSleBeforeAttempt));
+            if (sponsorshipSleAfterAttempt)
+            {
+                BEAST_EXPECT(
+                    sponsorshipSleAfterAttempt->isFieldPresent(sfRemainingOwnerCount) ==
+                    reserveCountPresentBeforeAttempt);
+                if (reserveCountPresentBeforeAttempt)
+                    BEAST_EXPECT(
+                        sponsorshipSleAfterAttempt->getFieldU32(sfRemainingOwnerCount) ==
+                        reserveCountBeforeAttempt);
+            }
         }
 
         // Success
@@ -2159,6 +2203,13 @@ public:
 
             if (!cosigning)
             {
+                // Prefunded success consumes the reserved owner slot before cleanup.
+                auto const sponsorshipSle = env.le(keylet::sponsorship(sponsor, sponsee));
+                BEAST_EXPECT(sponsorshipSle);
+                BEAST_EXPECT(
+                    !sponsorshipSle->isFieldPresent(sfRemainingOwnerCount) ||
+                    sponsorshipSle->getFieldU32(sfRemainingOwnerCount) == 0);
+
                 // cleanup sponsorship
                 env(sponsor::del(sponsor), sponsor::SponseeAcc(sponsee));
                 env.close();
@@ -2177,6 +2228,8 @@ public:
                 sponsorReserveCount);
             BEAST_EXPECT(
                 sponsoringOwnerCount(env, sponsee) - sponseeSponsoringOwnerCountBefore == 0);
+            BEAST_EXPECT(ownerCount(env, sponsor) == sponsorOwnerCountBefore);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor) == sponsorSponsoredOwnerCountBefore);
             BEAST_EXPECT(
                 sponsoringOwnerCount(env, sponsor) - sponsorSponsoringOwnerCountBefore ==
                 sponsorReserveCount);
@@ -3237,6 +3290,7 @@ public:
         Account const alice("alice");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
+        auto const credType = std::string("credType");
 
         {
             Env env{*this, testableAmendments()};
@@ -3267,10 +3321,16 @@ public:
             {
                 env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
                 env.close();
+                // No sponsor signature here: this exercises the prefunded reassign path.
                 env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor2));
+                    sponsor::As(sponsor2, spfSponsorReserve));
                 env.close();
+
+                auto const sponsor2Sle = env.le(keylet::sponsorship(sponsor2, alice));
+                BEAST_EXPECT(sponsor2Sle);
+                BEAST_EXPECT(
+                    !sponsor2Sle->isFieldPresent(sfRemainingOwnerCount) ||
+                    sponsor2Sle->getFieldU32(sfRemainingOwnerCount) == 0);
             }
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -3286,6 +3346,27 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, sponsor);
+            env.close();
+
+            // Cover DepositPreauth's sfAuthorizeCredentials sponsor-reserve branch.
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env&, auto const& submit) {
+                    submit(
+                        deposit::authCredentials(
+                            alice, {{.issuer = sponsor, .credType = credType}}));
+                });
         }
     }
 
@@ -5576,6 +5657,12 @@ public:
             auto const requiredFee = drops(env.current()->fees().increment);
             env(acctdelete(alice, bob), Fee(requiredFee), Ter(tecNO_SPONSOR_PERMISSION));
 
+            // The failed delete must leave the account sponsored by the original sponsor.
+            auto const aliceSle = env.le(keylet::account(alice));
+            BEAST_EXPECT(aliceSle);
+            if (aliceSle)
+                BEAST_EXPECT(aliceSle->getAccountID(sfSponsor) == sponsor.id());
+
             auto const sponsorSle = env.le(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSle->getFieldU32(sfSponsoringAccountCount) == 1);
 
@@ -5619,13 +5706,19 @@ public:
             // Verify sfSponsoringOwnerCount is set on sponsor
             auto const sponsorSle = env.le(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSle->isFieldPresent(sfSponsoringOwnerCount));
-            BEAST_EXPECT(sponsorSle->getFieldU32(sfSponsoringOwnerCount) >= 1);
+            auto const sponsoringOwnerCount = sponsorSle->getFieldU32(sfSponsoringOwnerCount);
+            BEAST_EXPECT(sponsoringOwnerCount >= 1);
 
             incLgrSeqForAccDel(env, sponsor);
 
             // AccountDelete should fail
             auto const requiredFee = drops(env.current()->fees().increment);
             env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
+            // The failed delete must not decrement the outstanding sponsored-object count.
+            auto const sponsorSleAfter = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(sponsorSleAfter->isFieldPresent(sfSponsoringOwnerCount));
+            BEAST_EXPECT(
+                sponsorSleAfter->getFieldU32(sfSponsoringOwnerCount) == sponsoringOwnerCount);
         }
 
         {
@@ -5642,13 +5735,19 @@ public:
             // Verify sfSponsoringAccountCount is set on sponsor
             auto const sponsorSle = env.le(keylet::account(sponsor));
             BEAST_EXPECT(sponsorSle->isFieldPresent(sfSponsoringAccountCount));
-            BEAST_EXPECT(sponsorSle->getFieldU32(sfSponsoringAccountCount) == 1);
+            auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
+            BEAST_EXPECT(sponsoringAccountCount == 1);
 
             incLgrSeqForAccDel(env, sponsor);
 
             // AccountDelete should fail
             auto const requiredFee = drops(env.current()->fees().increment);
             env(acctdelete(sponsor, bob), Fee(requiredFee), Ter(tecHAS_OBLIGATIONS));
+            // The failed delete must not decrement the outstanding sponsored-account count.
+            auto const sponsorSleAfter = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(sponsorSleAfter->isFieldPresent(sfSponsoringAccountCount));
+            BEAST_EXPECT(
+                sponsorSleAfter->getFieldU32(sfSponsoringAccountCount) == sponsoringAccountCount);
         }
     }
 
