@@ -1,4 +1,3 @@
-#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/Oracle.h>
@@ -11,15 +10,12 @@
 #include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/did.h>
-#include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
-#include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
-#include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
@@ -34,8 +30,6 @@
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 #include <test/jtx/xchain_bridge.h>
-
-#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
@@ -55,7 +49,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
