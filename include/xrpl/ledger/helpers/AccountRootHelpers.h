@@ -35,6 +35,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 
 /** Returns the account reserve, in drops.
     Actual owner count can be adjusted by delta in ownerCountAdj
+    Actual reserve count can be adjusted by delta in reserveCountAdj
     The reserve is calculated as
        (ownerCount + "sponsoring object count" - "sponsored object count" + additionalOwnerCount) *
    increment + (1 if not sponsored account + sponsoringAccountCount) * "reserve base"
@@ -58,8 +59,15 @@ accountReserve(
     return accountReserve(view, view.read(keylet::account(id)), j, ownerCountAdj, reserveCountAdj);
 }
 
+/** Simply return hypothetical reserve that needs by account with provided counters
+ *  ownerCount - number of objects for which account will be responsible
+ *  reserveCount - number of accounts for which account will be responsible
+ *              default to 1 as normally every account suppose to have its reserve
+ *              can be 0 if account is sponsored
+ *              can be greater than 1 if account sponsoring other accounts
+ */
 XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount);
+baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t reserveCount = 1);
 
 [[nodiscard]] TER
 checkInsufficientReserve(
@@ -72,6 +80,9 @@ checkInsufficientReserve(
     std::int32_t reserveCountDelta = 0,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
+/** Return number of the objects which reserve is covered by the account(sle) (so called "owner
+ * count"). Actual owner count can be adjusted by delta in ownerCountAdj
+ */
 std::uint32_t
 ownerCount(
     ReadView const& view,
@@ -104,6 +115,9 @@ adjustOwnerCount(
         j);
 }
 
+/** The same as adjustOwnerCount except take sponsor from the provided object.
+ *  Used to delete objectss
+ */
 void
 adjustOwnerCountObj(
     ApplyView& view,
