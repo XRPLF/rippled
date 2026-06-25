@@ -15,15 +15,16 @@
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 
+XRPL_FIX    (Cleanup3_3_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (Cleanup3_2_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(MPTokensV2,                  Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FIX    (Cleanup3_1_3,                Supported::Yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (BatchInnerSigs,              Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(LendingProtocol,             Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(PermissionDelegationV1_1,    Supported::No,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(PermissionDelegationV1_1,    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,              Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (IncludeKeyletFields,         Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(DynamicMPT,                  Supported::No,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(DynamicMPT,                  Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (TokenEscrowV1,               Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (PriceOracleOrder,            Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (MPTDeliveredAmount,          Supported::Yes, VoteBehavior::DefaultNo)
@@ -64,7 +65,6 @@ XRPL_FIX    (DisallowIncomingV1,         Supported::Yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(XChainBridge,               Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(AMM,                        Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Clawback,                   Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (UniversalNumber,            Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(XRPFees,                    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::Yes, VoteBehavior::DefaultYes)
 
@@ -112,6 +112,7 @@ XRPL_RETIRE_FIX(RmSmallIncreasedQOffers)
 XRPL_RETIRE_FIX(STAmountCanonicalize)
 XRPL_RETIRE_FIX(TakerDryOfferRemoval)
 XRPL_RETIRE_FIX(TrustLinesToSelf)
+XRPL_RETIRE_FIX(UniversalNumber)
 
 XRPL_RETIRE_FEATURE(Checks)
 XRPL_RETIRE_FEATURE(CheckCashMakesTrustLine)

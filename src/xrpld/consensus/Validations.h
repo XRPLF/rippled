@@ -267,13 +267,13 @@ to_string(ValStatus m)
 template <class Adaptor>
 class Validations
 {
-    using Mutex = typename Adaptor::Mutex;
-    using Validation = typename Adaptor::Validation;
-    using Ledger = typename Adaptor::Ledger;
-    using ID = typename Ledger::ID;
-    using Seq = typename Ledger::Seq;
-    using NodeID = typename Validation::NodeID;
-    using NodeKey = typename Validation::NodeKey;
+    using Mutex = Adaptor::Mutex;
+    using Validation = Adaptor::Validation;
+    using Ledger = Adaptor::Ledger;
+    using ID = Ledger::ID;
+    using Seq = Ledger::Seq;
+    using NodeID = Validation::NodeID;
+    using NodeKey = Validation::NodeKey;
 
     using WrappedValidationType =
         std::decay_t<std::invoke_result_t<decltype(&Validation::unwrap), Validation>>;

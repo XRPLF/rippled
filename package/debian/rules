@@ -10,7 +10,6 @@ override_dh_auto_configure override_dh_auto_build override_dh_auto_test:
 
 override_dh_installsystemd:
 	dh_installsystemd --no-stop-on-upgrade xrpld.service
-	dh_installsystemd --name=update-xrpld --no-enable --no-start update-xrpld.service update-xrpld.timer
 
 execute_before_dh_installtmpfiles:
 	dh_installsysusers
@@ -21,7 +20,6 @@ override_dh_install:
 	install -D -m 0755 xrpld            debian/xrpld/usr/bin/xrpld
 	install -D -m 0644 xrpld.cfg        debian/xrpld/etc/xrpld/xrpld.cfg
 	install -D -m 0644 validators.txt   debian/xrpld/etc/xrpld/validators.txt
-	install -D -m 0755 update-xrpld     debian/xrpld/usr/libexec/xrpld/update-xrpld
 
 override_dh_dwz:
 	@:
