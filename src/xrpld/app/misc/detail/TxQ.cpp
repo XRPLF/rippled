@@ -398,6 +398,10 @@ TxQ::canBeHeld(
         ((flags & TapFailHard) != 0u))
         return telCAN_NOT_QUEUE;
 
+    // Disallow delegated transactions from being queued.
+    if (tx.isFieldPresent(sfDelegate))
+        return telCAN_NOT_QUEUE;
+
     {
         // To be queued and relayed, the transaction needs to
         // promise to stick around for long enough that it has
