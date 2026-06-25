@@ -229,21 +229,6 @@ jobs:
               --parallel "${BUILD_NPROC}" \
               --target "${CMAKE_TARGET}"
 
-      # This step is needed to allow running in non-Nix environments
-      - name: Patch binary to use default loader and remove rpath (Linux)
-        if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
-        run: |
-          loader="$(/tmp/loader-path.sh)"
-          patchelf --set-interpreter "${loader}" --remove-rpath "${{ env.BUILD_DIR }}/xrpld"
-
-      # We're only running aarch64 Linux builds in Ubuntu-based images, so this is kept simple
-      - name: Install libatomic (Linux aarch64)
-        if: ${{ runner.os == 'Linux' && runner.arch == 'ARM64' }}
-        run: |
-          apt update --yes
-          apt install -y --no-install-recommends \
-              libatomic1
-
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
         run: |

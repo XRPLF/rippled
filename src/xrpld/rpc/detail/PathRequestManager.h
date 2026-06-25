@@ -3,7 +3,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathRequest.h>
-#include <xrpld/rpc/detail/RippleLineCache.h>
 
 #include <atomic>
 #include <mutex>
