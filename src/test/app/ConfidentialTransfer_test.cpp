@@ -7935,43 +7935,6 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
         testcase("Send: recipient inbox rerandomization prevents merge cancellation");
 
         using namespace test::jtx;
-        Env env{*this, features};
-        Account const alice("alice"), bob("bob"), carol("carol");
-        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
-
-        mptAlice.create({
-            .ownerCount = 1,
-            .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
-        });
-
-        mptAlice.authorize({.account = bob});
-        mptAlice.authorize({.account = carol});
-        mptAlice.pay(alice, bob, 100);
-        mptAlice.pay(alice, carol, 100);
-
-        mptAlice.generateKeyPair(alice);
-        mptAlice.generateKeyPair(bob);
-        mptAlice.generateKeyPair(carol);
-        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
-
-        // Carol converts 50 and merge inbox
-        mptAlice.convert({
-            .account = carol,
-            .amt = 50,
-            .holderPubKey = mptAlice.getPubKey(carol),
-        });
-        mptAlice.mergeInbox({.account = carol});
-
-        // Bob converts 20 and has not merged yet. His spending
-        // balance is the canonical zero Enc(0; r0), and his inbox uses the
-        // publicly revealed convert blinding factor.
-        Buffer const convertBlindingFactor = generateBlindingFactor();
-        mptAlice.convert({
-            .account = bob,
-            .amt = 20,
-            .holderPubKey = mptAlice.getPubKey(bob),
-            .blindingFactor = convertBlindingFactor,
-        });
 
         // Derive the deterministic canonical-zero randomness r0 used for
         // Bob's first spending balance.
@@ -8013,25 +7976,125 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             return negated;
         };
 
-        Buffer const canonicalZeroBlindingFactor =
-            getCanonicalZeroBlindingFactor(bob.id(), mptAlice.issuanceID());
-        Buffer const maliciousSendBlindingFactor =
-            negateScalarSum(canonicalZeroBlindingFactor, convertBlindingFactor);
+        // Without an auditor, target Bob's holder inbox. The crafted send
+        // randomness would make MergeInbox hit the point at infinity unless
+        // ConfidentialMPTSend re-randomizes the recipient ciphertext.
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob"), carol("carol");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
-        // This leaves Bob's inbox with randomness -r0, making
-        // MergeInbox hit the point at infinity.
-        mptAlice.send({
-            .account = carol,
-            .dest = bob,
-            .amt = 5,
-            .blindingFactor = maliciousSendBlindingFactor,
-        });
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
+            });
 
-        mptAlice.mergeInbox({.account = bob});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
 
-        auto const bobSpending =
-            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
-        BEAST_EXPECT(bobSpending && *bobSpending == 25);
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+            mptAlice.convert({
+                .account = carol,
+                .amt = 50,
+                .holderPubKey = mptAlice.getPubKey(carol),
+            });
+            mptAlice.mergeInbox({.account = carol});
+
+            Buffer const convertBlindingFactor = generateBlindingFactor();
+            mptAlice.convert({
+                .account = bob,
+                .amt = 20,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .blindingFactor = convertBlindingFactor,
+            });
+
+            Buffer const canonicalZeroBlindingFactor =
+                getCanonicalZeroBlindingFactor(bob.id(), mptAlice.issuanceID());
+
+            // Holder inbox cancellation happens later in MergeInbox, when
+            // Bob's spending Enc(0; r0) is added to inbox Enc(25; -r0).
+            Buffer const maliciousSendBlindingFactor =
+                negateScalarSum(canonicalZeroBlindingFactor, convertBlindingFactor);
+
+            mptAlice.send({
+                .account = carol,
+                .dest = bob,
+                .amt = 5,
+                .blindingFactor = maliciousSendBlindingFactor,
+            });
+
+            mptAlice.mergeInbox({.account = bob});
+
+            auto const bobSpending =
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
+            BEAST_EXPECT(bobSpending && *bobSpending == 25);
+        }
+
+        // With an auditor, verify the destination auditor balance is also
+        // re-randomized. Auditor balance is updated during send, and this crafted
+        // randomness would otherwise make that homomorphic sum hit infinity without
+        // re-randomization.
+        {
+            Env env{*this, features};
+            Account const alice("alice"), bob("bob"), carol("carol"), auditor("auditor");
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}, .auditor = auditor});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
+            });
+
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
+            mptAlice.pay(alice, bob, 100);
+            mptAlice.pay(alice, carol, 100);
+
+            mptAlice.generateKeyPair(alice);
+            mptAlice.generateKeyPair(bob);
+            mptAlice.generateKeyPair(carol);
+            mptAlice.generateKeyPair(auditor);
+            mptAlice.set({
+                .account = alice,
+                .issuerPubKey = mptAlice.getPubKey(alice),
+                .auditorPubKey = mptAlice.getPubKey(auditor),
+            });
+
+            mptAlice.convert({
+                .account = carol,
+                .amt = 50,
+                .holderPubKey = mptAlice.getPubKey(carol),
+            });
+            mptAlice.mergeInbox({.account = carol});
+
+            Buffer const convertBlindingFactor = generateBlindingFactor();
+            mptAlice.convert({
+                .account = bob,
+                .amt = 20,
+                .holderPubKey = mptAlice.getPubKey(bob),
+                .blindingFactor = convertBlindingFactor,
+            });
+
+            // This would make the homomorphic sum hit infinity.
+            Buffer const maliciousSendBlindingFactor =
+                negateScalarSum(gMakeZeroBuffer(kEcBlindingFactorLength), convertBlindingFactor);
+
+            mptAlice.send({
+                .account = carol,
+                .dest = bob,
+                .amt = 5,
+                .blindingFactor = maliciousSendBlindingFactor,
+            });
+
+            auto const bobAuditor =
+                mptAlice.getDecryptedBalance(bob, MPTTester::auditorEncryptedBalance);
+            BEAST_EXPECT(bobAuditor && *bobAuditor == 25);
+        }
     }
 
     void
