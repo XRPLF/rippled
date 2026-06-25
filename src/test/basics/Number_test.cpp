@@ -1531,7 +1531,7 @@ public:
                 {
                     case MantissaRange::MantissaScale::Large330:
                         // Rounding to nearest, since the mantissa is below the halfway point from
-                        // kMaxRep to kMaxRep up, it will be rounded down to kMaxRep
+                        // kMaxRep to kMaxRepUp, it will be rounded down to kMaxRep
                         test(
                             Number{std::numeric_limits<std::int64_t>::max(), 0} + 1,
                             "9223372036854775807",

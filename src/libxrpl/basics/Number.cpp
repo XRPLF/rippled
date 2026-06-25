@@ -449,7 +449,7 @@ Number::Guard::pushOverflow(T mantissa)
             return;
         }
 
-        // The second step scales the final digit of the update mantissa proportionally, converting
+        // The second step scales the final digit of the updated mantissa proportionally, converting
         // from (kMaxRep, kMaxRepUp) to (0 to 9]. It then pushes that scaled digit onto the guard as
         // if it was a digit that got removed, but doesn't actually remove it. This method should be
         // future-proof in case the number of mantissa bits ever changes. (Though for integer values
