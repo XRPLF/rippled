@@ -227,7 +227,8 @@ jobs:
               --build . \
               --config "${BUILD_TYPE}" \
               --parallel "${BUILD_NPROC}" \
-              --target "${CMAKE_TARGET}"
+              --target "${CMAKE_TARGET}" \
+              2>&1 | tee build.log
 
       # This step is needed to allow running in non-Nix environments
       - name: Patch binary to use default loader and remove rpath (Linux)
@@ -340,7 +341,7 @@ jobs:
           LD_PRELOAD="$PRELOAD" ./xrpld --unittest --unittest-jobs "${BUILD_NPROC}" 2>&1 | tee unittest.log
 
       - name: Show test failure summary
-        if: ${{ failure() && !inputs.build_only }}
+        if: ${{ failure() }}
         env:
           WORKING_DIR: ${{ runner.os == 'Windows' && format('{0}\{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
         run: |
@@ -351,13 +352,17 @@ jobs:
 
           cd "${WORKING_DIR}"
 
-          if [ ! -f unittest.log ]; then
+          if [ -f unittest.log ]; then
+              if ! grep -E "failed" unittest.log; then
+                  echo "unittest.log present but no failure lines found."
+              fi
+          else
               echo "unittest.log not found; embedded tests may not have run."
-              exit 0
-          fi
-
-          if ! grep -E "failed" unittest.log; then
-              echo "Log present but no failure lines found in unittest.log."
+              if [ -f build.log ]; then
+                  if ! grep -E "error:" build.log; then
+                      echo "build.log present but no compile errors found."
+                  fi
+              fi
           fi
       - name: Debug failure (Linux)
         if: ${{ failure() && runner.os == 'Linux' && !inputs.build_only }}
