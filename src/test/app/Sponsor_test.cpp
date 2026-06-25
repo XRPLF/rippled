@@ -681,6 +681,7 @@ public:
         testcase("PreFund and Cosign");
         using namespace test::jtx;
         Account const alice("alice");
+        Account const bob("bob");
         Account const sponsor("sponsor");
 
         {
@@ -719,7 +720,7 @@ public:
         {
             // if pre-funded value is not enough, error
             Env env{*this, testableAmendments()};
-            env.fund(XRP(10000), alice, sponsor);
+            env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
             env(sponsor::set(sponsor, 0, 10, XRP(10), XRP(100)),
@@ -728,15 +729,18 @@ public:
             env.close();
 
             // Fee insufficient
-            env(ticket::create(alice, 1),
+            env(check::create(alice, bob, XRP(1)),
                 sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                 Sig(sfSponsorSignature, sponsor),
                 Fee(XRP(11)),
                 Ter(terINSUF_FEE_B));
             env.close();
 
+            env(sponsor::set_reserve(sponsor, 0, 0), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+            env.close();
+
             // reserve insufficient
-            env(ticket::create(alice, 11),
+            env(check::create(alice, bob, XRP(1)),
                 sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                 Sig(sfSponsorSignature, sponsor),
                 Fee(XRP(1)),
@@ -2002,25 +2006,26 @@ public:
         using namespace test::jtx;
         Env env{*this, testableAmendments()};
         Account const alice("alice");
+        Account const bob("bob");
         Account const sponsor("sponsor");
 
-        env.fund(XRP(10000), alice, sponsor);
+        env.fund(XRP(10000), alice, bob, sponsor);
         env.close();
 
         // test Sufficient sponsor balance
         if (cosigning)
         {
-            adjustAccountXRPBalance(env, sponsor, reserve(env, 99));
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
 
-            env(ticket::create(alice, 100),
+            env(check::create(alice, bob, XRP(100)),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor),
                 Ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
-            adjustAccountXRPBalance(env, sponsor, reserve(env, 100));
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
 
-            env(ticket::create(alice, 100),
+            env(check::create(alice, bob, XRP(100)),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor),
                 Ter(tesSUCCESS));
@@ -2031,16 +2036,16 @@ public:
             env(sponsor::set_reserve(sponsor, 0, 250), sponsor::SponseeAcc(alice));
             env.close();
 
-            adjustAccountXRPBalance(env, sponsor, reserve(env, 99 + 1 /* sponsor object*/));
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 2) - drops(1));
 
-            env(ticket::create(alice, 100),
+            env(check::create(alice, bob, XRP(100)),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
-            adjustAccountXRPBalance(env, sponsor, reserve(env, 100 + 1 /* sponsor object*/));
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
 
-            env(ticket::create(alice, 100),
+            env(check::create(alice, bob, XRP(100)),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Ter(tesSUCCESS));
             env.close();
@@ -3628,7 +3633,8 @@ public:
             BEAST_EXPECT(env.balance(sponsor) == XRP(900));
 
             auto jt = env.jtnofill(
-                ticket::create(alice, 1), sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee));
+                check::create(alice, bob, XRP(1)),
+                sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee));
             // remove txn signature since it is filled by env.jtnofill()
             jt.jv.removeMember(jss::TxnSignature);
 
@@ -3662,7 +3668,7 @@ public:
             env.close();
 
             auto jt = env.jtnofill(
-                ticket::create(alice, 1),
+                check::create(alice, bob, XRP(1)),
                 sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                 Sig(sfSponsorSignature, sponsor));
             // remove txn signature since it is filled by env.jtnofill()
