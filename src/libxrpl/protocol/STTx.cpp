@@ -290,15 +290,13 @@ STTx::checkBatchSign(Rules const& rules) const
 {
     try
     {
-        XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSign : not a batch transaction");
-        // LCOV_EXCL_START - defensive: the assert above guarantees ttBATCH;
-        // this guard only protects release builds where asserts are no-ops.
         if (getTxnType() != ttBATCH)
         {
-            JLOG(debugLog().fatal()) << "not a batch transaction";
+            // LCOV_EXCL_START
+            UNREACHABLE("STTx::checkBatchSign : not a batch transaction");
             return std::unexpected("Not a batch transaction.");
+            // LCOV_EXCL_STOP
         }
-        // LCOV_EXCL_STOP
         if (!isFieldPresent(sfBatchSigners))
             return std::unexpected("Missing BatchSigners field.");
         STArray const& signers{getFieldArray(sfBatchSigners)};
@@ -535,7 +533,7 @@ STTx::checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const
     dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
         batchSigner,
-        std::optional<AccountID>(batchSignerAccount),
+        batchSignerAccount,
         [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
@@ -572,9 +570,11 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
 void
 STTx::buildBatchTxnIds()
 {
-    // Precondition: applyTemplate() must have run first, so the fields
-    // (including sfRawTransactions) are canonical before the inner txns
-    // are hashed. The constructors call this immediately after applyTemplate().
+    // Precondition: the template must have been applied first, so the fields
+    // (including sfRawTransactions) are canonical before the inner txns are
+    // hashed. The constructors call this immediately after applying the
+    // template; isFree() being false confirms a template is set.
+    XRPL_ASSERT(!isFree(), "STTx::buildBatchTxnIds : template not applied");
     if (getTxnType() != ttBATCH || !isFieldPresent(sfRawTransactions))
         return;
 
@@ -738,6 +738,11 @@ isBatchRawTransactionOkay(STObject const& st, std::string& reason)
 {
     if (!st.isFieldPresent(sfRawTransactions))
         return true;
+
+    // sfRawTransactions only appears on a Batch.
+    XRPL_ASSERT(
+        safeCast<TxType>(st.getFieldU16(sfTransactionType)) == ttBATCH,
+        "xrpl::isBatchRawTransactionOkay : not a batch transaction");
 
     if (st.isFieldPresent(sfBatchSigners) &&
         st.getFieldArray(sfBatchSigners).size() > kMaxBatchSigners)

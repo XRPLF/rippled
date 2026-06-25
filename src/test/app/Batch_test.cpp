@@ -443,7 +443,7 @@ class Batch_test : public beast::unit_test::Suite
 
         // temINVALID_FLAG: tfInnerBatchTxn set but featureBatchV1_1 disabled.
         {
-            test::jtx::Env disabledEnv{*this, features - featureBatchV1_1};
+            Env disabledEnv{*this, features - featureBatchV1_1};
             disabledEnv.fund(XRP(10000), alice, bob);
             disabledEnv.close();
             auto jtx = disabledEnv.jt(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn));
@@ -1545,26 +1545,6 @@ class Batch_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!result.applied && result.ter == temARRAY_TOO_LARGE);
                 return result.applied;
             });
-        }
-
-        // telENV_RPC_FAILED: Batch: signers array exceeds kMaxBatchSigners
-        // entries.
-        {
-            test::jtx::Env env{*this, features};
-
-            auto const alice = Account("alice");
-            auto const bob = Account("bob");
-            env.fund(XRP(10000), alice, bob);
-            env.close();
-
-            auto const aliceSeq = env.seq(alice);
-            auto const batchFee = batch::calcBatchFee(env, kMaxBatchSigners + 1, 2);
-            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
-                batch::Inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
-                batch::Inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
-                batch::Sig(std::vector<Reg>(kMaxBatchSigners + 1, bob)),
-                Ter(telENV_RPC_FAILED));
-            env.close();
         }
 
         // Regression: the relay-boundary local check (isBatchRawTransactionOkay)
@@ -2876,6 +2856,46 @@ class Batch_test : public beast::unit_test::Suite
         // Alice pays XRP & Fee; Bob receives XRP
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1000) - batchFee);
         BEAST_EXPECT(env.balance(bob) == XRP(1000));
+
+        // An inner partial payment must never fund a new account. With
+        // featureBatchV1_1 the partial-payment-to-create check runs on the
+        // batch's closed view and rejects it (tefNO_DST_PARTIAL). A USD->XRP path is
+        // set up so that, absent the check, the partial payment would deliver
+        // XRP and create carol; the check must block exactly that. A
+        // cross-currency shape (IOU SendMax, XRP Amount) also lets the inner
+        // pass preflight and reach the preclaim check.
+        {
+            test::jtx::Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const gw = Account("gw");
+            auto const carol = Account("carol");  // never funded
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, gw);
+            env.close();
+            env.memoize(carol);
+
+            env(trust(alice, USD(100000)));
+            env(pay(gw, alice, USD(10000)));
+            env(offer(gw, USD(2000), XRP(2000)));  // USD -> XRP liquidity
+            env.close();
+
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            auto pp = pay(alice, carol, XRP(1000));
+            pp[jss::SendMax] = USD(2000).value().getJson(JsonOptions::Values::None);
+            pp[jss::Flags] = tfPartialPayment;
+
+            env(batch::outer(alice, seq, batchFee, tfIndependent),
+                batch::Inner(pp, seq + 1),
+                batch::Inner(noop(alice), seq + 2),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // carol was not created despite the available path.
+            BEAST_EXPECT(!env.le(carol));
+        }
     }
 
     void

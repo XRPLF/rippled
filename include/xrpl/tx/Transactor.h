@@ -405,14 +405,8 @@ protected:
         std::optional<T> value,
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
-private:
-    static NotTEC
-    checkPermission(
-        ReadView const& view,
-        STTx const& tx,
-        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
-
-protected:
+    // Signature-authorization helpers. protected so the Batch transactor can
+    // reuse them when validating each BatchSigner in Batch::checkBatchSign.
     static NotTEC
     checkSingleSign(
         ReadView const& view,
@@ -430,6 +424,12 @@ protected:
         beast::Journal const j);
 
 private:
+    static NotTEC
+    checkPermission(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
+
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
 

@@ -425,13 +425,15 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     // (excluding the outer account), sorted and de-duplicated to match against
     // the ascending, unique batch signers.
     std::vector<AccountID> requiredSigners;
-    requiredSigners.reserve(rawTxns.size());
+    requiredSigners.reserve(kMaxBatchSigners);
     for (STObject const& rb : rawTxns)
     {
         // A delegated inner is signed by the delegate, not the account holder,
         // so the delegate is the required signer when present.
         AccountID const authorizer = rb[~sfDelegate].value_or(rb[sfAccount]);
 
+        // The outer account signs the batch itself, so it is never added to the
+        // required signers.
         if (authorizer != outerAccount)
             requiredSigners.push_back(authorizer);
         // Some transactions have a Counterparty, who must also sign the
@@ -441,7 +443,8 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             requiredSigners.push_back(*counterparty);
     }
     std::ranges::sort(requiredSigners);
-    requiredSigners.erase(std::ranges::unique(requiredSigners).begin(), requiredSigners.end());
+    auto const dupes = std::ranges::unique(requiredSigners);
+    requiredSigners.erase(dupes.begin(), dupes.end());
 
     std::size_t matched = 0;
 
@@ -496,10 +499,9 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             ++matched;
         }
 
-        // Cache the expensive signer-signature crypto per tx id. Safe because
-        // the tx id covers sfBatchSigners and checkBatchSign is rules-
-        // independent (revisit the key if that changes). Good-only: failures
-        // aren't cached, so a verdict can't become sticky.
+        // Caches only the cryptographic signature check, not whether each
+        // signer is authorized to sign for its account - that ledger-dependent
+        // check is Batch::checkBatchSign in preclaim and is never cached.
         auto& router = ctx.registry.get().getHashRouter();
         if (!any(router.getFlags(parentBatchId) & kSfBatchSigGood))
         {
@@ -527,16 +529,14 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
 NotTEC
 Batch::checkBatchSign(PreclaimContext const& ctx)
 {
-    NotTEC ret = tesSUCCESS;
     STArray const& signers{ctx.tx.getFieldArray(sfBatchSigners)};
     for (auto const& signer : signers)
     {
         auto const idAccount = signer.getAccountID(sfAccount);
-
         Blob const& pkSigner = signer.getFieldVL(sfSigningPubKey);
         if (pkSigner.empty())
         {
-            if (ret = checkMultiSign(ctx.view, ctx.flags, idAccount, signer, ctx.j);
+            if (auto const ret = checkMultiSign(ctx.view, ctx.flags, idAccount, signer, ctx.j);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -553,7 +553,8 @@ Batch::checkBatchSign(PreclaimContext const& ctx)
                 if (isPseudoAccount(sleAccount))
                     return tefBAD_AUTH;  // LCOV_EXCL_LINE
 
-                if (ret = checkSingleSign(ctx.view, idSigner, idAccount, sleAccount, ctx.j);
+                if (auto const ret =
+                        checkSingleSign(ctx.view, idSigner, idAccount, sleAccount, ctx.j);
                     !isTesSuccess(ret))
                     return ret;
             }
@@ -567,7 +568,7 @@ Batch::checkBatchSign(PreclaimContext const& ctx)
             }
         }
     }
-    return ret;
+    return tesSUCCESS;
 }
 
 /**

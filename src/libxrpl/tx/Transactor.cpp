@@ -244,18 +244,10 @@ Transactor::preflight2(PreflightContext const& ctx)
         return *ret;
     }
 
-    // Skip signature check on batch inner transactions, but only if
-    // this tx was actually submitted through the batch apply path
-    // (parentBatchId is set). Without this check, a standalone tx
-    // with tfInnerBatchTxn could bypass signature verification.
+    // Skip signature check on batch inner transactions. The inner-batch flag
+    // and parentBatchId checks are in preflight1.
     if (ctx.tx.isFlag(tfInnerBatchTxn))
-    {
-        if (!ctx.rules.enabled(featureBatchV1_1))
-            return temINVALID_FLAG;
-        if (!ctx.parentBatchId.has_value())
-            return temINVALID_INNER_BATCH;
         return tesSUCCESS;
-    }
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 

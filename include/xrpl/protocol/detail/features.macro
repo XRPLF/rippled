@@ -20,7 +20,6 @@ XRPL_FIX    (Cleanup3_3_0,                Supported::Yes, VoteBehavior::DefaultN
 XRPL_FIX    (Cleanup3_2_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(MPTokensV2,                  Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FIX    (Cleanup3_1_3,                Supported::Yes, VoteBehavior::DefaultYes)
-XRPL_FIX    (BatchInnerSigs,              Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(LendingProtocol,             Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionDelegationV1_1,    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,              Supported::Yes, VoteBehavior::DefaultNo)
@@ -34,7 +33,6 @@ XRPL_FEATURE(TokenEscrow,                 Supported::Yes, VoteBehavior::DefaultN
 XRPL_FIX    (EnforceNFTokenTrustlineV2,   Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMv1_3,                     Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionedDEX,             Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(Batch,                       Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(SingleAssetVault,            Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,          Supported::Yes, VoteBehavior::DefaultNo)
 // Check flags in Credential transactions
