@@ -74,7 +74,7 @@ ledgerEntryTypeName(SLE const& sle)
     if (item == nullptr)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("xrpl::ledgerEntryTypeName : ledger entry has ledger format");
+        UNREACHABLE("xrpl::ledgerEntryTypeName : ledger entry has no known ledger format");
         return std::to_string(sle.getType());
         // LCOV_EXCL_STOP
     }
