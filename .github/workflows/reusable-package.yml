@@ -39,23 +39,8 @@ jobs:
         working-directory: .github/scripts/strategy-matrix
         run: ./generate.py --packaging >>"${GITHUB_OUTPUT}"
 
-  generate-version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          sparse-checkout: |
-            .github/actions/generate-version
-            src/libxrpl/protocol/BuildInfo.cpp
-      - name: Generate version
-        id: version
-        uses: ./.github/actions/generate-version
-
   package:
-    needs: [generate-matrix, generate-version]
+    needs: [generate-matrix]
     if: ${{ github.event.repository.visibility == 'public' }}
     strategy:
       fail-fast: false
@@ -82,14 +67,13 @@ jobs:
 
       - name: Build package
         env:
-          PKG_VERSION: ${{ needs.generate-version.outputs.version }}
           PKG_RELEASE: ${{ inputs.pkg_release }}
         run: ./package/build_pkg.sh
 
       - name: Upload package artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ matrix.artifact_name }}-pkg-${{ needs.generate-version.outputs.version }}
+          name: ${{ matrix.artifact_name }}-pkg
           path: |
             ${{ env.BUILD_DIR }}/debbuild/*.deb
             ${{ env.BUILD_DIR }}/debbuild/*.ddeb
