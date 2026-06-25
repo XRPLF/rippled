@@ -71,10 +71,13 @@ ledgerEntryTypeName(SLE const& sle)
 {
     auto const item = LedgerFormats::getInstance().findByType(sle.getType());
 
-    XRPL_ASSERT(item, "xrpl::ledgerEntryTypeName : ledger entry has ledger format");
     if (item == nullptr)
-        return std::to_string(sle.getType());  // LCOV_EXCL_LINE
-
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::ledgerEntryTypeName : ledger entry has ledger format");
+        return std::to_string(sle.getType());
+        // LCOV_EXCL_STOP
+    }
     return item->getName();
 }
 
@@ -1087,10 +1090,11 @@ ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::co
     // Before should never be null when isDelete = true
     if (!before)
     {
-        XRPL_ASSERT(
-            before,
+        // LCOV_EXCL_START
+        UNREACHABLE(
             "xrpl::ObjectHasPseudoAccount::visitEntry : deleted ledger entry missing before state");
-        return;  // LCOV_EXCL_LINE
+        return;
+        // LCOV_EXCL_STOP
     }
 
     switch (before->getType())
@@ -1131,8 +1135,7 @@ ObjectHasPseudoAccount::finalize(
         }
 
         // The pseudo-account must NOT exist on the ledger after the object is deleted.
-        bool const exists = view.read(keylet::account(sle->getAccountID(sfAccount))) != nullptr;
-        if (exists)
+        if (view.exists(keylet::account(sle->getAccountID(sfAccount))))
         {
             JLOG(j.fatal()) << "Invariant failed: deleted " << ledgerEntryTypeName(*sle)
                             << " without deleting its pseudo-account";
