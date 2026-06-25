@@ -226,7 +226,7 @@ struct base_uint_test : beast::unit_test::Suite
             BEAST_EXPECTS(z2 == z, to_string(z2));
 
             test96 const z3{0u};
-            BEAST_EXPECTS(z3 == z, to_string(z2));
+            BEAST_EXPECTS(z3 == z, to_string(z3));
         }
 
         test96 n{z};
