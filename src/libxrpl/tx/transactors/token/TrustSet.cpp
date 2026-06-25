@@ -219,9 +219,8 @@ TrustSet::preclaim(PreclaimContext const& ctx)
     if (sleDst && sleDst->isFlag(lsfDisallowIncomingTrustline))
     {
         // The original implementation of featureDisallowIncoming was
-        // too restrictive. If
-        //   o The trust line already exists
-        // Then allow the TrustSet.
+        // too restrictive. If the trust line already exists
+        // then allow the TrustSet.
         if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
         {
             // pass

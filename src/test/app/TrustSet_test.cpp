@@ -475,13 +475,13 @@ public:
     }
 
     void
-    testDisallowIncomingWithRequireAuth(FeatureBitset features)
+    testDisallowIncomingWithRequireAuth()
     {
         testcase("Create trustline with disallow incoming requiring auth");
 
         using namespace test::jtx;
 
-        Env env{*this, features};
+        Env env{*this};
         auto const dist = Account("dist");
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
@@ -597,7 +597,7 @@ public:
         testModifyQualityOfTrustline(features, false, true);
         testModifyQualityOfTrustline(features, true, false);
         testModifyQualityOfTrustline(features, true, true);
-        testDisallowIncomingWithRequireAuth(features);
+        testDisallowIncomingWithRequireAuth();
         testDisallowIncoming(features);
         testTrustLineResetWithAuthFlag();
         testTrustLineDelete();
