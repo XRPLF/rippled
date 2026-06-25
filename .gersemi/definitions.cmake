@@ -96,3 +96,6 @@ function(verbose_find_path variable name)
         ${ARGN}
     )
 endfunction()
+
+function(patch_nix_binary target)
+endfunction()
