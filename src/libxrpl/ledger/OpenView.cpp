@@ -202,7 +202,7 @@ OpenView::txsEnd() const -> std::unique_ptr<TxsType::iter_base>
 bool
 OpenView::txExists(key_type const& key) const
 {
-    return txs_.contains(key) || base_->txExists(key);
+    return txs_.contains(key);
 }
 
 auto
