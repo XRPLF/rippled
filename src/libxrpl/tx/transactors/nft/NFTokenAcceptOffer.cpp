@@ -7,7 +7,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -374,12 +373,7 @@ NFTokenAcceptOffer::transferNFToken(
 
     std::uint32_t const buyerOwnerCountBefore = sleBuyer->getFieldU32(sfOwnerCount);
 
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-
-    auto const insertRet =
-        nft::insertToken(view(), ctx_.tx, buyer, *sponsorSle, std::move(tokenAndPage->token));
+    auto const insertRet = nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
 
     // if fixNFTokenReserve is enabled, check if the buyer has sufficient
     // reserve to own a new object, if their OwnerCount changed.
@@ -399,13 +393,8 @@ NFTokenAcceptOffer::transferNFToken(
         auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
         if (buyerOwnerCountAfter > buyerOwnerCountBefore)
         {
-            SLE::const_pointer buyerSponsorSle;
-            if (accountID_ == buyer)
-                buyerSponsorSle = *sponsorSle;
-            if (auto const ret = checkInsufficientReserve(
-                    ctx_.view(), ctx_.tx, sleBuyer, buyerBalance, buyerSponsorSle, 0, 0, j_);
-                !isTesSuccess(ret))
-                return ret;
+            if (buyerBalance < accountReserve(view(), sleBuyer, j_))
+                return tecINSUFFICIENT_RESERVE;
         }
     }
 
