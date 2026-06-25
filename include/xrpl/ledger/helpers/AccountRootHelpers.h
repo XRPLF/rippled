@@ -35,7 +35,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 
 /** Returns the account reserve, in drops.
     Actual owner count can be adjusted by delta in ownerCountAdj
-    Actual reserve count can be adjusted by delta in reserveCountAdj
+    Actual reserve count can be adjusted by delta in accountCountAdj
     The reserve is calculated as
        (ownerCount + "sponsoring object count" - "sponsored object count" + additionalOwnerCount) *
    increment + (1 if not sponsored account + sponsoringAccountCount) * "reserve base"
@@ -46,7 +46,7 @@ accountReserve(
     SLE::const_ref sle,
     beast::Journal j,
     std::int32_t ownerCountAdj = 0,
-    std::int32_t reserveCountAdj = 0);
+    std::int32_t accountCountAdj = 0);
 
 [[nodiscard]] inline XRPAmount
 accountReserve(
@@ -54,20 +54,20 @@ accountReserve(
     AccountID const& id,
     beast::Journal j,
     std::int32_t ownerCountAdj = 0,
-    std::int32_t reserveCountAdj = 0)
+    std::int32_t accountCountAdj = 0)
 {
-    return accountReserve(view, view.read(keylet::account(id)), j, ownerCountAdj, reserveCountAdj);
+    return accountReserve(view, view.read(keylet::account(id)), j, ownerCountAdj, accountCountAdj);
 }
 
 /** Simply return hypothetical reserve that needs by account with provided counters
  *  ownerCount - number of objects for which account will be responsible
- *  reserveCount - number of accounts for which account will be responsible
+ *  accountCount - number of accounts for which account will be responsible
  *              default to 1 as normally every account suppose to have its reserve
  *              can be 0 if account is sponsored
  *              can be greater than 1 if account sponsoring other accounts
  */
 XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t reserveCount = 1);
+baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount = 1);
 
 [[nodiscard]] TER
 checkInsufficientReserve(
@@ -77,18 +77,14 @@ checkInsufficientReserve(
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
     std::int32_t ownerCountDelta,
-    std::int32_t reserveCountDelta = 0,
+    std::int32_t accountCountDelta = 0,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 /** Return number of the objects which reserve is covered by the account(sle) (so called "owner
  * count"). Actual owner count can be adjusted by delta in ownerCountAdj
  */
 std::uint32_t
-ownerCount(
-    ReadView const& view,
-    SLE::const_ref sle,
-    beast::Journal j,
-    std::int32_t ownerCountAdj = 0);
+ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj = 0);
 
 /** Adjust the owner count up or down. */
 void
