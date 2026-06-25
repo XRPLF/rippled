@@ -528,17 +528,20 @@ void
 Number::Guard::bringIntoRange(bool& negative, T& mantissa, int& exponent) const
 {
     // Bring mantissa back into the minMantissa / maxMantissa range AFTER
-    // rounding. Mantissa should never be 0.
-    XRPL_ASSERT(mantissa != 0, "xrpl::Number::Guard::bringIntoRange : valid mantissa");
-    if (mantissa < minMantissa)
+    // rounding.
+    if (mantissa < minMantissa &&
+        (cuspRoundingFix < MantissaRange::CuspRoundingFix::Enabled330 || mantissa != 0))
     {
         mantissa *= 10;
         --exponent;
     }
-    // mantissa should never be 0, but if it _is_ make the result kZero.
+    // mantissa should never be 0, but if it _is_ assert, but fall back to making the result kZero.
     if (exponent < kMinExponent ||
         (cuspRoundingFix >= MantissaRange::CuspRoundingFix::Enabled330 && mantissa == 0))
     {
+        // Engineers: If you hit this assert, you probably did something wrong in the operation
+        // leading up to the rounding work.
+        XRPL_ASSERT(mantissa != 0, "xrpl::Number::Guard::bringIntoRange : valid mantissa");
         static constexpr Number kZero = Number{};
 
         negative = kZero.negative_;

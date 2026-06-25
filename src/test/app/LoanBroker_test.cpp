@@ -1452,7 +1452,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(tx2, Ter(temINVALID));
         }
 
-        if (Number::getMantissaScale() == MantissaRange::MantissaScale::Large330)
+        if (Number::getMantissaScale() >= MantissaRange::MantissaScale::Large330)
         {
             // For the Large330 scale, 2^63 rounds _down_ to Number::kMaxRep
             {
