@@ -453,14 +453,6 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     {
         STArray const& signers = ctx.tx.getFieldArray(sfBatchSigners);
 
-        // Check that the batch signers array is not too large.
-        if (signers.size() > kMaxBatchSigners)
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "signers array exceeds " << kMaxBatchSigners << " entries.";
-            return temARRAY_TOO_LARGE;
-        }
-
         // Batch signers must be strictly ascending and match the required
         // signers exactly; since both are sorted, each must be the next
         // required signer.
