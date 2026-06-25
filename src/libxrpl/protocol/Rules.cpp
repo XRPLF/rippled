@@ -41,23 +41,24 @@ setCurrentTransactionRules(std::optional<Rules> r)
 
     // Declare the range this way to keep clang-tidy from complaining
     auto const range = [&r]() {
-        // If any new conditions with new amendments are added to "enableVaultNumbers", those
+        // If any new conditions with new amendments are added to "enableLargeNumbers", those
         // amendments must also be added to useRulesGuards.
-        bool const enableVaultNumbers =
+        bool const enableLargeNumbers =
             !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+        // If enableLargeNumbers is true, then useRulesGuard must also return true.
+        // However, the reverse is not true. Other amendments can cause the rules guard to be used,
+        // even though large numbers are _not_ used.
         XRPL_ASSERT(
-            !r || !enableVaultNumbers || useRulesGuards(*r),
+            !r || !enableLargeNumbers || useRulesGuards(*r),
             "setCurrentTransactionRules : rule decisions match");
-        bool const enableCuspRounding320 = !r || r->enabled(fixCleanup3_2_0);
-        bool const enableCuspRounding330 = !r || r->enabled(fixCleanup3_3_0);
 
-        if (enableVaultNumbers)
+        if (enableLargeNumbers)
         {
-            if (enableCuspRounding330)
+            if (!r || r->enabled(fixCleanup3_3_0))
             {
                 return MantissaRange::MantissaScale::Large330;
             }
-            if (enableCuspRounding320)
+            if (r->enabled(fixCleanup3_2_0))
             {
                 return MantissaRange::MantissaScale::Large320;
             }
@@ -74,7 +75,7 @@ bool
 useRulesGuards(Rules const& rules)
 {
     // The list of amendments used here - to decide whether to create a RulesGuard - must be a
-    // superset of the list used to determine "enableVaultNumbers" in setCurrentTransactionRules.
+    // superset of the list used to determine "enableLargeNumbers" in setCurrentTransactionRules.
     // Additional amendments can be added if desired.
     //
     // As soon as any one of these amendments is retired, this whole function can be removed, along
@@ -92,7 +93,8 @@ createGuards(
 {
     if (useRulesGuards(rules))
     {
-        // raii classes for the current ledger rules.
+        // raii classes for the current ledger rules. If the rules are set, the MantissaRange will
+        // be updated, too.
         rulesGuard.emplace(rules);
     }
     else

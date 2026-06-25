@@ -136,6 +136,10 @@ struct MantissaRange final
         Large320,
         // If Large330 is ever the only remaining "Large*" entry, it can be renamed to just "Large".
         Large330,
+        // Large is a de-facto alias for "the latest", and is only here for backward compatibility
+        // in the extremely unlikely case that a downstream project made use of it. Note that
+        // because the behavior changed, this may still be a breaking change.
+        Large = Large330,
     };
 
     // This entire enum can be removed when the last relevant amendment is retired
@@ -146,6 +150,10 @@ struct MantissaRange final
         Enabled320 = 1,
         // If we ever get to the point that there's only one entry, remove the entire enum
         Enabled330 = 2,
+        // Enabled is a de-facto alias for "the latest", and is only here for backward compatibility
+        // in the extremely unlikely case that a downstream project made use of it. Note that
+        // because the behavior changed, this may still be a breaking change.
+        Enabled = Enabled330,
     };
 
     explicit constexpr MantissaRange(MantissaScale sc) : scale(sc)
@@ -158,11 +166,25 @@ struct MantissaRange final
     rep const max{(min * 10) - 1};
     CuspRoundingFix const cuspRoundingFix{isCuspFixEnabled(scale)};
 
-    static constexpr MantissaRange const&
-    getMantissaRange(MantissaScale scale);
+    static constexpr std::set<MantissaScale> const&
+    getAllScales()
+    {
+        static std::set<MantissaRange::MantissaScale> const kScales = {
+            MantissaRange::MantissaScale::Small,
+            MantissaRange::MantissaScale::LargeLegacy,
+            MantissaRange::MantissaScale::Large320,
+            MantissaRange::MantissaScale::Large330,
+        };
+        return kScales;
+    }
 
-    static std::set<MantissaScale> const&
-    getAllScales();
+    class Get
+    {
+        static constexpr MantissaRange const&
+        mantissaRange(MantissaScale scale);
+
+        friend Number;
+    };
 
 private:
     static constexpr int

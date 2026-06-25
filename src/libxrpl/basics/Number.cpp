@@ -30,7 +30,7 @@ namespace xrpl {
 
 thread_local Number::RoundingMode Number::mode = Number::RoundingMode::ToNearest;
 thread_local std::reference_wrapper<MantissaRange const> Number::kRange =
-    MantissaRange::getMantissaRange(MantissaRange::MantissaScale::Large330);
+    MantissaRange::Get::mantissaRange(MantissaRange::MantissaScale::Large330);
 
 std::string
 to_string(MantissaRange::MantissaScale const& scale)
@@ -68,20 +68,8 @@ to_string(Number::RoundingMode const& round)
     }
 }
 
-std::set<MantissaRange::MantissaScale> const&
-MantissaRange::getAllScales()
-{
-    static std::set<MantissaRange::MantissaScale> const kScales = {
-        MantissaRange::MantissaScale::Small,
-        MantissaRange::MantissaScale::LargeLegacy,
-        MantissaRange::MantissaScale::Large320,
-        MantissaRange::MantissaScale::Large330,
-    };
-    return kScales;
-}
-
 constexpr MantissaRange const&
-MantissaRange::getMantissaRange(MantissaScale scale)
+MantissaRange::Get::mantissaRange(MantissaScale scale)
 {
     static constexpr MantissaRange kSmall{MantissaScale::Small};
     static constexpr MantissaRange kLegacy{MantissaScale::LargeLegacy};
@@ -164,7 +152,7 @@ Number::setMantissaScale(MantissaRange::MantissaScale scale)
 {
     if (!MantissaRange::getAllScales().contains(scale))
         logicError("Unknown mantissa scale");
-    kRange = MantissaRange::getMantissaRange(scale);
+    kRange = MantissaRange::Get::mantissaRange(scale);
 }
 
 // Optimization equivalent to:
