@@ -247,6 +247,7 @@ target_link_modules(
 
 if(xrpld)
     add_executable(xrpld)
+    patch_nix_binary(xrpld)
     if(tests)
         target_compile_definitions(xrpld PUBLIC ENABLE_TESTS)
         target_compile_definitions(
