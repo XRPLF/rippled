@@ -353,7 +353,7 @@ jobs:
           cd "${WORKING_DIR}"
 
           if [ -f unittest.log ]; then
-              if ! grep -E "failed" unittest.log; then
+              if ! grep -E "failed" unittest.log | grep -vE "^I[0-9]|^[0-9]+> (ERR:|FTL:)"; then
                   echo "unittest.log present but no failure lines found."
               fi
           else
