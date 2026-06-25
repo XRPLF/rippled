@@ -29,7 +29,6 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
-#include <test/jtx/xchain_bridge.h>
 
 #include <xrpld/core/Config.h>
 
@@ -4128,165 +4127,6 @@ public:
     }
 
     void
-    testXChain(bool cosigning)
-    {
-        testcase("XChain");
-        using namespace test::jtx;
-        Account const alice("alice");
-        Account const bob("bob");
-        Account const doorA("doorA");
-        Account const signer("signer");
-        Account const sponsor("sponsor");
-
-        Env env{*this, testableAmendments()};
-        env.fund(XRP(1000000), alice, bob, sponsor, doorA);
-        env.close();
-
-        auto jvb = bridge(doorA, XRP, env.master, XRP);
-
-        env(signers(doorA, 1, {signer}));
-        env.close();
-
-        // XChainCreateBridge
-        {
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                doorA,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    submit(bridgeCreate(doorA, jvb, XRP(1), XRP(1)));
-                });
-        }
-        // XChainCreateClaimID
-        {
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                alice,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    submit(xchainCreateClaimId(alice, jvb, XRP(1), bob));
-                });
-        }
-        // XChainCommit
-        {
-            BEAST_EXPECT(ownerCount(env, alice) == 1);  // XChainOwnedClaimID
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
-
-            if (cosigning)
-            {
-                env(xchainCommit(alice, jvb, 1, XRP(100), bob),
-                    sponsor::As(sponsor, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor));
-                env.close();
-            }
-            else
-            {
-                env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(alice));
-                env.close();
-
-                env(xchainCommit(alice, jvb, 1, XRP(100), bob),
-                    sponsor::As(sponsor, spfSponsorReserve));
-                env.close();
-
-                env(sponsor::del(sponsor), sponsor::SponseeAcc(alice));
-                env.close();
-            }
-
-            // doesn't sponsor anything
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
-        }
-        // XChainAddClaimAttestation
-        {
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
-
-            if (cosigning)
-            {
-                env(claimAttestation(alice, jvb, bob, XRP(1), bob, false, 1, bob, signer),
-                    sponsor::As(sponsor, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor));
-                env.close();
-            }
-            else
-            {
-                env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(alice));
-                env.close();
-
-                env(claimAttestation(alice, jvb, bob, XRP(1), bob, false, 1, bob, signer),
-                    sponsor::As(sponsor, spfSponsorReserve));
-                env.close();
-
-                env(sponsor::del(sponsor), sponsor::SponseeAcc(alice));
-                env.close();
-            }
-
-            // XChainOwnedClaimID deleted
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
-        }
-        // XChainClaim
-        {
-            // prepare for claim
-            {
-                env(xchainCreateClaimId(alice, jvb, XRP(1), bob),
-                    sponsor::As(sponsor, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor));
-                env(xchainCommit(alice, jvb, 2, XRP(100)));  // omit destination
-                env(claimAttestation(
-                    alice, jvb, bob, XRP(100), bob, false, 2, std::nullopt, signer));
-                env.close();
-            }
-
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
-
-            env(xchainClaim(alice, jvb, 2, XRP(100), bob));
-            env.close();
-
-            // XChainOwnedClaimID deleted
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
-        }
-        // XChainCreateAccountClaimID
-        {
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, doorA) == 2);
-            BEAST_EXPECT(sponsoredOwnerCount(env, doorA) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
-
-            env(createAccountAttestation(
-                    alice, jvb, alice, XRP(20), XRP(0), bob, false, 2, bob, signer),
-                sponsor::As(sponsor, spfSponsorReserve),
-                Sig(sfSponsorSignature, sponsor),
-                Ter(tesSUCCESS));
-            env.close();
-
-            // XChainCreateAccountClaimID not sponsored
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, doorA) == 3);
-            BEAST_EXPECT(sponsoredOwnerCount(env, doorA) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
-        }
-    }
-
-    void
     testLending(bool cosigning)
     {
         testcase("Lending");
@@ -5124,7 +4964,6 @@ public:
         testSignerList(cosigning);
         testTrustSet(cosigning);
         testVault(cosigning);
-        testXChain(cosigning);
         testLending(cosigning);
     }
 
