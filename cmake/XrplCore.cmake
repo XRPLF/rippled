@@ -69,6 +69,7 @@ target_link_libraries(
         secp256k1::secp256k1
         xrpl.libpb
         xxHash::xxhash
+        spdlog::spdlog
         $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
 )
 

@@ -34,6 +34,7 @@ class Xrpl(ConanFile):
         "openssl/3.6.2",
         "secp256k1/0.7.1",
         "soci/4.0.3",
+        "spdlog/1.17.0",
         "zlib/1.3.2",
     ]
 
@@ -109,6 +110,7 @@ class Xrpl(ConanFile):
         "secp256k1/*:shared": False,
         "snappy/*:shared": False,
         "soci/*:shared": False,
+        "spdlog/*:shared": False,
         "soci/*:with_sqlite3": True,
         "soci/*:with_boost": True,
         "xxhash/*:shared": False,
@@ -213,6 +215,7 @@ class Xrpl(ConanFile):
             "protobuf::libprotobuf",
             "soci::soci",
             "secp256k1::secp256k1",
+            "spdlog::spdlog",
             "sqlite3::sqlite",
             "xxhash::xxhash",
             "zlib::zlib",
