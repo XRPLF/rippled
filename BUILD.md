@@ -101,7 +101,7 @@ More information on customizing Conan can be found in the [Advanced Conan config
 Run the following command to add the `xrplf` remote, which hosts some of our dependencies:
 
 ```bash
-conan remote add --index 0 --force xrplf https://conan.xrplf.org/repository/conan/
+conan remote add --index 0 --force xrplf https://conan.ripplex.io
 ```
 
 ### Set Up Ccache
