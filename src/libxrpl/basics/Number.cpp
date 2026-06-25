@@ -30,7 +30,7 @@ namespace xrpl {
 
 thread_local Number::RoundingMode Number::mode = Number::RoundingMode::ToNearest;
 thread_local std::reference_wrapper<MantissaRange const> Number::kRange =
-    MantissaRange::Get::mantissaRange(MantissaRange::MantissaScale::Large330);
+    MantissaRange::Access::mantissaRange(MantissaRange::MantissaScale::Large330);
 
 std::string
 to_string(MantissaRange::MantissaScale const& scale)
@@ -69,7 +69,7 @@ to_string(Number::RoundingMode const& round)
 }
 
 constexpr MantissaRange const&
-MantissaRange::Get::mantissaRange(MantissaScale scale)
+MantissaRange::Access::mantissaRange(MantissaScale scale)
 {
     static constexpr MantissaRange kSmall{MantissaScale::Small};
     static constexpr MantissaRange kLegacy{MantissaScale::LargeLegacy};
@@ -152,7 +152,7 @@ Number::setMantissaScale(MantissaRange::MantissaScale scale)
 {
     if (!MantissaRange::getAllScales().contains(scale))
         logicError("Unknown mantissa scale");
-    kRange = MantissaRange::Get::mantissaRange(scale);
+    kRange = MantissaRange::Access::mantissaRange(scale);
 }
 
 // Optimization equivalent to:
