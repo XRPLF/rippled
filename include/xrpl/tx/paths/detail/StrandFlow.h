@@ -767,8 +767,6 @@ flow(
      *   TakerPays. We reverse pays and gets because during crossing
      *   we are taking, therefore the owner must deliver the full TakerPays and
      *   the entire TakerGets doesn't have to be spent.
-     *   Pre-fixFillOrKill amendment code fails if the entire TakerGets
-     *   is not spent. fixFillOrKill addresses this issue.
      * 2. If tfSell is also set then the owner must spend the entire TakerGets
      *   even if it means obtaining more than TakerPays. Since the pays and gets
      *   are reversed, the owner must send the entire TakerGets.
@@ -789,7 +787,7 @@ flow(
         if (!partialPayment)
         {
             // If we're offerCrossing a !partialPayment, then we're handling a FillOrKill.
-            if (offerCrossing == OfferCrossing::No || offerCrossing != OfferCrossing::Sell)
+            if (offerCrossing != OfferCrossing::Sell)
             {
                 return {tecPATH_PARTIAL, actualIn, actualOut, std::move(ofrsToRmOnFail)};
             }
@@ -799,8 +797,7 @@ flow(
             return {tecPATH_DRY, std::move(ofrsToRmOnFail)};
         }
     }
-    if (offerCrossing != OfferCrossing::No &&
-        (!partialPayment && offerCrossing == OfferCrossing::Sell))
+    if (!partialPayment && offerCrossing == OfferCrossing::Sell)
     {
         // If we're offer crossing and partialPayment is *not* true, then
         // we're handling a FillOrKill offer.

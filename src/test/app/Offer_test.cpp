@@ -4949,7 +4949,7 @@ public:
         auto makerXRPBalance = env.balance(maker, XRP).value();
         auto takerXRPBalance = env.balance(taker, XRP).value();
 
-        // tfFillOrKill, TakerPays must be filled
+        // TakerPays must be filled
         {
             env(offer(maker, XRP(100), usd(100)));
             env.close();
@@ -4994,7 +4994,7 @@ public:
             BEAST_EXPECT(expectOffers(env, taker, 0));
         }
 
-        // tfFillOrKill + tfSell, TakerGets must be filled
+        // tfSell, TakerGets must be filled
         {
             env(offer(maker, XRP(101), usd(101)));
             env.close();
