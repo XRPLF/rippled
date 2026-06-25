@@ -174,11 +174,21 @@ public:
     ammRpcInfo(
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledgerIndex = std::nullopt,
-        std::optional<Asset> asset1 = std::nullopt,
-        std::optional<Asset> asset2 = std::nullopt,
+        std::optional<Asset> const& asset1 = std::nullopt,
+        std::optional<Asset> const& asset2 = std::nullopt,
         std::optional<AccountID> const& ammAccount = std::nullopt,
         bool ignoreParams = false,
         unsigned apiVersion = RPC::kApiInvalidVersion) const;
+
+    [[nodiscard]] json::Value
+    ammRpcInfo(
+        std::optional<json::Value> const& account,
+        std::optional<std::string> const& ledgerIndex,
+        std::optional<Asset> const& asset1,
+        std::optional<Asset> const& asset2,
+        std::optional<json::Value> const& ammAccount,
+        bool ignoreParams,
+        unsigned apiVersion) const;
 
     /** Verify the AMM balances.
      */
