@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
@@ -4622,8 +4623,11 @@ class Invariants_test : public beast::unit_test::Suite
 
                 shareID = env.le(vaultKeylet)->at(sfShareMPTID);
 
-                // Freeze a1's IOU trustline from the issuer side.
-                env(trust(gw, gw["IOU"](0), a1, tfSetFreeze));
+                // Freeze a2's IOU trustline from the issuer side.
+                // a2 is the receiver in the simulated AMM withdraw; the
+                // distinction under test is that pre-fix330 the invariant
+                // does not apply the transitive vault freeze to receivers.
+                env(trust(gw, gw["IOU"](0), a2, tfSetFreeze));
                 env.close();
                 return true;
             };
@@ -4642,8 +4646,9 @@ class Invariants_test : public beast::unit_test::Suite
                 return true;
             };
 
-            // post-fixCleanup3_3_0: isVaultPseudoAccountFrozen finds a1's
-            // underlying IOU frozen → invalidTransfer → invariant fires.
+            // post-fixCleanup3_3_0: full isFrozen() applies to all holders;
+            // isVaultPseudoAccountFrozen finds a2's underlying IOU frozen →
+            // invalidTransfer → invariant fires.
             doInvariantCheck(
                 Env{*this, defaultAmendments()},
                 {{"invalid MPToken transfer between holders"}},
@@ -4653,8 +4658,9 @@ class Invariants_test : public beast::unit_test::Suite
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 preclose);
 
-            // pre-fixCleanup3_3_0: isVaultPseudoAccountFrozen is not called;
-            // transfer is allowed even though the underlying IOU is frozen.
+            // pre-fixCleanup3_3_0: legacy AMM withdraw only checked
+            // checkIndividualFrozen on the destination, not the transitive
+            // vault freeze; a2 as receiver is exempt → invariant passes.
             doInvariantCheck(
                 Env{*this, defaultAmendments() - fixCleanup3_3_0},
                 {},
@@ -4663,6 +4669,131 @@ class Invariants_test : public beast::unit_test::Suite
                 STTx{ttAMM_WITHDRAW, [](STObject&) {}},
                 {tesSUCCESS, tesSUCCESS},
                 preclose);
+        }
+
+        // Side-specific vault-share AMM_WITHDRAW invariant tests.
+        // Both cases use a real vault (IOU underlying) and a real AMM whose
+        // pool includes vault shares.  precheck simulates an AMM_WITHDRAW by
+        // transferring 10 vault shares from the AMM pseudo-account to a2.
+        {
+            MPTID shareID{};
+            AccountID ammAcctID{};
+            AccountID vaultPseudoID{};
+            Account const gw{"gw"};
+
+            // Simulate AMM_WITHDRAW: AMM pseudo-account sends 10 vault shares
+            // to a2.  The AMM pseudo is the sender (decreasing balance);
+            // a2 is the receiver (increasing balance).
+            auto const precheck2 =
+                [&](Account const& /*a1*/, Account const& a2, ApplyContext& ac) -> bool {
+                auto sleAMM = ac.view().peek(keylet::mptoken(shareID, ammAcctID));
+                auto sle2 = ac.view().peek(keylet::mptoken(shareID, a2.id()));
+                if (!sleAMM || !sle2)
+                    return false;
+                (*sleAMM)[sfMPTAmount] -= 10;
+                (*sle2)[sfMPTAmount] += 10;
+                ac.view().update(sleAMM);
+                ac.view().update(sle2);
+                return true;
+            };
+
+            // Shared vault + AMM setup: a1 deposits 500 IOU into a vault and
+            // creates an AMM with XRP + 100 vault shares, giving the AMM
+            // pseudo-account a vault-share MPToken balance.
+            auto const setupVaultAMM = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                env.fund(XRP(1'000), gw);
+                env(fset(gw, asfDefaultRipple));
+                env.trust(gw["IOU"](10'000), a1);
+                env.trust(gw["IOU"](10'000), a2);
+                env.close();
+                env(pay(gw, a1, gw["IOU"](1'000)));
+                env(pay(gw, a2, gw["IOU"](500)));
+                env.close();
+
+                Vault const vault{env};
+                auto [createTx, vaultKeylet] = vault.create({.owner = a1, .asset = gw["IOU"]});
+                env(createTx);
+                env.close();
+
+                env(vault.deposit(
+                    {.depositor = a1, .id = vaultKeylet.key, .amount = gw["IOU"](500)}));
+                env(vault.deposit(
+                    {.depositor = a2, .id = vaultKeylet.key, .amount = gw["IOU"](200)}));
+                env.close();
+
+                shareID = env.le(vaultKeylet)->at(sfShareMPTID);
+                vaultPseudoID = env.le(vaultKeylet)->at(sfAccount);
+
+                // a1 creates AMM with XRP + 100 vault shares; the AMM
+                // pseudo-account receives an MPToken record for shareID.
+                AMM const amm(env, a1, XRP(100), STAmount{MPTIssue{shareID}, 100});
+                ammAcctID = amm.ammAccount();
+                return true;
+            };
+
+            // Case 1: freeze the vault pseudo-account's IOU trustline.
+            // isVaultPseudoAccountFrozen(ammAcct) calls isAnyFrozen({vaultPseudo,
+            // ammAcct}, IOU); since vaultPseudo is frozen it returns true.  The
+            // AMM sender has a decreasing balance (not a receiver) so it is
+            // never exempt from the check — invariant fires both pre- and
+            // post-fixCleanup3_3_0.
+            auto const preclose3 = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                if (!setupVaultAMM(a1, a2, env))
+                    return false;
+                env(trust(gw, gw["IOU"](0), Account{"vaultPseudo", vaultPseudoID}, tfSetFreeze));
+                env.close();
+                return true;
+            };
+
+            doInvariantCheck(
+                Env{*this, defaultAmendments()},
+                {{"invalid MPToken transfer between holders"}},
+                precheck2,
+                XRPAmount{},
+                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                preclose3);
+
+            doInvariantCheck(
+                Env{*this, defaultAmendments() - fixCleanup3_3_0},
+                {{"invalid MPToken transfer between holders"}},
+                precheck2,
+                XRPAmount{},
+                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                preclose3);
+
+            // Case 2: freeze a2's (receiver's) IOU trustline.
+            // isVaultPseudoAccountFrozen(a2) → isAnyFrozen({vaultPseudo, a2},
+            // IOU) → true.  The AMM sender's check passes (vaultPseudo and
+            // ammAcct are not frozen).  Pre-fix330: receiver is exempt from
+            // isVaultPseudoAccountFrozen in ttAMM_WITHDRAW → passes.
+            // Post-fix330: full isFrozen() applied to a2 → fires.
+            auto const preclose4 = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+                if (!setupVaultAMM(a1, a2, env))
+                    return false;
+                env(trust(gw, gw["IOU"](0), a2, tfSetFreeze));
+                env.close();
+                return true;
+            };
+
+            doInvariantCheck(
+                Env{*this, defaultAmendments()},
+                {{"invalid MPToken transfer between holders"}},
+                precheck2,
+                XRPAmount{},
+                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                preclose4);
+
+            doInvariantCheck(
+                Env{*this, defaultAmendments() - fixCleanup3_3_0},
+                {},
+                precheck2,
+                XRPAmount{},
+                STTx{ttAMM_WITHDRAW, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                preclose4);
         }
     }
 

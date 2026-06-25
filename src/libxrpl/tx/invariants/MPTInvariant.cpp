@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -510,6 +511,15 @@ ValidMPTTransfer::isAuthorized(
     AccountID const& holder,
     bool reqAuth) const
 {
+    // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of their
+    // participants and are implicitly authorized for any MPT they hold,
+    // including vault shares whose underlying asset would otherwise require
+    // auth.  Exempt them here rather than relying on requireAuth: the recursive
+    // share -> underlying descent in requireAuth fails for a pseudo-account
+    // that holds the share but not the underlying.
+    if (isPseudoAccount(view, holder, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
+        return true;
+
     auto const key = keylet::mptoken(mptid, holder);
     auto const it = deletedAuthorized_.find(key.key);
     if (it != deletedAuthorized_.end())
@@ -590,13 +600,24 @@ ValidMPTTransfer::finalize(
                 // Check once: if any involved account is frozen, the whole issuance transfer is
                 // considered frozen. Only need to check for frozen if there is a transfer of funds.
                 //
-                // The isVaultPseudoAccountFrozen check (transitive freeze via vault underlying) is
-                // only enforced post-fixCleanup3_3_0; pre-amendment, AMM withdrawals of vault
-                // shares are permitted even when the underlying asset is individually frozen.
-                bool const accountFrozen = isGlobalFrozen(view, MPTIssue{mptID}) ||
-                    isIndividualFrozen(view, account, MPTIssue{mptID}) ||
-                    (fix330Enabled &&
-                     isVaultPseudoAccountFrozen(view, account, MPTIssue{mptID}, 0));
+                // Post-fix330: full isFrozen() applies — vault-share transitive freeze is part of
+                // the freeze semantics for all changed holders.
+                //
+                // Pre-fix330: legacy AMM withdraw only checked individual freeze on the
+                // destination, not the transitive vault freeze.  All other paths (and the AMM
+                // account itself as sender) did apply the full check.
+                MPTIssue const issue{mptID};
+                auto const legacyAccountFrozen = [&] {
+                    if (isGlobalFrozen(view, issue) || isIndividualFrozen(view, account, issue))
+                        return true;
+                    bool const isReceiver =
+                        !value.amtBefore.has_value() || *value.amtAfter > *value.amtBefore;
+                    if (txnType == ttAMM_WITHDRAW && isReceiver)
+                        return false;
+                    return isVaultPseudoAccountFrozen(view, account, issue, 0);
+                };
+                bool const accountFrozen =
+                    fix330Enabled ? isFrozen(view, account, issue) : legacyAccountFrozen();
                 if (!invalidTransfer &&
                     (accountFrozen || !isAuthorized(view, mptID, account, reqAuth)))
                 {

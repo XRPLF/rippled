@@ -18,12 +18,12 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
-#include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
@@ -6914,7 +6914,7 @@ private:
 
         auto runIOU = [&](FeatureBitset const& features) {
             bool const fix330 = features[fixCleanup3_3_0];
-            Env env{*this, features};
+            Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
 
             env.fund(XRP(100'000), gw_, alice_);
             env(fset(gw_, asfDefaultRipple));
@@ -6954,21 +6954,33 @@ private:
                  .asset1In = XRP(1),
                  .err = Ter(fix330 ? TER(tesSUCCESS) : TER(tecLOCKED))});
 
-            // post-fix330: checkDeepFrozen(alice, share) descends to alice's
-            //              frozen IOU → tecLOCKED
-            // pre-fix330:  old path checks AMM account's MPToken lock only
-            //              (unset) → tesSUCCESS
+            // post-fix330: checkWithdrawFreeze → checkDeepFrozen(alice, share)
+            //              descends to alice's frozen IOU → tecLOCKED
+            // pre-fix330:  the AMM pseudo-account is not authorized for the
+            //              share's underlying (requireAuth recurses share→IOU
+            //              and the AMM holds no IOU trustline), so
+            //              accountHolds(ZeroIfUnauthorized) reports the pool's
+            //              share balance as 0 and the withdrawal math fails →
+            //              tecAMM_FAILED.  Vault shares deposited into an AMM are
+            //              only withdrawable once fixCleanup3_3_0 exempts the
+            //              pseudo-account from the recursive auth check.
             amm.withdraw(
                 {.account = alice_,
                  .tokens = 1'000,
-                 .err = Ter(fix330 ? TER(tecLOCKED) : TER(tesSUCCESS))});
+                 .err = Ter(fix330 ? TER(tecLOCKED) : TER(tecAMM_FAILED))});
 
             env(trust(gw_, iou(0), alice_, tfClearFreeze));
             env.close();
 
-            // Confirm both operations succeed once the freeze is lifted.
+            // Lifting the freeze lets the deposit through in both cases.  The
+            // withdrawal only succeeds post-fix330; pre-fix330 the share balance
+            // remains inaccessible to the unauthorized pseudo-account, so the
+            // shares stay stuck → tecAMM_FAILED.
             amm.deposit({.account = alice_, .asset1In = XRP(1)});
-            amm.withdraw({.account = alice_, .tokens = 1'000});
+            amm.withdraw(
+                {.account = alice_,
+                 .tokens = 1'000,
+                 .err = Ter(fix330 ? TER(tesSUCCESS) : TER(tecAMM_FAILED))});
         };
 
         runIOU(all);
@@ -6976,7 +6988,9 @@ private:
 
         auto runMPT = [&](FeatureBitset const& features) {
             bool const fix330 = features[fixCleanup3_3_0];
-            Env env{*this, features};
+            // Expected freeze failures fire invariant checks that log at Error;
+            // silence them so the test output stays clean.
+            Env env{*this, envconfig(), features, nullptr, beast::Severity::Disabled};
 
             env.fund(XRP(100'000), gw_, alice_);
             env.close();
@@ -7015,15 +7029,27 @@ private:
 
             // {.tokens = 1'000} → frac = 1000/1e6 = 0.001
             // XRP out = 1e8 * 0.001 = 1e5 drops, shares out = 10000 * 0.001 = 10
+            // post-fix330: checkWithdrawFreeze sees alice's locked underlying
+            //              MPT via the share → tecLOCKED.
+            // pre-fix330:  the AMM pseudo-account is unauthorized for the
+            //              share's underlying MPT (it holds no underlying
+            //              MPToken), so accountHolds(ZeroIfUnauthorized) zeros
+            //              the pool's share balance and the math fails →
+            //              tecAMM_FAILED.
             amm.withdraw(
                 {.account = alice_,
                  .tokens = 1'000,
-                 .err = Ter(fix330 ? TER(tecLOCKED) : TER(tesSUCCESS))});
+                 .err = Ter(fix330 ? TER(tecLOCKED) : TER(tecAMM_FAILED))});
 
             mptt.set({.holder = alice_, .flags = tfMPTUnlock});
 
+            // Unlocking lets the deposit through; the withdrawal only succeeds
+            // post-fix330 (pre-fix330 the shares remain stuck → tecAMM_FAILED).
             amm.deposit({.account = alice_, .asset1In = XRP(1)});
-            amm.withdraw({.account = alice_, .tokens = 1'000});
+            amm.withdraw(
+                {.account = alice_,
+                 .tokens = 1'000,
+                 .err = Ter(fix330 ? TER(tesSUCCESS) : TER(tecAMM_FAILED))});
         };
 
         runMPT(all);
@@ -7252,7 +7278,7 @@ private:
         FeatureBitset const all{jtx::testableAmendments()};
         testInstanceCreate();
         testInvalidInstance();
-        for (auto const& f : jtx::amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
+        for (auto const& f : jtx::amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}, all))
             testInvalidDeposit(f);
         testDeposit();
         testInvalidWithdraw();

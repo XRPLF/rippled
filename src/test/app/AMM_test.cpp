@@ -19,7 +19,6 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
-#include <test/jtx/utility.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>

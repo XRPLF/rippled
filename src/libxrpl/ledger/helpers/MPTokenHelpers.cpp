@@ -308,6 +308,18 @@ requireAuth(
     AuthType authType,
     std::uint8_t depth)
 {
+    bool const fix330Enabled = view.rules().enabled(fixCleanup3_3_0);
+    bool const featureSAVEnabled = view.rules().enabled(featureSingleAssetVault);
+    bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
+
+    // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of their participants.
+    // They are implicitly authorized for any MPT they hold, including vault shares whose
+    // underlying asset would otherwise require auth.
+    auto const isPseudoAccountExempt = [&] {
+        return (featureSAVEnabled || featureMPTV2Enabled) &&
+            isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID});
+    };
+
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
     if (!sleIssuance)
@@ -319,18 +331,9 @@ requireAuth(
     if (mptIssuer == account)  // Issuer won't have MPToken
         return tesSUCCESS;
 
-    bool const featureSAVEnabled = view.rules().enabled(featureSingleAssetVault);
-
-    bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
-    if (featureSAVEnabled || featureMPTV2Enabled)
-    {
-        // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of
-        // their participants and do not have trustlines to underlying assets.
-        // They are implicitly authorized for any MPT they hold, including vault
-        // shares whose underlying asset would otherwise require auth.
-        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
-            return tesSUCCESS;
-    }
+    // Post-fix330: exempt before the recursive underlying-asset auth check.
+    if (fix330Enabled && isPseudoAccountExempt())
+        return tesSUCCESS;
 
     if (featureSAVEnabled)
     {
@@ -392,6 +395,10 @@ requireAuth(
         // We ignore error from validDomain if we found sleToken, as it could
         // belong to someone who is explicitly authorized e.g. a vault owner.
     }
+
+    // Pre-fix330: exempt after domain/sleToken checks, preserving prior behavior.
+    if (!fix330Enabled && isPseudoAccountExempt())
+        return tesSUCCESS;
 
     // mptoken must be authorized if issuance enabled requireAuth
     if (sleIssuance->isFlag(lsfMPTRequireAuth) &&
