@@ -33,7 +33,6 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
-#include <test/jtx/xchain_bridge.h>
 
 #include <xrpld/core/Config.h>
 
