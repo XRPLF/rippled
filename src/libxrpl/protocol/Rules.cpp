@@ -54,6 +54,8 @@ setCurrentTransactionRules(std::optional<Rules> r)
 
         if (enableLargeNumbers)
         {
+            static_assert(
+                MantissaRange::MantissaScale::Large == MantissaRange::MantissaScale::Large330);
             if (!r || r->enabled(fixCleanup3_3_0))
             {
                 return MantissaRange::MantissaScale::Large330;
