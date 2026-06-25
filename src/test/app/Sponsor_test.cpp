@@ -26,7 +26,6 @@
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
-#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
@@ -40,7 +39,6 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -55,7 +53,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <utility>
 
 namespace xrpl::test {
 
@@ -681,12 +678,13 @@ public:
         testcase("PreFund and Cosign");
         using namespace test::jtx;
         Account const alice("alice");
+        Account const bob("bob");
         Account const sponsor("sponsor");
 
         {
             // both pre-funded and co-signed,pre-funded value is used
             Env env{*this, testableAmendments()};
-            env.fund(XRP(10000), alice, sponsor);
+            env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
             env(sponsor::set(sponsor, 0, 100, XRP(100), XRP(1)),
@@ -694,8 +692,8 @@ public:
                 Ter(tesSUCCESS));
             env.close();
 
-            auto const ticketSeq = env.seq(alice);
-            env(ticket::create(alice, 1),
+            auto const checkSeq = env.seq(alice);
+            env(check::create(alice, bob, XRP(1)),
                 sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                 Sig(sfSponsorSignature, sponsor),
                 Fee(XRP(1)),
@@ -707,7 +705,7 @@ public:
             BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 99);
             BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(99));
 
-            env(noop(alice), ticket::Use(ticketSeq + 1), Ter(tesSUCCESS));
+            env(check::cancel(alice, keylet::check(alice, checkSeq).key), Ter(tesSUCCESS));
             env.close();
 
             sle = env.le(keylet::sponsorship(sponsor, alice));
@@ -719,7 +717,7 @@ public:
         {
             // if pre-funded value is not enough, error
             Env env{*this, testableAmendments()};
-            env.fund(XRP(10000), alice, sponsor);
+            env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
             env(sponsor::set(sponsor, 0, 10, XRP(10), XRP(100)),
@@ -728,15 +726,18 @@ public:
             env.close();
 
             // Fee insufficient
-            env(ticket::create(alice, 1),
+            env(check::create(alice, bob, XRP(1)),
                 sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                 Sig(sfSponsorSignature, sponsor),
                 Fee(XRP(11)),
                 Ter(terINSUF_FEE_B));
             env.close();
 
+            env(sponsor::set_reserve(sponsor, 0, 0), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
+            env.close();
+
             // reserve insufficient
-            env(ticket::create(alice, 11),
+            env(check::create(alice, bob, XRP(1)),
                 sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                 Sig(sfSponsorSignature, sponsor),
                 Fee(XRP(1)),
@@ -2002,25 +2003,26 @@ public:
         using namespace test::jtx;
         Env env{*this, testableAmendments()};
         Account const alice("alice");
+        Account const bob("bob");
         Account const sponsor("sponsor");
 
-        env.fund(XRP(10000), alice, sponsor);
+        env.fund(XRP(10000), alice, bob, sponsor);
         env.close();
 
         // test Sufficient sponsor balance
         if (cosigning)
         {
-            adjustAccountXRPBalance(env, sponsor, reserve(env, 99));
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
 
-            env(ticket::create(alice, 100),
+            env(check::create(alice, bob, XRP(100)),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor),
                 Ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
-            adjustAccountXRPBalance(env, sponsor, reserve(env, 100));
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
 
-            env(ticket::create(alice, 100),
+            env(check::create(alice, bob, XRP(100)),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor),
                 Ter(tesSUCCESS));
@@ -2031,16 +2033,16 @@ public:
             env(sponsor::set_reserve(sponsor, 0, 250), sponsor::SponseeAcc(alice));
             env.close();
 
-            adjustAccountXRPBalance(env, sponsor, reserve(env, 99 + 1 /* sponsor object*/));
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 2) - drops(1));
 
-            env(ticket::create(alice, 100),
+            env(check::create(alice, bob, XRP(100)),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
-            adjustAccountXRPBalance(env, sponsor, reserve(env, 100 + 1 /* sponsor object*/));
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
 
-            env(ticket::create(alice, 100),
+            env(check::create(alice, bob, XRP(100)),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Ter(tesSUCCESS));
             env.close();
@@ -2329,75 +2331,6 @@ public:
                     BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
                     BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
                 });
-        }
-    }
-
-    void
-    testTicket(bool cosigning)
-    {
-        testcase("Ticket");
-        using namespace test::jtx;
-        Account const alice("alice");
-        Account const sponsor("sponsor");
-        Account const sponsor2("sponsor2");
-
-        {
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), alice, sponsor, sponsor2);
-            env.close();
-
-            // TicketCreate
-            uint32_t ticketSeq = 0;
-
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                alice,
-                250,
-                250,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    ticketSeq = env.seq(alice) + 1;
-                    submit(ticket::create(alice, 250));
-                });
-
-            auto const keylet = keylet::TicketT()(alice, ticketSeq);
-            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor.id());
-
-            // transfer sponsor
-            if (cosigning)
-            {
-                env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor2));
-                env.close();
-            }
-            else
-            {
-                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
-                env.close();
-
-                env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve));
-                env.close();
-            }
-
-            BEAST_EXPECT(ownerCount(env, alice) == 250);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 250);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 249);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
-
-            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor2.id());
-
-            // use a Ticket
-            env(noop(alice), ticket::Use(ticketSeq));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 249);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 249);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 249);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
     }
 
@@ -3697,7 +3630,8 @@ public:
             BEAST_EXPECT(env.balance(sponsor) == XRP(900));
 
             auto jt = env.jtnofill(
-                ticket::create(alice, 1), sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee));
+                check::create(alice, bob, XRP(1)),
+                sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee));
             // remove txn signature since it is filled by env.jtnofill()
             jt.jv.removeMember(jss::TxnSignature);
 
@@ -3731,7 +3665,7 @@ public:
             env.close();
 
             auto jt = env.jtnofill(
-                ticket::create(alice, 1),
+                check::create(alice, bob, XRP(1)),
                 sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                 Sig(sfSponsorSignature, sponsor));
             // remove txn signature since it is filled by env.jtnofill()
@@ -3764,7 +3698,6 @@ public:
         testRequireFlag();
         testSponsorReserveSimple(cosigning);
         testCheck(cosigning);
-        testTicket(cosigning);
         testDelegate(cosigning);
         testDepositPreauth(cosigning);
         testEscrow(cosigning);
