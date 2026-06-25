@@ -636,7 +636,7 @@ AMMWithdraw::withdraw(
             // See also TrustSet::doApply() and MPTokenAuthorize::authorize()
             XRPAmount const reserve(
                 (ownerCount < 2) ? XRPAmount(beast::kZero)
-                                 : baseAccountReserve(view, ownerCount + 1));
+                                 : accountReserve(view, sleAccount, journal, 1));
 
             auto const balanceAdj = isIssue ? std::max(priorBalance, balance.xrp()) : priorBalance;
             if (balanceAdj < reserve)
