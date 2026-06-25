@@ -269,11 +269,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
     // the NFT.
     SLE::pointer const page =
         getPageForToken(view, owner, nft[sfNFTokenID], [](ApplyView& view, AccountID const& owner) {
-            adjustOwnerCount(
-                view,
-                view.peek(keylet::account(owner)),
-                1,
-                beast::Journal{beast::Journal::getNullSink()});
+            adjustOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
         });
 
     if (!page)
@@ -421,11 +417,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
 
         if (cnt != 0)
         {
-            adjustOwnerCount(
-                view,
-                view.peek(keylet::account(owner)),
-                cnt,
-                beast::Journal{beast::Journal::getNullSink()});
+            adjustOwnerCount(view, owner, {}, cnt, beast::Journal{beast::Journal::getNullSink()});
         }
 
         return tesSUCCESS;
@@ -460,11 +452,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
-            adjustOwnerCount(
-                view,
-                view.peek(keylet::account(owner)),
-                -1,
-                beast::Journal{beast::Journal::getNullSink()});
+            adjustOwnerCount(view, owner, {}, -1, beast::Journal{beast::Journal::getNullSink()});
 
             view.update(curr);
             view.erase(prev);
@@ -519,11 +507,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
         cnt++;
 
-    adjustOwnerCount(
-        view,
-        view.peek(keylet::account(owner)),
-        -1 * cnt,
-        beast::Journal{beast::Journal::getNullSink()});
+    adjustOwnerCount(view, owner, {}, -1 * cnt, beast::Journal{beast::Journal::getNullSink()});
 
     return tesSUCCESS;
 }
@@ -639,8 +623,7 @@ deleteTokenOffer(ApplyView& view, SLE::ref offer)
             false))
         return false;
 
-    adjustOwnerCount(
-        view, view.peek(keylet::account(owner)), -1, beast::Journal{beast::Journal::getNullSink()});
+    adjustOwnerCount(view, owner, {}, -1, beast::Journal{beast::Journal::getNullSink()});
 
     view.erase(offer);
     return true;
@@ -745,7 +728,7 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
             {
                 Throw<std::runtime_error>(
                     "NFTokenPage directory for " + to_string(owner) +
-                    " cannot be repaired.  Unexpected link problem.");
+                    " cannot be repaired. Unexpected link problem.");
             }
             newPrev->at(sfNextPageMin) = nextPage->key();
             view.update(newPrev);
@@ -930,8 +913,7 @@ tokenOfferCreateApply(
     std::uint32_t txFlags)
 {
     Keylet const acctKeylet = keylet::account(acctID);
-    if (auto const acct = view.read(acctKeylet);
-        priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
+    if (auto const acct = view.read(acctKeylet); priorBalance < accountReserve(view, acct, j, 1))
         return tecINSUFFICIENT_RESERVE;
 
     auto const offerID = keylet::nftoffer(acctID, seqProxy.value());
@@ -983,7 +965,7 @@ tokenOfferCreateApply(
     }
 
     // Update owner count.
-    adjustOwnerCount(view, view.peek(acctKeylet), 1, j);
+    adjustOwnerCount(view, acctID, {}, 1, j);
 
     return tesSUCCESS;
 }

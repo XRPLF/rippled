@@ -6,6 +6,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/check.h>
+#include <test/jtx/did.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/noop.h>
@@ -13,6 +14,8 @@
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
 #include <test/jtx/rate.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
@@ -423,21 +426,40 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         Account const alice{"alice"};
+        Account const bob{"bob"};
         Env env{*this, features};
-        env.fund(XRP(1000), alice);
+        env.fund(XRP(1000), alice, bob);
         env.close();
 
         // We're going to hack the ledger in order to avoid generating
         // 4 billion or so NFTs.  Because we're hacking the ledger we
-        // need alice's account to have non-zero sfMintedNFTokens and
-        // sfBurnedNFTokens fields.  This prevents an exception when the
-        // AccountRoot template is applied.
+        // need alice's account to have non-zero sfMintedNFTokens,
+        // sfBurnedNFTokens, sfSponsoredOwnerCount, sfSponsoringOwnerCount,
+        // sfSponsoringAccountCount fields. This prevents an exception when
+        // the AccountRoot template is applied.
         {
             uint256 const nftId0{token::getNextID(env, alice, 0u)};
             env(token::mint(alice, 0u));
             env.close();
 
             env(token::burn(alice, nftId0));
+            env.close();
+
+            env(did::set(alice),
+                did::Uri("uri"),
+                sponsor::As(bob, spfSponsorReserve),
+                Sig(sfSponsorSignature, bob));
+            env.close();
+
+            env(did::set(bob),
+                did::Uri("uri"),
+                sponsor::As(alice, spfSponsorReserve),
+                Sig(sfSponsorSignature, alice));
+            env.close();
+
+            env(sponsor::transfer(bob, tfSponsorshipCreate),
+                sponsor::As(alice, spfSponsorReserve),
+                Sig(sfSponsorSignature, alice));
             env.close();
         }
 
@@ -7162,7 +7184,7 @@ protected:
     {
         testEnabled(features);
         testMintReserve(features);
-        // testMintMaxTokens(features);
+        testMintMaxTokens(features);
         testMintInvalid(features);
         testBurnInvalid(features);
         testCreateOfferInvalid(features);
