@@ -5874,6 +5874,73 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testBatchSigCache(FeatureBitset features)
+    {
+        testcase("batch signature caching");
+
+        using namespace test::jtx;
+
+        // Mirrors Batch.cpp's file-local kSfBatchSigGood; keep in sync.
+        constexpr HashRouterFlags kSfBatchSigGood = HashRouterFlags::PRIVATE7;
+
+        // Valid batch: alice (outer) + an inner from bob, who co-signs.
+        auto buildValidBatch = [](Env& env) {
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            return env.jt(
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::Inner(pay(bob, alice, XRP(2)), env.seq(bob)),
+                batch::Sig(bob));
+        };
+
+        // WRITE: a valid batch records "good" on its tx id.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), Account("alice"), Account("bob"));
+            env.close();
+
+            auto jt = buildValidBatch(env);
+            auto const txid = jt.stx->getTransactionID();
+
+            BEAST_EXPECT(!any(env.app().getHashRouter().getFlags(txid) & kSfBatchSigGood));
+            env(jt, Ter(tesSUCCESS));
+            BEAST_EXPECT(any(env.app().getHashRouter().getFlags(txid) & kSfBatchSigGood));
+            env.close();
+        }
+
+        // READ: corrupt only a signer's signature (outer sig + signer key
+        // untouched), so just the crypto would fail. Caught when uncached...
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), Account("alice"), Account("bob"));
+            env.close();
+
+            auto jt = buildValidBatch(env);
+            jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfTxnSignature.jsonName] =
+                "00";
+            env(jt.jv, Ter(temBAD_SIGNATURE));
+            env.close();
+        }
+        {
+            // ...but a planted "good" skips the crypto, so it applies.
+            Env env{*this, features};
+            env.fund(XRP(10000), Account("alice"), Account("bob"));
+            env.close();
+
+            auto jt = buildValidBatch(env);
+            jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfTxnSignature.jsonName] =
+                "00";
+            auto const txid = STTx{parse(jt.jv)}.getTransactionID();
+            env.app().getHashRouter().setFlags(txid, kSfBatchSigGood);
+            env(jt.jv, Ter(tesSUCCESS));
+            env.close();
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -5911,6 +5978,7 @@ class Batch_test : public beast::unit_test::Suite
         testStandaloneInnerBatchFlag(features);
         testOuterBinding(features);
         testUnsortedBatchSigners(features);
+        testBatchSigCache(features);
     }
 
 public:

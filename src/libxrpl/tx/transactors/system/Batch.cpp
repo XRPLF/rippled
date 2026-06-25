@@ -5,6 +5,8 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/HashRouter.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -35,6 +37,10 @@
 #include <vector>
 
 namespace xrpl {
+
+// Set on a batch's tx id once its signer signatures verify, so
+// preflightSigValidated can skip the expensive re-check on later preflights.
+constexpr HashRouterFlags kSfBatchSigGood = HashRouterFlags::PRIVATE7;
 
 /**
  * @brief Calculates the total base fee for a batch transaction.
@@ -490,14 +496,20 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             ++matched;
         }
 
-        // Check the batch signers signatures.
-        auto const sigResult = ctx.tx.checkBatchSign(ctx.rules);
-
-        if (!sigResult)
+        // Cache the expensive signer-signature crypto per tx id. Safe because
+        // the tx id covers sfBatchSigners and checkBatchSign is rules-
+        // independent (revisit the key if that changes). Good-only: failures
+        // aren't cached, so a verdict can't become sticky.
+        auto& router = ctx.registry.get().getHashRouter();
+        if (!any(router.getFlags(parentBatchId) & kSfBatchSigGood))
         {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "invalid batch txn signature: " << sigResult.error();
-            return temBAD_SIGNATURE;
+            if (auto const sigResult = ctx.tx.checkBatchSign(ctx.rules); !sigResult)
+            {
+                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                    << "invalid batch txn signature: " << sigResult.error();
+                return temBAD_SIGNATURE;
+            }
+            router.setFlags(parentBatchId, kSfBatchSigGood);
         }
     }
 
