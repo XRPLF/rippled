@@ -9,6 +9,7 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <boost/circular_buffer.hpp>
+#include <boost/intrusive/list.hpp>
 #include <boost/intrusive/set.hpp>
 
 #include <optional>
@@ -490,6 +491,7 @@ private:
         /// to put each MaybeTx object into more than one
         /// set without copies, pointers, etc.
         boost::intrusive::set_member_hook<> byFeeListHook;
+        boost::intrusive::list_member_hook<> byPayerListHook;
 
         /// The complete transaction.
         std::shared_ptr<STTx const> txn;
@@ -724,11 +726,21 @@ private:
         std::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
         std::shared_ptr<STTx const> const& tx);
 
+    void
+    removeFromByPayer(MaybeTx const& txn);
+
     using FeeHook = boost::intrusive::
         member_hook<MaybeTx, boost::intrusive::set_member_hook<>, &MaybeTx::byFeeListHook>;
 
     using FeeMultiSet =
         boost::intrusive::multiset<MaybeTx, FeeHook, boost::intrusive::compare<OrderCandidates>>;
+
+    using PayerHook = boost::intrusive::
+        member_hook<MaybeTx, boost::intrusive::list_member_hook<>, &MaybeTx::byPayerListHook>;
+
+    using PayerList = boost::intrusive::list<MaybeTx, PayerHook>;
+
+    using PayerMap = std::map<AccountID, PayerList>;
 
     using AccountMap = std::map<AccountID, TxQAccount>;
 
@@ -748,6 +760,13 @@ private:
         locked mutex_
     */
     FeeMultiSet byFee_;
+    /** Queued transactions grouped by the account that pays their fee.
+        The transaction objects are owned by byAccount_; this is only an
+        intrusive index over those same objects.
+        @note This member must always and only be accessed under
+        locked mutex_
+    */
+    PayerMap byPayer_;
     /** All of the accounts which currently have any transactions
         in the queue. Entries are created and destroyed dynamically
         as transactions are added and removed.

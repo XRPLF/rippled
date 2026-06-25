@@ -371,6 +371,9 @@ TxQ::TxQ(Setup const& setup, beast::Journal j)
 TxQ::~TxQ()
 {
     byFee_.clear();
+    for (auto& [_, payerTxs] : byPayer_)
+        payerTxs.clear();
+    byPayer_.clear();
 }
 
 template <size_t FillPercentage>
@@ -457,6 +460,8 @@ TxQ::erase(TxQ::FeeMultiSet::const_iterator_type candidateIter) -> FeeMultiSet::
 {
     auto& txQAccount = byAccount_.at(candidateIter->account);
     auto const seqProx = candidateIter->seqProxy;
+    auto& txn = txQAccount.transactions.at(seqProx);
+    removeFromByPayer(txn);
     auto const newCandidateIter = byFee_.erase(candidateIter);
     // Now that the candidate has been removed from the
     // intrusive list remove it from the TxQAccount
@@ -494,6 +499,7 @@ TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
         accountNextIter->first > candidateIter->seqProxy &&
         (feeNextIter == byFee_.end() || byFee_.value_comp()(accountNextIter->second, *feeNextIter));
 
+    removeFromByPayer(accountIter->second);
     auto const candidateNextIter = byFee_.erase(candidateIter);
     txQAccount.transactions.erase(accountIter);
 
@@ -508,6 +514,7 @@ TxQ::erase(
 {
     for (auto it = begin; it != end; ++it)
     {
+        removeFromByPayer(it->second);
         byFee_.erase(byFee_.iterator_to(it->second));
     }
     return txQAccount.transactions.erase(begin, end);
@@ -1049,15 +1056,15 @@ TxQ::apply(
                 }
             }
             XRPAmount totalFee{beast::kZero};
-            for (auto const& txn : byFee_)
+            if (auto const payerIter = byPayer_.find(feePayer); payerIter != byPayer_.end())
             {
-                if (txn.feePayer != feePayer)
-                    continue;
+                for (auto const& txn : payerIter->second)
+                {
+                    if (replacedTxIter && &txn == &(*replacedTxIter)->second)
+                        continue;
 
-                if (replacedTxIter && &txn == &(*replacedTxIter)->second)
-                    continue;
-
-                totalFee += txn.consequences().fee();
+                    totalFee += txn.consequences().fee();
+                }
             }
             if (replacedTxIter && std::next(*replacedTxIter) != txIter->end)
             {
@@ -1333,8 +1340,9 @@ TxQ::apply(
 
     auto& candidate = accountIter->second.add({tx, transactionID, feeLevelPaid, flags, pfResult});
 
-    // Then index it into the byFee lookup.
+    // Then index it into the non-owning lookups.
     byFee_.insert(candidate);
+    byPayer_[candidate.feePayer].push_back(candidate);
     JLOG(j_.debug()) << "Added transaction " << candidate.txID << " with result "
                      << transToken(pfResult.ter) << " from "
                      << (accountIsInQueue ? "existing" : "new") << " account " << candidate.account
@@ -1757,6 +1765,18 @@ TxQ::removeFromByFee(
         erase(deleteIter);
     }
     return std::nullopt;
+}
+
+void
+TxQ::removeFromByPayer(MaybeTx const& txn)
+{
+    auto payerIter = byPayer_.find(txn.feePayer);
+    XRPL_ASSERT(payerIter != byPayer_.end(), "xrpl::TxQ::removeFromByPayer : payer found");
+
+    auto& payerTxs = payerIter->second;
+    payerTxs.erase(payerTxs.iterator_to(const_cast<MaybeTx&>(txn)));
+    if (payerTxs.empty())
+        byPayer_.erase(payerIter);
 }
 
 TxQ::Metrics
