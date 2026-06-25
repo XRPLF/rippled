@@ -26,7 +26,6 @@
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
-#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
@@ -40,7 +39,6 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -55,7 +53,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <utility>
 
 namespace xrpl::test {
 
