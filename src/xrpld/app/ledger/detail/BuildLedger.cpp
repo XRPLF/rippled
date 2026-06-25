@@ -204,9 +204,11 @@ buildLedger(
                                 << accum.txCount();
             }
             else
+            {
                 JLOG(j.debug()) << "Applied " << applied << " transactions. "
                                 << "Total transactions in ledger (including Inner Batch): "
                                 << accum.txCount();
+            }
         });
 }
 
