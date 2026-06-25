@@ -57,7 +57,7 @@ template <class Generator>
 static void
 rngcpy(void* buffer, std::size_t bytes, Generator& g)
 {
-    using result_type = typename Generator::result_type;
+    using result_type = Generator::result_type;
     while (bytes >= sizeof(result_type))
     {
         auto const v = g();
