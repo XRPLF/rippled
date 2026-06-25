@@ -224,7 +224,7 @@ checkDepositFreeze(
     // 1. Asset is globally frozen
     // 2. The trustline/mptoken of the pseudo-account is frozen
 
-    if (auto const ret = checkGlobalFrozen(view, asset))
+    if (auto const ret = checkGlobalFrozen(view, asset); !isTesSuccess(ret))
         return ret;
 
     // Special case for shares - check if the shares (and the transitive asset) is not frozen
