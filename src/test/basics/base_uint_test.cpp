@@ -219,13 +219,13 @@ struct base_uint_test : beast::unit_test::Suite
         {
             // There are several ways to create a zero. beast::kZero is tested above. Test some
             // others.
-            test96 z1;
+            test96 const z1;
             BEAST_EXPECTS(z1 == z, to_string(z1));
 
-            test96 z2{};
+            test96 const z2{};
             BEAST_EXPECTS(z2 == z, to_string(z2));
 
-            test96 z3{0u};
+            test96 const z3{0u};
             BEAST_EXPECTS(z3 == z, to_string(z2));
         }
 
