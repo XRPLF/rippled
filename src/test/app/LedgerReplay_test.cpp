@@ -1139,10 +1139,10 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
 
         {
             Config c;
-            std::string const toLoad = (R"xrpldConfig(
+            std::string const toLoad = R"xrpldConfig(
 [ledger_replay]
 0
-)xrpldConfig");
+)xrpldConfig";
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.ledgerReplay == false);
         }

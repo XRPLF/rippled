@@ -1612,7 +1612,9 @@ ApplicationImp::signalStop(std::string const& msg)
             JLOG(journal_.warn()) << "Server stopping";
         }
         else
+        {
             JLOG(journal_.warn()) << "Server stopping: " << msg;
+        }
 
         isTimeToStop.notify_all();
     }

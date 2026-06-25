@@ -3006,9 +3006,9 @@ protected:
             }
 
             if (mptTest)
-                (mptTest)(env, brokers[0], mptt);
+                mptTest(env, brokers[0], mptt);
             if (iouTest)
-                (iouTest)(env, brokers[1]);
+                iouTest(env, brokers[1]);
         };
 
         testCase(

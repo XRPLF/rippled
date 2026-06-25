@@ -368,8 +368,10 @@ LedgerHistory::handleMismatch(
                              << " validated: " << to_string(*validatedConsensusHash);
         }
         else
+        {
             JLOG(j_.error()) << "MISMATCH with same consensus transaction set: "
                              << to_string(*builtConsensusHash);
+        }
     }
 
     // Find differences between built and valid ledgers
@@ -381,8 +383,10 @@ LedgerHistory::handleMismatch(
         JLOG(j_.error()) << "MISMATCH with same " << builtTx.size() << " transactions";
     }
     else
+    {
         JLOG(j_.error()) << "MISMATCH with " << builtTx.size() << " built and " << validTx.size()
                          << " valid transactions.";
+    }
 
     JLOG(j_.error()) << "built\n" << getJson({*builtLedger, {}});
     JLOG(j_.error()) << "valid\n" << getJson({*validLedger, {}});

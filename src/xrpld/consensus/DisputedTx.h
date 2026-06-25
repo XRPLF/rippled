@@ -29,7 +29,7 @@ namespace xrpl {
 template <class Tx, class NodeId>
 class DisputedTx
 {
-    using TxID_t = typename Tx::ID;
+    using TxID_t = Tx::ID;
     using Map_t = boost::container::flat_map<NodeId, bool>;
 
 public:
