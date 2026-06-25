@@ -21,7 +21,7 @@
 #include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/ticket.h>
+#include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
@@ -2334,6 +2334,211 @@ public:
                     BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
                     BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
                 });
+        }
+    }
+
+    void
+    testOffer(bool cosigning)
+    {
+        testcase("Offer");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const gw("gw");
+        Account const sponsor1("sponsor1");
+        Account const sponsor2("sponsor2");
+
+        auto usd = gw["usd"];
+        auto eur = gw["eur"];
+
+        {
+            Env env{*this, testableAmendments()};
+
+            env.fund(XRP(10000), alice, gw, sponsor1, sponsor2);
+            env.close();
+
+            // OfferCreate
+            uint32_t seq = 0;
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor1,
+                alice,
+                1,
+                1,
+                tecINSUF_RESERVE_OFFER,
+                [&](Env& env, auto const& submit) {
+                    seq = env.seq(alice);
+                    submit(offer(alice, usd(1), XRP(1)));
+                });
+
+            // transfer sponsor
+            auto const keylet = keylet::offer(alice, seq);
+            if (cosigning)
+            {
+                env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
+                    sponsor::As(sponsor2, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor2));
+                env.close();
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
+                env.close();
+
+                env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
+                    sponsor::As(sponsor2, spfSponsorReserve));
+                env.close();
+            }
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+            BEAST_EXPECT(env.le(keylet)->getAccountID(sfSponsor) == sponsor2.id());
+
+            // OfferCancel
+            env(offerCancel(alice, seq));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
+        {
+            Env env{*this, testableAmendments()};
+
+            env.fund(XRP(10000), alice, gw, sponsor1, sponsor2);
+            env.close();
+
+            // OfferCreate
+            uint32_t seq = 0;
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor1,
+                alice,
+                1,
+                1,
+                tecINSUF_RESERVE_OFFER,
+                [&](Env& env, auto const& submit) {
+                    seq = env.seq(alice);
+                    submit(offer(alice, usd(1), XRP(1)));
+                });
+
+            // OfferCreate with Cancel (new sponsor)
+            auto const seq2 = env.seq(alice);
+            if (cosigning)
+            {
+                env(offer(alice, usd(1), XRP(1)),
+                    Json(jss::OfferSequence, seq),
+                    sponsor::As(sponsor2, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor2));
+                env.close();
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
+                env.close();
+
+                env(offer(alice, usd(1), XRP(1)),
+                    Json(jss::OfferSequence, seq),
+                    sponsor::As(sponsor2, spfSponsorReserve));
+                env.close();
+            }
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+            // OfferCreate with Cancel (no sponsor)
+            env(offer(alice, usd(1), XRP(1)), Json(jss::OfferSequence, seq2));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
+        // test Offer Execution doesn't sponsor new trustline
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10000), alice, bob, gw, sponsor1, sponsor2);
+            env.close();
+
+            env(trust(alice, usd(100)));
+            env(trust(bob, eur(100)));
+            env.close();
+
+            env(pay(gw, alice, usd(100)));
+            env(pay(gw, bob, eur(100)));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+
+            // OfferCreate
+            if (cosigning)
+            {
+                env(offer(alice, eur(1), usd(1)),
+                    sponsor::As(sponsor1, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor1));
+                env.close();
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor1, 0, 1), sponsor::SponseeAcc(alice));
+                env.close();
+
+                env(offer(alice, eur(1), usd(1)), sponsor::As(sponsor1, spfSponsorReserve));
+                env.close();
+            }
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 1);
+
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+
+            // OfferCreate (cross offer)
+            if (cosigning)
+            {
+                env(offer(bob, usd(1), eur(1)),
+                    sponsor::As(sponsor2, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor2));
+                env.close();
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(bob));
+                env.close();
+
+                env(offer(bob, usd(1), eur(1)), sponsor::As(sponsor2, spfSponsorReserve));
+                env.close();
+            }
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+
+            // does not sponsor new trustline by cross offer
+            BEAST_EXPECT(ownerCount(env, bob) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
     }
 
