@@ -1,13 +1,11 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/Oracle.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/check.h>
-#include <test/jtx/credentials.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/did.h>
@@ -22,14 +20,12 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
-#include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
@@ -37,7 +33,6 @@
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
@@ -48,7 +43,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -63,15 +57,12 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
 
-#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
-#include <tuple>
 #include <utility>
-#include <vector>
 
 namespace xrpl::test {
 
@@ -710,8 +701,8 @@ public:
                 Ter(tesSUCCESS));
             env.close();
 
-            env(did::set(alice),
-                did::Uri("uri"),
+            auto const ticketSeq = env.seq(alice);
+            env(ticket::create(alice, 1),
                 sponsor::As(sponsor, spfSponsorReserve | spfSponsorFee),
                 Sig(sfSponsorSignature, sponsor),
                 Fee(XRP(1)),
@@ -723,7 +714,7 @@ public:
             BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 99);
             BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(99));
 
-            env(did::del(alice), Ter(tesSUCCESS));
+            env(noop(alice), ticket::Use(ticketSeq + 1), Ter(tesSUCCESS));
             env.close();
 
             sle = env.le(keylet::sponsorship(sponsor, alice));
@@ -3022,151 +3013,6 @@ public:
     }
 
     void
-    testCredentials(bool cosigning)
-    {
-        testcase("Credentials");
-        using namespace test::jtx;
-        Account const issuer("issuer");
-        Account const subject("subject");
-        Account const sponsor("sponsor");
-        Account const sponsor2("sponsor2");
-
-        auto const credType = std::string("credType");
-        auto const credTypeSlice = Slice(credType.data(), credType.size());
-
-        // CredentialsCreate
-        {
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), issuer, subject, sponsor, sponsor2);
-            env.close();
-
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                issuer,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    submit(credentials::create(subject, issuer, credType), credentials::Uri("uri"));
-                });
-
-            BEAST_EXPECT(ownerCount(env, subject) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
-
-            // transfer sponsor
-            auto const keylet = keylet::credential(subject, issuer, credTypeSlice);
-            if (cosigning)
-            {
-                env(sponsor::transfer(issuer, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor2));
-                env.close();
-            }
-            else
-            {
-                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(issuer));
-                env.close();
-
-                env(sponsor::transfer(issuer, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve));
-                env.close();
-            }
-
-            BEAST_EXPECT(ownerCount(env, issuer) == 1);
-            BEAST_EXPECT(ownerCount(env, subject) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
-
-            // CredentialsAccept
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                subject,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    submit(credentials::accept(subject, issuer, credType));
-                });
-
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, subject) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-
-            // transfer accepted credential
-            if (cosigning)
-            {
-                env(sponsor::transfer(subject, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor2));
-                env.close();
-            }
-            else
-            {
-                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(subject));
-                env.close();
-
-                env(sponsor::transfer(subject, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve));
-                env.close();
-            }
-
-            // CredentialsDelete
-            env(credentials::deleteCred(subject, subject, issuer, credType));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, subject) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-        }
-
-        {
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), issuer, subject, sponsor);
-            env.close();
-
-            // Accept Sponsored Credentials without sponsoring
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                issuer,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    submit(credentials::create(subject, issuer, credType));
-                });
-
-            env(credentials::accept(subject, issuer, credType));
-            env.close();
-
-            // sponsorship is removed
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, subject) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(!env.le(keylet::credential(subject, issuer, credTypeSlice))
-                              ->isFieldPresent(sfSponsor));
-
-            env(credentials::deleteCred(subject, subject, issuer, credType));
-            env.close();
-        }
-    }
-
-    void
     testDelegate(bool cosigning)
     {
         testcase("Delegate");
@@ -3279,65 +3125,6 @@ public:
 
             // DepositPreauthDelete
             env(deposit::unauth(alice, sponsor));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-        }
-    }
-
-    void
-    testDID(bool cosigning)
-    {
-        testcase("DID");
-        using namespace test::jtx;
-        Account const alice("alice");
-        Account const sponsor("sponsor");
-        Account const sponsor2("sponsor2");
-
-        {
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), alice, sponsor, sponsor2);
-            env.close();
-
-            // DIDSet
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                alice,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) { submit(did::set(alice), did::Uri("uri")); });
-
-            // transfer sponsor
-            auto const keylet = keylet::did(alice);
-            if (cosigning)
-            {
-                env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor2));
-                env.close();
-            }
-            else
-            {
-                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
-                env.close();
-                env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve));
-                env.close();
-            }
-
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
-
-            // DIDDelete
-            env(did::del(alice));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -3733,357 +3520,6 @@ public:
     }
 
     void
-    testNFToken(bool cosigning)
-    {
-        testcase("NFToken");
-        using namespace test::jtx;
-        Account const alice("alice");
-        Account const bob("bob");
-        Account const sponsor("sponsor");
-        Account const sponsor2("sponsor2");
-
-        {
-            Env env{*this, testableAmendments()};
-
-            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
-            env.close();
-
-            // NFTokenMint
-            uint256 nftId;
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                alice,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    nftId = token::getNextID(env, alice, 0);
-                    submit(token::mint(alice));
-                });
-
-            // transfer sponsor
-            auto const keylet = keylet::nftpageMax(alice);
-            if (cosigning)
-            {
-                env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor2));
-                env.close();
-            }
-            else
-            {
-                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
-                env.close();
-
-                env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve));
-            }
-            // NFTokenBurn
-            env(token::burn(alice, nftId));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-
-            // NFTokenMintOffer
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                alice,
-                2,
-                2,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    submit(token::mint(alice), token::Amount(XRP(100)));
-                });
-        }
-
-        {
-            // multiple nft page process
-            Env env{*this, testableAmendments()};
-
-            env.fund(XRP(1000000), alice, bob, sponsor);
-            env.close();
-
-            auto const nftCount = 200;
-
-            // NFTokenMint
-            if (cosigning)
-            {
-                for (auto i = 0; i < nftCount; i++)
-                {
-                    env(token::mint(alice),
-                        sponsor::As(sponsor, spfSponsorReserve),
-                        Sig(sfSponsorSignature, sponsor));
-                }
-            }
-            else
-            {
-                env(sponsor::set_reserve(sponsor, 0, 8), sponsor::SponseeAcc(alice));
-                env.close();
-                for (auto i = 0; i < nftCount; i++)
-                {
-                    env(token::mint(alice), sponsor::As(sponsor, spfSponsorReserve));
-                }
-            }
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == sponsoredOwnerCount(env, alice));
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == sponsoringOwnerCount(env, sponsor));
-
-            // NFTokenBurn
-            for (auto i = 0; i < nftCount; i++)
-            {
-                auto const nftId = token::getID(env, alice, 0, i, 0, 0);
-                env(token::burn(alice, nftId));
-            }
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        }
-    }
-
-    void
-    testNFTokenOffer(bool cosigning)
-    {
-        testcase("NFTokenOffer");
-        using namespace test::jtx;
-        Account const alice("alice");
-        Account const bob("bob");
-        Account const broker("broker");
-        Account const sponsor("sponsor");
-        Account const sponsor2("sponsor2");
-
-        auto const taxon = 0u;
-
-        {
-            // Mint + CreateOffer + CancelOffer
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
-            env.close();
-
-            // Mint
-            uint256 const nftId{token::getNextID(env, alice, taxon, tfTransferable)};
-            env(token::mint(alice, taxon), Txflags(tfTransferable));
-            env.close();
-
-            // NFTokenOfferCreate
-            uint256 offerIndex1;
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                alice,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    offerIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
-                    submit(
-                        token::createOffer(alice, nftId, XRP(1)),
-                        token::Destination(bob),
-                        Txflags(tfSellNFToken));
-                });
-
-            uint256 offerIndex2;
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                alice,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    offerIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
-                    submit(
-                        token::createOffer(alice, nftId, XRP(1)),
-                        token::Destination(bob),
-                        Txflags(tfSellNFToken));
-                });
-
-            // transfer sponsor
-            if (cosigning)
-            {
-                env(sponsor::transfer(alice, tfSponsorshipReassign, offerIndex1),
-                    sponsor::As(sponsor2, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor2));
-                env.close();
-            }
-            else
-            {
-                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
-                env.close();
-
-                env(sponsor::transfer(alice, tfSponsorshipReassign, offerIndex1),
-                    sponsor::As(sponsor2, spfSponsorReserve));
-                env.close();
-            }
-
-            BEAST_EXPECT(ownerCount(env, alice) == 3);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
-
-            // NFTokenOfferCancel
-            env(token::cancelOffer(alice, {offerIndex1, offerIndex2}));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-        }
-
-        {
-            // Mint + CreateSellOffer + AcceptSellOffer
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), alice, bob, sponsor);
-            env.close();
-
-            // Mint
-            uint256 const nftId{token::getNextID(env, alice, taxon, tfTransferable)};
-            env(token::mint(alice, taxon), Txflags(tfTransferable));
-            env.close();
-
-            // NFTokenOfferCreate
-            uint256 offerIndex;
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                alice,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    offerIndex = keylet::nftoffer(alice, env.seq(alice)).key;
-                    submit(
-                        token::createOffer(alice, nftId, XRP(1)),
-                        token::Destination(bob),
-                        Txflags(tfSellNFToken));
-                });
-
-            // NFTokenOfferAccept
-            env(token::acceptSellOffer(bob, offerIndex));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, bob) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        }
-
-        {
-            // Mint + CreateBuyOffer + AcceptBuyOffer
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), alice, bob, sponsor);
-            env.close();
-
-            // Mint
-            uint256 const nftId{token::getNextID(env, alice, taxon, tfTransferable)};
-            env(token::mint(alice, taxon), Txflags(tfTransferable));
-            env.close();
-
-            // NFTokenOfferCreate
-            uint256 offerIndex;
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                bob,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    offerIndex = keylet::nftoffer(bob, env.seq(bob)).key;
-                    submit(
-                        token::createOffer(bob, nftId, XRP(1)),
-                        token::Owner(alice),
-                        token::Destination(alice));
-                });
-
-            // NFTokenOfferAccept
-            env(token::acceptBuyOffer(alice, offerIndex));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, bob) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        }
-        {
-            // Broker
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), alice, bob, broker, sponsor, sponsor2);
-            env.close();
-
-            // Mint
-            uint256 const nftId{token::getNextID(env, alice, taxon, tfTransferable)};
-            env(token::mint(alice, taxon), Txflags(tfTransferable));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-
-            // NFTokenOfferCreate (BuyOffer)
-            uint256 buyOfferIndex;
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                bob,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    buyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
-                    submit(
-                        token::createOffer(bob, nftId, XRP(1)),
-                        token::Owner(alice),
-                        token::Destination(broker));
-                });
-
-            // NFTokenOfferCreate (SellOffer)
-            uint256 sellOfferIndex;
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor2,
-                alice,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    sellOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
-                    submit(
-                        token::createOffer(alice, nftId, XRP(1)),
-                        Txflags(tfSellNFToken),
-                        token::Destination(broker));
-                });
-
-            // NFTokenOfferAccept
-            env(token::brokerOffers(broker, buyOfferIndex, sellOfferIndex));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(ownerCount(env, bob) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-        }
-    }
-
-    void
     testPayChan(bool cosigning)
     {
         testcase("PayChan");
@@ -4148,382 +3584,6 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-        }
-    }
-
-    void
-    testPermissionedDomain(bool cosigning)
-    {
-        testcase("PermissionedDomain");
-        using namespace test::jtx;
-        Account const alice("alice");
-        Account const sponsor("sponsor");
-        Account const sponsor2("sponsor2");
-        {
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), alice, sponsor, sponsor2);
-            env.close();
-
-            // PermissionedDomainSet
-            pdomain::Credentials credentials{{.issuer = alice, .credType = "first credential"}};
-            uint32_t seq = 0;
-            testEachSponsorship(
-                env,
-                cosigning,
-                sponsor,
-                alice,
-                1,
-                1,
-                tecINSUFFICIENT_RESERVE,
-                [&](Env& env, auto const& submit) {
-                    seq = env.seq(alice);
-                    submit(pdomain::setTx(alice, credentials));
-                });
-
-            // transfer sponsor
-            auto const keylet = keylet::permissionedDomain(alice, seq);
-
-            if (cosigning)
-            {
-                env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor2));
-                env.close();
-            }
-            else
-            {
-                env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
-                env.close();
-                env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve));
-                env.close();
-            }
-
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
-
-            // PermissionedDomainDelete
-            auto objects = pdomain::getObjects(alice, env);
-            auto const domain = objects.begin()->first;
-            env(pdomain::deleteTx(alice, domain));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-        }
-    }
-
-    void
-    testOracle(bool cosigning)
-    {
-        testcase("Oracle");
-        using namespace test::jtx;
-        using namespace std::chrono;
-        using DataSeries =
-            std::vector<std::tuple<std::string, std::string, std::uint32_t, std::uint8_t>>;
-
-        Account const alice("alice");
-        Account const sponsor("sponsor");
-        Account const sponsor2("sponsor2");
-
-        auto const oracleSet = [](Env& env, Account const& account, uint8_t dataSeriesSize) {
-            auto const now = env.timeKeeper().now();
-            env.close(now + oracle::kTestStartTime - kEpochOffset);
-            json::Value jv;
-            jv[jss::TransactionType] = jss::OracleSet;
-            jv[jss::Account] = to_string(account);
-            jv[jss::OracleDocumentID] = 1;
-            jv[jss::LastUpdateTime] = to_string(
-                duration_cast<seconds>(env.current()->header().closeTime.time_since_epoch())
-                    .count() +
-                kEpochOffset.count() + 100);
-            jv[jss::PriceDataSeries] = json::ValueType::Array;
-            jv[jss::Provider] = strHex(std::string{"provider"});
-            jv[jss::AssetClass] = strHex(std::string{"currency"});
-
-            DataSeries const series = {
-                {"XRP", "US1", 740, 1},
-                {"XRP", "US2", 750, 1},
-                {"XRP", "US3", 740, 1},
-                {"XRP", "US4", 750, 1},
-                {"XRP", "US5", 740, 1},
-                {"XRP", "US6", 750, 1},
-                {"XRP", "US7", 740, 1},
-                {"XRP", "US8", 750, 1},
-                {"XRP", "US9", 740, 1},
-                {"XRP", "U10", 750, 1},
-            };
-
-            DataSeries const actualSeries(series.begin(), series.begin() + dataSeriesSize);
-
-            json::Value dataSeries(json::ValueType::Array);
-            for (auto const& data : actualSeries)
-            {
-                json::Value priceData;
-                json::Value price;
-                price[jss::BaseAsset] = std::get<0>(data);
-                price[jss::QuoteAsset] = std::get<1>(data);
-                price[jss::AssetPrice] = std::get<2>(data);
-                price[jss::Scale] = std::get<3>(data);
-                priceData[jss::PriceData] = price;
-                dataSeries.append(priceData);
-            }
-            jv[jss::PriceDataSeries] = dataSeries;
-            return jv;
-        };
-
-        auto const oracleDelete = [&](Account const& account) {
-            json::Value jv;
-            jv[jss::TransactionType] = jss::OracleDelete;
-            jv[jss::Account] = to_string(account);
-            jv[jss::OracleDocumentID] = 1;
-            return jv;
-        };
-
-        {
-            Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), alice, sponsor, sponsor2);
-            env.close();
-
-            {
-                // OracleSet (reserve 1)
-                testEachSponsorship(
-                    env,
-                    cosigning,
-                    sponsor,
-                    alice,
-                    1,
-                    1,
-                    tecINSUFFICIENT_RESERVE,
-                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 5)); });
-
-                // transfer sponsor
-                auto const keylet = keylet::oracle(alice, 1);
-                if (cosigning)
-                {
-                    env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                        sponsor::As(sponsor2, spfSponsorReserve),
-                        Sig(sfSponsorSignature, sponsor2));
-                    env.close();
-                }
-                else
-                {
-                    env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
-                    env.close();
-                    env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                        sponsor::As(sponsor2, spfSponsorReserve));
-                    env.close();
-                }
-
-                BEAST_EXPECT(ownerCount(env, alice) == 1);
-                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
-
-                // OracleDelete
-                env(oracleDelete(alice));
-                env.close();
-
-                BEAST_EXPECT(ownerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-            }
-            {
-                // OracleSet (reserve 2)
-                testEachSponsorship(
-                    env,
-                    cosigning,
-                    sponsor,
-                    alice,
-                    2,
-                    2,
-                    tecINSUFFICIENT_RESERVE,
-                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 6)); });
-
-                // transfer sponsor
-                auto const keylet = keylet::oracle(alice, 1);
-                if (cosigning)
-                {
-                    env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                        sponsor::As(sponsor2, spfSponsorReserve),
-                        Sig(sfSponsorSignature, sponsor2));
-                    env.close();
-                }
-                else
-                {
-                    env(sponsor::set_reserve(sponsor2, 0, 2), sponsor::SponseeAcc(alice));
-                    env.close();
-                    env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                        sponsor::As(sponsor2, spfSponsorReserve));
-                    env.close();
-                }
-
-                BEAST_EXPECT(ownerCount(env, alice) == 2);
-                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 2);
-
-                // OracleDelete
-                env(oracleDelete(alice));
-                env.close();
-
-                BEAST_EXPECT(ownerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-            }
-            {
-                // OracleSet (reserve 1->2, sponsor1 -> no-sponsor)
-                testEachSponsorship(
-                    env,
-                    cosigning,
-                    sponsor,
-                    alice,
-                    1,
-                    1,
-                    tecINSUFFICIENT_RESERVE,
-                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 5)); });
-
-                // reserve 1->2
-                env(oracleSet(env, alice, 6));
-                env.close();
-
-                BEAST_EXPECT(ownerCount(env, alice) == 2);
-                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-
-                // OracleDelete
-                env(oracleDelete(alice));
-                env.close();
-
-                BEAST_EXPECT(ownerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            }
-            {
-                // OracleSet (reserve 1->2, sponsor1 -> sponsor2)
-                testEachSponsorship(
-                    env,
-                    cosigning,
-                    sponsor,
-                    alice,
-                    1,
-                    1,
-                    tecINSUFFICIENT_RESERVE,
-                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 5)); });
-                // return;
-
-                // reserve 1->2
-                testEachSponsorship(
-                    env,
-                    cosigning,
-                    sponsor2,
-                    alice,
-                    1,
-                    2,
-                    tecINSUFFICIENT_RESERVE,
-                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 6)); },
-                    [&]() {
-                        BEAST_EXPECT(ownerCount(env, alice) == 2);
-                        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
-                        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-                        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 2);
-                    });
-
-                // OracleDelete
-                env(oracleDelete(alice));
-                env.close();
-
-                BEAST_EXPECT(ownerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-            }
-            {
-                // OracleSet (reserve 1->2, non-sponsor -> sponsor1)
-                env(oracleSet(env, alice, 5));
-                env.close();
-
-                BEAST_EXPECT(ownerCount(env, alice) == 1);
-
-                // reserve 1->2
-                testEachSponsorship(
-                    env,
-                    cosigning,
-                    sponsor,
-                    alice,
-                    1,
-                    2,
-                    tecINSUFFICIENT_RESERVE,
-                    [&](Env& env, auto const& submit) { submit(oracleSet(env, alice, 6)); });
-
-                // OracleDelete
-                env(oracleDelete(alice));
-                env.close();
-
-                BEAST_EXPECT(ownerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            }
-            for (bool const isTwoOwnerCount : {false, true})
-            {
-                // test sponsor transfer
-                auto const dataSeriesSize = isTwoOwnerCount ? 6 : 5;
-                auto const ocount = isTwoOwnerCount ? 2 : 1;
-
-                testEachSponsorship(
-                    env,
-                    cosigning,
-                    sponsor,
-                    alice,
-                    ocount,
-                    ocount,
-                    tecINSUFFICIENT_RESERVE,
-                    [&](Env& env, auto const& submit) {
-                        submit(oracleSet(env, alice, dataSeriesSize));
-                    });
-
-                // transfer sponsor
-                if (cosigning)
-                {
-                    env(sponsor::transfer(
-                            alice, tfSponsorshipReassign, keylet::oracle(alice, 1).key),
-                        sponsor::As(sponsor2, spfSponsorReserve),
-                        Sig(sfSponsorSignature, sponsor2));
-                    env.close();
-                }
-                else
-                {
-                    env(sponsor::set_reserve(sponsor2, 0, ocount), sponsor::SponseeAcc(alice));
-                    env.close();
-                    env(sponsor::transfer(
-                            alice, tfSponsorshipReassign, keylet::oracle(alice, 1).key),
-                        sponsor::As(sponsor2, spfSponsorReserve));
-                    env.close();
-                }
-
-                BEAST_EXPECT(ownerCount(env, alice) == ocount);
-                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == ocount);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == ocount);
-
-                // dissolve sponsor
-                env(sponsor::transfer(alice, tfSponsorshipEnd, keylet::oracle(alice, 1).key));
-                env.close();
-
-                BEAST_EXPECT(ownerCount(env, alice) == ocount);
-                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-
-                // remove sponsor
-                env(oracleDelete(alice));
-                env.close();
-            }
         }
     }
 
@@ -5896,17 +4956,11 @@ public:
         testCheck(cosigning);
         testOffer(cosigning);
         testTicket(cosigning);
-        testCredentials(cosigning);
         testDelegate(cosigning);
         testDepositPreauth(cosigning);
-        testDID(cosigning);
         testEscrow(cosigning);
         testMPToken(cosigning);
-        testNFToken(cosigning);
-        testNFTokenOffer(cosigning);
         testPayChan(cosigning);
-        testPermissionedDomain(cosigning);
-        testOracle(cosigning);
         testSignerList(cosigning);
         testTrustSet(cosigning);
         testVault(cosigning);
