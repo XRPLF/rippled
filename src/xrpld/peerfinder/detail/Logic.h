@@ -148,13 +148,13 @@ public:
     }
 
     void
-    addFixedPeer(std::string const& name, beast::IP::Endpoint const& ep)
+    addFixedPeer(std::string_view name, beast::IP::Endpoint const& ep)
     {
         addFixedPeer(name, std::vector<beast::IP::Endpoint>{ep});
     }
 
     void
-    addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses)
+    addFixedPeer(std::string_view name, std::vector<beast::IP::Endpoint> const& addresses)
     {
         std::scoped_lock const _(lock);
 
@@ -980,7 +980,7 @@ public:
     /** Adds eligible Fixed addresses for outbound attempts. */
     template <class Container>
     void
-    getFixed(std::size_t needed, Container& c, typename ConnectHandouts::Squelches& squelches)
+    getFixed(std::size_t needed, Container& c, ConnectHandouts::Squelches& squelches)
     {
         auto const now(clock.now());
         for (auto iter = fixed_.begin(); needed && iter != fixed_.end(); ++iter)

@@ -120,7 +120,7 @@ TicketCreate::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].valueOr(0u);
+    std::uint32_t const oldTicketCount = (*sleAccountRoot)[~sfTicketCount].valueOr(0u);
 
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 

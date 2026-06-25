@@ -201,7 +201,7 @@ public:
         file, along with the set of corresponding IP addresses.
     */
     virtual void
-    addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) = 0;
+    addFixedPeer(std::string_view name, std::vector<beast::IP::Endpoint> const& addresses) = 0;
 
     /** Add a set of strings as fallback IP::Endpoint sources.
         @param name A label used for diagnostics.
