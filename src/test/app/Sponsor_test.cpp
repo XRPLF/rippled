@@ -32,7 +32,6 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
