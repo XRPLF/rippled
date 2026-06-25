@@ -131,8 +131,7 @@ CredentialCreate::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
-        STAmount const reserve{baseAccountReserve(
-            view(), static_cast<std::int32_t>(sleIssuer->getFieldU32(sfOwnerCount)) + 1)};
+        STAmount const reserve{accountReserve(view(), sleIssuer, j_, 1)};
         if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

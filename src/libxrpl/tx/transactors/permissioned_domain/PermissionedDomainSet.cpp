@@ -106,8 +106,7 @@ PermissionedDomainSet::doApply()
         // Create new permissioned domain.
         // Check reserve availability for new object creation
         auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
-        auto const reserve = baseAccountReserve(
-            ctx_.view(), static_cast<std::int32_t>(ownerSle->getFieldU32(sfOwnerCount)) + 1);
+        auto const reserve = accountReserve(ctx_.view(), ownerSle, ctx_.journal, 1);
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
