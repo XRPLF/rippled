@@ -69,6 +69,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -3352,6 +3353,12 @@ public:
             Env env{*this, testableAmendments()};
             env.fund(XRP(1000000), alice, sponsor);
             env.close();
+            auto const authCreds = std::vector<deposit::AuthorizeCredentials>{
+                {.issuer = sponsor, .credType = credType}};
+            auto const preauthKeylet = keylet::depositPreauth(
+                alice.id(),
+                std::set<std::pair<AccountID, Slice>>{
+                    {sponsor.id(), Slice(credType.data(), credType.size())}});
 
             // Cover DepositPreauth's sfAuthorizeCredentials sponsor-reserve branch.
             testEachSponsorship(
@@ -3363,10 +3370,22 @@ public:
                 1,
                 tecINSUFFICIENT_RESERVE,
                 [&](Env&, auto const& submit) {
-                    submit(
-                        deposit::authCredentials(
-                            alice, {{.issuer = sponsor, .credType = credType}}));
+                    submit(deposit::authCredentials(alice, authCreds));
                 });
+
+            // Cover sfUnauthorizeCredentials cleanup for a sponsored preauth object.
+            BEAST_EXPECT(env.le(preauthKeylet));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            env(deposit::unauthCredentials(alice, authCreds));
+            env.close();
+
+            BEAST_EXPECT(!env.le(preauthKeylet));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         }
     }
 
