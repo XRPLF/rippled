@@ -57,6 +57,8 @@ if(target)
     )
 endif()
 
+include(PatchNixBinary)
+
 include(XrplSanity)
 include(XrplVersion)
 include(XrplSettings)
