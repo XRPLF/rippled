@@ -407,8 +407,10 @@ AccountRootsNotDeleted::finalize(
                                "succeeded without deleting an account";
         }
         else
+        {
             JLOG(j.fatal()) << "Invariant failed: account deletion "
                                "succeeded but deleted multiple accounts!";
+        }
         return false;
     }
 

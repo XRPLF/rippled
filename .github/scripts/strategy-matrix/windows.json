@@ -1,6 +1,6 @@
 {
   "platform": "windows/amd64",
-  "runner": ["self-hosted", "Windows", "devbox"],
+  "runner": ["self-hosted", "Windows", "dev-box-windows-2026"],
   "configs": [
     { "build_type": "Release" },
     {

@@ -905,6 +905,11 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
     ReadView const& view,
     std::optional<Quality> const& clobQuality) const
 {
+    // AMM doesn't support domain books. When fixCleanup3_3_0 is enabled, exclude
+    // AMM liquidity so quality estimation matches actual crossing (tryAMM skips
+    // AMM for domain books).
+    if (book_.domain && view.rules().enabled(fixCleanup3_3_0))
+        return std::nullopt;
     if (ammLiquidity_)
         return ammLiquidity_->getOffer(view, clobQuality);
     return std::nullopt;
@@ -1472,8 +1477,8 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
 {
     return std::visit(
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
-            using TIn_ = typename TIn::amount_type;
-            using TOut_ = typename TOut::amount_type;
+            using TIn_ = TIn::amount_type;
+            using TOut_ = TOut::amount_type;
 
             if constexpr (ValidTaker<TIn_, TOut_>)
             {

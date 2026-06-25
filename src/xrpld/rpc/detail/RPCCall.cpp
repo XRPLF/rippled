@@ -1589,7 +1589,7 @@ struct RPCCallImp
 
             jvResult["result"] = jvReply;
 
-            (callbackFuncP)(jvResult);
+            callbackFuncP(jvResult);
         }
 
         return false;

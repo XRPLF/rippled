@@ -16,7 +16,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/paths/detail/AmountSpec.h>
 #include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
