@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -44,6 +45,7 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.interestUnrealized = from.at(sfInterestUnrealized);
     return self;
 }
 
@@ -492,6 +494,48 @@ ValidVault::finalize(
         result = false;
     }
 
+    if (view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        if (afterVault.interestUnrealized < kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: interest unrealized must be non-negative";
+            result = false;
+        }
+
+        // InterestUnrealized <= AssetsTotal - AssetsAvailable (the lent portion)
+        if (afterVault.interestUnrealized > afterVault.assetsTotal - afterVault.assetsAvailable)
+        {
+            JLOG(j.fatal()) << "Invariant failed: interest unrealized exceeds lent assets";
+            result = false;
+        }
+
+        // Deposit net asset value = AssetsTotal - InterestUnrealized must be > 0 when vault
+        // has assets.
+        if (afterVault.assetsTotal > kZero &&
+            afterVault.assetsTotal - afterVault.interestUnrealized <= kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: deposit net asset value must be positive";
+            result = false;
+        }
+
+        // Withdrawal net asset value = AssetsTotal - InterestUnrealized - LossUnrealized
+        // must not go negative.
+        if (afterVault.assetsTotal - afterVault.interestUnrealized - afterVault.lossUnrealized <
+            kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: withdrawal net asset value must not be negative";
+            result = false;
+        }
+
+        // If there's unrealized interest, shares must be outstanding.
+        if (updatedShares && afterVault.interestUnrealized > kZero &&
+            updatedShares->sharesTotal == 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: interest unrealized with no outstanding shares";
+            result = false;
+        }
+    }
+
     // Thanks to this check we can simply do `assert(!beforeVault_.empty()` when
     // enforcing invariants on transaction types other than ttVAULT_CREATE
     if (beforeVault_.empty() && txnType != ttVAULT_CREATE)
@@ -506,8 +550,17 @@ ValidVault::finalize(
         txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY)
     {
         JLOG(j.fatal()) <<  //
-            "Invariant failed: vault transaction must not change loss "
-            "unrealized";
+            "Invariant failed: vault transaction must not change loss unrealized";
+        result = false;
+    }
+
+    // Interest unrealized must only change via loan transactions.
+    if (view.rules().enabled(featureLendingProtocolV1_1) && !beforeVault_.empty() &&
+        afterVault.interestUnrealized != beforeVault_[0].interestUnrealized &&
+        txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY && txnType != ttLOAN_SET)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: vault transaction must not change interest unrealized";
         result = false;
     }
 
@@ -524,10 +577,14 @@ ValidVault::finalize(
         return std::nullopt;
     }();
 
-    if (!beforeShares &&
-        (tx.getTxnType() == ttVAULT_DEPOSIT ||   //
-         tx.getTxnType() == ttVAULT_WITHDRAW ||  //
-         tx.getTxnType() == ttVAULT_CLAWBACK))
+    bool const isDonate = vault::isVaultDonate(view.rules(), tx);
+    bool const shouldUpdateShares =
+        // Vault Asset donation is the only operation that can succeed without updating shares
+        ((tx.getTxnType() == ttVAULT_DEPOSIT && !isDonate) ||  //
+         tx.getTxnType() == ttVAULT_WITHDRAW ||                //
+         tx.getTxnType() == ttVAULT_CLAWBACK);
+
+    if (!beforeShares && shouldUpdateShares)
     {
         JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
                            "without updating shares";
@@ -738,34 +795,57 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const maybeAccDeltaShares = deltaShares(tx[sfAccount]);
-                if (!maybeAccDeltaShares)
+                // If assets are donated, check share invariants
+                if (isDonate)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: deposit must change depositor shares";
-                    return false;  // That's all we can do
-                }
-                // We don't round shares, they are integral MPT
-                auto const& accountDeltaShares = *maybeAccDeltaShares;
-                if (accountDeltaShares.delta <= kZero)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: deposit must increase depositor shares";
-                    result = false;
-                }
+                    auto const accountDeltaShares = deltaShares(tx[sfAccount]);
+                    if (accountDeltaShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: donation must not change depositor shares";
+                        return false;  // That's all we can do
+                    }
 
-                auto const maybeVaultDeltaShares = deltaShares(afterVault.pseudoId);
-                if (!maybeVaultDeltaShares || maybeVaultDeltaShares->delta == kZero)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: deposit must change vault shares";
-                    return false;  // That's all we can do
+                    auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
+                    if (vaultDeltaShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: donation must not change vault shares";
+                        return false;  // That's all we can do
+                    }
                 }
-
-                // We don't round shares, they are integral MPT
-                auto const& vaultDeltaShares = *maybeVaultDeltaShares;
-                if (vaultDeltaShares.delta * -1 != accountDeltaShares.delta)
+                else
                 {
-                    JLOG(j.fatal()) << "Invariant failed: " <<  //
-                        "deposit must change depositor and vault shares by equal amount";
-                    result = false;
+                    auto const maybeAccDeltaShares = deltaShares(tx[sfAccount]);
+                    if (!maybeAccDeltaShares)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: deposit must change depositor shares";
+                        return false;  // That's all we can do
+                    }
+                    // We don't need to round shares, they are integral MPT
+                    auto const& accountDeltaShares = *maybeAccDeltaShares;
+                    if (accountDeltaShares.delta <= kZero)
+                    {
+                        JLOG(j.fatal())
+                            << "Invariant failed: deposit must increase depositor shares";
+                        result = false;
+                    }
+
+                    auto const maybeVaultDeltaShares = deltaShares(afterVault.pseudoId);
+                    if (!maybeVaultDeltaShares || maybeVaultDeltaShares->delta == kZero)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: deposit must change vault shares";
+                        return false;  // That's all we can do
+                    }
+
+                    // We don't need to round shares, they are integral MPT
+                    auto const& vaultDeltaShares = *maybeVaultDeltaShares;
+                    if (vaultDeltaShares.delta * -1 != accountDeltaShares.delta)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: " <<  //
+                            "deposit must change depositor and vault shares by equal amount";
+                        result = false;
+                    }
                 }
 
                 auto const assetTotalDelta = roundToAsset(

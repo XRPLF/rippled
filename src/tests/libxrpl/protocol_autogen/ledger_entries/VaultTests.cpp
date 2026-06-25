@@ -35,6 +35,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
+    auto const interestUnrealizedValue = canonical_NUMBER();
 
     VaultBuilder builder{
         previousTxnIDValue,
@@ -54,6 +55,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setLossUnrealized(lossUnrealizedValue);
     builder.setScale(scaleValue);
+    builder.setInterestUnrealized(interestUnrealizedValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -166,6 +168,14 @@ TEST(VaultTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasScale());
     }
 
+    {
+        auto const& expected = interestUnrealizedValue;
+        auto const actualOpt = entry.getInterestUnrealized();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfInterestUnrealized");
+        EXPECT_TRUE(entry.hasInterestUnrealized());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -194,6 +204,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
+    auto const interestUnrealizedValue = canonical_NUMBER();
 
     auto sle = std::make_shared<SLE>(Vault::entryType, index);
 
@@ -212,6 +223,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfShareMPTID) = shareMPTIDValue;
     sle->at(sfWithdrawalPolicy) = withdrawalPolicyValue;
     sle->at(sfScale) = scaleValue;
+    sle->at(sfInterestUnrealized) = interestUnrealizedValue;
 
     VaultBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -390,6 +402,19 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfScale");
     }
 
+    {
+        auto const& expected = interestUnrealizedValue;
+
+        auto const fromSleOpt = entryFromSle.getInterestUnrealized();
+        auto const fromBuilderOpt = entryFromBuilder.getInterestUnrealized();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfInterestUnrealized");
+        expectEqualField(expected, *fromBuilderOpt, "sfInterestUnrealized");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -472,5 +497,7 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getLossUnrealized().has_value());
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
+    EXPECT_FALSE(entry.hasInterestUnrealized());
+    EXPECT_FALSE(entry.getInterestUnrealized().has_value());
 }
 }

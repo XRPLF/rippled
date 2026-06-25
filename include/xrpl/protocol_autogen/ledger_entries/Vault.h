@@ -287,6 +287,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfScale);
     }
+
+    /**
+     * @brief Get sfInterestUnrealized (soeDEFAULT)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getInterestUnrealized() const
+    {
+        if (hasInterestUnrealized())
+            return this->sle_->at(sfInterestUnrealized);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfInterestUnrealized is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasInterestUnrealized() const
+    {
+        return this->sle_->isFieldPresent(sfInterestUnrealized);
+    }
 };
 
 /**
@@ -503,6 +527,17 @@ public:
     setScale(std::decay_t<typename SF_UINT8::type::value_type> const& value)
     {
         object_[sfScale] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfInterestUnrealized (soeDEFAULT)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setInterestUnrealized(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfInterestUnrealized] = value;
         return *this;
     }
 

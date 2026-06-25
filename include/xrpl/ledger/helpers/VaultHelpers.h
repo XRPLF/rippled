@@ -1,66 +1,33 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 
-#include <optional>
+#include <expected>
 
-namespace xrpl {
+namespace xrpl::vault {
 
-/** From the perspective of a vault, return the number of shares to give
-    depositor when they offer a fixed amount of assets. Note, since shares are
-    MPT, this number is integral and always truncated in this calculation.
-
-    @param vault The vault SLE.
-    @param issuance The MPTokenIssuance SLE for the vault's shares.
-    @param assets The amount of assets to convert.
-
-    @return The number of shares, or nullopt on error.
-*/
-[[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets);
-
-/** From the perspective of a vault, return the number of assets to take from
-    depositor when they receive a fixed amount of shares. Note, since shares are
-    MPT, they are always an integral number.
-
-    @param vault The vault SLE.
-    @param issuance The MPTokenIssuance SLE for the vault's shares.
-    @param shares The amount of shares to convert.
-
-    @return The number of assets, or nullopt on error.
-*/
-[[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
-
-/** Controls whether to truncate shares instead of rounding. */
 enum class TruncateShares : bool { No = false, Yes = true };
 
-/** Controls whether the withdraw conversion helpers
-    (assetsToSharesWithdraw and sharesToAssetsWithdraw) subtract
-    sfLossUnrealized from sfAssetsTotal before computing the exchange rate.
-    The default (No) applies the standard discounted rate; Yes is used when
-    the redeemer is the sole remaining shareholder.
-*/
 enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
 
-/** From the perspective of a vault, return the number of shares to demand from
-    the depositor when they ask to withdraw a fixed amount of assets. Since
-    shares are MPT this number is integral, and it will be rounded to nearest
-    unless explicitly requested to be truncated instead.
+// Low-level v2 math — exposed for unit testing.
+namespace detail {
 
-    @param vault The vault SLE.
-    @param issuance The MPTokenIssuance SLE for the vault's shares.
-    @param assets The amount of assets to convert.
-    @param truncate Whether to truncate instead of rounding.
-    @param waive Whether to waive the unrealized-loss discount when computing
-                 the exchange rate.
+[[nodiscard]] STAmount
+assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets);
 
-    @return The number of shares, or nullopt on error.
-*/
-[[nodiscard]] std::optional<STAmount>
+[[nodiscard]] STAmount
+sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares);
+
+[[nodiscard]] STAmount
 assetsToSharesWithdraw(
     SLE::const_ref vault,
     SLE::const_ref issuance,
@@ -68,35 +35,157 @@ assetsToSharesWithdraw(
     TruncateShares truncate = TruncateShares::No,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
-/** From the perspective of a vault, return the number of assets to give the
-    depositor when they redeem a fixed amount of shares. Note, since shares are
-    MPT, they are always an integral number.
-
-    @param vault The vault SLE.
-    @param issuance The MPTokenIssuance SLE for the vault's shares.
-    @param shares The amount of shares to convert.
-    @param waive Whether to waive (i.e. not subtract) the vault's unrealized
-                 loss when computing the exchange rate.
-
-    @return The number of assets, or nullopt on error.
-*/
-[[nodiscard]] std::optional<STAmount>
+[[nodiscard]] STAmount
 sharesToAssetsWithdraw(
     SLE::const_ref vault,
     SLE::const_ref issuance,
     STAmount const& shares,
     WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
 
-/** Returns true iff `account` holds all of the vault's outstanding shares —
-    i.e. is the sole remaining shareholder. Returns false if the account
-    holds no shares or fewer than the total outstanding.
+}  // namespace detail
 
-    @param view The ledger view.
-    @param account The candidate sole shareholder.
-    @param issuance The MPTokenIssuance SLE for the vault's shares; provides
-                    both the share MPTID and the outstanding-amount total.
-*/
+// High-level API — orchestrates forward+reverse conversions, handles overflow.
+
 [[nodiscard]] bool
 isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
 
-}  // namespace xrpl
+[[nodiscard]] bool
+isVaultDonate(Rules const& rules, STTx const& tx);
+
+/** Determine if a vault is insolvent. A vault is considered insolvent when
+    the total assets in the vault are zero, and outstanding shares are non-zero.
+
+    @param vault The vault SLE.
+    @param shareIssuance The MPTokenIssuance SLE for the vault's shares.
+
+    @return True if the vault is insolvent, false otherwise.
+*/
+[[nodiscard]] bool
+isVaultInsolvent(SLE::const_ref vault, SLE::const_ref shareIssuance);
+
+[[nodiscard]] STAmount
+sharesToAssetsWithdraw(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    WaiveUnrealizedLoss waive = WaiveUnrealizedLoss::No);
+
+/** The actual amounts exchanged after the forward+reverse round-trip.
+ *  Both values reflect post-rounding quantities: assets is the amount
+ *  transferred, shares is the number of share tokens created or destroyed.
+ */
+struct ExchangeResult
+{
+    STAmount assets;
+    STAmount shares;
+};
+
+/**
+ * Computes the asset/share exchange for a vault deposit. Converts the
+ * requested asset amount to shares (forward), then back-calculates the
+ * actual assets consumed (reverse) to ensure the vault never takes more
+ * than offered.
+ *
+ * @param assets  The asset amount the depositor is offering.
+ *
+ * @return {assetsDeposited, sharesCreated} on success. assetsDeposited
+ *         is always <= assets. Returns tecPRECISION_LOSS if shares
+ *         truncate to zero, tecPATH_DRY on overflow.
+ */
+[[nodiscard]] std::expected<ExchangeResult, TER>
+computeDeposit(
+    Rules const& rules,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& assets,
+    beast::Journal j);
+
+/**
+ * Computes the asset/share exchange for a withdrawal by asset amount.
+ * Converts the requested assets to shares, then back-calculates the
+ * actual assets returned.
+ *
+ * Note: due to banker's rounding on the intermediate share value, the
+ * returned assets may slightly exceed the requested amount. This is by
+ * design — the user burns more shares to receive proportionally more
+ * assets. The per-share price is preserved. See XLS-0065 §3.1.7.1.
+ *
+ * @param assets  The asset amount the withdrawer is requesting.
+ *
+ * @return {assetsWithdrawn, sharesRedeemed} on success. Returns
+ *         tecPRECISION_LOSS if shares truncate to zero, tecPATH_DRY
+ *         on overflow.
+ */
+[[nodiscard]] std::expected<ExchangeResult, TER>
+computeWithdrawByAssets(
+    Rules const& rules,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& assets,
+    beast::Journal j);
+
+/**
+ * Computes the asset/share exchange for a withdrawal by share amount.
+ * Converts the given shares directly to assets.
+ *
+ * @param shares  The number of shares the withdrawer is redeeming.
+ *
+ * @return {assetsWithdrawn, shares} on success. Returns tecPATH_DRY
+ *         on overflow.
+ */
+[[nodiscard]] std::expected<ExchangeResult, TER>
+computeWithdrawByShares(
+    Rules const& rules,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    beast::Journal j);
+
+/**
+ * Computes the asset/share exchange for a clawback. Performs a two-pass
+ * computation: first converts the clawback amount to shares and back to
+ * assets. If the result exceeds assetsAvailable, re-computes with
+ * truncated shares to ensure the recovered amount stays within the limit.
+ *
+ * @param clawbackAmount   The asset amount being clawed back.
+ * @param assetsAvailable  Hard ceiling — recovered assets must not exceed
+ *                         this value.
+ *
+ * @return {assetsRecovered, sharesDestroyed} on success. assetsRecovered
+ *         is always <= assetsAvailable. Returns tecPATH_DRY on overflow.
+ */
+[[nodiscard]] std::expected<ExchangeResult, TER>
+computeClawback(
+    Rules const& rules,
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& clawbackAmount,
+    Number const& assetsAvailable,
+    beast::Journal j);
+
+/**
+ * Updates vault state when a loan is issued: reduces available assets by the
+ * borrowed amount and increases total assets by the yield (accrued interest).
+ * With featureLendingProtocolV1_1, also tracks the yield in InterestUnrealized
+ * and validates vault state after modification.
+ *
+ * @param view    The ledger view to read issuance from and update.
+ * @param vault   The vault SLE to modify. Must be of type ltVAULT.
+ * @param amount  The principal to borrow. Must be > 0 and <= AssetsAvailable.
+ * @param yield   The accrued interest to add. Must be >= 0. Added to both
+ *                AssetsTotal and InterestUnrealized (v1_1 only).
+ * @param j       Journal for error logging.
+ *
+ * @return tesSUCCESS on success, tecINTERNAL on invalid inputs or if the
+ *         resulting vault state fails validation. The caller should validate
+ *         inputs beforehand to return a user-facing error code.
+ */
+[[nodiscard]] TER
+borrowFromVault(
+    ApplyView& view,
+    SLE::ref vault,
+    Number const& amount,
+    Number const& yield,
+    beast::Journal j);
+
+}  // namespace xrpl::vault

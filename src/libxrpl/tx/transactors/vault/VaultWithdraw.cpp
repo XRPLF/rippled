@@ -1,10 +1,5 @@
 #include <xrpl/tx/transactors/vault/VaultWithdraw.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/ReadView.h>
+//
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -20,23 +15,21 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <stdexcept>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {
 
-static WaiveUnrealizedLoss
+static vault::WaiveUnrealizedLoss
 shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
         "xrpl::shouldWaiveWithdrawal : valid issuance sle");
 
-    return view.rules().enabled(fixCleanup3_2_0) && isSoleShareholder(view, account, issuance)
-        ? WaiveUnrealizedLoss::Yes
-        : WaiveUnrealizedLoss::No;
+    return view.rules().enabled(fixCleanup3_2_0) &&
+            vault::isSoleShareholder(view, account, issuance)
+        ? vault::WaiveUnrealizedLoss::Yes
+        : vault::WaiveUnrealizedLoss::No;
 }
 
 NotTEC
@@ -121,16 +114,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(ctx.view, account, sleIssuance);
         try
         {
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, amount, waiveUnrealizedLoss);
-            if (!maybeAssets)
-                return tefINTERNAL;  // LCOV_EXCL_LINE
+            auto const assetsEquiv =
+                vault::sharesToAssetsWithdraw(vault, sleIssuance, amount, waiveUnrealizedLoss);
 
             if (auto const ret = canWithdraw(
                     ctx.view,
                     account,
                     dstAcct,
-                    *maybeAssets,
+                    assetsEquiv,
                     ctx.tx.isFieldPresent(sfDestinationTag)))
                 return ret;
         }
@@ -194,65 +185,26 @@ VaultWithdraw::doApply()
     // to deposit into it, and this means you are also indefinitely authorized
     // to withdraw from it.
 
+    STAmount assetsWithdrawn;
+    STAmount sharesRedeemed;
+
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
 
     MPTIssue const share{mptIssuanceID};
-    STAmount sharesRedeemed = {share};
-    STAmount assetsWithdrawn;
+    auto const& rules = ctx_.view().rules();
 
-    // When the user is the sole shareholder they own both the available and future value.
-    // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of their
-    // shares but keeping future value in the vault.
-    auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(view(), accountID_, sleIssuance);
-    try
-    {
+    auto const result = [&]() -> std::expected<vault::ExchangeResult, TER> {
         if (amount.asset() == vaultAsset)
-        {
-            // Fixed assets, variable shares.
-            {
-                auto const maybeShares = assetsToSharesWithdraw(
-                    vault, sleIssuance, amount, TruncateShares::No, waiveUnrealizedLoss);
-                if (!maybeShares)
-                    return tecINTERNAL;  // LCOV_EXCL_LINE
-                sharesRedeemed = *maybeShares;
-            }
-
-            if (sharesRedeemed == beast::kZero)
-                return tecPRECISION_LOSS;
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
-            if (!maybeAssets)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            assetsWithdrawn = *maybeAssets;
-        }
-        else if (amount.asset() == share)
-        {
-            // Fixed shares, variable assets.
-            sharesRedeemed = amount;
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
-            if (!maybeAssets)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            assetsWithdrawn = *maybeAssets;
-        }
-        else
-        {
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-        }
-    }
-    catch (std::overflow_error const&)
-    {
-        // It's easy to hit this exception from Number with large enough Scale
-        // so we avoid spamming the log and only use debug here.
-        JLOG(j_.debug())  //
-            << "VaultWithdraw: overflow error with"
-            << " scale=" << (int)vault->at(sfScale).value()  //
-            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
-            << ", amount=" << amount.value();
-        return tecPATH_DRY;
-    }
+            return vault::computeWithdrawByAssets(rules, vault, sleIssuance, amount, j_);
+        if (amount.asset() == share)
+            return vault::computeWithdrawByShares(rules, vault, sleIssuance, amount, j_);
+        return std::unexpected(tefINTERNAL);  // LCOV_EXCL_LINE
+    }();
+    if (!result)
+        return result.error();
+    assetsWithdrawn = result.value().assets;
+    sharesRedeemed = result.value().shares;
 
     if (accountHolds(
             view(), accountID_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <

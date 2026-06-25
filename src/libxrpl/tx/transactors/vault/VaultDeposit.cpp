@@ -1,9 +1,5 @@
 #include <xrpl/tx/transactors/vault/VaultDeposit.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/beast/utility/instrumentation.h>
+//
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -20,12 +16,21 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/Transactor.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
-#include <stdexcept>
+#include <cstdint>
 
 namespace xrpl {
+
+std::uint32_t
+VaultDeposit::getFlagsMask(PreflightContext const& ctx)
+{
+    if (ctx.rules.enabled(featureLendingProtocolV1_1))
+        return tfVaultDepositMask;
+
+    return tfVaultDepositMask | tfVaultDonate;
+}
 
 [[nodiscard]]
 static STAmount
@@ -90,8 +95,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
-    if (!sleIssuance)
+    auto const sleShareIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleShareIssuance)
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
@@ -99,12 +104,46 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (sleIssuance->isFlag(lsfMPTLocked))
+    if (vault::isVaultDonate(ctx.view.rules(), ctx.tx))
+    {
+        if (account != vault->at(sfOwner))
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: only owner can donate to vault.";
+            return tecNO_PERMISSION;
+        }
+
+        // Cannot donate to a vault with no shares
+        if (sleShareIssuance->at(sfOutstandingAmount) == 0)
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: empty vault cannot receive donations.";
+            return tecNO_PERMISSION;
+        }
+    }
+
+    if (sleShareIssuance->isFlag(lsfMPTLocked))
     {
         // LCOV_EXCL_START
         JLOG(ctx.j.error()) << "VaultDeposit: issuance of vault shares is locked.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        // Perform these checks early to avoid unnecessary processing
+
+        // The Vault is insolvent, deposits are not allowed
+        if (vault::isVaultInsolvent(vault, sleShareIssuance))
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: Vault is insolvent, deposits are not allowed";
+            return tecLOCKED;
+        }
+
+        if (vault->isFlag(lsfVaultDepositBlocked))
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: Vault deposits are blocked";
+            return tecNO_PERMISSION;
+        }
     }
 
     // Cannot deposit inside Vault an Asset frozen for the depositor
@@ -117,7 +156,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
-        auto const maybeDomainID = sleIssuance->at(~sfDomainID);
+        auto const maybeDomainID = sleShareIssuance->at(~sfDomainID);
         // Since this is a private vault and the account is not its owner, we
         // perform authorization check based on DomainID read from sleIssuance.
         // Had the vault shares been a regular MPToken, we would allow
@@ -215,6 +254,8 @@ VaultDeposit::doApply()
         // LCOV_EXCL_STOP
     }
 
+    auto const isDonate = vault::isVaultDonate(ctx_.view().rules(), ctx_.tx);
+
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
     if (vault->isFlag(lsfVaultPrivate) && accountID_ != vault->at(sfOwner))
@@ -254,44 +295,22 @@ VaultDeposit::doApply()
                 return err;
         }
     }
-
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
-    try
+    if (isDonate)
+    {
+        XRPL_ASSERT(
+            accountID_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
+        assetsDeposited = amount;
+    }
+    else
     {
         // Compute exchange before transferring any amounts.
-        {
-            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
-            if (!maybeShares)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            sharesCreated = *maybeShares;
-        }
-        if (sharesCreated == beast::kZero)
-            return tecPRECISION_LOSS;
-
-        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
-        if (!maybeAssets)
-        {
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
-        if (*maybeAssets > amount)
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-        assetsDeposited = *maybeAssets;
-    }
-    catch (std::overflow_error const&)
-    {
-        // It's easy to hit this exception from Number with large enough Scale
-        // so we avoid spamming the log and only use debug here.
-        JLOG(j_.debug())  //
-            << "VaultDeposit: overflow error with"
-            << " scale=" << (int)vault->at(sfScale).value()  //
-            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount) << ", amount=" << amount;
-        return tecPATH_DRY;
+        auto const& rules = ctx_.view().rules();
+        auto const result = vault::computeDeposit(rules, vault, sleIssuance, amount, j_);
+        if (!result)
+            return result.error();
+        assetsDeposited = result->assets;
+        sharesCreated = result->shares;
     }
 
     XRPL_ASSERT(
@@ -335,11 +354,19 @@ VaultDeposit::doApply()
         }
     }
 
-    // Transfer shares from vault to depositor.
-    if (auto const ter =
-            accountSend(view(), vaultAccount, accountID_, sharesCreated, j_, WaiveTransferFee::Yes);
-        !isTesSuccess(ter))
-        return ter;
+    if (isDonate)
+    {
+        XRPL_ASSERT(
+            sharesCreated == beast::kZero, "xrpl::VaultDeposit::doApply : donation issued shares");
+    }
+    else
+    {
+        // Transfer shares from vault to depositor.
+        if (auto const ter = accountSend(
+                view(), vaultAccount, accountID_, sharesCreated, j_, WaiveTransferFee::Yes);
+            !isTesSuccess(ter))
+            return ter;
+    }
 
     associateAsset(*vault, vaultAsset);
 
