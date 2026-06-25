@@ -9,7 +9,7 @@ inputs:
   remote_url:
     description: "The URL of the Conan endpoint to use."
     required: false
-    default: https://conan.xrplf.org/repository/conan/
+    default: https://conan.ripplex.io
 
 runs:
   using: composite
