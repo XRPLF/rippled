@@ -62,9 +62,5 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
  * Useful for running a test over every combination of optional amendments
  * so that each case is exercised both with and without each feature.
  */
-std::vector<FeatureBitset>
-amendmentCombinations(
-    std::initializer_list<uint256> features,
-    FeatureBitset seed = testableAmendments());
 
 }  // namespace xrpl::test::jtx

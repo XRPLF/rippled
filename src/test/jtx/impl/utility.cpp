@@ -4,7 +4,6 @@
 
 #include <xrpld/rpc/RPCCall.h>
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -12,7 +11,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -23,8 +21,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstddef>
-#include <initializer_list>
 #include <utility>
 #include <vector>
 
@@ -104,18 +100,4 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
         jv[jss::id] = paramsObj[jss::id];
     return jv;
 }
-
-std::vector<FeatureBitset>
-amendmentCombinations(std::initializer_list<uint256> features, FeatureBitset seed)
-{
-    std::vector<FeatureBitset> result{seed};
-    for (auto const& f : features)
-    {
-        auto const n = result.size();
-        for (std::size_t i = 0; i < n; ++i)
-            result.push_back(result[i] - f);
-    }
-    return result;
-}
-
 }  // namespace xrpl::test::jtx

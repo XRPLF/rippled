@@ -96,6 +96,19 @@ testableAmendments()
     return kIds;
 }
 
+inline std::vector<FeatureBitset>
+amendmentCombinations(std::initializer_list<uint256> features, FeatureBitset seed)
+{
+    std::vector<FeatureBitset> result{seed};
+    for (auto const& f : features)
+    {
+        auto const n = result.size();
+        for (std::size_t i = 0; i < n; ++i)
+            result.push_back(result[i] - f);
+    }
+    return result;
+}
+
 //------------------------------------------------------------------------------
 
 class SuiteLogs : public Logs
