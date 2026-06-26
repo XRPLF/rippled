@@ -278,11 +278,11 @@ checkConsensus(
 template <class Adaptor>
 class Consensus
 {
-    using Ledger_t = typename Adaptor::Ledger_t;
-    using TxSet_t = typename Adaptor::TxSet_t;
-    using NodeID_t = typename Adaptor::NodeID_t;
-    using Tx_t = typename TxSet_t::Tx;
-    using PeerPosition_t = typename Adaptor::PeerPosition_t;
+    using Ledger_t = Adaptor::Ledger_t;
+    using TxSet_t = Adaptor::TxSet_t;
+    using NodeID_t = Adaptor::NodeID_t;
+    using Tx_t = TxSet_t::Tx;
+    using PeerPosition_t = Adaptor::PeerPosition_t;
     using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID, typename TxSet_t::ID>;
 
     using Result = ConsensusResult<Adaptor>;
@@ -343,7 +343,7 @@ public:
     void
     startRound(
         NetClock::time_point const& now,
-        typename Ledger_t::ID const& prevLedgerID,
+        Ledger_t::ID const& prevLedgerID,
         Ledger_t prevLedger,
         hash_set<NodeID_t> const& nowUntrusted,
         bool proposing,
@@ -404,7 +404,7 @@ public:
 
         @return ID of previous ledger
     */
-    typename Ledger_t::ID
+    Ledger_t::ID
     prevLedgerID() const
     {
         return prevLedgerID_;
@@ -444,7 +444,7 @@ private:
     void
     startRoundInternal(
         NetClock::time_point const& now,
-        typename Ledger_t::ID const& prevLedgerID,
+        Ledger_t::ID const& prevLedgerID,
         Ledger_t const& prevLedger,
         ConsensusMode mode,
         std::unique_ptr<std::stringstream> const& clog,
@@ -452,9 +452,7 @@ private:
 
     // Change our view of the previous ledger
     void
-    handleWrongLedger(
-        typename Ledger_t::ID const& lgrId,
-        std::unique_ptr<std::stringstream> const& clog);
+    handleWrongLedger(Ledger_t::ID const& lgrId, std::unique_ptr<std::stringstream> const& clog);
 
     /** Check if our previous ledger matches the network's.
 
@@ -585,7 +583,7 @@ private:
     // Non-peer (self) consensus data
 
     // Last validated ledger ID provided to consensus
-    typename Ledger_t::ID prevLedgerID_;
+    Ledger_t::ID prevLedgerID_;
     // Last validated ledger seen by consensus
     Ledger_t previousLedger_;
 
@@ -660,7 +658,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::startRound(
     NetClock::time_point const& now,
-    typename Ledger_t::ID const& prevLedgerID,
+    Ledger_t::ID const& prevLedgerID,
     Ledger_t prevLedger,
     hash_set<NodeID_t> const& nowUntrusted,
     bool proposing,
@@ -705,7 +703,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::startRoundInternal(
     NetClock::time_point const& now,
-    typename Ledger_t::ID const& prevLedgerID,
+    Ledger_t::ID const& prevLedgerID,
     Ledger_t const& prevLedger,
     ConsensusMode mode,
     std::unique_ptr<std::stringstream> const& clog,
@@ -888,7 +886,9 @@ Consensus<Adaptor>::peerProposalInternal(
                 gotTxSet(now_, *set);
             }
             else
+            {
                 JLOG(j_.debug()) << "Don't have tx set for peer";
+            }
         }
         else if (result_)
         {
@@ -1105,7 +1105,7 @@ Consensus<Adaptor>::getJson(bool full) const
 template <class Adaptor>
 void
 Consensus<Adaptor>::handleWrongLedger(
-    typename Ledger_t::ID const& lgrId,
+    Ledger_t::ID const& lgrId,
     std::unique_ptr<std::stringstream> const& clog)
 {
     CLOG(clog) << "handleWrongLedger. ";

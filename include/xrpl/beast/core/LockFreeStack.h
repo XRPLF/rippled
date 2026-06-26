@@ -12,13 +12,13 @@ template <class Container, bool IsConst>
 class LockFreeStackIterator
 {
 protected:
-    using Node = typename Container::Node;
+    using Node = Container::Node;
     using NodePtr = std::conditional_t<IsConst, Node const*, Node*>;
 
 public:
     using iterator_category = std::forward_iterator_tag;
-    using value_type = typename Container::value_type;
-    using difference_type = typename Container::difference_type;
+    using value_type = Container::value_type;
+    using difference_type = Container::difference_type;
     using pointer =
         std::conditional_t<IsConst, typename Container::const_pointer, typename Container::pointer>;
     using reference = std::

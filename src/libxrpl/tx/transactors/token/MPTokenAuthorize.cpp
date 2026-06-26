@@ -64,7 +64,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             if ((*sleMpt)[sfMPTAmount] != 0)
             {
                 auto const sleMptIssuance =
-                    ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                    ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -74,7 +74,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             if ((*sleMpt)[~sfLockedAmount].value_or(0) != 0)
             {
                 auto const sleMptIssuance =
-                    ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                    ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -87,7 +87,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         }
 
         // Now test when the holder wants to hold/create/authorize a new MPT
-        auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+        auto const sleMptIssuance =
+            ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
 
         if (!sleMptIssuance)
             return tecOBJECT_NOT_FOUND;
@@ -106,7 +107,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (!sleHolder)
         return tecNO_DST;
 
-    auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    auto const sleMptIssuance = ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
