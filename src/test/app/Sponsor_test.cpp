@@ -2862,9 +2862,8 @@ public:
             env(noop(sponsor), ticket::Use(ticketSeq));
             env.close();
 
-            // pass (free mptoken for the holder, but the sponsor is still
-            // charged a reserve increment regardless of the free-first-item
-            // shortcut).
+            // pass (free-tier mptoken for the holder, but the sponsor is still
+            // charged a reserve increment regardless of the ownerCount < 2 shortcut).
             if (cosigning)
             {
                 adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
