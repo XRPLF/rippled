@@ -207,6 +207,11 @@ TER
 OracleSet::doApply()
 {
     auto const oracleID = keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]);
+    SLE::pointer accountSle = view().peek(keylet::account(accountID_));
+    auto const sponsorSleExpected = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+    if (!sponsorSleExpected)
+        return sponsorSleExpected.error();  // LCOV_EXCL_LINE
+    auto const& sponsorSle = *sponsorSleExpected;
 
     auto populatePriceData = [](STObject& priceData, STObject const& entry) {
         setPriceDataInnerObjTemplate(priceData);
@@ -279,9 +284,6 @@ OracleSet::doApply()
 
         if (ctx_.view().rules().enabled(featureSponsor))
         {
-            auto const sponsorSle = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-            if (!sponsorSle)
-                return sponsorSle.error();  // LCOV_EXCL_LINE
             auto const delta = (getLedgerEntryReserveSponsorAccountID(sle) ==
                                 getTxReserveSponsorAccountID(ctx_.tx))
                 ? adjust
@@ -291,7 +293,7 @@ OracleSet::doApply()
                     ctx_.tx,
                     accountSle,
                     STAmount{preFeeBalance_},
-                    *sponsorSle,
+                    sponsorSle,
                     delta,
                     0,
                     j_);
@@ -353,7 +355,7 @@ OracleSet::doApply()
                     ctx_.tx,
                     accountSle,
                     STAmount{preFeeBalance_},
-                    *sponsorSle,
+                    sponsorSle,
                     count,
                     0,
                     j_);
