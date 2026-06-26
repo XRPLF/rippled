@@ -4703,6 +4703,8 @@ class Invariants_test : public beast::unit_test::Suite
             auto const setupVaultAMM = [&](Account const& a1, Account const& a2, Env& env) -> bool {
                 env.fund(XRP(1'000), gw);
                 env(fset(gw, asfDefaultRipple));
+                env.close();
+
                 env.trust(gw["IOU"](10'000), a1);
                 env.trust(gw["IOU"](10'000), a2);
                 env.close();
