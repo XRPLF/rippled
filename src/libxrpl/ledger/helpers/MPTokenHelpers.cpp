@@ -126,7 +126,7 @@ canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyViewContext ctx,
+    ApplyViewContext& ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
@@ -148,7 +148,7 @@ addEmptyHolding(
 
 [[nodiscard]] TER
 authorizeMPToken(
-    ApplyViewContext ctx,
+    ApplyViewContext& ctx,
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
@@ -280,7 +280,7 @@ authorizeMPToken(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyViewContext ctx,
+    ApplyViewContext& ctx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
     beast::Journal journal)
@@ -411,7 +411,7 @@ requireAuth(
 
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
-    ApplyViewContext ctx,
+    ApplyViewContext& ctx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization

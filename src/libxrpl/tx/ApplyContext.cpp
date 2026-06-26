@@ -40,12 +40,13 @@ ApplyContext::ApplyContext(
     , journal(journal)
     , base_(base)
     , flags_(flags)
+    , view_{std::in_place, &base_, flags_}
     , parentBatchId_(parentBatchId)
+    , viewCtx_{*view_, tx}
 {
     XRPL_ASSERT(
         parentBatchId.has_value() == ((flags_ & TapBatch) == TapBatch),
         "Parent Batch ID should be set if batch apply flag is set");
-    view_.emplace(&base_, flags_);
 }
 
 void

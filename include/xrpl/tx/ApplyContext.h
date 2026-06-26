@@ -112,10 +112,10 @@ public:
     TER
     checkInvariants(TER const result, XRPAmount const fee);
 
-    inline ApplyViewContext
+    inline ApplyViewContext&
     getApplyViewContext()
     {
-        return {view(), tx};
+        return viewCtx_;
     }
 
 private:
@@ -132,6 +132,11 @@ private:
 
     // The ID of the batch transaction we are executing under, if seated.
     std::optional<uint256 const> parentBatchId_;
+
+    // A temporary helper object that passes around ApplyContext info
+    // Only necessary (for now) because the ApplyContext can't be passed into helpers due to
+    // levelization
+    ApplyViewContext viewCtx_;
 };
 
 }  // namespace xrpl

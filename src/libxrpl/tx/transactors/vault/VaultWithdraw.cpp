@@ -347,8 +347,8 @@ VaultWithdraw::doApply()
     // Keep MPToken if holder is the vault owner.
     if (accountID_ != vault->at(sfOwner))
     {
-        if (auto const ter =
-                removeEmptyHolding({view(), ctx_.tx}, accountID_, sharesRedeemed.asset(), j_);
+        if (auto const ter = removeEmptyHolding(
+                ctx_.getApplyViewContext(), accountID_, sharesRedeemed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
