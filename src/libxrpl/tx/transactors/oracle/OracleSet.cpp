@@ -279,9 +279,6 @@ OracleSet::doApply()
         auto const newCount = calculateOracleReserve(pairs.size());
         int32_t const adjust = newCount - oldCount;
 
-        if (adjust != 0 && !adjustOwnerCount(ctx_, adjust))
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-
         if (ctx_.view().rules().enabled(featureSponsor))
         {
             auto const delta = (getLedgerEntryReserveSponsorAccountID(sle) ==
@@ -300,6 +297,9 @@ OracleSet::doApply()
                 !isTesSuccess(ret))
                 return ret;
         }
+
+        if (adjust != 0 && !adjustOwnerCount(ctx_, adjust))
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         ctx_.view().update(sle);
     }
