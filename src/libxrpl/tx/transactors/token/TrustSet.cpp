@@ -334,9 +334,9 @@ TrustSet::doApply()
 
     std::uint32_t const uOwnerCount = ownerCount(view(), *sponsorSle ? *sponsorSle : sle, j_);
 
-    // The free-first-item shortcut only applies when there is no sponsor.
-    // With any sponsor on the tx, the sponsor must cover the reserve
-    // (whether via balance or prefunded budget), so the reserve check runs.
+    // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
+    // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
+    // prefunded budget), so the reserve check always runs.
     bool const freeTrustLine = uOwnerCount < 2 && !*sponsorSle;
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
