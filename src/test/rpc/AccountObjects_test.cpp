@@ -1555,7 +1555,7 @@ public:
                 Sig(sfSponsorSignature, sponsor));
             env.close();
 
-            auto const sponsorship = env.le(keylet::sponsor(owner, sponsee));
+            auto const sponsorship = env.le(keylet::sponsorship(owner, sponsee));
             if (!BEAST_EXPECT(sponsorship))
                 return;
             BEAST_EXPECT(sponsorship->isFieldPresent(sfSponsor));
