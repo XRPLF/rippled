@@ -361,7 +361,7 @@ SpanGuard::discard()
             // flag leak-proof if a later phase can hand back a non-recording
             // span (e.g. honoring a non-sampled remote parent during
             // propagation), so it can never spill onto the next span.
-            DiscardScope discardScope;
+            DiscardScope const discardScope;
             impl_->span->End();
         }
         impl_->span = nullptr;  // prevent ~Impl from calling End() again
