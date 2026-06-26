@@ -744,6 +744,41 @@ public:
                 Ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
+
+        {
+            // Regression: trust lines and MPTokens normally skip the reserve
+            // check when the holder's ownerCount < 2 (the "free first item"
+            // shortcut). When the tx is sponsored — even via direct cosigning,
+            // without a prefunded sponsorship object — that shortcut must not
+            // apply; the sponsor must still cover the reserve.
+            Env env{*this, testableAmendments()};
+            Account const issuer("issuer");
+            env.fund(XRP(10000), alice, issuer);
+            // Sponsor is funded just below the reserve required to cover a
+            // single sponsored item.
+            env.fund(reserve(env, 1) - drops(1), sponsor);
+            env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+
+            MPTTester mptt(env, issuer, {.fund = false});
+            mptt.create();
+
+            // Free-tier trust line cosigned by an undercapitalized sponsor
+            // must fail — the holder's free-first-item shortcut does not let
+            // the sponsor skip the reserve check.
+            env(trust(alice, issuer["USD"](100)),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(tecNO_LINE_INSUF_RESERVE));
+            env.close();
+
+            // Free-tier MPTokenAuthorize must also fail for the same reason.
+            env(MPTTester::authorizeJV({.account = alice, .id = mptt.issuanceID()}),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+        }
     }
 
     void
@@ -2821,10 +2856,12 @@ public:
             env(noop(sponsor), ticket::Use(ticketSeq));
             env.close();
 
-            // pass (free mptoken)
+            // pass (free mptoken for the holder, but the sponsor is still
+            // charged a reserve increment regardless of the free-first-item
+            // shortcut).
             if (cosigning)
             {
-                adjustAccountXRPBalance(env, sponsor, reserve(env, 2) - drops(1));
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
                 env(jv,
                     sponsor::As(sponsor, spfSponsorReserve),
                     Sig(sfSponsorSignature, sponsor),
