@@ -14,11 +14,34 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <openssl/rand.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 
 namespace xrpl::test::jtx {
+
+/**
+ * @brief Generates a cryptographically secure blinding factor
+ * (size=xrpl::kEcBlindingFactorLength).
+ *
+ * Produces random bytes suitable for use as an ElGamal blinding factor
+ * or Pedersen commitment randomness.
+ *
+ * @return A buffer containing the random blinding factor
+ *         (size=xrpl::kEcBlindingFactorLength).
+ */
+inline Buffer
+generateBlindingFactor()
+{
+    unsigned char blindingFactor[kEcBlindingFactorLength];
+
+    if (RAND_bytes(blindingFactor, kEcBlindingFactorLength) != 1)
+        Throw<std::runtime_error>("Failed to generate random number");
+
+    return Buffer(blindingFactor, kEcBlindingFactorLength);
+}
 
 class MPTTester;
 
