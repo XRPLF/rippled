@@ -34,7 +34,7 @@ TEST(TelemetryConfig, setup_defaults)
 TEST(TelemetryConfig, parse_empty_section)
 {
     Section const section;
-    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0);
+    auto setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0);
 
     EXPECT_FALSE(setup.enabled);
     EXPECT_EQ(setup.serviceName, "xrpld");
@@ -67,7 +67,7 @@ TEST(TelemetryConfig, parse_full_section)
     section.set("trace_peer", "1");
     section.set("trace_ledger", "0");
 
-    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 1);
+    auto setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 1);
 
     EXPECT_TRUE(setup.enabled);
     EXPECT_EQ(setup.serviceName, "my-rippled");
@@ -92,7 +92,7 @@ TEST(TelemetryConfig, mtls_cert_and_key_both_set)
     section.set("tls_client_cert", "/etc/ssl/client.pem");
     section.set("tls_client_key", "/etc/ssl/client.key");
 
-    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0);
+    auto setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0);
     EXPECT_EQ(setup.tlsClientCertPath, "/etc/ssl/client.pem");
     EXPECT_EQ(setup.tlsClientKeyPath, "/etc/ssl/client.key");
 }
@@ -101,14 +101,16 @@ TEST(TelemetryConfig, mtls_cert_without_key_throws)
 {
     Section section;
     section.set("tls_client_cert", "/etc/ssl/client.pem");
-    EXPECT_THROW(telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0), std::runtime_error);
+    EXPECT_THROW(
+        telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0), std::runtime_error);
 }
 
 TEST(TelemetryConfig, mtls_key_without_cert_throws)
 {
     Section section;
     section.set("tls_client_key", "/etc/ssl/client.key");
-    EXPECT_THROW(telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0), std::runtime_error);
+    EXPECT_THROW(
+        telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0), std::runtime_error);
 }
 
 TEST(TelemetryConfig, mtls_neither_set_is_one_way_tls)
@@ -117,7 +119,7 @@ TEST(TelemetryConfig, mtls_neither_set_is_one_way_tls)
     section.set("use_tls", "1");
     section.set("tls_ca_cert", "/etc/ssl/ca.pem");
 
-    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0);
+    auto setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0);
     EXPECT_TRUE(setup.tlsClientCertPath.empty());
     EXPECT_TRUE(setup.tlsClientKeyPath.empty());
 }
