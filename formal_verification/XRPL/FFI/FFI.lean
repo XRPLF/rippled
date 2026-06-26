@@ -27,7 +27,10 @@ import XRPL.FFI.Protocol.LedgerHeaderFFI
 import XRPL.FFI.Protocol.MPTAmountFFI
 import XRPL.FFI.Protocol.MPTIssueFFI
 import XRPL.FFI.Protocol.NumberFFI
+import XRPL.FFI.Protocol.RulesFFI
 import XRPL.FFI.Protocol.STAmountFFI
 import XRPL.FFI.Protocol.STNumberFFI
 import XRPL.FFI.Protocol.UintTypesFFI
 import XRPL.FFI.Protocol.XRPAmountFFI
+import XRPL.FFI.tx.TxFFI
+import XRPL.FFI.tx.vault.VaultSetFFI

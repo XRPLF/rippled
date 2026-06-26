@@ -15,5 +15,6 @@ abbrev lsfMPTRequireAuth : UInt32 := 0x00000004
 abbrev lsfDepositAuth : UInt32 := 0x01000000
 abbrev lsfAccepted : UInt32 := 0x00010000
 abbrev lsfDisableMaster : UInt32 := 0x00100000
+abbrev lsfVaultPrivate : UInt32 := 0x00010000
 
 end XRPL.Model.Protocol

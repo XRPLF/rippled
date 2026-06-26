@@ -45,7 +45,13 @@ namespace xrpl::test::formal_verification {
     X(tecLOCKED)                \
     X(temMALFORMED)             \
     X(temBAD_AMOUNT)            \
-    X(telFAILED_PROCESSING)
+    X(telFAILED_PROCESSING)     \
+    X(temINVALID)               \
+    X(temINVALID_FLAG)          \
+    X(temBAD_FEE)               \
+    X(temBAD_SRC_ACCOUNT)       \
+    X(temDISABLED)              \
+    X(tecLIMIT_EXCEEDED)
 // clang-format on
 
 enum class Ter : uint8_t {
