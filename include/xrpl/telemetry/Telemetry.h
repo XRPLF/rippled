@@ -104,6 +104,13 @@
 
 namespace xrpl::telemetry {
 
+#ifdef XRPL_ENABLE_TELEMETRY
+/** OTel instrumentation scope (tracer) name. Identifies this library as the
+    source of spans; distinct from the `service.name` resource attribute
+    (Setup::serviceName), which is config-overridable. */
+inline constexpr std::string_view kTracerName{"xrpld"};
+#endif
+
 class Telemetry
 {
     /** Global singleton pointer, set by start()/stop() in the active
@@ -175,13 +182,13 @@ public:
             delegated to the collector's tail sampling; for node-local post-hoc
             dropping see SpanGuard::discard().
         */
-        double const samplingRatio = 1.0;
+        static constexpr double samplingRatio = 1.0;
 
         /** Maximum number of spans per batch export. */
         std::uint32_t batchSize = 512;
 
         /** Delay between batch exports. */
-        std::chrono::milliseconds batchDelay{5000};
+        std::chrono::milliseconds batchDelay = std::chrono::milliseconds{5000};
 
         /** Maximum number of spans queued before dropping. */
         std::uint32_t maxQueueSize = 2048;
@@ -271,7 +278,7 @@ public:
         @return A shared pointer to the Tracer.
     */
     virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
-    getTracer(std::string_view name = "xrpld") = 0;
+    getTracer(std::string_view name = kTracerName) = 0;
 
     /** Start a new span on the current thread's context.
 
@@ -331,7 +338,7 @@ makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
     @return A populated Setup struct with defaults for missing values.
 */
 Telemetry::Setup
-setupTelemetry(
+makeTelemetrySetup(
     Section const& section,
     std::string const& nodePublicKey,
     std::string const& version,

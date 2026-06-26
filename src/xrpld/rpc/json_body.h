@@ -22,7 +22,7 @@ struct JsonBody
         dynamic_buffer_type buffer_;
 
     public:
-        using const_buffers_type = typename dynamic_buffer_type::const_buffers_type;
+        using const_buffers_type = dynamic_buffer_type::const_buffers_type;
 
         using is_deferred = std::false_type;
 

@@ -107,7 +107,6 @@ inline constexpr auto link = makeStr("link");
 namespace attr {
 inline constexpr auto networkId = join(join(seg::xrpl, seg::network), makeStr("id"));
 inline constexpr auto networkType = join(join(seg::xrpl, seg::network), makeStr("type"));
-inline constexpr auto linkType = makeStr("link_type");
 }  // namespace attr
 
 // ===== Shared attribute values =============================================
@@ -115,7 +114,6 @@ inline constexpr auto linkType = makeStr("link_type");
 namespace attr_val {
 inline constexpr auto success = makeStr("success");
 inline constexpr auto error = makeStr("error");
-inline constexpr auto followsFrom = makeStr("follows_from");
 }  // namespace attr_val
 
 }  // namespace xrpl::telemetry

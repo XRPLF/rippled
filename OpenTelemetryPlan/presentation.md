@@ -222,7 +222,7 @@ flowchart TB
         services --> Telemetry
     end
 
-    Telemetry -->|OTLP/gRPC| Collector["OTel Collector"]
+    Telemetry -->|OTLP/HTTP| Collector["OTel Collector"]
 
     Collector --> Tempo["Grafana Tempo"]
     Collector --> Elastic["Elastic APM"]
@@ -237,7 +237,7 @@ flowchart TB
 
 - **Core Services (blue, top)**: RPC Server, Overlay, and Consensus are the three primary components that generate trace data — they represent the entry points for client requests, peer messages, and consensus rounds respectively.
 - **Telemetry Module (green, middle)**: The OpenTelemetry SDK sits below the core services and receives span data from all three; it acts as a single collection point within the xrpld process.
-- **OTel Collector (orange, center)**: An external process that receives spans over OTLP/gRPC from the Telemetry Module; it decouples xrpld from backend choices and handles batching, sampling, and routing.
+- **OTel Collector (orange, center)**: An external process that receives spans over OTLP/HTTP from the Telemetry Module; it decouples xrpld from backend choices and handles batching, sampling, and routing.
 - **Backends (bottom row)**: Tempo and Elastic APM are interchangeable — the Collector fans out to any combination, so operators can switch backends without modifying xrpld code.
 - **Top-to-bottom flow**: Data flows from instrumented code down through the SDK, out over the network to the Collector, and finally into storage/visualization backends.
 
@@ -373,6 +373,13 @@ Per-transaction tracing cost breakdown:
 > recordable (~250 bytes base), and `std::map`-based attribute storage (~200-500 bytes for 3-5
 > string attributes). See [Section 3.5.4](./03-implementation-strategy.md#354-performance-data-sources) for source references.
 
+> **Measured (perf-iac, telemetry on vs off, 9 nodes under payment load)**: the ~10 MB
+> above is a theoretical SDK-footprint ceiling, dominated by virtual (not resident) thread-stack
+> memory. In practice, per-node RSS showed **no measurable increase over the telemetry-off
+> baseline** (~15 GiB mean / ~18–19 GiB peak on both sides), with no OOM, swap, or leak over the
+> run. Treat memory overhead as negligible; the ceiling is a provisioning safety margin, not an
+> expected increase.
+
 **Network (10-50 KB/s) — Calculation**:
 
 Two sources of network overhead:
@@ -457,7 +464,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A["Head Sampling<br/>10% default"] --> B["Tail Sampling<br/>Keep errors/slow"] --> C["Batch Export<br/>Reduce I/O"] --> D["Conditional Compile<br/>XRPL_ENABLE_TELEMETRY"]
+    A["Head Sampling<br/>fixed 1.0 (record all)"] --> B["Tail Sampling<br/>Keep errors/slow"] --> C["Batch Export<br/>Reduce I/O"] --> D["Conditional Compile<br/>XRPL_ENABLE_TELEMETRY"]
 
     style A fill:#1565c0,stroke:#0d47a1,color:#fff
     style B fill:#2e7d32,stroke:#1b5e20,color:#fff
@@ -496,7 +503,7 @@ flowchart LR
 
 | Aspect                        | Details                                                                                                                                                                                                  |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Where it runs**             | Inside xrpld (SDK-level). Configured via `sampling_ratio` in `xrpld.cfg`.                                                                                                                                |
+| **Where it runs**             | Inside xrpld (SDK-level). In xrpld the ratio is fixed at 1.0 and not read from config (tail sampling in the collector needs every span) — the example below shows the general head-sampling mechanism.   |
 | **When the decision happens** | At trace creation time — before the first span is even populated.                                                                                                                                        |
 | **How it works**              | `sampling_ratio=0.1` means each trace has a 10% probability of being recorded. Dropped traces incur near-zero overhead (no spans created, no attributes set, no export).                                 |
 | **Propagation**               | Once a trace is sampled, the `trace_flags` field (1 byte in the context header) tells downstream nodes to also sample it. Unsampled traces propagate `trace_flags=0`, so downstream nodes skip them too. |
@@ -508,8 +515,10 @@ flowchart LR
 
 ```ini
 [telemetry]
-# Record 10% of traces (recommended for production)
-sampling_ratio=0.1
+# xrpld fixes head sampling at 1.0 (record every trace). This value is
+# NOT read from config — the collector performs tail sampling instead,
+# which needs all spans to arrive. See Slide 9 (tail sampling) and §7.4.2.
+sampling_ratio=1.0
 ```
 
 ### Tail Sampling (Decision at End)
@@ -574,16 +583,16 @@ processors:
 
 ### Head vs. Tail — Side-by-Side
 
-|                               | Head Sampling                            | Tail Sampling                                    |
-| ----------------------------- | ---------------------------------------- | ------------------------------------------------ |
-| **Decision point**            | Trace start (inside xrpld)               | Trace end (in OTel Collector)                    |
-| **Knows trace content?**      | No (random coin flip)                    | Yes (evaluates completed trace)                  |
-| **Overhead on xrpld**         | Lowest (dropped traces = no-op)          | Higher (must export 100% to Collector)           |
-| **Collector resource usage**  | Low (receives only sampled traces)       | Higher (buffers all traces before deciding)      |
-| **Captures all errors?**      | No (only if trace was randomly selected) | **Yes** (error policy catches them)              |
-| **Captures slow operations?** | No (random)                              | **Yes** (latency policy catches them)            |
-| **Configuration**             | `xrpld.cfg`: `sampling_ratio=0.1`        | `otel-collector.yaml`: `tail_sampling` processor |
-| **Best for**                  | High-throughput steady-state             | Troubleshooting & anomaly detection              |
+|                               | Head Sampling                             | Tail Sampling                                    |
+| ----------------------------- | ----------------------------------------- | ------------------------------------------------ |
+| **Decision point**            | Trace start (inside xrpld)                | Trace end (in OTel Collector)                    |
+| **Knows trace content?**      | No (random coin flip)                     | Yes (evaluates completed trace)                  |
+| **Overhead on xrpld**         | Lowest (dropped traces = no-op)           | Higher (must export 100% to Collector)           |
+| **Collector resource usage**  | Low (receives only sampled traces)        | Higher (buffers all traces before deciding)      |
+| **Captures all errors?**      | No (only if trace was randomly selected)  | **Yes** (error policy catches them)              |
+| **Captures slow operations?** | No (random)                               | **Yes** (latency policy catches them)            |
+| **Configuration**             | Fixed at `1.0` in xrpld (not config-read) | `otel-collector.yaml`: `tail_sampling` processor |
+| **Best for**                  | High-throughput steady-state              | Troubleshooting & anomaly detection              |
 
 ### Recommended Strategy for xrpld
 
@@ -610,7 +619,7 @@ flowchart LR
     style storage fill:#2e7d32,stroke:#1b5e20,color:#fff
 ```
 
-> **Why this works**: xrpld exports everything (no blind drops), the Collector applies intelligent filtering (keep errors/slow/anomalies, sample the rest), and only ~15-20% of traces reach storage. If Collector resource usage becomes a concern, add head sampling at `sampling_ratio=0.5` to halve the export volume while still giving the Collector enough data for good tail-sampling decisions.
+> **Why this works**: xrpld exports everything (no blind drops), the Collector applies intelligent filtering (keep errors/slow/anomalies, sample the rest), and only ~15-20% of traces reach storage. xrpld's head sampling is fixed at 1.0 and not configurable, because tail sampling can only see traces that reach the Collector — any head drop would blind the error/slow policies. To reduce volume, tune the Collector's tail-sampling rules rather than adding head sampling.
 
 ---
 

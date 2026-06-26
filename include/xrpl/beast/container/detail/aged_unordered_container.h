@@ -67,8 +67,8 @@ class AgedUnorderedContainer
 {
 public:
     using clock_type = AbstractClock<Clock>;
-    using time_point = typename clock_type::time_point;
-    using duration = typename clock_type::duration;
+    using time_point = clock_type::time_point;
+    using duration = clock_type::duration;
     using key_type = Key;
     using mapped_type = T;
     using value_type = std::conditional_t<IsMap, std::pair<Key const, T>, Key>;
@@ -99,8 +99,8 @@ private:
         {
             explicit Stashed() = default;
 
-            using value_type = typename AgedUnorderedContainer::value_type;
-            using time_point = typename AgedUnorderedContainer::time_point;
+            using value_type = AgedUnorderedContainer::value_type;
+            using time_point = AgedUnorderedContainer::time_point;
         };
 
         Element(time_point const& when, value_type const& value) : value(value), when(when)
@@ -201,8 +201,8 @@ private:
         }
     };
 
-    using list_type = typename boost::intrusive::
-        make_list<Element, boost::intrusive::constant_time_size<false>>::type;
+    using list_type =
+        boost::intrusive::make_list<Element, boost::intrusive::constant_time_size<false>>::type;
 
     using cont_type = std::conditional_t<
         IsMulti,
@@ -219,16 +219,14 @@ private:
             boost::intrusive::equal<KeyValueEqual>,
             boost::intrusive::cache_begin<true>>::type>;
 
-    using bucket_type = typename cont_type::bucket_type;
-    using bucket_traits = typename cont_type::bucket_traits;
+    using bucket_type = cont_type::bucket_type;
+    using bucket_traits = cont_type::bucket_traits;
 
-    using ElementAllocator =
-        typename std::allocator_traits<Allocator>::template rebind_alloc<Element>;
+    using ElementAllocator = std::allocator_traits<Allocator>::template rebind_alloc<Element>;
 
     using ElementAllocatorTraits = std::allocator_traits<ElementAllocator>;
 
-    using BucketAllocator =
-        typename std::allocator_traits<Allocator>::template rebind_alloc<Element>;
+    using BucketAllocator = std::allocator_traits<Allocator>::template rebind_alloc<Element>;
 
     using BucketAllocatorTraits = std::allocator_traits<BucketAllocator>;
 
@@ -542,8 +540,8 @@ public:
     using allocator_type = Allocator;
     using reference = value_type&;
     using const_reference = value_type const&;
-    using pointer = typename std::allocator_traits<Allocator>::pointer;
-    using const_pointer = typename std::allocator_traits<Allocator>::const_pointer;
+    using pointer = std::allocator_traits<Allocator>::pointer;
+    using const_pointer = std::allocator_traits<Allocator>::const_pointer;
 
     // A set iterator (IsMap==false) is always const
     // because the elements of a set are immutable.
@@ -850,7 +848,7 @@ public:
         bool MaybeMulti = IsMulti,
         bool MaybeMap = IsMap,
         class = std::enable_if_t<MaybeMap && !MaybeMulti>>
-    typename std::conditional<IsMap, T, void*>::type const&
+    std::conditional<IsMap, T, void*>::type const&
     at(K const& k) const;
 
     template <
@@ -1414,7 +1412,7 @@ private:
     void
     touch(
         beast::detail::AgedContainerIterator<IsConst, Iterator> pos,
-        typename clock_type::time_point const& now)
+        clock_type::time_point const& now)
     {
         auto& e(*pos.iterator());
         e.when = now;
@@ -2111,7 +2109,7 @@ template <
     class KeyEqual,
     class Allocator>
 template <class K, bool MaybeMulti, bool MaybeMap, class>
-typename std::conditional<IsMap, T, void*>::type const&
+std::conditional<IsMap, T, void*>::type const&
 AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::at(
     K const& k) const
 {
