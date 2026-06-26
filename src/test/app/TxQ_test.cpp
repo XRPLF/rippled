@@ -2359,8 +2359,17 @@ public:
         fillQueue(env, alice);
         checkMetrics(*this, env, 0, 8, 5, 4);
 
+        // Delegated transactions are not allowed to be queued.
         env(pay(alice, carol, drops(1)), delegate::As(bob), Ter(telCAN_NOT_QUEUE));
         checkMetrics(*this, env, 0, 8, 5, 4);
+
+        // Delegated transactions may still apply directly if they pay the
+        // open ledger fee. They just cannot be held in the queue.
+        env(pay(alice, carol, drops(1)),
+            delegate::As(bob),
+            Fee(openLedgerCost(env)),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, 8, 6, 4);
     }
 
     void
