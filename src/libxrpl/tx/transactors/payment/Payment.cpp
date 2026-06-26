@@ -312,7 +312,7 @@ Payment::checkGranularSemantics(
             if (issue.getIssuer() != account && issue.getIssuer() != destination)
                 return terNO_DELEGATE_PERMISSION;
 
-            auto const sle = view.read(keylet::line(account, destination, issue.currency));
+            auto const sle = view.read(keylet::trustLine(account, destination, issue.currency));
             if (!sle)
                 return terNO_DELEGATE_PERMISSION;
 
