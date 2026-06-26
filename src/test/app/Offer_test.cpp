@@ -798,11 +798,13 @@ public:
             // The offer expires (it's not removed yet).
             env.close();
             env.require(Owners(bob, 1), offers(bob, 1));
+            auto const expiredBobOffer = keylet::offer(bob, env.seq(bob) - 1);
 
             // bob creates the offer that will be crossed.
             env(offer(bob, usd(500), XRP(500)), Ter(tesSUCCESS));
             env.close();
             env.require(Owners(bob, 2), offers(bob, 2));
+            auto const crossedBobOffer = keylet::offer(bob, env.seq(bob) - 1);
 
             env(trust(alice, usd(1000)), Ter(tesSUCCESS));
             env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));
@@ -821,6 +823,8 @@ public:
                 Balance(bob, usd(kNone)),
                 Owners(bob, 1),
                 offers(bob, 1));
+            BEAST_EXPECT(!env.current()->exists(expiredBobOffer));
+            BEAST_EXPECT(env.current()->exists(crossedBobOffer));
 
             // Order that can be filled
             env(offer(alice, XRP(500), usd(500)), Txflags(tfFillOrKill), Ter(tesSUCCESS));
@@ -834,6 +838,27 @@ public:
                 Balance(bob, usd(500)),
                 Owners(bob, 1),
                 offers(bob, 0));
+        }
+
+        // A failed Fill-or-Kill may tentatively consume a funded offer before
+        // the transaction is reset. That offer must not be treated as an
+        // unfunded offer cleanup.
+        {
+            Env env{*this, features};
+
+            env.fund(startBalance, gw, alice, bob);
+            env.close();
+
+            env(offer(bob, usd(500), XRP(500)), Ter(tesSUCCESS));
+            env.close();
+            auto const bobOffer = keylet::offer(bob, env.seq(bob) - 1);
+
+            env(trust(alice, usd(1000)), Ter(tesSUCCESS));
+            env(pay(gw, alice, usd(1000)), Ter(tesSUCCESS));
+            env(offer(alice, XRP(1000), usd(1000)), Txflags(tfFillOrKill), Ter(tecKILLED));
+
+            env.require(offers(alice, 0), offers(bob, 1), Balance(alice, usd(1000)));
+            BEAST_EXPECT(env.current()->exists(bobOffer));
         }
 
         // Immediate or Cancel - cross as much as possible

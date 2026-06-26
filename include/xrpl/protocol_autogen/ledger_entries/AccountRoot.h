@@ -448,78 +448,6 @@ public:
     }
 
     /**
-     * @brief Get sfAMMID (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
-    getAMMID() const
-    {
-        if (hasAMMID())
-            return this->sle_->at(sfAMMID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfAMMID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasAMMID() const
-    {
-        return this->sle_->isFieldPresent(sfAMMID);
-    }
-
-    /**
-     * @brief Get sfVaultID (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
-    getVaultID() const
-    {
-        if (hasVaultID())
-            return this->sle_->at(sfVaultID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfVaultID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasVaultID() const
-    {
-        return this->sle_->isFieldPresent(sfVaultID);
-    }
-
-    /**
-     * @brief Get sfLoanBrokerID (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
-     */
-    [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
-    getLoanBrokerID() const
-    {
-        if (hasLoanBrokerID())
-            return this->sle_->at(sfLoanBrokerID);
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfLoanBrokerID is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasLoanBrokerID() const
-    {
-        return this->sle_->isFieldPresent(sfLoanBrokerID);
-    }
-
-    /**
      * @brief Get sfSponsoredOwnerCount (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
@@ -589,6 +517,78 @@ public:
     hasSponsoringAccountCount() const
     {
         return this->sle_->isFieldPresent(sfSponsoringAccountCount);
+    }
+
+    /**
+     * @brief Get sfAMMID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getAMMID() const
+    {
+        if (hasAMMID())
+            return this->sle_->at(sfAMMID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAMMID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAMMID() const
+    {
+        return this->sle_->isFieldPresent(sfAMMID);
+    }
+
+    /**
+     * @brief Get sfVaultID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getVaultID() const
+    {
+        if (hasVaultID())
+            return this->sle_->at(sfVaultID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfVaultID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasVaultID() const
+    {
+        return this->sle_->isFieldPresent(sfVaultID);
+    }
+
+    /**
+     * @brief Get sfLoanBrokerID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getLoanBrokerID() const
+    {
+        if (hasLoanBrokerID())
+            return this->sle_->at(sfLoanBrokerID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLoanBrokerID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLoanBrokerID() const
+    {
+        return this->sle_->isFieldPresent(sfLoanBrokerID);
     }
 };
 
@@ -859,39 +859,6 @@ public:
     }
 
     /**
-     * @brief Set sfAMMID (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    AccountRootBuilder&
-    setAMMID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
-    {
-        object_[sfAMMID] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfVaultID (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    AccountRootBuilder&
-    setVaultID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
-    {
-        object_[sfVaultID] = value;
-        return *this;
-    }
-
-    /**
-     * @brief Set sfLoanBrokerID (SoeOptional)
-     * @return Reference to this builder for method chaining.
-     */
-    AccountRootBuilder&
-    setLoanBrokerID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
-    {
-        object_[sfLoanBrokerID] = value;
-        return *this;
-    }
-
-    /**
      * @brief Set sfSponsoredOwnerCount (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
@@ -921,6 +888,39 @@ public:
     setSponsoringAccountCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfSponsoringAccountCount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAMMID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setAMMID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfAMMID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfVaultID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setVaultID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfVaultID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLoanBrokerID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setLoanBrokerID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfLoanBrokerID] = value;
         return *this;
     }
 

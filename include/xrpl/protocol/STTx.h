@@ -84,7 +84,7 @@ public:
     getSeqValue() const;
 
     AccountID
-    getFeePayer() const;
+    getInitiator() const;
 
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;

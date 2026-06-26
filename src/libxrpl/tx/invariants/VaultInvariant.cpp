@@ -1048,6 +1048,10 @@ ValidVault::finalize(
                 // TBD
                 return true;
             }
+            case ttSPONSORSHIP_TRANSFER: {
+                // SponsorshipTransfer may update a vault's sfSponsor
+                return true;
+            }
 
             default:
                 // LCOV_EXCL_START

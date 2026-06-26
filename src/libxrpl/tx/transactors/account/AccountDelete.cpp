@@ -407,8 +407,8 @@ AccountDelete::doApply()
 
     if (src->isFieldPresent(sfSponsor))
     {
-        auto const sponsorAccountID = src->getAccountID(sfSponsor);
-        auto sponsorSle = view().peek(keylet::account(sponsorAccountID));
+        auto const sponsorID = src->getAccountID(sfSponsor);
+        auto sponsorSle = view().peek(keylet::account(sponsorID));
 
         if (!sponsorSle || !sponsorSle->isFieldPresent(sfSponsoringAccountCount))
             return tefINTERNAL;  // LCOV_EXCL_LINE

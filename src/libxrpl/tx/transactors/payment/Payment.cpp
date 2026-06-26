@@ -8,7 +8,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -30,7 +29,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -131,6 +129,9 @@ Payment::preflight(PreflightContext const& ctx)
 
         if (tx.isFlag(tfNoRippleDirect) || tx.isFlag(tfPartialPayment) || tx.isFlag(tfLimitQuality))
             return temINVALID_FLAG;
+
+        if (tx.isFieldPresent(sfSendMax) || tx.isFieldPresent(sfPaths))
+            return temINVALID;
 
         if (!dstAmount.native())
             return temBAD_AMOUNT;
@@ -287,38 +288,24 @@ Payment::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-Payment::checkPermission(ReadView const& view, STTx const& tx)
+Payment::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttPAYMENT, granularPermissions);
-
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
     auto const& amountAsset = dstAmount.asset();
 
     // Granular permissions are only valid for direct payments.
-    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset) ||
-        tx.isFieldPresent(sfPaths))
+    if (tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset)
         return terNO_DELEGATE_PERMISSION;
 
     // PaymentMint and PaymentBurn apply to both IOU and MPT direct payments.
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+    if (heldGranularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
         amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
 
-    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
+    if (heldGranularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
         amountAsset.getIssuer() == tx[sfDestination])
         return tesSUCCESS;
 
@@ -653,7 +640,7 @@ Payment::doApply()
 
     // In a delegated payment, the fee payer is the delegated account,
     // not the source account (accountID_).
-    bool const accountIsPayer = (ctx_.tx.getFeePayer() == accountID_);
+    bool const accountIsPayer = (ctx_.tx.getInitiator() == accountID_);
 
     // preFeeBalance_ is the balance on the source account (accountID_) BEFORE the fees
     // were charged. If source account is the fee payer, it must also cover the fee.

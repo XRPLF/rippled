@@ -184,7 +184,8 @@ invokePreclaim(PreclaimContext const& ctx)
                         if (NotTEC const result = T::checkSponsor(ctx.view, ctx.tx))
                             return result;
 
-                        if (NotTEC const result = T::checkPermission(ctx.view, ctx.tx))
+                        if (NotTEC const result =
+                                Transactor::invokeCheckPermission<T>(ctx.view, ctx.tx))
                             return result;
 
                         if (NotTEC const result = T::checkSign(ctx))

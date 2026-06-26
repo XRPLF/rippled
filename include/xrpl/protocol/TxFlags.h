@@ -353,44 +353,35 @@ getAllTxFlags()
 inline constexpr FlagValue tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
 inline constexpr FlagValue tfTrustSetPermissionMask =
     ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
-inline constexpr FlagValue tfSponsorshipSetPermissionMask =
-    ~(tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipSetRequireSignForReserve |
-      tfSponsorshipClearRequireSignForFee | tfSponsorshipClearRequireSignForReserve);
 
 // MPTokenIssuanceCreate MutableFlags:
 // Indicating specific fields or flags may be changed after issuance.
-inline constexpr FlagValue tmfMPTCanMutateCanLock = lsmfMPTCanMutateCanLock;
-inline constexpr FlagValue tmfMPTCanMutateRequireAuth = lsmfMPTCanMutateRequireAuth;
-inline constexpr FlagValue tmfMPTCanMutateCanEscrow = lsmfMPTCanMutateCanEscrow;
-inline constexpr FlagValue tmfMPTCanMutateCanTrade = lsmfMPTCanMutateCanTrade;
-inline constexpr FlagValue tmfMPTCanMutateCanTransfer = lsmfMPTCanMutateCanTransfer;
-inline constexpr FlagValue tmfMPTCanMutateCanClawback = lsmfMPTCanMutateCanClawback;
+inline constexpr FlagValue tmfMPTCanEnableCanLock = lsmfMPTCanEnableCanLock;
+inline constexpr FlagValue tmfMPTCanEnableRequireAuth = lsmfMPTCanEnableRequireAuth;
+inline constexpr FlagValue tmfMPTCanEnableCanEscrow = lsmfMPTCanEnableCanEscrow;
+inline constexpr FlagValue tmfMPTCanEnableCanTrade = lsmfMPTCanEnableCanTrade;
+inline constexpr FlagValue tmfMPTCanEnableCanTransfer = lsmfMPTCanEnableCanTransfer;
+inline constexpr FlagValue tmfMPTCanEnableCanClawback = lsmfMPTCanEnableCanClawback;
 inline constexpr FlagValue tmfMPTCanMutateMetadata = lsmfMPTCanMutateMetadata;
 inline constexpr FlagValue tmfMPTCanMutateTransferFee = lsmfMPTCanMutateTransferFee;
 inline constexpr FlagValue tmfMPTokenIssuanceCreateMutableMask =
-    ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow |
-      tmfMPTCanMutateCanTrade | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback |
+    ~(tmfMPTCanEnableCanLock | tmfMPTCanEnableRequireAuth | tmfMPTCanEnableCanEscrow |
+      tmfMPTCanEnableCanTrade | tmfMPTCanEnableCanTransfer | tmfMPTCanEnableCanClawback |
       tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
 
 // MPTokenIssuanceSet MutableFlags:
-// Set or Clear flags.
+// Enable mutable capability flags. These flags are one-way: once enabled,
+// the corresponding capability cannot be disabled by MPTokenIssuanceSet.
 
 inline constexpr FlagValue tmfMPTSetCanLock = 0x00000001;
-inline constexpr FlagValue tmfMPTClearCanLock = 0x00000002;
-inline constexpr FlagValue tmfMPTSetRequireAuth = 0x00000004;
-inline constexpr FlagValue tmfMPTClearRequireAuth = 0x00000008;
-inline constexpr FlagValue tmfMPTSetCanEscrow = 0x00000010;
-inline constexpr FlagValue tmfMPTClearCanEscrow = 0x00000020;
-inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000040;
-inline constexpr FlagValue tmfMPTClearCanTrade = 0x00000080;
-inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000100;
-inline constexpr FlagValue tmfMPTClearCanTransfer = 0x00000200;
-inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000400;
-inline constexpr FlagValue tmfMPTClearCanClawback = 0x00000800;
-inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask = ~(
-    tmfMPTSetCanLock | tmfMPTClearCanLock | tmfMPTSetRequireAuth | tmfMPTClearRequireAuth |
-    tmfMPTSetCanEscrow | tmfMPTClearCanEscrow | tmfMPTSetCanTrade | tmfMPTClearCanTrade |
-    tmfMPTSetCanTransfer | tmfMPTClearCanTransfer | tmfMPTSetCanClawback | tmfMPTClearCanClawback);
+inline constexpr FlagValue tmfMPTSetRequireAuth = 0x00000002;
+inline constexpr FlagValue tmfMPTSetCanEscrow = 0x00000004;
+inline constexpr FlagValue tmfMPTSetCanTrade = 0x00000008;
+inline constexpr FlagValue tmfMPTSetCanTransfer = 0x00000010;
+inline constexpr FlagValue tmfMPTSetCanClawback = 0x00000020;
+inline constexpr FlagValue tmfMPTokenIssuanceSetMutableMask =
+    ~(tmfMPTSetCanLock | tmfMPTSetRequireAuth | tmfMPTSetCanEscrow | tmfMPTSetCanTrade |
+      tmfMPTSetCanTransfer | tmfMPTSetCanClawback);
 
 // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between accounts allowed a
 // TrustLine to be added to the issuer of that token without explicit permission from that issuer.
@@ -463,34 +454,11 @@ getAsfFlagMap()
 #pragma pop_macro("ACCOUNTSET_FLAG_TO_MAP")
 #pragma pop_macro("ACCOUNTSET_FLAGS")
 
-#pragma push_macro("SPONSOR_FLAGS")
-#pragma push_macro("SPONSOR_FLAG_TO_VALUE")
-#pragma push_macro("SPONSOR_FLAG_TO_MAP")
+// Sponsor flags (spf)
 
-// Sponsor Flag values
-#define SPONSOR_FLAGS(SPF_FLAG) \
-    SPF_FLAG(spfSponsorFee, 1)  \
-    SPF_FLAG(spfSponsorReserve, 2)
-
-#define SPONSOR_FLAG_TO_VALUE(name, value) inline constexpr FlagValue name = value;
-#define SPONSOR_FLAG_TO_MAP(name, value) {#name, value},
-
-SPONSOR_FLAGS(SPONSOR_FLAG_TO_VALUE)
-
-inline std::map<std::string, FlagValue> const&
-getspfFlagMap()
-{
-    static std::map<std::string, FlagValue> const flags = {SPONSOR_FLAGS(SPONSOR_FLAG_TO_MAP)};
-    return flags;
-}
-
-#undef SPONSOR_FLAG_TO_VALUE
-#undef SPONSOR_FLAG_TO_MAP
-#undef SPONSOR_FLAGS
-
-#pragma pop_macro("SPONSOR_FLAG_TO_VALUE")
-#pragma pop_macro("SPONSOR_FLAG_TO_MAP")
-#pragma pop_macro("SPONSOR_FLAGS")
+inline constexpr FlagValue spfSponsorFee = 1;
+inline constexpr FlagValue spfSponsorReserve = 2;
+inline constexpr FlagValue spfSponsorFlagMask = ~(spfSponsorFee | spfSponsorReserve);
 
 }  // namespace xrpl
 

@@ -29,7 +29,7 @@ set(jtx::Account const& account,
     jv[jss::Account] = account.human();
     jv[sfFlags.jsonName] = flags;
     if (reserveCount)
-        jv[sfReserveCount.jsonName] = *reserveCount;
+        jv[sfRemainingOwnerCount.jsonName] = *reserveCount;
     if (feeAmount)
         jv[sfFeeAmount.jsonName] = feeAmount->getJson(JsonOptions::Values::None);
     if (maxFee)
@@ -61,7 +61,7 @@ set_reserve(jtx::Account const& account, uint32_t flags, uint32_t reserveCount)
     jv[jss::TransactionType] = jss::SponsorshipSet;
     jv[jss::Account] = account.human();
     jv[sfFlags.jsonName] = flags;
-    jv[sfReserveCount.jsonName] = reserveCount;
+    jv[sfRemainingOwnerCount.jsonName] = reserveCount;
     return jv;
 }
 

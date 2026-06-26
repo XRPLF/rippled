@@ -1006,13 +1006,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                // After the Sponsor Amendment, it will result in tesSUCCESS
-                // if the current XRP == balance the required XRP balance calculated from the
-                // reserve.
-                // Before the Amendment, it will result in tecINSUF_RESERVE_LINE
-                // if the current XRP == balance the required XRP balance calculated from the
-                // reserve.
-                features[featureSponsor] ? Ter(tesSUCCESS) : Ter(tecINSUF_RESERVE_LINE));
+                Ter(tecINSUF_RESERVE_LINE));
         }
 
         // Invalid min
@@ -2246,7 +2240,9 @@ private:
                     .err = Ter(tecNO_AUTH)});
         }
 
-        // MPTCanTransfer is not set and the account is not the issuer of MPT
+        // MPTCanTransfer is not set and the account is not the issuer of MPT.
+        // The issuer can create the AMM, and an existing LP token holder can
+        // still withdraw.
         {
             Env env{*this};
             env.fund(XRP(30'000), gw_, alice_);
@@ -2256,15 +2252,17 @@ private:
                  .issuer = gw_,
                  .holders = {alice_},
                  .pay = 30'000,
-                 .flags = kMptDexFlags,
-                 .mutableFlags = tmfMPTCanMutateCanTransfer,
+                 .flags = tfMPTCanTrade,
                  .authHolder = true});
 
             AMM amm(env, gw_, XRP(10'000), btc(10'000));
-            amm.deposit(DepositArg{.account = alice_, .asset1In = XRP(200), .asset2In = btc(200)});
 
-            // Allow to withdraw if transfer is disabled
-            btc.set({.mutableFlags = tmfMPTClearCanTransfer});
+            auto const lpIssue = amm.lptIssue();
+            env.trust(STAmount{lpIssue, 20'000'000}, alice_);
+            env.close();
+            env(pay(gw_, alice_, LPToken(1'000'000).tokens(lpIssue)));
+            env.close();
+
             amm.withdraw(
                 WithdrawArg{.account = alice_, .asset1Out = btc(100), .assets = {{XRP, btc}}});
         }
@@ -7089,7 +7087,6 @@ private:
         testInvalidInstance();
         testInvalidDeposit(all);
         testInvalidDeposit(all - featureAMMClawback);
-        testInvalidDeposit(all - featureSponsor);
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();

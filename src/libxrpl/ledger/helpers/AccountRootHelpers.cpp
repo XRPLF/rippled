@@ -274,13 +274,14 @@ adjustOwnerCount(
         adjustOwnerCountHlp(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
         adjustOwnerCountHlp(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
 
-        auto sponsorObjSle = view.peek(keylet::sponsor(sponsorID, accountID));
-        if (sponsorObjSle && adjustment > 0)
+        auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
+        if (sponsorshipSle && adjustment > 0)
         {
-            // update the pre-funded ReserveCount on Sponsorship ledger object
-            // Reserve count moves opposite to adjustment: +adjustment => consume reserve (-),
+            // update the pre-funded RemainingOwnerCount on Sponsorship ledger object
+            // Remaining owner count moves opposite to adjustment:
+            // +adjustment => consume reserve (-),
             adjustOwnerCountHlp(
-                view, sponsorObjSle, sfReserveCount, sponsorID, -adjustment, j, false);
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
         }
     }
     adjustOwnerCountHlp(view, accountSle, sfOwnerCount, accountID, adjustment, j);
@@ -345,7 +346,8 @@ checkInsufficientReserve(
         auto const isCoSigning = isSponsorReserveCoSigning(tx);
 
         auto const sle = view.read(
-            keylet::sponsor(sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
+            keylet::sponsorship(
+                sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
         // prefunded sponsor should have a sponsorship entry
         if (!isCoSigning && !sle)
@@ -353,7 +355,7 @@ checkInsufficientReserve(
 
         if (sle)
         {
-            auto const ownerCountAllowed = sle->getFieldU32(sfReserveCount);
+            auto const ownerCountAllowed = sle->getFieldU32(sfRemainingOwnerCount);
             if (ownerCountAllowed < ownerCountDelta)
                 return tecINSUFFICIENT_RESERVE;
         }
