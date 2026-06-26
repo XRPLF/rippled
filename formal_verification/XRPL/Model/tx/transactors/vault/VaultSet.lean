@@ -81,9 +81,18 @@ def vaultSetDoApply (tx : VaultSetTx) : ApplyView TER := do
       ApplyView.update (.vault finalVault)
       return .tesSUCCESS
 
+-- VaultSet's tx-specific valid flags (TxFlags.h: tfVaultDepositBlock/Unblock).
+def tfVaultDepositBlock : UInt32 := 0x00010000
+def tfVaultDepositUnblock : UInt32 := 0x00020000
+
+-- Allow VaultSet's own flags
+def vaultSetFlagsMask (_ : VaultSetTx) (_ : Rules) : UInt32 :=
+  tfUniversalMask &&& ~~~(tfVaultDepositBlock ||| tfVaultDepositUnblock)
+
 instance : Transactor VaultSetTx where
   baseTx := VaultSetTx.toTx
   checkExtraFeatures := vaultSetCheckExtraFeatures
+  getFlagsMask := vaultSetFlagsMask
   preflight := vaultSetPreflight
   preclaim := vaultSetPreclaim
   doApply := vaultSetDoApply

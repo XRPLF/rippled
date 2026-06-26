@@ -191,6 +191,25 @@ class LeanVaultSet_test : public LedgerSuite
     }
 
     void
+    testVaultSetValidFlagDepositBlock()
+    {
+        using namespace jtx;
+        Env env(*this);
+        Account const owner("owner");
+        env.fund(XRP(10000), owner);
+        env.close();
+        // tfVaultDepositBlock is a valid VaultSet flag, so preflight accepts it
+        auto jv = jtx::Vault::set({.owner = owner, .id = keylet::vault(owner.id(), 99).key});
+        jv[sfData] = strHex(Blob{0xCA, 0xFE});
+        jv[sfFlags] = tfVaultDepositBlock;
+        auto const jt = env.jt(jv);
+        if (!BEAST_EXPECT(jt.stx))
+            return;
+        OpenView ov{*env.current()};
+        runVaultSet(env, ov, *jt.stx, tecNO_ENTRY, "vaultSet.valid_flag_deposit_block");
+    }
+
+    void
     testVaultSetFeeTooHigh()
     {
         using namespace jtx;
@@ -579,6 +598,7 @@ class LeanVaultSet_test : public LedgerSuite
         testVaultSetDataTooLong();
         testVaultSetNegativeAssetsMaximum();
         testVaultSetInvalidFlag();
+        testVaultSetValidFlagDepositBlock();
         testVaultSetFeeTooHigh();
         testVaultSetFeatureDisabled();
         testVaultSetDomainNeedsPermissionedDomains();
