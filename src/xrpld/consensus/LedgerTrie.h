@@ -21,8 +21,8 @@ template <class Ledger>
 class SpanTip
 {
 public:
-    using Seq = typename Ledger::Seq;
-    using ID = typename Ledger::ID;
+    using Seq = Ledger::Seq;
+    using ID = Ledger::ID;
 
     SpanTip(Seq s, ID i, Ledger const lgr) : seq{s}, id{i}, ledger_{std::move(lgr)}
     {
@@ -58,8 +58,8 @@ namespace ledger_trie_detail {
 template <class Ledger>
 class Span
 {
-    using Seq = typename Ledger::Seq;
-    using ID = typename Ledger::ID;
+    using Seq = Ledger::Seq;
+    using ID = Ledger::ID;
 
     // The span is the half-open interval [start,end) of ledger_
     Seq start_{0};
@@ -323,8 +323,8 @@ struct Node
 template <class Ledger>
 class LedgerTrie
 {
-    using Seq = typename Ledger::Seq;
-    using ID = typename Ledger::ID;
+    using Seq = Ledger::Seq;
+    using ID = Ledger::ID;
 
     using Node = ledger_trie_detail::Node<Ledger>;
     using Span = ledger_trie_detail::Span<Ledger>;

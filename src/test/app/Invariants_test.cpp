@@ -51,6 +51,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
@@ -461,7 +462,7 @@ class Invariants_test : public beast::unit_test::Suite
                 BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
 
                 for (auto const& trustKeylet :
-                     {keylet::line(ammAcctID, a1["USD"]), keylet::line(a1, ammIssue)})
+                     {keylet::trustLine(ammAcctID, a1["USD"]), keylet::trustLine(a1, ammIssue)})
                 {
                     auto const line = ac.view().peek(trustKeylet);
                     if (!line)
@@ -562,7 +563,7 @@ class Invariants_test : public beast::unit_test::Suite
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // create simple trust SLE with xrp currency
                 auto const sleNew =
-                    std::make_shared<SLE>(keylet::line(a1, a2, xrpIssue().currency));
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, xrpIssue().currency));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -578,7 +579,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(a1, a2, a1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
 
@@ -593,7 +595,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(a1, a2, a1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -607,7 +610,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(a1, a2, a1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -621,7 +625,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(a1, a2, a1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -635,7 +640,8 @@ class Invariants_test : public beast::unit_test::Suite
             {{"a trust line with deep freeze flag without normal freeze was "
               "created"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::line(a1, a2, a1["USD"].currency));
+                auto const sleNew =
+                    std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
                 sleNew->setFieldAmount(sfLowLimit, a1["USD"](0));
                 sleNew->setFieldAmount(sfHighLimit, a1["USD"](0));
                 std::uint32_t uFlags = 0u;
@@ -690,8 +696,8 @@ class Invariants_test : public beast::unit_test::Suite
                                         ApplyContext& ac,
                                         int a1Balance,
                                         int a2Balance) {
-            auto const sleA1 = ac.view().peek(keylet::line(a1, g1["USD"]));
-            auto const sleA2 = ac.view().peek(keylet::line(a2, g1["USD"]));
+            auto const sleA1 = ac.view().peek(keylet::trustLine(a1, g1["USD"]));
+            auto const sleA2 = ac.view().peek(keylet::trustLine(a2, g1["USD"]));
 
             sleA1->setFieldAmount(sfBalance, g1["USD"](a1Balance));
             sleA2->setFieldAmount(sfBalance, g1["USD"](a2Balance));
@@ -960,7 +966,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, -1);
                 ac.view().insert(sleNew);
                 return true;
@@ -976,7 +982,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfLockedAmount, -1);
                 ac.view().insert(sleNew);
                 return true;
@@ -992,7 +998,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 1);
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);
@@ -1175,7 +1181,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {{"NFT page has invalid size"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(0));
 
                 ac.view().insert(nftPage);
@@ -1185,7 +1191,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {{"NFT page has invalid size"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(33));
 
                 ac.view().insert(nftPage);
@@ -1198,7 +1204,7 @@ class Invariants_test : public beast::unit_test::Suite
                 STArray nfTokens = makeNFTokenIDs(2);
                 std::iter_swap(nfTokens.begin(), nfTokens.begin() + 1);
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1211,7 +1217,7 @@ class Invariants_test : public beast::unit_test::Suite
                 STArray nfTokens = makeNFTokenIDs(1);
                 nfTokens[0].setFieldVL(sfURI, Blob{});
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1221,9 +1227,9 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
-                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftpageMax(a1).key);
+                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftokenPageMax(a1).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1232,9 +1238,9 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
-                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftpageMin(a2).key);
+                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftokenPageMin(a2).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1243,7 +1249,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
                 nftPage->setFieldH256(sfNextPageMin, nftPage->key());
 
@@ -1255,10 +1261,10 @@ class Invariants_test : public beast::unit_test::Suite
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const& a2, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(1);
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage(
-                    keylet::nftpageMax(a1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
+                    keylet::nftokenPageMax(a1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
-                nftPage->setFieldH256(sfNextPageMin, keylet::nftpageMax(a2).key);
+                nftPage->setFieldH256(sfNextPageMin, keylet::nftokenPageMax(a2).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1268,13 +1274,94 @@ class Invariants_test : public beast::unit_test::Suite
             {{"NFT found in incorrect page"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(2);
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage(
-                    keylet::nftpageMax(a1), (nfTokens[1].getFieldH256(sfNFTokenID))));
+                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
+                    keylet::nftokenPageMax(a1), (nfTokens[1].getFieldH256(sfNFTokenID))));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
                 return true;
             });
+    }
+
+    void
+    testAMMDeleteInvariants(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const enforceAMMDelete = features[fixCleanup3_3_0];
+        testcase << "AMM delete invariants" + std::string(enforceAMMDelete ? " fix" : "");
+
+        Env env(*this, features);
+        Account const issuer{"issuer"};
+        Issue const lptIssue{Currency(0x4c50540000000000), issuer.id()};
+        STAmount const zeroLP{lptIssue, 0};
+        STAmount const nonZeroLP{lptIssue, 1};
+
+        auto const makeAMM = [](STAmount const& lptBalance) {
+            auto sleAMM = std::make_shared<SLE>(keylet::amm(uint256(1)));
+            sleAMM->setFieldAmount(sfLPTokenBalance, lptBalance);
+            return sleAMM;
+        };
+
+        auto const checkInvariant = [&](TxType txType,
+                                        TER result,
+                                        std::optional<STAmount> const& deletedLPBalance,
+                                        bool expected,
+                                        std::string const& expectedLog) {
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ValidAMM invariant;
+
+            if (deletedLPBalance)
+                invariant.visitEntry(true, makeAMM(*deletedLPBalance), nullptr);
+
+            bool const actual = invariant.finalize(
+                STTx{txType, [](STObject&) {}}, result, XRPAmount{}, *env.current(), jlog);
+
+            BEAST_EXPECTS(actual == expected, "unexpected AMM delete invariant result");
+            auto const messages = sink.messages().str();
+            auto const expectedLogWhenEnforced = enforceAMMDelete ? expectedLog : "";
+            if (!expectedLogWhenEnforced.empty())
+            {
+                BEAST_EXPECTS(messages.contains(expectedLogWhenEnforced), expectedLogWhenEnforced);
+            }
+            else
+            {
+                BEAST_EXPECTS(messages.empty(), messages);
+            }
+        };
+
+        checkInvariant(
+            ttPAYMENT,
+            tesSUCCESS,
+            nonZeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMM failed, unexpected AMM deletion by");
+        checkInvariant(
+            ttAMM_DELETE,
+            tesSUCCESS,
+            std::nullopt,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object remained on tesSUCCESS");
+        checkInvariant(
+            ttAMM_DELETE,
+            tesSUCCESS,
+            nonZeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object deleted with non-zero LP balance");
+        checkInvariant(
+            ttAMM_DELETE,
+            tecINCOMPLETE,
+            zeroLP,
+            !enforceAMMDelete,
+            "Invariant failed: AMMDelete failed, AMM object deleted when result is not tesSUCCESS");
+
+        checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, nonZeroLP, true, "");
+        checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, nonZeroLP, true, "");
+
+        checkInvariant(ttAMM_DELETE, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_WITHDRAW, tesSUCCESS, zeroLP, true, "");
+        checkInvariant(ttAMM_CLAWBACK, tesSUCCESS, zeroLP, true, "");
     }
 
     static SLE::pointer
@@ -2047,7 +2134,7 @@ class Invariants_test : public beast::unit_test::Suite
 
         auto const getBookRootKey = [](Account const& account, std::uint64_t quality) {
             Book const book{xrpIssue(), account["USD"], std::nullopt};
-            return keylet::quality(keylet::kBook(book), quality);
+            return keylet::quality(keylet::book(book), quality);
         };
 
         // Root book-directory pages carry exchange-rate metadata that must
@@ -2219,7 +2306,7 @@ class Invariants_test : public beast::unit_test::Suite
         // Create Loan Broker
         using namespace loanBroker;
 
-        auto const loanBrokerKeylet = keylet::loanbroker(a.id(), env.seq(a));
+        auto const loanBrokerKeylet = keylet::loanBroker(a.id(), env.seq(a));
         // Create a Loan Broker with all default values.
         env(set(a, vaultID), Fee(kIncrement));
 
@@ -2598,7 +2685,7 @@ class Invariants_test : public beast::unit_test::Suite
                 return false;
 
             auto const mptIssuanceID = (*sleVault)[sfShareMPTID];
-            auto sleShares = ac.peek(keylet::mptIssuance(mptIssuanceID));
+            auto sleShares = ac.peek(keylet::mptokenIssuance(mptIssuanceID));
             if (!sleShares)
                 return false;
 
@@ -2900,7 +2987,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().erase(sleVault);
@@ -2925,7 +3012,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 // Note, such an "orphaned" update of MPT issuance attached to a
@@ -3015,7 +3102,7 @@ class Invariants_test : public beast::unit_test::Suite
                 (*sleVault)[sfAssetsMaximum] = 200;
                 ac.view().update(sleVault);
 
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().erase(sleShares);
@@ -3211,7 +3298,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sleVault)
                     return false;
                 ac.view().update(sleVault);
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfOutstandingAmount] = 0;
@@ -3231,7 +3318,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfMaximumAmount] = 10;
@@ -3254,7 +3341,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfOutstandingAmount] = kMaxMpTokenAmount + 1;
@@ -3356,7 +3443,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().update(sleVault);
@@ -3408,7 +3495,7 @@ class Invariants_test : public beast::unit_test::Suite
                 auto sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().update(sleVault);
@@ -3455,7 +3542,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().insert(sleAccount);
 
                 auto const sharesMptId = makeMptID(sequence, pseudoId);
-                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
                 auto sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(pseudoId), sharesKeylet, describeOwnerDir(pseudoId));
@@ -3513,7 +3600,7 @@ class Invariants_test : public beast::unit_test::Suite
                 ac.view().insert(sleAccount);
 
                 auto const sharesMptId = makeMptID(sequence, pseudoId);
-                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
                 auto sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(pseudoId), sharesKeylet, describeOwnerDir(pseudoId));
@@ -3555,7 +3642,7 @@ class Invariants_test : public beast::unit_test::Suite
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
 
                 auto const sharesMptId = makeMptID(sequence, a2.id());
-                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
                 auto sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(a2.id()), sharesKeylet, describeOwnerDir(a2.id()));
@@ -4195,7 +4282,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), a1)};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 110);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
                 ac.view().insert(sleNew);
@@ -4212,7 +4299,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(sle->getFieldU32(sfSequence), a1)};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 100);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
                 ac.view().insert(sleNew);
@@ -4256,7 +4343,7 @@ class Invariants_test : public beast::unit_test::Suite
             });
         testPayment(
             "OutstandingAmount overflow", [&](MPTID const& id, ApplyContext& ac, Account const&) {
-                auto sle = ac.view().peek(keylet::mptIssuance(id));
+                auto sle = ac.view().peek(keylet::mptokenIssuance(id));
                 if (!sle)
                     return false;
                 sle->setFieldU64(sfOutstandingAmount, 101);
@@ -4283,7 +4370,8 @@ class Invariants_test : public beast::unit_test::Suite
                     for (int i = 0; i < nTokens; ++i)
                     {
                         MPTIssue const mpt{makeMptID(seq + i, a1)};
-                        auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                        auto sleNew =
+                            std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                         ac.view().insert(sleNew);
 
                         sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a2));
@@ -4337,7 +4425,7 @@ class Invariants_test : public beast::unit_test::Suite
                 if (!sleAcct)
                     return false;
                 MPTIssue const mpt{makeMptID(sleAcct->getFieldU32(sfSequence), a1)};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldH256(sfReferenceHolding, uint256{1});
                 ac.view().insert(sleNew);
                 return true;
@@ -4360,7 +4448,7 @@ class Invariants_test : public beast::unit_test::Suite
                     if (!sleVault)
                         return false;
                     auto sleIssuance =
-                        ac.view().peek(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+                        ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
                     if (!sleIssuance)
                         return false;
                     sleIssuance->setFieldH256(sfReferenceHolding, uint256{2});
@@ -4402,7 +4490,7 @@ class Invariants_test : public beast::unit_test::Suite
                     if (!sleVault)
                         return false;
                     auto const sleIssuance =
-                        ac.view().peek(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+                        ac.view().peek(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
                     if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
                         return false;
                     auto sleHolding = ac.view().peek(
@@ -4468,7 +4556,7 @@ class Invariants_test : public beast::unit_test::Suite
                                 ac.view().update(sle);
                                 return true;
                             };
-                            auto issuanceSle = ac.view().peek(keylet::mptIssuance(id));
+                            auto issuanceSle = ac.view().peek(keylet::mptokenIssuance(id));
                             if (!issuanceSle)
                                 return false;
                             auto const flags = issuanceSle->at(sfFlags);
@@ -4642,8 +4730,8 @@ class Invariants_test : public beast::unit_test::Suite
                                                    auto const& goodConfig) {
             char const* const c1 = "USD";
             char const* const c2 = "EUR";
-            auto const k1 = keylet::line(a1, a2, a1[c1].currency);
-            auto const k2 = keylet::line(a1, a3, a1[c2].currency);
+            auto const k1 = keylet::trustLine(a1, a2, a1[c1].currency);
+            auto const k2 = keylet::trustLine(a1, a3, a1[c2].currency);
 
             bool const k1First = k1.key < k2.key;
             auto const& badKey = k1First ? k1 : k2;
@@ -4738,7 +4826,7 @@ class Invariants_test : public beast::unit_test::Suite
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 // outstanding exceeds kMaxMpTokenAmount -> checkAmount sets bad_
                 sleNew->setFieldU64(sfOutstandingAmount, kMaxMpTokenAmount + 1);
                 // locked is valid and <= outstanding -> must NOT clear bad_
@@ -4900,6 +4988,8 @@ public:
         testNoZeroEscrow();
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
+        testAMMDeleteInvariants(defaultAmendments());
+        testAMMDeleteInvariants(defaultAmendments() - fixCleanup3_3_0);
         testPermissionedDomainInvariants(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDomainInvariants(defaultAmendments() - fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);

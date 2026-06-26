@@ -112,7 +112,7 @@ MPTokenIssuanceCreate::create(ApplyView& view, beast::Journal journal, MPTCreate
         return std::unexpected(tecINSUFFICIENT_RESERVE);
 
     auto const mptId = makeMptID(args.sequence, args.account);
-    auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
+    auto const mptIssuanceKeylet = keylet::mptokenIssuance(mptId);
 
     // create the MPTokenIssuance
     {
