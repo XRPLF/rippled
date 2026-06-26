@@ -108,23 +108,43 @@ struct STNumber_test : public beast::unit_test::Suite
                 auto const minInt = std::to_string(std::numeric_limits<std::int64_t>::min());
                 if (Number::getMantissaScale() == MantissaRange::MantissaScale::Small)
                 {
-                    BEAST_EXPECT(
-                        numberFromJson(sfNumber, maxInt) ==
-                        STNumber(sfNumber, Number{9'223'372'036'854'775, 3}));
-                    BEAST_EXPECT(
-                        numberFromJson(sfNumber, minInt) ==
-                        STNumber(sfNumber, Number{-9'223'372'036'854'775, 3}));
+                    // min/maxInt can't be exactly represented with the small mantissa, so they
+                    // don't parse, and are expected to throw.
+                    try
+                    {
+                        auto const bad = numberFromJson(sfNumber, maxInt);
+                        fail();
+                    }
+                    catch (std::exception const& e)
+                    {
+                        BEAST_EXPECT(std::string(e.what()) == "number can not be represented");
+                    }
+                    try
+                    {
+                        auto const bad = numberFromJson(sfNumber, minInt);
+                        fail();
+                    }
+                    catch (std::exception const& e)
+                    {
+                        BEAST_EXPECT(std::string(e.what()) == "number can not be represented");
+                    }
                 }
                 else
                 {
+                    // with large mantissas, maxint is fine
                     BEAST_EXPECT(
                         numberFromJson(sfNumber, maxInt) ==
                         STNumber(sfNumber, Number{9'223'372'036'854'775'807, 0}));
-                    BEAST_EXPECT(
-                        numberFromJson(sfNumber, minInt) ==
-                        STNumber(
-                            sfNumber,
-                            Number{true, 9'223'372'036'854'775'808ULL, 0, Number::Normalized{}}));
+                    // but minint's mantissa is > kMaxRep, and so rounds, and thus can't be parsed
+                    try
+                    {
+                        auto const bad = numberFromJson(sfNumber, minInt);
+                        fail();
+                    }
+                    catch (std::exception const& e)
+                    {
+                        BEAST_EXPECT(std::string(e.what()) == "number can not be represented");
+                    }
                 }
             }
 

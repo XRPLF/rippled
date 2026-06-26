@@ -263,36 +263,44 @@ numberFromJson(SField const& field, json::Value const& value)
     auto const negative = num.mantissa() < 0;
     auto mantissa = Number::externalToInternal(num.mantissa());
     auto exponent = num.exponent();
-    XRPL_ASSERT(negative == parts.negative, "numberFromJson : signs agree");
+
+    // Number zero has a special representation, so if the result is 0, nothing else needs to match.
+    // i.e. the Json string could be negative 0 ("-0") or a very "large" 0 ("0e99"), but they all
+    // represent 0.
+    bool const isZero = num == beast::kZero && parts.mantissa == 0;
+    XRPL_ASSERT(negative == parts.negative || isZero, "numberFromJson : signs agree");
     static_assert(
         // NOLINTNEXTLINE(misc-redundant-expression)
         std::is_same_v<decltype(mantissa), decltype(parts.mantissa)>);
     static_assert(
         // NOLINTNEXTLINE(misc-redundant-expression)
         std::is_same_v<decltype(exponent), decltype(parts.exponent)>);
-    auto const minMantissa = Number::minMantissa();
-    while (parts.exponent > exponent && parts.mantissa < minMantissa)
+    if (!isZero)
     {
-        parts.mantissa *= 10;
-        --parts.exponent;
-    }
-    while (parts.exponent < exponent && mantissa < minMantissa)
-    {
-        // This should only happen in the edge case where the internal mantissa > kMaxRep
-        mantissa *= 10;
-        --exponent;
-    }
-    while (parts.exponent < exponent && parts.mantissa % 10 == 0)
-    {
-        // LCOV_EXCL_START
-        // This will probably never be needed
-        parts.mantissa /= 10;
-        ++parts.exponent;
-        // LCOV_EXCL_STOP
-    }
+        auto constexpr minMantissa = Number::kMaxRep / 10;
+        while (parts.exponent > exponent && parts.mantissa < minMantissa)
+        {
+            parts.mantissa *= 10;
+            --parts.exponent;
+        }
+        while (parts.exponent < exponent && mantissa < minMantissa)
+        {
+            // This should only happen in the edge case where the internal mantissa > kMaxRep
+            mantissa *= 10;
+            --exponent;
+        }
+        while (parts.exponent < exponent && parts.mantissa % 10 == 0)
+        {
+            // LCOV_EXCL_START
+            // This will probably never be needed
+            parts.mantissa /= 10;
+            ++parts.exponent;
+            // LCOV_EXCL_STOP
+        }
 
-    if (negative != parts.negative || mantissa != parts.mantissa || exponent != parts.exponent)
-        Throw<std::runtime_error>("number can not be represented");
+        if (negative != parts.negative || mantissa != parts.mantissa || exponent != parts.exponent)
+            Throw<std::runtime_error>("number can not be represented");
+    }
 
     return STNumber{field, num};
 }
