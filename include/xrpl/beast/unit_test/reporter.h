@@ -48,7 +48,7 @@ private:
         std::size_t cases = 0;
         std::size_t total = 0;
         std::size_t failed = 0;
-        typename clock_type::time_point start = clock_type::now();
+        clock_type::time_point start = clock_type::now();
 
         explicit SuiteResults(std::string name = "") : name(std::move(name))
         {
@@ -60,7 +60,7 @@ private:
 
     struct Results
     {
-        using run_time = std::pair<std::string, typename clock_type::duration>;
+        using run_time = std::pair<std::string, clock_type::duration>;
 
         static constexpr auto kMaxTop = 10;
 
@@ -69,7 +69,7 @@ private:
         std::size_t total = 0;
         std::size_t failed = 0;
         std::vector<run_time> top;
-        typename clock_type::time_point start = clock_type::now();
+        clock_type::time_point start = clock_type::now();
 
         void
         add(SuiteResults const& r);
@@ -91,7 +91,7 @@ public:
 
 private:
     static std::string
-    fmtdur(typename clock_type::duration const& d);
+    fmtdur(clock_type::duration const& d);
 
     void
     onSuiteBegin(SuiteInfo const& info) override;
@@ -141,9 +141,7 @@ Reporter<Unused>::Results::add(SuiteResults const& r)
             top.begin(),
             top.end(),
             elapsed,
-            [](run_time const& t1, typename clock_type::duration const& t2) {
-                return t1.second > t2;
-            });
+            [](run_time const& t1, clock_type::duration const& t2) { return t1.second > t2; });
         if (iter != top.end())
         {
             if (top.size() == kMaxTop)
@@ -181,7 +179,7 @@ Reporter<Unused>::~Reporter()
 
 template <class Unused>
 std::string
-Reporter<Unused>::fmtdur(typename clock_type::duration const& d)
+Reporter<Unused>::fmtdur(clock_type::duration const& d)
 {
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);

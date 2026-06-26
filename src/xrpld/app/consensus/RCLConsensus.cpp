@@ -719,7 +719,9 @@ RCLConsensus::Adaptor::doAccept(
         JLOG(j_.info()) << "CNF Val " << newLCLHash;
     }
     else
+    {
         JLOG(j_.info()) << "CNF buildLCL " << newLCLHash;
+    }
 
     // See if we can accept a ledger as fully-validated
     ledgerMaster_.consensusBuilt(built.ledger, result.txns.id(), std::move(consensusJson));
@@ -939,7 +941,9 @@ RCLConsensus::Adaptor::buildLCL(
         JLOG(j_.debug()) << "Consensus built ledger we were acquiring";
     }
     else
+    {
         JLOG(j_.debug()) << "Consensus built new ledger";
+    }
     return RCLCxLedger{std::move(built)};
 }
 

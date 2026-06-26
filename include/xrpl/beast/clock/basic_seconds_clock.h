@@ -20,10 +20,10 @@ public:
 
     explicit BasicSecondsClock() = default;
 
-    using rep = typename Clock::rep;
-    using period = typename Clock::period;
-    using duration = typename Clock::duration;
-    using time_point = typename Clock::time_point;
+    using rep = Clock::rep;
+    using period = Clock::period;
+    using duration = Clock::duration;
+    using time_point = Clock::time_point;
 
     static bool const is_steady =  // NOLINT(readability-identifier-naming)
         Clock::is_steady;

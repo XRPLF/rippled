@@ -391,7 +391,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
         return std::nullopt;
     }
 
-    using desttype = typename Dest::value_type;
+    using desttype = Dest::value_type;
     constexpr auto kMax = std::numeric_limits<desttype>::max();
 
     // Shortcuts, since these happen a lot in the real world

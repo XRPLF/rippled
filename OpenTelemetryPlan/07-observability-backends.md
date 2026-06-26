@@ -258,10 +258,13 @@ Grafana provisions three TraceQL-based alert rules (group `xrpld-tracing-alerts`
   {resource.service.name="xrpld" && name="consensus.round"} | avg(duration) > 5s
   ```
 
-- **RPC Error Rate Spike** (critical, `for: 2m`): fires when the error rate across `rpc.command.*` spans exceeds 5%.
+- **RPC Error Rate Spike** (critical, `for: 2m`): fires when the error rate across `rpc.command.*` spans exceeds 5%. Error _rate_ is a ratio, so it must divide the error-span rate by the total-span rate — a single TraceQL `rate()` returns spans/second, not a percentage, and would fire on traffic volume alone. This uses span metrics emitted by the collector's `spanmetrics` connector (Prometheus datasource), not a TraceQL query:
 
   ```
-  {resource.service.name="xrpld" && name=~"rpc.command.*" && status.code=error} | rate() > 0.05
+  sum(rate(calls_total{service_name="xrpld", span_name=~"rpc.command.*", status_code="STATUS_CODE_ERROR"}[5m]))
+  /
+  sum(rate(calls_total{service_name="xrpld", span_name=~"rpc.command.*"}[5m]))
+  > 0.05
   ```
 
 - **Transaction Throughput Drop** (warning, `for: 10m`): fires when the `tx.receive` span rate falls below 10/s.
@@ -270,7 +273,7 @@ Grafana provisions three TraceQL-based alert rules (group `xrpld-tracing-alerts`
   {resource.service.name="xrpld" && name="tx.receive"} | rate() < 10
   ```
 
-> **Note**: The first two rules use TraceQL aggregates (`avg(duration)`, `rate()`), which require Tempo 2.3+ with TraceQL metrics enabled. Verify aggregate query support in your Tempo version before provisioning.
+> **Note**: The Consensus Round Slow and Transaction Throughput Drop rules use TraceQL aggregates (`avg(duration)`, `rate()`), which require Tempo 2.3+ with TraceQL metrics enabled. Verify aggregate query support in your Tempo version before provisioning. The RPC Error Rate Spike rule instead queries Prometheus span metrics (collector `spanmetrics` connector), so it needs that connector enabled in the collector pipeline.
 
 ---
 
