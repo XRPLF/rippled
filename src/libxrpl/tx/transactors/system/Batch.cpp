@@ -415,8 +415,7 @@ NotTEC
 Batch::preflightSigValidated(PreflightContext const& ctx)
 {
     XRPL_ASSERT(
-        ctx.tx.getTxnType() == ttBATCH,
-        "xrpl::Batch::preflightSigValidated : not a batch transaction");
+        ctx.tx.getTxnType() == ttBATCH, "xrpl::Batch::preflightSigValidated : batch transaction");
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
@@ -491,7 +490,21 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             }
             ++numReqSignersMatched;
         }
+    }
 
+    // Every required signer must be matched. This is cheaper than the signature
+    // check below, so verify it first. Also covers sfBatchSigners being absent
+    // while inner txns require signers (numReqSignersMatched stays 0).
+    if (numReqSignersMatched != requiredSigners.size())
+    {
+        JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                            << "invalid batch signers.";
+        return temBAD_SIGNER;
+    }
+
+    // Check the batch signer signatures (only present when there are signers).
+    if (ctx.tx.isFieldPresent(sfBatchSigners))
+    {
         // Caches only the cryptographic signature check, not whether each
         // signer is authorized to sign for its account - that ledger-dependent
         // check is Batch::checkBatchSign in preclaim and is never cached.
@@ -508,14 +521,6 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         }
     }
 
-    // Reject if any required signer was not matched (also covers signers being
-    // required while sfBatchSigners is absent, leaving numReqSignersMatched at 0).
-    if (numReqSignersMatched != requiredSigners.size())
-    {
-        JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                            << "invalid batch signers.";
-        return temBAD_SIGNER;
-    }
     return tesSUCCESS;
 }
 

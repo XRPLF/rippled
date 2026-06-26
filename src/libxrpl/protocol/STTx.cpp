@@ -436,7 +436,7 @@ STTx::checkSingleSign(STObject const& sigObject) const
 std::expected<void, std::string>
 STTx::checkBatchSingleSign(STObject const& batchSigner) const
 {
-    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : not a batch transaction");
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
     serializeBatch(
         msg, getAccountID(sfAccount), getSeqValue(), getFlags(), getBatchTransactionIDs());
@@ -524,7 +524,7 @@ multiSignHelper(
 std::expected<void, std::string>
 STTx::checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const
 {
-    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchMultiSign : not a batch transaction");
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchMultiSign : batch transaction");
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
@@ -576,7 +576,7 @@ STTx::buildBatchTxnIds()
     // (including sfRawTransactions) are canonical before the inner txns are
     // hashed. The constructors call this immediately after applying the
     // template; isFree() being false confirms a template is set.
-    XRPL_ASSERT(!isFree(), "STTx::buildBatchTxnIds : template not applied");
+    XRPL_ASSERT(!isFree(), "STTx::buildBatchTxnIds : template applied");
     if (getTxnType() != ttBATCH || !isFieldPresent(sfRawTransactions))
         return;
 
@@ -593,7 +593,7 @@ STTx::buildBatchTxnIds()
 std::vector<uint256> const&
 STTx::getBatchTransactionIDs() const
 {
-    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : not a batch transaction");
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : batch transaction");
     XRPL_ASSERT(
         !batchTxnIds_.empty(), "STTx::getBatchTransactionIDs : batch transaction IDs not built");
     XRPL_ASSERT(
@@ -744,7 +744,7 @@ isBatchRawTransactionOkay(STObject const& st, std::string& reason)
     // sfRawTransactions only appears on a Batch.
     XRPL_ASSERT(
         safeCast<TxType>(st.getFieldU16(sfTransactionType)) == ttBATCH,
-        "xrpl::isBatchRawTransactionOkay : not a batch transaction");
+        "xrpl::isBatchRawTransactionOkay : batch transaction");
 
     if (st.isFieldPresent(sfBatchSigners) &&
         st.getFieldArray(sfBatchSigners).size() > kMaxBatchSigners)
