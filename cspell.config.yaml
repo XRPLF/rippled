@@ -77,6 +77,7 @@ words:
   - coeffs
   - coldwallet
   - compr
+  - cppcoro
   - conanfile
   - conanrun
   - confs
@@ -119,6 +120,7 @@ words:
   - fmtdur
   - fsanitize
   - funclets
+  - gantt
   - gcov
   - gcovr
   - ghead
@@ -164,6 +166,7 @@ words:
   - ltype
   - mathbunnyru
   - mcmodel
+  - Mankawde
   - MEMORYSTATUSEX
   - MPTAMM
   - MPTDEX
@@ -230,6 +233,7 @@ words:
   - protobuf
   - protos
   - ptrs
+  - Pratik
   - pushd
   - pyenv
   - pyparsing
@@ -239,6 +243,7 @@ words:
   - Raphson
   - rcflags
   - replayer
+  - reposts
   - rerere
   - retriable
   - RIPD
@@ -275,6 +280,7 @@ words:
   - sslws
   - statsd
   - STATSDCOLLECTOR
+  - stackful
   - stissue
   - stnum
   - stobj
