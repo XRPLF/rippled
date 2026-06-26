@@ -190,19 +190,19 @@ wasm_trap_t* getNFTTransferFee_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 using getNFTSequence_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t* getNFTSequence_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using trace_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
+using trace_proto = void(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
 wasm_trap_t* trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using traceNum_proto = int32_t(uint8_t const*, int32_t, int64_t);
+using traceNum_proto = void(uint8_t const*, int32_t, int64_t);
 wasm_trap_t* traceNum_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using traceAccount_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+using traceAccount_proto = void(uint8_t const*, int32_t, uint8_t const*, int32_t);
 wasm_trap_t* traceAccount_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using traceFloat_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+using traceFloat_proto = void(uint8_t const*, int32_t, uint8_t const*, int32_t);
 wasm_trap_t* traceFloat_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
-using traceAmount_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+using traceAmount_proto = void(uint8_t const*, int32_t, uint8_t const*, int32_t);
 wasm_trap_t* traceAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST);
 
 using floatFromInt_proto = int32_t(int64_t, uint8_t*, int32_t, int32_t);

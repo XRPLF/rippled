@@ -400,34 +400,32 @@ public:
         return std::unexpected(HostFunctionError::Unimplemented);
     }
 
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
+    // trace_* return nothing to the guest and only write to the local log, so
+    // the base is a no-op (not Unimplemented). See the trace_*_wrap consensus
+    // note in HostFuncWrapper.cpp.
+    virtual void
     trace(std::string_view const& msg, Slice const& data, bool asHex) const
     {
-        return std::unexpected(HostFunctionError::Unimplemented);
     }
 
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
+    virtual void
     traceNum(std::string_view const& msg, int64_t data) const
     {
-        return std::unexpected(HostFunctionError::Unimplemented);
     }
 
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
+    virtual void
     traceAccount(std::string_view const& msg, AccountID const& account) const
     {
-        return std::unexpected(HostFunctionError::Unimplemented);
     }
 
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
+    virtual void
     traceFloat(std::string_view const& msg, Slice const& data) const
     {
-        return std::unexpected(HostFunctionError::Unimplemented);
     }
 
-    [[nodiscard]] [[nodiscard]] virtual std::expected<int32_t, HostFunctionError>
+    virtual void
     traceAmount(std::string_view const& msg, STAmount const& amount) const
     {
-        return std::unexpected(HostFunctionError::Unimplemented);
     }
 
     [[nodiscard]] [[nodiscard]] virtual std::expected<Bytes, HostFunctionError>

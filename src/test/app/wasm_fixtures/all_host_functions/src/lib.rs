@@ -28,7 +28,7 @@ extern crate std;
 use xrpl_std::core::current_tx::escrow_finish::EscrowFinish;
 use xrpl_std::core::current_tx::traits::TransactionCommonFields;
 use xrpl_std::host;
-use xrpl_std::host::trace::{trace, trace_account_buf, trace_data, trace_num, DataRepr};
+use xrpl_std::host::trace::{DataRepr, trace, trace_account_buf, trace_data, trace_num};
 use xrpl_std::sfield;
 
 #[unsafe(no_mangle)]
@@ -739,7 +739,9 @@ fn test_utility_functions() -> i32 {
     // Test 6.3: trace() - Debug logging with data
     let trace_message = b"Test trace message";
     let trace_data_payload = b"payload";
-    let trace_result = unsafe {
+    // The trace_* host functions return nothing -- they only write to the host's
+    // local log -- so there is no status to check and no failure path to test.
+    unsafe {
         host::trace(
             trace_message.as_ptr(),
             trace_message.len(),
@@ -749,26 +751,9 @@ fn test_utility_functions() -> i32 {
         )
     };
 
-    if trace_result < 0 {
-        let _ = trace_num("ERROR: trace() failed:", trace_result as i64);
-        return -603; // Trace function failed
-    }
-    let _ = trace_num("Trace function bytes written:", trace_result as i64);
-
     // Test 6.4: trace_num() - Debug logging with number
     let test_number = 42i64;
-    let trace_num_result = trace_num("Test number trace", test_number);
-
-    use xrpl_std::host::Result;
-    match trace_num_result {
-        Result::Ok(_) => {
-            let _ = trace_num("Trace_num function succeeded", 0);
-        }
-        Result::Err(_) => {
-            let _ = trace_num("ERROR: trace_num() failed:", -604);
-            return -604; // Trace number function failed
-        }
-    }
+    trace_num("Test number trace", test_number);
 
     let _ = trace("SUCCESS: Utility functions");
     0

@@ -241,19 +241,19 @@ public:
     std::expected<std::uint32_t, HostFunctionError>
     getNFTSequence(uint256 const& nftId) const override;
 
-    std::expected<int32_t, HostFunctionError>
+    void
     trace(std::string_view const& msg, Slice const& data, bool asHex) const override;
 
-    std::expected<int32_t, HostFunctionError>
+    void
     traceNum(std::string_view const& msg, int64_t data) const override;
 
-    std::expected<int32_t, HostFunctionError>
+    void
     traceAccount(std::string_view const& msg, AccountID const& account) const override;
 
-    std::expected<int32_t, HostFunctionError>
+    void
     traceFloat(std::string_view const& msg, Slice const& data) const override;
 
-    std::expected<int32_t, HostFunctionError>
+    void
     traceAmount(std::string_view const& msg, STAmount const& amount) const override;
 
     std::expected<Bytes, HostFunctionError>

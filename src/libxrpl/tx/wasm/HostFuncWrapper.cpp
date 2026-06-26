@@ -3,6 +3,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
@@ -1268,117 +1269,162 @@ getNFTSequence_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
     return returnResult(runtime, params, results, hf.getNFTSequence(*nftId), index);
 }
 
+// Whether the trace_* wrappers should do any work at all. In DEBUG_OUTPUT
+// builds WasmHostFunctionsImpl::log() writes straight to std::cerr and ignores
+// the journal, so gating on the journal there would silence the very output
+// the flag exists to produce.
+static inline bool
+traceActive([[maybe_unused]] HostFunctions const& hf)
+{
+#ifdef DEBUG_OUTPUT
+    return true;
+#else
+    return hf.getJournal().active(beast::Severity::Trace);
+#endif
+}
+
+// The trace_* host functions return nothing and charge a flat 30 gas (in
+// mainCheck, before these run). Their ONLY effect is this node's local log, so
+// a node's log level must not change gas, the transfer limit, the (absent)
+// return value, or ledger state -- otherwise nodes would diverge and break
+// consensus. Hence: gate on the log level first (skip all work if inactive),
+// charge no transfer limit, and never let an error escape as a trap -- log it
+// briefly instead.
 wasm_trap_t*
 trace_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    if (!traceActive(hf))
+        return nullptr;
 
-    auto const msg = getDataString(runtime, params, index);
-    if (!msg)
-        return hfResult(results, msg.error());
-
-    auto const data = getDataSlice(runtime, params, index);
-    if (!data)
-        return hfResult(results, data.error());
-
-    if (msg->size() + data->size() > kMaxWasmDataLength)
-        return hfResult(results, HostFunctionError::DataFieldTooLarge);
-
-    auto const asHex = getDataInt32(runtime, params, index);
-    if (!asHex)
-        return hfResult(results, asHex.error());  // LCOV_EXCL_LINE
-
-    if (*asHex != 0 && *asHex != 1)
-        return hfResult(results, HostFunctionError::InvalidParams);
-
-    return returnResult(runtime, params, results, hf.trace(*msg, *data, *asHex != 0), index);
+    try
+    {
+        int index = 0;
+        WasmRuntimeWrapper& runtime = hf.getRT();
+        auto const msg = getDataString(runtime, params, index);
+        auto const data = getDataSlice(runtime, params, index);
+        auto const asHex = getDataInt32(runtime, params, index);
+        if (!msg || !data || !asHex || (*asHex != 0 && *asHex != 1) ||
+            msg->size() + data->size() > kMaxWasmDataLength)
+        {
+            hf.getJournal().trace() << "WasmTrace: invalid arguments";
+            return nullptr;
+        }
+        hf.trace(*msg, *data, *asHex != 0);
+    }
+    catch (std::exception const& e)
+    {
+        hf.getJournal().trace() << "WasmTrace: error: " << e.what();
+    }
+    return nullptr;
 }
 
 wasm_trap_t*
 traceNum_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int index = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    if (!traceActive(hf))
+        return nullptr;
 
-    auto const msg = getDataString(runtime, params, index);
-    if (!msg)
-        return hfResult(results, msg.error());
-
-    auto const number = getDataInt64(runtime, params, index);
-    if (!number)
-        return hfResult(results, number.error());  // LCOV_EXCL_LINE
-
-    return returnResult(runtime, params, results, hf.traceNum(*msg, *number), index);
+    try
+    {
+        int index = 0;
+        WasmRuntimeWrapper& runtime = hf.getRT();
+        auto const msg = getDataString(runtime, params, index);
+        auto const number = getDataInt64(runtime, params, index);
+        if (!msg || !number)
+        {
+            hf.getJournal().trace() << "WasmTrace: invalid arguments";
+            return nullptr;
+        }
+        hf.traceNum(*msg, *number);
+    }
+    catch (std::exception const& e)
+    {
+        hf.getJournal().trace() << "WasmTrace: error: " << e.what();
+    }
+    return nullptr;
 }
 
 wasm_trap_t*
 traceAccount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    if (!traceActive(hf))
+        return nullptr;
 
-    auto const msg = getDataString(runtime, params, i);
-    if (!msg)
-        return hfResult(results, msg.error());
-
-    auto const account = getDataAccountID(runtime, params, i);
-    if (!account)
-        return hfResult(results, account.error());
-
-    return returnResult(runtime, params, results, hf.traceAccount(*msg, *account), i);
+    try
+    {
+        int i = 0;
+        WasmRuntimeWrapper& runtime = hf.getRT();
+        auto const msg = getDataString(runtime, params, i);
+        // Read the account bytes directly via getDataSlice -- NOT
+        // getDataAccountID, which would charge the transfer limit (a
+        // consensus-observable effect that must not depend on log level).
+        auto const accSlice = getDataSlice(runtime, params, i);
+        if (!msg || !accSlice || accSlice->size() != AccountID::size())
+        {
+            hf.getJournal().trace() << "WasmTrace: invalid arguments";
+            return nullptr;
+        }
+        hf.traceAccount(*msg, AccountID::fromVoid(accSlice->data()));
+    }
+    catch (std::exception const& e)
+    {
+        hf.getJournal().trace() << "WasmTrace: error: " << e.what();
+    }
+    return nullptr;
 }
 
 wasm_trap_t*
 traceFloat_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    if (!traceActive(hf))
+        return nullptr;
 
-    auto const msg = getDataString(runtime, params, i);
-    if (!msg)
-        return hfResult(results, msg.error());
-
-    auto const number = getDataSlice(runtime, params, i);
-    if (!number)
-        return hfResult(results, number.error());
-
-    return returnResult(runtime, params, results, hf.traceFloat(*msg, *number), i);
+    try
+    {
+        int i = 0;
+        WasmRuntimeWrapper& runtime = hf.getRT();
+        auto const msg = getDataString(runtime, params, i);
+        auto const number = getDataSlice(runtime, params, i);
+        if (!msg || !number)
+        {
+            hf.getJournal().trace() << "WasmTrace: invalid arguments";
+            return nullptr;
+        }
+        hf.traceFloat(*msg, *number);
+    }
+    catch (std::exception const& e)
+    {
+        hf.getJournal().trace() << "WasmTrace: error: " << e.what();
+    }
+    return nullptr;
 }
 
 wasm_trap_t*
 traceAmount_wrap(WASM_SECONDARY_CB_PARAMS_LIST)
 {
-    int i = 0;
-    WasmRuntimeWrapper& runtime = hf.getRT();
+    if (!traceActive(hf))
+        return nullptr;
 
-    auto const msg = getDataString(runtime, params, i);
-    if (!msg)
-        return hfResult(results, msg.error());
-
-    auto const amountSliceOpt = getDataSlice(runtime, params, i);
-    if (!amountSliceOpt)
-        return hfResult(results, amountSliceOpt.error());
-
-    auto const amountSlice = amountSliceOpt.value();
-    auto serialIter = SerialIter(amountSlice);
-
-    std::optional<STAmount> amount;
     try
     {
-        amount = STAmount(serialIter, sfGeneric);
+        int i = 0;
+        WasmRuntimeWrapper& runtime = hf.getRT();
+        auto const msg = getDataString(runtime, params, i);
+        auto const amountSlice = getDataSlice(runtime, params, i);
+        if (!msg || !amountSlice)
+        {
+            hf.getJournal().trace() << "WasmTrace: invalid arguments";
+            return nullptr;
+        }
+        auto serialIter = SerialIter(*amountSlice);
+        STAmount const amount(serialIter, sfGeneric);  // may throw on bad input
+        hf.traceAmount(*msg, amount);
     }
-    catch (std::exception const&)
+    catch (std::exception const& e)
     {
-        amount = std::nullopt;
+        hf.getJournal().trace() << "WasmTrace: error: " << e.what();
     }
-
-    if (!amount)
-    {
-        return hfResult(results, HostFunctionError::InvalidParams);
-    }
-
-    return returnResult(runtime, params, results, hf.traceAmount(*msg, *amount), i);
+    return nullptr;
 }
 
 wasm_trap_t*

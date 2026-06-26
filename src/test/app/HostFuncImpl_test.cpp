@@ -3444,12 +3444,11 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             {
                 vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
                 vrt.setBytes(256, slice.data(), slice.size());
-                WasmValVec params(5), result(1);
+                WasmValVec params(5), result(0);
                 auto* trap =
                     ww(&import.at("trace"), params, result, 0, msg.size(), 256, slice.size(), 0);
 
-                if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == 0))
+                if (BEAST_EXPECT(!trap))
                 {
                     auto const messages = sink.messages().str();
                     BEAST_EXPECT(messages.contains(msg));
@@ -3460,12 +3459,11 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             {
                 vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
                 vrt.setBytes(256, slice.data(), slice.size());
-                WasmValVec params(5), result(1);
+                WasmValVec params(5), result(0);
                 auto* trap =
                     ww(&import.at("trace"), params, result, 0, msg.size(), 256, slice.size(), 1);
 
-                if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == 0))
+                if (BEAST_EXPECT(!trap))
                 {
                     auto const messages = sink.messages().str();
                     std::string hex;
@@ -3499,12 +3497,11 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             // hfs.trace(msg, slice, false);
             vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
             vrt.setBytes(256, slice.data(), slice.size());
-            WasmValVec params(5), result(1);
+            WasmValVec params(5), result(0);
             auto* trap =
                 ww(&import.at("trace"), params, result, 0, msg.size(), 256, slice.size(), 0);
 
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == 0);
+            BEAST_EXPECT(!trap);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -3535,11 +3532,10 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             // hfs.traceNum(msg, num);
             vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
-            WasmValVec params(3), result(1);
+            WasmValVec params(3), result(0);
             auto* trap = ww(&import.at("trace_num"), params, result, 0, msg.size(), num);
 
-            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == 0))
+            if (BEAST_EXPECT(!trap))
             {
                 auto const messages = sink.messages().str();
                 BEAST_EXPECT(messages.contains(msg));
@@ -3567,11 +3563,10 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
 
             // hfs.traceNum(msg, num);
             vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
-            WasmValVec params(3), result(1);
+            WasmValVec params(3), result(0);
             auto* trap = ww(&import.at("trace_num"), params, result, 0, msg.size(), num);
 
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == 0);
+            BEAST_EXPECT(!trap);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -3603,12 +3598,11 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             // hfs.traceAccount(msg, env.master.id());
             vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
             vrt.setBytes(256, accountId.data(), accountId.size());
-            WasmValVec params(4), result(1);
+            WasmValVec params(4), result(0);
             auto* trap =
                 ww(&import.at("trace_acct"), params, result, 0, msg.size(), 256, accountId.size());
 
-            if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == 0))
+            if (BEAST_EXPECT(!trap))
             {
                 auto const messages = sink.messages().str();
                 BEAST_EXPECT(messages.contains(msg));
@@ -3637,12 +3631,11 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             // hfs.traceAccount(msg, env.master.id());
             vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
             vrt.setBytes(256, accountId.data(), accountId.size());
-            WasmValVec params(4), result(1);
+            WasmValVec params(4), result(0);
             auto* trap =
                 ww(&import.at("trace_acct"), params, result, 0, msg.size(), 256, accountId.size());
 
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == 0);
+            BEAST_EXPECT(!trap);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -3675,7 +3668,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 Bytes amountBytes = toBytes(amount);
                 vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
                 vrt.setBytes(256, amountBytes.data(), amountBytes.size());
-                WasmValVec params(4), result(1);
+                WasmValVec params(4), result(0);
                 auto* trap =
                     ww(&import.at("trace_amt"),
                        params,
@@ -3685,8 +3678,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        256,
                        amountBytes.size());
 
-                if (BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == 0))
+                if (BEAST_EXPECT(!trap))
                 {
                     auto const messages = sink.messages().str();
                     BEAST_EXPECT(messages.contains(msg));
@@ -3704,7 +3696,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 Bytes amountBytes = toBytes(iouAmount);
                 vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
                 vrt.setBytes(256, amountBytes.data(), amountBytes.size());
-                WasmValVec params(4), result(1);
+                WasmValVec params(4), result(0);
                 auto* trap =
                     ww(&import.at("trace_amt"),
                        params,
@@ -3714,8 +3706,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        256,
                        amountBytes.size());
 
-                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == 0);
+                BEAST_EXPECT(!trap);
             }
 
             // MPT amount
@@ -3728,7 +3719,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 Bytes amountBytes = toBytes(mptAmount);
                 vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
                 vrt.setBytes(256, amountBytes.data(), amountBytes.size());
-                WasmValVec params(4), result(1);
+                WasmValVec params(4), result(0);
                 auto* trap =
                     ww(&import.at("trace_amt"),
                        params,
@@ -3738,8 +3729,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        256,
                        amountBytes.size());
 
-                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == 0);
+                BEAST_EXPECT(!trap);
             }
         }
 
@@ -3765,12 +3755,11 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             Bytes amountBytes = toBytes(amount);
             vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
             vrt.setBytes(256, amountBytes.data(), amountBytes.size());
-            WasmValVec params(4), result(1);
+            WasmValVec params(4), result(0);
             auto* trap =
                 ww(&import.at("trace_amt"), params, result, 0, msg.size(), 256, amountBytes.size());
 
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == 0);
+            BEAST_EXPECT(!trap);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -3885,19 +3874,18 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                 // hfs.traceFloat(msg, makeSlice(invalid));
                 vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
                 vrt.setBytes(256, reinterpret_cast<uint8_t const*>(invalid.data()), invalid.size());
-                WasmValVec params(4), result(1);
+                WasmValVec params(4), result(0);
                 auto* trap = ww(
                     &import.at("trace_xfloat"), params, result, 0, msg.size(), 256, invalid.size());
 
-                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == 0);
+                BEAST_EXPECT(!trap);
             }
 
             {
                 // hfs.traceFloat(msg, makeSlice(floatMaxExp));
                 vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
                 vrt.setBytes(256, floatMaxExp.data(), floatMaxExp.size());
-                WasmValVec params(4), result(1);
+                WasmValVec params(4), result(0);
                 auto* trap =
                     ww(&import.at("trace_xfloat"),
                        params,
@@ -3907,8 +3895,7 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
                        256,
                        floatMaxExp.size());
 
-                BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                    BEAST_EXPECT(result[0].of.i32 == 0);
+                BEAST_EXPECT(!trap);
             }
         }
 
@@ -3932,12 +3919,11 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             // hfs.traceFloat(msg, makeSlice(invalid));
             vrt.setBytes(0, reinterpret_cast<uint8_t const*>(msg.data()), msg.size());
             vrt.setBytes(256, reinterpret_cast<uint8_t const*>(invalid.data()), invalid.size());
-            WasmValVec params(4), result(1);
+            WasmValVec params(4), result(0);
             auto* trap =
                 ww(&import.at("trace_xfloat"), params, result, 0, msg.size(), 256, invalid.size());
 
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == 0);
+            BEAST_EXPECT(!trap);
             auto const messages = sink.messages().str();
             BEAST_EXPECT(messages.empty());
         }
@@ -6181,18 +6167,18 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
             reinterpret_cast<uint8_t const*>("dummy"),
             5);  // Empty data slice for trace
         {
-            WasmValVec params(5), result(1);
-            // trace(msg_ptr, msg_len, data_ptr, data_len, asHex)
+            WasmValVec params(5), result(0);
+            // trace(msg_ptr, msg_len, data_ptr, data_len, asHex) -- returns nothing
             auto* trap = ww(&import.at("trace"), params, result, 0, testMsg.size(), 100, 5, 0);
 
-            // Should succeed even though message is >10 bytes, because trace only uses slices
-            // (no transfer limit check in getDataSlice)
-            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
-                BEAST_EXPECT(result[0].of.i32 == 0);
+            // Should not trap even though the message is >10 bytes, because trace only reads
+            // slices (no transfer limit check in getDataSlice) and never charges the limit.
+            BEAST_EXPECT(!trap);
         }
 
-        // setData should return  when transfer limit is exhausted
-        // After trace consumed overhead (1024 bytes), we have 10 - 1024 = negative limit left
+        // setData should return OutOfTransferLimit when the transfer limit is exhausted.
+        // trace left the limit untouched, so the next getTransferLimit() overhead (1024)
+        // takes 1034 down to 10 -- not enough for the 32-byte hash copy.
         {
             WasmValVec params(2), result(1);
             auto* trap = ww(&import.at("parent_ldgr_hash"), params, result, 500, 32);

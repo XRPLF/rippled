@@ -382,7 +382,7 @@ public:
 #endif
     }
 
-    [[nodiscard]] std::expected<int32_t, HostFunctionError>
+    void
     trace(std::string_view const& msg, Slice const& data, bool asHex) const override
     {
         if (!asHex)
@@ -400,36 +400,30 @@ public:
                 return hex;
             });
         }
-
-        return 0;
     }
 
-    [[nodiscard]] std::expected<int32_t, HostFunctionError>
+    void
     traceNum(std::string_view const& msg, int64_t data) const override
     {
         log(msg, [data] { return data; });
-        return 0;
     }
 
-    [[nodiscard]] std::expected<int32_t, HostFunctionError>
+    void
     traceAccount(std::string_view const& msg, AccountID const& account) const override
     {
         log(msg, [&account] { return toBase58(account); });
-        return 0;
     }
 
-    [[nodiscard]] std::expected<int32_t, HostFunctionError>
+    void
     traceFloat(std::string_view const& msg, Slice const& data) const override
     {
         log(msg, [&data] { return wasm_float::floatToString(data); });
-        return 0;
     }
 
-    [[nodiscard]] std::expected<int32_t, HostFunctionError>
+    void
     traceAmount(std::string_view const& msg, STAmount const& amount) const override
     {
         log(msg, [&amount] { return amount.getFullText(); });
-        return 0;
     }
 
     [[nodiscard]] std::expected<Bytes, HostFunctionError>

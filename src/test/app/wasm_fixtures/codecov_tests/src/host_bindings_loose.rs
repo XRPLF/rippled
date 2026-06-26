@@ -43,5 +43,7 @@ unsafe extern "C" {
         out_buff_len: usize,
     ) -> i32;
 
-    pub fn trace_num(msg_read_ptr: i32, msg_read_len: i32, number: i64) -> i32;
+    // Returns nothing, matching the host's void trace_* ABI. The i32 pointer/len
+    // params stay deliberately loose so the out-of-bounds path can be exercised.
+    pub fn trace_num(msg_read_ptr: i32, msg_read_len: i32, number: i64);
 }

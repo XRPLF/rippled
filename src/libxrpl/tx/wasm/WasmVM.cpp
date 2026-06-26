@@ -81,11 +81,11 @@ setCommonHostFunctions(HostFunctions& hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, getNFTTransferFee, "nft_xfer_fee", hfs,                                               60);
     WASM_IMPORT_FUNC2(i, getNFTSequence, "nft_serial", hfs,                                                   60);
 
-    WASM_IMPORT_FUNC (i, trace, hfs,                                                                          500);
-    WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                          500);
-    WASM_IMPORT_FUNC2(i, traceAccount, "trace_acct", hfs,                                                     500);
-    WASM_IMPORT_FUNC2(i, traceFloat, "trace_xfloat", hfs,                                                     500);
-    WASM_IMPORT_FUNC2(i, traceAmount, "trace_amt", hfs,                                                       500);
+    WASM_IMPORT_FUNC (i, trace, hfs,                                                                           30);
+    WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           30);
+    WASM_IMPORT_FUNC2(i, traceAccount, "trace_acct", hfs,                                                      30);
+    WASM_IMPORT_FUNC2(i, traceFloat, "trace_xfloat", hfs,                                                      30);
+    WASM_IMPORT_FUNC2(i, traceAmount, "trace_amt", hfs,                                                        30);
 
     WASM_IMPORT_FUNC2(i, floatFromInt, "float_from_int", hfs,                                                 100);
     WASM_IMPORT_FUNC2(i, floatFromUint, "float_from_uint", hfs,                                               130);
