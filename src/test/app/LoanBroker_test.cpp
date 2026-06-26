@@ -2245,6 +2245,7 @@ public:
     run() override
     {
         testCoverPrecisionGuard();
+
         testLoanBrokerSetDebtMaximum();
         testLoanBrokerCoverDepositNullVault();
 
