@@ -10,7 +10,6 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -148,43 +147,15 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return terNO_RIPPLE;
     }
 
-    if (ctx.view.rules().enabled(featureSponsor))
+    // Check the reserve for LPToken trustline
+    STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
+    // Insufficient reserve
+    if (xrpBalance <= beast::kZero)
     {
-        auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
-
-        // Check the reserve for LPToken trustline
-        // Insufficient reserve
-        auto const accountSle = ctx.view.read(keylet::account(accountID));
-        if (auto const ret = checkInsufficientReserve(
-                ctx.view,
-                ctx.tx,
-                accountSle,
-                accountSle->getFieldAmount(sfBalance),
-                *sponsorSle,
-                1,
-                0,
-                ctx.j);
-            !isTesSuccess(ret))
-        {
-            JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
-            return tecINSUF_RESERVE_LINE;
-        }
-    }
-    else
-    {
-        STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
-        // Insufficient reserve
-        if (xrpBalance <= beast::kZero)
-        {
-            JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
-            return tecINSUF_RESERVE_LINE;
-        }
+        JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
+        return tecINSUF_RESERVE_LINE;
     }
 
-    auto const ownerCountAdj = isReserveSponsored(ctx.tx) ? 0 : 1;
-    STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, ownerCountAdj, ctx.j);
     auto insufficientBalance = [&](STAmount const& amount) {
         if (isXRP(amount))
             return xrpBalance < amount;
@@ -323,11 +294,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto const sponsorSle = getTxReserveSponsor(sb, ctx.tx);
-    if (!sponsorSle)
-        return {sponsorSle.error(), false};  // LCOV_EXCL_LINE
-
-    auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal, *sponsorSle);
+    auto res = accountSend(sb, accountId, account, lpTokens, ctx.journal);
     if (!isTesSuccess(res))
     {
         JLOG(j.debug()) << "AMM Instance: failed to send LPT " << lpTokens;

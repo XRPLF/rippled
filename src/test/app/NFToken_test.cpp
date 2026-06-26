@@ -6,7 +6,6 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/check.h>
-#include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/noop.h>
@@ -14,8 +13,6 @@
 #include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
 #include <test/jtx/rate.h>
-#include <test/jtx/sig.h>
-#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
@@ -426,40 +423,21 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         Account const alice{"alice"};
-        Account const bob{"bob"};
         Env env{*this, features};
-        env.fund(XRP(1000), alice, bob);
+        env.fund(XRP(1000), alice);
         env.close();
 
         // We're going to hack the ledger in order to avoid generating
         // 4 billion or so NFTs.  Because we're hacking the ledger we
-        // need alice's account to have non-zero sfMintedNFTokens,
-        // sfBurnedNFTokens, sfSponsoredOwnerCount, sfSponsoringOwnerCount,
-        // sfSponsoringAccountCount fields. This prevents an exception when
-        // the AccountRoot template is applied.
+        // need alice's account to have non-zero sfMintedNFTokens and
+        // sfBurnedNFTokens fields.  This prevents an exception when the
+        // AccountRoot template is applied.
         {
             uint256 const nftId0{token::getNextID(env, alice, 0u)};
             env(token::mint(alice, 0u));
             env.close();
 
             env(token::burn(alice, nftId0));
-            env.close();
-
-            // Use DepositPreauth here because it is in the v1 reserve-sponsor
-            // allow-list; DIDSet is not.
-            env(deposit::auth(alice, bob),
-                sponsor::As(bob, spfSponsorReserve),
-                Sig(sfSponsorSignature, bob));
-            env.close();
-
-            env(deposit::auth(bob, alice),
-                sponsor::As(alice, spfSponsorReserve),
-                Sig(sfSponsorSignature, alice));
-            env.close();
-
-            env(sponsor::transfer(bob, tfSponsorshipCreate),
-                sponsor::As(alice, spfSponsorReserve),
-                Sig(sfSponsorSignature, alice));
             env.close();
         }
 
@@ -474,7 +452,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
             // Just for sanity's sake we'll check that the current value
             // of sfMintedNFTokens matches what we expect.
-            auto replacement = std::make_shared<SLE>(*sle, sle->key());
+            auto replacement = std::make_shared<SLE>(*sle);
             if (replacement->getFieldU32(sfMintedNFTokens) != 1)
                 return false;  // Unexpected test conditions.
 

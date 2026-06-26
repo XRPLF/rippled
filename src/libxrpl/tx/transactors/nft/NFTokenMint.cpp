@@ -5,7 +5,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -306,12 +305,7 @@ NFTokenMint::doApply()
             object.setFieldVL(sfURI, *uri);
     });
 
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-
-    if (TER const ret =
-            nft::insertToken(ctx_.view(), ctx_.tx, accountID_, *sponsorSle, std::move(newToken));
+    if (TER const ret = nft::insertToken(ctx_.view(), accountID_, std::move(newToken));
         !isTesSuccess(ret))
         return ret;
 
@@ -322,7 +316,6 @@ NFTokenMint::doApply()
         // because a Mint is only allowed to create a sell offer.
         if (TER const ter = nft::tokenOfferCreateApply(
                 view(),
-                ctx_.tx,
                 ctx_.tx[sfAccount],
                 ctx_.tx[sfAmount],
                 ctx_.tx[~sfDestination],
@@ -339,21 +332,15 @@ NFTokenMint::doApply()
     // allows NFTs to be added to the page (and burn fees) without
     // requiring the reserve to be met each time.  The reserve is
     // only managed when a new NFT page or sell offer is added.
-    if (auto const ownerCountAfter =
-            view().read(keylet::account(accountID_))->getFieldU32(sfOwnerCount);
+    auto const sleAccount = view().read(keylet::account(accountID_));
+    if (!sleAccount)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    if (auto const ownerCountAfter = sleAccount->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
-                view().read(keylet::account(accountID_)),
-                preFeeBalance_,
-                *sponsorSle,
-                0,
-                0,
-                j_);
-            !isTesSuccess(ret))
-            return ret;
+        if (preFeeBalance_ < accountReserve(view(), sleAccount, j_))
+            return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
 }

@@ -933,16 +933,15 @@ class AccountTx_test : public beast::unit_test::Suite
         checkTx(alice, jss::SponsorshipSet);
         checkTx(sponsor, jss::SponsorshipSet);
 
-        // create a DepositPreauth with sponsor (TicketCreate is not in the
-        // v1 reserve-sponsor allow-list, so use DepositPreauth instead).
-        env(deposit::auth(alice, sponsor2), sponsor::As(sponsor, spfSponsorReserve));
+        // create an object with sponsor
+        auto const checkId = keylet::check(alice, env.seq(alice)).key;
+        env(check::create(alice, sponsor, XRP(1)), sponsor::As(sponsor, spfSponsorReserve));
         env.close();
-        checkTx(alice, jss::DepositPreauth);
-        checkTx(sponsor, jss::DepositPreauth);
+        checkTx(alice, jss::CheckCreate);
+        checkTx(sponsor, jss::CheckCreate);
 
         // transfer object sponsorship
-        env(sponsor::transfer(
-                alice, tfSponsorshipReassign, keylet::depositPreauth(alice, sponsor2).key),
+        env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
             sponsor::As(sponsor2, spfSponsorReserve),
             Sig(sfSponsorSignature, sponsor2));
         env.close();
@@ -950,13 +949,14 @@ class AccountTx_test : public beast::unit_test::Suite
         checkTx(sponsor, jss::SponsorshipTransfer);
         checkTx(sponsor2, jss::SponsorshipTransfer);
 
-        // fee-sponsored noop after preauth (sponsor2 isn't involved, so the
-        // checkTx hash equality below would not match — only verify the two
-        // accounts that actually appear in the latest tx).
-        env(noop(alice), sponsor::As(sponsor, spfSponsorFee), Sig(sfSponsorSignature, sponsor));
+        // delete the sponsored object
+        env(check::cancel(alice, checkId),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor));
         env.close();
-        checkTx(alice, jss::AccountSet);
-        checkTx(sponsor, jss::AccountSet);
+        checkTx(alice, jss::CheckCancel);
+        checkTx(sponsor, jss::CheckCancel);
+        checkTx(sponsor2, jss::CheckCancel);
 
         // account sponsorship
         env(sponsor::transfer(alice, tfSponsorshipCreate),
