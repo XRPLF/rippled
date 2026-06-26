@@ -30,7 +30,7 @@ class Xrpl(ConanFile):
         "ed25519/2015.03",
         "grpc/1.81.1",
         "libarchive/3.8.7",
-        "mpt-crypto/0.3.0-rc5",
+        "mpt-crypto/0.4.0-rc2",
         "nudb/2.0.9",
         "openssl/3.6.3",
         "secp256k1/0.7.1",
@@ -134,7 +134,6 @@ class Xrpl(ConanFile):
         self.requires("boost/1.91.0", force=True, transitive_headers=True)
         self.requires("date/3.0.4", transitive_headers=True)
         self.requires("lz4/1.10.0", force=True)
-        self.requires("openssl/3.6.2", force=True)
         self.requires("protobuf/6.33.5", force=True)
         self.requires("sqlite3/3.53.0", force=True)
         if self.options.jemalloc:
