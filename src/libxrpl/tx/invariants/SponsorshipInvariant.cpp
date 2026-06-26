@@ -4,6 +4,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
@@ -62,7 +63,7 @@ SponsorshipOwnerCountsMatch::visitEntry(
                 if (!sle->isFieldPresent(sfSponsor))
                     return 0;
                 auto const priceDataSeries = sle->getFieldArray(sfPriceDataSeries);
-                return OracleSet::calculateOracleReserve(priceDataSeries.size());
+                return calculateOracleReserve(priceDataSeries.size());
             }
             case ltVAULT: {
                 if (!sle->isFieldPresent(sfSponsor))
