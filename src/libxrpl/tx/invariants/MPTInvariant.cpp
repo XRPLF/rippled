@@ -658,7 +658,7 @@ ValidConfidentialMPToken::finalize(
         auto const issuance = [&]() -> std::shared_ptr<SLE const> {
             if (checks.issuance)
                 return checks.issuance;
-            return view.read(keylet::mptIssuance(id));
+            return view.read(keylet::mptokenIssuance(id));
         }();
 
         // Skip all invariance checks if issuance doesn't exist because that means the MPT has been

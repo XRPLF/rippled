@@ -5090,7 +5090,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"Confidential outstanding amount exceeds total outstanding amount"},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleIssuance = ac.view().peek(keylet::mptIssuance(mptID));
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
                 if (!sleIssuance)
                     return false;
                 // Total outstanding is natively 100; bloat the COA over 100
@@ -5107,7 +5107,7 @@ class Invariants_test : public beast::unit_test::Suite
         doInvariantCheck(
             {"Token conservation violation for MPT"},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleIssuance = ac.view().peek(keylet::mptIssuance(mptID));
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
                 if (!sleIssuance)
                     return false;
 
@@ -5129,7 +5129,7 @@ class Invariants_test : public beast::unit_test::Suite
              "by confidential transaction that should not "
              "modify it for MPT"},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleIssuance = ac.view().peek(keylet::mptIssuance(mptID));
+                auto sleIssuance = ac.view().peek(keylet::mptokenIssuance(mptID));
                 if (!sleIssuance)
                     return false;
                 sleIssuance->setFieldU64(

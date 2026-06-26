@@ -86,7 +86,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             if (ctx.view.rules().enabled(featureConfidentialTransfer))
             {
                 auto const sleMptIssuance =
-                    ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                    ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
 
                 // if there still existing encrypted balances of MPT in
                 // circulation

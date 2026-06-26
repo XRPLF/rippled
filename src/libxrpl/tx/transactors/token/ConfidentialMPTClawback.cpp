@@ -68,7 +68,7 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Check if MPT issuance exists
     auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
-    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -127,7 +127,7 @@ ConfidentialMPTClawback::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const holder = ctx_.tx[sfHolder];
 
-    auto sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
+    auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     auto sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
 
     if (!sleIssuance || !sleHolderMPToken)
