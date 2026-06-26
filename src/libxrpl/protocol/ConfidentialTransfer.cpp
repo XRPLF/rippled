@@ -1,9 +1,11 @@
 #include <xrpl/protocol/ConfidentialTransfer.h>
 
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -197,6 +199,8 @@ homomorphicAdd(Slice const& a, Slice const& b)
             secp256k1Context(), &sum.c1, &sum.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
     {
+        JLOG(debugLog().error()) << "homomorphicAdd: secp256k1_elgamal_add failed"
+                                 << " a=" << strHex(a) << " b=" << strHex(b);
         return std::nullopt;
     }
 
@@ -220,6 +224,8 @@ homomorphicSubtract(Slice const& a, Slice const& b)
             secp256k1Context(), &diff.c1, &diff.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
     {
+        JLOG(debugLog().error()) << "homomorphicSubtract: secp256k1_elgamal_subtract failed"
+                                 << " a=" << strHex(a) << " b=" << strHex(b);
         return std::nullopt;
     }
 
@@ -234,18 +240,6 @@ rerandomizeCiphertext(Slice const& ciphertext, Slice const& pubKeySlice, Slice c
         return std::nullopt;
 
     return homomorphicAdd(ciphertext, *zero);
-}
-
-Buffer
-generateBlindingFactor()
-{
-    unsigned char blindingFactor[kEcBlindingFactorLength];
-
-    // todo: might need to be updated using another RNG
-    if (RAND_bytes(blindingFactor, kEcBlindingFactorLength) != 1)
-        Throw<std::runtime_error>("Failed to generate random number");
-
-    return Buffer(blindingFactor, kEcBlindingFactorLength);
 }
 
 std::optional<Buffer>

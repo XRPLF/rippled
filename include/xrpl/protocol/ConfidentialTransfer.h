@@ -357,19 +357,6 @@ verifyClawbackProof(
     uint256 const& contextHash);
 
 /**
- * @brief Generates a cryptographically secure blinding factor
- * (size=xrpl::kEcBlindingFactorLength).
- *
- * Produces random bytes suitable for use as an ElGamal blinding factor
- * or Pedersen commitment randomness.
- *
- * @return A buffer containing the random blinding factor
- *         (size=xrpl::kEcBlindingFactorLength).
- */
-Buffer
-generateBlindingFactor();
-
-/**
  * @brief Verifies all zero-knowledge proofs for a ConfidentialMPTSend transaction.
  *
  * This function calls mpt_verify_send_proof API in the mpt-crypto utility lib, which verifies the
