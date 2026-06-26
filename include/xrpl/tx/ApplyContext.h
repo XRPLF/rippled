@@ -115,6 +115,7 @@ public:
     inline ApplyViewContext&
     getApplyViewContext()
     {
+        XRPL_ASSERT(&viewCtx_.view == &view_, "Previous view discarded");
         return viewCtx_;
     }
 
