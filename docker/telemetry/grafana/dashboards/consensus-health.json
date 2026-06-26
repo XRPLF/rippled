@@ -235,7 +235,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.round_time_ms, .5)",
@@ -245,7 +245,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "refId": "B",
@@ -288,7 +288,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.round_time_ms)",
@@ -337,7 +337,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "refId": "A",
@@ -381,7 +381,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.round\" && resource.service.instance.id=~\"$node\"} | quantile_over_time(span.previous_round_time_ms, .95)",
@@ -676,7 +676,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_time_vote_bins)",
@@ -686,7 +686,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | avg_over_time(span.close_resolution_ms)",
@@ -734,7 +734,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.resolution_direction=~\"$resolution_direction\"} | count_over_time() by (span.resolution_direction)",
@@ -805,7 +805,7 @@
         {
           "datasource": {
             "type": "tempo",
-            "uid": "tempo"
+            "uid": "${DS_TEMPO}"
           },
           "queryType": "traceql",
           "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\"} | count_over_time() by (span.close_time_vote_bins)",
@@ -1062,6 +1062,32 @@
   "templating": {
     "list": [
       {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 2,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
+        "name": "DS_TEMPO",
+        "type": "datasource",
+        "label": "Tempo",
+        "query": "tempo",
+        "regex": "",
+        "current": {},
+        "hide": 2,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
         "name": "node",
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
@@ -1069,7 +1095,7 @@
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",
@@ -1089,7 +1115,7 @@
         "query": "label_values(traces_span_metrics_calls_total{span_name=\"consensus.ledger_close\"}, consensus_mode)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",

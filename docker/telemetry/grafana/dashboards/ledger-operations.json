@@ -309,6 +309,19 @@
   "templating": {
     "list": [
       {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 2,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
         "name": "node",
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
@@ -316,7 +329,7 @@
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",

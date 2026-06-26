@@ -775,6 +775,19 @@
   "templating": {
     "list": [
       {
+        "name": "DS_PROMETHEUS",
+        "type": "datasource",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "regex": "",
+        "current": {},
+        "hide": 2,
+        "refresh": 1,
+        "includeAll": false,
+        "multi": false,
+        "options": []
+      },
+      {
         "name": "node",
         "label": "Node",
         "description": "Filter by rippled node (service.instance.id)",
@@ -782,7 +795,7 @@
         "query": "label_values(xrpld_Peer_Finder_Active_Inbound_Peers, exported_instance)",
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${DS_PROMETHEUS}"
         },
         "includeAll": true,
         "allValue": ".*",

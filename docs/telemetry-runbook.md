@@ -42,6 +42,39 @@ cmake --preset default -Dtelemetry=ON
 cmake --build --preset default
 ```
 
+### 4. Run against a live network
+
+Two ready-made configs connect a tracking node (no validator credentials) to a
+public network with all tracing and native metrics enabled:
+
+| Config                                         | Network |
+| ---------------------------------------------- | ------- |
+| `docker/telemetry/xrpld-telemetry.cfg`         | Devnet  |
+| `docker/telemetry/xrpld-telemetry-mainnet.cfg` | Mainnet |
+
+```bash
+.build/xrpld --conf docker/telemetry/xrpld-telemetry-mainnet.cfg
+```
+
+Both set `[insight] server=otel` (native metrics → collector → Prometheus, which
+drives the dashboards) and `service_instance_id`, exposed by Prometheus as the
+`exported_instance` label that the `$node` dashboard variable filters on. The
+mainnet config logs to `/home/pratik/xrpld-logs/mainnet/debug.log` — the path
+the collector's filelog receiver tails for log-trace correlation.
+
+Metrics begin flowing as soon as the node connects to peers (`server_state`
+≥ `connected`); full ledger and consensus panels populate after sync
+(`server_state` = `full`). Check progress with:
+
+```bash
+curl -s http://localhost:5005 -d '{"method":"server_info"}' |
+    jq '.result.info | {server_state, peers, complete_ledgers}'
+```
+
+> Mainnet sync is bandwidth- and disk-heavy. For a quick check use the devnet
+> config or the standalone test in `docker/telemetry/TESTING.md`, which
+> generates spans without waiting for a live sync.
+
 ## Configuration Reference
 
 | Option                     | Default                           | Description                                               |
@@ -123,6 +156,36 @@ remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
 > **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
 > logging on (at least `warning` level) so the collector's filelog receiver
 > has a `debug.log` to tail. Traces and metrics are unaffected by log level.
+
+### Importing dashboards to Grafana Cloud
+
+Shipping data (above) is independent of installing the dashboards. The local
+stack auto-provisions dashboards from a mounted folder
+(`grafana/provisioning/dashboards/dashboards.yaml`, `type: file`); Grafana
+Cloud cannot read your filesystem, so its dashboards must be imported over the
+HTTP API or the UI.
+
+The dashboard JSON in `docker/telemetry/grafana/dashboards/` references its
+backends through datasource **template variables** (`${DS_PROMETHEUS}`,
+`${DS_TEMPO}`) rather than fixed UIDs. On import, Grafana binds each variable
+to a datasource of the matching type — auto-selecting it when only one exists
+(the usual case: one Mimir, one Tempo). This is what makes the same files work
+unchanged on both the local stack and Cloud.
+
+> Dashboards are parameterized by `grafana/parameterize-datasources.py`. If you
+> add a dashboard exported with hardcoded UIDs, re-run that script (idempotent)
+> before committing so it stays portable.
+
+To import:
+
+1. In Grafana Cloud, go to **Dashboards → New → Import**.
+2. Upload a file from `docker/telemetry/grafana/dashboards/` (or paste its
+   JSON), then click **Load**.
+3. At the datasource prompt, confirm the auto-selected **Prometheus/Mimir**
+   datasource — and **Tempo** for dashboards that query traces — then
+   **Import**.
+4. Repeat per dashboard. Only `consensus-health` uses Tempo; the rest need
+   only the Prometheus/Mimir datasource.
 
 ## Span Reference
 
