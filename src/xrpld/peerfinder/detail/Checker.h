@@ -34,8 +34,8 @@ private:
     template <class Handler>
     struct AsyncOp : BasicAsyncOp
     {
-        using socket_type = typename Protocol::socket;
-        using endpoint_type = typename Protocol::endpoint;
+        using socket_type = Protocol::socket;
+        using endpoint_type = Protocol::endpoint;
 
         Checker& checker;
         socket_type socket;
@@ -57,8 +57,8 @@ private:
 
     //--------------------------------------------------------------------------
 
-    using list_type = typename boost::intrusive::
-        make_list<BasicAsyncOp, boost::intrusive::constant_time_size<true>>::type;
+    using list_type =
+        boost::intrusive::make_list<BasicAsyncOp, boost::intrusive::constant_time_size<true>>::type;
 
     std::mutex mutex_;
     std::condition_variable cond_;

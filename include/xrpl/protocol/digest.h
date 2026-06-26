@@ -206,7 +206,7 @@ sha512Half(Args const&... args)
     sha512_half_hasher h;
     using beast::hash_append;
     hash_append(h, args...);
-    return static_cast<typename sha512_half_hasher::result_type>(h);
+    return static_cast<sha512_half_hasher::result_type>(h);
 }
 
 /** Returns the SHA512-Half of a series of objects.
@@ -222,7 +222,7 @@ sha512HalfS(Args const&... args)
     sha512_half_hasher_s h;
     using beast::hash_append;
     hash_append(h, args...);
-    return static_cast<typename sha512_half_hasher_s::result_type>(h);
+    return static_cast<sha512_half_hasher_s::result_type>(h);
 }
 
 }  // namespace xrpl

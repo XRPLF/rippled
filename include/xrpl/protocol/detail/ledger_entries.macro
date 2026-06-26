@@ -21,7 +21,7 @@
 
 /** A ledger object which identifies an offer to buy or sell an NFT.
 
-    \sa keylet::nftoffer
+    \sa keylet::nftokenOffer
  */
 LEDGER_ENTRY(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, nft_offer, ({
     {sfOwner,                SoeRequired},
@@ -84,7 +84,7 @@ LEDGER_ENTRY(ltNEGATIVE_UNL, 0x004e, NegativeUNL, nunl, ({
 
 /** A ledger object which contains a list of NFTs
 
-    \sa keylet::nftpageMin, keylet::nftpageMax, keylet::nftpage
+    \sa keylet::nftokenPageMin, keylet::nftokenPageMax, keylet::nftokenPage
  */
 LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
     {sfPreviousPageMin,      SoeOptional},
@@ -96,7 +96,7 @@ LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
 
 /** A ledger object which contains a signer list for an account.
 
-    \sa keylet::signers
+    \sa keylet::signerList
  */
 // All fields are SoeRequired because there is always a SignerEntries.
 // If there are no SignerEntries the node is deleted.
@@ -112,7 +112,7 @@ LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, ({
 
 /** A ledger object which describes a ticket.
 
-    \sa keylet::kTicket
+    \sa keylet::ticket
  */
 LEDGER_ENTRY(ltTICKET, 0x0054, Ticket, ticket, ({
     {sfAccount,              SoeRequired},
@@ -272,7 +272,7 @@ LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, xchain_owned_c
 
     @note Per Vinnie Falco this should be renamed to ltTRUST_LINE
 
-    \sa keylet::line
+    \sa keylet::trustLine
  */
 LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
     {sfBalance,              SoeRequired},
@@ -292,7 +292,7 @@ LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
 
     \note This is a singleton: only one such object exists in the ledger.
 
-    \sa keylet::fees
+    \sa keylet::feeSettings
  */
 LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
     // Old version uses raw numbers
@@ -346,7 +346,7 @@ LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
 
 /** A ledger object describing a single unidirectional XRP payment channel.
 
-    \sa keylet::payChan
+    \sa keylet::payChannel
  */
 LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, payment_channel, ({
     {sfAccount,              SoeRequired},
@@ -384,7 +384,7 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
 }))
 
 /** A ledger object which tracks MPTokenIssuance
-    \sa keylet::mptIssuance
+    \sa keylet::mptokenIssuance
  */
 LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfIssuer,                   SoeRequired},
@@ -499,7 +499,7 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
 
 /** A ledger object representing a loan broker
 
-    \sa keylet::loanbroker
+    \sa keylet::loanBroker
  */
 LEDGER_ENTRY(ltLOAN_BROKER, 0x0088, LoanBroker, loan_broker, ({
     {sfPreviousTxnID,        SoeRequired},
