@@ -350,7 +350,7 @@ checkInsufficientReserve(
         // A reserve-sponsored tx must carry a sponsor signature
         // (cosigning path) and/or have a pre-existing sponsorship SLE
         // (prefunded path). Absence of both is an internal invariant break.
-        if (!sle && !tx.isFieldPresent(sfSponsorSignature))
+        if (isReserveSponsored(tx) && !sle && !tx.isFieldPresent(sfSponsorSignature))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (sle)
