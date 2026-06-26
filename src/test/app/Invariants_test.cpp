@@ -5030,7 +5030,7 @@ class Invariants_test : public beast::unit_test::Suite
             precloseConfidential);
 
         doInvariantCheck(
-            {"MPToken auditor encrypted field without core encrypted fields"},
+            {"MPToken encrypted field existence inconsistency"},
             [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
                 if (!sleToken)
