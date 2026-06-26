@@ -64,6 +64,66 @@ cmake --build --preset default
 | `tls_client_cert`          | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way TLS     |
 | `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`                   |
 
+## Exporting to Grafana Cloud
+
+The collector can ship traces, metrics, and logs to a hosted **Grafana
+Cloud** stack instead of (or alongside) the local Tempo/Prometheus/Loki
+backends. This is a runtime choice — no xrpld rebuild and no change to the
+base stack. xrpld still exports to the local collector exactly as before;
+the collector adds one OTLP/HTTP exporter that forwards all three signals to
+the Grafana Cloud OTLP gateway, which fans them out to hosted Tempo, Mimir,
+and Loki.
+
+### Credentials
+
+Find these under **Grafana Cloud → Connections → OpenTelemetry (OTLP)**:
+
+| Value                         | Used as           | Notes                                              |
+| ----------------------------- | ----------------- | -------------------------------------------------- |
+| `GRAFANA_CLOUD_OTLP_ENDPOINT` | exporter endpoint | Full gateway URL incl. `/otlp` path                |
+| `GRAFANA_CLOUD_INSTANCE_ID`   | Basic-auth user   | Numeric stack/instance id                          |
+| `GRAFANA_CLOUD_API_TOKEN`     | Basic-auth pass   | Access-policy token with `*:write` for all signals |
+
+### Enable
+
+1. Copy the template and fill in the three values:
+
+   ```bash
+   cp docker/telemetry/.env.grafanacloud.example docker/telemetry/.env.grafanacloud
+   # edit .env.grafanacloud — this file is gitignored, never commit tokens
+   ```
+
+2. Bring the stack up with the base file **and** the Grafana Cloud override:
+
+   ```bash
+   docker compose -f docker/telemetry/docker-compose.yml \
+       -f docker/telemetry/docker-compose.grafanacloud.yaml up -d
+   ```
+
+To return to local-only export, bring the stack up with just the base
+`docker-compose.yml`.
+
+### Files
+
+| File                                      | Role                                                                                           |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `otel-collector-config.grafanacloud.yaml` | Collector config: local backends **plus** a Grafana Cloud OTLP exporter on all three pipelines |
+| `docker-compose.grafanacloud.yaml`        | Override that mounts that config and injects the credentials                                   |
+| `.env.grafanacloud.example`               | Credential template (copy to `.env.grafanacloud`)                                              |
+
+### Local + cloud vs cloud-only
+
+The prepared config **dual-exports**: data goes to both the local stack and
+Grafana Cloud, so the on-box backends remain a fallback. For cloud-only,
+remove the local exporters (`debug`, `otlp/tempo`, `prometheus`,
+`otlphttp/loki`) from the respective pipelines in
+`otel-collector-config.grafanacloud.yaml`, leaving only
+`otlphttp/grafanacloud`.
+
+> **Note**: shipping logs to Grafana Cloud requires keeping xrpld file
+> logging on (at least `warning` level) so the collector's filelog receiver
+> has a `debug.log` to tail. Traces and metrics are unaffected by log level.
+
 ## Span Reference
 
 All spans instrumented in xrpld, grouped by subsystem:

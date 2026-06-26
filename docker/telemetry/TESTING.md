@@ -466,6 +466,65 @@ Pre-configured datasources:
 
 ---
 
+## Exporting to Grafana Cloud
+
+Instead of (or alongside) the local backends, the collector can forward
+traces, metrics, and logs to a hosted **Grafana Cloud** stack. This is a
+runtime choice layered on top of the base stack — xrpld and the base
+`docker-compose.yml` are unchanged.
+
+### Step 1: Get Grafana Cloud OTLP credentials
+
+From **Grafana Cloud → Connections → OpenTelemetry (OTLP)**, note the OTLP
+gateway endpoint (ends in `/otlp`), the numeric instance id, and an
+access-policy token with `metrics:write`, `traces:write`, and `logs:write`.
+
+### Step 2: Fill in the env file
+
+```bash
+cp docker/telemetry/.env.grafanacloud.example docker/telemetry/.env.grafanacloud
+# edit .env.grafanacloud:
+#   GRAFANA_CLOUD_OTLP_ENDPOINT=https://otlp-gateway-<zone>.grafana.net/otlp
+#   GRAFANA_CLOUD_INSTANCE_ID=<instance id>
+#   GRAFANA_CLOUD_API_TOKEN=<token>
+```
+
+`.env.grafanacloud` is gitignored — never commit real tokens.
+
+### Step 3: Start the stack with cloud export enabled
+
+```bash
+docker compose -f docker/telemetry/docker-compose.yml \
+    -f docker/telemetry/docker-compose.grafanacloud.yaml up -d
+```
+
+The override swaps the collector onto `otel-collector-config.grafanacloud.yaml`,
+which keeps the local Tempo/Prometheus/Loki exporters and adds one
+OTLP/HTTP exporter to Grafana Cloud on all three pipelines. Bring the stack
+up with just the base file to return to local-only.
+
+### Step 4: Verify data reaches Grafana Cloud
+
+After exercising RPC/transaction workflows (Tests 1 or 2), open your Grafana
+Cloud instance and confirm:
+
+- **Traces**: Explore → hosted Tempo datasource → search `{resource.service.name="xrpld"}`
+- **Metrics**: Explore → hosted Prometheus/Mimir → query `traces_span_metrics_calls_total`
+- **Logs**: Explore → hosted Loki → query `{job="xrpld"}` (requires `warning`+ file logging)
+
+If nothing appears, check the collector logs for auth/export errors:
+
+```bash
+docker compose -f docker/telemetry/docker-compose.yml \
+    -f docker/telemetry/docker-compose.grafanacloud.yaml \
+    logs otel-collector | grep -iE 'grafanacloud|401|403|export'
+```
+
+A `401`/`403` means the instance id or token is wrong; a connection error
+means the endpoint URL is wrong or missing the `/otlp` path.
+
+---
+
 ## Test 3: Log-Trace Correlation (Phase 8)
 
 Phase 8 injects `trace_id` and `span_id` into xrpld's log output when

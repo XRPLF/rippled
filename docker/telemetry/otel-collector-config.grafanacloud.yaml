@@ -1,0 +1,139 @@
+# OpenTelemetry Collector configuration — Grafana Cloud dual-export variant.
+#
+# Identical to otel-collector-config.yaml (local Tempo/Prometheus/Loki) but
+# ALSO ships all three signals to Grafana Cloud over a single OTLP/HTTP
+# endpoint. Local backends are kept so the on-box stack still works as a
+# fallback; remove the local exporters from the pipelines below if you want
+# cloud-only.
+#
+# Selecting this config is a RUNTIME choice — no code or image changes:
+#   Local only (default):
+#     docker compose -f docker/telemetry/docker-compose.yml up -d
+#   Local + Grafana Cloud:
+#     docker compose -f docker/telemetry/docker-compose.yml \
+#                    -f docker/telemetry/docker-compose.grafanacloud.yaml up -d
+#
+# The override file mounts THIS config over the collector's config path and
+# injects the three required secrets as environment variables:
+#   GRAFANA_CLOUD_OTLP_ENDPOINT  e.g. https://otlp-gateway-<zone>.grafana.net/otlp
+#   GRAFANA_CLOUD_INSTANCE_ID    numeric Grafana Cloud stack/instance id
+#   GRAFANA_CLOUD_API_TOKEN      a Cloud Access Policy token with metrics/traces/logs:write
+# Find all three under Grafana Cloud -> Connections -> "OpenTelemetry (OTLP)".
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  # Basic-auth for the Grafana Cloud OTLP gateway: username = instance id,
+  # password = API token. Values come from the container environment so no
+  # secret is committed to the repo.
+  basicauth/grafanacloud:
+    client_auth:
+      username: ${env:GRAFANA_CLOUD_INSTANCE_ID}
+      password: ${env:GRAFANA_CLOUD_API_TOKEN}
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  filelog:
+    include:
+      - /var/log/rippled/*/debug.log
+      - /var/log/rippled-integration/*/debug.log
+    operators:
+      - type: regex_parser
+        regex: '^(?P<timestamp>\S+\s+\S+)\s+\S+\s+(?:(?P<partition>\S+):)?(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
+        timestamp:
+          parse_from: attributes.timestamp
+          layout: "%Y-%b-%d %H:%M:%S.%f"
+          location: UTC
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 100
+  resource/logs:
+    attributes:
+      - key: service.name
+        value: xrpld
+        action: upsert
+      - key: job
+        value: xrpld
+        action: upsert
+
+connectors:
+  spanmetrics:
+    resource_metrics_key_attributes:
+      - service.instance.id
+    histogram:
+      explicit:
+        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
+    dimensions:
+      - name: command
+      - name: rpc_status
+      - name: consensus_mode
+      - name: close_time_correct
+      - name: consensus_state
+      - name: local
+      - name: suppressed
+      - name: proposal_trusted
+      - name: validation_trusted
+      - name: tx_type
+      - name: ter_result
+      - name: stage
+      - name: txq_status
+      - name: load_type
+      - name: is_batch
+      - name: mode_new
+      - name: consensus_stalled
+      - name: consensus_phase
+      - name: consensus_result
+      - name: method
+      - name: grpc_role
+      - name: grpc_status
+      - name: outcome
+      - name: acquire_reason
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+  prometheus:
+    endpoint: 0.0.0.0:8889
+  # Single OTLP/HTTP exporter to Grafana Cloud. The gateway fans the three
+  # signals out to hosted Tempo (traces), Mimir/Prometheus (metrics), and
+  # Loki (logs). Retry + queue guard against transient gateway errors.
+  otlphttp/grafanacloud:
+    endpoint: ${env:GRAFANA_CLOUD_OTLP_ENDPOINT}
+    auth:
+      authenticator: basicauth/grafanacloud
+    retry_on_failure:
+      enabled: true
+    sending_queue:
+      enabled: true
+
+service:
+  extensions: [health_check, basicauth/grafanacloud]
+  pipelines:
+    # Each pipeline keeps its local exporter(s) AND adds Grafana Cloud.
+    # For cloud-only, drop debug/otlp/tempo, prometheus, and otlphttp/loki
+    # from the respective exporter lists.
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug, otlp/tempo, spanmetrics, otlphttp/grafanacloud]
+    metrics:
+      receivers: [otlp, spanmetrics]
+      processors: [batch]
+      exporters: [prometheus, otlphttp/grafanacloud]
+    logs:
+      receivers: [filelog]
+      processors: [resource/logs, batch]
+      exporters: [otlphttp/loki, otlphttp/grafanacloud]
