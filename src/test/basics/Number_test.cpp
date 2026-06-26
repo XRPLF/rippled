@@ -1427,7 +1427,7 @@ public:
 
         test(Number(-2, 10), "-20000000000", __LINE__);
         test(Number(-2, 11), "-2e11", __LINE__);
-        test(Number(-2, 11) + 1, "-200000000001", __LINE__);
+        test(Number(-2, 11) - 1, "-200000000001", __LINE__);
 
         switch (scale)
         {
