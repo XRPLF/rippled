@@ -647,7 +647,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 lsfMPTCanTransfer | lsfMPTCanLock | lsfMPTCanHoldConfidentialBalance));
 
             // Verify keys are persisted on the issuance
-            auto const sle = env.le(keylet::mptIssuance(mptAlice.issuanceID()));
+            auto const sle = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
             BEAST_EXPECT(sle);
             BEAST_EXPECT(sle->isFieldPresent(sfIssuerEncryptionKey));
             BEAST_EXPECT(sle->isFieldPresent(sfAuditorEncryptionKey));
@@ -2778,7 +2778,7 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             BEAST_EXPECT(env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
                 auto const issuance = std::const_pointer_cast<SLE>(
-                    view.read(keylet::mptIssuance(mptAlice.issuanceID())));
+                    view.read(keylet::mptokenIssuance(mptAlice.issuanceID())));
                 if (!issuance)
                     return false;
 
@@ -3307,7 +3307,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
                 // Set lsfMPTCanHoldConfidentialBalance on the share issuance
                 // so the invariant allows encrypted fields on the MPToken
-                auto issuance = std::const_pointer_cast<SLE>(view.read(keylet::mptIssuance(share)));
+                auto issuance =
+                    std::const_pointer_cast<SLE>(view.read(keylet::mptokenIssuance(share)));
                 if (!issuance)
                     return false;
                 issuance->setFlag(lsfMPTCanHoldConfidentialBalance);

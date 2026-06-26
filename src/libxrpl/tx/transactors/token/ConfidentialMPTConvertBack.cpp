@@ -149,7 +149,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     auto const amount = ctx.tx[sfMPTAmount];
 
     // ensure that issuance exists
-    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -221,7 +221,7 @@ ConfidentialMPTConvertBack::doApply()
     if (!sleMptoken)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
+    auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
