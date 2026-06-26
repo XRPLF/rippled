@@ -543,7 +543,8 @@ ValidConfidentialMPToken::visitEntry(
             bool const hasPublicBalance = before->getFieldU64(sfMPTAmount) > 0;
             bool const hasEncryptedFields = before->isFieldPresent(sfConfidentialBalanceSpending) ||
                 before->isFieldPresent(sfConfidentialBalanceInbox) ||
-                before->isFieldPresent(sfIssuerEncryptedBalance);
+                before->isFieldPresent(sfIssuerEncryptedBalance) ||
+                before->isFieldPresent(sfAuditorEncryptedBalance);
 
             if (hasPublicBalance || hasEncryptedFields)
                 changes_[id].deletedWithEncrypted = true;
@@ -561,10 +562,12 @@ ValidConfidentialMPToken::visitEntry(
         bool const hasIssuerBalance = after->isFieldPresent(sfIssuerEncryptedBalance);
         bool const hasHolderInbox = after->isFieldPresent(sfConfidentialBalanceInbox);
         bool const hasHolderSpending = after->isFieldPresent(sfConfidentialBalanceSpending);
+        bool const hasAuditorBalance = after->isFieldPresent(sfAuditorEncryptedBalance);
 
-        // sfIssuerEncryptedBalance, sfConfidentialBalanceInbox, and sfConfidentialBalanceSpending
-        // must all exist or not exist same time.
-        if (hasHolderInbox != hasHolderSpending || hasHolderInbox != hasIssuerBalance)
+        // The core encrypted balances must all exist or not exist at the same time. The auditor
+        // balance is optional, but cannot exist without the core fields.
+        if (hasHolderInbox != hasHolderSpending || hasHolderInbox != hasIssuerBalance ||
+            (hasAuditorBalance && !hasIssuerBalance))
             changes_[id].badConsistency = true;
 
         auto const confidentialBalanceFieldChanged = [&before, &after](auto const& field) {

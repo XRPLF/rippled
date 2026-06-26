@@ -5029,6 +5029,24 @@ class Invariants_test : public beast::unit_test::Suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidential);
 
+        doInvariantCheck(
+            {"MPToken encrypted field existence inconsistency"},
+            [&mptID](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto sleToken = ac.view().peek(keylet::mptoken(mptID, a2.id()));
+                if (!sleToken)
+                    return false;
+                sleToken->makeFieldAbsent(sfIssuerEncryptedBalance);
+                sleToken->makeFieldAbsent(sfConfidentialBalanceInbox);
+                sleToken->makeFieldAbsent(sfConfidentialBalanceSpending);
+                sleToken->setFieldVL(sfAuditorEncryptedBalance, Blob{0x00});
+                ac.view().update(sleToken);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttMPTOKEN_AUTHORIZE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
         // requiresPrivacyFlag
         auto const precloseNoPrivacy = [&mptID](
                                            Account const& a1, Account const& a2, Env& env) -> bool {

@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
@@ -306,7 +307,13 @@ ConfidentialMPTSend::doApply()
         auto const curSpending = (*sleSenderMPToken)[sfConfidentialBalanceSpending];
         auto newSpending = homomorphicSubtract(curSpending, senderEc);
         if (!newSpending)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic subtract for sender spending balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleSenderMPToken)[sfConfidentialBalanceSpending] = std::move(*newSpending);
     }
@@ -316,7 +323,13 @@ ConfidentialMPTSend::doApply()
         auto const curIssuerEnc = (*sleSenderMPToken)[sfIssuerEncryptedBalance];
         auto newIssuerEnc = homomorphicSubtract(curIssuerEnc, issuerEc);
         if (!newIssuerEnc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic subtract for sender issuer balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleSenderMPToken)[sfIssuerEncryptedBalance] = std::move(*newIssuerEnc);
     }
@@ -327,7 +340,13 @@ ConfidentialMPTSend::doApply()
         auto const curAuditorEnc = (*sleSenderMPToken)[sfAuditorEncryptedBalance];
         auto newAuditorEnc = homomorphicSubtract(curAuditorEnc, *auditorEc);
         if (!newAuditorEnc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic subtract for sender auditor balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleSenderMPToken)[sfAuditorEncryptedBalance] = std::move(*newAuditorEnc);
     }
@@ -342,7 +361,13 @@ ConfidentialMPTSend::doApply()
         auto const curInbox = (*sleDestinationMPToken)[sfConfidentialBalanceInbox];
         auto newInbox = homomorphicAdd(curInbox, *rerandomizedDestEc);
         if (!newInbox)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic add for destination inbox.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleDestinationMPToken)[sfConfidentialBalanceInbox] = std::move(*newInbox);
     }
@@ -357,7 +382,13 @@ ConfidentialMPTSend::doApply()
         auto const curIssuerEnc = (*sleDestinationMPToken)[sfIssuerEncryptedBalance];
         auto newIssuerEnc = homomorphicAdd(curIssuerEnc, *rerandomizedIssuerEc);
         if (!newIssuerEnc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic add for destination issuer balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleDestinationMPToken)[sfIssuerEncryptedBalance] = std::move(*newIssuerEnc);
     }
@@ -373,7 +404,13 @@ ConfidentialMPTSend::doApply()
         auto const curAuditorEnc = (*sleDestinationMPToken)[sfAuditorEncryptedBalance];
         auto newAuditorEnc = homomorphicAdd(curAuditorEnc, *rerandomizedAuditorEc);
         if (!newAuditorEnc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic add for destination auditor balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleDestinationMPToken)[sfAuditorEncryptedBalance] = std::move(*newAuditorEnc);
     }

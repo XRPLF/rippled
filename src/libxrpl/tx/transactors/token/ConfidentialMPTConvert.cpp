@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -246,7 +247,13 @@ ConfidentialMPTConvert::doApply()
         {
             auto sum = homomorphicAdd(holderEc, (*sleMptoken)[sfConfidentialBalanceInbox]);
             if (!sum)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
+            {
+                // LCOV_EXCL_START
+                JLOG(ctx_.journal.error())
+                    << "ConfidentialMPTConvert failed homomorphic add for holder inbox.";
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
 
             (*sleMptoken)[sfConfidentialBalanceInbox] = std::move(*sum);
         }
@@ -255,7 +262,13 @@ ConfidentialMPTConvert::doApply()
         {
             auto sum = homomorphicAdd(issuerEc, (*sleMptoken)[sfIssuerEncryptedBalance]);
             if (!sum)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
+            {
+                // LCOV_EXCL_START
+                JLOG(ctx_.journal.error())
+                    << "ConfidentialMPTConvert failed homomorphic add for issuer balance.";
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
 
             (*sleMptoken)[sfIssuerEncryptedBalance] = std::move(*sum);
         }
@@ -268,7 +281,13 @@ ConfidentialMPTConvert::doApply()
 
             auto sum = homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance]);
             if (!sum)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
+            {
+                // LCOV_EXCL_START
+                JLOG(ctx_.journal.error())
+                    << "ConfidentialMPTConvert failed homomorphic add for auditor balance.";
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
 
             (*sleMptoken)[sfAuditorEncryptedBalance] = std::move(*sum);
         }

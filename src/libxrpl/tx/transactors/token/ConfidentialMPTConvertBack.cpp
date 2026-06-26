@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTConvertBack.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
@@ -245,7 +246,14 @@ ConfidentialMPTConvertBack::doApply()
         auto res = homomorphicSubtract(
             (*sleMptoken)[sfConfidentialBalanceSpending], ctx_.tx[sfHolderEncryptedAmount]);
         if (!res)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTConvertBack failed homomorphic subtract for holder spending "
+                   "balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleMptoken)[sfConfidentialBalanceSpending] = std::move(*res);
     }
@@ -255,7 +263,13 @@ ConfidentialMPTConvertBack::doApply()
         auto res = homomorphicSubtract(
             (*sleMptoken)[sfIssuerEncryptedBalance], ctx_.tx[sfIssuerEncryptedAmount]);
         if (!res)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTConvertBack failed homomorphic subtract for issuer balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleMptoken)[sfIssuerEncryptedBalance] = std::move(*res);
     }
@@ -265,7 +279,13 @@ ConfidentialMPTConvertBack::doApply()
         auto res = homomorphicSubtract(
             (*sleMptoken)[sfAuditorEncryptedBalance], ctx_.tx[sfAuditorEncryptedAmount]);
         if (!res)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTConvertBack failed homomorphic subtract for auditor balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleMptoken)[sfAuditorEncryptedBalance] = std::move(*res);
     }

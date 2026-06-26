@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
@@ -101,7 +102,13 @@ ConfidentialMPTMergeInbox::doApply()
     auto sum = homomorphicAdd(
         (*sleMptoken)[sfConfidentialBalanceSpending], (*sleMptoken)[sfConfidentialBalanceInbox]);
     if (!sum)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTMergeInbox failed homomorphic add for inbox merge.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     (*sleMptoken)[sfConfidentialBalanceSpending] = std::move(*sum);
 
