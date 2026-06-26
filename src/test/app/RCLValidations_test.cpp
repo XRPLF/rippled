@@ -97,7 +97,7 @@ class RCLValidations_test : public beast::unit_test::Suite
             auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             // Force a different hash on the first iteration
             next->updateSkipList();
-            BEAST_EXPECT(next->read(keylet::fees()));
+            BEAST_EXPECT(next->read(keylet::feeSettings()));
             if (forceHash)
             {
                 next->setImmutable();
