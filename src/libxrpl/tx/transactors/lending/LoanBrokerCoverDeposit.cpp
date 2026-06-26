@@ -51,7 +51,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
 
-    auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
+    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -139,7 +139,7 @@ LoanBrokerCoverDeposit::doApply()
     auto const& tx = ctx_.tx;
 
     auto const brokerID = tx[sfLoanBrokerID];
-    auto broker = view().peek(keylet::loanbroker(brokerID));
+    auto broker = view().peek(keylet::loanBroker(brokerID));
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
