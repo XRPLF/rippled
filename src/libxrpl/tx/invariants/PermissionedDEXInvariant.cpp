@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -19,6 +20,13 @@ namespace xrpl {
 void
 ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
+    auto const validType = [](SLE::const_ref sle) {
+        return !sle || sle->getType() == ltDIR_NODE || sle->getType() == ltOFFER;
+    };
+    XRPL_ASSERT(
+        validType(before) && validType(after),
+        "xrpl::ValidPermissionedDEX::visitEntry : directory node or offer input");
+
     if (after && after->getType() == ltDIR_NODE)
     {
         if (after->isFieldPresent(sfDomainID))

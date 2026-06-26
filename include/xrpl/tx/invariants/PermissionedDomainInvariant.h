@@ -4,6 +4,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 
 #include <vector>
 
@@ -31,6 +32,9 @@ class ValidPermissionedDomain
     std::vector<SleStatus> sleStatus_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes =
+        VisitLedgerEntryTypes<ltPERMISSIONED_DOMAIN>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 

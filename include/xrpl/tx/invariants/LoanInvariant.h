@@ -4,6 +4,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 
 #include <vector>
 
@@ -22,6 +23,8 @@ class ValidLoan
     std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> loans_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltLOAN>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 

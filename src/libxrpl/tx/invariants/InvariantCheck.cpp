@@ -188,6 +188,11 @@ XRPNotCreated::finalize(
 void
 XRPBalanceChecks::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
+    XRPL_ASSERT(
+        (!before || before->getType() == ltACCOUNT_ROOT) &&
+            (!after || after->getType() == ltACCOUNT_ROOT),
+        "xrpl::XRPBalanceChecks::visitEntry : account root input");
+
     auto isBad = [](STAmount const& balance) {
         if (!balance.native())
             return true;
@@ -206,10 +211,10 @@ XRPBalanceChecks::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
         return false;
     };
 
-    if (before && before->getType() == ltACCOUNT_ROOT)
+    if (before)
         bad_ |= isBad((*before)[sfBalance]);
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
+    if (after)
         bad_ |= isBad((*after)[sfBalance]);
 }
 
@@ -235,6 +240,10 @@ XRPBalanceChecks::finalize(
 void
 NoBadOffers::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
+    XRPL_ASSERT(
+        (!before || before->getType() == ltOFFER) && (!after || after->getType() == ltOFFER),
+        "xrpl::NoBadOffers::visitEntry : offer input");
+
     auto isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
         if (pays < beast::kZero)
@@ -247,10 +256,10 @@ NoBadOffers::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref aft
         return pays.native() && gets.native();
     };
 
-    if (before && before->getType() == ltOFFER)
+    if (before)
         bad_ |= isBad((*before)[sfTakerPays], (*before)[sfTakerGets]);
 
-    if (after && after->getType() == ltOFFER)
+    if (after)
         bad_ |= isBad((*after)[sfTakerPays], (*after)[sfTakerGets]);
 }
 
@@ -276,6 +285,14 @@ NoBadOffers::finalize(
 void
 NoZeroEscrow::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
+    auto const validType = [](SLE::const_ref sle) {
+        return !sle || sle->getType() == ltESCROW || sle->getType() == ltMPTOKEN_ISSUANCE ||
+            sle->getType() == ltMPTOKEN;
+    };
+    XRPL_ASSERT(
+        validType(before) && validType(after),
+        "xrpl::NoZeroEscrow::visitEntry : escrow or mpt input");
+
     auto isBad = [](STAmount const& amount) {
         // XRP case
         if (amount.native())
@@ -380,7 +397,11 @@ NoZeroEscrow::finalize(
 void
 AccountRootsNotDeleted::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref)
 {
-    if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
+    XRPL_ASSERT(
+        !before || before->getType() == ltACCOUNT_ROOT,
+        "xrpl::AccountRootsNotDeleted::visitEntry : account root input");
+
+    if (isDelete && before)
         accountsDeleted_++;
 }
 
@@ -432,7 +453,12 @@ AccountRootsNotDeleted::finalize(
 void
 AccountRootsDeletedClean::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
+    XRPL_ASSERT(
+        (!before || before->getType() == ltACCOUNT_ROOT) &&
+            (!after || after->getType() == ltACCOUNT_ROOT),
+        "xrpl::AccountRootsDeletedClean::visitEntry : account root input");
+
+    if (isDelete && before)
         accountsDeleted_.emplace_back(before, after);
 }
 
@@ -603,9 +629,13 @@ LedgerEntryTypesMatch::finalize(
 void
 NoXRPTrustLines::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
 {
+    XRPL_ASSERT(
+        !after || after->getType() == ltRIPPLE_STATE,
+        "xrpl::NoXRPTrustLines::visitEntry : ripple state input");
+
     bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
-    if (after && after->getType() == ltRIPPLE_STATE)
+    if (after)
     {
         // checking the issue directly here instead of
         // relying on .native() just in case native somehow
@@ -643,7 +673,11 @@ NoXRPTrustLines::finalize(
 void
 NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(bool, SLE::const_ref, SLE::const_ref after)
 {
-    if (after && after->getType() == ltRIPPLE_STATE)
+    XRPL_ASSERT(
+        !after || after->getType() == ltRIPPLE_STATE,
+        "xrpl::NoDeepFreezeTrustLinesWithoutFreeze::visitEntry : ripple state input");
+
+    if (after)
     {
         bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
@@ -686,7 +720,12 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 void
 ValidNewAccountRoot::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
-    if (!before && after->getType() == ltACCOUNT_ROOT)
+    XRPL_ASSERT(
+        (!before || before->getType() == ltACCOUNT_ROOT) &&
+            (!after || after->getType() == ltACCOUNT_ROOT),
+        "xrpl::ValidNewAccountRoot::visitEntry : account root input");
+
+    if (!before && after)
     {
         accountsCreated_++;
         accountSeq_ = (*after)[sfSequence];
@@ -760,6 +799,10 @@ ValidNewAccountRoot::finalize(
 void
 ValidClawback::visitEntry(bool, SLE::const_ref before, SLE::const_ref)
 {
+    XRPL_ASSERT(
+        !before || before->getType() == ltRIPPLE_STATE || before->getType() == ltMPTOKEN,
+        "xrpl::ValidClawback::visitEntry : ripple state or mptoken input");
+
     if (before && before->getType() == ltRIPPLE_STATE)
         trustlinesChanged_++;
 
@@ -845,13 +888,18 @@ ValidClawback::finalize(
 void
 ValidPseudoAccounts::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
+    XRPL_ASSERT(
+        (!before || before->getType() == ltACCOUNT_ROOT) &&
+            (!after || after->getType() == ltACCOUNT_ROOT),
+        "xrpl::ValidPseudoAccounts::visitEntry : account root input");
+
     if (isDelete)
     {
         // Deletion is ignored
         return;
     }
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
+    if (after)
     {
         bool const isPseudo = [&]() {
             // isPseudoAccount checks that any of the pseudo-account fields are

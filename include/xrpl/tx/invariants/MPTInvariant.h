@@ -5,6 +5,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 
 #include <cstdint>
 #include <memory>
@@ -36,6 +37,9 @@ class ValidMPTIssuance
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes =
+        VisitLedgerEntryTypes<ltMPTOKEN_ISSUANCE, ltMPTOKEN, ltRIPPLE_STATE>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -64,6 +68,9 @@ class ValidMPTPayment
     hash_map<uint192, MPTData> data_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes =
+        VisitLedgerEntryTypes<ltMPTOKEN_ISSUANCE, ltMPTOKEN>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -85,6 +92,8 @@ class ValidMPTTransfer
     hash_map<uint256, bool> deletedAuthorized_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltMPTOKEN>{};
+
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 

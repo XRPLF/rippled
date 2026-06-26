@@ -8,6 +8,7 @@
 #include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
 #include <xrpl/tx/invariants/LoanInvariant.h>
 #include <xrpl/tx/invariants/MPTInvariant.h>
@@ -107,6 +108,8 @@ public:
 class TransactionFeeCheck
 {
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitNoLedgerEntryTypes{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -127,6 +130,8 @@ class XRPNotCreated
     std::int64_t drops_ = 0;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitAllLedgerEntryTypes{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -147,6 +152,8 @@ class AccountRootsNotDeleted
     std::uint32_t accountsDeleted_ = 0;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltACCOUNT_ROOT>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -174,6 +181,8 @@ class AccountRootsDeletedClean
     std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> accountsDeleted_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltACCOUNT_ROOT>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -193,6 +202,8 @@ class XRPBalanceChecks
     bool bad_ = false;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltACCOUNT_ROOT>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -210,6 +221,8 @@ class LedgerEntryTypesMatch
     bool invalidTypeAdded_ = false;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitAllLedgerEntryTypes{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -228,6 +241,8 @@ class NoXRPTrustLines
     bool xrpTrustLine_ = false;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltRIPPLE_STATE>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -247,6 +262,8 @@ class NoDeepFreezeTrustLinesWithoutFreeze
     bool deepFreezeWithoutFreeze_ = false;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltRIPPLE_STATE>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -266,6 +283,8 @@ class NoBadOffers
     bool bad_ = false;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltOFFER>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -282,6 +301,9 @@ class NoZeroEscrow
     bool bad_ = false;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes =
+        VisitLedgerEntryTypes<ltESCROW, ltMPTOKEN_ISSUANCE, ltMPTOKEN>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -302,6 +324,8 @@ class ValidNewAccountRoot
     std::uint32_t flags_ = 0;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltACCOUNT_ROOT>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -323,6 +347,9 @@ class ValidClawback
     std::uint32_t mptokensChanged_ = 0;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes =
+        VisitLedgerEntryTypes<ltRIPPLE_STATE, ltMPTOKEN>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -343,6 +370,8 @@ class ValidPseudoAccounts
     std::vector<std::string> errors_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<ltACCOUNT_ROOT>{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -363,6 +392,8 @@ class NoModifiedUnmodifiableFields
     std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitAllLedgerEntryTypes{};
+
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
@@ -378,6 +409,8 @@ class ValidAmounts
     std::vector<std::shared_ptr<SLE const>> afterEntries_;
 
 public:
+    static constexpr auto kRelevantLedgerEntryTypes = VisitAllLedgerEntryTypes{};
+
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 

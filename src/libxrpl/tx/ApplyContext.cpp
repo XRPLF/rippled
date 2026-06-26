@@ -8,21 +8,162 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <exception>
 #include <functional>
 #include <optional>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 namespace xrpl {
+
+namespace {
+
+template <class Checker>
+using RelevantLedgerEntryTypes = std::remove_cvref_t<decltype(Checker::kRelevantLedgerEntryTypes)>;
+
+template <class Checker>
+concept HasRelevantLedgerEntryTypes = requires { Checker::kRelevantLedgerEntryTypes; };
+
+template <class Checker>
+consteval bool
+hasInvariantVisitRoute()
+{
+    if constexpr (HasRelevantLedgerEntryTypes<Checker>)
+    {
+        using Types = RelevantLedgerEntryTypes<Checker>;
+        return Types::visitsAll || Types::visitsNone || !Types::empty;
+    }
+    return false;
+}
+
+template <std::size_t... Is>
+consteval bool
+allInvariantChecksHaveVisitRoutes(std::index_sequence<Is...>)
+{
+    return (hasInvariantVisitRoute<std::tuple_element_t<Is, InvariantChecks>>() && ...);
+}
+
+static_assert(
+    allInvariantChecksHaveVisitRoutes(
+        std::make_index_sequence<std::tuple_size_v<InvariantChecks>>{}),
+    "Every invariant check must declare ledger-entry visit routing.");
+
+template <class Checker>
+void
+visitAllEntryInvariantCheck(
+    InvariantChecks& checkers,
+    bool isDelete,
+    SLE::const_ref before,
+    SLE::const_ref after)
+{
+    if constexpr (RelevantLedgerEntryTypes<Checker>::visitsAll)
+        std::get<Checker>(checkers).visitEntry(isDelete, before, after);
+}
+
+template <std::size_t... Is>
+void
+visitAllEntryInvariantChecks(
+    InvariantChecks& checkers,
+    bool isDelete,
+    SLE::const_ref before,
+    SLE::const_ref after,
+    std::index_sequence<Is...>)
+{
+    (...,
+     visitAllEntryInvariantCheck<std::tuple_element_t<Is, InvariantChecks>>(
+         checkers, isDelete, before, after));
+}
+
+[[nodiscard]] std::optional<LedgerEntryType>
+entryTypeForMappedInvariants(SLE::const_ref before, SLE::const_ref after)
+{
+    if (before && after && before->getType() != after->getType())
+    {
+        // LedgerEntryTypesMatch runs as an all-entry invariant and reports this.
+        return std::nullopt;
+    }
+
+    if (after)
+        return after->getType();
+    if (before)
+        return before->getType();
+    return std::nullopt;
+}
+
+template <LedgerEntryType Type, class Checker>
+void
+visitLedgerTypeInvariantCheck(
+    InvariantChecks& checkers,
+    bool isDelete,
+    SLE::const_ref before,
+    SLE::const_ref after)
+{
+    using Types = RelevantLedgerEntryTypes<Checker>;
+    if constexpr (!Types::visitsAll && !Types::visitsNone && Types::template contains<Type>())
+    {
+        std::get<Checker>(checkers).visitEntry(isDelete, before, after);
+    }
+}
+
+template <LedgerEntryType Type, std::size_t... Is>
+void
+visitLedgerTypeInvariantChecks(
+    InvariantChecks& checkers,
+    bool isDelete,
+    SLE::const_ref before,
+    SLE::const_ref after,
+    std::index_sequence<Is...>)
+{
+    (...,
+     visitLedgerTypeInvariantCheck<Type, std::tuple_element_t<Is, InvariantChecks>>(
+         checkers, isDelete, before, after));
+}
+
+using LedgerTypeInvariantVisitor = void (*)(InvariantChecks&, bool, SLE::const_ref, SLE::const_ref);
+
+template <LedgerEntryType Type>
+void
+visitMappedLedgerTypeInvariantChecks(
+    InvariantChecks& checkers,
+    bool isDelete,
+    SLE::const_ref before,
+    SLE::const_ref after)
+{
+    visitLedgerTypeInvariantChecks<Type>(
+        checkers,
+        isDelete,
+        before,
+        after,
+        std::make_index_sequence<std::tuple_size_v<InvariantChecks>>{});
+}
+
+#pragma push_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY
+
+#define LEDGER_ENTRY(tag, ...)                              \
+    std::pair<LedgerEntryType, LedgerTypeInvariantVisitor>{ \
+        tag, &visitMappedLedgerTypeInvariantChecks<tag>},
+
+constexpr auto kLedgerTypeInvariantVisitors =
+    std::to_array<std::pair<LedgerEntryType, LedgerTypeInvariantVisitor>>({
+#include <xrpl/protocol/detail/ledger_entries.macro>
+    });
+
+#undef LEDGER_ENTRY
+#pragma pop_macro("LEDGER_ENTRY")
+
+}  // namespace
 
 ApplyContext::ApplyContext(
     ServiceRegistry& registry,
@@ -99,11 +240,25 @@ ApplyContext::checkInvariantsHelper(
         auto checkers = getInvariantChecks();
 
         // call each check's per-entry method
-        visit(
-            [&checkers](
-                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
-                (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
-            });
+        visit([&checkers](
+                  uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+            visitAllEntryInvariantChecks(
+                checkers,
+                isDelete,
+                before,
+                after,
+                std::make_index_sequence<std::tuple_size_v<InvariantChecks>>{});
+
+            if (auto const type = entryTypeForMappedInvariants(before, after))
+            {
+                auto const iter = std::find_if(
+                    kLedgerTypeInvariantVisitors.cbegin(),
+                    kLedgerTypeInvariantVisitors.cend(),
+                    [type](auto const& visitor) { return visitor.first == *type; });
+                if (iter != kLedgerTypeInvariantVisitors.cend())
+                    iter->second(checkers, isDelete, before, after);
+            }
+        });
 
         // Note: do not replace this logic with a `...&&` fold expression.
         // The fold expression will only run until the first check fails (it

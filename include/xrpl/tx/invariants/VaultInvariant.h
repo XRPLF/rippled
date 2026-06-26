@@ -9,6 +9,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 
 #include <optional>
 #include <unordered_map>
@@ -152,6 +153,13 @@ public:
     // Compute the coarsest scale required to represent all numbers
     [[nodiscard]] static std::int32_t
     computeCoarsestScale(std::vector<DeltaInfo> const& numbers);
+
+    static constexpr auto kRelevantLedgerEntryTypes = VisitLedgerEntryTypes<
+        ltVAULT,
+        ltMPTOKEN_ISSUANCE,
+        ltMPTOKEN,
+        ltACCOUNT_ROOT,
+        ltRIPPLE_STATE>{};
 
     void
     visitEntry(bool, SLE::const_ref, SLE::const_ref);

@@ -5,6 +5,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/invariants/InvariantEntryTypes.h>
 
 #include <optional>
 
@@ -21,6 +22,9 @@ class ValidAMM
 
 public:
     enum class ZeroAllowed : bool { No = false, Yes = true };
+
+    static constexpr auto kRelevantLedgerEntryTypes =
+        VisitLedgerEntryTypes<ltAMM, ltRIPPLE_STATE, ltACCOUNT_ROOT, ltMPTOKEN>{};
 
     ValidAMM() = default;
     void

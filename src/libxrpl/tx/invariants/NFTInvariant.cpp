@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -30,9 +31,10 @@ ValidNFTokenPage::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
     static constexpr uint256 const& kPageBits = nft::kPageMask;
     static constexpr uint256 kAccountBits = ~kPageBits;
 
-    if ((before && before->getType() != ltNFTOKEN_PAGE) ||
-        (after && after->getType() != ltNFTOKEN_PAGE))
-        return;
+    XRPL_ASSERT(
+        (!before || before->getType() == ltNFTOKEN_PAGE) &&
+            (!after || after->getType() == ltNFTOKEN_PAGE),
+        "xrpl::ValidNFTokenPage::visitEntry : nftoken page input");
 
     auto check = [this, isDelete](SLE::const_ref sle) {
         uint256 const account = sle->key() & kAccountBits;
@@ -185,13 +187,18 @@ ValidNFTokenPage::finalize(
 void
 NFTokenCountTracking::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
 {
-    if (before && before->getType() == ltACCOUNT_ROOT)
+    XRPL_ASSERT(
+        (!before || before->getType() == ltACCOUNT_ROOT) &&
+            (!after || after->getType() == ltACCOUNT_ROOT),
+        "xrpl::NFTokenCountTracking::visitEntry : account root input");
+
+    if (before)
     {
         beforeMintedTotal_ += (*before)[~sfMintedNFTokens].value_or(0);
         beforeBurnedTotal_ += (*before)[~sfBurnedNFTokens].value_or(0);
     }
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
+    if (after)
     {
         afterMintedTotal_ += (*after)[~sfMintedNFTokens].value_or(0);
         afterBurnedTotal_ += (*after)[~sfBurnedNFTokens].value_or(0);
