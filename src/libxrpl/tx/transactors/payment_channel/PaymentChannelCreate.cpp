@@ -81,17 +81,13 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureSponsor))
     {
         auto const balance = (*sle)[sfBalance];
-        auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
-        if (auto const ret =
-                checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, *sponsorSle, 1, 0, ctx.j);
-            !isTesSuccess(ret))
-            return ret;
+        auto const fees = ctx.view.fees();
+        auto const reserve = fees.reserve + fees.increment * ((*sle)[sfOwnerCount] + 1);
 
-        if (auto const ret = checkInsufficientReserve(
-                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], *sponsorSle, 1, 0, ctx.j);
-            !isTesSuccess(ret))
+        if (balance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+
+        if (balance < reserve + ctx.tx[sfAmount])
             return tecUNFUNDED;
     }
 

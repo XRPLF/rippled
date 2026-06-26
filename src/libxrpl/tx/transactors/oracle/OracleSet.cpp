@@ -183,14 +183,13 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 
     if (!ctx.view.rules().enabled(featureSponsor))
     {
+        auto const fees = ctx.view.fees();
+        auto const reserve =
+            fees.reserve + fees.increment * (sleSetter->getFieldU32(sfOwnerCount) + adjustReserve);
         auto const& balance = sleSetter->getFieldAmount(sfBalance);
-        auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
-        if (auto const ret = checkInsufficientReserve(
-                ctx.view, ctx.tx, sleSetter, balance, *sponsorSle, adjustReserve, 0, ctx.j);
-            !isTesSuccess(ret))
-            return ret;
+
+        if (balance < reserve)
+            return tecINSUFFICIENT_RESERVE;
     }
 
     return tesSUCCESS;
