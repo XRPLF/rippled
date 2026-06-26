@@ -25,7 +25,7 @@ public:
     static constexpr auto kDefaultCacheTargetSize = 0;
 
     using key_type = uint256;
-    using clock_type = typename CacheType::clock_type;
+    using clock_type = CacheType::clock_type;
 
     /** Construct the cache.
 

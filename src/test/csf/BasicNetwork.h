@@ -64,9 +64,9 @@ class BasicNetwork
 
     using clock_type = Scheduler::clock_type;
 
-    using duration = typename clock_type::duration;
+    using duration = clock_type::duration;
 
-    using time_point = typename clock_type::time_point;
+    using time_point = clock_type::time_point;
 
     struct LinkType
     {

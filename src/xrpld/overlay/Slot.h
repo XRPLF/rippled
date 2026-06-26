@@ -82,7 +82,7 @@ class Slot final
 private:
     friend class Slots<ClockType>;
     using id_t = Peer::id_t;
-    using time_point = typename ClockType::time_point;
+    using time_point = ClockType::time_point;
 
     // a callback to report ignored squelches
     using ignored_squelch_callback = std::function<void()>;
@@ -217,7 +217,7 @@ private:
     std::uint16_t reachedThreshold_{0};
 
     // last time peers were selected, used to age the slot
-    typename ClockType::time_point lastSelected_;
+    ClockType::time_point lastSelected_;
 
     SlotState state_{SlotState::Counting};  // slot's state
     SquelchHandler const& handler_;         // squelch/unsquelch handler
@@ -483,7 +483,7 @@ Slot<ClockType>::notInState(PeerState state) const
 }
 
 template <typename ClockType>
-std::set<typename Peer::id_t>
+std::set<Peer::id_t>
 Slot<ClockType>::getSelected() const
 {
     std::set<id_t> r;
@@ -496,7 +496,7 @@ Slot<ClockType>::getSelected() const
 }
 
 template <typename ClockType>
-std::unordered_map<typename Peer::id_t, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
+std::unordered_map<Peer::id_t, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
 Slot<ClockType>::getPeers() const
 {
     using namespace std::chrono;
@@ -526,8 +526,8 @@ Slot<ClockType>::getPeers() const
 template <typename ClockType>
 class Slots final
 {
-    using time_point = typename ClockType::time_point;
-    using id_t = typename Peer::id_t;
+    using time_point = ClockType::time_point;
+    using id_t = Peer::id_t;
     using messages = beast::aged_unordered_map<
         uint256,
         std::unordered_set<Peer::id_t>,
@@ -600,7 +600,7 @@ public:
         PublicKey const& validator,
         id_t id,
         protocol::MessageType type,
-        typename Slot<ClockType>::ignored_squelch_callback callback);
+        Slot<ClockType>::ignored_squelch_callback callback);
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator.
@@ -651,9 +651,8 @@ public:
     /** Get peers info. Return map of peer's state, count, and squelch
      * expiration milliseconds.
      */
-    std::
-        unordered_map<typename Peer::id_t, std::tuple<PeerState, uint16_t, uint32_t, std::uint32_t>>
-        getPeers(PublicKey const& validator)
+    std::unordered_map<Peer::id_t, std::tuple<PeerState, uint16_t, uint32_t, std::uint32_t>>
+    getPeers(PublicKey const& validator)
     {
         auto const& it = slots_.find(validator);
         if (it != slots_.end())
@@ -742,7 +741,7 @@ Slots<ClockType>::updateSlotAndSquelch(
     PublicKey const& validator,
     id_t id,
     protocol::MessageType type,
-    typename Slot<ClockType>::ignored_squelch_callback callback)
+    Slot<ClockType>::ignored_squelch_callback callback)
 {
     if (!addPeerMessage(key, id))
         return;
