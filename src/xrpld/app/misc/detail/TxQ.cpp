@@ -1282,6 +1282,13 @@ TxQ::apply(
         }
     }
 
+    // A Batch is never queued: it can advance the account sequence by more
+    // than one, which the TxQ's single-sequence forecast cannot model. It must
+    // apply straight to the open ledger or not at all. (Fee and sequence errors
+    // are already returned above; only an otherwise-queueable Batch reaches here.)
+    if (tx->getTxnType() == ttBATCH)
+        return {telCAN_NOT_QUEUE, false};
+
     // Hold the transaction in the queue.
     if (replacedTxIter)
     {
