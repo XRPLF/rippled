@@ -42,7 +42,7 @@ class NullTelemetry : public Telemetry
     Setup const setup_;
 
 public:
-    explicit NullTelemetry(Setup setup) : setup_(std::move(setup))
+    explicit NullTelemetry(Setup setup) : setup_{std::move(setup)}
     {
     }
 
