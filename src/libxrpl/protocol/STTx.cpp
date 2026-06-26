@@ -298,7 +298,7 @@ STTx::checkBatchSign(Rules const& rules) const
             // LCOV_EXCL_STOP
         }
         if (!isFieldPresent(sfBatchSigners))
-            return std::unexpected("Missing BatchSigners field.");
+            return std::unexpected("Missing BatchSigners field.");  // LCOV_EXCL_LINE
         STArray const& signers{getFieldArray(sfBatchSigners)};
         for (auto const& signer : signers)
         {
@@ -313,7 +313,9 @@ STTx::checkBatchSign(Rules const& rules) const
     }
     catch (std::exception const& e)
     {
+        // LCOV_EXCL_START
         return std::unexpected(std::string("Internal batch signature check failure: ") + e.what());
+        // LCOV_EXCL_STOP
     }
 }
 
