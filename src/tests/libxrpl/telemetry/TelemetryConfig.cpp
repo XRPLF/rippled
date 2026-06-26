@@ -34,7 +34,7 @@ TEST(TelemetryConfig, setup_defaults)
 TEST(TelemetryConfig, parse_empty_section)
 {
     Section const section;
-    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 0);
+    auto setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 0);
 
     EXPECT_FALSE(setup.enabled);
     EXPECT_EQ(setup.serviceName, "xrpld");
@@ -67,7 +67,7 @@ TEST(TelemetryConfig, parse_full_section)
     section.set("trace_peer", "1");
     section.set("trace_ledger", "0");
 
-    auto setup = telemetry::setupTelemetry(section, "nHUtest123", "2.0.0", 1);
+    auto setup = telemetry::makeTelemetrySetup(section, "nHUtest123", "2.0.0", 1);
 
     EXPECT_TRUE(setup.enabled);
     EXPECT_EQ(setup.serviceName, "my-rippled");
