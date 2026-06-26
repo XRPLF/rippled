@@ -18,8 +18,8 @@ template <class Clock>
 class IOLatencyProbe
 {
 private:
-    using duration = typename Clock::duration;
-    using time_point = typename Clock::time_point;
+    using duration = Clock::duration;
+    using time_point = Clock::time_point;
 
     std::recursive_mutex mutex_;
     std::condition_variable_any cond_;

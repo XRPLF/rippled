@@ -1,4 +1,3 @@
-#include <test/csf.h>
 #include <test/csf/Peer.h>
 #include <test/csf/PeerGroup.h>
 #include <test/csf/Sim.h>

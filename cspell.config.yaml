@@ -110,6 +110,7 @@ words:
   - enabled
   - enablerepo
   - endmacro
+  - envrc
   - exceptioned
   - EXPECT_STREQ
   - Falco
@@ -306,6 +307,7 @@ words:
   - txs
   - ubsan
   - UBSAN
+  - ufdio
   - umant
   - unacquired
   - unambiguity

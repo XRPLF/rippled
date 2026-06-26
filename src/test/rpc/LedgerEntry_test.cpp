@@ -1476,7 +1476,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         // positive test
         {
-            Keylet const keylet = keylet::fees();
+            Keylet const keylet = keylet::feeSettings();
             json::Value jvParams;
             jvParams[jss::fee] = to_string(keylet.key);
             json::Value const jrr =
@@ -1526,7 +1526,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         uint256 const nftokenID0 = token::getNextID(env, issuer, 0, tfTransferable);
         env(token::mint(issuer, 0), Txflags(tfTransferable));
         env.close();
-        uint256 const offerID = keylet::nftoffer(issuer, env.seq(issuer)).key;
+        uint256 const offerID = keylet::nftokenOffer(issuer, env.seq(issuer)).key;
         env(token::createOffer(issuer, nftokenID0, drops(1)),
             token::Destination(buyer),
             Txflags(tfSellNFToken));
@@ -1560,7 +1560,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env(token::mint(issuer, 0), Txflags(tfTransferable));
         env.close();
 
-        auto const nftpage = keylet::nftpageMax(issuer);
+        auto const nftpage = keylet::nftokenPageMax(issuer);
         BEAST_EXPECT(env.le(nftpage) != nullptr);
 
         {
@@ -1710,7 +1710,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
-        uint256 const payChanIndex{keylet::payChan(alice, env.master, env.seq(alice) - 1).key};
+        uint256 const payChanIndex{keylet::payChannel(alice, env.master, env.seq(alice) - 1).key};
         {
             // Request the payment channel using its index.
             json::Value jvParams;
@@ -2421,7 +2421,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         };
 
         test(jss::amendments, jss::Amendments, keylet::amendments(), true);
-        test(jss::fee, jss::FeeSettings, keylet::fees(), true);
+        test(jss::fee, jss::FeeSettings, keylet::feeSettings(), true);
         // There won't be an nunl
         test(jss::nunl, jss::NegativeUNL, keylet::negativeUNL(), false);
         // Can only get the short skip list this way

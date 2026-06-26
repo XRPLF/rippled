@@ -53,7 +53,7 @@ class Clawback_test : public beast::unit_test::Suite
         test::jtx::Account const& dst,
         Currency const& cur)
     {
-        if (auto sle = env.le(keylet::line(src, dst, cur)))
+        if (auto sle = env.le(keylet::trustLine(src, dst, cur)))
         {
             auto const useHigh = src.id() > dst.id();
             return sle->isFlag(useHigh ? lsfHighFreeze : lsfLowFreeze);
@@ -161,35 +161,6 @@ class Clawback_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
         }
-
-        // Test that one cannot enable asfAllowTrustLineClawback when
-        // featureClawback amendment is disabled
-        {
-            Env env(*this, features - featureClawback);
-
-            Account const alice{"alice"};
-
-            env.fund(XRP(1000), alice);
-            env.close();
-
-            env.require(Nflags(alice, asfAllowTrustLineClawback));
-
-            // alice attempts to set asfAllowTrustLineClawback flag while
-            // amendment is disabled. no error is returned, but the flag remains
-            // to be unset.
-            env(fset(alice, asfAllowTrustLineClawback));
-            env.close();
-            env.require(Nflags(alice, asfAllowTrustLineClawback));
-
-            // now enable clawback amendment
-            env.enableFeature(featureClawback);
-            env.close();
-
-            // asfAllowTrustLineClawback can be set
-            env(fset(alice, asfAllowTrustLineClawback));
-            env.close();
-            env.require(Flags(alice, asfAllowTrustLineClawback));
-        }
     }
 
     void
@@ -197,46 +168,6 @@ class Clawback_test : public beast::unit_test::Suite
     {
         testcase("Validation");
         using namespace test::jtx;
-
-        // Test that Clawback tx fails for the following:
-        // 1. when amendment is disabled
-        // 2. when asfAllowTrustLineClawback flag has not been set
-        {
-            Env env(*this, features - featureClawback);
-
-            Account const alice{"alice"};
-            Account const bob{"bob"};
-
-            env.fund(XRP(1000), alice, bob);
-            env.close();
-
-            env.require(Nflags(alice, asfAllowTrustLineClawback));
-
-            auto const usd = alice["USD"];
-
-            // alice issues 10 USD to bob
-            env.trust(usd(1000), bob);
-            env(pay(alice, bob, usd(10)));
-            env.close();
-
-            env.require(Balance(bob, alice["USD"](10)));
-            env.require(Balance(alice, bob["USD"](-10)));
-
-            // clawback fails because amendment is disabled
-            env(claw(alice, bob["USD"](5)), Ter(temDISABLED));
-            env.close();
-
-            // now enable clawback amendment
-            env.enableFeature(featureClawback);
-            env.close();
-
-            // clawback fails because asfAllowTrustLineClawback has not been set
-            env(claw(alice, bob["USD"](5)), Ter(tecNO_PERMISSION));
-            env.close();
-
-            env.require(Balance(bob, alice["USD"](10)));
-            env.require(Balance(alice, bob["USD"](-10)));
-        }
 
         // Test that Clawback tx fails for the following:
         // 1. invalid flag

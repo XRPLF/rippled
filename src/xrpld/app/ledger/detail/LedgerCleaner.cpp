@@ -366,7 +366,9 @@ private:
             }
         }
         else
+        {
             JLOG(j_.warn()) << "Validated ledger is prior to target ledger";
+        }
 
         return ledgerHash;
     }
