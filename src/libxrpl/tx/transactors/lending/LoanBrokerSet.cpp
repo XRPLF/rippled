@@ -7,7 +7,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -237,29 +236,11 @@ LoanBrokerSet::doApply()
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
             return ter;  // LCOV_EXCL_LINE
 
-        auto const sponsorSle = getTxReserveSponsor(view, tx);
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
-
-        if (auto const ret = checkInsufficientReserve(
-                view, tx, owner, preFeeBalance_, {}, *sponsorSle ? 1 : 2, 0, j_);
-            !isTesSuccess(ret))
-            return ret;
-
-        if (*sponsorSle)
-        {
-            if (auto const ret = checkInsufficientReserve(
-                    view, tx, owner, preFeeBalance_, *sponsorSle, 1, 0, j_);
-                !isTesSuccess(ret))
-                return ret;
-        }
-
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        // Pseudo-account cannot be sponsored
-        adjustOwnerCount(view, owner, {}, 1, j_);
-        // LoanBroker object can be sponsored
-        adjustOwnerCount(view, owner, *sponsorSle, 1, j_);
+        adjustOwnerCount(view, owner, {}, 2, j_);
+        if (preFeeBalance_ < accountReserve(view, owner, j_))
+            return tecINSUFFICIENT_RESERVE;
 
         auto maybePseudo = createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
@@ -288,8 +269,6 @@ LoanBrokerSet::doApply()
             broker->at(sfCoverRateMinimum) = *coverMin;
         if (auto const coverLiq = tx[~sfCoverRateLiquidation])
             broker->at(sfCoverRateLiquidation) = *coverLiq;
-
-        addSponsorToLedgerEntry(broker, *sponsorSle);
 
         view.insert(broker);
 
