@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -207,7 +208,7 @@ TER
 OracleSet::doApply()
 {
     auto const oracleID = keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]);
-    SLE::pointer accountSle = view().peek(keylet::account(accountID_));
+    SLE::pointer const accountSle = view().peek(keylet::account(accountID_));
     auto const sponsorSleExpected = getTxReserveSponsor(ctx_.view(), ctx_.tx);
     if (!sponsorSleExpected)
         return sponsorSleExpected.error();  // LCOV_EXCL_LINE
