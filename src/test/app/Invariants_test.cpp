@@ -1,6 +1,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/Oracle.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
@@ -2314,7 +2315,7 @@ class Invariants_test : public beast::unit_test::Suite
     };
 
     void
-    testNoModifiedUnmodifiableFields()
+    testNoModifiedImmutableFields()
     {
         testcase("no modified unmodifiable fields");
         using namespace jtx;
@@ -2364,10 +2365,12 @@ class Invariants_test : public beast::unit_test::Suite
 
         // TODO: Loan Object
 
+        // Template-based checks: common constant fields on AccountRoot
         {
             auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
                 [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = uint256(1u); },
+                [](SLE::pointer& sle) { sle->at(sfAccount) = Account("other").id(); },
             });
 
             for (auto const& mod : mods)
@@ -2382,6 +2385,137 @@ class Invariants_test : public beast::unit_test::Suite
                         ac.view().update(sle);
                         return true;
                     });
+            }
+        }
+
+        // Template-based checks: SoeMutable field
+        // (sfPreviousTxnID) on AccountRoot should NOT fail when
+        // modified — no invariant checks this field.
+        {
+            doInvariantCheck(
+                {},
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::account(a1.id()));
+                    if (!sle)
+                        return false;
+                    sle->at(sfPreviousTxnID) = uint256(42u);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS});
+        }
+
+        // Without fixCleanup3_3_0, old hardcoded path should
+        // still catch sfLedgerEntryType/sfLedgerIndex changes
+        {
+            auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
+                [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
+                [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = uint256(1u); },
+            });
+
+            for (auto const& mod : mods)
+            {
+                doInvariantCheck(
+                    Env(*this, defaultAmendments() - fixCleanup3_3_0),
+                    {{"changed an unchangeable field"}},
+                    [&](Account const& a1, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(keylet::account(a1.id()));
+                        if (!sle)
+                            return false;
+                        mod(sle);
+                        ac.view().update(sle);
+                        return true;
+                    });
+            }
+        }
+
+        // Without fixCleanup3_3_0, modifying a SoeImmutable field
+        // that is NOT sfLedgerEntryType/sfLedgerIndex on a non-loan
+        // type should NOT fail (old code doesn't check it)
+        {
+            doInvariantCheck(
+                Env(*this, defaultAmendments() - fixCleanup3_3_0),
+                {},
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::account(a1.id()));
+                    if (!sle)
+                        return false;
+                    sle->at(sfAccount) = a2.id();
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS});
+        }
+
+        // Template-based checks: SoeImmutableSetOnce field on Oracle.
+        {
+            Keylet oracleKeylet = keylet::amendments();
+            Preclose const createLegacyOracle = [this, &oracleKeylet](
+                                                    Account const& a, Account const&, Env& env) {
+                jtx::oracle::Oracle const oracle{
+                    env,
+                    {.owner = a.id(), .fee = static_cast<int>(env.current()->fees().base.drops())}};
+                oracleKeylet = keylet::oracle(a.id(), oracle.documentID());
+
+                auto const sle = env.le(oracleKeylet);
+                return BEAST_EXPECT(sle && !sle->isFieldPresent(sfOracleDocumentID));
+            };
+
+            doInvariantCheck(
+                Env(*this, defaultAmendments() - fixIncludeKeyletFields),
+                {},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(oracleKeylet);
+                    if (!sle)
+                        return false;
+                    sle->at(sfOracleDocumentID) = std::uint32_t{1};
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                createLegacyOracle);
+        }
+
+        {
+            Keylet oracleKeylet = keylet::amendments();
+            Preclose const createOracle = [this, &oracleKeylet](
+                                              Account const& a, Account const&, Env& env) {
+                jtx::oracle::Oracle const oracle{
+                    env,
+                    {.owner = a.id(), .fee = static_cast<int>(env.current()->fees().base.drops())}};
+                oracleKeylet = keylet::oracle(a.id(), oracle.documentID());
+
+                auto const sle = env.le(oracleKeylet);
+                return BEAST_EXPECT(sle && sle->isFieldPresent(sfOracleDocumentID));
+            };
+
+            auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
+                [](SLE::pointer& sle) { sle->at(sfOracleDocumentID) = std::uint32_t{2}; },
+                [](SLE::pointer& sle) { sle->makeFieldAbsent(sfOracleDocumentID); },
+            });
+
+            for (auto const& mod : mods)
+            {
+                doInvariantCheck(
+                    {{"changed an unchangeable field"}},
+                    [&](Account const&, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(oracleKeylet);
+                        if (!sle)
+                            return false;
+                        mod(sle);
+                        ac.view().update(sle);
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{ttACCOUNT_SET, [](STObject&) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    createOracle);
             }
         }
     }
@@ -3180,7 +3314,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"violation of vault immutable data"},
+            {"violation of vault immutable data", "changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -3192,11 +3326,11 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
-            {"violation of vault immutable data"},
+            {"violation of vault immutable data", "changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -3208,11 +3342,11 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
-            {"violation of vault immutable data"},
+            {"violation of vault immutable data", "changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -3224,7 +3358,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
         doInvariantCheck(
@@ -3312,7 +3446,7 @@ class Invariants_test : public beast::unit_test::Suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"updated shares must not exceed maximum"},
+            {"updated shares must not exceed maximum", "changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -3328,7 +3462,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
 
@@ -3489,7 +3623,8 @@ class Invariants_test : public beast::unit_test::Suite
             {"create operation must not have updated a vault",
              "shares issuer and vault pseudo-account must be the same",
              "shares issuer must be a pseudo-account",
-             "shares issuer pseudo-account must point back to the vault"},
+             "shares issuer pseudo-account must point back to the vault",
+             "changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -3505,7 +3640,7 @@ class Invariants_test : public beast::unit_test::Suite
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -4995,7 +5130,7 @@ public:
         testPermissionedDEX(defaultAmendments() | fixCleanup3_1_3);
         testPermissionedDEX(defaultAmendments() - fixCleanup3_1_3);
         testBookDirectoryExchangeRate();
-        testNoModifiedUnmodifiableFields();
+        testNoModifiedImmutableFields();
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();

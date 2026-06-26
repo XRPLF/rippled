@@ -27,6 +27,13 @@ enum SOEStyle {
 // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum SOEMutability {
+    SoeImmutable,
+    SoeMutable,
+    SoeImmutableSetOnce,
+};
+
 //------------------------------------------------------------------------------
 
 /** An element in a SOTemplate. */
@@ -35,6 +42,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
+    SOEMutability mutability_ = SoeImmutable;
     SOETxMPTIssue supportMpt_ = SoeMptNone;
 
 private:
@@ -48,10 +56,24 @@ private:
                 nm += ": '" + fieldName.getName() + "'";
             Throw<std::runtime_error>("SField (" + nm + ") in SOElement must be useful.");
         }
+
+        XRPL_ASSERT(
+            mutability_ != SoeImmutableSetOnce || style_ == SoeOptional,
+            "xrpl::SOElement::init : set-once fields must be optional");
+        XRPL_ASSERT(
+            mutability_ != SoeMutable || style_ == SoeRequired || style_ == SoeOptional ||
+                style_ == SoeDefault,
+            "xrpl::SOElement::init : mutable fields must have a valid style");
     }
 
 public:
     SOElement(SField const& fieldName, SOEStyle style) : sField_(fieldName), style_(style)
+    {
+        init(fieldName);
+    }
+
+    SOElement(SField const& fieldName, SOEStyle style, SOEMutability mutability)
+        : sField_(fieldName), style_(style), mutability_(mutability)
     {
         init(fieldName);
     }
@@ -67,6 +89,18 @@ public:
         init(fieldName);
     }
 
+    template <typename T>
+        requires(std::is_same_v<T, STAmount> || std::is_same_v<T, STIssue>)
+    SOElement(
+        TypedField<T> const& fieldName,
+        SOEStyle style,
+        SOEMutability mutability,
+        SOETxMPTIssue supportMpt = SoeMptNotSupported)
+        : sField_(fieldName), style_(style), mutability_(mutability), supportMpt_(supportMpt)
+    {
+        init(fieldName);
+    }
+
     [[nodiscard]] SField const&
     sField() const
     {
@@ -77,6 +111,12 @@ public:
     style() const
     {
         return style_;
+    }
+
+    [[nodiscard]] SOEMutability
+    mutability() const
+    {
+        return mutability_;
     }
 
     [[nodiscard]] SOETxMPTIssue

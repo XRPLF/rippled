@@ -27,7 +27,7 @@ public:
         SF_UINT32::type::value_type flags = 0)
     {
         // Don't call object_.set(soTemplate) - keep object_ as a free object.
-        // This avoids creating STBase placeholders for soeDEFAULT fields,
+        // This avoids creating STBase placeholders for SoeDefault fields,
         // which would cause applyTemplate() to throw "may not be explicitly
         // set to default" when building the SLE.
         // The SLE constructor will call applyTemplate() which properly

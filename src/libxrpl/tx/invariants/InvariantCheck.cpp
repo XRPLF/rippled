@@ -18,6 +18,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
@@ -931,7 +932,7 @@ ValidPseudoAccounts::finalize(
 //------------------------------------------------------------------------------
 
 void
-NoModifiedUnmodifiableFields::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+NoModifiedImmutableFields::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
     if (isDelete || !before)
     {
@@ -942,26 +943,105 @@ NoModifiedUnmodifiableFields::visitEntry(bool isDelete, SLE::const_ref before, S
     changedEntries_.emplace(before, after);
 }
 
+// Check whether any immutable (or unannotated) fields in the given template
+// have been modified between before and after.
+// TODO(future): recurse into STObject and STArray fields using InnerObjectFormats
+static bool
+hasImmutableFieldChanged(STObject const& before, STObject const& after, SOTemplate const& tmpl)
+{
+    for (auto const& elem : tmpl)
+    {
+        auto const& sf = elem.sField();
+        auto const mutability = elem.mutability();
+
+        auto const* bField = before.peekAtPField(sf);
+        auto const* aField = after.peekAtPField(sf);
+        bool const bPresent = (bField != nullptr) && bField->getSType() != STI_NOTPRESENT;
+        bool const aPresent = (aField != nullptr) && aField->getSType() != STI_NOTPRESENT;
+
+        if (mutability == SoeImmutable)
+        {
+            // Field must not change at all, including transitions between
+            // default (not-present) and explicit values.
+            if (bPresent != aPresent || (bPresent && aPresent && *bField != *aField))
+                return true;
+        }
+        else if (mutability == SoeImmutableSetOnce)
+        {
+            XRPL_ASSERT(
+                elem.style() == SoeOptional,
+                "xrpl::hasImmutableFieldChanged : set-once fields must be optional");
+
+            // Field may be set once, but cannot be removed or changed after
+            // it is present.
+            if (bPresent && (!aPresent || *bField != *aField))
+                return true;
+        }
+        // SoeMutable fields may change freely — no recursion
+        // into inner objects/arrays is needed because the parent
+        // field explicitly allows changes to its entire contents.
+    }
+    return false;
+}
+
 bool
-NoModifiedUnmodifiableFields::finalize(
+NoModifiedImmutableFields::finalize(
     STTx const& tx,
     TER const,
     XRPAmount const,
     ReadView const& view,
     beast::Journal const& j)
 {
+    // LedgerStateFix repairs ledger invariants, so it may need to modify
+    // fields that are otherwise immutable.
+    if (tx.getTxnType() == ttLEDGER_STATE_FIX)
+        return true;
+
     static auto const kFieldChanged = [](auto const& before, auto const& after, auto const& field) {
         bool const beforeField = before->isFieldPresent(field);
         bool const afterField = after->isFieldPresent(field);
         return beforeField != afterField || (afterField && before->at(field) != after->at(field));
     };
+
+    bool const useTemplate = view.rules().enabled(fixCleanup3_3_0);
+
     for (auto const& slePair : changedEntries_)
     {
         auto const& before = slePair.first;
         auto const& after = slePair.second;
         auto const type = after->getType();
-        bool bad = false;
-        [[maybe_unused]] bool enforce = false;
+
+        // New template-based check. This is a superset of the old hardcoded
+        // path below: the common template includes sfLedgerEntryType, the
+        // explicit check below covers sfLedgerIndex, and the loan/loan-broker
+        // fields from the old switch are marked immutable in their ledger
+        // templates.
+        if (useTemplate)
+        {
+            bool bad = false;
+            auto const* format = LedgerFormats::getInstance().findByType(type);
+            if (format != nullptr)
+                bad = hasImmutableFieldChanged(*before, *after, format->getSOTemplate());
+
+            // sfLedgerIndex is a non-serialized (discardable) field
+            // that is not reliably present via peekAtPField, so we
+            // check it explicitly.
+            if (!bad)
+                bad = kFieldChanged(before, after, sfLedgerIndex);
+
+            if (bad)
+            {
+                JLOG(j.fatal()) << "Invariant failed: changed an unchangeable field for "
+                                << tx.getTransactionID();
+                return false;
+            }
+
+            continue;
+        }
+
+        // Old hardcoded check
+        bool badOld = false;
+        bool const enforceOld = view.rules().enabled(featureLendingProtocol);
         switch (type)
         {
             case ltLOAN_BROKER:
@@ -970,8 +1050,7 @@ NoModifiedUnmodifiableFields::finalize(
                  * amendment status, allowing for detection and logging of
                  * potential issues even when the amendment is disabled.
                  */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+                badOld = kFieldChanged(before, after, sfLedgerEntryType) ||
                     kFieldChanged(before, after, sfLedgerIndex) ||
                     kFieldChanged(before, after, sfSequence) ||
                     kFieldChanged(before, after, sfOwnerNode) ||
@@ -989,10 +1068,9 @@ NoModifiedUnmodifiableFields::finalize(
                  * amendment status, allowing for detection and logging of
                  * potential issues even when the amendment is disabled.
                  */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+                badOld = kFieldChanged(before, after, sfLedgerEntryType) ||
                     kFieldChanged(before, after, sfLedgerIndex) ||
-                    kFieldChanged(before, after, sfSequence) ||
+                    kFieldChanged(before, after, sfLoanSequence) ||
                     kFieldChanged(before, after, sfOwnerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerNode) ||
                     kFieldChanged(before, after, sfLoanBrokerID) ||
@@ -1021,19 +1099,19 @@ NoModifiedUnmodifiableFields::finalize(
                  * all transactions are affected because that's when it
                  * was added.
                  */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = kFieldChanged(before, after, sfLedgerEntryType) ||
+                badOld = kFieldChanged(before, after, sfLedgerEntryType) ||
                     kFieldChanged(before, after, sfLedgerIndex);
         }
+
         XRPL_ASSERT(
-            !bad || enforce,
-            "xrpl::NoModifiedUnmodifiableFields::finalize : no bad "
+            !badOld || enforceOld,
+            "xrpl::NoModifiedImmutableFields::finalize : no bad "
             "changes or enforce invariant");
-        if (bad)
+        if (badOld)
         {
             JLOG(j.fatal()) << "Invariant failed: changed an unchangeable field for "
                             << tx.getTransactionID();
-            if (enforce)
+            if (enforceOld)
                 return false;
         }
     }
