@@ -1448,20 +1448,13 @@ public:
         {
             auto const resp = acctObjsSponsored(env, bob.id(), true);
             auto const& objs = resp[jss::result][jss::account_objects];
-            bool foundTrustLine = false;
-            if (BEAST_EXPECT(objs.size() == 1))
-            {
-                auto const& obj = objs[0u];
-                BEAST_EXPECT(obj[sfLedgerEntryType.jsonName] == jss::RippleState);
-                if (obj[sfLedgerEntryType.jsonName] == jss::RippleState)
-                {
-                    BEAST_EXPECT(
-                        obj.isMember(sfHighSponsor.jsonName) ||
-                        obj.isMember(sfLowSponsor.jsonName));
-                    foundTrustLine = true;
-                }
-            }
-            BEAST_EXPECT(foundTrustLine);
+            if (!BEAST_EXPECT(objs.size() == 1))
+                return;
+
+            auto const& obj = objs[0u];
+            BEAST_EXPECT(obj[sfLedgerEntryType.jsonName] == jss::RippleState);
+            BEAST_EXPECT(
+                obj.isMember(sfHighSponsor.jsonName) || obj.isMember(sfLowSponsor.jsonName));
         }
 
         // sponsored=false on bob should NOT include the sponsored trust line
