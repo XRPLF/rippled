@@ -1842,8 +1842,18 @@ private:
         // are rounded to all LP tokens.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto const err =
-                    env.enabled(fixAMMv1_3) ? Ter(tecINVARIANT_FAILED) : Ter(tecAMM_BALANCE);
+                // Without fixAMMv1_3: sub-method returns tecAMM_BALANCE early.
+                // With fixAMMv1_3 but without fixCleanup3_3_0: sub-method succeeds
+                //   but invariant check catches the precision violation.
+                // With fixCleanup3_3_0: caught in the transaction layer before
+                //   the invariant checker runs.
+                auto const err = [&] {
+                    if (!env.enabled(fixAMMv1_3))
+                        return Ter(tecAMM_BALANCE);
+                    if (env.enabled(fixCleanup3_3_0))
+                        return Ter(tecPRECISION_LOSS);
+                    return Ter(tecINVARIANT_FAILED);
+                }();
                 ammAlice.withdraw(
                     alice_,
                     STAmount{USD, UINT64_C(9'999'999999999999), -12},
@@ -1851,7 +1861,7 @@ private:
                     std::nullopt,
                     err);
             },
-            {.features = {all, all - fixAMMv1_3}, .noLog = true});
+            {.features = {all, all - fixAMMv1_3, all - fixCleanup3_3_0}, .noLog = true});
 
         // Tiny withdraw
         testAMM([&](AMM& ammAlice, Env&) {
@@ -2229,6 +2239,31 @@ private:
             ammAlice.withdraw(alice_, XRPAmount{9'999'999'999});
             BEAST_EXPECT(ammAlice.expectBalances(XRPAmount{1}, USD(10'000), IOUAmount{100}));
         });
+
+        // singleWithdrawEPrice: crafted ePrice = lptAMMBalance*f/amountBalance
+        // makes the denominator (T*f - A*E) exactly zero.
+        // Pre-fixCleanup3_3_0: std::overflow_error escapes to the
+        // transactor backstop and is returned as tefEXCEPTION.
+        // Post-fixCleanup3_3_0: denominator check returns tecAMM_FAILED.
+        //
+        // Pool: USD(100)/EUR(100), baseFee=1000 (1%).
+        // Alice is the creator so her discounted fee is 100 (0.1%), f=0.001.
+        // ePrice = lptAMMBalance(100) * f(0.001) / amountBalance(100) = 0.001
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const err =
+                    env.enabled(fixCleanup3_3_0) ? Ter(tecAMM_FAILED) : Ter(tefEXCEPTION);
+                ammAlice.withdraw(
+                    WithdrawArg{
+                        .account = alice_,
+                        .asset1Out = USD(0),
+                        .maxEP = IOUAmount{1, -3},  // ePrice=0.001 → denom=0
+                        .err = err});
+            },
+            {{USD(100), EUR(100)}},
+            1000,
+            std::nullopt,
+            {all - fixCleanup3_3_0, all});
     }
 
     void

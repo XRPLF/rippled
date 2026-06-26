@@ -8,7 +8,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -29,7 +28,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -273,38 +271,24 @@ Payment::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-Payment::checkPermission(ReadView const& view, STTx const& tx)
+Payment::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttPAYMENT, granularPermissions);
-
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
     auto const& amountAsset = dstAmount.asset();
 
     // Granular permissions are only valid for direct payments.
-    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset) ||
-        tx.isFieldPresent(sfPaths))
+    if (tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset)
         return terNO_DELEGATE_PERMISSION;
 
     // PaymentMint and PaymentBurn apply to both IOU and MPT direct payments.
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+    if (heldGranularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
         amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
 
-    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
+    if (heldGranularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
         amountAsset.getIssuer() == tx[sfDestination])
         return tesSUCCESS;
 
