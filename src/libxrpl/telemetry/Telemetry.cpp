@@ -132,14 +132,13 @@ public:
 
     bool
     ForceFlush(
-        std::chrono::microseconds timeout = (std::chrono::microseconds::max)()) noexcept override
+        std::chrono::microseconds timeout = std::chrono::microseconds::max()) noexcept override
     {
         return delegate_->ForceFlush(timeout);
     }
 
     bool
-    Shutdown(
-        std::chrono::microseconds timeout = (std::chrono::microseconds::max)()) noexcept override
+    Shutdown(std::chrono::microseconds timeout = std::chrono::microseconds::max()) noexcept override
     {
         return delegate_->Shutdown(timeout);
     }
