@@ -744,41 +744,47 @@ public:
                 Ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
+    }
 
-        {
-            // Regression: trust lines and MPTokens normally skip the reserve
-            // check when the holder's ownerCount < 2 (the "free first item"
-            // shortcut). When the tx is sponsored — even via direct cosigning,
-            // without a prefunded sponsorship object — that shortcut must not
-            // apply; the sponsor must still cover the reserve.
-            Env env{*this, testableAmendments()};
-            Account const issuer("issuer");
-            env.fund(XRP(10000), alice, issuer);
-            // Sponsor is funded just below the reserve required to cover a
-            // single sponsored item.
-            env.fund(reserve(env, 1) - drops(1), sponsor);
-            env.close();
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
+    void
+    testSponsoredFreeTierReserve()
+    {
+        testcase("Sponsored Free-Tier Reserve");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const issuer("issuer");
+        Account const sponsor("sponsor");
 
-            MPTTester mptt(env, issuer, {.fund = false});
-            mptt.create();
+        // Trust lines and MPTokens normally skip the reserve check when the
+        // holder's ownerCount < 2 (the "free first item" shortcut). When the
+        // tx is sponsored, that shortcut must not apply — the sponsor must
+        // still cover the reserve.
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(10000), alice, issuer);
+        // Sponsor is funded just below the reserve required to cover a single
+        // sponsored item.
+        env.fund(reserve(env, 1) - drops(1), sponsor);
+        env.close();
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
 
-            // Free-tier trust line cosigned by an undercapitalized sponsor
-            // must fail — the holder's free-first-item shortcut does not let
-            // the sponsor skip the reserve check.
-            env(trust(alice, issuer["USD"](100)),
-                sponsor::As(sponsor, spfSponsorReserve),
-                Sig(sfSponsorSignature, sponsor),
-                Ter(tecNO_LINE_INSUF_RESERVE));
-            env.close();
+        MPTTester mptt(env, issuer, {.fund = false});
+        mptt.create();
 
-            // Free-tier MPTokenAuthorize must also fail for the same reason.
-            env(MPTTester::authorizeJV({.account = alice, .id = mptt.issuanceID()}),
-                sponsor::As(sponsor, spfSponsorReserve),
-                Sig(sfSponsorSignature, sponsor),
-                Ter(tecINSUFFICIENT_RESERVE));
-            env.close();
-        }
+        // Free-tier trust line cosigned by an undercapitalized sponsor must
+        // fail — the holder's free-first-item shortcut does not let the
+        // sponsor skip the reserve check.
+        env(trust(alice, issuer["USD"](100)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tecNO_LINE_INSUF_RESERVE));
+        env.close();
+
+        // Free-tier MPTokenAuthorize must also fail for the same reason.
+        env(MPTTester::authorizeJV({.account = alice, .id = mptt.issuanceID()}),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
     }
 
     void
@@ -3760,6 +3766,7 @@ protected:
         testSimpleSponsorshipSet();
 
         testPreFundAndCosign();
+        testSponsoredFreeTierReserve();
 
         testTransferSponsor();
         testSponsorFee();
