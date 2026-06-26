@@ -78,7 +78,7 @@ getSendContextHash(
             version,
             result.data()) != 0)
     {
-        Throw<std::runtime_error>("mpt_get_send_context_hash failed");
+        Throw<std::runtime_error>("mpt_get_send_context_hash failed");  // LCOV_EXCL_LINE
     }
     return result;
 }
@@ -98,7 +98,7 @@ getClawbackContextHash(
             toAccountId(holder),
             result.data()) != 0)
     {
-        Throw<std::runtime_error>("mpt_get_clawback_context_hash failed");
+        Throw<std::runtime_error>("mpt_get_clawback_context_hash failed");  // LCOV_EXCL_LINE
     }
     return result;
 }
@@ -110,7 +110,7 @@ getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::
     if (mpt_get_convert_context_hash(
             toAccountId(account), toIssuanceId(issuanceID), sequence, result.data()) != 0)
     {
-        Throw<std::runtime_error>("mpt_get_convert_context_hash failed");
+        Throw<std::runtime_error>("mpt_get_convert_context_hash failed");  // LCOV_EXCL_LINE
     }
     return result;
 }
@@ -126,7 +126,7 @@ getConvertBackContextHash(
     if (mpt_get_convert_back_context_hash(
             toAccountId(account), toIssuanceId(issuanceID), sequence, version, result.data()) != 0)
     {
-        Throw<std::runtime_error>("mpt_get_convert_back_context_hash failed");
+        Throw<std::runtime_error>("mpt_get_convert_back_context_hash failed");  // LCOV_EXCL_LINE
     }
     return result;
 }
