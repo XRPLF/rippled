@@ -54,6 +54,9 @@
 namespace xrpl::test::jtx {
 namespace {
 
+static constexpr std::uint64_t kElGamalDecryptRangeLow = 0;
+static constexpr std::uint64_t kElGamalDecryptRangeHigh = 3000;
+
 /**
  * @brief Returns a reference to the value held by an optional, throwing if it
  *        is not an optional.
@@ -2091,7 +2094,13 @@ MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
 
     uint64_t decryptedAmt = 0;
     if (secp256k1_elgamal_decrypt(
-            secp256k1Context(), &decryptedAmt, &pair->c1, &pair->c2, privKey->data()) == 0)
+            secp256k1Context(),
+            &decryptedAmt,
+            &pair->c1,
+            &pair->c2,
+            privKey->data(),
+            kElGamalDecryptRangeLow,
+            kElGamalDecryptRangeHigh) == 0)
     {
         return std::nullopt;
     }
