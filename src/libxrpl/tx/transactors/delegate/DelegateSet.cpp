@@ -52,8 +52,12 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAccount])))
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    if (!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])))
+    auto const sleAuthorize = ctx.view.read(keylet::account(ctx.tx[sfAuthorize]));
+    if (!sleAuthorize)
         return tecNO_TARGET;
+
+    if (isPseudoAccount(sleAuthorize))
+        return tecNO_PERMISSION;
 
     // Deleting the delegate object is invalid if it doesn’t exist.
     if (ctx.tx.getFieldArray(sfPermissions).empty() &&
