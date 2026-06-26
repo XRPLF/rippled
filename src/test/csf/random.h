@@ -72,14 +72,14 @@ public:
     Selector(RAIter first, RAIter last, std::vector<double> const& w, Generator& g)
         : first_{first}, last_{last}, dd_{w.begin(), w.end()}, g_{g}
     {
-        using tag = typename std::iterator_traits<RAIter>::iterator_category;
+        using tag = std::iterator_traits<RAIter>::iterator_category;
         static_assert(
             std::is_same_v<tag, std::random_access_iterator_tag>,
             "Selector only supports random access iterators.");
         // TODO: Allow for forward iterators
     }
 
-    typename std::iterator_traits<RAIter>::value_type
+    std::iterator_traits<RAIter>::value_type
     operator()()
     {
         auto idx = dd_(g_);

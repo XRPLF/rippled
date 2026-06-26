@@ -230,7 +230,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             auto const lpIssue = (*ammSle)[sfLPTokenBalance].get<Issue>();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle =
-                ctx.view.read(keylet::line(accountID, lpIssue.account, lpIssue.currency));
+                ctx.view.read(keylet::trustLine(accountID, lpIssue.account, lpIssue.currency));
             if (xrpLiquid(ctx.view, accountID, !sle, ctx.j) >= deposit)
                 return TER(tesSUCCESS);
             if (sle)
@@ -467,6 +467,19 @@ AMMDeposit::applyGuts(Sandbox& sb)
         XRPL_ASSERT(
             newLPTokenBalance > beast::kZero,
             "xrpl::AMMDeposit::applyGuts : valid new LP token balance");
+        // Defensive check: deposit formulas with fixAMMv1_3 round LP tokens
+        // down and asset amounts up, so sqrt(pool1*pool2) >= newLPTokenBalance
+        // is guaranteed to hold. A precision loss failure is not expected.
+        if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
+        {
+            if (auto const ter = checkAMMPrecisionLoss(
+                    sb, ammAccountID, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], newLPTokenBalance, j_);
+                !isTesSuccess(ter))
+            {
+                UNREACHABLE("xrpl::AMMDeposit::applyGuts : AMM precision loss");
+                return {ter, false};  // LCOV_EXCL_LINE
+            }
+        }
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         // LP depositing into AMM empty state gets the auction slot
         // and the voting
@@ -516,7 +529,8 @@ AMMDeposit::deposit(
         {
             auto const& lpIssue = lpTokensDeposit.get<Issue>();
             // Adjust the reserve if LP doesn't have LPToken trustline
-            auto const sle = view.read(keylet::line(accountID_, lpIssue.account, lpIssue.currency));
+            auto const sle =
+                view.read(keylet::trustLine(accountID_, lpIssue.account, lpIssue.currency));
             if (xrpLiquid(view, accountID_, !sle, j_) >= depositAmount)
                 return tesSUCCESS;
         }
