@@ -5641,6 +5641,7 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
+            // There are several parse failures expected in this function, so just disable it once.
             env.setParseFailureExpected(true);
             try
             {
@@ -5786,6 +5787,9 @@ class Vault_test : public beast::unit_test::Suite
             env(tx);
             env.close();
 
+            // Since several tests are expected to have parser failures, leave this flag set for the
+            // remainder of this function.
+            env.setParseFailureExpected(true);
             try
             {
                 tx[sfAssetsMaximum] = maxInt64Plus2;

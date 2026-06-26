@@ -1466,6 +1466,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 std::string(e.what()) ==
                 "invalidParamsField 'tx_json.DebtMaximum' has invalid data.");
         }
+        env.setParseFailureExpected(false);
 
         if (Number::getMantissaScale() >= MantissaRange::MantissaScale::Large330)
         {
