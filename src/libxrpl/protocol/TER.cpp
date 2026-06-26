@@ -106,6 +106,7 @@ transResults()
         MAKE_ERROR(tecLIMIT_EXCEEDED,                "Limit exceeded."),
         MAKE_ERROR(tecPSEUDO_ACCOUNT,                "This operation is not allowed against a pseudo-account."),
         MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
+        MAKE_ERROR(tecNO_DELEGATE_PERMISSION,        "DEPRECATED. Delegate lacks permission."),
         MAKE_ERROR(tecBAD_PROOF,                     "Proof cannot be verified"),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),

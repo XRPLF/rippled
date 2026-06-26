@@ -1149,25 +1149,14 @@ MPTTester::convert(MPTConvert const& arg)
     auto const holderAmt = getBalance(*arg.account);
     auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
 
-    auto const previousBalance = [&](EncryptedBalanceType balanceType) {
-        if (!getEncryptedBalance(*arg.account, balanceType))
-            return std::uint64_t{0};
-
-        auto const decrypted = getDecryptedBalance(*arg.account, balanceType);
-        if (!decrypted)
-            Throw<std::runtime_error>("Failed to get Pre-convert balance");
-
-        return *decrypted;
-    };
-
-    auto const prevInboxBalance = previousBalance(holderEncryptedInbox);
-    auto const prevSpendingBalance = previousBalance(holderEncryptedSpending);
-    auto const prevIssuerBalance = previousBalance(issuerEncryptedBalance);
+    auto const prevInboxBalance = getDecryptedBalance(*arg.account, holderEncryptedInbox);
+    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, holderEncryptedSpending);
+    auto const prevIssuerBalance = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
 
     std::optional<uint64_t> prevAuditorBalance;
     if (arg.auditorEncryptedAmt || auditor_)
     {
-        prevAuditorBalance = previousBalance(auditorEncryptedBalance);
+        prevAuditorBalance = getDecryptedBalance(*arg.account, auditorEncryptedBalance);
     }
 
     auto const prevOutstanding = getIssuanceOutstandingBalance();
@@ -1219,16 +1208,19 @@ MPTTester::convert(MPTConvert const& arg)
                 [&]() -> bool { return *prevAuditorBalance + *arg.amt == *postAuditorBalance; }));
         }
         // spending balance should not change
-        env_.require(
-            RequireAny([&]() -> bool { return *postSpendingBalance == prevSpendingBalance; }));
+        env_.require(RequireAny([&]() -> bool {
+            return prevSpendingBalance && *postSpendingBalance == *prevSpendingBalance;
+        }));
 
         // issuer's encrypted balance is updated correctly
-        env_.require(RequireAny(
-            [&]() -> bool { return prevIssuerBalance + *arg.amt == *postIssuerBalance; }));
+        env_.require(RequireAny([&]() -> bool {
+            return prevIssuerBalance && *prevIssuerBalance + *arg.amt == *postIssuerBalance;
+        }));
 
         // holder's inbox balance is updated correctly
-        env_.require(
-            RequireAny([&]() -> bool { return prevInboxBalance + *arg.amt == *postInboxBalance; }));
+        env_.require(RequireAny([&]() -> bool {
+            return prevInboxBalance && *prevInboxBalance + *arg.amt == *postInboxBalance;
+        }));
 
         // sum of holder's inbox and spending balance should equal to issuer's
         // encrypted balance
@@ -2123,7 +2115,7 @@ MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType bala
     auto const encryptedAmt = getEncryptedBalance(account, balanceType);
 
     if (!encryptedAmt)
-        return std::nullopt;
+        return 0;
 
     Account decryptor = account;
 
@@ -2201,9 +2193,6 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
     auto const prevAuditorEncrypted = getEncryptedBalance(*arg.account, auditorEncryptedBalance);
     auto const prevVersion = getMPTokenVersion(*arg.account);
 
-    if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
-        Throw<std::runtime_error>("Failed to get pre-mergeInbox balances");
-
     if (submit(arg, jv) == tesSUCCESS)
     {
         auto const postCOA = getIssuanceConfidentialBalance();
@@ -2216,6 +2205,9 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
         auto const postAuditorEncrypted =
             getEncryptedBalance(*arg.account, auditorEncryptedBalance);
         auto const postVersion = getMPTokenVersion(*arg.account);
+
+        if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
+            Throw<std::runtime_error>("Failed to get pre-mergeInbox balances");
 
         if (!postInboxBalance || !postSpendingBalance || !postIssuerBalance ||
             !prevIssuerEncrypted || !postInboxEncrypted || !postIssuerEncrypted)

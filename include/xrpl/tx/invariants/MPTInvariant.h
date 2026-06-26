@@ -131,7 +131,9 @@ public:
  * lsfMPTCanHoldConfidentialBalance is set on the issuance.
  * - Encrypted field existence consistency:
  * If sfConfidentialBalanceSpending/sfConfidentialBalanceInbox exists, then
- * sfIssuerEncryptedBalance must also exist (and vice versa).
+ * sfIssuerEncryptedBalance must also exist (and vice versa). If
+ * sfAuditorEncryptedBalance exists, then those core encrypted balance fields
+ * must also exist.
  * - COA <= OutstandingAmount:
  * Confidential outstanding balance cannot exceed total outstanding.
  * - Verifies sfConfidentialBalanceVersion is changed whenever sfConfidentialBalanceSpending is
