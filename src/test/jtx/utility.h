@@ -4,7 +4,6 @@
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STObject.h>
 
 #include <stdexcept>
