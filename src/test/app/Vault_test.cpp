@@ -114,7 +114,7 @@ class Vault_test : public beast::unit_test::Suite
                 {
                     BEAST_EXPECT(vault->at(sfScale) == 0);
                 }
-                auto const shares = env.le(keylet::mptIssuance(vault->at(sfShareMPTID)));
+                auto const shares = env.le(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
                 BEAST_EXPECT(shares != nullptr);
                 if (!asset.integral())
                 {
@@ -1693,7 +1693,7 @@ class Vault_test : public beast::unit_test::Suite
             auto v = env.le(keylet);
             BEAST_EXPECT(v);
             MPTID const share = (*v)[sfShareMPTID];
-            auto issuance = env.le(keylet::mptIssuance(share));
+            auto issuance = env.le(keylet::mptokenIssuance(share));
             BEAST_EXPECT(issuance);
             Number const outstandingShares = issuance->at(sfOutstandingAmount);
             BEAST_EXPECT(outstandingShares == 100);
@@ -2795,7 +2795,7 @@ class Vault_test : public beast::unit_test::Suite
             env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
             env.close();
 
-            auto trustline = env.le(keylet::line(owner, asset.raw().get<Issue>()));
+            auto trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
             BEAST_EXPECT(trustline == nullptr);
 
             // Withdraw without trust line, will succeed
@@ -2978,7 +2978,7 @@ class Vault_test : public beast::unit_test::Suite
                 env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
                 env.close();
 
-                auto trustline = env.le(keylet::line(owner, asset.raw().get<Issue>()));
+                auto trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
                 BEAST_EXPECT(trustline == nullptr);
 
                 env(ticket::create(owner, 1));
@@ -3406,7 +3406,7 @@ class Vault_test : public beast::unit_test::Suite
             return {vault->at(sfAccount), vault->at(sfShareMPTID)};
         }();
         BEAST_EXPECT(env.le(keylet::account(vaultAccount)));
-        BEAST_EXPECT(env.le(keylet::mptIssuance(issuanceId)));
+        BEAST_EXPECT(env.le(keylet::mptokenIssuance(issuanceId)));
         PrettyAsset const shares{issuanceId};
 
         {
@@ -3560,7 +3560,7 @@ class Vault_test : public beast::unit_test::Suite
                         auto vault = sb.peek(keylet::vault(keylet.key));
                         if (!BEAST_EXPECT(vault))
                             return false;
-                        auto shares = sb.peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
+                        auto shares = sb.peek(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
                         if (!BEAST_EXPECT(shares))
                             return false;
                         if (fn(*vault, *shares))
@@ -4309,7 +4309,7 @@ class Vault_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
 
             // Create a loan broker backed by this vault
-            auto const brokerKeylet = keylet::loanbroker(d.owner.id(), env.seq(d.owner));
+            auto const brokerKeylet = keylet::loanBroker(d.owner.id(), env.seq(d.owner));
             env(set(d.owner, d.keylet.key));
             env.close();
 
@@ -4784,7 +4784,7 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(vaultKeylet);
             BEAST_EXPECT(sleVault != nullptr);
 
-            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
             BEAST_EXPECT(sleIssuance != nullptr);
 
             return sleIssuance->at(sfOutstandingAmount);
@@ -4823,7 +4823,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             auto const& sharesAvailable = vaultShareBalance(vaultKeylet);
-            auto const& brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+            auto const& brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
 
             env(set(owner, vaultKeylet.key));
             env.close();
@@ -5216,7 +5216,7 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5274,7 +5274,7 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5329,7 +5329,7 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5383,7 +5383,7 @@ class Vault_test : public beast::unit_test::Suite
                     return;
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5431,7 +5431,7 @@ class Vault_test : public beast::unit_test::Suite
                     return;
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5538,7 +5538,7 @@ class Vault_test : public beast::unit_test::Suite
             PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
             // Create a loan broker backed by this vault
-            auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+            auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
             env(set(owner, vaultKeylet.key));
             env.close();
 
@@ -6379,7 +6379,7 @@ class Vault_test : public beast::unit_test::Suite
         env.close();
 
         // Loan broker: no cover, no management fee, debt cap 10x principal.
-        f.brokerID = keylet::loanbroker(f.lender.id(), env.seq(f.lender)).key;
+        f.brokerID = keylet::loanBroker(f.lender.id(), env.seq(f.lender)).key;
         {
             using namespace loanBroker;
             env(set(f.lender, vaultKeylet.key),
@@ -6388,7 +6388,7 @@ class Vault_test : public beast::unit_test::Suite
         }
 
         // Loan: 3,333 USD principal, impaired immediately.
-        auto const sleBroker = env.le(keylet::loanbroker(f.brokerID));
+        auto const sleBroker = env.le(keylet::loanBroker(f.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return f;
         f.loanKeylet = keylet::loan(f.brokerID, sleBroker->at(sfLoanSequence));
@@ -6433,7 +6433,7 @@ class Vault_test : public beast::unit_test::Suite
             return f;
         f.sharesLender = tokenLender->getFieldU64(sfMPTAmount);
 
-        auto const sleIssuance = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const sleIssuance = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(sleIssuance))
             return f;
         BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == f.sharesLender);
@@ -6523,7 +6523,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
-        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceAfter = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceAfter))
             return;
 
@@ -6621,7 +6621,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
-        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceAfter = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceAfter))
             return;
         BEAST_EXPECT(issuanceAfter->getFieldU64(sfOutstandingAmount) == f.sharesLender);
@@ -6712,7 +6712,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultFinal = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultFinal))
             return;
-        auto const issuanceFinal = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceFinal = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceFinal))
             return;
 
@@ -6794,7 +6794,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultFinal = env.le(vaultKeylet);
         if (!BEAST_EXPECT(vaultFinal))
             return;
-        auto const issuanceFinal = env.le(keylet::mptIssuance(shareAsset));
+        auto const issuanceFinal = env.le(keylet::mptokenIssuance(shareAsset));
         if (!BEAST_EXPECT(issuanceFinal))
             return;
         BEAST_EXPECT(issuanceFinal->getFieldU64(sfOutstandingAmount) == 0);
@@ -6877,7 +6877,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
-        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceAfter = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceAfter))
             return;
 
@@ -7396,7 +7396,7 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(vaultKeylet);
             if (!sleVault)
                 return std::nullopt;
-            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
             if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
                 return std::nullopt;
             return sleIssuance->getFieldH256(sfReferenceHolding);
@@ -7456,13 +7456,13 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(keylet);
             BEAST_EXPECT(sleVault != nullptr);
             auto const pseudoId = sleVault->at(sfAccount);
-            auto const expected = keylet::line(pseudoId, asset.raw().get<Issue>()).key;
+            auto const expected = keylet::trustLine(pseudoId, asset.raw().get<Issue>()).key;
 
             auto const stored = readReferenceHolding(env, keylet);
             BEAST_EXPECT(stored.has_value());
             BEAST_EXPECT(stored && *stored == expected);
             // The pointed-to RippleState must actually exist.
-            BEAST_EXPECT(env.le(keylet::line(pseudoId, asset.raw().get<Issue>())) != nullptr);
+            BEAST_EXPECT(env.le(keylet::trustLine(pseudoId, asset.raw().get<Issue>())) != nullptr);
         }
 
         // XRP-backed vaults leave the field absent: XRP has no separate
@@ -7520,7 +7520,7 @@ class Vault_test : public beast::unit_test::Suite
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             env.close();
 
-            auto const sleIssuance = env.le(keylet::mptIssuance(mptt.issuanceID()));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptt.issuanceID()));
             if (BEAST_EXPECT(sleIssuance))
                 BEAST_EXPECT(!sleIssuance->isFieldPresent(sfReferenceHolding));
         }
@@ -7546,7 +7546,7 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(vaultKeylet);
             if (!sleVault)
                 return false;
-            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
             if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
                 return false;
             auto const holdingKey = sleIssuance->getFieldH256(sfReferenceHolding);
@@ -7782,7 +7782,7 @@ class Vault_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(env.le(keylet) == nullptr);
             BEAST_EXPECT(env.le(holdingKeylet) == nullptr);
-            BEAST_EXPECT(env.le(keylet::mptIssuance(sharedMptId)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::mptokenIssuance(sharedMptId)) == nullptr);
         }
     }
 
