@@ -11,6 +11,7 @@
 #include <xrpl/beast/container/detail/aged_unordered_container.h>
 #include <xrpl/beast/unit_test/suite.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <functional>
@@ -232,10 +233,10 @@ public:
     {
     public:
         using T = void;
-        using Value = typename Base::Key;
+        using Value = Base::Key;
         using Values = std::vector<Value>;
 
-        static typename Base::Key const&
+        static Base::Key const&
         extract(Value const& value)
         {
             return value;  // NOLINT(bugprone-return-const-ref-from-parameter)
@@ -271,7 +272,7 @@ public:
         using Value = std::pair<typename Base::Key, T>;
         using Values = std::vector<Value>;
 
-        static typename Base::Key const&
+        static Base::Key const&
         extract(Value const& value)
         {
             return value.first;
@@ -387,7 +388,7 @@ public:
     struct EqualValue
     {
         bool
-        operator()(typename Traits::Value const& lhs, typename Traits::Value const& rhs)
+        operator()(Traits::Value const& lhs, Traits::Value const& rhs)
         {
             return Traits::extract(lhs) == Traits::extract(rhs);
         }
@@ -647,7 +648,7 @@ AgedAssociativeContainerTestBase::checkUnorderedContentsRefRef(C&& c, Values con
     using Cont = std::remove_reference_t<C>;
     using Traits =
         TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
-    using size_type = typename Cont::size_type;
+    using size_type = Cont::size_type;
     auto const hash(c.hashFunction());
     auto const keyEq(c.keyEq());
     for (size_type i(0); i < c.bucketCount(); ++i)
@@ -655,10 +656,9 @@ AgedAssociativeContainerTestBase::checkUnorderedContentsRefRef(C&& c, Values con
         auto const last(c.end(i));
         for (auto iter(c.begin(i)); iter != last; ++iter)
         {
-            auto const match(
-                std::find_if(v.begin(), v.end(), [iter](typename Values::value_type const& e) {
-                    return Traits::extract(*iter) == Traits::extract(e);
-                }));
+            auto const match(std::ranges::find_if(v, [iter](Values::value_type const& e) {
+                return Traits::extract(*iter) == Traits::extract(e);
+            }));
             BEAST_EXPECT(match != v.end());
             BEAST_EXPECT(keyEq(Traits::extract(*iter), Traits::extract(*match)));
             BEAST_EXPECT(hash(Traits::extract(*iter)) == hash(Traits::extract(*match)));
@@ -671,7 +671,7 @@ void
 AgedAssociativeContainerTestBase::checkContentsRefRef(C&& c, Values const& v)
 {
     using Cont = std::remove_reference_t<C>;
-    using size_type = typename Cont::size_type;
+    using size_type = Cont::size_type;
 
     BEAST_EXPECT(c.size() == v.size());
     BEAST_EXPECT(size_type(std::distance(c.begin(), c.end())) == v.size());
@@ -703,7 +703,7 @@ AgedAssociativeContainerTestBase::checkContents(Cont& c)
 {
     using Traits =
         TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
-    using Values = typename Traits::Values;
+    using Values = Traits::Values;
     checkContents(c, Values());
 }
 
@@ -719,10 +719,10 @@ std::enable_if_t<!IsUnordered>
 AgedAssociativeContainerTestBase::testConstructEmpty()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Comp = typename Traits::Comp;
-    using Alloc = typename Traits::Alloc;
-    using MyComp = typename Traits::MyComp;
-    using MyAlloc = typename Traits::MyAlloc;
+    using Comp = Traits::Comp;
+    using Alloc = Traits::Alloc;
+    using MyComp = Traits::MyComp;
+    using MyAlloc = Traits::MyAlloc;
     typename Traits::ManualClock clock;
 
     // testcase (Traits::name() + " empty");
@@ -755,12 +755,12 @@ std::enable_if_t<IsUnordered>
 AgedAssociativeContainerTestBase::testConstructEmpty()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Hash = typename Traits::Hash;
-    using Equal = typename Traits::Equal;
-    using Alloc = typename Traits::Alloc;
-    using MyHash = typename Traits::MyHash;
-    using MyEqual = typename Traits::MyEqual;
-    using MyAlloc = typename Traits::MyAlloc;
+    using Hash = Traits::Hash;
+    using Equal = Traits::Equal;
+    using Alloc = Traits::Alloc;
+    using MyHash = Traits::MyHash;
+    using MyEqual = Traits::MyEqual;
+    using MyAlloc = Traits::MyAlloc;
     typename Traits::ManualClock clock;
 
     // testcase (Traits::name() + " empty");
@@ -813,10 +813,10 @@ std::enable_if_t<!IsUnordered>
 AgedAssociativeContainerTestBase::testConstructRange()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Comp = typename Traits::Comp;
-    using Alloc = typename Traits::Alloc;
-    using MyComp = typename Traits::MyComp;
-    using MyAlloc = typename Traits::MyAlloc;
+    using Comp = Traits::Comp;
+    using Alloc = Traits::Alloc;
+    using MyComp = Traits::MyComp;
+    using MyAlloc = Traits::MyAlloc;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
 
@@ -860,12 +860,12 @@ std::enable_if_t<IsUnordered>
 AgedAssociativeContainerTestBase::testConstructRange()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Hash = typename Traits::Hash;
-    using Equal = typename Traits::Equal;
-    using Alloc = typename Traits::Alloc;
-    using MyHash = typename Traits::MyHash;
-    using MyEqual = typename Traits::MyEqual;
-    using MyAlloc = typename Traits::MyAlloc;
+    using Hash = Traits::Hash;
+    using Equal = Traits::Equal;
+    using Alloc = Traits::Alloc;
+    using MyHash = Traits::MyHash;
+    using MyEqual = Traits::MyEqual;
+    using MyAlloc = Traits::MyAlloc;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
 
@@ -962,7 +962,7 @@ void
 AgedAssociativeContainerTestBase::testCopyMove()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Alloc = typename Traits::Alloc;
+    using Alloc = Traits::Alloc;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
 
@@ -1307,7 +1307,7 @@ AgedAssociativeContainerTestBase::testChronological()
     // Test touch() with a non-const iterator.
     for (auto iter(v.crbegin()); iter != v.crend(); ++iter)
     {
-        using iterator = typename decltype(c)::iterator;
+        using iterator = decltype(c)::iterator;
         iterator const found(c.find(Traits::extract(*iter)));
 
         BEAST_EXPECT(found != c.cend());
@@ -1327,7 +1327,7 @@ AgedAssociativeContainerTestBase::testChronological()
     // Test touch() with a const_iterator
     for (auto iter(v.cbegin()); iter != v.cend(); ++iter)
     {
-        using const_iterator = typename decltype(c)::const_iterator;
+        using const_iterator = decltype(c)::const_iterator;
         const_iterator const found(c.find(Traits::extract(*iter)));
 
         BEAST_EXPECT(found != c.cend());

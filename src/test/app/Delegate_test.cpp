@@ -235,6 +235,19 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(gw, Account("unknown"), {"Payment"}), Ter(tecNO_TARGET));
         }
 
+        // Delegating to a pseudo-account is not allowed, should return tecNO_PERMISSION
+        {
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = gw, .asset = xrpIssue()});
+            env(tx);
+            env.close();
+
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault);
+            Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
+            env(delegate::set(gw, vaultPseudo, {"Payment"}), Ter(tecNO_PERMISSION));
+        }
+
         // non-delegable transaction
         {
             env(delegate::set(gw, alice, {"SetRegularKey"}), Ter(temMALFORMED));
@@ -2327,7 +2340,6 @@ class Delegate_test : public beast::unit_test::Suite
         // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer,
         // NFTokenAcceptOffer are not included, they are tested separately.
         std::unordered_map<std::string, uint256> txRequiredFeatures{
-            {"Clawback", featureClawback},
             {"AMMClawback", featureAMMClawback},
             {"AMMCreate", featureAMM},
             {"AMMDeposit", featureAMM},

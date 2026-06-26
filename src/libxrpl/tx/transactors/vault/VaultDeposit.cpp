@@ -90,7 +90,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -206,7 +206,7 @@ VaultDeposit::doApply()
 
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START

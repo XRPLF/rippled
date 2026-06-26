@@ -980,7 +980,7 @@ public:
     /** Adds eligible Fixed addresses for outbound attempts. */
     template <class Container>
     void
-    getFixed(std::size_t needed, Container& c, typename ConnectHandouts::Squelches& squelches)
+    getFixed(std::size_t needed, Container& c, ConnectHandouts::Squelches& squelches)
     {
         auto const now(clock.now());
         for (auto iter = fixed_.begin(); needed && iter != fixed_.end(); ++iter)
