@@ -63,9 +63,10 @@ namespace resource = opentelemetry::sdk::resource;
 /** SpanProcessor decorator that drops discarded spans.
 
     Wraps a delegate processor (typically BatchSpanProcessor). In OnEnd(),
-    checks the gTlDiscardCurrentSpan thread-local flag. If set (by
-    SpanGuard::discard()), the span is silently dropped — never entering
-    the batch queue, never sent over the network, never stored.
+    calls DiscardScope::isActive(). If the calling thread is inside a
+    DiscardScope (entered by SpanGuard::discard()), the span is silently
+    dropped — never entering the batch queue, never sent over the network,
+    never stored.
 
     Uses a thread-local flag rather than inspecting Recordable attributes
     because the Recordable type varies by exporter (SpanData for simple
@@ -89,7 +90,7 @@ namespace resource = opentelemetry::sdk::resource;
           +---------------------+
 
     @note Thread safety: OnEnd() may be called concurrently from multiple
-    threads. The gTlDiscardCurrentSpan flag is thread-local, so each
+    threads. The discard flag behind DiscardScope is thread-local, so each
     thread's discard state is independent — no synchronization needed.
 */
 class FilteringSpanProcessor : public trace_sdk::SpanProcessor
@@ -119,11 +120,11 @@ public:
     void
     OnEnd(std::unique_ptr<trace_sdk::Recordable>&& span) noexcept override
     {
-        if (gTlDiscardCurrentSpan)
+        if (DiscardScope::isActive())
         {
-            // SpanGuard::discard() set the flag on this thread just before
-            // calling Span::End(), which invokes OnEnd() synchronously.
-            // Drop the span.
+            // SpanGuard::discard() is inside a DiscardScope on this thread,
+            // which it entered just before calling Span::End() — and End()
+            // invokes OnEnd() synchronously. Drop the span.
             return;
         }
         delegate_->OnEnd(std::move(span));
@@ -391,7 +392,7 @@ public:
     }
 
     opentelemetry::nostd::shared_ptr<trace_api::Tracer>
-    getTracer(std::string_view name) override
+    getTracer(std::string_view name = kTracerName) override
     {
         if (!sdkProvider_)
             return trace_api::Provider::GetTracerProvider()->GetTracer(std::string(name));
@@ -401,7 +402,7 @@ public:
     opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view name, trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer("xrpld");
+        auto tracer = getTracer();
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
         return tracer->StartSpan(std::string(name), opts);
@@ -413,7 +414,7 @@ public:
         opentelemetry::context::Context const& parentContext,
         trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer("xrpld");
+        auto tracer = getTracer();
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
         opts.parent = parentContext;

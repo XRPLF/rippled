@@ -411,9 +411,9 @@ class BasicLogstream : public std::basic_ostream<CharT, Traits>
 {
     using char_type = CharT;
     using traits_type = Traits;
-    using int_type = typename traits_type::int_type;
-    using pos_type = typename traits_type::pos_type;
-    using off_type = typename traits_type::off_type;
+    using int_type = traits_type::int_type;
+    using pos_type = traits_type::pos_type;
+    using off_type = traits_type::off_type;
 
     detail::LogStreamBuf<CharT, Traits> buf_;
 

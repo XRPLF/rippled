@@ -106,7 +106,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // to the equivalent asset amount before checking withdrawal
         // limits. Pre-amendment the limit check was skipped for
         // share-denominated withdrawals.
-        auto const sleIssuance = ctx.view.read(keylet::mptIssuance(vaultShare));
+        auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(vaultShare));
         if (!sleIssuance)
         {
             // LCOV_EXCL_START
@@ -180,7 +180,7 @@ VaultWithdraw::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
