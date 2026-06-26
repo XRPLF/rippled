@@ -93,12 +93,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     // already checked in preflight, but should also check that issuer on the
     // issuance isn't the account either
     if (sleIssuance->getAccountID(sfIssuer) == account)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "ConfidentialMPTConvert issuer matched holder during preclaim.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     bool const requiresAuditor = sleIssuance->isFieldPresent(sfAuditorEncryptionKey);
@@ -164,8 +159,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
         auto const contextHash =
             getConvertContextHash(account, issuanceID, ctx.tx.getSeqProxy().value());
 
-        if (auto const ter =
-                verifySchnorrProof(holderPubKey, ctx.tx[sfZKProof], contextHash, ctx.j);
+        if (auto const ter = verifySchnorrProof(holderPubKey, ctx.tx[sfZKProof], contextHash);
             !isTesSuccess(ter))
         {
             valid = false;
@@ -198,18 +192,14 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
                 .publicKey = (*sleIssuance)[sfIssuerEncryptionKey],
                 .encryptedAmount = ctx.tx[sfIssuerEncryptedAmount],
             },
-            auditor,
-            ctx.j);
+            auditor);
         !isTesSuccess(ter))
     {
         valid = false;
     }
 
     if (!valid)
-    {
-        JLOG(ctx.j.warn()) << "ConfidentialMPTConvert proof verification failed.";
         return tecBAD_PROOF;
-    }
 
     return tesSUCCESS;
 }
@@ -221,21 +211,11 @@ ConfidentialMPTConvert::doApply()
 
     auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error()) << "ConfidentialMPTConvert apply missing MPToken entry.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error()) << "ConfidentialMPTConvert apply missing issuance entry.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const amtToConvert = ctx_.tx[sfMPTAmount];
     auto const amt = (*sleMptoken)[~sfMPTAmount].valueOr(0);
@@ -247,13 +227,7 @@ ConfidentialMPTConvert::doApply()
     // The confidential outstanding tracks total tokens in confidential form globally.
     auto const currentCOA = (*sleIssuance)[~sfConfidentialOutstandingAmount].valueOr(0);
     if (amtToConvert > kMaxMpTokenAmount - currentCOA)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error())
-            << "ConfidentialMPTConvert confidential outstanding amount would overflow.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     (*sleMptoken)[sfMPTAmount] = amt - amtToConvert;
     (*sleIssuance)[sfConfidentialOutstandingAmount] = currentCOA + amtToConvert;
@@ -303,13 +277,7 @@ ConfidentialMPTConvert::doApply()
         if (auditorEc)
         {
             if (!sleMptoken->isFieldPresent(sfAuditorEncryptedBalance))
-            {
-                // LCOV_EXCL_START
-                JLOG(ctx_.journal.error())
-                    << "ConfidentialMPTConvert missing auditor balance field during apply.";
-                return tecINTERNAL;
-                // LCOV_EXCL_STOP
-            }
+                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             auto sum = homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance]);
             if (!sum)
@@ -344,13 +312,7 @@ ConfidentialMPTConvert::doApply()
             (*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
         if (!zeroBalance)
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx_.journal.error())
-                << "ConfidentialMPTConvert failed to create canonical zero spending balance.";
-            return tecINTERNAL;
-            // LCOV_EXCL_STOP
-        }
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sleMptoken)[sfConfidentialBalanceSpending] = std::move(*zeroBalance);
     }
@@ -358,11 +320,7 @@ ConfidentialMPTConvert::doApply()
     {
         // both sfIssuerEncryptedBalance and sfConfidentialBalanceInbox should
         // exist together
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error())
-            << "ConfidentialMPTConvert found inconsistent confidential balance fields.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     view().update(sleIssuance);

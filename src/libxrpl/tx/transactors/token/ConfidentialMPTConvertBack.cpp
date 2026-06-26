@@ -73,17 +73,10 @@ static TER
 verifyProofs(
     STTx const& tx,
     std::shared_ptr<SLE const> const& issuance,
-    std::shared_ptr<SLE const> const& mptoken,
-    beast::Journal j)
+    std::shared_ptr<SLE const> const& mptoken)
 {
     if (!mptoken->isFieldPresent(sfHolderEncryptionKey))
-    {
-        // LCOV_EXCL_START
-        JLOG(j.error())
-            << "ConfidentialMPTConvertBack proof verification missing holder encryption key.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = tx[sfMPTokenIssuanceID];
     auto const account = tx[sfAccount];
@@ -124,8 +117,7 @@ verifyProofs(
                 .publicKey = (*issuance)[sfIssuerEncryptionKey],
                 .encryptedAmount = tx[sfIssuerEncryptedAmount],
             },
-            auditor,
-            j);
+            auditor);
         !isTesSuccess(ter))
     {
         valid = false;
@@ -137,18 +129,14 @@ verifyProofs(
             (*mptoken)[sfConfidentialBalanceSpending],
             tx[sfBalanceCommitment],
             amount,
-            contextHash,
-            j);
+            contextHash);
         !isTesSuccess(ter))
     {
         valid = false;
     }
 
     if (!valid)
-    {
-        JLOG(j.warn()) << "ConfidentialMPTConvertBack proof verification failed.";
         return tecBAD_PROOF;
-    }
 
     return tesSUCCESS;
 }
@@ -185,12 +173,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     // already checked in preflight, but should also check that issuer on
     // the issuance isn't the account either
     if (sleIssuance->getAccountID(sfIssuer) == account)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "ConfidentialMPTConvertBack issuer matched holder during preclaim.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleMptoken = ctx.view.read(keylet::mptoken(mptIssuanceID, account));
     if (!sleMptoken)
@@ -206,13 +189,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     // Sanity check: holder's MPToken must have auditor balance field if auditing
     // is enabled
     if (requiresAuditor && !sleMptoken->isFieldPresent(sfAuditorEncryptedBalance))
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx.j.error())
-            << "ConfidentialMPTConvertBack missing auditor balance while auditing is enabled.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // if the total circulating confidential balance is smaller than what the
     // holder is trying to convert back, we know for sure this txn should
@@ -229,7 +206,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, mptIssue, account); !isTesSuccess(ter))
         return ter;
 
-    if (auto const res = verifyProofs(ctx.tx, sleIssuance, sleMptoken, ctx.j); !isTesSuccess(res))
+    if (auto const res = verifyProofs(ctx.tx, sleIssuance, sleMptoken); !isTesSuccess(res))
         return res;
 
     return tesSUCCESS;
@@ -242,21 +219,11 @@ ConfidentialMPTConvertBack::doApply()
 
     auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error()) << "ConfidentialMPTConvertBack apply missing MPToken entry.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error()) << "ConfidentialMPTConvertBack apply missing issuance entry.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const amtToConvertBack = ctx_.tx[sfMPTAmount];
     auto const amt = (*sleMptoken)[~sfMPTAmount].valueOr(0);
@@ -264,24 +231,12 @@ ConfidentialMPTConvertBack::doApply()
     // Converting back increases regular balance and decreases confidential
     // outstanding. This is the inverse of Convert.
     if (amt > kMaxMpTokenAmount - amtToConvertBack)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error())
-            << "ConfidentialMPTConvertBack public MPT amount would overflow.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleMptoken)[sfMPTAmount] = amt + amtToConvertBack;
 
     auto const coa = (*sleIssuance)[~sfConfidentialOutstandingAmount].valueOr(0);
     if (coa < amtToConvertBack)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error())
-            << "ConfidentialMPTConvertBack confidential outstanding amount would underflow.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleIssuance)[sfConfidentialOutstandingAmount] = coa - amtToConvertBack;
 
     std::optional<Slice> const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];

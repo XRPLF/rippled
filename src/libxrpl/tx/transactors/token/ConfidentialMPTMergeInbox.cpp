@@ -53,12 +53,7 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
     // already checked in preflight, but should also check that issuer on the
     // issuance isn't the account either
     if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "ConfidentialMPTMergeInbox issuer matched holder during preclaim.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleMptoken =
         ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
@@ -91,23 +86,14 @@ ConfidentialMPTMergeInbox::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error()) << "ConfidentialMPTMergeInbox apply missing MPToken entry.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // sanity check
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
     {
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error())
-            << "ConfidentialMPTMergeInbox apply missing confidential balance fields.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     }
 
     // Merge inbox into spending: spending = spending + inbox
@@ -132,13 +118,7 @@ ConfidentialMPTMergeInbox::doApply()
         encryptCanonicalZeroAmount((*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
     if (!zeroEncryption)
-    {
-        // LCOV_EXCL_START
-        JLOG(ctx_.journal.error())
-            << "ConfidentialMPTMergeInbox failed to create canonical zero inbox balance.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     (*sleMptoken)[sfConfidentialBalanceInbox] = std::move(*zeroEncryption);
 
