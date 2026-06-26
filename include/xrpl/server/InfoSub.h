@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -26,6 +27,19 @@ public:
 };
 
 /** Manages a client's subscription to data feeds.
+ *
+ *  An InfoSub holds a non-owning reference to its `Source` (typically the
+ *  process-wide `NetworkOPsImp`). The destructor reaches back into the
+ *  `Source` to remove this subscriber from every server-side subscription
+ *  map.
+ *
+ *  @note Lifetime contract: every `InfoSub` instance MUST be destroyed
+ *        before the backing `Source`. NetworkOPsImp shutdown drops all
+ *        subscriber strong refs before its own teardown to satisfy this.
+ *  @note Thread-safety: per-instance state is guarded by `lock_`. The
+ *        destructor reads tracking sets without taking `lock_` because
+ *        the strong-pointer ref-count is zero at destruction time, so
+ *        no other thread can be calling the public mutators.
  */
 class InfoSub : public CountedObject<InfoSub>
 {
@@ -117,8 +131,43 @@ public:
 
         virtual bool
         subBook(ref ispListener, Book const&) = 0;
+
+        /**
+         * Remove a book subscription for a live subscriber.
+         *
+         * Clears the book from the subscriber's own tracking set
+         * (InfoSub::bookSubscriptions_) and then removes the server-side
+         * entry from subBook_. Call this from RPC unsubscribe handlers.
+         *
+         * @param ispListener The subscriber requesting removal.
+         * @param book        The order book to unsubscribe from.
+         * @return true if the entry was present and removed, false if the
+         *         subscriber was not subscribed to @p book.
+         *
+         * @note Thread-safety: acquires subLock_ internally.
+         * @note Do NOT call from ~InfoSub(). Use unsubBookInternal instead
+         *       to avoid a redundant write-back to bookSubscriptions_ on a
+         *       partially-destroyed object.
+         */
         virtual bool
-        unsubBook(std::uint64_t uListener, Book const&) = 0;
+        unsubBook(ref ispListener, Book const&) = 0;
+
+        /**
+         * Remove a book subscription during InfoSub teardown.
+         *
+         * Removes only the server-side entry from subBook_. Does NOT touch
+         * InfoSub::bookSubscriptions_ because the InfoSub is being destroyed.
+         * Called by ~InfoSub() for each book in bookSubscriptions_.
+         *
+         * @param uListener The sequence number of the subscriber being torn down.
+         * @param book      The order book entry to remove.
+         * @return true if the entry was present and removed, false otherwise
+         *         (e.g., already removed by a concurrent RPC unsubscribe).
+         *
+         * @note Thread-safety: acquires subLock_ internally.
+         */
+        virtual bool
+        unsubBookInternal(std::uint64_t uListener, Book const&) = 0;
 
         virtual bool
         subTransactions(ref ispListener) = 0;
@@ -158,6 +207,13 @@ public:
         addRpcSub(std::string const& strUrl, ref rspEntry) = 0;
         virtual bool
         tryRemoveRpcSub(std::string const& strUrl) = 0;
+
+        /** Journal used by InfoSub for diagnostics that occur after the
+         *  owning subsystem (e.g. application-level Logs) is the only
+         *  surviving sink — primarily destructor-time cleanup failures.
+         */
+        [[nodiscard]] virtual beast::Journal const&
+        journal() const = 0;
     };
 
 public:
@@ -183,6 +239,31 @@ public:
 
     void
     deleteSubAccountInfo(AccountID const& account, bool rt);
+
+    /** Record that this subscriber is following @p book.
+     *
+     *  Called by NetworkOPsImp::subBook so that ~InfoSub() can issue a
+     *  matching unsubBook for every book this subscriber is tracking,
+     *  keeping per-subscriber state symmetric with the server-side map.
+     *
+     *  @param book The order book this subscriber has just subscribed to.
+     *  @note Idempotent: re-inserting an already-tracked book is a no-op.
+     *  @note Thread-safe: takes InfoSub::lock_.
+     */
+    void
+    insertBookSubscription(Book const& book);
+
+    /** Stop tracking @p book for this subscriber.
+     *
+     *  Called by the unsubscribe RPC handler so that the book is not
+     *  re-unsubscribed by ~InfoSub(). Pairs with insertBookSubscription.
+     *
+     *  @param book The order book to forget.
+     *  @note No-op if @p book was not previously inserted.
+     *  @note Thread-safe: takes InfoSub::lock_.
+     */
+    void
+    deleteBookSubscription(Book const& book);
 
     // return false if already subscribed to this account
     bool
@@ -217,6 +298,7 @@ private:
     std::shared_ptr<InfoSubRequest> request_;
     std::uint64_t seq_;
     hash_set<AccountID> accountHistorySubscriptions_;
+    hash_set<Book> bookSubscriptions_;
     unsigned int apiVersion_ = 0;
 
     static int

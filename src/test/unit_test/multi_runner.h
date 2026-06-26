@@ -42,7 +42,7 @@ struct SuiteResults
     std::size_t cases = 0;
     std::size_t total = 0;
     std::size_t failed = 0;
-    typename clock_type::time_point start = clock_type::now();
+    clock_type::time_point start = clock_type::now();
 
     explicit SuiteResults(std::string name = "") : name(std::move(name))
     {
@@ -57,7 +57,7 @@ struct Results
     using static_string = boost::beast::static_string<256>;
     // results may be stored in shared memory. Use `static_string` to ensure
     // pointers from different memory spaces do not co-mingle
-    using run_time = std::pair<static_string, typename clock_type::duration>;
+    using run_time = std::pair<static_string, clock_type::duration>;
 
     static constexpr auto kMaxTop = 10;
 
@@ -66,7 +66,7 @@ struct Results
     std::size_t total = 0;
     std::size_t failed = 0;
     boost::container::static_vector<run_time, kMaxTop> top;
-    typename clock_type::time_point start = clock_type::now();
+    clock_type::time_point start = clock_type::now();
 
     void
     add(SuiteResults const& r);

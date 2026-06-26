@@ -106,7 +106,7 @@ applyFeeAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx)
 bool
 verifyFeeObject(std::shared_ptr<Ledger const> const& ledger, FeeSettingsFields const& expected)
 {
-    auto const feeObject = ledger->read(keylet::fees());
+    auto const feeObject = ledger->read(keylet::feeSettings());
     if (!feeObject)
         return false;
 

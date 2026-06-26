@@ -178,7 +178,7 @@ Ledger::Ledger(
     }
 
     {
-        auto sle = std::make_shared<SLE>(keylet::fees());
+        auto sle = std::make_shared<SLE>(keylet::feeSettings());
         sle->at(sfBaseFeeDrops) = fees.base;
         sle->at(sfReserveBaseDrops) = fees.reserve;
         sle->at(sfReserveIncrementDrops) = fees.increment;
@@ -544,7 +544,7 @@ Ledger::setup()
 
     try
     {
-        if (auto const sle = read(keylet::fees()))
+        if (auto const sle = read(keylet::feeSettings()))
         {
             bool oldFees = false;
             bool newFees = false;
