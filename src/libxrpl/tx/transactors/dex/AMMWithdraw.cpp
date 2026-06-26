@@ -631,7 +631,7 @@ AMMWithdraw::withdraw(
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             auto const balance = (*sleAccount)[sfBalance]->xrp();
-            std::uint32_t const count = ownerCount(sponsorSle ? sponsorSle : sleAccount, journal);
+            std::uint32_t const currentOwnerCount = ownerCount(sleAccount, journal);
             // See also TrustSet::doApply() and MPTokenAuthorize::authorize()
             XRPAmount const reserve(
                 (currentOwnerCount < 2) ? XRPAmount(beast::kZero)
