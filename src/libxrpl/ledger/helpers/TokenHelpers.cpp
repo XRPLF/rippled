@@ -220,14 +220,10 @@ checkDepositFreeze(
         !isPseudoAccount(view, srcAcct),
         "xrpl::checkDepositFreeze : source is not a pseudo-account");
 
-    // An Issuer cannot deposit when:
-    // 1. Asset is globally frozen
-    // 2. The trustline/mptoken of the pseudo-account is frozen
-
     if (auto const ret = checkGlobalFrozen(view, asset); !isTesSuccess(ret))
         return ret;
 
-    // Special case for shares - check if the shares (and the transitive asset) is not frozen
+    // Special case for shares - check if the shares and the transitive asset is not frozen
     if (asset.holds<MPTIssue>() &&
         isVaultPseudoAccountFrozen(view, dstAcct, asset.get<MPTIssue>(), 0))
     {

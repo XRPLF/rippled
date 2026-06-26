@@ -96,6 +96,13 @@ testableAmendments()
     return kIds;
 }
 
+/**
+ * Returns all 2^N permutations of a seed FeatureBitset with each subset of
+ * the given features excluded.  The seed is included as the first element.
+ *
+ * Useful for running a test over every combination of optional amendments
+ * so that each case is exercised both with and without each feature.
+ */
 inline std::vector<FeatureBitset>
 amendmentCombinations(std::initializer_list<uint256> features, FeatureBitset seed)
 {
