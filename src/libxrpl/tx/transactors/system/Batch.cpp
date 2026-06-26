@@ -438,7 +438,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             requiredSigners.push_back(authorizer);
         // Some transactions have a Counterparty, who must also sign the
         // transaction if they are not the outer account
-        if (auto const counterparty = rb.at(~sfCounterparty);
+        if (auto const counterparty = rb[~sfCounterparty];
             counterparty && counterparty != outerAccount)
             requiredSigners.push_back(*counterparty);
     }
@@ -446,7 +446,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     auto const dupes = std::ranges::unique(requiredSigners);
     requiredSigners.erase(dupes.begin(), dupes.end());
 
-    std::size_t matched = 0;
+    std::size_t numReqSignersMatched = 0;
 
     // Validation Batch Signers
     if (ctx.tx.isFieldPresent(sfBatchSigners))
@@ -482,13 +482,14 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             }
             lastBatchSigner = signerAccount;
 
-            if (matched >= requiredSigners.size() || requiredSigners[matched] != signerAccount)
+            if (numReqSignersMatched >= requiredSigners.size() ||
+                requiredSigners[numReqSignersMatched] != signerAccount)
             {
                 JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                     << "extra signer provided: " << signerAccount;
                 return temBAD_SIGNER;
             }
-            ++matched;
+            ++numReqSignersMatched;
         }
 
         // Caches only the cryptographic signature check, not whether each
@@ -508,8 +509,8 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     }
 
     // Reject if any required signer was not matched (also covers signers being
-    // required while sfBatchSigners is absent, leaving matched at 0).
-    if (matched != requiredSigners.size())
+    // required while sfBatchSigners is absent, leaving numReqSignersMatched at 0).
+    if (numReqSignersMatched != requiredSigners.size())
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                             << "invalid batch signers.";

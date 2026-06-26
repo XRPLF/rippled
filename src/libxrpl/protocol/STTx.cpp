@@ -772,6 +772,9 @@ isBatchRawTransactionOkay(STObject const& st, std::string& reason)
 
             raw.applyTemplate(getTxFormat(tt)->getSOTemplate());
 
+            // passesLocalChecks recurses back into isBatchRawTransactionOkay,
+            // but an inner can never be a batch (rejected above), so the
+            // recursion terminates at depth 1.
             if (!passesLocalChecks(raw, reason))
                 return false;
         }
