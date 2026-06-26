@@ -86,7 +86,7 @@ isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& 
     }
     if (sle->getType() == ltSIGNER_LIST)
     {
-        Keylet const accountSignerList = keylet::signerList(accountID);
+        Keylet const accountSignerList = keylet::signers(accountID);
         return sle->key() == accountSignerList.key;
     }
     if (sle->getType() == ltNFTOKEN_OFFER)

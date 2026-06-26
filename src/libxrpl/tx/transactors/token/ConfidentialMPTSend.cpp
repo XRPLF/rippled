@@ -175,7 +175,7 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 
     // Check if MPT issuance exists
     auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -281,7 +281,7 @@ ConfidentialMPTSend::doApply()
 
     auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     auto sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
-    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
 
     auto const sleDestAcct = view().read(keylet::account(destination));
 

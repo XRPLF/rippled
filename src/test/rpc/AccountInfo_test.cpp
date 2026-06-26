@@ -583,17 +583,24 @@ public:
         static constexpr std::pair<std::string_view, std::uint32_t> kAllowTrustLineClawbackFlag{
             "allowTrustLineClawback", asfAllowTrustLineClawback};
 
-        // must use bob's account because alice has noFreeze set
-        auto const f1 = getAccountFlag(kAllowTrustLineClawbackFlag.first, bob);
-        BEAST_EXPECT(f1.has_value());
-        BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
+        if (features[featureClawback])
+        {
+            // must use bob's account because alice has noFreeze set
+            auto const f1 = getAccountFlag(kAllowTrustLineClawbackFlag.first, bob);
+            BEAST_EXPECT(f1.has_value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
-        // Set allowTrustLineClawback
-        env(fset(bob, kAllowTrustLineClawbackFlag.second));
-        env.close();
-        auto const f2 = getAccountFlag(kAllowTrustLineClawbackFlag.first, bob);
-        BEAST_EXPECT(f2.has_value());
-        BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
+            // Set allowTrustLineClawback
+            env(fset(bob, kAllowTrustLineClawbackFlag.second));
+            env.close();
+            auto const f2 = getAccountFlag(kAllowTrustLineClawbackFlag.first, bob);
+            BEAST_EXPECT(f2.has_value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
+        }
+        else
+        {
+            BEAST_EXPECT(!getAccountFlag(kAllowTrustLineClawbackFlag.first, bob));
+        }
 
         static constexpr std::pair<std::string_view, std::uint32_t> kAllowTrustLineLockingFlag{
             "allowTrustLineLocking", asfAllowTrustLineLocking};
@@ -627,7 +634,8 @@ public:
 
         FeatureBitset const allFeatures{xrpl::test::jtx::testableAmendments()};
         testAccountFlags(allFeatures);
-        testAccountFlags(allFeatures - featureTokenEscrow);
+        testAccountFlags(allFeatures - featureClawback);
+        testAccountFlags(allFeatures - featureClawback - featureTokenEscrow);
     }
 };
 

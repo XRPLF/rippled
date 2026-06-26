@@ -395,7 +395,7 @@ TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer,
 #endif
 TRANSACTION(ttCLAWBACK, 30, Clawback,
     Delegation::Delegable,
-    uint256{},
+    featureClawback,
     NoPriv,
     ({
     {sfAmount, SoeRequired, SoeMptSupported},

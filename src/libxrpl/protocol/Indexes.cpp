@@ -218,7 +218,7 @@ amendments() noexcept
 }
 
 Keylet const&
-feeSettings() noexcept
+fees() noexcept
 {
     static Keylet const kRet{ltFEE_SETTINGS, indexHash(LedgerNameSpace::FeeSettings)};
     return kRet;
@@ -232,18 +232,18 @@ negativeUNL() noexcept
 }
 
 Keylet
-book(Book const& b)
+BookT::operator()(Book const& b) const
 {
     return {ltDIR_NODE, getBookBase(b)};
 }
 
 Keylet
-trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept
+line(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept
 {
     // There is code in TrustSet that calls us with id0 == id1, to allow users
     // to locate and delete such "weird" trustlines. If we remove that code, we
     // could enable this assert:
-    // XRPL_ASSERT(id0 != id1, "xrpl::keylet::trustLine : accounts must be
+    // XRPL_ASSERT(id0 != id1, "xrpl::keylet::line : accounts must be
     // different");
 
     // A trust line is shared between two accounts; while we typically think
@@ -285,20 +285,20 @@ quality(Keylet const& k, std::uint64_t q) noexcept
 }
 
 Keylet
-next(Keylet const& k)
+NextT::operator()(Keylet const& k) const
 {
-    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::next : valid input type");
+    XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::NextT::operator() : valid input type");
     return {ltDIR_NODE, getQualityNext(k.key)};
 }
 
 Keylet
-ticket(AccountID const& id, std::uint32_t ticketSeq)
+TicketT::operator()(AccountID const& id, std::uint32_t ticketSeq) const
 {
     return {ltTICKET, getTicketIndex(id, ticketSeq)};
 }
 
 Keylet
-ticket(AccountID const& id, SeqProxy ticketSeq)
+TicketT::operator()(AccountID const& id, SeqProxy ticketSeq) const
 {
     return {ltTICKET, getTicketIndex(id, ticketSeq)};
 }
@@ -307,15 +307,15 @@ ticket(AccountID const& id, SeqProxy ticketSeq)
 // else. If we ever support multiple pages of signer lists, this would be the
 // keylet used to locate them.
 static Keylet
-signerList(AccountID const& account, std::uint32_t page) noexcept
+signers(AccountID const& account, std::uint32_t page) noexcept
 {
     return {ltSIGNER_LIST, indexHash(LedgerNameSpace::SignerList, account, page)};
 }
 
 Keylet
-signerList(AccountID const& account) noexcept
+signers(AccountID const& account) noexcept
 {
-    return signerList(account, 0);
+    return signers(account, 0);
 }
 
 Keylet
@@ -375,13 +375,13 @@ escrow(AccountID const& src, std::uint32_t seq) noexcept
 }
 
 Keylet
-payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
+payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
 {
     return {ltPAYCHAN, indexHash(LedgerNameSpace::XRPPaymentChannel, src, dst, seq)};
 }
 
 Keylet
-nftokenPageMin(AccountID const& owner)
+nftpageMin(AccountID const& owner)
 {
     std::array<std::uint8_t, 32> buf{};
     std::memcpy(buf.data(), owner.data(), owner.size());
@@ -389,7 +389,7 @@ nftokenPageMin(AccountID const& owner)
 }
 
 Keylet
-nftokenPageMax(AccountID const& owner)
+nftpageMax(AccountID const& owner)
 {
     uint256 id = nft::kPageMask;
     std::memcpy(id.data(), owner.data(), owner.size());
@@ -397,14 +397,14 @@ nftokenPageMax(AccountID const& owner)
 }
 
 Keylet
-nftokenPage(Keylet const& k, uint256 const& token)
+nftpage(Keylet const& k, uint256 const& token)
 {
-    XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftokenPage : valid input type");
+    XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftpage : valid input type");
     return {ltNFTOKEN_PAGE, (k.key & ~nft::kPageMask) + (token & nft::kPageMask)};
 }
 
 Keylet
-nftokenOffer(AccountID const& owner, std::uint32_t seq)
+nftoffer(AccountID const& owner, std::uint32_t seq)
 {
     return {ltNFTOKEN_OFFER, indexHash(LedgerNameSpace::NftokenOffer, owner, seq)};
 }
@@ -518,13 +518,13 @@ oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 }
 
 Keylet
-mptokenIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
+mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
 {
-    return mptokenIssuance(makeMptID(seq, issuer));
+    return mptIssuance(makeMptID(seq, issuer));
 }
 
 Keylet
-mptokenIssuance(MPTID const& issuanceID) noexcept
+mptIssuance(MPTID const& issuanceID) noexcept
 {
     return {ltMPTOKEN_ISSUANCE, indexHash(LedgerNameSpace::MPTokenIssuance, issuanceID)};
 }
@@ -532,7 +532,7 @@ mptokenIssuance(MPTID const& issuanceID) noexcept
 Keylet
 mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept
 {
-    return mptoken(mptokenIssuance(issuanceID).key, holder);
+    return mptoken(mptIssuance(issuanceID).key, holder);
 }
 
 Keylet
@@ -554,9 +554,9 @@ vault(AccountID const& owner, std::uint32_t seq) noexcept
 }
 
 Keylet
-loanBroker(AccountID const& owner, std::uint32_t seq) noexcept
+loanbroker(AccountID const& owner, std::uint32_t seq) noexcept
 {
-    return loanBroker(indexHash(LedgerNameSpace::LoanBroker, owner, seq));
+    return loanbroker(indexHash(LedgerNameSpace::LoanBroker, owner, seq));
 }
 
 Keylet

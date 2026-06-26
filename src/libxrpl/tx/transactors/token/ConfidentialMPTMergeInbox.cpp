@@ -43,7 +43,7 @@ ConfidentialMPTMergeInbox::calculateBaseFee(ReadView const& view, STTx const& tx
 TER
 ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 

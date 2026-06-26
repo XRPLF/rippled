@@ -73,7 +73,7 @@ buildLedgerImpl(
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::feeSettings()),
+        built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::fees()),
         "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 

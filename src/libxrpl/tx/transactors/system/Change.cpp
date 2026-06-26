@@ -254,7 +254,7 @@ Change::applyAmendment()
 TER
 Change::applyFee()
 {
-    auto const k = keylet::feeSettings();
+    auto const k = keylet::fees();
 
     SLE::pointer feeObject = view().peek(k);
 

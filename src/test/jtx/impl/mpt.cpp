@@ -269,8 +269,8 @@ MPTTester::create(MPTCreate const& arg)
     if (!isTesSuccess(submit(arg, jv)))
     {
         // Verify issuance doesn't exist
-        env_.require(RequireAny(
-            [&]() -> bool { return env_.le(keylet::mptokenIssuance(*id_)) == nullptr; }));
+        env_.require(
+            RequireAny([&]() -> bool { return env_.le(keylet::mptIssuance(*id_)) == nullptr; }));
 
         id_.reset();
     }
@@ -587,7 +587,7 @@ MPTTester::forObject(
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
-    auto const key = holder ? keylet::mptoken(*id_, holder->id()) : keylet::mptokenIssuance(*id_);
+    auto const key = holder ? keylet::mptoken(*id_, holder->id()) : keylet::mptIssuance(*id_);
     if (auto const sle = env_.le(key))
         return cb(sle);
     return false;
@@ -760,7 +760,7 @@ MPTTester::getBalance(Account const& account) const
         Throw<std::runtime_error>("MPT has not been created");
     if (account == issuer_)
     {
-        if (auto const sle = env_.le(keylet::mptokenIssuance(*id_)))
+        if (auto const sle = env_.le(keylet::mptIssuance(*id_)))
             return sle->getFieldU64(sfOutstandingAmount);
     }
     else
@@ -777,7 +777,7 @@ MPTTester::getIssuanceConfidentialBalance() const
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
 
-    if (auto const sle = env_.le(keylet::mptokenIssuance(*id_)))
+    if (auto const sle = env_.le(keylet::mptIssuance(*id_)))
         return (*sle)[~sfConfidentialOutstandingAmount].value_or(0);
 
     return 0;
@@ -794,7 +794,7 @@ MPTTester::getClawbackProof(
         Throw<std::runtime_error>("MPT has not been created");
 
     auto const sleHolder = env_.le(keylet::mptoken(*id_, holder.id()));
-    auto const sleIssuance = env_.le(keylet::mptokenIssuance(*id_));
+    auto const sleIssuance = env_.le(keylet::mptIssuance(*id_));
 
     if (!sleHolder || !sleIssuance)
         return std::nullopt;
@@ -2258,7 +2258,7 @@ MPTTester::getIssuanceOutstandingBalance() const
     if (!id_)
         return std::nullopt;
 
-    auto const sle = env_.current()->read(keylet::mptokenIssuance(*id_));
+    auto const sle = env_.current()->read(keylet::mptIssuance(*id_));
 
     if (!sle)
         return std::nullopt;

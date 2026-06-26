@@ -161,7 +161,7 @@ TER
 MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists
-    auto const sleMptIssuance = ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -309,7 +309,7 @@ MPTokenIssuanceSet::doApply()
     }
     else
     {
-        sle = view().peek(keylet::mptokenIssuance(mptIssuanceID));
+        sle = view().peek(keylet::mptIssuance(mptIssuanceID));
     }
 
     if (!sle)

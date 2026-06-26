@@ -194,27 +194,30 @@ AccountSet::preclaim(PreclaimContext const& ctx)
     //
     // Clawback
     //
-    if (uSetFlag == asfAllowTrustLineClawback)
+    if (ctx.view.rules().enabled(featureClawback))
     {
-        if (sle->isFlag(lsfNoFreeze))
+        if (uSetFlag == asfAllowTrustLineClawback)
         {
-            JLOG(ctx.j.trace()) << "Can't set Clawback if NoFreeze is set";
-            return tecNO_PERMISSION;
-        }
+            if (sle->isFlag(lsfNoFreeze))
+            {
+                JLOG(ctx.j.trace()) << "Can't set Clawback if NoFreeze is set";
+                return tecNO_PERMISSION;
+            }
 
-        if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
-        {
-            JLOG(ctx.j.trace()) << "Owner directory not empty.";
-            return tecOWNERS;
+            if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
+            {
+                JLOG(ctx.j.trace()) << "Owner directory not empty.";
+                return tecOWNERS;
+            }
         }
-    }
-    else if (uSetFlag == asfNoFreeze)
-    {
-        // Cannot set NoFreeze if clawback is enabled
-        if (sle->isFlag(lsfAllowTrustLineClawback))
+        else if (uSetFlag == asfNoFreeze)
         {
-            JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
-            return tecNO_PERMISSION;
+            // Cannot set NoFreeze if clawback is enabled
+            if (sle->isFlag(lsfAllowTrustLineClawback))
+            {
+                JLOG(ctx.j.trace()) << "Can't set NoFreeze if clawback is enabled";
+                return tecNO_PERMISSION;
+            }
         }
     }
 
@@ -312,7 +315,7 @@ AccountSet::doApply()
             return tecNEED_MASTER_KEY;
         }
 
-        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signerList(accountID_))))
+        if ((!sle->isFieldPresent(sfRegularKey)) && (!view().peek(keylet::signers(accountID_))))
         {
             // Account has no regular key or multi-signer signer list.
             return tecNO_ALTERNATIVE_KEY;
@@ -573,7 +576,7 @@ AccountSet::doApply()
     }
 
     // Set flag for clawback
-    if (uSetFlag == asfAllowTrustLineClawback)
+    if (ctx_.view().rules().enabled(featureClawback) && uSetFlag == asfAllowTrustLineClawback)
     {
         JLOG(j_.trace()) << "set allow clawback";
         uFlagsOut |= lsfAllowTrustLineClawback;

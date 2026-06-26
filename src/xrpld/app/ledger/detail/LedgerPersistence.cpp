@@ -122,7 +122,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
         return;
 
     XRPL_ASSERT(
-        ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
+        ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::fees()),
         "xrpl::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 
