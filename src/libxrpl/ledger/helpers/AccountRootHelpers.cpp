@@ -274,14 +274,14 @@ adjustOwnerCount(
         adjustOwnerCountHlp(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
         adjustOwnerCountHlp(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
 
-        auto sponsorObjSle = view.peek(keylet::sponsorship(sponsorID, accountID));
-        if (sponsorObjSle && adjustment > 0)
+        auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
+        if (sponsorshipSle && adjustment > 0)
         {
             // update the pre-funded RemainingOwnerCount on Sponsorship ledger object
             // Remaining owner count moves opposite to adjustment:
             // +adjustment => consume reserve (-),
             adjustOwnerCountHlp(
-                view, sponsorObjSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
         }
     }
     adjustOwnerCountHlp(view, accountSle, sfOwnerCount, accountID, adjustment, j);

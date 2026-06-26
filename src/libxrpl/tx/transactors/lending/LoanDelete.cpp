@@ -103,6 +103,9 @@ LoanDelete::doApply()
     if (!view.dirRemove(keylet::ownerDir(borrower), loanSle->at(sfOwnerNode), loanID, false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
+    // Delete the Loan object
+    view.erase(loanSle);
+
     // Decrement the LoanBroker's owner count.
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
@@ -127,10 +130,7 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    adjustOwnerCountObj(view, borrowerSle, loanSle, -1, j_);
-
-    // Delete the Loan object
-    view.erase(loanSle);
+    adjustOwnerCount(view, borrowerSle, {}, -1, j_);
 
     // These associations shouldn't do anything, but do them just to be safe
     associateAsset(*loanSle, vaultAsset);

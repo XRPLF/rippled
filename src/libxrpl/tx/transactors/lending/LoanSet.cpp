@@ -8,7 +8,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -513,18 +512,14 @@ LoanSet::doApply()
         }
     }
 
-    auto const sponsorSle = getTxReserveSponsor(view, tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
+    adjustOwnerCount(view, borrowerSle, {}, 1, j_);
+
     {
         auto const balance =
             accountID_ == borrower ? preFeeBalance_ : borrowerSle->at(sfBalance).value().xrp();
-        if (auto const ret =
-                checkInsufficientReserve(view, tx, borrowerSle, balance, *sponsorSle, 1, 0, j_);
-            !isTesSuccess(ret))
-            return ret;
+        if (balance < accountReserve(view, borrowerSle, j_))
+            return tecINSUFFICIENT_RESERVE;
     }
-    adjustOwnerCount(view, borrowerSle, *sponsorSle, 1, j_);
 
     // Account for the origination fee using two payments
     //
@@ -624,7 +619,6 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
-    addSponsorToLedgerEntry(loan, *sponsorSle);
     view.insert(loan);
 
     // Update the balances in the vault

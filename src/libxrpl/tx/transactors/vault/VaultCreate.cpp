@@ -7,7 +7,6 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -157,28 +156,9 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    auto const sponsorSle = getTxReserveSponsor(view(), tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-    if (!ctx_.view().rules().enabled(featureSponsor))
-    {
-        adjustOwnerCount(view(), owner, *sponsorSle, 2, j_);
-        addSponsorToLedgerEntry(vault, *sponsorSle);
-        if (auto const ret =
-                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, *sponsorSle, 0, 0, j_);
-            !isTesSuccess(ret))
-            return ret;
-    }
-    else
-    {
-        // after Sponsor Amendment, check insufficient reserve first
-        if (auto const ret =
-                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, *sponsorSle, 2, 0, j_);
-            !isTesSuccess(ret))
-            return ret;
-        adjustOwnerCount(view(), owner, *sponsorSle, 2, j_);
-        addSponsorToLedgerEntry(vault, *sponsorSle);
-    }
+    adjustOwnerCount(view(), owner, {}, 2, j_);
+    if (preFeeBalance_ < accountReserve(view(), owner, j_))
+        return tecINSUFFICIENT_RESERVE;
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)

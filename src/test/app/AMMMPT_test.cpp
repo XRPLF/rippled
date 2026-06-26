@@ -1006,13 +1006,7 @@ private:
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
-                // After the Sponsor Amendment, it will result in tesSUCCESS
-                // if the current XRP == balance the required XRP balance calculated from the
-                // reserve.
-                // Before the Amendment, it will result in tecINSUF_RESERVE_LINE
-                // if the current XRP == balance the required XRP balance calculated from the
-                // reserve.
-                features[featureSponsor] ? Ter(tesSUCCESS) : Ter(tecINSUF_RESERVE_LINE));
+                Ter(tecINSUF_RESERVE_LINE));
         }
 
         // Invalid min
@@ -7093,7 +7087,6 @@ private:
         testInvalidInstance();
         testInvalidDeposit(all);
         testInvalidDeposit(all - featureAMMClawback);
-        testInvalidDeposit(all - featureSponsor);
         testDeposit();
         testInvalidWithdraw();
         testWithdraw();
