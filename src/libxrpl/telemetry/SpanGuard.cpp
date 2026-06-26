@@ -317,8 +317,7 @@ SpanGuard::hashSpan(
                 std::make_unique<Impl>(tracer->StartSpan(
                     std::string(name),
                     {},
-                    {{linkSpan->GetContext(),
-                      {{std::string(attr::linkType), std::string(attr_val::followsFrom)}}}},
+                    {{linkSpan->GetContext(), {{kLinkTypeKey, kLinkTypeFollowsFrom}}}},
                     opts)));
         }
     }
