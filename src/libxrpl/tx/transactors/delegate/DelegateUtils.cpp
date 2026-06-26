@@ -29,14 +29,12 @@ checkTxPermission(SLE::const_ref delegate, STTx const& tx)
     return terNO_DELEGATE_PERMISSION;
 }
 
-void
-loadGranularPermission(
-    SLE::const_ref delegate,
-    TxType const& txType,
-    std::unordered_set<GranularPermissionType>& granularPermissions)
+std::unordered_set<GranularPermissionType>
+getGranularPermission(SLE::const_ref delegate, TxType const& txType)
 {
+    std::unordered_set<GranularPermissionType> granularPermissions;
     if (!delegate)
-        return;
+        return granularPermissions;
 
     auto const permissionArray = delegate->getFieldArray(sfPermissions);
     for (auto const& permission : permissionArray)
@@ -47,6 +45,8 @@ loadGranularPermission(
         if (type && *type == txType)
             granularPermissions.insert(granularValue);
     }
+
+    return granularPermissions;
 }
 
 }  // namespace xrpl

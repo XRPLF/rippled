@@ -28,7 +28,6 @@ endif()
 set(package_env
     SRC_DIR=${CMAKE_SOURCE_DIR}
     BUILD_DIR=${CMAKE_BINARY_DIR}
-    PKG_VERSION=${xrpld_version}
     PKG_RELEASE=${pkg_release}
 )
 

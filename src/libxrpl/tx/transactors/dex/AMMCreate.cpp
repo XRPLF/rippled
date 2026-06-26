@@ -212,7 +212,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto clawbackDisabled = [&](Asset const& asset) -> TER {
         return asset.visit(
             [&](MPTIssue const& issue) -> TER {
-                auto const sle = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
+                auto const sle = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
                 if (!sle)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 if (sle->isFlag(lsfMPTCanClawback))
@@ -260,7 +260,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 
     // LP Token already exists. (should not happen)
     auto const lptIss = ammLPTIssue(amount.asset(), amount2.asset(), accountId);
-    if (sb.read(keylet::line(accountId, lptIss)))
+    if (sb.read(keylet::trustLine(accountId, lptIss)))
     {
         JLOG(j.error()) << "AMM Instance: LP Token already exists.";
         return {tecDUPLICATE, false};
@@ -330,7 +330,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                 // Set AMM flag on AMM trustline
                 if (!isXRP(amount))
                 {
-                    SLE::pointer const sleRippleState = sb.peek(keylet::line(accountId, issue));
+                    SLE::pointer const sleRippleState =
+                        sb.peek(keylet::trustLine(accountId, issue));
                     if (!sleRippleState)
                     {
                         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -364,7 +365,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     << lpTokens << " " << amount << " " << amount2;
     auto addOrderBook = [&](Asset const& assetIn, Asset const& assetOut, std::uint64_t uRate) {
         Book const book{assetIn, assetOut, std::nullopt};
-        auto const dir = keylet::quality(keylet::kBook(book), uRate);
+        auto const dir = keylet::quality(keylet::book(book), uRate);
         if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
             ctx.registry.get().getOrderBookDB().addOrderBook(book);
     };

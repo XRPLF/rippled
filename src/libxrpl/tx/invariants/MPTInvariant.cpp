@@ -551,7 +551,7 @@ ValidMPTTransfer::finalize(
         std::uint16_t senders = 0;
         std::uint16_t receivers = 0;
         bool invalidTransfer = false;
-        auto const sleIssuance = view.read(keylet::mptIssuance(mptID));
+        auto const sleIssuance = view.read(keylet::mptokenIssuance(mptID));
         if (!sleIssuance)
         {
             continue;

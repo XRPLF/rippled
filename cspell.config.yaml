@@ -109,6 +109,7 @@ words:
   - enabled
   - enablerepo
   - endmacro
+  - envrc
   - exceptioned
   - EXPECT_STREQ
   - Falco
@@ -233,8 +234,10 @@ words:
   - pyenv
   - pyparsing
   - qalloc
+  - qbsprofile
   - queuable
   - Raphson
+  - rcflags
   - replayer
   - rerere
   - retriable
@@ -298,6 +301,7 @@ words:
   - txs
   - ubsan
   - UBSAN
+  - ufdio
   - umant
   - unacquired
   - unambiguity

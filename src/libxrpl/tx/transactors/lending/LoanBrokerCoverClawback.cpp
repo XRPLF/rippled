@@ -218,7 +218,7 @@ preclaimHelper<MPTIssue>(
     SLE const& sleIssuer,
     STAmount const& clawAmount)
 {
-    auto const issuanceKey = keylet::mptIssuance(clawAmount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(clawAmount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -245,7 +245,7 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
     auto const brokerID = *findBrokerID;
     auto const amount = tx[~sfAmount];
 
-    auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
+    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -344,7 +344,7 @@ LoanBrokerCoverClawback::doApply()
     auto const brokerID = *findBrokerID;
     auto const amount = tx[~sfAmount];
 
-    auto sleBroker = view().peek(keylet::loanbroker(brokerID));
+    auto sleBroker = view().peek(keylet::loanBroker(brokerID));
     if (!sleBroker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
