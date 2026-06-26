@@ -168,7 +168,7 @@ struct MantissaRange final
     rep const max{(min * 10) - 1};
     CuspRoundingFix const cuspRoundingFix{isCuspFixEnabled(scale)};
 
-    static constexpr std::set<MantissaScale> const&
+    static std::set<MantissaScale> const&
     getAllScales()
     {
         static std::set<MantissaRange::MantissaScale> const kScales = {
