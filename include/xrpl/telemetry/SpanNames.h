@@ -107,7 +107,6 @@ inline constexpr auto link = makeStr("link");
 namespace attr {
 inline constexpr auto networkId = join(join(seg::xrpl, seg::network), makeStr("id"));
 inline constexpr auto networkType = join(join(seg::xrpl, seg::network), makeStr("type"));
-inline constexpr auto linkType = makeStr("link_type");
 
 /// Canonical shared attrs (rule 5 — <domain>_<field> underscore form).
 ///
@@ -139,7 +138,6 @@ inline constexpr auto fullValidation = makeStr("full_validation");
 namespace attr_val {
 inline constexpr auto success = makeStr("success");
 inline constexpr auto error = makeStr("error");
-inline constexpr auto followsFrom = makeStr("follows_from");
 }  // namespace attr_val
 
 }  // namespace xrpl::telemetry
