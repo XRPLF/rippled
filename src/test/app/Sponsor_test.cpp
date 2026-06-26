@@ -756,7 +756,7 @@ public:
         Account const sponsor("sponsor");
 
         // Trust lines and MPTokens normally skip the reserve check when the
-        // holder's ownerCount < 2 (the "free first item" shortcut). When the
+        // holder's ownerCount < 2 (the "free-tier" / first-two-items shortcut). When the
         // tx is sponsored, that shortcut must not apply — the sponsor must
         // still cover the reserve.
         Env env{*this, testableAmendments()};
