@@ -54,8 +54,8 @@
 namespace xrpl::test::jtx {
 namespace {
 
-static constexpr std::uint64_t kElGamalDecryptRangeLow = 0;
-static constexpr std::uint64_t kElGamalDecryptRangeHigh = 3000;
+constexpr std::uint64_t kElGamalDecryptRangeLow = 0;
+constexpr std::uint64_t kElGamalDecryptRangeHigh = 3000;
 
 /**
  * @brief Returns a reference to the value held by an optional, throwing if it
