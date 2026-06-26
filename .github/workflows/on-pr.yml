@@ -154,8 +154,8 @@ jobs:
     if: ${{ github.repository == 'XRPLF/rippled' && needs.should-run.outputs.go == 'true' && github.event_name == 'pull_request' && startsWith(github.event.pull_request.base.ref, 'release') }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
-      remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
 
   notify-clio:
     needs: upload-recipe
