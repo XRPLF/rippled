@@ -1,6 +1,7 @@
 #include <xrpl/protocol/ConfidentialTransfer.h>
 
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -292,7 +293,8 @@ verifyRevealedAmount(
     Slice const& blindingFactor,
     ConfidentialRecipient const& holder,
     ConfidentialRecipient const& issuer,
-    std::optional<ConfidentialRecipient> const& auditor)
+    std::optional<ConfidentialRecipient> const& auditor,
+    beast::Journal j)
 {
     if (blindingFactor.size() != kEcBlindingFactorLength ||
         holder.publicKey.size() != kEcPubKeyLength ||
@@ -300,7 +302,11 @@ verifyRevealedAmount(
         issuer.publicKey.size() != kEcPubKeyLength ||
         issuer.encryptedAmount.size() != kEcGamalEncryptedTotalLength)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "Confidential transfer revealed amount verification reached "
+                           "invalid holder or issuer input sizes.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     auto const holderP = toParticipant(holder);
@@ -312,7 +318,11 @@ verifyRevealedAmount(
         if (auditor->publicKey.size() != kEcPubKeyLength ||
             auditor->encryptedAmount.size() != kEcGamalEncryptedTotalLength)
         {
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+            // LCOV_EXCL_START
+            JLOG(j.error()) << "Confidential transfer revealed amount verification reached "
+                               "invalid auditor input sizes.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
         auditorP = toParticipant(*auditor);
         auditorPtr = &auditorP;
@@ -321,6 +331,7 @@ verifyRevealedAmount(
     if (mpt_verify_revealed_amount(amount, blindingFactor.data(), &holderP, &issuerP, auditorPtr) !=
         0)
     {
+        JLOG(j.warn()) << "Confidential transfer revealed amount proof rejected by crypto library.";
         return tecBAD_PROOF;
     }
 
@@ -362,13 +373,26 @@ checkEncryptedAmountFormat(STObject const& object)
 }
 
 TER
-verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash)
+verifySchnorrProof(
+    Slice const& pubKeySlice,
+    Slice const& proofSlice,
+    uint256 const& contextHash,
+    beast::Journal j)
 {
     if (proofSlice.size() != kEcSchnorrProofLength || pubKeySlice.size() != kEcPubKeyLength)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error())
+            << "Confidential transfer Schnorr proof verification reached invalid input sizes.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     if (mpt_verify_convert_proof(proofSlice.data(), pubKeySlice.data(), contextHash.data()) != 0)
+    {
+        JLOG(j.warn()) << "Confidential transfer Schnorr proof rejected by crypto library.";
         return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }
@@ -379,17 +403,23 @@ verifyClawbackProof(
     Slice const& proof,
     Slice const& pubKeySlice,
     Slice const& ciphertext,
-    uint256 const& contextHash)
+    uint256 const& contextHash,
+    beast::Journal j)
 {
     if (ciphertext.size() != kEcGamalEncryptedTotalLength ||
         pubKeySlice.size() != kEcPubKeyLength || proof.size() != kEcClawbackProofLength)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        JLOG(j.error())
+            << "ConfidentialMPTClawback proof verification reached invalid input sizes.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     if (mpt_verify_clawback_proof(
             proof.data(), amount, pubKeySlice.data(), ciphertext.data(), contextHash.data()) != 0)
     {
+        JLOG(j.warn()) << "ConfidentialMPTClawback proof rejected by crypto library.";
         return tecBAD_PROOF;
     }
 
@@ -406,7 +436,8 @@ verifySendProof(
     Slice const& spendingBalance,
     Slice const& amountCommitment,
     Slice const& balanceCommitment,
-    uint256 const& contextHash)
+    uint256 const& contextHash,
+    beast::Journal j)
 {
     auto const recipientCount = getConfidentialRecipientCount(auditor.has_value());
     if (proof.size() != kEcSendProofLength || sender.publicKey.size() != kEcPubKeyLength ||
@@ -419,7 +450,10 @@ verifySendProof(
         amountCommitment.size() != kEcPedersenCommitmentLength ||
         balanceCommitment.size() != kEcPedersenCommitmentLength)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "ConfidentialMPTSend proof verification reached invalid input sizes.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     std::vector<mpt_confidential_participant> participants;
@@ -432,12 +466,22 @@ verifySendProof(
         if (auditor->publicKey.size() != kEcPubKeyLength ||
             auditor->encryptedAmount.size() != kEcGamalEncryptedTotalLength)
         {
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+            // LCOV_EXCL_START
+            JLOG(j.error())
+                << "ConfidentialMPTSend proof verification reached invalid auditor input sizes.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
         }
         participants.push_back(toParticipant(*auditor));
     }
     if (participants.size() != recipientCount)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "ConfidentialMPTSend proof verification built an unexpected "
+                           "participant count.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     if (mpt_verify_send_proof(
             proof.data(),
@@ -448,6 +492,7 @@ verifySendProof(
             balanceCommitment.data(),
             contextHash.data()) != 0)
     {
+        JLOG(j.warn()) << "ConfidentialMPTSend proof rejected by crypto library.";
         return tecBAD_PROOF;
     }
 
@@ -461,13 +506,18 @@ verifyConvertBackProof(
     Slice const& spendingBalance,
     Slice const& balanceCommitment,
     uint64_t amount,
-    uint256 const& contextHash)
+    uint256 const& contextHash,
+    beast::Journal j)
 {
     if (proof.size() != kEcConvertBackProofLength || pubKeySlice.size() != kEcPubKeyLength ||
         spendingBalance.size() != kEcGamalEncryptedTotalLength ||
         balanceCommitment.size() != kEcPedersenCommitmentLength)
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        JLOG(j.error())
+            << "ConfidentialMPTConvertBack proof verification reached invalid input sizes.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     if (mpt_verify_convert_back_proof(
@@ -478,6 +528,7 @@ verifyConvertBackProof(
             amount,
             contextHash.data()) != 0)
     {
+        JLOG(j.warn()) << "ConfidentialMPTConvertBack proof rejected by crypto library.";
         return tecBAD_PROOF;
     }
 

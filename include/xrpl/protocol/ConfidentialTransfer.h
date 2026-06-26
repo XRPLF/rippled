@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
@@ -280,7 +281,11 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
  * @return tesSUCCESS if valid, or an error code otherwise.
  */
 TER
-verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash);
+verifySchnorrProof(
+    Slice const& pubKeySlice,
+    Slice const& proofSlice,
+    uint256 const& contextHash,
+    beast::Journal j);
 
 /**
  * @brief Validates the format of encrypted amount fields in a transaction.
@@ -316,7 +321,8 @@ verifyRevealedAmount(
     Slice const& blindingFactor,
     ConfidentialRecipient const& holder,
     ConfidentialRecipient const& issuer,
-    std::optional<ConfidentialRecipient> const& auditor);
+    std::optional<ConfidentialRecipient> const& auditor,
+    beast::Journal j);
 
 /**
  * @brief Returns the number of recipients in a confidential transfer.
@@ -354,7 +360,8 @@ verifyClawbackProof(
     Slice const& proof,
     Slice const& pubKeySlice,
     Slice const& ciphertext,
-    uint256 const& contextHash);
+    uint256 const& contextHash,
+    beast::Journal j);
 
 /**
  * @brief Generates a cryptographically secure blinding factor
@@ -401,7 +408,8 @@ verifySendProof(
     Slice const& spendingBalance,
     Slice const& amountCommitment,
     Slice const& balanceCommitment,
-    uint256 const& contextHash);
+    uint256 const& contextHash,
+    beast::Journal j);
 
 /**
  * @brief Verifies all zero-knowledge proofs for a ConfidentialMPTConvertBack transaction.
@@ -426,6 +434,7 @@ verifyConvertBackProof(
     Slice const& spendingBalance,
     Slice const& balanceCommitment,
     uint64_t amount,
-    uint256 const& contextHash);
+    uint256 const& contextHash,
+    beast::Journal j);
 
 }  // namespace xrpl

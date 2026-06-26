@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTClawback.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
@@ -74,7 +75,12 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Sanity check: account must be the same as issuer
     if (sleIssuance->getAccountID(sfIssuer) != account)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error()) << "ConfidentialMPTClawback account did not match issuance issuer.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Check if issuance has issuer ElGamal public key
     if (!sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
@@ -118,7 +124,8 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
         ctx.tx[sfZKProof],
         (*sleIssuance)[sfIssuerEncryptionKey],
         (*sleHolderMPToken)[sfIssuerEncryptedBalance],
-        contextHash);
+        contextHash,
+        ctx.j);
 }
 
 TER
@@ -131,7 +138,13 @@ ConfidentialMPTClawback::doApply()
     auto sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
 
     if (!sleIssuance || !sleHolderMPToken)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTClawback apply missing issuance or holder MPToken entry.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const clawAmount = ctx_.tx[sfMPTAmount];
 
@@ -141,11 +154,23 @@ ConfidentialMPTClawback::doApply()
     // After clawback, the balance should be encrypted zero.
     auto const encZeroForHolder = encryptCanonicalZeroAmount(holderPubKey, holder, mptIssuanceID);
     if (!encZeroForHolder)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTClawback failed to create canonical zero for holder balance.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto encZeroForIssuer = encryptCanonicalZeroAmount(issuerPubKey, holder, mptIssuanceID);
     if (!encZeroForIssuer)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTClawback failed to create canonical zero for issuer balance.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Set holder's confidential balances to encrypted zero
     (*sleHolderMPToken)[sfConfidentialBalanceInbox] = *encZeroForHolder;
@@ -158,14 +183,26 @@ ConfidentialMPTClawback::doApply()
         // Sanity check: the issuance must have an auditor public key if
         // auditing is enabled.
         if (!sleIssuance->isFieldPresent(sfAuditorEncryptionKey))
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTClawback missing auditor key while auditor balance is present.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const auditorPubKey = (*sleIssuance)[sfAuditorEncryptionKey];
 
         auto encZeroForAuditor = encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
 
         if (!encZeroForAuditor)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTClawback failed to create canonical zero for auditor balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleHolderMPToken)[sfAuditorEncryptedBalance] = std::move(*encZeroForAuditor);
     }
@@ -173,13 +210,24 @@ ConfidentialMPTClawback::doApply()
     // Decrease Global Confidential Outstanding Amount
     auto const oldCOA = (*sleIssuance)[sfConfidentialOutstandingAmount];
     if (clawAmount > oldCOA)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTClawback confidential outstanding amount would underflow.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
     (*sleIssuance)[sfConfidentialOutstandingAmount] = oldCOA - clawAmount;
 
     // Decrease Global Total Outstanding Amount
     auto const oldOA = (*sleIssuance)[sfOutstandingAmount];
     if (clawAmount > oldOA)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error()) << "ConfidentialMPTClawback outstanding amount would underflow.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
     (*sleIssuance)[sfOutstandingAmount] = oldOA - clawAmount;
 
     view().update(sleHolderMPToken);

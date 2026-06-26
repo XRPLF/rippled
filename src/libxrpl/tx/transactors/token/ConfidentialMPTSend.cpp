@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
@@ -107,7 +108,13 @@ verifySendProofs(
 {
     // Sanity check
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleIssuance)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error())
+            << "ConfidentialMPTSend proof verification missing required ledger entries.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
 
@@ -146,7 +153,8 @@ verifySendProofs(
         (*sleSenderMPToken)[sfConfidentialBalanceSpending],
         ctx.tx[sfAmountCommitment],
         ctx.tx[sfBalanceCommitment],
-        contextHash);
+        contextHash,
+        ctx.j);
 }
 
 }  // namespace detail
@@ -206,7 +214,12 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 
     // Sanity check: issuer isn't the sender
     if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error()) << "ConfidentialMPTSend issuer matched sender during preclaim.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Check sender's MPToken existence
     auto const sleSenderMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, account));
@@ -240,7 +253,11 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         (!sleSenderMPToken->isFieldPresent(sfAuditorEncryptedBalance) ||
          !sleDestinationMPToken->isFieldPresent(sfAuditorEncryptedBalance)))
     {
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error())
+            << "ConfidentialMPTSend missing auditor balance field while auditing is enabled.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     // Check lock
@@ -285,7 +302,12 @@ ConfidentialMPTSend::doApply()
     auto const sleDestAcct = view().read(keylet::account(destination));
 
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleIssuance || !sleDestAcct)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error()) << "ConfidentialMPTSend apply missing required ledger entries.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Deposit preauth authorization was already verified in preclaim.
     // Remove any expired credentials.
@@ -306,7 +328,13 @@ ConfidentialMPTSend::doApply()
         auto const curSpending = (*sleSenderMPToken)[sfConfidentialBalanceSpending];
         auto newSpending = homomorphicSubtract(curSpending, senderEc);
         if (!newSpending)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic subtract for sender spending balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleSenderMPToken)[sfConfidentialBalanceSpending] = std::move(*newSpending);
     }
@@ -316,7 +344,13 @@ ConfidentialMPTSend::doApply()
         auto const curIssuerEnc = (*sleSenderMPToken)[sfIssuerEncryptedBalance];
         auto newIssuerEnc = homomorphicSubtract(curIssuerEnc, issuerEc);
         if (!newIssuerEnc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic subtract for sender issuer balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleSenderMPToken)[sfIssuerEncryptedBalance] = std::move(*newIssuerEnc);
     }
@@ -327,7 +361,13 @@ ConfidentialMPTSend::doApply()
         auto const curAuditorEnc = (*sleSenderMPToken)[sfAuditorEncryptedBalance];
         auto newAuditorEnc = homomorphicSubtract(curAuditorEnc, *auditorEc);
         if (!newAuditorEnc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic subtract for sender auditor balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleSenderMPToken)[sfAuditorEncryptedBalance] = std::move(*newAuditorEnc);
     }
@@ -337,12 +377,24 @@ ConfidentialMPTSend::doApply()
         auto rerandomizedDestEc = rerandomizeCiphertext(
             destEc, (*sleDestinationMPToken)[sfHolderEncryptionKey], sendChallenge);
         if (!rerandomizedDestEc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed to rerandomize destination ciphertext.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const curInbox = (*sleDestinationMPToken)[sfConfidentialBalanceInbox];
         auto newInbox = homomorphicAdd(curInbox, *rerandomizedDestEc);
         if (!newInbox)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic add for destination inbox.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleDestinationMPToken)[sfConfidentialBalanceInbox] = std::move(*newInbox);
     }
@@ -352,12 +404,24 @@ ConfidentialMPTSend::doApply()
         auto rerandomizedIssuerEc =
             rerandomizeCiphertext(issuerEc, (*sleIssuance)[sfIssuerEncryptionKey], sendChallenge);
         if (!rerandomizedIssuerEc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed to rerandomize issuer ciphertext.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const curIssuerEnc = (*sleDestinationMPToken)[sfIssuerEncryptedBalance];
         auto newIssuerEnc = homomorphicAdd(curIssuerEnc, *rerandomizedIssuerEc);
         if (!newIssuerEnc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic add for destination issuer balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleDestinationMPToken)[sfIssuerEncryptedBalance] = std::move(*newIssuerEnc);
     }
@@ -368,12 +432,24 @@ ConfidentialMPTSend::doApply()
         auto rerandomizedAuditorEc = rerandomizeCiphertext(
             *auditorEc, (*sleIssuance)[sfAuditorEncryptionKey], sendChallenge);
         if (!rerandomizedAuditorEc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed to rerandomize auditor ciphertext.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         auto const curAuditorEnc = (*sleDestinationMPToken)[sfAuditorEncryptedBalance];
         auto newAuditorEnc = homomorphicAdd(curAuditorEnc, *rerandomizedAuditorEc);
         if (!newAuditorEnc)
-            return tecINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx_.journal.error())
+                << "ConfidentialMPTSend failed homomorphic add for destination auditor balance.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
 
         (*sleDestinationMPToken)[sfAuditorEncryptedBalance] = std::move(*newAuditorEnc);
     }

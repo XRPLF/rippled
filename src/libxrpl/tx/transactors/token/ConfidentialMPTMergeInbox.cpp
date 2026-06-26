@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
@@ -52,7 +53,12 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
     // already checked in preflight, but should also check that issuer on the
     // issuance isn't the account either
     if (sleIssuance->getAccountID(sfIssuer) == ctx.tx[sfAccount])
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error()) << "ConfidentialMPTMergeInbox issuer matched holder during preclaim.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const sleMptoken =
         ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
@@ -85,14 +91,23 @@ ConfidentialMPTMergeInbox::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error()) << "ConfidentialMPTMergeInbox apply missing MPToken entry.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // sanity check
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
     {
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTMergeInbox apply missing confidential balance fields.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     // Merge inbox into spending: spending = spending + inbox
@@ -101,7 +116,13 @@ ConfidentialMPTMergeInbox::doApply()
     auto sum = homomorphicAdd(
         (*sleMptoken)[sfConfidentialBalanceSpending], (*sleMptoken)[sfConfidentialBalanceInbox]);
     if (!sum)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTMergeInbox failed homomorphic add for inbox merge.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     (*sleMptoken)[sfConfidentialBalanceSpending] = std::move(*sum);
 
@@ -111,7 +132,13 @@ ConfidentialMPTMergeInbox::doApply()
         encryptCanonicalZeroAmount((*sleMptoken)[sfHolderEncryptionKey], accountID_, mptIssuanceID);
 
     if (!zeroEncryption)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx_.journal.error())
+            << "ConfidentialMPTMergeInbox failed to create canonical zero inbox balance.";
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     (*sleMptoken)[sfConfidentialBalanceInbox] = std::move(*zeroEncryption);
 
