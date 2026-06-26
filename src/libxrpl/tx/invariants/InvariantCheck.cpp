@@ -407,8 +407,10 @@ AccountRootsNotDeleted::finalize(
                                "succeeded without deleting an account";
         }
         else
+        {
             JLOG(j.fatal()) << "Invariant failed: account deletion "
                                "succeeded but deleted multiple accounts!";
+        }
         return false;
     }
 
@@ -516,8 +518,8 @@ AccountRootsDeletedClean::finalize(
             // checked above as entries in directAccountKeylets. This uses
             // view.succ() to check for any NFT pages in between the two
             // endpoints.
-            Keylet const first = keylet::nftpageMin(accountID);
-            Keylet const last = keylet::nftpageMax(accountID);
+            Keylet const first = keylet::nftokenPageMin(accountID);
+            Keylet const last = keylet::nftokenPageMax(accountID);
 
             std::optional<uint256> key = view.succ(first.key, last.key.next());
 
