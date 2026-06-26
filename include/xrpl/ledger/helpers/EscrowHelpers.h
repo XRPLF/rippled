@@ -17,8 +17,7 @@ namespace xrpl {
 template <ValidIssueType T>
 TER
 escrowUnlockApplyHelper(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext& ctx,
     Rate lockedRate,
     SLE::ref sleDest,
     STAmount const& xrpBalance,
@@ -32,8 +31,7 @@ escrowUnlockApplyHelper(
 template <>
 inline TER
 escrowUnlockApplyHelper<Issue>(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext& ctx,
     Rate lockedRate,
     SLE::ref sleDest,
     STAmount const& xrpBalance,
@@ -49,6 +47,7 @@ escrowUnlockApplyHelper<Issue>(
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
+    auto& view = ctx.view;
 
     if (senderIssuer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -59,12 +58,12 @@ escrowUnlockApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsorSle = getTxReserveSponsor(view, tx);
+        auto const sponsorSle = getTxReserveSponsor(ctx);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
-        if (auto const ret =
-                checkInsufficientReserve(view, tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
+        if (auto const ret = checkInsufficientReserve(
+                view, ctx.tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -169,8 +168,7 @@ escrowUnlockApplyHelper<Issue>(
 template <>
 inline TER
 escrowUnlockApplyHelper<MPTIssue>(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext& ctx,
     Rate lockedRate,
     SLE::ref sleDest,
     STAmount const& xrpBalance,
@@ -183,18 +181,19 @@ escrowUnlockApplyHelper<MPTIssue>(
 {
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
+    auto& view = ctx.view;
 
     auto const mptID = amount.get<MPTIssue>().getMptID();
     auto const issuanceKey = keylet::mptIssuance(mptID);
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        auto const sponsorSle = getTxReserveSponsor(view, tx);
+        auto const sponsorSle = getTxReserveSponsor(ctx);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
-        if (auto const ret =
-                checkInsufficientReserve(view, tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
+        if (auto const ret = checkInsufficientReserve(
+                view, ctx.tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
             return ret;
 

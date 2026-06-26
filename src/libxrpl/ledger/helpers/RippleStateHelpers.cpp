@@ -666,7 +666,7 @@ addEmptyHolding(
     SLE::pointer sponsorSle;
     if (!isPseudoAccount(sleDst))
     {
-        auto sle = getTxReserveSponsor(ctx.view, ctx.tx);
+        auto sle = getTxReserveSponsor(ctx);
         if (!sle)
             return sle.error();  // LCOV_EXCL_LINE
         sponsorSle = std::move(*sle);

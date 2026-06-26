@@ -328,7 +328,7 @@ TrustSet::doApply()
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
 
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 

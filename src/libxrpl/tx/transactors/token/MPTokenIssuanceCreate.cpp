@@ -104,11 +104,11 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
 std::expected<MPTID, TER>
 MPTokenIssuanceCreate::create(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext& ctx,
     beast::Journal journal,
     MPTCreateArgs const& args)
 {
+    auto& view = ctx.view;
     auto const acct = view.peek(keylet::account(args.account));
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
@@ -116,7 +116,7 @@ MPTokenIssuanceCreate::create(
     SLE::pointer sponsorSle;
     if (!isPseudoAccount(acct))
     {
-        auto sle = getTxReserveSponsor(view, tx);
+        auto sle = getTxReserveSponsor(ctx);
         if (!sle)
             return std::unexpected(sle.error());
         sponsorSle = std::move(*sle);
@@ -125,7 +125,7 @@ MPTokenIssuanceCreate::create(
     if (args.priorBalance)
     {
         if (auto const ret = checkInsufficientReserve(
-                view, tx, acct, *(args.priorBalance), sponsorSle, 1, 0, journal);
+                view, ctx.tx, acct, *(args.priorBalance), sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
             return std::unexpected(ret);  // tecINSUFFICIENT_RESERVE
     }
@@ -198,8 +198,7 @@ MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
     auto const result = create(
-        view(),
-        tx,
+        ctx_.getApplyViewContext(),
         j_,
         {
             .priorBalance = preFeeBalance_,

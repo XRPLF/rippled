@@ -197,8 +197,7 @@ VaultCreate::doApply()
             : keylet::line(pseudoId, asset.get<Issue>()).key;
     }();
     auto const maybeShare = MPTokenIssuanceCreate::create(
-        view(),
-        tx,
+        ctx_.getApplyViewContext(),
         j_,
         {
             .priorBalance = std::nullopt,

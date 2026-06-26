@@ -191,7 +191,7 @@ authorizeMPToken(
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
-        auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+        auto const sponsorSle = getTxReserveSponsor(ctx);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 

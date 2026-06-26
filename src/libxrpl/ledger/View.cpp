@@ -469,7 +469,7 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
+    auto const sponsorSle = getTxReserveSponsor(ctx);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 

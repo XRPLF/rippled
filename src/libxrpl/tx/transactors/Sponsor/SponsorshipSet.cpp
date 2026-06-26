@@ -204,7 +204,7 @@ SponsorshipSet::doApply()
     auto const maxFee = ctx_.tx[~sfMaxFee];
     auto const remainingOwnerCount = ctx_.tx[~sfRemainingOwnerCount];
 
-    auto reserveSponsorAccSle = getTxReserveSponsor(view(), ctx_.tx);
+    auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!reserveSponsorAccSle)
         return reserveSponsorAccSle.error();  // LCOV_EXCL_LINE
 
