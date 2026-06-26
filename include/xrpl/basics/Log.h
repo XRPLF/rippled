@@ -206,8 +206,7 @@ private:
 #ifndef JLOG
 #define JLOG(x) \
     if (!(x))   \
-    {           \
-    }           \
+        ;       \
     else        \
         x
 #endif

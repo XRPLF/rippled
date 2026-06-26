@@ -52,19 +52,22 @@
 
     2. Child span for a sub-operation (scoped child):
     @code
-        auto parent = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
+        auto parent = SpanGuard::span(
+            TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
         {
-            auto child = parent.childSpan("tx.apply");
-            child.setAttribute("tx_type", txType);
+            auto child = parent.childSpan(rpc_span::op::process);
+            child.setAttribute(rpc_span::attr::version, apiVersion);
             // child ends here
         }
     @endcode
 
     3. Unrelated span (cross-scope, same thread):
     @code
-        // Transactions and RPC can be active simultaneously
-        auto txSpan = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
-        auto rpcSpan = SpanGuard::span(TraceCategory::Rpc, "rpc", "info");
+        // gRPC and RPC handlers can be active simultaneously
+        auto grpcSpan = SpanGuard::span(
+            TraceCategory::Rpc, grpc_span::prefix::grpc, grpc_span::attr::method);
+        auto rpcSpan = SpanGuard::span(
+            TraceCategory::Rpc, rpc_span::prefix::command, commandName);
         // both spans end on scope exit
     @endcode
 
@@ -74,7 +77,7 @@
         auto ctx = parentGuard.captureContext();
 
         // Thread B: create child span with explicit parent
-        auto child = SpanGuard::childSpan("async.work", ctx);
+        auto child = SpanGuard::childSpan(rpc_span::op::process, ctx);
     @endcode
 
     @note Thread safety: The Telemetry interface is safe for concurrent reads
@@ -83,8 +86,8 @@
     The OTel SDK's TracerProvider and Tracer are internally thread-safe.
 */
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/config/BasicConfig.h>
 
 #include <atomic>
 #include <chrono>
@@ -100,6 +103,13 @@
 #endif
 
 namespace xrpl::telemetry {
+
+#ifdef XRPL_ENABLE_TELEMETRY
+/** OTel instrumentation scope (tracer) name. Identifies this library as the
+    source of spans; distinct from the `service.name` resource attribute
+    (Setup::serviceName), which is config-overridable. */
+inline constexpr std::string_view kTracerName{"xrpld"};
+#endif
 
 class Telemetry
 {
@@ -163,19 +173,31 @@ public:
         /** Path to a CA certificate bundle for TLS verification. */
         std::string tlsCertPath;
 
-        /** Head-based sampling ratio in [0.0, 1.0]. 1.0 = trace everything.
-            This is a head-based (pre-decision) sampler using
-            TraceIdRatioBasedSampler — the decision to record or drop a
-            trace is made before the root span starts. For post-hoc
-            (tail-based) filtering, see SpanGuard::discard().
+        /** Path to this node's client certificate (PEM), presented to the
+            collector for mutual TLS. Empty disables client-side auth, in
+            which case only server (one-way) TLS is used. */
+        std::string tlsClientCertPath;
+
+        /** Path to the private key (PEM) for tlsClientCertPath. Required
+            whenever tlsClientCertPath is set. */
+        std::string tlsClientKeyPath;
+
+        /** Head-based sampling ratio. Intentionally fixed at 1.0 (sample
+            everything) and NOT read from config. A per-node ratio would let
+            nodes make divergent keep/drop decisions for the same distributed
+            trace, producing broken/partial traces. The ratio sampler is wrapped
+            in a ParentBasedSampler (see Telemetry.cpp) so spans inheriting a
+            remote parent honor the upstream sampled flag. Volume reduction is
+            delegated to the collector's tail sampling; for node-local post-hoc
+            dropping see SpanGuard::discard().
         */
-        double samplingRatio = 1.0;
+        static constexpr double samplingRatio = 1.0;
 
         /** Maximum number of spans per batch export. */
         std::uint32_t batchSize = 512;
 
         /** Delay between batch exports. */
-        std::chrono::milliseconds batchDelay{5000};
+        std::chrono::milliseconds batchDelay = std::chrono::milliseconds{5000};
 
         /** Maximum number of spans queued before dropping. */
         std::uint32_t maxQueueSize = 2048;
@@ -195,9 +217,9 @@ public:
         /** Enable tracing for RPC request handling. */
         bool traceRpc = true;
 
-        /** Enable tracing for peer-to-peer messages (disabled by default
-            due to high volume). */
-        bool tracePeer = false;
+        /** Enable tracing for peer-to-peer messages (enabled by default;
+            high volume). */
+        bool tracePeer = true;
 
         /** Enable tracing for ledger close/accept. */
         bool traceLedger = true;
@@ -276,7 +298,7 @@ public:
         @return A shared pointer to the Tracer.
     */
     virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
-    getTracer(std::string_view name = "xrpld") = 0;
+    getTracer(std::string_view name = kTracerName) = 0;
 
     /** Start a new span on the current thread's context.
 
@@ -336,7 +358,7 @@ makeTelemetry(Telemetry::Setup const& setup, beast::Journal journal);
     @return A populated Setup struct with defaults for missing values.
 */
 Telemetry::Setup
-setupTelemetry(
+makeTelemetrySetup(
     Section const& section,
     std::string const& nodePublicKey,
     std::string const& version,

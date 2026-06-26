@@ -7,16 +7,59 @@
     See cfg/xrpld-example.cfg for the full list of available options.
 */
 
-#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
 #include <xrpl/telemetry/Telemetry.h>
 
-#include <algorithm>
+#include <chrono>
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 
 namespace xrpl::telemetry {
 
 namespace {
+
+/** Config key names for the [telemetry] section.
+
+    Each must match the corresponding option documented in
+    cfg/xrpld-example.cfg verbatim. Defined as `char const*` so they
+    pass to Section::valueOr() (which takes `std::string const&`)
+    without an explicit conversion, exactly as a literal would.
+*/
+namespace key {
+constexpr char const* enabled = "enabled";
+constexpr char const* serviceName = "service_name";
+constexpr char const* serviceInstanceId = "service_instance_id";
+constexpr char const* endpoint = "endpoint";
+constexpr char const* useTls = "use_tls";
+constexpr char const* tlsCaCert = "tls_ca_cert";
+constexpr char const* tlsClientCert = "tls_client_cert";
+constexpr char const* tlsClientKey = "tls_client_key";
+constexpr char const* batchSize = "batch_size";
+constexpr char const* batchDelayMs = "batch_delay_ms";
+constexpr char const* maxQueueSize = "max_queue_size";
+constexpr char const* traceTransactions = "trace_transactions";
+constexpr char const* traceConsensus = "trace_consensus";
+constexpr char const* traceRpc = "trace_rpc";
+constexpr char const* tracePeer = "trace_peer";
+constexpr char const* traceLedger = "trace_ledger";
+}  // namespace key
+
+/** Default values applied when a key is absent from the config.
+
+    @note serviceName mirrors SystemParameters' systemName() ("xrpld") but
+    is duplicated here as a literal: the telemetry module deliberately does
+    not link xrpl.libxrpl.protocol, so including SystemParameters.h would
+    introduce an undeclared cross-module dependency.
+*/
+namespace dflt {
+constexpr char const* serviceName = "xrpld";
+constexpr char const* endpoint = "http://localhost:4318/v1/traces";
+constexpr std::uint32_t batchSize = 512u;
+constexpr std::uint32_t batchDelayMs = 5000u;
+constexpr std::uint32_t maxQueueSize = 2048u;
+}  // namespace dflt
 
 /** Derive a human-readable network type label from the numeric network ID.
     @param networkId  The network identifier from [network_id] config.
@@ -41,7 +84,7 @@ networkTypeFromId(std::uint32_t networkId)
 }  // namespace
 
 Telemetry::Setup
-setupTelemetry(
+makeTelemetrySetup(
     Section const& section,
     std::string const& nodePublicKey,
     std::string const& version,
@@ -49,33 +92,47 @@ setupTelemetry(
 {
     Telemetry::Setup setup;
 
-    setup.enabled = section.valueOr<int>("enabled", 0) != 0;
-    setup.serviceName = section.valueOr<std::string>("service_name", "xrpld");
+    setup.enabled = section.valueOr<int>(key::enabled, 0) != 0;
+    setup.serviceName = section.valueOr<std::string>(key::serviceName, dflt::serviceName);
     setup.serviceVersion = version;
-    setup.serviceInstanceId = section.valueOr<std::string>("service_instance_id", nodePublicKey);
+    setup.serviceInstanceId = section.valueOr<std::string>(key::serviceInstanceId, nodePublicKey);
 
-    setup.exporterEndpoint =
-        section.valueOr<std::string>("endpoint", "http://localhost:4318/v1/traces");
+    setup.exporterEndpoint = section.valueOr<std::string>(key::endpoint, dflt::endpoint);
 
-    setup.useTls = section.valueOr<int>("use_tls", 0) != 0;
-    setup.tlsCertPath = section.valueOr<std::string>("tls_ca_cert", "");
+    setup.useTls = section.valueOr<int>(key::useTls, 0) != 0;
+    setup.tlsCertPath = section.valueOr<std::string>(key::tlsCaCert, "");
+    setup.tlsClientCertPath = section.valueOr<std::string>(key::tlsClientCert, "");
+    setup.tlsClientKeyPath = section.valueOr<std::string>(key::tlsClientKey, "");
 
-    setup.samplingRatio = section.valueOr<double>("sampling_ratio", 1.0);
-    setup.samplingRatio = std::clamp(setup.samplingRatio, 0.0, 1.0);
+    // Mutual TLS needs both the client certificate and its private key.
+    // Supplying only one fails later with a cryptic SSL handshake error, so
+    // reject the partial configuration here with an actionable message.
+    if (setup.tlsClientCertPath.empty() != setup.tlsClientKeyPath.empty())
+    {
+        Throw<std::runtime_error>(
+            "[telemetry] tls_client_cert and tls_client_key must be set together "
+            "(set both for mutual TLS, or neither for one-way TLS).");
+    }
 
-    setup.batchSize = section.valueOr<std::uint32_t>("batch_size", 512u);
-    setup.batchDelay =
-        std::chrono::milliseconds{section.valueOr<std::uint32_t>("batch_delay_ms", 5000u)};
-    setup.maxQueueSize = section.valueOr<std::uint32_t>("max_queue_size", 2048u);
+    // Head sampling is intentionally fixed at 1.0 (sample everything) and is
+    // not read from config. A per-node ratio would let nodes make divergent
+    // keep/drop decisions for the same distributed trace, producing broken
+    // traces; volume reduction is delegated to the collector's tail sampling.
+    // setup.samplingRatio is a const member fixed at 1.0; nothing to parse.
+
+    setup.batchSize = section.valueOr<std::uint32_t>(key::batchSize, dflt::batchSize);
+    setup.batchDelay = std::chrono::milliseconds{
+        section.valueOr<std::uint32_t>(key::batchDelayMs, dflt::batchDelayMs)};
+    setup.maxQueueSize = section.valueOr<std::uint32_t>(key::maxQueueSize, dflt::maxQueueSize);
 
     setup.networkId = networkId;
     setup.networkType = networkTypeFromId(networkId);
 
-    setup.traceTransactions = section.valueOr<int>("trace_transactions", 1) != 0;
-    setup.traceConsensus = section.valueOr<int>("trace_consensus", 1) != 0;
-    setup.traceRpc = section.valueOr<int>("trace_rpc", 1) != 0;
-    setup.tracePeer = section.valueOr<int>("trace_peer", 0) != 0;
-    setup.traceLedger = section.valueOr<int>("trace_ledger", 1) != 0;
+    setup.traceTransactions = section.valueOr<int>(key::traceTransactions, 1) != 0;
+    setup.traceConsensus = section.valueOr<int>(key::traceConsensus, 1) != 0;
+    setup.traceRpc = section.valueOr<int>(key::traceRpc, 1) != 0;
+    setup.tracePeer = section.valueOr<int>(key::tracePeer, 1) != 0;
+    setup.traceLedger = section.valueOr<int>(key::traceLedger, 1) != 0;
 
     setup.consensusTraceStrategy =
         section.valueOr<std::string>("consensus_trace_strategy", "deterministic");

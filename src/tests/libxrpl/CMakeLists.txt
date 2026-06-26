@@ -1,68 +1,75 @@
-include(XrplAddTest)
+include(GoogleTest)
+include(isolate_headers)
 
 # Test requirements.
 find_package(GTest REQUIRED)
 
-# Custom target for all tests defined in this file
-add_custom_target(xrpl.tests)
-
-# Test helpers
-add_library(xrpl.helpers.test STATIC)
-target_sources(
-    xrpl.helpers.test
-    PRIVATE helpers/Account.cpp helpers/TestSink.cpp helpers/TxTest.cpp
+# Single combined gtest binary built from the shared test helpers and all test
+# modules below.
+add_executable(
+    xrpl_tests
+    main.cpp
+    helpers/Account.cpp
+    helpers/TestSink.cpp
+    helpers/TxTest.cpp
 )
-target_include_directories(xrpl.helpers.test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(xrpl.helpers.test PUBLIC xrpl.libxrpl gtest::gtest)
-
-# Common library dependencies for the rest of the tests.
-add_library(xrpl.imports.test INTERFACE)
-target_link_libraries(
-    xrpl.imports.test
-    INTERFACE gtest::gtest xrpl.libxrpl xrpl.helpers.test
+patch_nix_binary(xrpl_tests)
+set_target_properties(
+    xrpl_tests
+    PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
 )
+# Lets test sources include the shared helpers as <helpers/...>.
+target_include_directories(xrpl_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(xrpl_tests PRIVATE GTest::gtest xrpl.libxrpl)
 
-# One test for each module.
-xrpl_add_test(basics)
-target_link_libraries(xrpl.test.basics PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.basics)
-
-xrpl_add_test(crypto)
-target_link_libraries(xrpl.test.crypto PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.crypto)
-
-xrpl_add_test(json)
-target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.json)
-
-xrpl_add_test(tx)
-target_link_libraries(xrpl.test.tx PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.tx)
-
-xrpl_add_test(protocol_autogen)
-target_link_libraries(xrpl.test.protocol_autogen PRIVATE xrpl.imports.test)
-add_dependencies(xrpl.tests xrpl.test.protocol_autogen)
-
-# Network unit tests are currently not supported on Windows
+# One source subdirectory per module. Network unit tests are currently not
+# supported on Windows.
+set(test_modules
+    basics
+    crypto
+    json
+    tx
+    protocol_autogen
+    telemetry
+)
 if(NOT WIN32)
-    xrpl_add_test(net)
-    target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
-    add_dependencies(xrpl.tests xrpl.test.net)
+    list(APPEND test_modules net)
 endif()
 
-xrpl_add_test(telemetry)
-target_link_libraries(xrpl.test.telemetry PRIVATE xrpl.imports.test)
-target_include_directories(xrpl.test.telemetry PRIVATE ${CMAKE_SOURCE_DIR}/src)
-# ValidationTracker lives in xrpld but has no OTel SDK dependency —
-# compile its .cpp directly so the test can link without all of xrpld.
-target_sources(
-    xrpl.test.telemetry
-    PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/detail/ValidationTracker.cpp
-)
+foreach(module IN LISTS test_modules)
+    # Append the module's sources (${module}/*.cpp and ${module}.cpp, if any).
+    file(
+        GLOB_RECURSE sources
+        CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/${module}/*.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/${module}.cpp"
+    )
+    target_sources(xrpl_tests PRIVATE ${sources})
+
+    # Expose the module's private headers under their canonical include path.
+    isolate_headers(
+        xrpl_tests
+        "${CMAKE_SOURCE_DIR}"
+        "${CMAKE_SOURCE_DIR}/tests/${module}"
+        PRIVATE
+    )
+endforeach()
+
+# The telemetry test module exercises SpanGuard/Telemetry, which link against
+# the OpenTelemetry SDK when the telemetry build option is enabled.
 if(telemetry)
     target_link_libraries(
-        xrpl.test.telemetry
+        xrpl_tests
         PRIVATE opentelemetry-cpp::opentelemetry-cpp
+    )
+    # ValidationTracker lives in src/xrpld/ (not libxrpl), so we compile its
+    # implementation directly into the test binary and put src/ on the include
+    # path so its tests can reach <xrpld/telemetry/...> headers.
+    target_include_directories(xrpl_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_sources(
+        xrpl_tests
+        PRIVATE
+            ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/detail/ValidationTracker.cpp
     )
 else()
     # MetricsRegistry lives in xrpld; compile its .cpp directly into the test
@@ -70,8 +77,9 @@ else()
     # When telemetry=ON, XRPL_ENABLE_TELEMETRY is globally defined and the
     # .cpp pulls in xrpld symbols we cannot satisfy here.
     target_sources(
-        xrpl.test.telemetry
+        xrpl_tests
         PRIVATE ${CMAKE_SOURCE_DIR}/src/xrpld/telemetry/MetricsRegistry.cpp
     )
 endif()
-add_dependencies(xrpl.tests xrpl.test.telemetry)
+
+gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)

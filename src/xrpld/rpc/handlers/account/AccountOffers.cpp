@@ -33,7 +33,7 @@
 namespace xrpl {
 
 void
-appendOfferJson(std::shared_ptr<SLE const> const& offer, json::Value& offers)
+appendOfferJson(SLE::const_ref offer, json::Value& offers)
 {
     STAmount const dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
     json::Value& obj(offers.append(json::ValueType::Object));
@@ -87,7 +87,7 @@ doAccountOffers(RPC::JsonContext& context)
         return *err;
 
     json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
-    std::vector<std::shared_ptr<SLE const>> offers;
+    std::vector<SLE::const_pointer> offers;
     uint256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
@@ -138,8 +138,7 @@ doAccountOffers(RPC::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&offers, &count, &marker, &limit, &nextHint, &accountID](
-                std::shared_ptr<SLE const> const& sle) {
+            [&offers, &count, &marker, &limit, &nextHint, &accountID](SLE::const_ref sle) {
                 if (!sle)
                 {
                     // LCOV_EXCL_START

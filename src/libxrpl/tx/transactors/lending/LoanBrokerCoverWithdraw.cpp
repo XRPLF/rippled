@@ -20,8 +20,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 bool
@@ -70,7 +68,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Trying to withdraw into a pseudo-account.";
         return tecPSEUDO_ACCOUNT;
     }
-    auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
+    auto const sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
     if (!sleBroker)
     {
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -182,7 +180,7 @@ LoanBrokerCoverWithdraw::doApply()
     auto const amount = tx[sfAmount];
     auto const dstAcct = tx[~sfDestination].value_or(accountID_);
 
-    auto broker = view().peek(keylet::loanbroker(brokerID));
+    auto broker = view().peek(keylet::loanBroker(brokerID));
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -204,10 +202,7 @@ LoanBrokerCoverWithdraw::doApply()
 }
 
 void
-LoanBrokerCoverWithdraw::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+LoanBrokerCoverWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -101,6 +101,9 @@ add_module(xrpl basics)
 target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast)
 
 # Level 03
+add_module(xrpl config)
+target_link_libraries(xrpl.libxrpl.config PUBLIC xrpl.libxrpl.basics)
+
 add_module(xrpl json)
 target_link_libraries(xrpl.libxrpl.json PUBLIC xrpl.libxrpl.basics)
 
@@ -127,6 +130,7 @@ target_link_libraries(
     xrpl.libxrpl.core
     PUBLIC
         xrpl.libxrpl.basics
+        xrpl.libxrpl.config
         xrpl.libxrpl.json
         xrpl.libxrpl.protocol
         xrpl.libxrpl.protocol_autogen
@@ -150,7 +154,11 @@ target_link_libraries(
 add_module(xrpl nodestore)
 target_link_libraries(
     xrpl.libxrpl.nodestore
-    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.json xrpl.libxrpl.protocol
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.config
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
 )
 
 add_module(xrpl shamap)
@@ -166,13 +174,14 @@ target_link_libraries(
 add_module(xrpl rdb)
 target_link_libraries(
     xrpl.libxrpl.rdb
-    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.core
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.config xrpl.libxrpl.core
 )
 
 add_module(xrpl server)
 target_link_libraries(
     xrpl.libxrpl.server
     PUBLIC
+        xrpl.libxrpl.config
         xrpl.libxrpl.protocol
         xrpl.libxrpl.core
         xrpl.libxrpl.rdb
@@ -204,7 +213,7 @@ target_link_libraries(
 add_module(xrpl telemetry)
 target_link_libraries(
     xrpl.libxrpl.telemetry
-    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.beast
+    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.beast xrpl.libxrpl.config
 )
 if(telemetry)
     target_link_libraries(
@@ -237,6 +246,7 @@ target_link_modules(
     basics
     beast
     conditions
+    config
     core
     crypto
     git
@@ -265,6 +275,7 @@ target_link_modules(
 
 if(xrpld)
     add_executable(xrpld)
+    patch_nix_binary(xrpld)
     if(tests)
         target_compile_definitions(xrpld PUBLIC ENABLE_TESTS)
         target_compile_definitions(

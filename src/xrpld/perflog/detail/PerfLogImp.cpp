@@ -2,12 +2,13 @@
 
 #include <xrpld/telemetry/MetricsRegistry.h>
 
-#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypes.h>
 #include <xrpl/core/PerfLog.h>
@@ -526,7 +527,7 @@ setupPerfLog(Section const& section, boost::filesystem::path const& configDir)
     }
 
     std::uint64_t logInterval = 0;
-    if (getIfExists(section, "log_interval", logInterval))
+    if (getIfExists(section, Keys::kLogInterval, logInterval))
         setup.logInterval = std::chrono::seconds(logInterval);
     return setup;
 }

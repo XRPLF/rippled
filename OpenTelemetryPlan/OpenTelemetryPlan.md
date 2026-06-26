@@ -16,12 +16,12 @@ This document provides a comprehensive implementation plan for integrating OpenT
 
 ### Estimated Performance Overhead
 
-| Metric        | Overhead   | Notes                               |
-| ------------- | ---------- | ----------------------------------- |
-| CPU           | 1-3%       | Span creation and attribute setting |
-| Memory        | 2-5 MB     | Batch buffer for pending spans      |
-| Network       | 10-50 KB/s | Compressed OTLP export to collector |
-| Latency (p99) | <2%        | With proper sampling configuration  |
+| Metric        | Overhead   | Notes                                            |
+| ------------- | ---------- | ------------------------------------------------ |
+| CPU           | 1-3%       | Span creation and attribute setting              |
+| Memory        | <10 MB     | SDK statics + batch buffer + worker thread stack |
+| Network       | 10-50 KB/s | Compressed OTLP export to collector              |
+| Latency (p99) | <2%        | With proper sampling configuration               |
 
 ---
 
@@ -46,7 +46,6 @@ flowchart TB
 
     subgraph impl["Implementation"]
         strategy["03-implementation-strategy.md"]
-        code["04-code-samples.md"]
         config["05-configuration-reference.md"]
     end
 
@@ -55,7 +54,6 @@ flowchart TB
         backends["07-observability-backends.md"]
         appendix["08-appendix.md"]
         secure["secure-OTel.md"]
-        poc["POC_taskList.md"]
         dataref["09-data-collection-reference.md"]
     end
 
@@ -67,13 +65,11 @@ flowchart TB
     fund --> arch
     arch --> design
     design --> strategy
-    strategy --> code
-    code --> config
+    strategy --> config
     config --> phases
     phases --> backends
     backends --> appendix
     backends --> secure
-    phases --> poc
     appendix --> dataref
 
     style overview fill:#1b5e20,stroke:#0d3d14,color:#fff,stroke-width:2px
@@ -85,13 +81,11 @@ flowchart TB
     style arch fill:#0d47a1,stroke:#082f6a,color:#fff
     style design fill:#0d47a1,stroke:#082f6a,color:#fff
     style strategy fill:#bf360c,stroke:#8c2809,color:#fff
-    style code fill:#bf360c,stroke:#8c2809,color:#fff
     style config fill:#bf360c,stroke:#8c2809,color:#fff
     style phases fill:#4a148c,stroke:#2e0d57,color:#fff
     style backends fill:#4a148c,stroke:#2e0d57,color:#fff
     style appendix fill:#4a148c,stroke:#2e0d57,color:#fff
     style secure fill:#4a148c,stroke:#2e0d57,color:#fff
-    style poc fill:#4a148c,stroke:#2e0d57,color:#fff
     style dataref fill:#4a148c,stroke:#2e0d57,color:#fff
 ```
 
@@ -107,14 +101,12 @@ flowchart TB
 | **1**   | [Architecture Analysis](./01-architecture-analysis.md)         | xrpld component analysis, trace points, instrumentation priorities     |
 | **2**   | [Design Decisions](./02-design-decisions.md)                   | SDK selection, exporters, span naming, attributes, context propagation |
 | **3**   | [Implementation Strategy](./03-implementation-strategy.md)     | Directory structure, key principles, performance optimization          |
-| **4**   | [Code Samples](./04-code-samples.md)                           | C++ implementation examples for core infrastructure and key modules    |
 | **5**   | [Configuration Reference](./05-configuration-reference.md)     | xrpld config, CMake integration, Collector configurations              |
 | **6**   | [Implementation Phases](./06-implementation-phases.md)         | 5-phase timeline, tasks, risks, success metrics                        |
 | **7**   | [Observability Backends](./07-observability-backends.md)       | Backend selection guide and production architecture                    |
 | **8**   | [Appendix](./08-appendix.md)                                   | Glossary, references, version history                                  |
 | **9**   | [Data Collection Reference](./09-data-collection-reference.md) | Complete inventory of spans, attributes, metrics, and dashboards       |
 | **Sec** | [Securing the OTel Pipeline](./secure-OTel.md)                 | Threat model and hardening (mTLS, peer trace-context validation)       |
-| **POC** | [POC Task List](./POC_taskList.md)                             | Proof of concept tasks for RPC tracing end-to-end demo                 |
 
 ---
 
@@ -156,25 +148,9 @@ Span naming follows a hierarchical `<component>.<operation>` convention (e.g., `
 
 The telemetry code is organized under `include/xrpl/telemetry/` for headers and `src/libxrpl/telemetry/` for implementation. Key principles include RAII-based span management via `SpanGuard` (with `discard()` for dropping unwanted spans), a `FilteringSpanProcessor` that intercepts `OnEnd()` to prevent discarded spans from entering the export pipeline, conditional compilation with `XRPL_ENABLE_TELEMETRY`, and minimal runtime overhead through batch processing and efficient sampling.
 
-Performance optimization strategies include probabilistic head sampling (10% default), tail-based sampling at the collector for errors and slow traces, batch export to reduce network overhead, and conditional instrumentation that compiles to no-ops when disabled.
+Performance optimization strategies include head sampling fixed at 100% (intentionally not configurable, so trace keep/drop decisions stay coherent across nodes), tail-based sampling at the collector for errors and slow traces to reduce volume, batch export to reduce network overhead, and conditional instrumentation that compiles to no-ops when disabled.
 
 ➡️ **[Read full Implementation Strategy](./03-implementation-strategy.md)**
-
----
-
-## 4. Code Samples
-
-C++ implementation examples are provided for the core telemetry infrastructure and key modules:
-
-- `Telemetry.h` - Core interface for tracer access and span creation
-- `SpanGuard.h` - RAII wrapper for automatic span lifecycle management with `discard()` support
-- `DiscardFlag.h` - Thread-local flag for span discard signaling between SpanGuard and FilteringSpanProcessor
-- `SpanGuard.cpp` - Pimpl implementation confining all OTel SDK types
-- Protocol Buffer extensions for trace context propagation
-- Module-specific instrumentation (RPC, Consensus, P2P, JobQueue)
-- Remaining modules (PathFinding, TxQ, Validator, etc.) follow the same patterns
-
-➡️ **[View all Code Samples](./04-code-samples.md)**
 
 ---
 
@@ -244,14 +220,6 @@ A single-source-of-truth reference documenting every piece of telemetry data col
 Threat model and hardening guidance for production deployments where xrpld nodes ship telemetry to a centrally-hosted collector across an untrusted network. Covers the two attack surfaces (collector ingress and peer trace-context spoofing) and the chosen defenses: mTLS as primary collector auth, NetworkPolicy as defense-in-depth, and source-side validation plus per-peer rate limiting for the `protocol::TraceContext` field on peer messages.
 
 ➡️ **[View Securing the OTel Pipeline](./secure-OTel.md)**
-
----
-
-## POC Task List
-
-A step-by-step task list for building a minimal end-to-end proof of concept that demonstrates distributed tracing in xrpld. The POC scope is limited to RPC tracing — showing request traces flowing from xrpld through an OpenTelemetry Collector into Tempo, viewable in Grafana.
-
-➡️ **[View POC Task List](./POC_taskList.md)**
 
 ---
 

@@ -34,7 +34,7 @@
  *    |   attrs: queue_size, ledger_changed                   |
  *    |                                                       |
  *    |  +--------------------------------------------------+ |
- *    |  | txq.accept.tx  (per queued transaction)           | |
+ *    |  | txq.accept_tx  (per queued transaction)           | |
  *    |  | attrs: tx_hash, ter_code, retries_remaining       | |
  *    |  +--------------------------------------------------+ |
  *    +-------------------------------------------------------+

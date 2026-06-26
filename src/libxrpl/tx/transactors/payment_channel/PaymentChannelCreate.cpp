@@ -137,7 +137,7 @@ PaymentChannelCreate::doApply()
     //
     // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
-    Keylet const payChanKeylet = keylet::payChan(account, dst, ctx_.tx.getSeqValue());
+    Keylet const payChanKeylet = keylet::payChannel(account, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel
@@ -185,10 +185,7 @@ PaymentChannelCreate::doApply()
 }
 
 void
-PaymentChannelCreate::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+PaymentChannelCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -10,6 +10,7 @@
 #include <functional>
 #include <memory>
 #include <ostream>
+#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -53,10 +54,10 @@ public:
     /** Send a copy of data asynchronously. */
     /** @{ */
     void
-    write(std::string const& s)
+    write(std::string_view s)
     {
         if (!s.empty())
-            write(&s[0], std::distance(s.begin(), s.end()));
+            write(s.data(), s.size());
     }
 
     template <typename BufferSequence>

@@ -15,8 +15,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
-#include <memory>
-
 namespace xrpl {
 
 std::uint32_t
@@ -48,7 +46,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //       `holderID` is NOT used
     if (!holderID)
     {
-        std::shared_ptr<SLE const> const sleMpt =
+        SLE::const_pointer const sleMpt =
             ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
         // There is an edge case where all holders have zero balance, issuance
@@ -66,7 +64,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             if ((*sleMpt)[sfMPTAmount] != 0)
             {
                 auto const sleMptIssuance =
-                    ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                    ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -76,7 +74,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             if ((*sleMpt)[~sfLockedAmount].value_or(0) != 0)
             {
                 auto const sleMptIssuance =
-                    ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                    ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -89,7 +87,8 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         }
 
         // Now test when the holder wants to hold/create/authorize a new MPT
-        auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+        auto const sleMptIssuance =
+            ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
 
         if (!sleMptIssuance)
             return tecOBJECT_NOT_FOUND;
@@ -108,7 +107,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (!sleHolder)
         return tecNO_DST;
 
-    auto const sleMptIssuance = ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+    auto const sleMptIssuance = ctx.view.read(keylet::mptokenIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -156,10 +155,7 @@ MPTokenAuthorize::doApply()
 }
 
 void
-MPTokenAuthorize::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+MPTokenAuthorize::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

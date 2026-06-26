@@ -107,7 +107,6 @@ inline constexpr auto link = makeStr("link");
 namespace attr {
 inline constexpr auto networkId = join(join(seg::xrpl, seg::network), makeStr("id"));
 inline constexpr auto networkType = join(join(seg::xrpl, seg::network), makeStr("type"));
-inline constexpr auto linkType = makeStr("link_type");
 
 /// Canonical shared attrs (rule 5 — <domain>_<field> underscore form).
 ///
@@ -125,7 +124,13 @@ inline constexpr auto ledgerSeq = makeStr("ledger_seq");
 inline constexpr auto closeTime = makeStr("close_time");
 inline constexpr auto closeTimeCorrect = makeStr("close_time_correct");
 inline constexpr auto closeResolutionMs = makeStr("close_resolution_ms");
-inline constexpr auto ledgerHash = join(join(seg::xrpl, seg::ledger), makeStr("hash"));
+/// Shared validation attrs — reused by the consensus and peer validation
+/// spans. Same concept, same key on every span; the span name tells them
+/// apart, so neither is emitter-prefixed. `ledgerHash` is a ledger-object
+/// property (bare, like ledgerSeq); `fullValidation` is the is-full-validation
+/// flag. Never the dotted xrpl. form (reserved for resource attrs).
+inline constexpr auto ledgerHash = makeStr("ledger_hash");
+inline constexpr auto fullValidation = makeStr("full_validation");
 }  // namespace attr
 
 // ===== Shared attribute values =============================================
@@ -133,7 +138,6 @@ inline constexpr auto ledgerHash = join(join(seg::xrpl, seg::ledger), makeStr("h
 namespace attr_val {
 inline constexpr auto success = makeStr("success");
 inline constexpr auto error = makeStr("error");
-inline constexpr auto followsFrom = makeStr("follows_from");
 }  // namespace attr_val
 
 }  // namespace xrpl::telemetry

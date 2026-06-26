@@ -549,7 +549,7 @@ struct LedgerServer
             while (senders.contains(fromIdx))
                 fromIdx = (fromIdx + 1) % fundedAccounts;
             senders.insert(fromIdx);
-            toIdx = (toIdx + r * 2) % fundedAccounts;
+            toIdx = (toIdx + (r * 2)) % fundedAccounts;
             if (toIdx == fromIdx)
                 toIdx = (toIdx + 1) % fundedAccounts;
         };
@@ -1077,10 +1077,10 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
 
         {
             Config c;
-            std::string const toLoad = (R"xrpldConfig(
+            std::string const toLoad = R"xrpldConfig(
 [ledger_replay]
 0
-)xrpldConfig");
+)xrpldConfig";
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.ledgerReplay == false);
         }

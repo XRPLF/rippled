@@ -31,6 +31,7 @@
 #include <opentelemetry/sdk/trace/batch_span_processor_options.h>
 #include <opentelemetry/sdk/trace/processor.h>
 #include <opentelemetry/sdk/trace/sampler.h>
+#include <opentelemetry/sdk/trace/samplers/parent_factory.h>
 #include <opentelemetry/sdk/trace/samplers/trace_id_ratio.h>
 #include <opentelemetry/sdk/trace/tracer_provider.h>
 #include <opentelemetry/sdk/trace/tracer_provider_factory.h>
@@ -62,9 +63,10 @@ namespace resource = opentelemetry::sdk::resource;
 /** SpanProcessor decorator that drops discarded spans.
 
     Wraps a delegate processor (typically BatchSpanProcessor). In OnEnd(),
-    checks the gTlDiscardCurrentSpan thread-local flag. If set (by
-    SpanGuard::discard()), the span is silently dropped — never entering
-    the batch queue, never sent over the network, never stored.
+    calls DiscardScope::isActive(). If the calling thread is inside a
+    DiscardScope (entered by SpanGuard::discard()), the span is silently
+    dropped — never entering the batch queue, never sent over the network,
+    never stored.
 
     Uses a thread-local flag rather than inspecting Recordable attributes
     because the Recordable type varies by exporter (SpanData for simple
@@ -88,7 +90,7 @@ namespace resource = opentelemetry::sdk::resource;
           +---------------------+
 
     @note Thread safety: OnEnd() may be called concurrently from multiple
-    threads. The gTlDiscardCurrentSpan flag is thread-local, so each
+    threads. The discard flag behind DiscardScope is thread-local, so each
     thread's discard state is independent — no synchronization needed.
 */
 class FilteringSpanProcessor : public trace_sdk::SpanProcessor
@@ -118,12 +120,11 @@ public:
     void
     OnEnd(std::unique_ptr<trace_sdk::Recordable>&& span) noexcept override
     {
-        if (gTlDiscardCurrentSpan)
+        if (DiscardScope::isActive())
         {
-            // SpanGuard::discard() set the flag on this thread just before
-            // calling Span::End(), which invokes OnEnd() synchronously.
-            // Clear the flag and drop the span.
-            gTlDiscardCurrentSpan = false;
+            // SpanGuard::discard() is inside a DiscardScope on this thread,
+            // which it entered just before calling Span::End() — and End()
+            // invokes OnEnd() synchronously. Drop the span.
             return;
         }
         delegate_->OnEnd(std::move(span));
@@ -280,7 +281,13 @@ public:
         otlp_http::OtlpHttpExporterOptions exporterOpts;
         exporterOpts.url = setup_.exporterEndpoint;
         if (setup_.useTls)
+        {
             exporterOpts.ssl_ca_cert_path = setup_.tlsCertPath;
+            // Present a client cert for mutual TLS. When both paths are
+            // empty the connection falls back to one-way (server) TLS.
+            exporterOpts.ssl_client_cert_path = setup_.tlsClientCertPath;
+            exporterOpts.ssl_client_key_path = setup_.tlsClientKeyPath;
+        }
 
         auto exporter = otlp_http::OtlpHttpExporterFactory::Create(exporterOpts);
 
@@ -302,12 +309,20 @@ public:
             {opentelemetry::semconv::service::kServiceName, setup_.serviceName},
             {opentelemetry::semconv::service::kServiceVersion, setup_.serviceVersion},
             {opentelemetry::semconv::service::kServiceInstanceId, setup_.serviceInstanceId},
-            {std::string(attr::networkId), static_cast<int64_t>(setup_.networkId)},
-            {std::string(attr::networkType), setup_.networkType},
+            {std::string(attr::networkId),
+             static_cast<int64_t>(setup_.networkId)},              // LCOV_EXCL_LINE
+            {std::string(attr::networkType), setup_.networkType},  // LCOV_EXCL_LINE
         });
 
-        // Configure sampler
-        auto sampler = std::make_unique<trace_sdk::TraceIdRatioBasedSampler>(setup_.samplingRatio);
+        // Configure sampler. Head sampling is fixed at 1.0 (sample everything);
+        // setup_.samplingRatio is not config-driven. Wrap the ratio sampler in a
+        // ParentBasedSampler so spans with a remote parent honor the upstream
+        // sampled flag — this keeps keep/drop decisions coherent for a single
+        // distributed trace spanning multiple nodes. Volume reduction is left to
+        // the collector's tail sampling.
+        auto rootSampler =
+            std::make_shared<trace_sdk::TraceIdRatioBasedSampler>(setup_.samplingRatio);
+        auto sampler = trace_sdk::ParentBasedSamplerFactory::Create(std::move(rootSampler));
 
         // Create TracerProvider
         sdkProvider_ = trace_sdk::TracerProviderFactory::Create(
@@ -395,7 +410,7 @@ public:
     }
 
     opentelemetry::nostd::shared_ptr<trace_api::Tracer>
-    getTracer(std::string_view name) override
+    getTracer(std::string_view name = kTracerName) override
     {
         if (!sdkProvider_)
             return trace_api::Provider::GetTracerProvider()->GetTracer(std::string(name));
@@ -405,7 +420,7 @@ public:
     opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view name, trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer("xrpld");
+        auto tracer = getTracer();
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
         return tracer->StartSpan(std::string(name), opts);
@@ -417,7 +432,7 @@ public:
         opentelemetry::context::Context const& parentContext,
         trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer("xrpld");
+        auto tracer = getTracer();
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
         opts.parent = parentContext;

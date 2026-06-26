@@ -4,6 +4,10 @@
 
 xrpld supports OpenTelemetry distributed tracing to provide visibility into RPC requests, transaction processing, and consensus rounds.
 
+This runbook covers operating a running node and querying its traces. For
+building xrpld with telemetry support and the internal architecture, see
+[build/telemetry.md](build/telemetry.md).
+
 ## Quick Start
 
 ### 1. Start the observability stack
@@ -14,11 +18,11 @@ docker compose -f docker/telemetry/docker-compose.yml up -d
 
 This starts:
 
-- **OTel Collector** on ports 4317 (gRPC) and 4318 (HTTP)
+- **OTel Collector** on ports 4317 (gRPC) and 4318 (HTTP), and 13133 (health)
 - **Tempo** on http://localhost:3200 (trace backend)
 - **Prometheus** on http://localhost:9090
 - **Loki** on http://localhost:3100 (log aggregation)
-- **Grafana** on http://localhost:3000
+- **Grafana** on http://localhost:3000 (Tempo pre-configured as datasource)
 
 ### 2. Enable telemetry in xrpld
 
@@ -46,11 +50,10 @@ cmake --build --preset default
 | `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                        |
 | `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute             |
 | `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute      |
-| `sampling_ratio`           | `1.0`                             | Head-based sampling ratio (0.0--1.0)                      |
 | `trace_rpc`                | `1`                               | Enable RPC request tracing                                |
 | `trace_transactions`       | `1`                               | Enable transaction tracing                                |
 | `trace_consensus`          | `1`                               | Enable consensus tracing                                  |
-| `trace_peer`               | `0`                               | Enable peer message tracing (high volume)                 |
+| `trace_peer`               | `1`                               | Enable peer message tracing (high volume)                 |
 | `trace_ledger`             | `1`                               | Enable ledger tracing                                     |
 | `consensus_trace_strategy` | `deterministic`                   | Consensus trace ID strategy (`deterministic` or `random`) |
 | `batch_size`               | `512`                             | Max spans per batch export                                |
@@ -58,6 +61,8 @@ cmake --build --preset default
 | `max_queue_size`           | `2048`                            | Max spans queued before dropping                          |
 | `use_tls`                  | `0`                               | Use TLS for exporter connection                           |
 | `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                             |
+| `tls_client_cert`          | (empty)                           | Client cert (PEM) for mutual TLS; empty = one-way TLS     |
+| `tls_client_key`           | (empty)                           | Private key (PEM) for `tls_client_cert`                   |
 
 ## Span Reference
 
@@ -116,8 +121,8 @@ RED metrics on the _Transaction Overview_ dashboard.
 | `consensus.accept.apply`       | RCLConsensus.cpp | `ledger_seq`, `close_time`, `close_time_correct`, `close_resolution_ms`, `consensus_state`, `proposing`, `round_time_ms`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction`, `tx_count` | Ledger application with close time details (see Events below)                                                                         |
 | `consensus.validation.send`    | RCLConsensus.cpp | `ledger_seq`, `proposing`, `ledger_hash`, `full_validation`, `validation_sign_time`                                                                                                                                          | Validation sent after accept (follows-from link)                                                                                      |
 | `consensus.mode_change`        | RCLConsensus.cpp | `mode_old`, `mode_new`                                                                                                                                                                                                       | Consensus mode transition                                                                                                             |
-| `consensus.proposal.receive`   | PeerImp.cpp      | `trusted`, `consensus_round`                                                                                                                                                                                                 | Proposal received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers)   |
-| `consensus.validation.receive` | PeerImp.cpp      | `trusted`, `ledger_seq`                                                                                                                                                                                                      | Validation received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers) |
+| `consensus.proposal.receive`   | PeerImp.cpp      | `proposal_trusted`, `consensus_round`                                                                                                                                                                                        | Proposal received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers)   |
+| `consensus.validation.receive` | PeerImp.cpp      | `validation_trusted`, `ledger_seq`                                                                                                                                                                                           | Validation received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers) |
 
 #### Consensus Span Events
 
@@ -864,7 +869,8 @@ The `getKBUsed*()` methods require SQLite databases to exist. If running with
 
 ### High memory usage
 
-- Reduce `sampling_ratio` (e.g., `0.1` for 10% sampling)
+- Reduce trace volume with collector-side tail sampling (xrpld head sampling is
+  fixed at 1.0 and is not configurable)
 - Reduce `max_queue_size` and `batch_size`
 - Disable high-volume trace categories: `trace_peer=0`
 
@@ -890,12 +896,12 @@ The `getKBUsed*()` methods require SQLite databases to exist. If running with
 
 ## Performance Tuning
 
-| Scenario                 | Recommendation                                    |
-| ------------------------ | ------------------------------------------------- |
-| Production mainnet       | `sampling_ratio=0.01`, `trace_peer=0`             |
-| Testnet/devnet           | `sampling_ratio=1.0` (full tracing)               |
-| Debugging specific issue | `sampling_ratio=1.0` temporarily                  |
-| High-throughput node     | Increase `batch_size=1024`, `max_queue_size=4096` |
+| Scenario                 | Recommendation                                            |
+| ------------------------ | --------------------------------------------------------- |
+| Production mainnet       | `trace_peer=0`; reduce volume via collector tail sampling |
+| Testnet/devnet           | Full tracing (head sampling fixed at 1.0)                 |
+| Debugging specific issue | Full tracing (head sampling fixed at 1.0)                 |
+| High-throughput node     | Increase `batch_size=1024`, `max_queue_size=4096`         |
 
 ## Disabling Telemetry
 

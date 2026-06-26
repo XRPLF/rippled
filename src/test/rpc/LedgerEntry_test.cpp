@@ -784,8 +784,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 jss::amm,
                 {
-                    {jss::asset, "malformedRequest"},
-                    {jss::asset2, "malformedRequest"},
+                    {.fieldName = jss::asset, .malformedErrorMsg = "malformedRequest"},
+                    {.fieldName = jss::asset2, .malformedErrorMsg = "malformedRequest"},
                 });
         };
         auto getIOU = [&](Env& env) -> PrettyAsset { return alice["USD"]; };
@@ -900,9 +900,9 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 jss::credential,
                 {
-                    {jss::subject, "malformedRequest"},
-                    {jss::issuer, "malformedRequest"},
-                    {jss::credential_type, "malformedRequest"},
+                    {.fieldName = jss::subject, .malformedErrorMsg = "malformedRequest"},
+                    {.fieldName = jss::issuer, .malformedErrorMsg = "malformedRequest"},
+                    {.fieldName = jss::credential_type, .malformedErrorMsg = "malformedRequest"},
                 });
         }
     }
@@ -954,8 +954,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 jss::delegate,
                 {
-                    {jss::account, "malformedAddress"},
-                    {jss::authorize, "malformedAddress"},
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::authorize, .malformedErrorMsg = "malformedAddress"},
                 });
         }
     }
@@ -1011,8 +1011,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 jss::deposit_preauth,
                 {
-                    {jss::owner, "malformedOwner"},
-                    {jss::authorized, "malformedAuthorized", false},
+                    {.fieldName = jss::owner, .malformedErrorMsg = "malformedOwner"},
+                    {.fieldName = jss::authorized,
+                     .malformedErrorMsg = "malformedAuthorized",
+                     .required = false},
                 });
         }
     }
@@ -1037,7 +1039,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             // Setup Bob with DepositAuth
             env(fset(bob, asfDepositAuth));
             env.close();
-            env(deposit::authCredentials(bob, {{issuer, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = issuer, .credType = credType}}));
             env.close();
         }
 
@@ -1458,7 +1460,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
         {
             // Malformed escrow fields
             runLedgerEntryTest(
-                env, jss::escrow, {{jss::owner, "malformedOwner"}, {jss::seq, "malformedSeq"}});
+                env,
+                jss::escrow,
+                {{.fieldName = jss::owner, .malformedErrorMsg = "malformedOwner"},
+                 {.fieldName = jss::seq, .malformedErrorMsg = "malformedSeq"}});
         }
     }
 
@@ -1471,7 +1476,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         // positive test
         {
-            Keylet const keylet = keylet::fees();
+            Keylet const keylet = keylet::feeSettings();
             json::Value jvParams;
             jvParams[jss::fee] = to_string(keylet.key);
             json::Value const jrr =
@@ -1521,7 +1526,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         uint256 const nftokenID0 = token::getNextID(env, issuer, 0, tfTransferable);
         env(token::mint(issuer, 0), Txflags(tfTransferable));
         env.close();
-        uint256 const offerID = keylet::nftoffer(issuer, env.seq(issuer)).key;
+        uint256 const offerID = keylet::nftokenOffer(issuer, env.seq(issuer)).key;
         env(token::createOffer(issuer, nftokenID0, drops(1)),
             token::Destination(buyer),
             Txflags(tfSellNFToken));
@@ -1555,7 +1560,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env(token::mint(issuer, 0), Txflags(tfTransferable));
         env.close();
 
-        auto const nftpage = keylet::nftpageMax(issuer);
+        auto const nftpage = keylet::nftokenPageMax(issuer);
         BEAST_EXPECT(env.le(nftpage) != nullptr);
 
         {
@@ -1667,7 +1672,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             runLedgerEntryTest(
                 env,
                 jss::offer,
-                {{jss::account, "malformedAddress"}, {jss::seq, "malformedRequest"}});
+                {{.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                 {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"}});
         }
     }
 
@@ -1704,7 +1710,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
         std::string const ledgerHash{to_string(env.closed()->header().hash)};
 
-        uint256 const payChanIndex{keylet::payChan(alice, env.master, env.seq(alice) - 1).key};
+        uint256 const payChanIndex{keylet::payChannel(alice, env.master, env.seq(alice) - 1).key};
         {
             // Request the payment channel using its index.
             json::Value jvParams;
@@ -1774,8 +1780,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     env,
                     fieldName,
                     {
-                        {jss::accounts, "malformedRequest"},
-                        {jss::currency, "malformedCurrency"},
+                        {.fieldName = jss::accounts, .malformedErrorMsg = "malformedRequest"},
+                        {.fieldName = jss::currency, .malformedErrorMsg = "malformedCurrency"},
                     });
             }
             {
@@ -1955,8 +1961,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 jss::ticket,
                 {
-                    {jss::account, "malformedAddress"},
-                    {jss::ticket_seq, "malformedRequest"},
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::ticket_seq, .malformedErrorMsg = "malformedRequest"},
                 });
         }
     }
@@ -2034,8 +2040,9 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 jss::oracle,
                 {
-                    {jss::account, "malformedAccount"},
-                    {jss::oracle_document_id, "malformedDocumentID"},
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAccount"},
+                    {.fieldName = jss::oracle_document_id,
+                     .malformedErrorMsg = "malformedDocumentID"},
                 });
         }
     }
@@ -2172,7 +2179,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         env.close();
 
         auto const seq = env.seq(alice);
-        env(pdomain::setTx(alice, {{alice, "first credential"}}));
+        env(pdomain::setTx(alice, {{.issuer = alice, .credType = "first credential"}}));
         env.close();
         auto const objects = pdomain::getObjects(alice, env);
         if (!BEAST_EXPECT(objects.size() == 1))
@@ -2221,8 +2228,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 jss::permissioned_domain,
                 {
-                    {jss::account, "malformedAddress"},
-                    {jss::seq, "malformedRequest"},
+                    {.fieldName = jss::account, .malformedErrorMsg = "malformedAddress"},
+                    {.fieldName = jss::seq, .malformedErrorMsg = "malformedRequest"},
                 });
         }
     }
@@ -2414,7 +2421,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         };
 
         test(jss::amendments, jss::Amendments, keylet::amendments(), true);
-        test(jss::fee, jss::FeeSettings, keylet::fees(), true);
+        test(jss::fee, jss::FeeSettings, keylet::feeSettings(), true);
         // There won't be an nunl
         test(jss::nunl, jss::NegativeUNL, keylet::negativeUNL(), false);
         // Can only get the short skip list this way

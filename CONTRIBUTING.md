@@ -14,9 +14,9 @@ The following branches exist in the main project repository:
 
 - `develop`: The latest set of unreleased features, and the most common
   starting point for contributions.
-- `release`: The latest beta release or release candidate.
-- `master`: The latest stable release.
-- `gh-pages`: The documentation for this project, built by Doxygen.
+- `release/*` (e.g. `release/3.2.x`): Release branches, one per release line,
+  holding the latest release candidate, or stable release for that line.
+  Stable releases are published as [tagged releases](https://github.com/XRPLF/rippled/releases).
 
 The tip of each branch must be signed. In order for GitHub to sign a
 squashed commit that it builds from your pull request, GitHub must know
@@ -130,11 +130,9 @@ tl;dr
 ## Pull requests
 
 In general, pull requests use `develop` as the base branch.
-The exceptions are
 
-- Fixes and improvements to a release candidate use `release` as the
-  base.
-- Hotfixes use `master` as the base.
+The exceptions are fixes, improvements, and hotfixes for an existing release,
+which use that release's branch (e.g. `release/3.2.x`) as the base.
 
 If your changes are not quite ready, but you want to make it easily available
 for preliminary examination or review, you can create a "Draft" pull request.
@@ -216,7 +214,7 @@ coherent rather than a set of _thou shalt not_ commandments.
 
 ## Formatting
 
-All code must conform to `clang-format` version 21,
+All code must conform to `clang-format` version 22,
 according to the settings in [`.clang-format`](./.clang-format),
 unless the result would be unreasonably difficult to read or maintain.
 To demarcate lines that should be left as-is, surround them with comments like
@@ -261,7 +259,7 @@ This ensures that configuration changes don't introduce new warnings across the 
 
 ### Installing clang-tidy
 
-See the [environment setup guide](./docs/build/environment.md#clang-tidy) for platform-specific installation instructions.
+See the [environment setup guide](./docs/build/environment.md#clang-tidy) for how to get clang-tidy.
 
 ### Running clang-tidy locally
 
@@ -299,6 +297,66 @@ If you wish to automatically fix whatever clang-tidy finds _and_ is capable of f
 ```
 run-clang-tidy -p build -quiet -fix -allow-no-checks src tests
 ```
+
+## Telemetry span attribute naming
+
+OpenTelemetry span attribute keys follow these rules so they stay consistent
+across the code, the OTel collector, Tempo, Grafana dashboards, and docs. The
+constants in the `*SpanNames.h` headers are the single source of truth; every
+other layer must match them. A CI check enforces this end to end.
+
+1. Per-span unique attribute: bare field name — allowed when the field is
+   recorded by a single span/workflow, so the span name already supplies the
+   domain (e.g. `command`, `local`, `version` on `rpc.command` / `tx.process`).
+2. Shared attribute (same concept on more than one span): ONE key, reused
+   verbatim on every span that records it — the span name tells the occurrences
+   apart, so no per-emitter prefix is added. Pick the name by the field's
+   meaning: a property of a domain object keeps that object's bare field name
+   (`ledger_hash`, `ledger_seq`, `tx_hash`, `peer_id`, `full_validation`); a
+   field already qualified by a sub-kind keeps that qualifier on every emitter
+   (`proposal_trusted` on both `consensus.proposal.receive` and
+   `peer.proposal.receive`; `validation_trusted` likewise). Define it once in
+   the base `SpanNames.h` `namespace attr` block and re-export (`using`) it from
+   each domain header, so all emitters share the exact string.
+3. Collision qualifier: `<domain>_<field>` — only when a bare name would collide
+   with a DIFFERENT concept in the shared spanmetrics label space, or with the
+   OTel-reserved `status` key (e.g. `rpc_status`, `grpc_status`,
+   `consensus_state`, `consensus_round`). This disambiguates distinct concepts
+   that share a word; it is NOT used to tag the same concept with the workflow
+   that emitted it — that is rule 2 (one shared name).
+4. Resource attribute: dotted `xrpl.<subsystem>.<field>` — reserved ONLY for
+   process/network identity set once at startup (`xrpl.network.id`,
+   `xrpl.network.type`). Never use the dotted `xrpl.` form for span attributes.
+5. Span names use `<subsystem>[.<component>]` (dotted). Only attribute _keys_
+   follow rules 1–4.
+
+All attribute keys are `lower_snake_case` (lowercase letters, digits, and
+underscores; each dot-separated segment of a resource key likewise). No
+camelCase, uppercase, or spaces.
+
+Standard OpenTelemetry semantic-convention keys keep their canonical dotted
+form (e.g. `service.*` resource attributes, `http.*` span attributes); the
+"no dotted form" rule above applies to xrpl-custom keys, not to OTel-standard
+conventions.
+
+Always reference the `*SpanNames.h` constants for attribute keys and span
+names — never pass a string literal as a key or as a `span`/`childSpan` name
+argument. (Attribute _values_ may be runtime data.)
+
+These rules are enforced by `.github/scripts/otel-naming/check_otel_naming.py`,
+run in CI on every pull request. The check derives the set of valid keys
+directly from the `*SpanNames.h` constants and the resource attributes the code
+registers, so there is no separate list to keep in sync. It cross-validates the
+collector, Tempo, dashboards, and docs against those keys, and each rule runs
+only when the file it needs is present — so it works whether telemetry changes
+land in one pull request or several. Run it locally with:
+
+```
+python .github/scripts/otel-naming/check_otel_naming.py
+```
+
+See [.github/scripts/otel-naming/README.md](.github/scripts/otel-naming/README.md)
+for the full rule list.
 
 ## Contracts and instrumentation
 

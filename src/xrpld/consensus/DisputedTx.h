@@ -29,7 +29,7 @@ namespace xrpl {
 template <class Tx, class NodeId>
 class DisputedTx
 {
-    using TxID_t = typename Tx::ID;
+    using TxID_t = Tx::ID;
     using Map_t = boost::container::flat_map<NodeId, bool>;
 
 public:
@@ -300,7 +300,7 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
     if (proposing)  // give ourselves full weight
     {
         // This is basically the percentage of nodes voting 'yes' (including us)
-        weight = (yays_ * 100 + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
+        weight = ((yays_ * 100) + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
 
         newPosition = weight > requiredPct;
     }

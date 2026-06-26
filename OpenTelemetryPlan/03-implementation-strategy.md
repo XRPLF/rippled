@@ -1,7 +1,7 @@
 # Implementation Strategy
 
 > **Parent Document**: [OpenTelemetryPlan.md](./OpenTelemetryPlan.md)
-> **Related**: [Code Samples](./04-code-samples.md) | [Configuration Reference](./05-configuration-reference.md)
+> **Related**: [Configuration Reference](./05-configuration-reference.md)
 
 ---
 
@@ -229,6 +229,14 @@ xychart-beta
 - Maximum memory is bounded: ~8.3 MB static (dominated by worker thread stack) + 2048 queued spans x ~500 bytes (~1 MB) + active spans (~0.8 MB) ≈ **~10 MB ceiling**
 - The worker thread stack (~8 MB) is virtual memory; actual RSS depends on stack usage (typically much less)
 
+> **Measured outcome**: A perf-iac comparison (telemetry compiled-in + enabled vs compiled-out,
+> 9 nodes — validators and client-handlers — under sustained payment load) recorded **no measurable
+> RSS increase over the telemetry-off baseline** (~15 GiB mean / ~18–19 GiB peak on both sides),
+> with no OOM, no swap, and no leak across the run. The ~10 MB ceiling above is therefore a
+> provisioning safety margin (dominated by virtual thread-stack address space), not an expected
+> resident-memory increase. Steady-state cost shows up as throughput (~3–4% at head sampling 1.0),
+> not memory.
+
 ### 3.5.4 Performance Data Sources
 
 The overhead estimates in Sections 3.3-3.5 are derived from the following sources:
@@ -310,27 +318,12 @@ flowchart TD
 
 ### 3.7.3 Conditional Instrumentation
 
-SpanGuard's static factory methods handle both compile-time and runtime
-checks internally. When `XRPL_ENABLE_TELEMETRY` is not defined, the
-entire SpanGuard class compiles to a no-op stub with empty method bodies.
-When it is defined, the factory methods check the global Telemetry
-instance and the relevant component filter before creating a span:
-
-```cpp
-// SpanGuard factory methods handle all conditional logic internally.
-// When XRPL_ENABLE_TELEMETRY is not defined, these are no-ops.
-// When defined, they check Telemetry::getInstance() and the
-// component filter (e.g. shouldTracePeer()) at runtime.
-auto span = telemetry::SpanGuard::peerSpan("peer.message.receive");
-span.setAttribute("xrpl.peer.id", peerId);
-// No overhead when telemetry is disabled at compile time or runtime
-```
+Instrumentation is gated on two levels. A compile-time feature flag (`XRPL_ENABLE_TELEMETRY`) reduces the trace macros to no-ops when telemetry is built out, so disabled builds carry zero cost. At runtime, per-component guards (e.g. `shouldTracePeer()`) skip span creation for components whose tracing is turned off, incurring no overhead beyond a single boolean check.
 
 ---
 
 ## 3.8 Links to Detailed Documentation
 
-- **[Code Samples](./04-code-samples.md)**: Complete implementation code for all components
 - **[Configuration Reference](./05-configuration-reference.md)**: Configuration options and collector setup
 - **[Implementation Phases](./06-implementation-phases.md)**: Detailed timeline and milestones
 
@@ -344,19 +337,19 @@ This section provides a detailed assessment of how intrusive the OpenTelemetry i
 
 ### 3.9.1 Files Modified Summary
 
-| Component             | Files Modified | Lines Added | Lines Changed | Architectural Impact |
-| --------------------- | -------------- | ----------- | ------------- | -------------------- |
-| **Core Telemetry**    | 7 new files    | ~800        | 0             | None (new module)    |
-| **Application Init**  | 2 files        | ~30         | ~5            | Minimal              |
-| **RPC Layer**         | 3 files        | ~80         | ~20           | Minimal              |
-| **Transaction Relay** | 4 files        | ~120        | ~40           | Low                  |
-| **Consensus**         | 3 files        | ~100        | ~30           | Low-Medium           |
-| **Protocol Buffers**  | 1 file         | ~25         | 0             | Low                  |
-| **CMake/Build**       | 3 files        | ~50         | ~10           | Minimal              |
-| **PathFinding**       | 2              | ~80         | ~5            | Minimal              |
-| **TxQ/Fee**           | 2              | ~60         | ~5            | Minimal              |
-| **Validator/Amend**   | 3              | ~40         | ~5            | Minimal              |
-| **Total**             | **~27 files**  | **~1,490**  | **~120**      | **Low**              |
+| Component             | Files Modified | Architectural Impact |
+| --------------------- | -------------- | -------------------- |
+| **Core Telemetry**    | 10 new files   | None (new module)    |
+| **Application Init**  | 2 files        | Minimal              |
+| **RPC Layer**         | 3 files        | Minimal              |
+| **Transaction Relay** | 4 files        | Low                  |
+| **Consensus**         | 3 files        | Low-Medium           |
+| **Protocol Buffers**  | 1 file         | Low                  |
+| **CMake/Build**       | 3 files        | Minimal              |
+| **PathFinding**       | 2              | Minimal              |
+| **TxQ/Fee**           | 2              | Minimal              |
+| **Validator/Amend**   | 3              | Minimal              |
+| **Total**             | **~33 files**  | **Low**              |
 
 ### 3.9.2 Detailed File Impact
 
@@ -376,40 +369,43 @@ pie title Code Changes by Component
 
 #### New Files (No Impact on Existing Code)
 
-| File                                        | Lines | Purpose                                               |
-| ------------------------------------------- | ----- | ----------------------------------------------------- |
-| `include/xrpl/telemetry/Telemetry.h`        | ~160  | Main interface (global singleton)                     |
-| `include/xrpl/telemetry/SpanGuard.h`        | ~250  | RAII wrapper + factory methods + discard + no-op stub |
-| `include/xrpl/telemetry/DiscardFlag.h`      | ~28   | Thread-local discard flag                             |
-| `include/xrpl/telemetry/TraceContext.h`     | ~80   | Context propagation                                   |
-| `src/libxrpl/telemetry/Telemetry.cpp`       | ~400  | Implementation + FilteringSpanProcessor               |
-| `src/libxrpl/telemetry/TelemetryConfig.cpp` | ~60   | Config parsing                                        |
-| `src/libxrpl/telemetry/NullTelemetry.cpp`   | ~40   | No-op implementation                                  |
+| File                                        | Purpose                   |
+| ------------------------------------------- | ------------------------- |
+| `include/xrpl/telemetry/Telemetry.h`        | Main interface            |
+| `include/xrpl/telemetry/TelemetryConfig.h`  | Configuration structures  |
+| `include/xrpl/telemetry/TraceContext.h`     | Context propagation       |
+| `include/xrpl/telemetry/SpanGuard.h`        | RAII wrapper              |
+| `include/xrpl/telemetry/DiscardFlag.h`      | Thread-local discard flag |
+| `include/xrpl/telemetry/SpanAttributes.h`   | Attribute helpers         |
+| `src/libxrpl/telemetry/Telemetry.cpp`       | Implementation            |
+| `src/libxrpl/telemetry/TelemetryConfig.cpp` | Config parsing            |
+| `src/libxrpl/telemetry/TraceContext.cpp`    | Context serialization     |
+| `src/libxrpl/telemetry/NullTelemetry.cpp`   | No-op implementation      |
 
 #### Modified Files (Existing Xrpld Code)
 
-| File                                              | Lines Added | Lines Changed | Risk Level |
-| ------------------------------------------------- | ----------- | ------------- | ---------- |
-| `src/xrpld/app/main/Application.cpp`              | ~15         | ~3            | Low        |
-| `include/xrpl/core/ServiceRegistry.h`             | ~5          | ~2            | Low        |
-| `src/xrpld/rpc/detail/ServerHandler.cpp`          | ~40         | ~10           | Low        |
-| `src/xrpld/rpc/handlers/*.cpp`                    | ~30         | ~8            | Low        |
-| `src/xrpld/overlay/detail/PeerImp.cpp`            | ~60         | ~15           | Medium     |
-| `src/xrpld/overlay/detail/OverlayImpl.cpp`        | ~30         | ~10           | Medium     |
-| `src/xrpld/app/consensus/RCLConsensus.cpp`        | ~50         | ~15           | Medium     |
-| `src/xrpld/app/consensus/RCLConsensusAdaptor.cpp` | ~40         | ~12           | Medium     |
-| `src/xrpld/core/JobQueue.cpp`                     | ~20         | ~5            | Low        |
-| `src/xrpld/app/paths/PathRequest.cpp`             | ~40         | ~3            | Low        |
-| `src/xrpld/app/paths/Pathfinder.cpp`              | ~40         | ~2            | Low        |
-| `src/xrpld/app/misc/TxQ.cpp`                      | ~40         | ~3            | Low        |
-| `src/xrpld/app/main/LoadManager.cpp`              | ~20         | ~2            | Low        |
-| `src/xrpld/app/misc/ValidatorList.cpp`            | ~20         | ~2            | Low        |
-| `src/xrpld/app/misc/AmendmentTable.cpp`           | ~10         | ~2            | Low        |
-| `src/xrpld/app/misc/Manifest.cpp`                 | ~10         | ~1            | Low        |
-| `src/xrpld/shamap/SHAMap.cpp`                     | ~20         | ~3            | Low        |
-| `src/xrpld/overlay/detail/ripple.proto`           | ~25         | 0             | Low        |
-| `CMakeLists.txt`                                  | ~40         | ~8            | Low        |
-| `cmake/FindOpenTelemetry.cmake`                   | ~50         | 0             | None (new) |
+| File                                              | Risk Level |
+| ------------------------------------------------- | ---------- |
+| `src/xrpld/app/main/Application.cpp`              | Low        |
+| `include/xrpl/core/ServiceRegistry.h`             | Low        |
+| `src/xrpld/rpc/detail/ServerHandler.cpp`          | Low        |
+| `src/xrpld/rpc/handlers/*.cpp`                    | Low        |
+| `src/xrpld/overlay/detail/PeerImp.cpp`            | Medium     |
+| `src/xrpld/overlay/detail/OverlayImpl.cpp`        | Medium     |
+| `src/xrpld/app/consensus/RCLConsensus.cpp`        | Medium     |
+| `src/xrpld/app/consensus/RCLConsensusAdaptor.cpp` | Medium     |
+| `src/xrpld/core/JobQueue.cpp`                     | Low        |
+| `src/xrpld/app/paths/PathRequest.cpp`             | Low        |
+| `src/xrpld/app/paths/Pathfinder.cpp`              | Low        |
+| `src/xrpld/app/misc/TxQ.cpp`                      | Low        |
+| `src/xrpld/app/main/LoadManager.cpp`              | Low        |
+| `src/xrpld/app/misc/ValidatorList.cpp`            | Low        |
+| `src/xrpld/app/misc/AmendmentTable.cpp`           | Low        |
+| `src/xrpld/app/misc/Manifest.cpp`                 | Low        |
+| `src/xrpld/shamap/SHAMap.cpp`                     | Low        |
+| `src/xrpld/overlay/detail/ripple.proto`           | Low        |
+| `CMakeLists.txt`                                  | Low        |
+| `cmake/FindOpenTelemetry.cmake`                   | None (new) |
 
 ### 3.9.3 Risk Assessment by Component
 
@@ -478,53 +474,10 @@ If issues are discovered after deployment:
 
 ### 3.9.7 Code Change Examples
 
-**Minimal RPC Instrumentation (Low Intrusiveness):**
+**Minimal RPC Instrumentation (Low Intrusiveness):** Instrumenting an RPC handler adds roughly 3-4 lines: one macro to start the span and one or two `setAttribute` calls (command name, status). The span ends automatically via RAII, so the existing control flow — process the request, send the result — is untouched.
 
-```cpp
-// Before
-void ServerHandler::onRequest(...) {
-    auto result = processRequest(req);
-    send(result);
-}
-
-// After (only ~4 lines added)
-void ServerHandler::onRequest(...) {
-    auto span = telemetry::SpanGuard::rpcSpan("rpc.request");   // +1 line
-    span.setAttribute("command", command);                        // +1 line
-
-    auto result = processRequest(req);
-
-    span.setAttribute("rpc_status", status);                      // +1 line
-    send(result);
-}
-```
-
-SpanGuard factory methods (`rpcSpan`, `txSpan`, `consensusSpan`, etc.)
-access the global `Telemetry` instance internally and check the relevant
-component filter (`shouldTraceRpc()`, etc.) before creating a span. The
-public SpanGuard header has zero `opentelemetry/` includes -- all OTel
-types are hidden behind the pimpl idiom.
-
-**Consensus Instrumentation (Medium Intrusiveness):**
-
-```cpp
-// Before
-void RCLConsensusAdaptor::startRound(...) {
-    // ... existing logic
-}
-
-// After (context storage required)
-void RCLConsensusAdaptor::startRound(...) {
-    auto span = telemetry::SpanGuard::consensusSpan("consensus.round");
-    span.setAttribute("xrpl.consensus.ledger.seq", seq);
-
-    // Store context for child spans in phase transitions
-    currentRoundContext_ = span.context();  // New member variable
-
-    // ... existing logic unchanged
-}
-```
+**Consensus Instrumentation (Medium Intrusiveness):** Consensus is slightly more intrusive because child spans in later phase transitions need the round's context. Beyond the span-start and attribute macros, this requires storing the active context in a new member variable (`currentRoundContext_`) at round start. The existing round logic itself remains unchanged.
 
 ---
 
-_Previous: [Design Decisions](./02-design-decisions.md)_ | _Next: [Code Samples](./04-code-samples.md)_ | _Back to: [Overview](./OpenTelemetryPlan.md)_
+_Previous: [Design Decisions](./02-design-decisions.md)_ | _Next: [Configuration Reference](./05-configuration-reference.md)_ | _Back to: [Overview](./OpenTelemetryPlan.md)_

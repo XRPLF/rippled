@@ -1,6 +1,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Account.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
@@ -60,6 +61,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -111,7 +113,7 @@ class Vault_test : public beast::unit_test::Suite
                 {
                     BEAST_EXPECT(vault->at(sfScale) == 0);
                 }
-                auto const shares = env.le(keylet::mptIssuance(vault->at(sfShareMPTID)));
+                auto const shares = env.le(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
                 BEAST_EXPECT(shares != nullptr);
                 if (!asset.integral())
                 {
@@ -1597,7 +1599,7 @@ class Vault_test : public beast::unit_test::Suite
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
                      (args.enableClawback ? tfMPTCanClawback : kNone) |
                      (args.requireAuth ? tfMPTRequireAuth : kNone),
-                 .mutableFlags = tmfMPTCanMutateCanTransfer});
+                 .mutableFlags = tmfMPTCanEnableCanTransfer});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
@@ -1690,7 +1692,7 @@ class Vault_test : public beast::unit_test::Suite
             auto v = env.le(keylet);
             BEAST_EXPECT(v);
             MPTID const share = (*v)[sfShareMPTID];
-            auto issuance = env.le(keylet::mptIssuance(share));
+            auto issuance = env.le(keylet::mptokenIssuance(share));
             BEAST_EXPECT(issuance);
             Number const outstandingShares = issuance->at(sfOutstandingAmount);
             BEAST_EXPECT(outstandingShares == 100);
@@ -2236,149 +2238,6 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
         }
 
-        testCase([this](
-                     Env& env,
-                     Account const&,
-                     Account const& owner,
-                     Account const& depositor,
-                     PrettyAsset const& asset,
-                     Vault& vault,
-                     MPTTester& mptt) {
-            testcase("MPT non-transferable: block deposit, allow withdraw");
-
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            tx = vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
-            env(tx);
-            env.close();
-
-            // Issuer governance: clear CanTransfer. New exposure must be
-            // blocked, but recovery paths must remain open so existing
-            // depositors are not trapped.
-            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
-            env.close();
-
-            // New deposit is blocked.
-            env(tx, Ter{tecNO_AUTH});
-            env.close();
-
-            // Existing depositor can always withdraw, even though the asset
-            // is no longer freely transferable.
-            tx = vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
-            env(tx);
-            env.close();
-
-            // Delete vault with zero balance
-            env(vault.del({.owner = owner, .id = keylet.key}));
-        });
-
-        {
-            testcase("MPT non-transferable: pre-fixCleanup3_2_0 withdraw blocked");
-
-            // Regression: before fixCleanup3_2_0 a depositor was trapped if
-            // the issuer cleared lsfMPTCanTransfer. Verify that the legacy
-            // (broken) behavior is preserved when the amendment is disabled.
-            Env env{*this, testableAmendments() - fixCleanup3_2_0};
-            Account const issuer{"issuer"};
-            Account const owner{"owner"};
-            Account const depositor{"depositor"};
-            env.fund(XRP(10'000), issuer, owner, depositor);
-            env.close();
-            Vault const vault{env};
-
-            MPTTester mptt{env, issuer, kMptInitNoFund};
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanMutateCanTransfer});
-            PrettyAsset const asset = mptt.issuanceID();
-            mptt.authorize({.account = owner});
-            mptt.authorize({.account = depositor});
-            env(pay(issuer, depositor, asset(1'000)));
-            env.close();
-
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
-            env.close();
-
-            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
-            env.close();
-
-            // Pre-amendment: deposit blocked (matches new behavior).
-            env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}),
-                Ter{tecNO_AUTH});
-            env.close();
-
-            // Pre-amendment: withdraw is also blocked - this is the bug
-            // that fixCleanup3_2_0 fixes.
-            env(vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(100)}),
-                Ter{tecNO_AUTH});
-            env.close();
-        }
-
-        {
-            testcase("MPT non-transferable: vault shares inherit restriction");
-
-            Env env{*this, testableAmendments()};
-            Account const issuer{"issuer"};
-            Account const owner{"owner"};
-            Account const alice{"alice"};
-            Account const bob{"bob"};
-            env.fund(XRP(10'000), issuer, owner, alice, bob);
-            env.close();
-            Vault const vault{env};
-
-            MPTTester mptt{env, issuer, kMptInitNoFund};
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanMutateCanTransfer});
-            PrettyAsset const asset = mptt.issuanceID();
-            mptt.authorize({.account = owner});
-            mptt.authorize({.account = alice});
-            mptt.authorize({.account = bob});
-            env(pay(issuer, alice, asset(1'000)));
-            env(pay(issuer, bob, asset(1'000)));
-            env.close();
-
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
-            // Bob also deposits so he has a share MPToken to receive into.
-            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
-            env.close();
-
-            auto const shares = [&]() -> PrettyAsset {
-                auto const sle = env.le(keylet);
-                BEAST_EXPECT(sle != nullptr);
-                return MPTIssue(sle->at(sfShareMPTID));
-            }();
-
-            // Sanity: while CanTransfer is set on the underlying, peer-to-peer
-            // share transfers are allowed.
-            env(pay(alice, bob, shares(1)));
-            env.close();
-
-            // Issuer governance: clear CanTransfer on the underlying.
-            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
-            env.close();
-
-            // Vault shares inherit the restriction: third-party share-to-share
-            // payments are blocked.
-            env(pay(alice, bob, shares(1)), Ter{tecNO_AUTH});
-            env.close();
-
-            // Recovery path: existing share holders can still redeem shares
-            // for the underlying asset via VaultWithdraw.
-            env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = shares(1)}));
-            env.close();
-        }
-
         {
             testcase("MPT locked: vault shares inherit underlying lock");
 
@@ -2457,56 +2316,6 @@ class Vault_test : public beast::unit_test::Suite
         }
 
         {
-            testcase("MPT non-transferable: pre-fixCleanup3_2_0 share transfer succeeds");
-
-            // Regression: before fixCleanup3_2_0 a peer-to-peer share Payment
-            // succeeded even when the underlying asset's lsfMPTCanTransfer
-            // was cleared. Verify that the legacy (non-inheriting) behavior
-            // is preserved when the amendment is disabled.
-            Env env{*this, testableAmendments() - fixCleanup3_2_0};
-            Account const issuer{"issuer"};
-            Account const owner{"owner"};
-            Account const alice{"alice"};
-            Account const bob{"bob"};
-            env.fund(XRP(10'000), issuer, owner, alice, bob);
-            env.close();
-            Vault const vault{env};
-
-            MPTTester mptt{env, issuer, kMptInitNoFund};
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanMutateCanTransfer});
-            PrettyAsset const asset = mptt.issuanceID();
-            mptt.authorize({.account = owner});
-            mptt.authorize({.account = alice});
-            mptt.authorize({.account = bob});
-            env(pay(issuer, alice, asset(1'000)));
-            env(pay(issuer, bob, asset(1'000)));
-            env.close();
-
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
-
-            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
-            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
-            env.close();
-
-            auto const shares = [&]() -> PrettyAsset {
-                auto const sle = env.le(keylet);
-                BEAST_EXPECT(sle != nullptr);
-                return MPTIssue(sle->at(sfShareMPTID));
-            }();
-
-            mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
-            env.close();
-
-            // Pre-amendment: share transfer leaks past underlying restriction.
-            env(pay(alice, bob, shares(1)));
-            env.close();
-        }
-
-        {
             testcase("MPT CanTrade governance: share inherits underlying on DEX and AMM");
 
             Env env{*this, testableAmendments()};
@@ -2520,8 +2329,8 @@ class Vault_test : public beast::unit_test::Suite
 
             MPTTester mptt{env, issuer, kMptInitNoFund};
             mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
-                 .mutableFlags = tmfMPTCanMutateCanTrade});
+                {.flags = tfMPTCanTransfer | tfMPTCanLock,
+                 .mutableFlags = tmfMPTCanEnableCanTrade});
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = alice});
@@ -2545,38 +2354,18 @@ class Vault_test : public beast::unit_test::Suite
                 return MPTIssue(sle->at(sfShareMPTID));
             }();
 
-            // Sanity: while CanTrade is set on the underlying, both the asset
-            // and the vault share can be placed on the DEX.
-            env(offer(alice, XRP(1), asset(10)));
-            env(offer(alice, XRP(1), shares(1)));
-            env.close();
-
-            // Issuer governance: clear CanTrade on the underlying.
-            mptt.set({.mutableFlags = tmfMPTClearCanTrade});
-            env.close();
-
-            // Control: clearing CanTrade on the underlying is observable on
-            // the DEX path for that asset.
+            // CanTrade is not set on the underlying, both the asset and
+            // the vault share are blocked on the DEX.
             env(offer(alice, XRP(1), asset(10)), Ter{tecNO_PERMISSION});
+            env(offer(alice, XRP(1), shares(1)), Ter{tecNO_PERMISSION});
             env.close();
 
-            // Control: clearing CanTrade on the underlying is also observable
-            // on the AMM path for that asset.
-            AMM const ammUnderlyingFails(
+            // The inherited CanTrade restriction also blocks AMM creation.
+            AMM const ammUnderlyingFail(
                 env, alice, XRP(1'000), asset(1'000), Ter{tecNO_PERMISSION});
-
-            // Post-fixCleanup3_2_0: vault shares inherit the underlying's
-            // CanTrade restriction on the DEX path (canTrade reads the
-            // share's sfReferenceHolding and dispatches to the underlying).
-            env(offer(bob, XRP(1), shares(1)), Ter{tecNO_PERMISSION});
-            env.close();
-
-            // checkMPTAllowed mirrors the inheritance for AMM/Offer-
-            // crossing/Check paths, so a share AMM also cannot be created
-            // when the underlying CanTrade is cleared.
             AMM const ammShares(env, alice, XRP(1'000), shares(100), Ter{tecNO_PERMISSION});
 
-            // Deposit still works (canAddHolding does not consult the field).
+            // Deposit still works before enabling CanTrade.
             env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
             env.close();
 
@@ -2585,9 +2374,19 @@ class Vault_test : public beast::unit_test::Suite
             env(pay(alice, bob, shares(1)));
             env.close();
 
-            // Withdraw still works.
+            // Withdraw still works before enabling CanTrade.
             env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
             env.close();
+
+            // Enable CanTrade on the underlying.
+            mptt.set({.mutableFlags = tmfMPTSetCanTrade});
+            env.close();
+
+            env(offer(alice, XRP(1), asset(10)));
+            env(offer(alice, XRP(1), shares(1)));
+            env.close();
+
+            AMM const ammUnderlying(env, alice, XRP(1'000), asset(1'000));
         }
 
         {
@@ -2995,7 +2794,7 @@ class Vault_test : public beast::unit_test::Suite
             env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
             env.close();
 
-            auto trustline = env.le(keylet::line(owner, asset.raw().get<Issue>()));
+            auto trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
             BEAST_EXPECT(trustline == nullptr);
 
             // Withdraw without trust line, will succeed
@@ -3178,7 +2977,7 @@ class Vault_test : public beast::unit_test::Suite
                 env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
                 env.close();
 
-                auto trustline = env.le(keylet::line(owner, asset.raw().get<Issue>()));
+                auto trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
                 BEAST_EXPECT(trustline == nullptr);
 
                 env(ticket::create(owner, 1));
@@ -3606,7 +3405,7 @@ class Vault_test : public beast::unit_test::Suite
             return {vault->at(sfAccount), vault->at(sfShareMPTID)};
         }();
         BEAST_EXPECT(env.le(keylet::account(vaultAccount)));
-        BEAST_EXPECT(env.le(keylet::mptIssuance(issuanceId)));
+        BEAST_EXPECT(env.le(keylet::mptokenIssuance(issuanceId)));
         PrettyAsset const shares{issuanceId};
 
         {
@@ -3760,7 +3559,7 @@ class Vault_test : public beast::unit_test::Suite
                         auto vault = sb.peek(keylet::vault(keylet.key));
                         if (!BEAST_EXPECT(vault))
                             return false;
-                        auto shares = sb.peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
+                        auto shares = sb.peek(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
                         if (!BEAST_EXPECT(shares))
                             return false;
                         if (fn(*vault, *shares))
@@ -4509,7 +4308,7 @@ class Vault_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
 
             // Create a loan broker backed by this vault
-            auto const brokerKeylet = keylet::loanbroker(d.owner.id(), env.seq(d.owner));
+            auto const brokerKeylet = keylet::loanBroker(d.owner.id(), env.seq(d.owner));
             env(set(d.owner, d.keylet.key));
             env.close();
 
@@ -4984,7 +4783,7 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(vaultKeylet);
             BEAST_EXPECT(sleVault != nullptr);
 
-            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
             BEAST_EXPECT(sleIssuance != nullptr);
 
             return sleIssuance->at(sfOutstandingAmount);
@@ -5023,7 +4822,7 @@ class Vault_test : public beast::unit_test::Suite
             env.close();
 
             auto const& sharesAvailable = vaultShareBalance(vaultKeylet);
-            auto const& brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+            auto const& brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
 
             env(set(owner, vaultKeylet.key));
             env.close();
@@ -5416,7 +5215,7 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5474,7 +5273,7 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5529,7 +5328,7 @@ class Vault_test : public beast::unit_test::Suite
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
                 // Create a loan broker backed by this vault
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5583,7 +5382,7 @@ class Vault_test : public beast::unit_test::Suite
                     return;
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5631,7 +5430,7 @@ class Vault_test : public beast::unit_test::Suite
                     return;
                 PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
-                auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+                auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
                 env(set(owner, vaultKeylet.key));
                 env.close();
 
@@ -5738,7 +5537,7 @@ class Vault_test : public beast::unit_test::Suite
             PrettyAsset const shares = MPTIssue(vaultSle->at(sfShareMPTID));
 
             // Create a loan broker backed by this vault
-            auto const brokerKeylet = keylet::loanbroker(owner.id(), env.seq(owner));
+            auto const brokerKeylet = keylet::loanBroker(owner.id(), env.seq(owner));
             env(set(owner, vaultKeylet.key));
             env.close();
 
@@ -6539,7 +6338,7 @@ class Vault_test : public beast::unit_test::Suite
         env.close();
 
         // Loan broker: no cover, no management fee, debt cap 10x principal.
-        f.brokerID = keylet::loanbroker(f.lender.id(), env.seq(f.lender)).key;
+        f.brokerID = keylet::loanBroker(f.lender.id(), env.seq(f.lender)).key;
         {
             using namespace loanBroker;
             env(set(f.lender, vaultKeylet.key),
@@ -6548,7 +6347,7 @@ class Vault_test : public beast::unit_test::Suite
         }
 
         // Loan: 3,333 USD principal, impaired immediately.
-        auto const sleBroker = env.le(keylet::loanbroker(f.brokerID));
+        auto const sleBroker = env.le(keylet::loanBroker(f.brokerID));
         if (!BEAST_EXPECT(sleBroker))
             return f;
         f.loanKeylet = keylet::loan(f.brokerID, sleBroker->at(sfLoanSequence));
@@ -6593,7 +6392,7 @@ class Vault_test : public beast::unit_test::Suite
             return f;
         f.sharesLender = tokenLender->getFieldU64(sfMPTAmount);
 
-        auto const sleIssuance = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const sleIssuance = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(sleIssuance))
             return f;
         BEAST_EXPECT(sleIssuance->getFieldU64(sfOutstandingAmount) == f.sharesLender);
@@ -6630,7 +6429,8 @@ class Vault_test : public beast::unit_test::Suite
                         "fixed-asset amount with impaired loan"} +
             (withFix ? " (fixCleanup3_2_0)" : " (pre-fix)"));
 
-        Env env(*this, features);
+        std::string logs;
+        Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
         auto const f = setupStuckDepositor(env);
         if (!f.vaultKeylet || !f.asset || f.sharesLender == 0)
         {
@@ -6682,7 +6482,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
-        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceAfter = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceAfter))
             return;
 
@@ -6748,7 +6548,8 @@ class Vault_test : public beast::unit_test::Suite
                         "burn is rejected while loss outstanding"} +
             (withFix ? " (fixCleanup3_2_0)" : " (pre-fix)"));
 
-        Env env(*this, features);
+        std::string logs;
+        Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
         auto const f = setupStuckDepositor(env);
         if (!f.vaultKeylet || f.sharesLender == 0)
         {
@@ -6779,7 +6580,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
-        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceAfter = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceAfter))
             return;
         BEAST_EXPECT(issuanceAfter->getFieldU64(sfOutstandingAmount) == f.sharesLender);
@@ -6870,7 +6671,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultFinal = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultFinal))
             return;
-        auto const issuanceFinal = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceFinal = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceFinal))
             return;
 
@@ -6952,7 +6753,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultFinal = env.le(vaultKeylet);
         if (!BEAST_EXPECT(vaultFinal))
             return;
-        auto const issuanceFinal = env.le(keylet::mptIssuance(shareAsset));
+        auto const issuanceFinal = env.le(keylet::mptokenIssuance(shareAsset));
         if (!BEAST_EXPECT(issuanceFinal))
             return;
         BEAST_EXPECT(issuanceFinal->getFieldU64(sfOutstandingAmount) == 0);
@@ -7035,7 +6836,7 @@ class Vault_test : public beast::unit_test::Suite
         auto const vaultAfter = env.le(vaultKey);
         if (!BEAST_EXPECT(vaultAfter))
             return;
-        auto const issuanceAfter = env.le(keylet::mptIssuance(f.shareAsset));
+        auto const issuanceAfter = env.le(keylet::mptokenIssuance(f.shareAsset));
         if (!BEAST_EXPECT(issuanceAfter))
             return;
 
@@ -7074,7 +6875,8 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7150,7 +6952,8 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7226,7 +7029,8 @@ class Vault_test : public beast::unit_test::Suite
         enum class DestKind : bool { ThirdParty = false, Self = true };
 
         auto runScenario = [this](FeatureBitset features, DestKind destKind, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7331,7 +7135,8 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7414,7 +7219,8 @@ class Vault_test : public beast::unit_test::Suite
     {
         using namespace test::jtx;
         auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -7489,7 +7295,8 @@ class Vault_test : public beast::unit_test::Suite
         using namespace test::jtx;
 
         auto runScenario = [this](FeatureBitset features, TER expected) {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
             Account const issuer{"issuer"};
             Account const owner{"owner"};
@@ -7548,7 +7355,7 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(vaultKeylet);
             if (!sleVault)
                 return std::nullopt;
-            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
             if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
                 return std::nullopt;
             return sleIssuance->getFieldH256(sfReferenceHolding);
@@ -7608,13 +7415,13 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(keylet);
             BEAST_EXPECT(sleVault != nullptr);
             auto const pseudoId = sleVault->at(sfAccount);
-            auto const expected = keylet::line(pseudoId, asset.raw().get<Issue>()).key;
+            auto const expected = keylet::trustLine(pseudoId, asset.raw().get<Issue>()).key;
 
             auto const stored = readReferenceHolding(env, keylet);
             BEAST_EXPECT(stored.has_value());
             BEAST_EXPECT(stored && *stored == expected);
             // The pointed-to RippleState must actually exist.
-            BEAST_EXPECT(env.le(keylet::line(pseudoId, asset.raw().get<Issue>())) != nullptr);
+            BEAST_EXPECT(env.le(keylet::trustLine(pseudoId, asset.raw().get<Issue>())) != nullptr);
         }
 
         // XRP-backed vaults leave the field absent: XRP has no separate
@@ -7672,7 +7479,7 @@ class Vault_test : public beast::unit_test::Suite
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             env.close();
 
-            auto const sleIssuance = env.le(keylet::mptIssuance(mptt.issuanceID()));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(mptt.issuanceID()));
             if (BEAST_EXPECT(sleIssuance))
                 BEAST_EXPECT(!sleIssuance->isFieldPresent(sfReferenceHolding));
         }
@@ -7698,7 +7505,7 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(vaultKeylet);
             if (!sleVault)
                 return false;
-            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
             if (!sleIssuance || !sleIssuance->isFieldPresent(sfReferenceHolding))
                 return false;
             auto const holdingKey = sleIssuance->getFieldH256(sfReferenceHolding);
@@ -7934,7 +7741,7 @@ class Vault_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(env.le(keylet) == nullptr);
             BEAST_EXPECT(env.le(holdingKeylet) == nullptr);
-            BEAST_EXPECT(env.le(keylet::mptIssuance(sharedMptId)) == nullptr);
+            BEAST_EXPECT(env.le(keylet::mptokenIssuance(sharedMptId)) == nullptr);
         }
     }
 

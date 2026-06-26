@@ -285,14 +285,13 @@ online_delete=256
 [telemetry]
 enabled=1
 endpoint=http://localhost:4318/v1/traces
-sampling_ratio=1.0
 batch_size=512
 batch_delay_ms=2000
 max_queue_size=2048
 trace_rpc=1
 trace_transactions=1
 trace_consensus=1
-trace_peer=0
+trace_peer=1
 trace_ledger=1
 
 [rpc_startup]

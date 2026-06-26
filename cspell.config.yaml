@@ -50,6 +50,7 @@ words:
   - AMMXRP
   - amt
   - amts
+  - archs
   - asnode
   - asynchrony
   - attestation
@@ -84,6 +85,7 @@ words:
   - coro
   - coros
   - cowid
+  - cpack
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
@@ -110,6 +112,7 @@ words:
   - enabled
   - enablerepo
   - endmacro
+  - envrc
   - EOCFG
   - exceptioned
   - EXPECT_STREQ
@@ -143,6 +146,7 @@ words:
   - iou
   - ious
   - isrdc
+  - isystem
   - itype
   - jemalloc
   - jlog
@@ -246,8 +250,10 @@ words:
   - pyenv
   - pyparsing
   - qalloc
+  - qbsprofile
   - queuable
   - Raphson
+  - rcflags
   - reparent
   - replayer
   - reqps
@@ -315,6 +321,7 @@ words:
   - txs
   - ubsan
   - UBSAN
+  - ufdio
   - umant
   - unacquired
   - unambiguity

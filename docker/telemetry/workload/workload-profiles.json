@@ -39,7 +39,7 @@
         },
         {
           "name": "txq-burst",
-          "description": "Single-type Payment burst at high TPS to force open-ledger fee escalation and TxQ queueing, exercising the txq.* spans (txq.enqueue / txq.accept / txq.accept.tx / txq.cleanup)",
+          "description": "Single-type Payment burst at high TPS to force open-ledger fee escalation and TxQ queueing, exercising the txq.* spans (txq.enqueue / txq.accept / txq.accept_tx / txq.cleanup)",
           "duration_sec": 30,
           "rpc": { "rate": 5, "weights": { "fee": 100 } },
           "tx": {

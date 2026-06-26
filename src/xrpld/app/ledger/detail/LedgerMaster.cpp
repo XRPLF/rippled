@@ -768,7 +768,9 @@ LedgerMaster::getFetchPack(LedgerIndex missing, InboundLedger::Reason reason)
         JLOG(journal_.trace()) << "Requested fetch pack for " << missing;
     }
     else
+    {
         JLOG(journal_.debug()) << "No peer for fetch pack";
+    }
 }
 
 void
@@ -1815,10 +1817,14 @@ LedgerMaster::fetchForHistory(
                     getFetchPack(missing, reason);
                 }
                 else
+                {
                     JLOG(journal_.trace()) << "fetchForHistory no fetch pack for " << missing;
+                }
             }
             else
+            {
                 JLOG(journal_.debug()) << "fetchForHistory found failed acquire";
+            }
         }
         if (ledger)
         {

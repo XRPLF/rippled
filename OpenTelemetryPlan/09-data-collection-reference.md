@@ -154,7 +154,7 @@ Controlled by `trace_transactions=1` in `[telemetry]` config.
 | `txq.apply_direct` | `txq.enqueue` | TxQ.cpp     | Direct apply attempt that bypasses the queue        |
 | `txq.batch_clear`  | `txq.enqueue` | TxQ.cpp     | Batch clear of an account's queued txs              |
 | `txq.accept`       | —             | TxQ.cpp     | Ledger-close accept loop (drains the queue)         |
-| `txq.accept.tx`    | `txq.accept`  | TxQ.cpp     | Per-queued-transaction apply inside the accept loop |
+| `txq.accept_tx`    | `txq.accept`  | TxQ.cpp     | Per-queued-transaction apply inside the accept loop |
 | `txq.cleanup`      | —             | TxQ.cpp     | Post-close cleanup of expired queue entries         |
 
 **Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"txq.*"}`
@@ -206,7 +206,7 @@ Controlled by `trace_ledger=1` in `[telemetry]` config.
 
 #### Peer Spans
 
-Controlled by `trace_peer=1` in `[telemetry]` config. **Disabled by default** (high volume).
+Controlled by `trace_peer` in `[telemetry]` config. **Enabled by default** (high volume).
 
 | Span Name                 | Parent | Source File | Description                           |
 | ------------------------- | ------ | ----------- | ------------------------------------- |
@@ -242,14 +242,14 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 `<domain>_<field>` underscore form where a bare name would collide (e.g.
 `rpc_status`, `grpc_status`, `tx_status`, `txq_status`).
 
-> **Dotted exceptions** (do not confuse with span attributes):
+> **Dotted keys are resource attributes, never span attributes:**
 >
-> - `xrpl.ledger.hash` is the **only** dotted span attribute. It is a shared
->   constant set on `peer.validation.receive`. Note that `consensus.validation.send`
->   uses the **bare** `ledger_hash` instead.
 > - `xrpl.network.id` and `xrpl.network.type` are **resource** attributes set
 >   once at startup on the OTel resource — not span attributes. They appear on
 >   every span's resource scope, queried as `{resource.xrpl.network.id=...}`.
+> - The ledger hash uses the bare `ledger_hash` key on every span that records
+>   it (both `consensus.validation.send` and `peer.validation.receive`) — there
+>   is no dotted span attribute.
 
 #### RPC Attributes
 
@@ -306,16 +306,16 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 
 | Attribute            | Type    | Set On                         | Description                                                 |
 | -------------------- | ------- | ------------------------------ | ----------------------------------------------------------- |
-| `tx_hash`            | string  | `txq.enqueue`, `txq.accept.tx` | Transaction hash                                            |
+| `tx_hash`            | string  | `txq.enqueue`, `txq.accept_tx` | Transaction hash                                            |
 | `tx_type`            | string  | `txq.enqueue`                  | Transaction type name                                       |
-| `txq_status`         | string  | `txq.enqueue`, `txq.accept.tx` | Queue outcome (e.g. `queued`, `applied_direct`, `rejected`) |
+| `txq_status`         | string  | `txq.enqueue`, `txq.accept_tx` | Queue outcome (e.g. `queued`, `applied_direct`, `rejected`) |
 | `fee_level_paid`     | int64   | `txq.enqueue`                  | Fee level paid by the queued tx                             |
 | `required_fee_level` | int64   | `txq.enqueue`                  | Minimum fee level for inclusion                             |
 | `num_cleared`        | int64   | `txq.batch_clear`              | Entries cleared in a batch                                  |
 | `queue_size`         | int64   | `txq.accept`                   | Current TxQ depth                                           |
 | `ledger_changed`     | boolean | `txq.accept`                   | Whether the ledger changed since last attempt               |
-| `ter_code`           | int64   | `txq.accept.tx`                | Transaction engine result code                              |
-| `retries_remaining`  | int64   | `txq.accept.tx`                | Retries left before discard                                 |
+| `ter_code`           | int64   | `txq.accept_tx`                | Transaction engine result code                              |
+| `retries_remaining`  | int64   | `txq.accept_tx`                | Retries left before discard                                 |
 | `ledger_seq`         | int64   | `txq.cleanup`                  | Ledger sequence number                                      |
 | `expired_count`      | int64   | `txq.cleanup`                  | Number of expired entries cleared                           |
 
@@ -362,7 +362,7 @@ aggregation. Per the 2026-05-13 naming redesign, span-attribute keys use the
 | `close_time_vote_bins`     | string  | `consensus.accept.apply`                                                                           | Distribution of close-time votes                         |
 | `resolution_direction`     | string  | `consensus.accept.apply`                                                                           | Whether close resolution increased/decreased/unchanged   |
 | `tx_count`                 | int64   | `consensus.accept.apply`                                                                           | Transactions in the accepted set                         |
-| `ledger_hash`              | string  | `consensus.validation.send`                                                                        | Full hash of the validated ledger (**bare**, not dotted) |
+| `ledger_hash`              | string  | `consensus.validation.send`                                                                        | Full hash of the validated ledger (shared with peer)     |
 | `full_validation`          | boolean | `consensus.validation.send`                                                                        | Whether this is a full validation                        |
 | `validation_sign_time`     | int64   | `consensus.validation.send`                                                                        | Validation signing time                                  |
 | `mode_old`                 | string  | `consensus.mode_change`                                                                            | Operating mode before the transition                     |
@@ -401,8 +401,8 @@ the parent `ledger.build` carries `ledger_seq` and the close-time attributes.
 | `peer_id`            | int64   | `tx.receive`, `peer.proposal.receive`, `peer.validation.receive` | Peer identifier                                      |
 | `proposal_trusted`   | boolean | `peer.proposal.receive`                                          | Whether the proposal came from a trusted validator   |
 | `validation_trusted` | boolean | `peer.validation.receive`                                        | Whether the validation came from a trusted validator |
-| `validation_full`    | boolean | `peer.validation.receive`                                        | Whether the validation is a full validation          |
-| `xrpl.ledger.hash`   | string  | `peer.validation.receive`                                        | Validated ledger hash (**dotted** — shared constant) |
+| `full_validation`    | boolean | `peer.validation.receive`                                        | Whether the validation is a full validation          |
+| `ledger_hash`        | string  | `peer.validation.receive`                                        | Validated ledger hash (shared with consensus spans)  |
 
 **Prometheus labels**: `proposal_trusted`, `validation_trusted` (SpanMetrics dimensions).
 
@@ -452,7 +452,7 @@ SpanMetrics connector does not rewrite or prefix it:
 | `tx_type`                         | string  | `tx.*`, `txq.enqueue`                          |
 | `ter_result`                      | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` |
 | `stage`                           | string  | `tx.preflight`, `tx.preclaim`, `tx.transactor` |
-| `txq_status`                      | string  | `txq.enqueue`, `txq.accept.tx`                 |
+| `txq_status`                      | string  | `txq.enqueue`, `txq.accept_tx`                 |
 | `consensus_state`                 | string  | `consensus.accept.apply`                       |
 | `load_type`                       | string  | `rpc.command.*`                                |
 | `is_batch`                        | boolean | `rpc.process`                                  |
@@ -468,11 +468,11 @@ The `stage` dimension (3 values: `preflight`, `preclaim`, `apply`) turns the
 apply-pipeline spans into per-stage RED metrics with no native instruments — the
 _Transaction Overview_ dashboard charts rate, p95 latency, and failure rate by stage.
 
-> **Sampling caveat**: span-derived metrics inherit the **tracer head-sampling**
-> ratio (`sampling_ratio` in `[telemetry]`, via `TraceIdRatioBasedSampler`). At
-> `sampling_ratio < 1.0` the stage RED metrics undercount proportionally — they
-> reflect sampled traces, not the full transaction volume. Native StatsD/meter
-> metrics do not sample. Account for this when reading absolute stage rates.
+> **Sampling caveat**: xrpld head sampling is fixed at 1.0 (every trace is
+> recorded), so span-derived metrics are not undercounted at the node. If the
+> collector is configured with tail sampling, span-derived metrics reflect only
+> the retained traces, whereas native StatsD/meter metrics do not sample.
+> Account for any collector-side tail sampling when reading absolute stage rates.
 
 **Where to query**: Prometheus → `traces_span_metrics_calls_total{span_name="rpc.command.server_info"}`
 
@@ -1245,7 +1245,7 @@ Lifetime validation agreement/miss tallies are exported as monotonic **Observabl
 | `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp |
 | `xrpld_jobq_job_count` may not emit in standalone mode             | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
 | `xrpld_rpc_requests` depends on `[insight]` config                 | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
-| Peer tracing disabled by default                                   | No `peer.*` spans unless `trace_peer=1`          | Intentional — high volume on mainnet                                 |
+| Peer tracing enabled by default                                    | `peer.*` spans emit unless `trace_peer=0`        | High volume — set `trace_peer=0` to opt out on busy mainnet nodes    |
 
 ---
 
@@ -1258,7 +1258,7 @@ The telemetry system is designed with privacy in mind:
 - **Transaction hashes** are included (public on-ledger data) but not transaction contents
 - **Peer IDs** are internal identifiers, not IP addresses
 - **All telemetry is opt-in** — disabled by default at build time (`-Dtelemetry=OFF`)
-- **Sampling** reduces data volume — `sampling_ratio=0.01` recommended for production
+- **Sampling** — head sampling is fixed at 1.0 (sample everything); reduce data volume with collector-side tail sampling
 - **Data stays local** — the default stack sends data to `localhost` only
 
 ---
@@ -1285,7 +1285,6 @@ prefix=xrpld
 [telemetry]
 enabled=1
 endpoint=http://otel-collector:4318/v1/traces
-sampling_ratio=0.01
 trace_peer=0
 batch_size=1024
 max_queue_size=4096
@@ -1304,4 +1303,4 @@ prefix=xrpld
 | `trace_transactions` | `1`     | `tx.*` spans                 |
 | `trace_consensus`    | `1`     | `consensus.*` spans          |
 | `trace_ledger`       | `1`     | `ledger.*` spans             |
-| `trace_peer`         | `0`     | `peer.*` spans (high volume) |
+| `trace_peer`         | `1`     | `peer.*` spans (high volume) |

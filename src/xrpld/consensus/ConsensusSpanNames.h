@@ -125,10 +125,14 @@ inline constexpr auto phaseOpen = join(seg::consensus, op::phaseOpen);
 // ===== Attribute keys ========================================================
 
 namespace attr {
-/// Canonical shared constants (defined in SpanNames.h).
+/// Canonical shared constants (defined in SpanNames.h). `ledgerHash` and
+/// `fullValidation` are shared with the peer.validation.receive span — same
+/// concept, same key, distinguished by span name (not an emitter prefix).
 using ::xrpl::telemetry::attr::closeResolutionMs;
 using ::xrpl::telemetry::attr::closeTime;
 using ::xrpl::telemetry::attr::closeTimeCorrect;
+using ::xrpl::telemetry::attr::fullValidation;
+using ::xrpl::telemetry::attr::ledgerHash;
 using ::xrpl::telemetry::attr::ledgerSeq;
 
 /// Domain-qualified attrs (rule 5 — bare name ambiguous across domains).
@@ -159,11 +163,10 @@ inline constexpr auto peerPositionsAtClose = makeStr("peer_positions_at_close");
 inline constexpr auto txCountOpen = makeStr("tx_count_open");
 /// Establish/check additional state.
 inline constexpr auto proposersFinished = makeStr("proposers_finished");
-inline constexpr auto establishCounter = makeStr("establish_counter");
 /// Accept/apply enrichment.
 inline constexpr auto disputesResolvedCount = makeStr("disputes_resolved_count");
-/// Validation send/receive enrichment.
-inline constexpr auto fullValidation = makeStr("full_validation");
+/// Validation send/receive enrichment. (`full_validation` is shared — see the
+/// `using` re-export above.)
 inline constexpr auto validationSignTime = makeStr("validation_sign_time");
 /// Receive-side hash prefixes for cross-peer correlation.
 inline constexpr auto prevLedgerPrefix = makeStr("prev_ledger_prefix");
@@ -191,8 +194,6 @@ inline constexpr auto modeNew = makeStr("mode_new");
 
 /// "is_bow_out" — whether this proposal is a bow-out (resigning from round).
 inline constexpr auto isBowOut = makeStr("is_bow_out");
-/// "ledger_hash" — full hash of the ledger being validated/accepted.
-inline constexpr auto ledgerHash = makeStr("ledger_hash");
 
 /// Transaction/dispute attrs used in consensus accept spans.
 inline constexpr auto txId = makeStr("tx_id");
@@ -201,7 +202,12 @@ inline constexpr auto disputeYays = makeStr("dispute_yays");
 inline constexpr auto disputeNays = makeStr("dispute_nays");
 inline constexpr auto txCount = makeStr("tx_count");
 inline constexpr auto disputesCount = makeStr("disputes_count");
-inline constexpr auto trusted = makeStr("trusted");
+/// Trust flag (is the message origin a trusted UNL validator). Qualified by
+/// message type, shared with the peer.{proposal,validation}.receive spans:
+/// consensus.proposal.receive uses `proposal_trusted`, consensus.validation.
+/// receive uses `validation_trusted`. Same concept on both emitters → same key.
+inline constexpr auto proposalTrusted = makeStr("proposal_trusted");
+inline constexpr auto validationTrusted = makeStr("validation_trusted");
 }  // namespace attr
 
 // ===== Event names ===========================================================
@@ -238,6 +244,10 @@ inline constexpr auto expired = makeStr("expired");
 inline constexpr auto increased = makeStr("increased");
 inline constexpr auto decreased = makeStr("decreased");
 inline constexpr auto unchanged = makeStr("unchanged");
+// consensus_phase attribute values (the phase the round is entering).
+inline constexpr auto phaseOpen = makeStr("open");
+inline constexpr auto phaseEstablish = makeStr("establish");
+inline constexpr auto phaseAccepted = makeStr("accepted");
 }  // namespace val
 
 }  // namespace xrpl::telemetry::consensus::span

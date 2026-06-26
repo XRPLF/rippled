@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - name: Determine changed files
         # This step checks whether any files have changed that should
         # cause the next jobs to run. We do it this way rather than
@@ -51,8 +51,10 @@ jobs:
           files: |
             # These paths are unique to `on-pr.yml`.
             .github/scripts/levelization/**
+            .github/scripts/otel-naming/**
             .github/scripts/rename/**
             .github/workflows/reusable-check-levelization.yml
+            .github/workflows/reusable-check-otel-naming.yml
             .github/workflows/reusable-check-rename.yml
             .github/workflows/on-pr.yml
 
@@ -70,6 +72,7 @@ jobs:
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
+            bin/check-tools.sh
             cfg/**
             cmake/**
             conan/**
@@ -108,6 +111,11 @@ jobs:
     if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-check-levelization.yml
 
+  check-otel-naming:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-otel-naming.yml
+
   check-rename:
     needs: should-run
     if: ${{ needs.should-run.outputs.go == 'true' }}
@@ -121,7 +129,6 @@ jobs:
       issues: write
       contents: read
     with:
-      check_only_changed: true
       create_issue_on_failure: false
 
   build-test:
@@ -153,8 +160,8 @@ jobs:
     if: ${{ github.repository == 'XRPLF/rippled' && needs.should-run.outputs.go == 'true' && github.event_name == 'pull_request' && startsWith(github.event.pull_request.base.ref, 'release') }}
     uses: ./.github/workflows/reusable-upload-recipe.yml
     secrets:
-      remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+      remote_username: ${{ secrets.NEXUS_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.NEXUS_REMOTE_PASSWORD }}
 
   notify-clio:
     needs: upload-recipe
@@ -176,6 +183,7 @@ jobs:
     if: failure() || cancelled()
     needs:
       - check-levelization
+      - check-otel-naming
       - check-rename
       - clang-tidy
       - build-test

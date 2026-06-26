@@ -384,9 +384,11 @@ LedgerHistory::handleMismatch(
             recordReason("consensus_txset");
             return;
         }
-
-        JLOG(j_.error()) << "MISMATCH with same consensus transaction set: "
-                         << to_string(*builtConsensusHash);
+        else
+        {
+            JLOG(j_.error()) << "MISMATCH with same consensus transaction set: "
+                             << to_string(*builtConsensusHash);
+        }
     }
 
     // Find differences between built and valid ledgers
