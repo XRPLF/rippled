@@ -249,6 +249,49 @@ numberFromJson(SField const& field, json::Value const& value)
             // NOLINTNEXTLINE(misc-redundant-expression)
             std::numeric_limits<std::uint64_t>::max() >=
             std::numeric_limits<decltype(parts.mantissa)>::max());
+
+        Number const num{parts.negative, parts.mantissa, parts.exponent, Number::Normalized{}};
+
+        // Bring the ranges of parts and num into the same range. Then check that they match.
+        // If they do not, then the value has been rounded one way or another, and should not be
+        // used, because it may lead to an unexpected result.
+        auto const negative = num.mantissa() < 0;
+        auto mantissa = Number::externalToInternal(num.mantissa());
+        auto exponent = num.exponent();
+        XRPL_ASSERT(negative == parts.negative, "numberFromJson : signs agree");
+        static_assert(
+            // NOLINTNEXTLINE(misc-redundant-expression)
+            std::is_same_v<decltype(mantissa), decltype(parts.mantissa)>);
+        static_assert(
+            // NOLINTNEXTLINE(misc-redundant-expression)
+            std::is_same_v<decltype(exponent), decltype(parts.exponent)>);
+        auto const minMantissa = Number::minMantissa();
+        while (parts.exponent > exponent && parts.mantissa < minMantissa)
+        {
+            parts.mantissa *= 10;
+            --parts.exponent;
+        }
+        while (parts.exponent < exponent && mantissa < minMantissa)
+        {
+            // This should only happen in the edge case where the internal mantissa > kMaxRep
+            mantissa *= 10;
+            --exponent;
+        }
+        while (parts.exponent < exponent && parts.mantissa % 10 == 0)
+        {
+            // LCOV_EXCL_START
+            // This will probably never be needed
+            parts.mantissa /= 10;
+            ++parts.exponent;
+            // LCOV_EXCL_STOP
+        }
+
+        if (negative != parts.negative || mantissa != parts.mantissa || exponent != parts.exponent)
+            Throw<std::runtime_error>("number can not be represented");
+
+        // To avoid normalizing twice, create the return value with num, instead of falling through
+        // and building it again.
+        return STNumber{field, num};
     }
     else
     {

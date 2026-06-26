@@ -1452,11 +1452,33 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(tx2, Ter(temINVALID));
         }
 
+        env.setParseFailureExpected(true);
+        try
+        {
+            tx2[sfDebtMaximum] = "9223372036854775808";
+            env(tx2, Ter(temINVALID));
+            // should throw in parser
+            fail();
+        }
+        catch (std::exception const& e)
+        {
+            BEAST_EXPECT(
+                std::string(e.what()) ==
+                "invalidParamsField 'tx_json.DebtMaximum' has invalid data.");
+        }
+
         if (Number::getMantissaScale() >= MantissaRange::MantissaScale::Large330)
         {
             // For the Large330 scale, 2^63 rounds _down_ to Number::kMaxRep
             {
                 auto const dm = power(2, 63);
+                BEAST_EXPECTS(dm == kMaxMpTokenAmount, to_string(dm));
+                tx2[sfDebtMaximum] = dm;
+                env(tx2, Ter(tesSUCCESS));
+            }
+
+            {
+                auto const dm = power(2, 63) + Number{1, -1};
                 BEAST_EXPECTS(dm == kMaxMpTokenAmount, to_string(dm));
                 tx2[sfDebtMaximum] = dm;
                 env(tx2, Ter(tesSUCCESS));

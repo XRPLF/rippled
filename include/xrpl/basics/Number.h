@@ -582,6 +582,13 @@ public:
     std::pair<T, int>
     normalizeToRange() const;
 
+    // Safely convert rep (int64) mantissa to internalrep (uint64). If the rep
+    // is negative, returns the positive value. This takes a little extra work
+    // because converting std::numeric_limits<std::int64_t>::min() flirts with
+    // UB, and can vary across compilers.
+    static internalrep
+    externalToInternal(rep mantissa);
+
 private:
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
@@ -635,13 +642,6 @@ private:
     // exponent could go out of range, so it will be checked.
     [[nodiscard]] Number
     shiftExponent(int exponentDelta) const;
-
-    // Safely convert rep (int64) mantissa to internalrep (uint64). If the rep
-    // is negative, returns the positive value. This takes a little extra work
-    // because converting std::numeric_limits<std::int64_t>::min() flirts with
-    // UB, and can vary across compilers.
-    static internalrep
-    externalToInternal(rep mantissa);
 };
 
 constexpr Number::Number(bool negative, internalrep mantissa, int exponent, Unchecked) noexcept

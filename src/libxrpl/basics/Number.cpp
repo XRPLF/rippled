@@ -1390,8 +1390,11 @@ to_string(Number const& amount)
         }
         std::string ret = negative ? "-" : "";
         ret.append(std::to_string(mantissa));
-        ret.append(1, 'e');
-        ret.append(std::to_string(exponent));
+        if (exponent != 0)
+        {
+            ret.append(1, 'e');
+            ret.append(std::to_string(exponent));
+        }
         return ret;
     }
 
