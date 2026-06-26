@@ -42,7 +42,7 @@ ApplyContext::ApplyContext(
     , flags_(flags)
     , view_{std::in_place, &base_, flags_}
     , parentBatchId_(parentBatchId)
-    , viewCtx_{.view = *view_, .tx = tx}
+    , viewCtx_{.view = *view_, .tx = tx, .reserveContext = ReserveTxContext::make(*view_, tx)}
 {
     XRPL_ASSERT(
         parentBatchId.has_value() == ((flags_ & TapBatch) == TapBatch),

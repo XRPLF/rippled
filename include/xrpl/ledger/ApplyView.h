@@ -398,10 +398,50 @@ public:
     emptyDirDelete(Keylet const& directory);
 };
 
+struct ReserveTxContext
+{
+    AccountID const account;
+    SLE::pointer accountSle;
+    std::optional<AccountID> const sponsor;
+    SLE::pointer sponsorSle;
+    SLE::pointer sponsorshipSle;
+
+    bool
+    isSponsored()
+    {
+        XRPL_ASSERT(
+            sponsor.has_value() == !!sponsorSle,
+            "ReserveTxContext::isSponsored : sponsor existence matches sponsorSle existence");
+        return sponsor.has_value();
+    }
+
+    bool
+    hasSponsorshipObj()
+    {
+        return !!sponsorshipSle;
+    }
+
+    static ReserveTxContext
+    make(ApplyView& view, STTx const& tx)
+    {
+        auto const account = tx[sfAccount];
+        auto const sponsor = tx[~sfSponsor];
+
+        return {
+            account,
+            view.peek(keylet::account(account)),
+            sponsor,
+            sponsor ? view.peek(keylet::account(*sponsor)) : nullptr,
+            sponsor ? view.peek(keylet::sponsorship(*sponsor, account)) : nullptr,
+        };
+    }
+};
+
 struct ApplyViewContext
 {
     ApplyView& view;
     STTx const& tx;
+    ReserveTxContext reserveContext;
 };
 
 namespace directory {
