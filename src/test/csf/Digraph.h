@@ -128,7 +128,7 @@ public:
     outVertices() const
     {
         return boost::adaptors::transform(
-            graph_, [](typename Graph::value_type const& v) { return v.first; });
+            graph_, [](Graph::value_type const& v) { return v.first; });
     }
 
     /** Range over target vertices
@@ -139,7 +139,7 @@ public:
     [[nodiscard]] auto
     outVertices(Vertex source) const
     {
-        auto transform = [](typename Links::value_type const& link) { return link.first; };
+        auto transform = [](Links::value_type const& link) { return link.first; };
         auto it = graph_.find(source);
         if (it != graph_.end())
             return boost::adaptors::transform(it->second, transform);
@@ -165,7 +165,7 @@ public:
     [[nodiscard]] auto
     outEdges(Vertex source) const
     {
-        auto transform = [source](typename Links::value_type const& link) {
+        auto transform = [source](Links::value_type const& link) {
             return Edge{source, link.first, link.second};
         };
 

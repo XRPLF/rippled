@@ -80,7 +80,7 @@ networkTypeFromId(std::uint32_t networkId)
 }  // namespace
 
 Telemetry::Setup
-setupTelemetry(
+makeTelemetrySetup(
     Section const& section,
     std::string const& nodePublicKey,
     std::string const& version,
