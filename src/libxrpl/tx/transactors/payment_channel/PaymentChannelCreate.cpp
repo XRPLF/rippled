@@ -136,8 +136,11 @@ PaymentChannelCreate::doApply()
 
     if (ctx_.view().rules().enabled(featureSponsor))
     {
+        auto const sponsorSle = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        if (!sponsorSle)
+            return sponsorSle.error();
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, STAmount{preFeeBalance_}, {}, 1, 0, j_);
+                ctx_.view(), ctx_.tx, sle, STAmount{preFeeBalance_}, *sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
         if (auto const ret = checkInsufficientReserve(
