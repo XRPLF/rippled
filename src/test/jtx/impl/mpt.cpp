@@ -1153,10 +1153,15 @@ MPTTester::convert(MPTConvert const& arg)
     auto const prevSpendingBalance = getDecryptedBalance(*arg.account, holderEncryptedSpending);
     auto const prevIssuerBalance = getDecryptedBalance(*arg.account, issuerEncryptedBalance);
 
+    if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
+        Throw<std::runtime_error>("Failed to get Pre-convert balance");
+
     std::optional<uint64_t> prevAuditorBalance;
     if (arg.auditorEncryptedAmt || auditor_)
     {
         prevAuditorBalance = getDecryptedBalance(*arg.account, auditorEncryptedBalance);
+        if (!prevAuditorBalance)
+            Throw<std::runtime_error>("Failed to get Pre-convert balance");
     }
 
     auto const prevOutstanding = getIssuanceOutstandingBalance();
@@ -1208,19 +1213,16 @@ MPTTester::convert(MPTConvert const& arg)
                 [&]() -> bool { return *prevAuditorBalance + *arg.amt == *postAuditorBalance; }));
         }
         // spending balance should not change
-        env_.require(RequireAny([&]() -> bool {
-            return prevSpendingBalance && *postSpendingBalance == *prevSpendingBalance;
-        }));
+        env_.require(
+            RequireAny([&]() -> bool { return *postSpendingBalance == *prevSpendingBalance; }));
 
         // issuer's encrypted balance is updated correctly
-        env_.require(RequireAny([&]() -> bool {
-            return prevIssuerBalance && *prevIssuerBalance + *arg.amt == *postIssuerBalance;
-        }));
+        env_.require(RequireAny(
+            [&]() -> bool { return *prevIssuerBalance + *arg.amt == *postIssuerBalance; }));
 
         // holder's inbox balance is updated correctly
-        env_.require(RequireAny([&]() -> bool {
-            return prevInboxBalance && *prevInboxBalance + *arg.amt == *postInboxBalance;
-        }));
+        env_.require(RequireAny(
+            [&]() -> bool { return *prevInboxBalance + *arg.amt == *postInboxBalance; }));
 
         // sum of holder's inbox and spending balance should equal to issuer's
         // encrypted balance
@@ -2012,12 +2014,9 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         env_.require(RequireAny([&]() -> bool {
             return getDecryptedBalance(*arg.holder, issuerEncryptedBalance) == 0;
         }));
-        if (getEncryptedBalance(*arg.holder, auditorEncryptedBalance))
-        {
-            env_.require(RequireAny([&]() -> bool {
-                return getDecryptedBalance(*arg.holder, auditorEncryptedBalance) == 0;
-            }));
-        }
+        env_.require(RequireAny([&]() -> bool {
+            return getDecryptedBalance(*arg.holder, auditorEncryptedBalance) == 0;
+        }));
 
         // Verify version is incremented
         env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }));
@@ -2114,6 +2113,8 @@ MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType bala
 {
     auto const encryptedAmt = getEncryptedBalance(account, balanceType);
 
+    // Return zero to test cases like Feature Disabled, where the ledger object
+    // does not exist.
     if (!encryptedAmt)
         return 0;
 
@@ -2193,6 +2194,9 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
     auto const prevAuditorEncrypted = getEncryptedBalance(*arg.account, auditorEncryptedBalance);
     auto const prevVersion = getMPTokenVersion(*arg.account);
 
+    if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
+        Throw<std::runtime_error>("Failed to get pre-mergeInbox balances");
+
     if (submit(arg, jv) == tesSUCCESS)
     {
         auto const postCOA = getIssuanceConfidentialBalance();
@@ -2205,9 +2209,6 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg)
         auto const postAuditorEncrypted =
             getEncryptedBalance(*arg.account, auditorEncryptedBalance);
         auto const postVersion = getMPTokenVersion(*arg.account);
-
-        if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
-            Throw<std::runtime_error>("Failed to get pre-mergeInbox balances");
 
         if (!postInboxBalance || !postSpendingBalance || !postIssuerBalance ||
             !prevIssuerEncrypted || !postInboxEncrypted || !postIssuerEncrypted)
