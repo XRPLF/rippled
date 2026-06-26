@@ -19,9 +19,10 @@ namespace xrpl {
 void
 ValidPermissionedDEX::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
 {
-    auto sle = after;
-    if (!isFeatureEnabled(fixCleanup3_3_0) && !after)
-        sle = before;
+    if (isFeatureEnabled(fixCleanup3_3_0) && !after)
+        return;
+
+    auto const sle = after ? after : before;
 
     if (sle && sle->getType() == ltDIR_NODE)
     {
