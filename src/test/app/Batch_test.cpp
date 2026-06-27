@@ -70,6 +70,7 @@
 #include <xrpl/tx/transactors/system/Batch.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -2870,21 +2871,21 @@ class Batch_test : public beast::unit_test::Suite
             auto const alice = Account("alice");
             auto const gw = Account("gw");
             auto const carol = Account("carol");  // never funded
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(10000), alice, gw);
             env.close();
             env.memoize(carol);
 
-            env(trust(alice, USD(100000)));
-            env(pay(gw, alice, USD(10000)));
-            env(offer(gw, USD(2000), XRP(2000)));  // USD -> XRP liquidity
+            env(trust(alice, usd(100000)));
+            env(pay(gw, alice, usd(10000)));
+            env(offer(gw, usd(2000), XRP(2000)));  // USD -> XRP liquidity
             env.close();
 
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
             auto pp = pay(alice, carol, XRP(1000));
-            pp[jss::SendMax] = USD(2000).value().getJson(JsonOptions::Values::None);
+            pp[jss::SendMax] = usd(2000).value().getJson(JsonOptions::Values::None);
             pp[jss::Flags] = tfPartialPayment;
 
             env(batch::outer(alice, seq, batchFee, tfIndependent),
