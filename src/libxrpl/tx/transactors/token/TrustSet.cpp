@@ -468,6 +468,9 @@ TrustSet::doApply()
             if ((bHigh ? saHighBalance : saLowBalance) >= beast::kZero)
             {
                 uFlagsOut |= (bHigh ? lsfHighNoRipple : lsfLowNoRipple);
+                // Also set legacy flag positions for backward compatibility
+                // with trust lines created before the DeepFreeze flag shift
+                uFlagsOut |= (bHigh ? 0x00020000u : 0x00010000u);
             }
             else
             {
@@ -478,6 +481,9 @@ TrustSet::doApply()
         else if (bClearNoRipple && !bSetNoRipple)
         {
             uFlagsOut &= ~(bHigh ? lsfHighNoRipple : lsfLowNoRipple);
+            // Also clear legacy flag positions for backward compatibility
+            // with trust lines created before the DeepFreeze flag shift
+            uFlagsOut &= ~(bHigh ? 0x00020000u : 0x00010000u);
         }
 
         // Have to use lsfNoFreeze to maintain pre-deep freeze behavior
