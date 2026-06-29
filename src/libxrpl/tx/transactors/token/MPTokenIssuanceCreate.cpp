@@ -104,7 +104,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
 std::expected<MPTID, TER>
 MPTokenIssuanceCreate::create(
-    ApplyViewContext& ctx,
+    ApplyViewContext&& ctx,
     beast::Journal journal,
     MPTCreateArgs const& args)
 {
@@ -116,7 +116,7 @@ MPTokenIssuanceCreate::create(
     SLE::pointer sponsorSle;
     if (!isPseudoAccount(acct))
     {
-        auto sle = getTxReserveSponsor(ctx);
+        auto sle = getTxReserveSponsor({.view = ctx.view, .tx = ctx.tx});
         if (!sle)
             return std::unexpected(sle.error());
         sponsorSle = std::move(*sle);
@@ -197,9 +197,8 @@ TER
 MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
-    auto applyViewContext = ctx_.getApplyViewContext();
     auto const result = create(
-        applyViewContext,
+        ctx_.getApplyViewContext(),
         j_,
         {
             .priorBalance = preFeeBalance_,

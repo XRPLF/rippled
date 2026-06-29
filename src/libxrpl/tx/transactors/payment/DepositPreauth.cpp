@@ -152,7 +152,6 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
 TER
 DepositPreauth::doApply()
 {
-    auto applyViewContext = ctx_.getApplyViewContext();
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
         auto const sleOwner = view().peek(keylet::account(accountID_));
@@ -162,7 +161,7 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        auto const sponsorSle = getTxReserveSponsor(applyViewContext);
+        auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret = checkInsufficientReserve(
@@ -210,7 +209,7 @@ DepositPreauth::doApply()
         // A preauth counts against the reserve of the issuing account, but we
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
-        auto const sponsorSle = getTxReserveSponsor(applyViewContext);
+        auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret = checkInsufficientReserve(

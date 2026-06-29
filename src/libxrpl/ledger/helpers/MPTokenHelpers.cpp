@@ -125,7 +125,7 @@ canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyViewContext& ctx,
+    ApplyViewContext&& ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
@@ -143,12 +143,13 @@ addEmptyHolding(
     if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;
 
-    return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal);
+    return authorizeMPToken(
+        {.view = ctx.view, .tx = ctx.tx}, priorBalance, mptID, accountID, journal);
 }
 
 [[nodiscard]] TER
 authorizeMPToken(
-    ApplyViewContext& ctx,
+    ApplyViewContext&& ctx,
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
@@ -192,7 +193,7 @@ authorizeMPToken(
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
-        auto const sponsorSle = getTxReserveSponsor(ctx);
+        auto const sponsorSle = getTxReserveSponsor({.view = ctx.view, .tx = ctx.tx});
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
@@ -279,7 +280,7 @@ authorizeMPToken(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyViewContext& ctx,
+    ApplyViewContext&& ctx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
     beast::Journal journal)
@@ -302,7 +303,7 @@ removeEmptyHolding(
         return tecHAS_OBLIGATIONS;
 
     return authorizeMPToken(
-        ctx,
+        {.view = ctx.view, .tx = ctx.tx},
         {},  // priorBalance
         mptID,
         accountID,
@@ -411,7 +412,7 @@ requireAuth(
 
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
-    ApplyViewContext& ctx,
+    ApplyViewContext&& ctx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization
@@ -493,7 +494,7 @@ enforceMPTokenAuthorization(
             maybeDomainID.has_value() && sleToken == nullptr,
             "xrpl::enforceMPTokenAuthorization : new MPToken for domain");
         if (auto const err = authorizeMPToken(
-                ctx,
+                {.view = ctx.view, .tx = ctx.tx},
                 priorBalance,   // priorBalance
                 mptIssuanceID,  // mptIssuanceID
                 account,        // account

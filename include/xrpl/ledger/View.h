@@ -201,7 +201,7 @@ canWithdraw(ReadView const& view, STTx const& tx);
 
 [[nodiscard]] TER
 doWithdraw(
-    ApplyViewContext& ctx,
+    ApplyViewContext&& ctx,
     AccountID const& senderAcct,
     AccountID const& dstAcct,
     AccountID const& sourceAcct,

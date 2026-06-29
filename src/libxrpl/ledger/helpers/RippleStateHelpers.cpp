@@ -633,7 +633,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 
 TER
 addEmptyHolding(
-    ApplyViewContext& ctx,
+    ApplyViewContext&& ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
@@ -666,7 +666,7 @@ addEmptyHolding(
     SLE::pointer sponsorSle;
     if (!isPseudoAccount(sleDst))
     {
-        auto sle = getTxReserveSponsor(ctx);
+        auto sle = getTxReserveSponsor({.view = ctx.view, .tx = ctx.tx});
         if (!sle)
             return sle.error();  // LCOV_EXCL_LINE
         sponsorSle = std::move(*sle);
@@ -699,7 +699,7 @@ addEmptyHolding(
 
 TER
 removeEmptyHolding(
-    ApplyViewContext& ctx,
+    ApplyViewContext&& ctx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal)
