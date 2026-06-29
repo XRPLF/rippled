@@ -2178,9 +2178,11 @@ public:
                     sponsorshipSleAfterAttempt->isFieldPresent(sfRemainingOwnerCount) ==
                     reserveCountPresentBeforeAttempt);
                 if (reserveCountPresentBeforeAttempt)
+                {
                     BEAST_EXPECT(
                         sponsorshipSleAfterAttempt->getFieldU32(sfRemainingOwnerCount) ==
                         reserveCountBeforeAttempt);
+                }
             }
         }
 
