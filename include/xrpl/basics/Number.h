@@ -126,8 +126,9 @@ struct MantissaRange final
 {
     using rep = std::uint64_t;
 
+    // NOLINTBEGIN(readability-enum-initial-value)
+    // The values don't matter, except for Large
     enum class MantissaScale {
-        // NOLINTBEGIN(readability-enum-initial-value) - The values don't matter, except for Large
         // Small can be removed when either featureSingleAssetVault or featureLendingProtocol are
         // retired
         Small,
@@ -141,8 +142,8 @@ struct MantissaRange final
         // in the extremely unlikely case that a downstream project made use of it. Note that
         // because the behavior changed, this may still be a breaking change.
         Large = Large330,
-        // NOLINTEND(readability-enum-initial-value)
     };
+    // NOLINTEND(readability-enum-initial-value)
 
     // This entire enum can be removed when the last relevant amendment is retired
     enum class CuspRoundingFix : std::uint8_t {
