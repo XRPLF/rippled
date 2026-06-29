@@ -720,15 +720,12 @@ public:
         {
             // if pre-funded value is not enough, error
             Env env{*this, testableAmendments()};
-            env.fund(XRP(10000), alice, bob, sponsor);
+            env.fund(XRP(10000), alice, bob, charlie, sponsor);
             env.close();
 
             env(sponsor::set(sponsor, 0, 1, XRP(10), XRP(100)),
                 sponsor::SponseeAcc(alice),
                 Ter(tesSUCCESS));
-            env.close();
-
-            env.fund(XRP(1000), bob, charlie);
             env.close();
 
             // Fee insufficient
