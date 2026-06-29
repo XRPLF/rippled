@@ -402,6 +402,10 @@ struct ApplyViewContext
 {
     ApplyView& view;
     STTx const& tx;
+
+    ApplyViewContext(ApplyViewContext const&) = delete;
+    ApplyViewContext&
+    operator=(ApplyViewContext const&) = delete;
 };
 
 namespace directory {
