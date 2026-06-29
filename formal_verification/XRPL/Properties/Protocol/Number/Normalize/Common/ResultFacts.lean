@@ -23,7 +23,7 @@ lemma doRoundUp_exponent_le_max
     res.exponent_ ≤ maxExponent := by
   unfold Guard.doRoundUp at hok
   simp only [Guard.doDropDigit] at hok
-  set gP : Guard := g.pushOverflow m with hgP_def
+  set gP : Guard := g.pushOverflow m mode with hgP_def
   have h_extract : ∀ r' : RoundResult,
       (if r'.exponent_ > maxExponent then (.error loc : Except String RoundResult)
        else .ok r') = .ok res → res.exponent_ ≤ maxExponent := by
@@ -110,7 +110,7 @@ lemma doRoundUp_mantissa_le_maxRepUp_at_maxExp
         exact ⟨rfl, rfl⟩
   unfold Guard.doRoundUp at hok
   simp only [Guard.doDropDigit] at hok
-  set gP : Guard := g.pushOverflow m with hgP_def
+  set gP : Guard := g.pushOverflow m mode with hgP_def
   have h_extract : ∀ r' : RoundResult,
       (if r'.exponent_ > maxExponent then (.error loc : Except String RoundResult)
        else .ok r') = .ok res → res = r' := by
@@ -161,13 +161,14 @@ lemma doRoundUp_mantissa_le_maxRepUp_at_maxExp
           · rw [UInt64.lt_iff_toNat_lt]; omega
         have hempty : g.empty = true := h_empty_above (by omega)
         have hgP_eq : gP = g := by
-          rw [hgP_def]
-          unfold Guard.pushOverflow
-          rw [if_neg]
-          intro ⟨h1, h2⟩
           rcases hzm_cases with h | h
-          · have := UInt64.lt_iff_toNat_lt.mp h1; omega
-          · have := UInt64.lt_iff_toNat_lt.mp h2; omega
+          · rw [hgP_def]
+            exact pushOverflow_noop_of_le_maxRep_of_empty (by omega) g mode hempty
+          · rw [hgP_def]
+            unfold Guard.pushOverflow
+            rw [if_neg]
+            intro ⟨_, h2⟩
+            have := UInt64.lt_iff_toNat_lt.mp h2; omega
         rw [hgP_eq, empty_guard_round_neg_two g mode hempty] at hb
         simp at hb
   · rw [if_neg hb] at hok
@@ -247,7 +248,7 @@ lemma doRoundUp_mantissa_le_cuspTop_at_maxExp
         exact ⟨rfl, rfl⟩
   unfold Guard.doRoundUp at hok
   simp only [Guard.doDropDigit] at hok
-  set gP : Guard := g.pushOverflow m with hgP_def
+  set gP : Guard := g.pushOverflow m mode with hgP_def
   have h_extract : ∀ r' : RoundResult,
       (if r'.exponent_ > maxExponent then (.error loc : Except String RoundResult)
        else .ok r') = .ok res → res = r' := by
@@ -373,7 +374,7 @@ lemma doRoundUp_ok_high_exp_mantissa_small
         exact ⟨rfl, rfl⟩
   unfold Guard.doRoundUp at hok
   simp only [Guard.doDropDigit] at hok
-  set gP : Guard := g.pushOverflow m with hgP_def
+  set gP : Guard := g.pushOverflow m mode with hgP_def
   have h_extract : ∀ r' : RoundResult,
       (if r'.exponent_ > maxExponent then (.error loc : Except String RoundResult)
        else .ok r') = .ok res → res = r' ∧ ¬ (res.exponent_ > maxExponent) := by

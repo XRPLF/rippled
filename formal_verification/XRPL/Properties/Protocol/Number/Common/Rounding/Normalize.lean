@@ -61,7 +61,7 @@ lemma empty_guard_doRoundUp_id
     rw [UInt64.le_iff_toNat_le] at hmin; simp [largeRange_min_val] at hmin
   unfold Guard.doRoundUp
   simp only []
-  rw [show g.pushOverflow m = g from by unfold Guard.pushOverflow; rw [if_neg h_no_push],
+  rw [pushOverflow_noop_of_empty g mode h_empty h_no_push,
       empty_guard_round_neg_two g mode h_empty]
   have h_round_false : ((-2 : Int) == 1 || ((-2 : Int) == 0 && m % 2 == 1)) = false := by rfl
   rw [h_round_false]
@@ -129,7 +129,8 @@ lemma empty_guard_doRoundUp_divu10
     intro h; rw [h] at h_gt; exact absurd h_gt (by decide)
   unfold Guard.doRoundUp
   simp only []
-  rw [pushOverflow_noop_of_le_maxRep h_div_le_maxRep, empty_guard_round_neg_two g mode h_empty]
+  rw [pushOverflow_noop_of_le_maxRep_of_empty h_div_le_maxRep g mode h_empty,
+      empty_guard_round_neg_two g mode h_empty]
   have h_round_false :
       ((-2 : Int) == 1 || ((-2 : Int) == 0 && (m / 10) % 2 == 1)) = false := by rfl
   rw [h_round_false]
@@ -165,7 +166,7 @@ lemma empty_guard_doRoundUp_exp_overflow
     rw [UInt64.le_iff_toNat_le] at hmin; simp [largeRange_min_val] at hmin
   unfold Guard.doRoundUp
   simp only []
-  rw [show g.pushOverflow m = g from by unfold Guard.pushOverflow; rw [if_neg h_no_push],
+  rw [pushOverflow_noop_of_empty g mode h_empty h_no_push,
       empty_guard_round_neg_two g mode h_empty]
   have h_round_false : ((-2 : Int) == 1 || ((-2 : Int) == 0 && m % 2 == 1)) = false := by rfl
   rw [h_round_false]

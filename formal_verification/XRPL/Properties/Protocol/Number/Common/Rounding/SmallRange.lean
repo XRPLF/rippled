@@ -118,9 +118,11 @@ lemma doRoundUp_small_truncate (g : Guard) (neg : Bool) (m : UInt64) (e : Int)
     rw [h] at hmin
     rw [cMinValue_val] at hmin
     simp at hmin
+  have h_lt_maxRep : m.toNat < maxRep.toNat := by
+    rw [maxRep_val]; rw [cMaxValue_val] at hmax; omega
   unfold Guard.doRoundUp
   simp only []
-  rw [pushOverflow_noop_of_le_maxRep h_le_maxRep g, hb]
+  rw [pushOverflow_noop_of_lt_maxRep h_lt_maxRep g mode, hb]
   simp only [Bool.false_eq_true, if_false]
   rw [if_neg h_no_cusp]
   rw [bringIntoRange_noscale_result (fun h => absurd (UInt64.lt_iff_toNat_lt.mp h.1)
@@ -149,9 +151,10 @@ lemma doRoundUp_small_fire (g : Guard) (neg : Bool) (m : UInt64) (e : Int)
     intro h
     have : (m + 1).toNat = 0 := by rw [h]; rfl
     omega
+  have h_lt_maxRep2 : m.toNat < maxRep.toNat := UInt64.lt_iff_toNat_lt.mp h_branch.2
   unfold Guard.doRoundUp
   simp only []
-  rw [pushOverflow_noop_of_le_maxRep h_le_maxRep g, hb]
+  rw [pushOverflow_noop_of_lt_maxRep h_lt_maxRep2 g mode, hb]
   simp only [if_true]
   rw [if_pos h_branch]
   rw [bringIntoRange_noscale_result (fun h => absurd (UInt64.lt_iff_toNat_lt.mp h.1)

@@ -64,7 +64,7 @@ lemma doRoundUp_small_cusp (g : Guard) (neg : Bool) (e : Int) (mode : rounding_m
   -- drive the doRoundUp pipeline through the doDropDigit branch
   unfold Guard.doRoundUp
   simp only []
-  rw [pushOverflow_noop_of_le_maxRep h_le_maxRep g, hb]
+  rw [pushOverflow_noop_of_lt_maxRep (by rw [maxRep_val, cMaxValue_val]; omega) g mode, hb]
   simp only [if_true]
   rw [if_neg (show ¬ (cMaxValue < cMaxValue ∧ cMaxValue < maxRep) from fun h => absurd (UInt64.lt_iff_toNat_lt.mp h.1) (by omega)),
       if_neg (show ¬ (maxRep < cMaxValue ∧ cMaxValue < maxRepUp) from fun h =>

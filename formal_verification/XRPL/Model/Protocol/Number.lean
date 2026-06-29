@@ -148,19 +148,27 @@ def RoundResult.toNumber (r : RoundResult) : Number :=
   else
     { negative_ := negative, mantissa_ := mantissa, exponent_ := exponent }
 
-def Guard.pushOverflow (mantissa : UInt64) (g : Guard) : Guard :=
-    if maxRep < mantissa ∧ mantissa < maxRepUp then
+def Guard.pushOverflow (g : Guard) (mantissa : UInt64) (mode : rounding_mode) : Guard :=
+    if maxRep ≤ mantissa ∧ mantissa < maxRepUp then
         let spread := maxRepUp - maxRep
-        let diff := mantissa - maxRep
-        let digit := (diff * 10) / spread
-        g.push digit
+        let mantissa :=
+            if mantissa % 10 < 9 then
+                let midpoint := maxRep + spread / 2
+                let r := g.round mode
+                if r == 1 || (r == 0 && mantissa == midpoint) then mantissa + 1 else mantissa
+            else mantissa
+        if mantissa == maxRep then g
+        else
+            let diff := mantissa - maxRep
+            let digit := (diff * 10) / spread
+            g.push digit
     else
         g
 
 def Guard.doRoundUp (g : Guard) (negative : Bool) (mantissa : UInt64) (exponent : Int)
     (minMantissa maxMantissa : internalrep) (mode : rounding_mode)
     (location : String) : Except String RoundResult :=
-  let g := g.pushOverflow mantissa
+  let g := g.pushOverflow mantissa mode
   let r := g.round mode
   let roundUp := r == 1 || (r == 0 && mantissa % 2 == 1)
   let res :=
@@ -484,7 +492,7 @@ def Number.to_rep (n : Number) (mode : rounding_mode) : Except String rep :=
     match (if offset ≥ 0 then grow drops offset else .ok drops) with
     | .error e => .error e
     | .ok drops =>
-      let g := g.pushOverflow drops.toUInt64
+      let g := g.pushOverflow drops.toUInt64 mode
       let r := g.round mode
       if r == 1 || (r == 0 && drops % 2 == 1) then
         if drops ≥ maxRep.toInt64 then

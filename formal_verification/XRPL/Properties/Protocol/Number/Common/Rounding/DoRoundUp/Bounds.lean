@@ -88,7 +88,7 @@ lemma doRoundUp_rounds_any_supTight_upTo_maxRepUp
     exact mul_le_mul_of_nonneg_right hX h10ze_nn
   unfold Guard.doRoundUp at hok_pos
   simp only [Guard.doDropDigit] at hok_pos
-  set gP : Guard := g.pushOverflow zm with hgP_def
+  set gP : Guard := g.pushOverflow zm mode with hgP_def
   by_cases hb : ((gP.round mode == 1) || ((gP.round mode == 0) && (zm % 2 == 1))) = true
   · rw [if_pos hb] at hok_pos
     have hlt_max : zm < largeRange.max := by
@@ -295,41 +295,85 @@ lemma doRoundUp_rounds_any_supTight_upTo_maxRepUp
 /-- At a cusp-interior mantissa `pushOverflow` pushes a positive digit
 (`(zm − maxRep)·10/3 ∈ {3, 6}`), so the pushed guard has nonzero digit content;
 the sign bit is preserved. -/
-lemma pushOverflow_cusp_interior_facts (g : Guard) (zm : UInt64)
+lemma pushOverflow_cusp_interior_facts (g : Guard) (zm : UInt64) (mode : rounding_mode)
     (h_lb : maxRep.toNat < zm.toNat) (h_ub : zm.toNat < maxRepUp.toNat) :
-    (g.pushOverflow zm).digits_ > 0 ∧ (g.pushOverflow zm).sbit_ = g.sbit_ := by
+    (g.pushOverflow zm mode).digits_ > 0 ∧ (g.pushOverflow zm mode).sbit_ = g.sbit_ := by
   have hmr_u : maxRep < zm := UInt64.lt_iff_toNat_lt.mpr h_lb
   have hlt_u : zm < maxRepUp := UInt64.lt_iff_toNat_lt.mpr h_ub
-  have hpof : g.pushOverflow zm = g.push ((zm - maxRep) * 10 / (maxRepUp - maxRep)) := by
-    unfold Guard.pushOverflow
-    rw [if_pos ⟨hmr_u, hlt_u⟩]
+  have hdiff_bound : zm.toNat = maxRep.toNat + 1 ∨ zm.toNat = maxRep.toNat + 2 := by
+    rw [maxRep_val] at h_lb; rw [show maxRepUp.toNat = maxRepUpNat from rfl] at h_ub
+    rw [maxRep_val]; omega
   have hdiff : (zm - maxRep).toNat = zm.toNat - maxRep.toNat :=
     UInt64.toNat_sub_of_le _ _ (UInt64.le_iff_toNat_le.mpr (Nat.le_of_lt h_lb))
-  have hdiff_bound : (zm - maxRep).toNat = 1 ∨ (zm - maxRep).toNat = 2 := by
-    rw [hdiff, maxRep_val]
-    rw [maxRep_val] at h_lb
-    rw [show maxRepUp.toNat = maxRepUpNat from rfl] at h_ub
-    omega
-  have hd10 : ((zm - maxRep) * 10).toNat = (zm - maxRep).toNat * 10 := by
-    rw [UInt64.toNat_mul, show (10 : UInt64).toNat = 10 from rfl]
+  have hzm1_toNat : (zm + 1).toNat = zm.toNat + 1 := by
+    rw [UInt64.toNat_add, show (1 : UInt64).toNat = 1 from rfl]
     apply Nat.mod_eq_of_lt
-    rcases hdiff_bound with h | h <;> rw [h] <;> norm_num
-  have hspread : (maxRepUp - maxRep) = (3 : UInt64) := by decide
-  have hdigit : ((zm - maxRep) * 10 / (maxRepUp - maxRep)).toNat = 3
-      ∨ ((zm - maxRep) * 10 / (maxRepUp - maxRep)).toNat = 6 := by
-    rw [hspread, UInt64.toNat_div, show (3 : UInt64).toNat = 3 from rfl, hd10]
-    rcases hdiff_bound with h | h
-    · left; rw [h]
-    · right; rw [h]
-  constructor
-  · rw [hpof]
-    change (0 : UInt64) < _
-    rw [UInt64.lt_iff_toNat_lt, show (0 : UInt64).toNat = 0 from rfl]
-    have hpd := toNat_push_digits g ((zm - maxRep) * 10 / (maxRepUp - maxRep))
-    rw [hpd]
-    rcases hdigit with h | h <;> rw [h] <;> norm_num
-  · rw [hpof]
-    rfl
+    have := zm.toNat_lt_size
+    rw [show maxRepUp.toNat = maxRepUpNat from rfl] at h_ub
+    simp only [UInt64.size] at this; omega
+  have hne : zm ≠ maxRep := by rintro rfl; simp [maxRep_val] at h_lb
+  have hne1 : zm + 1 ≠ maxRep := by
+    rintro heq
+    have := congrArg UInt64.toNat heq
+    rw [hzm1_toNat] at this; omega
+  unfold Guard.pushOverflow
+  rw [if_pos ⟨UInt64.le_of_lt hmr_u, hlt_u⟩]
+  by_cases h9 : zm % (10 : UInt64) < 9
+  · have hzm_val : zm.toNat = maxRep.toNat + 1 := by
+      rcases hdiff_bound with h | h
+      · exact h
+      · exfalso
+        have : zm.toNat % 10 = 9 := by rw [h, maxRep_val]
+        have hmod : (zm % 10).toNat = zm.toNat % 10 := UInt64.toNat_mod _ _
+        exact absurd (UInt64.lt_iff_toNat_lt.mp h9) (by rw [hmod, this]; decide)
+    have hmid_eq : maxRep + (maxRepUp - maxRep) / 2 = zm := by
+      apply UInt64.toNat_inj.mp; rw [hzm_val, maxRep_val]; decide
+    simp only [if_pos h9]
+    rw [hmid_eq]
+    by_cases hbump : (g.round mode == 1 ||
+        (g.round mode == 0 && zm == zm)) = true
+    · rw [if_pos hbump]
+      simp only [show (zm + 1 == maxRep) = false from beq_eq_false_iff_ne.mpr hne1,
+                 Bool.false_eq_true, ite_false]
+      constructor
+      · change (0 : UInt64) < (g.push _).digits_
+        rw [UInt64.lt_iff_toNat_lt]
+        rw [toNat_push_digits]
+        have hsub : (zm + 1 - maxRep).toNat = 2 := by
+          rw [UInt64.toNat_sub_of_le _ _
+              (by rw [UInt64.le_iff_toNat_le, hzm1_toNat, hzm_val, maxRep_val]; norm_num)]
+          rw [hzm1_toNat, hzm_val, maxRep_val]
+        rw [UInt64.toNat_div, show (maxRepUp - maxRep).toNat = 3 from by decide,
+            UInt64.toNat_mul, show (10 : UInt64).toNat = 10 from rfl, hsub]
+        norm_num
+      · rfl
+    · rw [Bool.not_eq_true] at hbump
+      simp only [hbump, Bool.false_eq_true, ite_false,
+                 show (zm == maxRep) = false from beq_eq_false_iff_ne.mpr hne]
+      constructor
+      · change (0 : UInt64) < (g.push _).digits_
+        rw [UInt64.lt_iff_toNat_lt, toNat_push_digits]
+        rw [UInt64.toNat_div, show (maxRepUp - maxRep).toNat = 3 from by decide,
+            UInt64.toNat_mul, show (10 : UInt64).toNat = 10 from rfl, hdiff, hzm_val, maxRep_val]
+        norm_num
+      · rfl
+  · have hzm_val : zm.toNat = maxRep.toNat + 2 := by
+      rcases hdiff_bound with h | h
+      · exfalso
+        have : zm.toNat % 10 = 8 := by rw [h, maxRep_val]
+        have hmod : (zm % 10).toNat = zm.toNat % 10 := UInt64.toNat_mod _ _
+        exact h9 (UInt64.lt_iff_toNat_lt.mpr (by rw [hmod, this]; decide))
+      · exact h
+    simp only [if_neg h9]
+    simp only [show (zm == maxRep) = false from beq_eq_false_iff_ne.mpr hne,
+               Bool.false_eq_true, ite_false]
+    constructor
+    · change (0 : UInt64) < (g.push _).digits_
+      rw [UInt64.lt_iff_toNat_lt, toNat_push_digits]
+      rw [UInt64.toNat_div, show (maxRepUp - maxRep).toNat = 3 from by decide,
+          UInt64.toNat_mul, show (10 : UInt64).toNat = 10 from rfl, hdiff, hzm_val, maxRep_val]
+      norm_num
+    · rfl
 
 set_option maxHeartbeats 1600000 in
 -- Cusp-range navigation (6 leaves) with literal arithmetic needs a raised budget.
@@ -353,22 +397,22 @@ lemma doRoundUp_value_cuspRange_cases
     (hres_ne : res_pos.mantissa_ ≠ 0) :
     ∃ v : ℚ, (res_pos.mantissa_.toNat : ℚ) * 10 ^ res_pos.exponent_ = v * 10 ^ ze
       ∧ ((v = maxRepNat ∧ zm.toNat < maxRepUp.toNat
-            ∧ (((g.pushOverflow zm).round mode == 1)
-               || (((g.pushOverflow zm).round mode == 0) && (zm % 2 == 1))) = false)
+            ∧ (((g.pushOverflow zm mode).round mode == 1)
+               || (((g.pushOverflow zm mode).round mode == 0) && (zm % 2 == 1))) = false)
          ∨ (v = maxRepNat + 3 ∧
               ((zm.toNat = maxRepUp.toNat
                   ∧ (((g.round mode == 1) || ((g.round mode == 0) && (zm % 2 == 1))) = false
                      ∨ (((g.push (maxRepUp % 10)).round mode == 1)
                         || (((g.push (maxRepUp % 10)).round mode == 0) && (maxRepUp / 10 % 2 == 1))) = false))
                ∨ (zm.toNat < maxRepUp.toNat
-                  ∧ (((g.pushOverflow zm).round mode == 1)
-                     || (((g.pushOverflow zm).round mode == 0) && (zm % 2 == 1))) = true)))
+                  ∧ (((g.pushOverflow zm mode).round mode == 1)
+                     || (((g.pushOverflow zm mode).round mode == 0) && (zm % 2 == 1))) = true)))
          ∨ (v = maxRepNat + 13 ∧ zm.toNat = maxRepUp.toNat
             ∧ ((g.round mode == 1) || ((g.round mode == 0) && (zm % 2 == 1))) = true)) := by
   have hmaxRepUp_toNat : maxRepUp.toNat = maxRepUpNat := rfl
   unfold Guard.doRoundUp at hok_pos
   simp only [Guard.doDropDigit] at hok_pos
-  set gP : Guard := g.pushOverflow zm with hgP_def
+  set gP : Guard := g.pushOverflow zm mode with hgP_def
   have hncusp1 : ¬ zm < maxRep := by
     rw [UInt64.lt_iff_toNat_lt]
     omega
@@ -587,7 +631,9 @@ theorem doRoundUp_value_downward_truncate
     (hok : g.doRoundUp zn zm ze' largeRange.min largeRange.max .downward loc = .ok res)
     (h_mant_ne : res.mantissa_ ≠ 0) :
     (res.mantissa_.toNat : ℚ) * 10 ^ res.exponent_ = (zm.toNat : ℚ) * 10 ^ ze' := by
-  have h_pof : g.pushOverflow zm = g := pushOverflow_noop_of_le_maxRep h_zm_le g
+  have h_pof : g.pushOverflow zm .downward = g :=
+    pushOverflow_noop_of_le_maxRep_of_round_ne_one h_zm_le g .downward
+      (fun hr => absurd ((round_downward_eq_one_iff g).mp hr) h_no_roundUp)
   have h_no_cusp : ¬ (maxRep < zm ∧ zm < maxRepUp) := by
     intro ⟨h, _⟩; have := UInt64.lt_iff_toNat_lt.mp h; omega
   have h_ru_false :
@@ -641,7 +687,7 @@ theorem doRoundUp_value_downward_roundUp_noCusp
     (h_mant_ne : res.mantissa_ ≠ 0) :
     (res.mantissa_.toNat : ℚ) * 10 ^ res.exponent_ = ((zm.toNat : ℚ) + 1) * 10 ^ ze' := by
   have h_m_lt_maxRep : zm.toNat < maxRep.toNat := by rw [maxRep_val] at h_no_cusp ⊢; omega
-  have h_pof : g.pushOverflow zm = g := pushOverflow_noop_of_le_maxRep (by omega) g
+  have h_pof : g.pushOverflow zm .downward = g := pushOverflow_noop_of_lt_maxRep h_m_lt_maxRep g .downward
   have h_ru_true :
       ((g.round .downward == 1) || ((g.round .downward == 0) && (zm % 2 == 1))) = true :=
     roundUp_bool_downward_true g zm h_roundUp
@@ -701,9 +747,11 @@ theorem doRoundUp_value_downward_roundUp_cusp
     (hok : g.doRoundUp zn zm ze' largeRange.min largeRange.max .downward loc = .ok res)
     (h_mant_ne : res.mantissa_ ≠ 0) :
     (res.mantissa_.toNat : ℚ) * 10 ^ res.exponent_ = maxRepCuspTarget * 10 ^ ze' := by
-  have h_pof : g.pushOverflow zm = g := by
-    unfold Guard.pushOverflow; rw [if_neg]; intro ⟨h, _⟩
-    have := UInt64.lt_iff_toNat_lt.mp h; rw [h_zm_eq_maxRep, maxRep_val] at this; omega
+  have h_g_round_one : g.round .downward = 1 := (round_downward_eq_one_iff g).mpr h_roundUp
+  have h_pof_eq : g.pushOverflow zm .downward = g.push 3 := by
+    unfold Guard.pushOverflow
+    rw [h_zm_eq_maxRep, h_g_round_one]
+    rfl
   have h_ru_true :
       ((g.round .downward == 1) || ((g.round .downward == 0) && (zm % 2 == 1))) = true :=
     roundUp_bool_downward_true g zm h_roundUp
@@ -711,11 +759,21 @@ theorem doRoundUp_value_downward_roundUp_cusp
     intro ⟨_, h⟩; have := UInt64.lt_iff_toNat_lt.mp h; rw [h_zm_eq_maxRep, maxRep_val] at this; omega
   have h_not_overflow : ¬ (maxRep < zm ∧ zm < maxRepUp) := by
     intro ⟨h, _⟩; have := UInt64.lt_iff_toNat_lt.mp h; rw [h_zm_eq_maxRep, maxRep_val] at this; omega
-  set g' := g.push (zm % 10) with hg'_def
+  set gP : Guard := g.pushOverflow zm .downward with hgP_def
+  have h_gP_eq3 : gP = g.push 3 := h_pof_eq ▸ rfl
+  set g' := gP.push (zm % 10) with hg'_def
   have h_g_sbit : g.sbit_ = true := h_roundUp.1
-  have h_g'_sbit : g'.sbit_ = true := by rw [hg'_def]; unfold Guard.push; exact h_g_sbit
-  have h_g'_digits_toNat : g'.digits_.toNat = g.digits_.toNat / 16 + (zm.toNat % 10 % 16) * 2 ^ 60 := by
-    rw [hg'_def]; have := toNat_push_digits g (zm % 10)
+  have h_gP_sbit : gP.sbit_ = true := by rw [h_gP_eq3]; unfold Guard.push; exact h_g_sbit
+  have h_gP_digits_toNat : gP.digits_.toNat = g.digits_.toNat / 16 + (3 % 16) * 2 ^ 60 := by
+    rw [h_gP_eq3]; exact toNat_push_digits g 3
+  have h_gP_digits_gt : gP.digits_ > 0 := by
+    change (0 : UInt64) < gP.digits_; rw [UInt64.lt_iff_toNat_lt]
+    rw [show (0 : UInt64).toNat = 0 from rfl, h_gP_digits_toNat]; omega
+  have h_gP_round : gP.round .downward = 1 :=
+    (round_downward_eq_one_iff gP).mpr ⟨h_gP_sbit, Or.inl h_gP_digits_gt⟩
+  have h_g'_sbit : g'.sbit_ = true := by rw [hg'_def]; unfold Guard.push; exact h_gP_sbit
+  have h_g'_digits_toNat : g'.digits_.toNat = gP.digits_.toNat / 16 + (zm.toNat % 10 % 16) * 2 ^ 60 := by
+    rw [hg'_def]; have := toNat_push_digits gP (zm % 10)
     rw [UInt64.toNat_mod] at this; have h10 : (10 : UInt64).toNat = 10 := uint64_ten_toNat; rw [h10] at this; exact this
   have h_zm_mod10 : zm.toNat % 10 = 7 := by rw [h_zm_eq_maxRep]; decide
   have h_zm_mod10_mod16 : zm.toNat % 10 % 16 = 7 := by rw [h_zm_mod10]
@@ -742,8 +800,9 @@ theorem doRoundUp_value_downward_roundUp_cusp
   have hres_eq : res = Guard.bringIntoRange zn (zm / 10 + 1) (ze' + 1) largeRange.min := by
     unfold Guard.doRoundUp at hok
     simp only [Guard.doDropDigit] at hok
-    rw [h_pof] at hok
-    rw [h_ru_true] at hok
+    have h_gP_ru_true : ((gP.round .downward == 1) || ((gP.round .downward == 0) && (zm % 2 == 1))) = true := by
+      rw [h_gP_round]; rfl
+    rw [h_gP_ru_true] at hok
     rw [if_neg h_not_noncusp, if_neg h_not_overflow] at hok
     rw [h_ru'_true] at hok
     simp only [if_true] at hok
@@ -788,14 +847,13 @@ lemma doRoundUp_output_invariants_downward
   have h_ge_maxMant_false : decide (m ≥ largeRange.max) = false :=
     decide_eq_false h_m_not_ge_maxMant
   -- Unfold doRoundUp to extract res
-  have h_pof : g.pushOverflow m = g := pushOverflow_noop_of_le_maxRep h_ub g
   unfold Guard.doRoundUp Guard.bringIntoRange at hok
   simp only [Guard.doDropDigit] at hok
-  rw [h_pof] at hok
-  by_cases h_ru : (g.round .downward == 1 || (g.round .downward == 0 && m % 2 == 1)) = true
-  · rw [show (g.round .downward == 1 || (g.round .downward == 0 && m % 2 == 1)) = true from h_ru] at hok
+  set gP : Guard := g.pushOverflow m .downward with hgP_def
+  by_cases h_ru : (gP.round .downward == 1 || (gP.round .downward == 0 && m % 2 == 1)) = true
+  · rw [show (gP.round .downward == 1 || (gP.round .downward == 0 && m % 2 == 1)) = true from h_ru] at hok
     by_cases h_m_eq_maxRep : m = maxRep
-    · -- cusp case: m = maxRep → ¬(m < maxMantissa ∧ m < maxRep), ¬(maxRep < m ∧ ...)
+    · -- cusp case: m = maxRep, gP = g.push 3 (since g.round .downward = 1)
       have h_not_noncusp : ¬ (m < largeRange.max ∧ m < maxRep) := by
         intro ⟨_, h⟩; have := UInt64.lt_iff_toNat_lt.mp h; rw [h_m_eq_maxRep, maxRep_val] at this; omega
       have h_not_overflow : ¬ (maxRep < m ∧ m < maxRepUp) := by
@@ -803,23 +861,35 @@ lemma doRoundUp_output_invariants_downward
       rw [if_neg h_not_noncusp, if_neg h_not_overflow] at hok
       have h_m_div10_toNat : (m / 10).toNat = mantissaFloor := by
         rw [UInt64.toNat_div, h_m_eq_maxRep]; decide
-      set g' := g.push (m % 10) with hg'_def
       have h_g_round_one : g.round .downward = 1 := by
-        rcases Bool.or_eq_true _ _ |>.mp h_ru with h1 | h2
-        · exact beq_iff_eq.mp h1
-        · exfalso
-          rcases Bool.and_eq_true _ _ |>.mp h2 with ⟨hr0, _⟩
-          have h_eq_0 : g.round .downward = 0 := beq_iff_eq.mp hr0
+        by_contra h_ne
+        have h_r_ne1 : g.round .downward ≠ 1 := h_ne
+        have h_pof_noop : gP = g :=
+          hgP_def ▸ pushOverflow_noop_of_le_maxRep_of_round_ne_one h_ub g .downward h_r_ne1
+        rw [h_pof_noop] at h_ru
+        have h_ne0 : g.round .downward ≠ 0 := by
           have hvals : g.round .downward = 1 ∨ g.round .downward = -1 ∨ g.round .downward = -2 := by
-            unfold Guard.round; split_ifs <;> first | (left; rfl) | (right; left; rfl) | (right; right; rfl)
-          rcases hvals with h1 | hm1 | hm2
-          · rw [h_eq_0] at h1; exact absurd h1 (by decide)
-          · rw [h_eq_0] at hm1; exact absurd hm1 (by decide)
-          · rw [h_eq_0] at hm2; exact absurd hm2 (by decide)
+            unfold Guard.round; split_ifs <;>
+              first | (left; rfl) | (right; left; rfl) | (right; right; rfl)
+          rcases hvals with h | h | h <;> omega
+        simp [beq_iff_eq, h_r_ne1, h_ne0] at h_ru
+      have h_gP_eq3 : gP = g.push 3 := by
+        rw [hgP_def, h_m_eq_maxRep]
+        unfold Guard.pushOverflow
+        rw [h_g_round_one]
+        rfl
       have h_g_sbit : g.sbit_ = true := ((round_downward_eq_one_iff g).mp h_g_round_one).1
-      have h_g'_sbit : g'.sbit_ = true := by rw [hg'_def]; unfold Guard.push; exact h_g_sbit
-      have h_g'_digits_toNat : g'.digits_.toNat = g.digits_.toNat / 16 + (m.toNat % 10 % 16) * 2 ^ 60 := by
-        rw [hg'_def]; have := toNat_push_digits g (m % 10)
+      have h_gP_sbit : gP.sbit_ = true := by rw [h_gP_eq3]; unfold Guard.push; exact h_g_sbit
+      have h_gP_digits_gt : gP.digits_ > 0 := by
+        change (0 : UInt64) < gP.digits_; rw [UInt64.lt_iff_toNat_lt]
+        rw [show (0 : UInt64).toNat = 0 from rfl]
+        have hpd : gP.digits_.toNat = g.digits_.toNat / 16 + (3 % 16) * 2 ^ 60 := by
+          rw [h_gP_eq3]; exact toNat_push_digits g 3
+        rw [hpd]; omega
+      set g' := gP.push (m % 10) with hg'_def
+      have h_g'_sbit : g'.sbit_ = true := by rw [hg'_def]; unfold Guard.push; exact h_gP_sbit
+      have h_g'_digits_toNat : g'.digits_.toNat = gP.digits_.toNat / 16 + (m.toNat % 10 % 16) * 2 ^ 60 := by
+        rw [hg'_def]; have := toNat_push_digits gP (m % 10)
         rw [UInt64.toNat_mod] at this; have h10 : (10 : UInt64).toNat = 10 := uint64_ten_toNat; rw [h10] at this; exact this
       have h_m_mod10_mod16 : m.toNat % 10 % 16 = 7 := by rw [show m.toNat % 10 = 7 from by rw [h_m_eq_maxRep]; decide]
       have h_g'_digits_gt : g'.digits_ > 0 := by
@@ -927,6 +997,36 @@ lemma doRoundUp_output_invariants_downward
           · change (m + 1).toNat > maxRep.toNat → (m + 1).toNat % 10 = 0
             intro h_gt; exfalso; have : (m + 1).toNat ≤ maxRep.toNat := h_m1_le_maxRep; omega
   · rw [Bool.not_eq_true] at h_ru
+    have h_g_round_ne1 : g.round .downward ≠ 1 := by
+      intro hone
+      rcases Nat.lt_or_ge m.toNat maxRep.toNat with hlt | hge
+      · have h_noop : gP = g := hgP_def ▸ pushOverflow_noop_of_lt_maxRep hlt g .downward
+        have : gP.round .downward = 1 := h_noop ▸ hone
+        simp [this] at h_ru
+      · have hm_eq : m = maxRep := UInt64.toNat_inj.mp (by omega)
+        have h_gP_eq3 : gP = g.push 3 := by
+          rw [hgP_def, hm_eq]; unfold Guard.pushOverflow
+          rw [if_pos (by decide)]
+          simp only [show maxRep % (10 : UInt64) < 9 from by decide]
+          rw [show maxRep + (maxRepUp - maxRep) / 2 = (maxRep + 1 : UInt64) from by decide]
+          have hr_eq : (g.round .downward == 1) = true := by rw [beq_iff_eq]; exact hone
+          simp only [hr_eq, Bool.true_or, ite_true]
+          have hne'' : ((maxRep + 1 : UInt64) == maxRep) = false := by decide
+          simp only [hne'', ite_false]; rfl
+        have h_g_sbit : g.sbit_ = true := ((round_downward_eq_one_iff g).mp hone).1
+        have h_gP_sbit : gP.sbit_ = true := by rw [h_gP_eq3]; unfold Guard.push; exact h_g_sbit
+        have h_gP_dgt : gP.digits_ > 0 := by
+          change (0 : UInt64) < gP.digits_; rw [UInt64.lt_iff_toNat_lt]
+          rw [show (0 : UInt64).toNat = 0 from rfl]
+          have hpd : gP.digits_.toNat = g.digits_.toNat / 16 + (3 % 16) * 2 ^ 60 := by
+            rw [h_gP_eq3]; exact toNat_push_digits g 3
+          rw [hpd]; omega
+        have h_gP_r1 : gP.round .downward = 1 :=
+          (round_downward_eq_one_iff gP).mpr ⟨h_gP_sbit, Or.inl h_gP_dgt⟩
+        simp [h_gP_r1] at h_ru
+    have h_pof_noop : gP = g :=
+      hgP_def ▸ pushOverflow_noop_of_le_maxRep_of_round_ne_one h_ub g .downward h_g_round_ne1
+    rw [h_pof_noop] at h_ru hok
     rw [show (g.round .downward == 1 || (g.round .downward == 0 && m % 2 == 1)) = false from h_ru] at hok
     simp only [Bool.false_eq_true, ite_false] at hok
     have h_no_overflow_d : ¬ (maxRep < m ∧ m < maxRepUp) := by
@@ -997,7 +1097,9 @@ theorem doRoundUp_value_towards_zero_truncate
     (hok : g.doRoundUp zn zm ze' largeRange.min largeRange.max .towards_zero loc = .ok res)
     (h_mant_ne : res.mantissa_ ≠ 0) :
     (res.mantissa_.toNat : ℚ) * 10 ^ res.exponent_ = (zm.toNat : ℚ) * 10 ^ ze' := by
-  have h_pof : g.pushOverflow zm = g := pushOverflow_noop_of_le_maxRep h_zm_le g
+  have h_pof : g.pushOverflow zm .towards_zero = g :=
+    pushOverflow_noop_of_le_maxRep_of_round_ne_one h_zm_le g .towards_zero
+      (by unfold Guard.round; split_ifs <;> intro h <;> simp at h)
   have h_no_cusp : ¬ (maxRep < zm ∧ zm < maxRepUp) := by
     intro ⟨h, _⟩; have := UInt64.lt_iff_toNat_lt.mp h; omega
   have h_ru_false :
@@ -1052,7 +1154,9 @@ lemma doRoundUp_output_invariants_towards_zero
   have hmaxRep_v : maxRep.toNat = maxRepNat := maxRep_val
   have hminMant_v : largeRange.min.toNat = 1000000000000000000 := largeRange_min_val
   have hmaxMant_v : largeRange.max.toNat = 9999999999999999999 := largeRange_max_val
-  have h_pof : g.pushOverflow m = g := pushOverflow_noop_of_le_maxRep h_ub g
+  have h_pof : g.pushOverflow m .towards_zero = g :=
+    pushOverflow_noop_of_le_maxRep_of_round_ne_one h_ub g .towards_zero
+      (by unfold Guard.round; split_ifs <;> intro h <;> simp at h)
   have h_ru_false :
       (g.round .towards_zero == 1 || (g.round .towards_zero == 0 && m % 2 == 1)) = false :=
     roundUp_bool_towards_zero_false g m
@@ -1258,7 +1362,9 @@ theorem doRoundUp_value_upward_truncate
     (hok : g.doRoundUp zn zm ze' largeRange.min largeRange.max .upward loc = .ok res)
     (h_mant_ne : res.mantissa_ ≠ 0) :
     (res.mantissa_.toNat : ℚ) * 10 ^ res.exponent_ = (zm.toNat : ℚ) * 10 ^ ze' := by
-  have h_pof : g.pushOverflow zm = g := pushOverflow_noop_of_le_maxRep h_zm_le g
+  have h_pof : g.pushOverflow zm .upward = g :=
+    pushOverflow_noop_of_le_maxRep_of_round_ne_one h_zm_le g .upward
+      (fun hr => absurd ((round_upward_eq_one_iff g).mp hr) h_no_roundUp)
   have h_no_cusp : ¬ (maxRep < zm ∧ zm < maxRepUp) := by
     intro ⟨h, _⟩; have := UInt64.lt_iff_toNat_lt.mp h; omega
   have h_ru_false :
@@ -1307,7 +1413,7 @@ theorem doRoundUp_value_upward_roundUp_noCusp
     (h_mant_ne : res.mantissa_ ≠ 0) :
     (res.mantissa_.toNat : ℚ) * 10 ^ res.exponent_ = ((zm.toNat : ℚ) + 1) * 10 ^ ze' := by
   have h_m_lt_maxRep : zm.toNat < maxRep.toNat := by rw [maxRep_val] at h_no_cusp ⊢; omega
-  have h_pof : g.pushOverflow zm = g := pushOverflow_noop_of_le_maxRep (by omega) g
+  have h_pof : g.pushOverflow zm .upward = g := pushOverflow_noop_of_lt_maxRep h_m_lt_maxRep g .upward
   have h_ru_true :
       ((g.round .upward == 1) || ((g.round .upward == 0) && (zm % 2 == 1))) = true :=
     roundUp_bool_upward_true g zm h_roundUp
@@ -1366,45 +1472,58 @@ theorem doRoundUp_value_upward_roundUp_cusp
     (hok : g.doRoundUp zn zm ze' largeRange.min largeRange.max .upward loc = .ok res)
     (h_mant_ne : res.mantissa_ ≠ 0) :
     (res.mantissa_.toNat : ℚ) * 10 ^ res.exponent_ = maxRepCuspTarget * 10 ^ ze' := by
-  have h_pof : g.pushOverflow zm = g := by
-    unfold Guard.pushOverflow; rw [if_neg]; intro ⟨h, _⟩
-    have := UInt64.lt_iff_toNat_lt.mp h; rw [h_zm_eq_maxRep, maxRep_val] at this; omega
-  have h_ru_true :
-      ((g.round .upward == 1) || ((g.round .upward == 0) && (zm % 2 == 1))) = true :=
-    roundUp_bool_upward_true g zm h_roundUp
+  have h_g_round_one : g.round .upward = 1 := (round_upward_eq_one_iff g).mpr h_roundUp
+  have h_pof_eq : g.pushOverflow zm .upward = g.push 3 := by
+    unfold Guard.pushOverflow
+    rw [h_zm_eq_maxRep, h_g_round_one]
+    rfl
   have h_not_noncusp : ¬ (zm < largeRange.max ∧ zm < maxRep) := by
     intro ⟨_, h⟩; have := UInt64.lt_iff_toNat_lt.mp h; rw [h_zm_eq_maxRep, maxRep_val] at this; omega
   have h_not_overflow : ¬ (maxRep < zm ∧ zm < maxRepUp) := by
     intro ⟨h, _⟩; have := UInt64.lt_iff_toNat_lt.mp h; rw [h_zm_eq_maxRep, maxRep_val] at this; omega
-  set g' := g.push (zm % 10) with hg'_def
+  set gP : Guard := g.pushOverflow zm .upward with hgP_def
+  have h_gP_eq3 : gP = g.push 3 := h_pof_eq ▸ rfl
+  set g' := gP.push (zm % 10) with hg'_def
   have h_g_sbit : g.sbit_ = false := h_roundUp.1
-  have h_g'_sbit : g'.sbit_ = false := by rw [hg'_def]; unfold Guard.push; exact h_g_sbit
-  have h_g'_digits_toNat : g'.digits_.toNat = g.digits_.toNat / 16 + (zm.toNat % 10 % 16) * 2 ^ 60 := by
-    rw [hg'_def]; have := toNat_push_digits g (zm % 10)
+  have h_gP_sbit : gP.sbit_ = false := by rw [h_gP_eq3]; unfold Guard.push; exact h_g_sbit
+  have h_gP_digits_toNat : gP.digits_.toNat = g.digits_.toNat / 16 + (3 % 16) * 2 ^ 60 := by
+    rw [h_gP_eq3]; exact toNat_push_digits g 3
+  have h_gP_digits_gt : gP.digits_ > 0 := by
+    change (0 : UInt64) < gP.digits_; rw [UInt64.lt_iff_toNat_lt]
+    rw [show (0 : UInt64).toNat = 0 from rfl, h_gP_digits_toNat]; omega
+  have h_gP_round : gP.round .upward = 1 :=
+    (round_upward_eq_one_iff gP).mpr ⟨h_gP_sbit, Or.inl h_gP_digits_gt⟩
+  have h_g'_sbit : g'.sbit_ = false := by rw [hg'_def]; unfold Guard.push; exact h_gP_sbit
+  have h_g'_digits_toNat : g'.digits_.toNat = gP.digits_.toNat / 16 + (zm.toNat % 10 % 16) * 2 ^ 60 := by
+    rw [hg'_def]; have := toNat_push_digits gP (zm % 10)
     rw [UInt64.toNat_mod] at this; have h10 : (10 : UInt64).toNat = 10 := uint64_ten_toNat; rw [h10] at this; exact this
   have h_zm_mod10_mod16 : zm.toNat % 10 % 16 = 7 := by rw [show zm.toNat % 10 = 7 from by rw [h_zm_eq_maxRep]; decide]
   have h_g'_digits_gt : g'.digits_ > 0 := by
     change (0 : UInt64) < g'.digits_; rw [UInt64.lt_iff_toNat_lt]
-    rw [show (0 : UInt64).toNat = 0 from rfl, h_g'_digits_toNat, h_zm_mod10_mod16]; omega
+    rw [show (0 : UInt64).toNat = 0 from rfl, h_g'_digits_toNat, h_zm_mod10_mod16, h_gP_digits_toNat]; omega
   have h_g'_round : g'.round .upward = 1 :=
     (round_upward_eq_one_iff g').mpr ⟨h_g'_sbit, Or.inl h_g'_digits_gt⟩
   have h_ru'_true :
       ((g'.round .upward == 1) || ((g'.round .upward == 0) && ((zm / 10) % 2 == 1))) = true := by
     rw [h_g'_round]; rfl
-  have h_m_div10_toNat : (zm / 10).toNat = mantissaFloor := by rw [UInt64.toNat_div, h_zm_eq_maxRep]; decide
-  have h_m_div10_le_maxRep : (zm / 10).toNat ≤ maxRep.toNat := by rw [h_m_div10_toNat, maxRep_val]; norm_num
+  have h_m_div10_toNat : (zm / 10).toNat = mantissaFloor := by
+    rw [UInt64.toNat_div, h_zm_eq_maxRep]; decide
+  have h_m_div10_le_maxRep : (zm / 10).toNat ≤ maxRep.toNat := by
+    rw [h_m_div10_toNat, maxRep_val]; norm_num
   have h_m1_toNat : (zm / 10 + 1).toNat = mantissaFloorSucc := by
     rw [m_add_one_no_overflow h_m_div10_le_maxRep, h_m_div10_toNat]
   have h_m1_lt_min : (zm / 10 + 1) < largeRange.min := by
     rw [UInt64.lt_iff_toNat_lt, h_m1_toNat, largeRange_min_val]; norm_num
-  have h_m1_ne : zm / 10 + 1 ≠ 0 := by
-    intro h; have := UInt64.toNat_inj.mpr h; rw [m_add_one_no_overflow h_m_div10_le_maxRep, h_m_div10_toNat] at this; simp at this
   have h_m1_mul10_toNat : ((zm / 10 + 1) * 10).toNat = maxRepCuspTarget := by
     rw [UInt64.toNat_mul]; have h10 : (10 : UInt64).toNat = 10 := uint64_ten_toNat; rw [h10, h_m1_toNat]
+  have h_m1_ne : zm / 10 + 1 ≠ 0 := by
+    intro h; have := UInt64.toNat_inj.mpr h
+    rw [m_add_one_no_overflow h_m_div10_le_maxRep, h_m_div10_toNat] at this; simp at this
   have hres_eq : res = Guard.bringIntoRange zn (zm / 10 + 1) (ze' + 1) largeRange.min := by
     unfold Guard.doRoundUp at hok; simp only [Guard.doDropDigit] at hok
-    rw [h_pof] at hok
-    rw [h_ru_true] at hok
+    have h_gP_ru_true : ((gP.round .upward == 1) || ((gP.round .upward == 0) && (zm % 2 == 1))) = true := by
+      rw [h_gP_round]; rfl
+    rw [h_gP_ru_true] at hok
     rw [if_neg h_not_noncusp, if_neg h_not_overflow] at hok
     rw [h_ru'_true] at hok
     simp only [if_true] at hok
@@ -1440,13 +1559,11 @@ lemma doRoundUp_output_invariants_upward
   have h_m_not_ge_maxMant : ¬ (m ≥ largeRange.max) := by
     intro h; have := UInt64.le_iff_toNat_le.mp h
     rw [hmaxMant_v] at this; rw [hmaxRep_v] at h_ub; omega
-  -- Unfold doRoundUp to extract res
-  have h_pof : g.pushOverflow m = g := pushOverflow_noop_of_le_maxRep h_ub g
   unfold Guard.doRoundUp Guard.bringIntoRange at hok
   simp only [Guard.doDropDigit] at hok
-  rw [h_pof] at hok
-  by_cases h_ru : (g.round .upward == 1 || (g.round .upward == 0 && m % 2 == 1)) = true
-  · rw [show (g.round .upward == 1 || (g.round .upward == 0 && m % 2 == 1)) = true from h_ru] at hok
+  set gP : Guard := g.pushOverflow m .upward with hgP_def
+  by_cases h_ru : (gP.round .upward == 1 || (gP.round .upward == 0 && m % 2 == 1)) = true
+  · rw [show (gP.round .upward == 1 || (gP.round .upward == 0 && m % 2 == 1)) = true from h_ru] at hok
     by_cases h_m_eq_maxRep : m = maxRep
     · -- cusp case: m = maxRep → ¬(m < maxMantissa ∧ m < maxRep), ¬(maxRep < m ∧ ...)
       have h_not_noncusp : ¬ (m < largeRange.max ∧ m < maxRep) := by
@@ -1456,28 +1573,42 @@ lemma doRoundUp_output_invariants_upward
       rw [if_neg h_not_noncusp, if_neg h_not_overflow] at hok
       have h_m_div10_toNat : (m / 10).toNat = mantissaFloor := by
         rw [UInt64.toNat_div, h_m_eq_maxRep]; decide
-      set g' := g.push (m % 10) with hg'_def
-      have h_g_round_one : g.round .upward = 1 := by
+      have h_gP_round_one : gP.round .upward = 1 := by
         rcases Bool.or_eq_true _ _ |>.mp h_ru with h1 | h2
         · exact beq_iff_eq.mp h1
         · exfalso
           rcases Bool.and_eq_true _ _ |>.mp h2 with ⟨hr0, _⟩
-          have h_eq_0 : g.round .upward = 0 := beq_iff_eq.mp hr0
-          have hvals : g.round .upward = 1 ∨ g.round .upward = -1 ∨ g.round .upward = -2 := by
+          have h_eq_0 : gP.round .upward = 0 := beq_iff_eq.mp hr0
+          have hvals : gP.round .upward = 1 ∨ gP.round .upward = -1 ∨ gP.round .upward = -2 := by
             unfold Guard.round; split_ifs <;> first | (left; rfl) | (right; left; rfl) | (right; right; rfl)
           rcases hvals with h1 | hm1 | hm2
           · rw [h_eq_0] at h1; exact absurd h1 (by decide)
           · rw [h_eq_0] at hm1; exact absurd hm1 (by decide)
           · rw [h_eq_0] at hm2; exact absurd hm2 (by decide)
+      have h_g_round_one : g.round .upward = 1 := by
+        by_contra h_ne
+        have h_pof_noop : gP = g :=
+          hgP_def ▸ pushOverflow_noop_of_le_maxRep_of_round_ne_one h_ub g .upward h_ne
+        rw [h_pof_noop] at h_gP_round_one
+        exact h_ne h_gP_round_one
+      have h_gP_eq3 : gP = g.push 3 := by
+        rw [hgP_def, h_m_eq_maxRep]
+        unfold Guard.pushOverflow
+        rw [h_g_round_one]
+        rfl
       have h_g_sbit : g.sbit_ = false := ((round_upward_eq_one_iff g).mp h_g_round_one).1
-      have h_g'_sbit : g'.sbit_ = false := by rw [hg'_def]; unfold Guard.push; exact h_g_sbit
-      have h_g'_digits_toNat : g'.digits_.toNat = g.digits_.toNat / 16 + (m.toNat % 10 % 16) * 2 ^ 60 := by
-        rw [hg'_def]; have := toNat_push_digits g (m % 10)
+      set g' := gP.push (m % 10) with hg'_def
+      have h_g'_sbit : g'.sbit_ = false := by
+        rw [hg'_def]; unfold Guard.push; rw [h_gP_eq3]; unfold Guard.push; exact h_g_sbit
+      have h_g'_digits_toNat : g'.digits_.toNat = gP.digits_.toNat / 16 + (m.toNat % 10 % 16) * 2 ^ 60 := by
+        rw [hg'_def]; have := toNat_push_digits gP (m % 10)
         rw [UInt64.toNat_mod] at this; have h10 : (10 : UInt64).toNat = 10 := uint64_ten_toNat; rw [h10] at this; exact this
+      have h_gP_digits_toNat : gP.digits_.toNat = g.digits_.toNat / 16 + (3 % 16) * 2 ^ 60 := by
+        rw [h_gP_eq3]; exact toNat_push_digits g 3
       have h_m_mod10_mod16 : m.toNat % 10 % 16 = 7 := by rw [show m.toNat % 10 = 7 from by rw [h_m_eq_maxRep]; decide]
       have h_g'_digits_gt : g'.digits_ > 0 := by
         change (0 : UInt64) < g'.digits_; rw [UInt64.lt_iff_toNat_lt]
-        rw [show (0 : UInt64).toNat = 0 from rfl, h_g'_digits_toNat, h_m_mod10_mod16]; omega
+        rw [show (0 : UInt64).toNat = 0 from rfl, h_g'_digits_toNat, h_m_mod10_mod16, h_gP_digits_toNat]; omega
       have h_g'_round : g'.round .upward = 1 :=
         (round_upward_eq_one_iff g').mpr ⟨h_g'_sbit, Or.inl h_g'_digits_gt⟩
       have h_ru'_true :
@@ -1577,7 +1708,7 @@ lemma doRoundUp_output_invariants_upward
           · change (m + 1).toNat > maxRep.toNat → (m + 1).toNat % 10 = 0
             intro h_gt; exfalso; have : (m + 1).toNat ≤ maxRep.toNat := h_m1_le_maxRep; omega
   · rw [Bool.not_eq_true] at h_ru
-    rw [show (g.round .upward == 1 || (g.round .upward == 0 && m % 2 == 1)) = false from h_ru] at hok
+    rw [show (gP.round .upward == 1 || (gP.round .upward == 0 && m % 2 == 1)) = false from h_ru] at hok
     simp only [Bool.false_eq_true, ite_false] at hok
     have h_no_overflow_d : ¬ (maxRep < m ∧ m < maxRepUp) := by
       intro ⟨h, _⟩; have := UInt64.lt_iff_toNat_lt.mp h; omega
@@ -1833,7 +1964,7 @@ lemma doRoundUp_flush_value_small
   -- Navigate the doRoundUp leaves.
   unfold Guard.doRoundUp at hok
   simp only [Guard.doDropDigit] at hok
-  set gP : Guard := g.pushOverflow zm with hgP_def
+  set gP : Guard := g.pushOverflow zm mode with hgP_def
   have h_zm_ne : zm ≠ 0 := by
     intro h
     have : zm.toNat = 0 := by rw [h]; rfl

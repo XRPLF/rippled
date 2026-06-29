@@ -316,8 +316,20 @@ theorem to_rep_within_one_proof (n : Number) (mode : rounding_mode) (r : Int64)
           _ ≤ (maxRep.toNat : ℤ) := by exact_mod_cast hmagM_le
       have h_sp1_u64 : sp.1.toUInt64.toNat ≤ maxRep.toNat :=
         toUInt64_toNat_le_maxRep sp.1 hDf_nn h_sp1_le
-      have h_pof : sp.2.pushOverflow sp.1.toUInt64 = sp.2 :=
-        pushOverflow_noop_of_le_maxRep h_sp1_u64 sp.2
+      have hk_pos : 1 ≤ k := by rw [hkdef]; omega
+      have h_sp1_lt_u64 : sp.1.toUInt64.toNat < maxRep.toNat := by
+        have hlt : sp.1.toInt < (maxRep.toNat : ℤ) := by
+          rw [hDf]
+          have h1 : magM / 10 ^ k ≤ magM / 10 :=
+            Nat.div_le_div_left (Nat.le_self_pow (by omega) 10) (by positivity)
+          have h2 : magM / 10 ≤ maxRep.toNat / 10 := Nat.div_le_div_right hmagM_le
+          have h3 : maxRep.toNat / 10 < maxRep.toNat := by rw [maxRep_val]; norm_num
+          have : magM / 10 ^ k < maxRep.toNat := (h1.trans h2).trans_lt h3
+          exact_mod_cast this
+        have hnat : (sp.1.toUInt64.toNat : ℤ) = sp.1.toInt := toUInt64_toNat_of_nonneg sp.1 hDf_nn
+        omega
+      have h_pof : sp.2.pushOverflow sp.1.toUInt64 mode = sp.2 :=
+        pushOverflow_noop_of_lt_maxRep h_sp1_lt_u64 sp.2 mode
       rw [h_pof] at hok
       -- case on the round-up boolean
       by_cases hb : (sp.2.round mode == 1 || sp.2.round mode == 0 && sp.1 % 2 == 1) = true
@@ -391,8 +403,10 @@ theorem to_rep_within_one_proof (n : Number) (mode : rounding_mode) (r : Int64)
           rw [hmag]; exact_mod_cast hmagM_le
         have h_drops_u64 : drops.toUInt64.toNat ≤ maxRep.toNat :=
           toUInt64_toNat_le_maxRep drops h_drops_nn h_drops_le
-        rw [pushOverflow_noop_of_le_maxRep h_drops_u64
-              (if n.negative_ then Guard.new.set_negative else Guard.new)] at hok
+        have h_g_empty : (if n.negative_ then Guard.new.set_negative else Guard.new).empty = true := by
+          cases n.negative_ <;> decide
+        rw [pushOverflow_noop_of_le_maxRep_of_empty h_drops_u64
+              (if n.negative_ then Guard.new.set_negative else Guard.new) mode h_g_empty] at hok
         rw [start_guard_round] at hok
         -- the empty guard rounds to the sentinel -2, so the round-up condition is false
         rw [if_neg (show ¬ ((-2 : Int) == 1 || (-2 : Int) == 0 && drops % 2 == 1) = true from by
@@ -470,8 +484,10 @@ theorem to_rep_exact_of_exponent_nonneg_proof (n : Number) (mode : rounding_mode
         rw [hmag]; exact_mod_cast mantissa_natAbs_le_maxRep n hn
       have h_drops_u64 : drops.toUInt64.toNat ≤ maxRep.toNat :=
         toUInt64_toNat_le_maxRep drops hdrops_nn h_drops_le
-      rw [pushOverflow_noop_of_le_maxRep h_drops_u64
-            (if n.negative_ then Guard.new.set_negative else Guard.new)] at hok
+      have h_g_empty2 : (if n.negative_ then Guard.new.set_negative else Guard.new).empty = true := by
+        cases n.negative_ <;> decide
+      rw [pushOverflow_noop_of_le_maxRep_of_empty h_drops_u64
+            (if n.negative_ then Guard.new.set_negative else Guard.new) mode h_g_empty2] at hok
       rw [start_guard_round] at hok
       -- the empty guard rounds to the sentinel -2, so the round-up condition is false
       rw [if_neg (show ¬ ((-2 : Int) == 1 || (-2 : Int) == 0 && drops % 2 == 1) = true from by
@@ -552,7 +568,9 @@ lemma to_rep_exact_of_exponent_zero_proof (neg : Bool) (m : UInt64) (mode : roun
     have hu64 : m.toInt64.toUInt64.toNat ≤ maxRep.toNat := by
       have : m.toInt64.toUInt64 = m := rfl
       rw [this]; exact hm
-    rw [pushOverflow_noop_of_le_maxRep hu64 _, start_guard_round] at hok
+    have h_g0_empty : (if neg then Guard.new.set_negative else Guard.new).empty = true := by
+      cases neg <;> decide
+    rw [pushOverflow_noop_of_le_maxRep_of_empty hu64 _ mode h_g0_empty, start_guard_round] at hok
     rw [if_neg (show ¬ ((-2 : Int) == 1 || (-2 : Int) == 0 && m.toInt64 % 2 == 1) = true from by
       simp)] at hok
     rw [if_neg (show ¬ (maxRep.toInt64 < m.toInt64 ∧ m.toInt64 < maxRepUp.toInt64) from by

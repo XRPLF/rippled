@@ -46,8 +46,8 @@ theorem operator_add_rounds_same_sign_downward_proof (x y result : Number)
     have habs := abs_toRat_eq result
     rw [h_result_abs] at habs
     exact habs.symm
-  have hgP_sbit : (g.pushOverflow zm).sbit_ = g.sbit_ := by
-    unfold Guard.pushOverflow
+  have hgP_sbit : (g.pushOverflow zm .downward).sbit_ = g.sbit_ := by
+    simp only [Guard.pushOverflow, Guard.push]
     split_ifs <;> rfl
   have h_eps_nn : (0 : ℚ) ≤ 10 / ((2 ^ 63 + 2 : ℚ)) := by norm_num
   by_cases h_pos : x.negative_ = false
@@ -145,7 +145,7 @@ theorem operator_add_rounds_same_sign_downward_proof (x y result : Number)
         have hzm_eq : zm.toNat = maxRepUp.toNat := by
           rcases hcoup with ⟨h, _⟩ | ⟨_, h⟩
           · exact h
-          · rw [h_bool_false (g.pushOverflow zm) (by rw [hgP_sbit]; exact h_g_sbit_false)] at h
+          · rw [h_bool_false (g.pushOverflow zm .downward) (by rw [hgP_sbit]; exact h_g_sbit_false)] at h
             exact absurd h Bool.noConfusion
         have hzm_q_eq : (zm.toNat : ℚ) = maxRepNat + 3 := by
           rw [hzm_eq, show maxRepUp.toNat = maxRepUpNat from rfl]; norm_num
@@ -278,8 +278,8 @@ theorem operator_add_rounds_same_sign_downward_proof (x y result : Number)
       rcases hv_cases with ⟨hv, hzm_lt_up, hbool⟩ | ⟨hv, hcoup⟩ | ⟨hv, hzm_eq, _⟩
       · -- v = maxRepNat: impossible for negatives (the pushed-guard decision fires).
         exfalso
-        obtain ⟨hdig_pos, hsb⟩ := pushOverflow_cusp_interior_facts g zm h_zm_le_rep hzm_lt_up
-        have h1 : (g.pushOverflow zm).round .downward = 1 :=
+        obtain ⟨hdig_pos, hsb⟩ := pushOverflow_cusp_interior_facts g zm .downward h_zm_le_rep hzm_lt_up
+        have h1 : (g.pushOverflow zm .downward).round .downward = 1 :=
           (round_downward_eq_one_iff _).mpr ⟨by rw [hsb]; exact h_g_sbit_true, Or.inl hdig_pos⟩
         rw [h1, show ((1 : Int) == 1) = true from rfl, Bool.true_or] at hbool
         exact Bool.noConfusion hbool
@@ -415,8 +415,8 @@ theorem operator_add_rounds_same_sign_upward_proof (x y result : Number)
     have habs := abs_toRat_eq result
     rw [h_result_abs] at habs
     exact habs.symm
-  have hgP_sbit : (g.pushOverflow zm).sbit_ = g.sbit_ := by
-    unfold Guard.pushOverflow
+  have hgP_sbit : (g.pushOverflow zm .upward).sbit_ = g.sbit_ := by
+    simp only [Guard.pushOverflow, Guard.push]
     split_ifs <;> rfl
   have h_eps_nn : (0 : ℚ) ≤ 10 / ((2 ^ 63 + 2 : ℚ)) := by norm_num
   by_cases h_pos : x.negative_ = false
@@ -524,8 +524,8 @@ theorem operator_add_rounds_same_sign_upward_proof (x y result : Number)
       rcases hv_cases with ⟨hv, hzm_lt_up, hbool⟩ | ⟨hv, hcoup⟩ | ⟨hv, hzm_eq, _⟩
       · -- v = maxRepNat: impossible for non-negatives (the pushed-guard decision fires).
         exfalso
-        obtain ⟨hdig_pos, hsb⟩ := pushOverflow_cusp_interior_facts g zm h_zm_le_rep hzm_lt_up
-        have h1 : (g.pushOverflow zm).round .upward = 1 :=
+        obtain ⟨hdig_pos, hsb⟩ := pushOverflow_cusp_interior_facts g zm .upward h_zm_le_rep hzm_lt_up
+        have h1 : (g.pushOverflow zm .upward).round .upward = 1 :=
           (round_upward_eq_one_iff _).mpr ⟨by rw [hsb]; exact h_g_sbit_false, Or.inl hdig_pos⟩
         rw [h1, show ((1 : Int) == 1) = true from rfl, Bool.true_or] at hbool
         exact Bool.noConfusion hbool
@@ -684,7 +684,7 @@ theorem operator_add_rounds_same_sign_upward_proof (x y result : Number)
         have hzm_eq : zm.toNat = maxRepUp.toNat := by
           rcases hcoup with ⟨h, _⟩ | ⟨_, h⟩
           · exact h
-          · rw [h_bool_false (g.pushOverflow zm) zm (by rw [hgP_sbit]; exact h_g_sbit_true)] at h
+          · rw [h_bool_false (g.pushOverflow zm .upward) zm (by rw [hgP_sbit]; exact h_g_sbit_true)] at h
             exact absurd h Bool.noConfusion
         have hzm_q_eq : (zm.toNat : ℚ) = maxRepNat + 3 := by
           rw [hzm_eq, show maxRepUp.toNat = maxRepUpNat from rfl]; norm_num

@@ -748,8 +748,8 @@ theorem doNormalize128_rounds_direction
               rw [hφf hst, hft0]
           have h10cp_pos : (0 : ℚ) < (10 : ℚ) ^ cp.2.1 := zpow_pos (by norm_num) _
           have h10cp_nn : (0 : ℚ) ≤ (10 : ℚ) ^ cp.2.1 := le_of_lt h10cp_pos
-          have hgP_sbit : (cp.2.2.pushOverflow cp.1).sbit_ = cp.2.2.sbit_ := by
-            unfold Guard.pushOverflow
+          have hgP_sbit : (cp.2.2.pushOverflow cp.1 mode).sbit_ = cp.2.2.sbit_ := by
+            simp only [Guard.pushOverflow, Guard.push]
             split_ifs <;> rfl
           -- result.toRat in signed form.
           have h_res_eq_pos : zn = false → result.toRat
@@ -819,7 +819,7 @@ theorem doNormalize128_rounds_direction
                     have hzm_eq : cp.1.toNat = maxRepUp.toNat := by
                       rcases hcoup with ⟨h, _⟩ | ⟨_, h⟩
                       · exact h
-                      · rw [h_bool_false (cp.2.2.pushOverflow cp.1)
+                      · rw [h_bool_false (cp.2.2.pushOverflow cp.1 .downward)
                             (by rw [hgP_sbit]; exact h_sbit_f)] at h
                         exact absurd h Bool.noConfusion
                     have hzm_q_eq : (cp.1.toNat : ℚ) = maxRepNat + 3 := by
@@ -875,8 +875,8 @@ theorem doNormalize128_rounds_direction
                   · -- the truncating clamp is impossible: the pushed decision fires.
                     exfalso
                     obtain ⟨hdig_pos, hsb⟩ := pushOverflow_cusp_interior_facts cp.2.2 cp.1
-                      h_zm_le_rep hzm_lt_up
-                    have h1 : (cp.2.2.pushOverflow cp.1).round .downward = 1 :=
+                      .downward h_zm_le_rep hzm_lt_up
+                    have h1 : (cp.2.2.pushOverflow cp.1 .downward).round .downward = 1 :=
                       (round_downward_eq_one_iff _).mpr
                         ⟨by rw [hsb]; exact h_sbit_t, Or.inl hdig_pos⟩
                     rw [h1, show ((1 : Int) == 1) = true from rfl, Bool.true_or] at hbool
@@ -981,8 +981,8 @@ theorem doNormalize128_rounds_direction
                   rcases hv_cases with ⟨hv, hzm_lt_up, hbool⟩ | ⟨hv, hcoup⟩ | ⟨hv, hzm_eq, _⟩
                   · exfalso
                     obtain ⟨hdig_pos, hsb⟩ := pushOverflow_cusp_interior_facts cp.2.2 cp.1
-                      h_zm_le_rep hzm_lt_up
-                    have h1 : (cp.2.2.pushOverflow cp.1).round .upward = 1 :=
+                      .upward h_zm_le_rep hzm_lt_up
+                    have h1 : (cp.2.2.pushOverflow cp.1 .upward).round .upward = 1 :=
                       (round_upward_eq_one_iff _).mpr
                         ⟨by rw [hsb]; exact h_sbit_f, Or.inl hdig_pos⟩
                     rw [h1, show ((1 : Int) == 1) = true from rfl, Bool.true_or] at hbool
@@ -1053,7 +1053,7 @@ theorem doNormalize128_rounds_direction
                     have hzm_eq : cp.1.toNat = maxRepUp.toNat := by
                       rcases hcoup with ⟨h, _⟩ | ⟨_, h⟩
                       · exact h
-                      · rw [h_bool_false (cp.2.2.pushOverflow cp.1)
+                      · rw [h_bool_false (cp.2.2.pushOverflow cp.1 .upward)
                             (by rw [hgP_sbit]; exact h_sbit_t)] at h
                         exact absurd h Bool.noConfusion
                     have hzm_q_eq : (cp.1.toNat : ℚ) = maxRepNat + 3 := by

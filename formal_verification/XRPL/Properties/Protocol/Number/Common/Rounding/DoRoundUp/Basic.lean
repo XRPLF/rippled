@@ -110,14 +110,67 @@ lemma represents_lt_one {g : Guard} {f : ℚ} (hrep : represents g f) : f < 1 :=
 
 /-! ## Helper lemmas for the new model -/
 
-/-- `Guard.pushOverflow` is a no-op when `mantissa ≤ maxRep`. -/
-lemma pushOverflow_noop_of_le_maxRep {m : UInt64} (hle : m.toNat ≤ maxRep.toNat) (g : Guard) :
-    g.pushOverflow m = g := by
+/-- `Guard.pushOverflow` is a no-op when `mantissa < maxRep` (strictly below the cusp). -/
+lemma pushOverflow_noop_of_lt_maxRep {m : UInt64} (hlt : m.toNat < maxRep.toNat)
+    (g : Guard) (mode : rounding_mode) :
+    g.pushOverflow m mode = g := by
   unfold Guard.pushOverflow
   rw [if_neg]
-  intro ⟨h_gt, _⟩
-  have : maxRep.toNat < m.toNat := UInt64.lt_iff_toNat_lt.mp h_gt
+  intro ⟨h_ge, _⟩
+  have : maxRep.toNat ≤ m.toNat := UInt64.le_iff_toNat_le.mp h_ge
   omega
+
+/-- With an empty guard `pushOverflow` is a no-op for any `mantissa ≤ maxRep` -/
+lemma pushOverflow_noop_of_le_maxRep_of_empty {m : UInt64} (hle : m.toNat ≤ maxRep.toNat)
+    (g : Guard) (mode : rounding_mode) (hempty : g.empty = true) :
+    g.pushOverflow m mode = g := by
+  rcases Nat.lt_or_ge m.toNat maxRep.toNat with hlt | hge
+  · exact pushOverflow_noop_of_lt_maxRep hlt g mode
+  · have hm : m = maxRep := UInt64.toNat_inj.mp (by omega)
+    subst hm
+    unfold Guard.pushOverflow
+    rw [if_pos (by decide : maxRep ≤ maxRep ∧ maxRep < maxRepUp)]
+    have hround : g.round mode = -2 := by unfold Guard.round; rw [if_pos hempty]
+    simp only [hround]
+    rfl
+
+/-- `Guard.pushOverflow` is a no-op for any `mantissa ≤ maxRep` when `g.round mode ≠ 1` -/
+lemma pushOverflow_noop_of_le_maxRep_of_round_ne_one {m : UInt64} (hle : m.toNat ≤ maxRep.toNat)
+    (g : Guard) (mode : rounding_mode) (hr : g.round mode ≠ 1) :
+    g.pushOverflow m mode = g := by
+  rcases Nat.lt_or_ge m.toNat maxRep.toNat with hlt | hge
+  · exact pushOverflow_noop_of_lt_maxRep hlt g mode
+  · have hm : m = maxRep := UInt64.toNat_inj.mp (by omega)
+    subst hm
+    unfold Guard.pushOverflow
+    rw [if_pos (by decide : maxRep ≤ maxRep ∧ maxRep < maxRepUp)]
+    have hr_ne : (g.round mode == 1) = false := beq_eq_false_iff_ne.mpr hr
+    have hmid : maxRep + (maxRepUp - maxRep) / 2 = (maxRep + 1 : UInt64) := by decide
+    simp only [show maxRep % (10 : UInt64) < 9 from by decide, hmid, hr_ne,
+               Bool.false_or]
+    have hne : (maxRep == (maxRep + 1 : UInt64)) = false := by decide
+    simp only [hne, Bool.and_false, ite_false]
+    simp only [show (false : Bool) = true ↔ False from by decide, if_false,
+               show (maxRep == maxRep) = true from rfl, ite_true]
+
+/-- For an empty guard `pushOverflow` is a no-op whenever `mantissa` is NOT strictly in
+the cusp interior `(maxRep, maxRepUp)`. -/
+lemma pushOverflow_noop_of_empty {m : UInt64} (g : Guard) (mode : rounding_mode)
+    (hempty : g.empty = true) (h_no_push : ¬ (maxRep < m ∧ m < maxRepUp)) :
+    g.pushOverflow m mode = g := by
+  unfold Guard.pushOverflow
+  by_cases hc : maxRep ≤ m ∧ m < maxRepUp
+  · rw [if_pos hc]
+    have hm_eq : m = maxRep := by
+      have h1 : ¬ (maxRep.toNat < m.toNat) :=
+        fun h => h_no_push ⟨UInt64.lt_iff_toNat_lt.mpr h, hc.2⟩
+      have h2 : maxRep.toNat ≤ m.toNat := UInt64.le_iff_toNat_le.mp hc.1
+      exact UInt64.toNat_inj.mp (by omega)
+    subst hm_eq
+    have hround : g.round mode = -2 := by unfold Guard.round; rw [if_pos hempty]
+    simp only [hround]
+    rfl
+  · rw [if_neg hc]
 
 -- bringIntoRange helper lemmas.
 

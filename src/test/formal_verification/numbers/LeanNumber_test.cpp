@@ -1099,10 +1099,10 @@ private:
     void
     runTests() override
     {
-        // testMul();
-        // testDiv();
-        // testAdd();
-        // testSub();
+        testMul();
+        testDiv();
+        testAdd();
+        testSub();
         testNeg();
         testSignum();
         testNormalize();

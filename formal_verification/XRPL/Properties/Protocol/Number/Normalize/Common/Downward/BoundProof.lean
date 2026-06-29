@@ -245,8 +245,8 @@ theorem normalize_rounding_bound_downward (n result : Number)
       rcases hv_cases with ⟨hv, hzm_lt_up, hbool⟩ | ⟨hv, hcoup⟩ | ⟨_, _, hfire⟩
       · -- v = maxRepNat: impossible for negative (the pushed-guard decision fires).
         exfalso
-        obtain ⟨hdig_pos, hsb⟩ := pushOverflow_cusp_interior_facts g zm h_zm_le_rep hzm_lt_up
-        have h1 : (g.pushOverflow zm).round .downward = 1 :=
+        obtain ⟨hdig_pos, hsb⟩ := pushOverflow_cusp_interior_facts g zm .downward h_zm_le_rep hzm_lt_up
+        have h1 : (g.pushOverflow zm .downward).round .downward = 1 :=
           (round_downward_eq_one_iff _).mpr ⟨by rw [hsb, h_g_sbit]; exact h_zn, Or.inl hdig_pos⟩
         rw [h1, show ((1 : Int) == 1) = true from rfl, Bool.true_or] at hbool
         exact Bool.noConfusion hbool
@@ -313,21 +313,21 @@ theorem normalize_rounding_bound_downward (n result : Number)
           rcases hcoup with ⟨h, _⟩ | ⟨_, h⟩
           · exact h
           · exfalso
-            have hr_ne1 : (g.pushOverflow zm).round .downward ≠ 1 := by
+            have hr_ne1 : (g.pushOverflow zm .downward).round .downward ≠ 1 := by
               intro h1
               have hsru := (round_downward_eq_one_iff _).mp h1
-              have hsb : (g.pushOverflow zm).sbit_ = g.sbit_ := by
-                unfold Guard.pushOverflow
+              have hsb : (g.pushOverflow zm .downward).sbit_ = g.sbit_ := by
+                simp only [Guard.pushOverflow, Guard.push]
                 split_ifs <;> rfl
               have hsb' := hsru.1
               rw [hsb, h_g_sbit_false] at hsb'
               exact Bool.noConfusion hsb'
-            have hr_ne0 : (g.pushOverflow zm).round .downward ≠ 0 := by
+            have hr_ne0 : (g.pushOverflow zm .downward).round .downward ≠ 0 := by
               unfold Guard.round
               split_ifs <;> decide
-            rw [show ((g.pushOverflow zm).round .downward == 1) = false from
+            rw [show ((g.pushOverflow zm .downward).round .downward == 1) = false from
                   beq_eq_false_iff_ne.mpr hr_ne1,
-                show ((g.pushOverflow zm).round .downward == 0) = false from
+                show ((g.pushOverflow zm .downward).round .downward == 0) = false from
                   beq_eq_false_iff_ne.mpr hr_ne0,
                 Bool.false_and] at h
             exact absurd h (by decide)
