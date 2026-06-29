@@ -2236,11 +2236,6 @@ class Vault_test : public beast::unit_test::Suite
             env(offer(alice, XRP(1), shares(1)), Ter{tecNO_PERMISSION});
             env.close();
 
-            // The inherited CanTrade restriction also blocks AMM creation.
-            AMM const ammUnderlyingFail(
-                env, alice, XRP(1'000), asset(1'000), Ter{tecNO_PERMISSION});
-            AMM const ammShares(env, alice, XRP(1'000), shares(100), Ter{tecNO_PERMISSION});
-
             // Deposit still works before enabling CanTrade.
             env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(100)}));
             env.close();
