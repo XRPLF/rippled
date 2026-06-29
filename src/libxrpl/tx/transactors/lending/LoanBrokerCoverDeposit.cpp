@@ -43,6 +43,8 @@ LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
 TER
 LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
 {
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
@@ -77,12 +79,21 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     // Cannot transfer a non-transferable Asset
     if (auto const ret = canTransfer(ctx.view, vaultAsset, account, pseudoAccountID))
         return ret;
-    // Cannot transfer a frozen Asset
-    if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
-        return ret;
-    // Pseudo-account cannot receive if asset is deep frozen
-    if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
-        return ret;
+
+    if (fix330Enabled)
+    {
+        if (auto const ret = checkDepositFreeze(ctx.view, account, pseudoAccountID, vaultAsset))
+            return ret;
+    }
+    else
+    {
+        if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
+            return ret;
+
+        if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
+            return ret;
+    }
+
     // Cannot transfer unauthorized asset
     if (auto const ret = requireAuth(ctx.view, vaultAsset, account, AuthType::StrongAuth))
         return ret;
@@ -92,7 +103,6 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     // `sfCoverAvailable  +=` could credit the broker more than the depositor paid  Computing it
     // here in preclaim lets  us reject sub-cover-scale dust early with tecPRECISION_LOSS instead of
     // failing only in  doApply.
-    bool const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
     auto const roundedAmount = [&]() -> STAmount {
         if (!fix320Enabled)
             return tx[sfAmount];
