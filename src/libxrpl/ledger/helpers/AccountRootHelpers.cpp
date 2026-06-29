@@ -244,19 +244,16 @@ adjustOwnerCountHlp(
 }
 
 void
-adjustOwnerCount(
-    ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref sponsorSle,
-    std::int32_t adjustment,
-    beast::Journal j)
+adjustOwnerCount(ApplyViewContext& ctx, std::int32_t adjustment, beast::Journal j)
 {
+    auto& accountSle = ctx.reserveContext.accountSle;
     if (!accountSle)
         Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid account sle");
 
-    auto const sleType = accountSle->getType();
-    bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
-                                      : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
+    auto const sleType = ctx.reserveContext.accountSle->getType();
+    bool const validType = ctx.reserveContext.sponsorSle
+        ? sleType == ltACCOUNT_ROOT
+        : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
     if (!validType)
         Throw<std::logic_error>("xrpl::adjustOwnerCount : valid account sle type");
 
@@ -264,32 +261,53 @@ adjustOwnerCount(
     if (adjustment == 0)
         return;
 
-    auto const accountID = accountSle->getAccountID(sfAccount);
-    if (sponsorSle)
+    if (ctx.reserveContext.isSponsored())
     {
-        if (sponsorSle->getType() != ltACCOUNT_ROOT)
+        if (ctx.reserveContext.sponsorSle->getType() != ltACCOUNT_ROOT)
             Throw<std::logic_error>("xrpl::adjustOwnerCount : valid sponsor sle type");
-        auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
-        adjustOwnerCountHlp(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
-        adjustOwnerCountHlp(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
+        adjustOwnerCountHlp(
+            ctx.view,
+            ctx.reserveContext.accountSle,
+            sfSponsoredOwnerCount,
+            ctx.reserveContext.accountID,
+            adjustment,
+            j);
+        adjustOwnerCountHlp(
+            ctx.view,
+            ctx.reserveContext.sponsorSle,
+            sfSponsoringOwnerCount,
+            *ctx.reserveContext.sponsorID,
+            adjustment,
+            j);
 
-        auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
-        if (sponsorshipSle && adjustment > 0)
+        if (ctx.reserveContext.sponsorshipSle && adjustment > 0)
         {
             // update the pre-funded RemainingOwnerCount on Sponsorship ledger object
             // Remaining owner count moves opposite to adjustment:
             // +adjustment => consume reserve (-),
             adjustOwnerCountHlp(
-                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
+                ctx.view,
+                ctx.reserveContext.sponsorshipSle,
+                sfRemainingOwnerCount,
+                *ctx.reserveContext.sponsorID,
+                -adjustment,
+                j,
+                false);
         }
     }
-    adjustOwnerCountHlp(view, accountSle, sfOwnerCount, accountID, adjustment, j);
+    adjustOwnerCountHlp(
+        ctx.view,
+        ctx.reserveContext.accountSle,
+        sfOwnerCount,
+        ctx.reserveContext.accountID,
+        adjustment,
+        j);
 }
 
 void
 adjustOwnerCountObj(
-    ApplyView& view,
+    ApplyViewContext& view,
     SLE::ref accountSle,
     SLE::ref objectSle,
     std::int32_t amount,

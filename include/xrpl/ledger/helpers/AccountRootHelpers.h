@@ -82,27 +82,9 @@ ownerCount(
 /** Adjust the owner count up or down. */
 void
 adjustOwnerCount(
-    ApplyView& view,
-    SLE::ref accountSle,
-    SLE::ref sponsorSle,
+    ApplyViewContext& ctx,
     std::int32_t amount,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
-
-inline void
-adjustOwnerCount(
-    ApplyView& view,
-    AccountID const& account,
-    std::optional<AccountID> const& sponsor,
-    std::int32_t amount,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-{
-    adjustOwnerCount(
-        view,
-        view.peek(keylet::account(account)),
-        sponsor ? view.peek(keylet::account(*sponsor)) : SLE::pointer(),
-        amount,
-        j);
-}
 
 void
 adjustOwnerCountObj(

@@ -400,9 +400,9 @@ public:
 
 struct ReserveTxContext
 {
-    AccountID const account;
+    AccountID const accountID;
     SLE::pointer accountSle;
-    std::optional<AccountID> const sponsor;
+    std::optional<AccountID> const sponsorID;
     SLE::pointer sponsorSle;
     SLE::pointer sponsorshipSle;
 
@@ -410,9 +410,9 @@ struct ReserveTxContext
     isSponsored()
     {
         XRPL_ASSERT(
-            sponsor.has_value() == !!sponsorSle,
+            sponsorID.has_value() == !!sponsorSle,
             "ReserveTxContext::isSponsored : sponsor existence matches sponsorSle existence");
-        return sponsor.has_value();
+        return sponsorID.has_value();
     }
 
     bool

@@ -192,11 +192,8 @@ authorizeMPToken(
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
-        auto const sponsorSle = getTxReserveSponsor(ctx);
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
-
-        auto const isSponsoredAndPreFunded = *sponsorSle && !isSponsorReserveCoSigning(ctx.tx);
+        auto const isSponsored = ctx.reserveContext.isSponsored();
+        auto const isSponsoredAndPreFunded = isSponsored && !isSponsorReserveCoSigning(ctx.tx);
 
         // The reserve that is required to create the MPToken. Note
         // that although the reserve increases with every item
@@ -205,11 +202,18 @@ authorizeMPToken(
         // items. This is similar to the reserve requirements of trust lines.
         // If PreFunded Sponsor, it must be checked whether sufficient
         // ReserveCount exists.
-        if (ownerCount(view, *sponsorSle ? *sponsorSle : sleAcct, journal) >= 2 ||
+        if (ownerCount(view, isSponsored ? ctx.reserveContext.sponsorSle : sleAcct, journal) >= 2 ||
             isSponsoredAndPreFunded)
         {
             if (auto const ret = checkInsufficientReserve(
-                    view, ctx.tx, sleAcct, priorBalance, *sponsorSle, 1, 0, journal);
+                    view,
+                    ctx.tx,
+                    sleAcct,
+                    priorBalance,
+                    *ctx.reserveContext.sponsorSle,
+                    1,
+                    0,
+                    journal);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -236,8 +240,8 @@ authorizeMPToken(
         view.insert(mptoken);
 
         // Update owner count.
-        adjustOwnerCount(view, sleAcct, *sponsorSle, 1, journal);
-        addSponsorToLedgerEntry(mptoken, *sponsorSle);
+        adjustOwnerCount(ctx, 1, journal);
+        addSponsorToLedgerEntry(mptoken, ctx.reserveContext.sponsorSle);
 
         return tesSUCCESS;
     }
@@ -937,10 +941,9 @@ createMPToken(
 
 TER
 checkCreateMPT(
-    xrpl::ApplyView& view,
+    xrpl::ApplyViewContext& ctx,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
-    SLE::ref sponsorSle,
     beast::Journal j)
 {
     if (mptIssue.getIssuer() == holder)
@@ -961,7 +964,7 @@ checkCreateMPT(
             return tecINTERNAL;
         }
 
-        adjustOwnerCount(view, sleAcct, sponsorSle, 1, j);
+        adjustOwnerCount(ctx, 1, j);
     }
     return tesSUCCESS;
 }

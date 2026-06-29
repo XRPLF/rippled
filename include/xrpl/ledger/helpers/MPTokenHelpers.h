@@ -233,10 +233,9 @@ createMPToken(
 
 TER
 checkCreateMPT(
-    xrpl::ApplyView& view,
+    xrpl::ApplyViewContext& view,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
-    SLE::ref sponsorSle,
     beast::Journal j);
 
 //------------------------------------------------------------------------------
