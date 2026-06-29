@@ -1459,6 +1459,43 @@ public:
                     Ter(tecNO_PERMISSION));
             }
         }
+
+        {
+            // existing owner objects that are outside the v1 SponsorshipTransfer
+            // object allow-list
+            Env env{*this, testableAmendments()};
+            Account const alice("alice");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, sponsor);
+            env.close();
+
+            auto const checkBlocked = [&](uint256 const& objectID) {
+                env(sponsor::transfer(alice, tfSponsorshipCreate, objectID),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(tecNO_PERMISSION));
+                env.close();
+            };
+
+            auto const ticketSeq = env.seq(alice);
+            env(ticket::create(alice, 1));
+            env.close();
+            auto const ticketID = keylet::TicketT()(alice, ticketSeq + 1).key;
+            BEAST_EXPECT(env.le(keylet::unchecked(ticketID)));
+            checkBlocked(ticketID);
+
+            env(did::set(alice));
+            env.close();
+            auto const didKeylet = keylet::did(alice.id());
+            BEAST_EXPECT(env.le(didKeylet));
+            checkBlocked(didKeylet.key);
+
+            env(token::mint(alice, 0u));
+            env.close();
+            auto const nftPageKeylet = keylet::nftpageMax(alice);
+            BEAST_EXPECT(env.le(nftPageKeylet));
+            checkBlocked(nftPageKeylet.key);
+        }
     }
 
     void
