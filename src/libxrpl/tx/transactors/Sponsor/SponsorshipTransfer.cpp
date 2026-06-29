@@ -436,10 +436,10 @@ SponsorshipTransfer::doApply()
                     ctx_.tx,
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
-                    *newSponsorSle,
+                    newSponsorSle,
                     ownerCountDelta,
                     0,
-                    ctx_.j);
+                    ctx_.journal);
                 !isTesSuccess(ter))
                 return ter;
 
@@ -491,7 +491,7 @@ SponsorshipTransfer::doApply()
                     ctx_.tx,
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
-                    *newSponsorSle,
+                    newSponsorSle,
                     ownerCountDelta,
                     0,
                     ctx_.journal);
