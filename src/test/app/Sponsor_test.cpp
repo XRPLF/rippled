@@ -681,6 +681,7 @@ public:
         using namespace test::jtx;
         Account const alice("alice");
         Account const bob("bob");
+        Account const charlie("charlie");
         Account const sponsor("sponsor");
 
         {
@@ -727,8 +728,6 @@ public:
                 Ter(tesSUCCESS));
             env.close();
 
-            Account const bob("bob");
-            Account const charlie("charlie");
             env.fund(XRP(1000), bob, charlie);
             env.close();
 
