@@ -389,8 +389,7 @@ CheckCash::doApply()
             STAmount const flowDeliver{
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
-            ApplyViewContext ctx(psb, ctx_.tx);
-            auto const sponsorSle = getTxReserveSponsor(ctx);
+            auto const sponsorSle = getTxReserveSponsor({psb, ctx_.tx});
             if (!sponsorSle)
                 return sponsorSle.error();  // LCOV_EXCL_LINE
 
