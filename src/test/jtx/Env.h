@@ -462,6 +462,38 @@ public:
         parseFailureExpected_ = b;
     }
 
+    /** RAII class to set and restore the parse failure flag (setParseFailureExpected).
+     *
+     * Can be created directly, or through the `getParseFailureGuard(bool)` function.
+     */
+    class ParseFailureGuard final
+    {
+        Env& self_;
+        bool oldExpected = self_.parseFailureExpected_;
+
+    public:
+        ParseFailureGuard(Env& self, bool b) : self_(self)
+        {
+            self_.setParseFailureExpected(b);
+        }
+
+        ~ParseFailureGuard()
+        {
+            self_.setParseFailureExpected(oldExpected);
+        }
+    };
+
+    /** Gets an RAII guard to set and restore the parse failure flag
+     *
+     * Usage:
+     * auto const guard = env.getParseFailureGuard(true/false);
+     */
+    ParseFailureGuard
+    getParseFailureGuard(bool b)
+    {
+        return ParseFailureGuard{*this, b};
+    }
+
     /** Turn off signature checks. */
     void
     disableSigs()
