@@ -136,7 +136,8 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
     bool const isObjectSponsor = !!index;
 
-    auto const sponseeID = ctx.tx[~sfSponsee].value_or(account_);
+    auto const account = ctx.tx[sfAccount];
+    auto const sponseeID = ctx.tx[~sfSponsee].value_or(account);
     auto const sponseeSle = ctx.view.read(keylet::account(sponseeID));
     if (!sponseeSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
