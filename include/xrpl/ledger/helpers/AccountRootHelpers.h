@@ -15,31 +15,47 @@
 namespace xrpl {
 
 /** Check if the issuer has the global freeze flag set.
-    @param issuer The account to check
-    @return true if the account has global freeze set
-*/
+ *
+ *  @param view The ledger view to read from
+ *  @param issuer The account to check
+ *  @return true if the account has global freeze set
+ */
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 
-// Calculate liquid XRP balance for an account.
-// This function may be used to calculate the amount of XRP that
-// the holder is able to freely spend. It subtracts reserve requirements.
-//
-// ownerCountAdj adjusts the owner count in case the caller calculates
-// before ledger entries are added or removed. Positive to add, negative
-// to subtract.
-//
-// @param ownerCountAdj positive to add to count, negative to reduce count.
+/** Calculate liquid XRP balance for an account.
+ *
+ *  This function may be used to calculate the amount of XRP that
+ *  the holder is able to freely spend. It subtracts reserve requirements.
+ *
+ *  ownerCountAdj adjusts the owner count in case the caller calculates
+ *  before ledger entries are added or removed. Positive to add, negative
+ *  to subtract.
+ *
+ *  @param view The ledger view to read from
+ *  @param id The account ID to check
+ *  @param ownerCountAdj Positive to add to count, negative to reduce count
+ *  @param j Journal for logging
+ *  @return The liquid XRP amount available to the account
+ */
 [[nodiscard]] XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j);
 
 /** Returns the account reserve, in drops.
-    Actual owner count can be adjusted by delta in ownerCountAdj
-    Actual reserve count can be adjusted by delta in accountCountAdj
-    The reserve is calculated as
-       (ownerCount + "sponsoring object count" - "sponsored object count" + additionalOwnerCount) *
-   increment + (1 if not sponsored account + sponsoringAccountCount) * "reserve base"
-*/
+ *
+ *  Actual owner count can be adjusted by delta in ownerCountAdj
+ *  Actual reserve count can be adjusted by delta in accountCountAdj
+ *  The reserve is calculated as:
+ *  (ownerCount + "sponsoring object count" - "sponsored object count" + additionalOwnerCount) *
+ *  increment + (1 if not sponsored account + sponsoringAccountCount) * "reserve base"
+ *
+ *  @param view The ledger view to read from
+ *  @param sle The ledger entry for the account
+ *  @param j Journal for logging
+ *  @param ownerCountAdj Adjustment to the owner count (default: 0)
+ *  @param accountCountAdj Adjustment to the account count (default: 0)
+ *  @return The account reserve amount in drops
+ */
 [[nodiscard]] XRPAmount
 accountReserve(
     ReadView const& view,
@@ -48,6 +64,15 @@ accountReserve(
     std::int32_t ownerCountAdj = 0,
     std::int32_t accountCountAdj = 0);
 
+/** Convenience overload that accepts AccountID instead of SLE.
+ *
+ *  @param view The ledger view to read from
+ *  @param id The account ID
+ *  @param j Journal for logging
+ *  @param ownerCountAdj Adjustment to the owner count (default: 0)
+ *  @param accountCountAdj Adjustment to the account count (default: 0)
+ *  @return The account reserve amount in drops
+ */
 [[nodiscard]] inline XRPAmount
 accountReserve(
     ReadView const& view,
@@ -60,15 +85,30 @@ accountReserve(
 }
 
 /** @brief Return the hypothetical reserve required by an account with the provided counters.
+ *
+ *  @param view The ledger view to read from
  *  @param ownerCount Number of objects for which the account will be responsible.
  *  @param accountCount Number of accounts for which the account will be responsible.
  *                      Defaults to 1, as normally every account is responsible for its own reserve.
  *                      Can be 0 if the account is sponsored.
  *                      Can be greater than 1 if the account is sponsoring other accounts.
+ *  @return The hypothetical reserve amount
  */
 XRPAmount
 baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount = 1);
 
+/** Check if an account has insufficient reserve.
+ *
+ *  @param view The ledger view to read from
+ *  @param tx The transaction being processed
+ *  @param accSle The account's ledger entry
+ *  @param accBalance The account's balance
+ *  @param sponsorSle The sponsor's ledger entry (if applicable)
+ *  @param ownerCountAdj Adjustment to the owner count
+ *  @param accountCountAdj Adjustment to the account count (default: 0)
+ *  @param j Journal for logging (default: null sink)
+ *  @return Transaction result code
+ */
 [[nodiscard]] TER
 checkInsufficientReserve(
     ReadView const& view,
@@ -81,12 +121,25 @@ checkInsufficientReserve(
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 /** Return number of the objects which reserve is covered by the account(sle) (so called "owner
- * count"). Actual owner count can be adjusted by delta in ownerCountAdj
+ *  count"). Actual owner count can be adjusted by delta in ownerCountAdj.
+ *
+ *  @param sle The account's ledger entry
+ *  @param j Journal for logging
+ *  @param ownerCountAdj Adjustment to the owner count (default: 0)
+ *  @return The adjusted owner count
  */
 std::uint32_t
 ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj = 0);
 
-/** Adjust the owner count up or down. */
+/** Adjust the owner counters of the account up or down. If sponsor provided adjust its counters
+ *  too.
+ *
+ *  @param view The apply view for making changes
+ *  @param accountSle The account's ledger entry
+ *  @param sponsorSle The sponsor's ledger entry (if applicable)
+ *  @param accountCountAdj Adjustment amount for the account count
+ *  @param j Journal for logging (default: null sink)
+ */
 void
 adjustOwnerCount(
     ApplyView& view,
@@ -95,6 +148,14 @@ adjustOwnerCount(
     std::int32_t accountCountAdj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
+/** Convenience overload that accepts AccountID instead of SLE references.
+ *
+ *  @param view The apply view for making changes
+ *  @param account The account ID
+ *  @param sponsor The optional sponsor account ID
+ *  @param accountCountAdj Adjustment amount for the account count
+ *  @param j Journal for logging (default: null sink)
+ */
 inline void
 adjustOwnerCount(
     ApplyView& view,
@@ -111,8 +172,14 @@ adjustOwnerCount(
         j);
 }
 
-/** The same as adjustOwnerCount except take sponsor from the provided object.
- *  Used to delete objectss
+/** Adjust the owner counters of the account up or down. If object has sponsor adjust its counters
+ *  too. Used primarily just before deleting the object.
+ *
+ *  @param view The apply view for making changes
+ *  @param accountSle The account's ledger entry
+ *  @param objectSle The object's ledger entry
+ *  @param accountCountAdj Adjustment amount for the account count
+ *  @param j Journal for logging (default: null sink)
  */
 void
 adjustOwnerCountObj(
@@ -122,6 +189,14 @@ adjustOwnerCountObj(
     std::int32_t accountCountAdj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
+/** Convenience overload that accepts AccountID instead of account SLE reference.
+ *
+ *  @param view The apply view for making changes
+ *  @param account The account ID
+ *  @param objectSle The object's ledger entry
+ *  @param accountCountAdj Adjustment amount for the account count
+ *  @param j Journal for logging (default: null sink)
+ */
 inline void
 adjustOwnerCountObj(
     ApplyView& view,
@@ -135,42 +210,61 @@ adjustOwnerCountObj(
 }
 
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
- * the fee as fractions of 1 billion. For example, 1% transfer rate
- * is represented as 1,010,000,000.
- * @param issuer The IOU issuer
+ *  the fee as fractions of 1 billion. For example, 1% transfer rate
+ *  is represented as 1,010,000,000.
+ *
+ *  @param view The ledger view to read from
+ *  @param issuer The IOU issuer
+ *  @return The transfer rate for the issuer
  */
 [[nodiscard]] Rate
 transferRate(ReadView const& view, AccountID const& issuer);
 
 /** Generate a pseudo-account address from a pseudo owner key.
-    @param pseudoOwnerKey The key to generate the address from
-    @return The generated account ID
-*/
+ *
+ *  @param view The ledger view to read from
+ *  @param pseudoOwnerKey The key to generate the address from
+ *  @return The generated account ID
+ */
 AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
 
 /** Returns the list of fields that define an ACCOUNT_ROOT as a pseudo-account
-    if set.
-
-    The list is constructed during initialization and is const after that.
-    Pseudo-account designator fields MUST be maintained by including the
-    SField::sMD_PseudoAccount flag in the SField definition.
-*/
+ *  if set.
+ *
+ *  The list is constructed during initialization and is const after that.
+ *  Pseudo-account designator fields MUST be maintained by including the
+ *  SField::sMD_PseudoAccount flag in the SField definition.
+ *
+ *  @return A const reference to the vector of pseudo-account fields
+ */
 [[nodiscard]] std::vector<SField const*> const&
 getPseudoAccountFields();
 
 /** Returns true if and only if sleAcct is a pseudo-account or specific
-    pseudo-accounts in pseudoFieldFilter.
-
-    Returns false if sleAcct is:
-    - NOT a pseudo-account OR
-    - NOT a ltACCOUNT_ROOT OR
-    - null pointer
-*/
+ *  pseudo-accounts in pseudoFieldFilter.
+ *
+ *  Returns false if sleAcct is:
+ *  - NOT a pseudo-account OR
+ *  - NOT a ltACCOUNT_ROOT OR
+ *  - null pointer
+ *
+ *  @param sleAcct The account's ledger entry to check
+ *  @param pseudoFieldFilter Optional set of specific pseudo-account fields to filter (default:
+ * empty)
+ *  @return true if sleAcct is a pseudo-account (or matches the filter), false otherwise
+ */
 [[nodiscard]] bool
 isPseudoAccount(SLE::const_ref sleAcct, std::set<SField const*> const& pseudoFieldFilter = {});
 
-/** Convenience overload that reads the account from the view. */
+/** Convenience overload that reads the account from the view.
+ *
+ *  @param view The ledger view to read from
+ *  @param accountId The account ID to check
+ *  @param pseudoFieldFilter Optional set of specific pseudo-account fields to filter (default:
+ * empty)
+ *  @return true if the account is a pseudo-account (or matches the filter), false otherwise
+ */
 [[nodiscard]] inline bool
 isPseudoAccount(
     ReadView const& view,
@@ -180,22 +274,30 @@ isPseudoAccount(
     return isPseudoAccount(view.read(keylet::account(accountId)), pseudoFieldFilter);
 }
 
-/**
- * Create pseudo-account, storing pseudoOwnerKey into ownerField.
+/** Create pseudo-account, storing pseudoOwnerKey into ownerField.
  *
- * The list of valid ownerField is maintained in AccountRootHelpers.cpp and
- * the caller to this function must perform necessary amendment check(s)
- * before using a field. The amendment check is **not** performed in
- * createPseudoAccount.
+ *  The list of valid ownerField is maintained in AccountRootHelpers.cpp and
+ *  the caller to this function must perform necessary amendment check(s)
+ *  before using a field. The amendment check is **not** performed in
+ *  createPseudoAccount.
+ *
+ *  @param view The apply view for making changes
+ *  @param pseudoOwnerKey The pseudo owner key to store
+ *  @param ownerField The field to store the pseudo owner key in
+ *  @return Expected containing either the created SLE pointer or a TER error code
  */
 [[nodiscard]] std::expected<SLE::pointer, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey, SField const& ownerField);
 
 /** Checks the destination and tag.
-
-   - Checks that the SLE is not null.
-   - If the SLE requires a destination tag, checks that there is a tag.
-*/
+ *
+ *  - Checks that the SLE is not null.
+ *  - If the SLE requires a destination tag, checks that there is a tag.
+ *
+ *  @param toSle The destination account's ledger entry
+ *  @param hasDestinationTag Whether a destination tag was provided
+ *  @return Transaction result code (tesSUCCESS, tecNO_DST, or tecDST_TAG_NEEDED)
+ */
 [[nodiscard]] TER
 checkDestinationAndTag(SLE::const_ref toSle, bool hasDestinationTag);
 

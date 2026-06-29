@@ -102,8 +102,11 @@ accountCountImpl(SLE::const_ref sle, std::int32_t accountCountAdj, beast::Journa
     }
     else if (totalAccountCount < 0)
     {
-        JLOG(j.fatal()) << "Reserve count set below 0!";  // LCOV_EXCL_LINE
-        totalAccountCount = 0;                            // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::accountCountImpl : Reserve count set below 0");
+        JLOG(j.fatal()) << "Reserve count set below 0";
+        totalAccountCount = 0;
+        // LCOV_EXCL_STOP
     }
 
     return totalAccountCount;
@@ -112,6 +115,8 @@ accountCountImpl(SLE::const_ref sle, std::int32_t accountCountAdj, beast::Journa
 std::uint32_t
 ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj)
 {
+    XRPL_ASSERT(sle && sle->getType() == ltACCOUNT_ROOT, "xrpl::ownerCount : sle is account root");
+
     AccountID const id = sle->getAccountID(sfAccount);
     std::uint32_t const currentOwnerCount = sle->at(sfOwnerCount);
     std::uint32_t const sponsoredOwnerCount = sle->at(sfSponsoredOwnerCount);
@@ -136,7 +141,7 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj)
     else if (deltaCount < std::numeric_limits<std::int32_t>::min())
     {
         deltaCount = std::numeric_limits<std::int32_t>::min();
-        JLOG(j.fatal()) << "Account " << id << " delta count exceeds min, "
+        JLOG(j.fatal()) << "Account " << id << " delta count is below min, "
                         << "adjustment: " << ownerCountAdj
                         << ", sponsoredCount: " << sponsoredOwnerCount
                         << ", sponsoringCount: " << sponsoringOwnerCount;
