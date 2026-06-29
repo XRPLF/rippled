@@ -109,7 +109,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
     XRPL_ASSERT(
-        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
 
@@ -331,7 +331,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
         XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
         ledger_->setImmutable();
     }
@@ -427,7 +427,7 @@ InboundLedger::done()
     if (complete_ && !failed_ && ledger_)
     {
         XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::done : valid ledger fees");
         ledger_->setImmutable();
         switch (reason_)
