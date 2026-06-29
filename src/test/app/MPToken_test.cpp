@@ -617,7 +617,8 @@ class MPToken_test : public beast::unit_test::Suite
             // (2)
             mptAlice.set({.account = alice, .flags = 0x00000008, .err = temINVALID_FLAG});
 
-            if (!features[featureSingleAssetVault] && !features[featureDynamicMPT])
+            if (!features[featureSingleAssetVault] && !features[featureDynamicMPT] &&
+                !features[featureConfidentialTransfer])
             {
                 // test invalid flags - nothing is being changed
                 mptAlice.set({.account = alice, .flags = 0x00000000, .err = tecNO_PERMISSION});
@@ -7461,21 +7462,42 @@ class MPToken_test : public beast::unit_test::Suite
 
                 // MPTLock is set
                 usd.set({.flags = tfMPTLock});
-                // carol and issuer can't withdraw
-                for (auto const& account : {carol, gw})
-                {
-                    amm.withdraw(
-                        {.account = account,
-                         .asset1Out = usd(1),
-                         .asset2Out = eur(1),
-                         .err = Ter(tecLOCKED)});
-                    amm.withdraw({.account = account, .tokens = 1'000, .err = Ter(tecLOCKED)});
-                    // can single withdraw another asset
-                    amm.withdraw(
-                        {.account = account,
-                         .asset1Out = eur(1),
-                         .assets = std::make_pair(eur, usd)});
-                }
+                auto const fix330 = env.current()->rules().enabled(fixCleanup3_3_0);
+
+                // carol can't withdraw the locked token (any withdrawal type)
+                amm.withdraw(
+                    {.account = carol,
+                     .asset1Out = usd(1),
+                     .asset2Out = eur(1),
+                     .err = Ter(tecLOCKED)});
+                amm.withdraw({.account = carol, .tokens = 1'000, .err = Ter(tecLOCKED)});
+                // can single withdraw the non-locked asset
+                amm.withdraw(
+                    {.account = carol, .asset1Out = eur(1), .assets = std::make_pair(eur, usd)});
+
+                // post-fixCleanup3_3_0 the issuer can redeem even when locked.
+                // Each successful withdrawal burns LP tokens, so replenish between
+                // each type to keep gw's LP balance stable.
+                auto const gwLockErr = fix330 ? Ter(tesSUCCESS) : Ter(tecLOCKED);
+                auto const replenish = [&](IOUAmount tokens) {
+                    usd.set({.flags = tfMPTUnlock});
+                    amm.deposit({.account = gw, .tokens = tokens});
+                    usd.set({.flags = tfMPTLock});
+                };
+
+                amm.withdraw(
+                    {.account = gw, .asset1Out = usd(1), .asset2Out = eur(1), .err = gwLockErr});
+                if (fix330)
+                    replenish(IOUAmount{1});
+
+                amm.withdraw({.account = gw, .tokens = 1'000, .err = gwLockErr});
+                if (fix330)
+                    replenish(IOUAmount{1'000});
+
+                // can single withdraw the non-locked asset
+                amm.withdraw(
+                    {.account = gw, .asset1Out = eur(1), .assets = std::make_pair(eur, usd)});
+
                 usd.set({.flags = tfMPTUnlock});
 
                 // MPTRequireAuth is set

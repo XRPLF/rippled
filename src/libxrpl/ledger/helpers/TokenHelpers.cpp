@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -33,14 +34,6 @@
 #include <variant>
 
 namespace xrpl {
-
-// Forward declaration for function that remains in View.h/cpp
-bool
-isLPTokenFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Asset const& asset,
-    Asset const& asset2);
 
 //------------------------------------------------------------------------------
 //
@@ -162,6 +155,90 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& ass
 {
     return std::visit(
         [&](auto const& issue) { return checkDeepFrozen(view, account, issue); }, asset.value());
+}
+
+[[nodiscard]] TER
+checkWithdrawFreeze(
+    ReadView const& view,
+    AccountID const& srcAcct,
+    AccountID const& submitterAcct,
+    AccountID const& dstAcct,
+    Asset const& asset)
+{
+    XRPL_ASSERT(
+        isPseudoAccount(view, srcAcct), "xrpl::checkWithdrawFreeze : source is a pseudo-account");
+    XRPL_ASSERT(
+        !isPseudoAccount(view, submitterAcct),
+        "xrpl::checkWithdrawFreeze : submitter is not a pseudo-account");
+    XRPL_ASSERT(
+        !isPseudoAccount(view, dstAcct),
+        "xrpl::checkWithdrawFreeze : destination is not a pseudo-account");
+
+    // Funds can always be sent to the issuer
+    if (dstAcct == asset.getIssuer())
+        return tesSUCCESS;
+
+    // If the asset is globally frozen, other checks are redundant
+    if (auto const ret = checkGlobalFrozen(view, asset); !isTesSuccess(ret))
+        return ret;
+
+    // Special case for shares - check if the shares (and the transitive asset) is not frozen
+    if (asset.holds<MPTIssue>() &&
+        isVaultPseudoAccountFrozen(view, srcAcct, asset.get<MPTIssue>(), 0))
+    {
+        return tecLOCKED;
+    }
+
+    // The transfer is from Submitter to Destination via Source (pseudo-account)
+    // Both Source and Submitter must not be frozen to allow sending funds
+    if (auto const ret = checkIndividualFrozen(view, srcAcct, asset); !isTesSuccess(ret))
+        return ret;
+
+    // Check submitter's individual freeze only when Submitter != Destination (a regular freeze
+    // should not block self-withdrawal).
+    if (submitterAcct != dstAcct)
+    {
+        if (auto const ret = checkIndividualFrozen(view, submitterAcct, asset); !isTesSuccess(ret))
+            return ret;
+    }
+
+    // The destination account must not be deep frozen to receive the funds
+    return checkDeepFrozen(view, dstAcct, asset);
+}
+
+[[nodiscard]] TER
+checkDepositFreeze(
+    ReadView const& view,
+    AccountID const& srcAcct,
+    AccountID const& dstAcct,
+    Asset const& asset)
+{
+    XRPL_ASSERT(
+        isPseudoAccount(view, dstAcct),
+        "xrpl::checkDepositFreeze : destination is a pseudo-account");
+    XRPL_ASSERT(
+        !isPseudoAccount(view, srcAcct),
+        "xrpl::checkDepositFreeze : source is not a pseudo-account");
+
+    if (auto const ret = checkGlobalFrozen(view, asset); !isTesSuccess(ret))
+        return ret;
+
+    // Special case for shares - check if the shares and the transitive asset is not frozen
+    if (asset.holds<MPTIssue>() &&
+        isVaultPseudoAccountFrozen(view, dstAcct, asset.get<MPTIssue>(), 0))
+    {
+        return tecLOCKED;
+    }
+
+    if (srcAcct != asset.getIssuer())
+    {
+        if (auto const ret = checkIndividualFrozen(view, srcAcct, asset); !isTesSuccess(ret))
+            return ret;
+    }
+
+    // Unlike regular accounts, pseudo-accounts cannot receive deposits under a regular freeze
+    // because those funds cannot be later withdrawn
+    return checkIndividualFrozen(view, dstAcct, asset);
 }
 
 //------------------------------------------------------------------------------
@@ -349,7 +426,8 @@ accountHolds(
         // Only if auth check is needed, as it needs to do an additional read
         // operation. Note featureSingleAssetVault will affect error codes.
         if (zeroIfUnauthorized == AuthHandling::ZeroIfUnauthorized &&
-            view.rules().enabled(featureSingleAssetVault))
+            (view.rules().enabled(featureSingleAssetVault) ||
+             view.rules().enabled(featureConfidentialTransfer)))
         {
             if (auto const err = requireAuth(view, mptIssue, account, AuthType::StrongAuth);
                 !isTesSuccess(err))
@@ -776,7 +854,8 @@ directSendNoLimitMultiIOU(
         if (senderID == issuer || receiverID == issuer || issuer == noAccount())
         {
             // Direct send: redeeming IOUs and/or sending own IOUs.
-            if (auto const ter = directSendNoFeeIOU(view, senderID, receiverID, amount, false, j))
+            if (auto const ter = directSendNoFeeIOU(view, senderID, receiverID, amount, false, j);
+                !isTesSuccess(ter))
                 return ter;
             actual += amount;
             // Do not add amount to takeFromSender, because directSendNoFeeIOU took

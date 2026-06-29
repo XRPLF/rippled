@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -152,9 +153,11 @@ Permission::getPermissionName(std::uint32_t value) const
         return granular;
 
     // not a granular permission, check if it maps to a transaction type
-    auto const txType = permissionToTxType(value);
-    if (auto const* item = TxFormats::getInstance().findByType(txType); item != nullptr)
-        return item->getName();
+    if (auto const txType = permissionToTxType(value))
+    {
+        if (auto const* item = TxFormats::getInstance().findByType(*txType); item != nullptr)
+            return item->getName();
+    }
 
     return std::nullopt;
 }
@@ -231,7 +234,10 @@ Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
     }
 
     auto const txType = permissionToTxType(permissionValue);
-    auto const txIt = txDelegationMap_.find(txType);
+    if (!txType)
+        return false;
+
+    auto const txIt = txDelegationMap_.find(*txType);
 
     // Tx-level permissions require the transaction type itself to be delegable, and
     // the corresponding amendment enabled.
@@ -245,10 +251,14 @@ Permission::txToPermissionType(TxType const type)
     return static_cast<uint32_t>(type) + 1;
 }
 
-TxType
+std::optional<TxType>
 Permission::permissionToTxType(uint32_t value)
 {
-    XRPL_ASSERT(value > 0, "xrpl::Permission::permissionToTxType : value is greater than 0");
+    // Values outside this range [1, 65536] would silently truncate when cast to
+    // uint16_t, for example, 65537 would become 1, mapping to the Payment transaction.
+    if (value == 0 || value > std::numeric_limits<std::uint16_t>::max() + 1u)
+        return std::nullopt;
+
     return static_cast<TxType>(value - 1);
 }
 
