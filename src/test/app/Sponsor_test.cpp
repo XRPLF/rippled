@@ -3764,10 +3764,10 @@ public:
         };
 
         checkBlocked(ticket::create(alice, 1));
-        checkBlocked(signers(alice, 1, {{bob, 1}}));
         checkBlocked(offer(alice, XRP(100), bob["USD"](100)));
         checkBlocked(did::set(alice));
         checkBlocked(token::mint(alice, 0u));
+        checkBlocked(sponsor::set(alice, 0, 10, XRP(10)));
     }
 
     void

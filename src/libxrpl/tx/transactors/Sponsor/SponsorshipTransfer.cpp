@@ -280,6 +280,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             case ltLOAN:
             case ltCREDENTIAL:
             case ltRIPPLE_STATE:
+            case ltSIGNER_LIST:
             // TBD object types (Check / Escrow / PaymentChannel) — kept
             // sponsorable in v1; revisit when their tx-level support is
             // formalized.

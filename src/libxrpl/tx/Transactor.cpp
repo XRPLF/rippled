@@ -238,6 +238,7 @@ preflight1Sponsor(PreflightContext const& ctx, AccountID const& id)
                 ttPAYCHAN_CREATE,
                 ttPAYCHAN_FUND,
                 ttREGULAR_KEY_SET,
+                ttSIGNER_LIST_SET,
                 ttCLAWBACK,
                 ttSPONSORSHIP_TRANSFER,
             };
