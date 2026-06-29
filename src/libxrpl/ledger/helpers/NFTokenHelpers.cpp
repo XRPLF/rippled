@@ -69,11 +69,12 @@ locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
 
 static SLE::pointer
 getPageForToken(
-    ApplyView& view,
+    ApplyViewContext& ctx,
     AccountID const& owner,
     uint256 const& id,
-    std::function<void(ApplyView&, AccountID const&)> const& createCallback)
+    std::function<void(ApplyViewContext&, AccountID const&)> const& createCallback)
 {
+    auto& view = ctx.view;
     auto const base = keylet::nftpageMin(owner);
     auto const first = keylet::nftpage(base, id);
     auto const last = keylet::nftpageMax(owner);
@@ -91,7 +92,7 @@ getPageForToken(
         cp = std::make_shared<SLE>(last);
         cp->setFieldArray(sfNFTokens, arr);
         view.insert(cp);
-        createCallback(view, owner);
+        createCallback(ctx, owner);
         return cp;
     }
 
@@ -260,16 +261,16 @@ changeTokenURI(
 
 /** Insert the token in the owner's token directory. */
 TER
-insertToken(ApplyView& view, AccountID owner, STObject&& nft)
+insertToken(ApplyViewContext& ctx, AccountID owner, STObject&& nft)
 {
     XRPL_ASSERT(nft.isFieldPresent(sfNFTokenID), "xrpl::nft::insertToken : has NFT token");
 
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
     // the NFT.
-    SLE::pointer const page =
-        getPageForToken(view, owner, nft[sfNFTokenID], [](ApplyView& view, AccountID const& owner) {
-            adjustOwnerCount(view, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
+    SLE::pointer const page = getPageForToken(
+        ctx, owner, nft[sfNFTokenID], [](ApplyViewContext& ctx, AccountID const& owner) {
+            adjustOwnerCount(ctx, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
         });
 
     if (!page)

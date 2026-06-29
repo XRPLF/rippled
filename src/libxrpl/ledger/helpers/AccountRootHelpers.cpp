@@ -215,7 +215,7 @@ adjustOwnerCountValue(
 void
 adjustOwnerCountImpl(
     ApplyView& view,
-    ReserveContext& reserveCtx,
+    ReserveContext const& reserveCtx,
     std::int32_t ownerCountAdj,
     beast::Journal j)
 {
@@ -240,14 +240,14 @@ adjustOwnerCountImpl(
             Throw<std::logic_error>("xrpl::adjustOwnerCount : valid sponsor sle type");
 
         adjustOwnerCountValue(
-            ctx.view,
+            view,
             reserveCtx.accountSle,
             sfSponsoredOwnerCount,
             reserveCtx.accountID,
             ownerCountAdj,
             j);
         adjustOwnerCountValue(
-            ctx.view,
+            view,
             reserveCtx.sponsorSle,
             sfSponsoringOwnerCount,
             *reserveCtx.sponsorID,
@@ -260,7 +260,7 @@ adjustOwnerCountImpl(
             // Remaining owner count moves opposite to ownerCountAdj:
             // +ownerCountAdj => consume reserve (-),
             adjustOwnerCountValue(
-                ctx.view,
+                view,
                 reserveCtx.sponsorshipSle,
                 sfRemainingOwnerCount,
                 *reserveCtx.sponsorID,
@@ -270,20 +270,20 @@ adjustOwnerCountImpl(
         }
     }
     adjustOwnerCountValue(
-        ctx.view, reserveCtx.accountSle, sfOwnerCount, reserveCtx.accountID, ownerCountAdj, j);
+        view, reserveCtx.accountSle, sfOwnerCount, reserveCtx.accountID, ownerCountAdj, j);
 }
 
 void
 adjustOwnerCount(ApplyViewContext& ctx, std::int32_t ownerCountAdj, beast::Journal j)
 {
-    return adjustOwnerCountImpl(ctx.view, ctx.reserveCtx, ownerCountAdj, j);
+    return adjustOwnerCountImpl(ctx.view, ctx.reserveContext, ownerCountAdj, j);
 }
 
 void
 adjustOwnerCountObj(
     ApplyViewContext& ctx,
     SLE::ref objectSle,
-    std::int32_t accountCountAdj,
+    std::int32_t ownerCountAdj,
     beast::Journal j)
 {
     if (!objectSle)
@@ -291,11 +291,10 @@ adjustOwnerCountObj(
     if (objectSle->getType() == ltACCOUNT_ROOT)
         Throw<std::logic_error>("xrpl::adjustOwnerCount : valid object sle type");
 
-    SLE::ref sponsorSle = getLedgerEntryReserveSponsor(ctx.view, objectSle);
     adjustOwnerCountImpl(
         ctx.view,
-        ReserveContext::makeFromObj(ctx.view, objectSle, ctx.reserveCtx.accountSle),
-        amount,
+        ReserveContext::makeFromObject(ctx.view, objectSle, ctx.reserveContext.accountSle),
+        ownerCountAdj,
         j);
 }
 

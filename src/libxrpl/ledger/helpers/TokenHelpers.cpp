@@ -551,7 +551,7 @@ canTransfer(
 // --> bCheckIssuer : normally require issuer to be involved.
 static TER
 directSendNoFeeIOU(
-    ApplyView& view,
+    ApplyViewContext& ctx,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
     STAmount const& saAmount,
@@ -629,7 +629,7 @@ directSendNoFeeIOU(
             // Clear the reserve of the sender, possibly delete the line!
             auto const currentSponsor = getLedgerEntryReserveSponsor(
                 view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
-            adjustOwnerCountObj(view, view.peek(keylet::account(uSenderID)), currentSponsor, -1, j);
+            adjustOwnerCountObj(ctx, currentSponsor, -1, j);
 
             removeSponsorFromLedgerEntry(
                 sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);

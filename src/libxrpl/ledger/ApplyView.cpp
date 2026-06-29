@@ -416,17 +416,20 @@ ApplyView::dirDelete(Keylet const& directory, std::function<void(uint256 const&)
     return true;
 }
 
-static ReserveContext
+ReserveContext
 ReserveContext::makeFromObject(ApplyView& view, SLE::ref objectSle, SLE::pointer ownerSle)
 {
+    auto const accountID = ownerSle->getAccountID(sfAccount);
     SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
     std::optional<AccountID> const sponsorID =
-        sponsorSle ? sponsorSle->getAccountID(sfAccount) : std::nullopt;
-    return
-    {
-        ownerSle->getAccountID(sfAccount), ownerSle, sponsorID, sponsorSle,
-            sponsorID ? view.peek(keylet::sponsorship(*sponsorID, account)) : nullptr,
-    }
+        sponsorSle ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)} : std::nullopt;
+    return {
+        accountID,
+        ownerSle,
+        sponsorID,
+        sponsorSle,
+        sponsorID ? view.peek(keylet::sponsorship(*sponsorID, accountID)) : nullptr,
+    };
 }
 
 }  // namespace xrpl
