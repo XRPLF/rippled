@@ -1,19 +1,14 @@
 #include <xrpl/tx/transactors/system/Batch.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/HashRouter.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
@@ -37,10 +32,6 @@
 #include <vector>
 
 namespace xrpl {
-
-// Set on a batch's tx id once its signer signatures verify, so
-// preflightSigValidated can skip the expensive re-check on later preflights.
-constexpr HashRouterFlags kSfBatchSigGood = HashRouterFlags::PRIVATE7;
 
 /**
  * @brief Calculates the total base fee for a batch transaction.
@@ -171,7 +162,8 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerFees calculation.";
         return XRPAmount{kInitialXrp};
     }
-    if (txnFees + signerFees > maxAmount - batchBase)
+    XRPAmount const innerFees = txnFees + signerFees;
+    if (innerFees > maxAmount - batchBase)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in total fee calculation.";
         return XRPAmount{kInitialXrp};
@@ -179,7 +171,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     // LCOV_EXCL_STOP
 
     // 10 drops per batch signature + sum of inner tx fees + batchBase
-    return signerFees + txnFees + batchBase;
+    return innerFees + batchBase;
 }
 
 std::uint32_t
@@ -485,7 +477,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
                 requiredSigners[numReqSignersMatched] != signerAccount)
             {
                 JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                    << "extra signer provided: " << signerAccount;
+                                    << "missing signer or extra signer provided: " << signerAccount;
                 return temBAD_SIGNER;
             }
             ++numReqSignersMatched;
@@ -502,25 +494,6 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         return temBAD_SIGNER;
     }
 
-    // Check the batch signer signatures (only present when there are signers).
-    if (ctx.tx.isFieldPresent(sfBatchSigners))
-    {
-        // Caches only the cryptographic signature check, not whether each
-        // signer is authorized to sign for its account - that ledger-dependent
-        // check is Batch::checkBatchSign in preclaim and is never cached.
-        auto& router = ctx.registry.get().getHashRouter();
-        if (!any(router.getFlags(parentBatchId) & kSfBatchSigGood))
-        {
-            if (auto const sigResult = ctx.tx.checkBatchSign(ctx.rules); !sigResult)
-            {
-                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                    << "invalid batch txn signature: " << sigResult.error();
-                return temBAD_SIGNATURE;
-            }
-            router.setFlags(parentBatchId, kSfBatchSigGood);
-        }
-    }
-
     return tesSUCCESS;
 }
 
@@ -530,41 +503,21 @@ Batch::checkBatchSign(PreclaimContext const& ctx)
     STArray const& signers{ctx.tx.getFieldArray(sfBatchSigners)};
     for (auto const& signer : signers)
     {
+        // Reuse the standard signer-authorization rules so the batch and
+        // non-batch paths cannot drift. permitUncreatedAccount allows an inner
+        // from an account that an earlier inner creates, which must be
+        // authorized by its own master key.
         auto const idAccount = signer.getAccountID(sfAccount);
-        Blob const& pkSigner = signer.getFieldVL(sfSigningPubKey);
-        if (pkSigner.empty())
-        {
-            if (auto const ret = checkMultiSign(ctx.view, ctx.flags, idAccount, signer, ctx.j);
-                !isTesSuccess(ret))
-                return ret;
-        }
-        else
-        {
-            if (!publicKeyType(makeSlice(pkSigner)))
-                return tefBAD_AUTH;  // LCOV_EXCL_LINE
-
-            auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
-            auto const sleAccount = ctx.view.read(keylet::account(idAccount));
-
-            if (sleAccount)
-            {
-                if (isPseudoAccount(sleAccount))
-                    return tefBAD_AUTH;  // LCOV_EXCL_LINE
-
-                if (auto const ret =
-                        checkSingleSign(ctx.view, idSigner, idAccount, sleAccount, ctx.j);
-                    !isTesSuccess(ret))
-                    return ret;
-            }
-            else
-            {
-                if (idAccount != idSigner)
-                    return tefBAD_AUTH;
-
-                // A batch can include transactions from an un-created account ONLY
-                // when the account master key is the signer
-            }
-        }
+        if (auto const ret = Transactor::checkSign(
+                ctx.view,
+                ctx.flags,
+                ctx.parentBatchId,
+                idAccount,
+                signer,
+                ctx.j,
+                /*permitUncreatedAccount=*/true);
+            !isTesSuccess(ret))
+            return ret;
     }
     return tesSUCCESS;
 }

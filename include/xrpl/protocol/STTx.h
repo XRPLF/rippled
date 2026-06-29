@@ -12,6 +12,7 @@
 
 #include <expected>
 #include <functional>
+#include <optional>
 
 namespace xrpl {
 
@@ -162,7 +163,7 @@ private:
     move(std::size_t n, void* buf) override;
 
     friend class detail::STVar;
-    std::vector<uint256> batchTxnIds_;
+    std::optional<std::vector<uint256>> batchTxnIds_;
 };
 
 bool

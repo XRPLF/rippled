@@ -232,12 +232,10 @@ class Batch_test : public beast::unit_test::Suite
             }
 
             // tfInnerBatchTxn
-            // If the feature is disabled, the transaction fails with
-            // temINVALID_FLAG. If the feature is enabled, the transaction fails
-            // early in checkValidity()
+            // A standalone transaction carrying this flag is never valid, so it
+            // is rejected early in checkValidity() regardless of the amendment.
             {
-                auto const txResult = withBatch ? Ter(telENV_RPC_FAILED) : Ter(temINVALID_FLAG);
-                env(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn), txResult);
+                env(pay(alice, bob, XRP(1)), Txflags(tfInnerBatchTxn), Ter(telENV_RPC_FAILED));
                 env.close();
             }
 
@@ -663,7 +661,7 @@ class Batch_test : public beast::unit_test::Suite
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfTxnSignature.jsonName] =
                 strHex(Slice{sig.data(), sig.size()});
 
-            env(jt.jv, Ter(temBAD_SIGNATURE));
+            env(jt.jv, Ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -2650,37 +2648,20 @@ class Batch_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, bob);
         env.close();
 
-        auto submitAndValidate = [&](std::string caseName,
-                                     Slice const& slice,
-                                     int line,
-                                     std::optional<std::string> expectedEnabled = std::nullopt,
-                                     std::optional<std::string> expectedDisabled = std::nullopt,
-                                     bool expectInvalidFlag = false) {
-            testcase << testName << caseName
-                     << (expectInvalidFlag ? " - Expected to reach tx engine!" : "");
+        // Any transaction carrying tfInnerBatchTxn is rejected in checkValidity()
+        // before it reaches the tx engine, regardless of its signing fields or
+        // whether the amendment is enabled.
+        auto submitAndValidate = [&](std::string caseName, Slice const& slice, int line) {
+            testcase << testName << caseName;
             auto const jrr = env.rpc("submit", strHex(slice))[jss::result];
-            auto const expected = withBatch
-                ? expectedEnabled.value_or(
-                      "fails local checks: Malformed: Invalid inner batch "
-                      "transaction.")
-                : expectedDisabled.value_or("fails local checks: Empty SigningPubKey.");
-            if (expectInvalidFlag)
-            {
-                expect(
-                    jrr[jss::status] == "success" && jrr[jss::engine_result] == "temINVALID_FLAG",
-                    pretty(jrr),
-                    __FILE__,
-                    line);
-            }
-            else
-            {
-                expect(
-                    jrr[jss::status] == "error" && jrr[jss::error] == "invalidTransaction" &&
-                        jrr[jss::error_exception] == expected,
-                    pretty(jrr),
-                    __FILE__,
-                    line);
-            }
+            expect(
+                jrr[jss::status] == "error" && jrr[jss::error] == "invalidTransaction" &&
+                    jrr[jss::error_exception] ==
+                        "fails local checks: Batch inner transactions are never "
+                        "considered validly signed.",
+                pretty(jrr),
+                __FILE__,
+                line);
             env.close();
         };
 
@@ -2709,12 +2690,7 @@ class Batch_test : public beast::unit_test::Suite
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
-            submitAndValidate(
-                "SigningPubKey set",
-                s.slice(),
-                __LINE__,
-                std::nullopt,
-                "fails local checks: Invalid signature.");
+            submitAndValidate("SigningPubKey set", s.slice(), __LINE__);
         }
 
         // Invalid RPC Submission: Signers
@@ -2728,12 +2704,7 @@ class Batch_test : public beast::unit_test::Suite
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
-            submitAndValidate(
-                "Signers set",
-                s.slice(),
-                __LINE__,
-                std::nullopt,
-                "fails local checks: Invalid Signers array size.");
+            submitAndValidate("Signers set", s.slice(), __LINE__);
         }
 
         {
@@ -2744,8 +2715,7 @@ class Batch_test : public beast::unit_test::Suite
             STParsedJSONObject parsed("test", jt.jv);
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
-            submitAndValidate(
-                "Fully signed", s.slice(), __LINE__, std::nullopt, std::nullopt, !withBatch);
+            submitAndValidate("Fully signed", s.slice(), __LINE__);
         }
 
         // Invalid RPC Submission: tfInnerBatchTxn
@@ -2758,12 +2728,7 @@ class Batch_test : public beast::unit_test::Suite
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
-            submitAndValidate(
-                "No signing fields set",
-                s.slice(),
-                __LINE__,
-                "fails local checks: Empty SigningPubKey.",
-                "fails local checks: Empty SigningPubKey.");
+            submitAndValidate("No signing fields set", s.slice(), __LINE__);
         }
 
         // Invalid RPC Submission: tfInnerBatchTxn pseudo-transaction
@@ -2782,12 +2747,7 @@ class Batch_test : public beast::unit_test::Suite
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
-            submitAndValidate(
-                "Pseudo-transaction",
-                s.slice(),
-                __LINE__,
-                "fails local checks: Empty SigningPubKey.",
-                "fails local checks: Empty SigningPubKey.");
+            submitAndValidate("Pseudo-transaction", s.slice(), __LINE__);
         }
     }
 
@@ -5716,7 +5676,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(carol, alice, XRP(50)), carolSeq));
 
             jt2.jv[sfBatchSigners.jsonName] = capturedSigners;
-            env(jt2.jv, Ter(temBAD_SIGNATURE));
+            env(jt2.jv, Ter(telENV_RPC_FAILED));
             env.close();
 
             BEAST_EXPECT(env.seq(carol) == carolSeq);
@@ -5760,7 +5720,7 @@ class Batch_test : public beast::unit_test::Suite
                 batch::Inner(pay(carol, alice, XRP(500)), carolSeq));
 
             jt2.jv[sfBatchSigners.jsonName] = capturedSigners;
-            env(jt2.jv, Ter(temBAD_SIGNATURE));
+            env(jt2.jv, Ter(telENV_RPC_FAILED));
             env.close();
 
             BEAST_EXPECT(env.balance(carol) == preCarol);
@@ -5813,7 +5773,7 @@ class Batch_test : public beast::unit_test::Suite
                 bobSignerEntry[sfBatchSigner.jsonName][sfSigners.jsonName];
 
             jt2.jv[sfBatchSigners.jsonName][0u] = carolSigner;
-            env(jt2.jv, Ter(temBAD_SIGNATURE));
+            env(jt2.jv, Ter(telENV_RPC_FAILED));
             env.close();
         }
     }
@@ -5860,8 +5820,10 @@ class Batch_test : public beast::unit_test::Suite
 
         using namespace test::jtx;
 
-        // Mirrors Batch.cpp's file-local kSfBatchSigGood; keep in sync.
-        constexpr HashRouterFlags kSfBatchSigGood = HashRouterFlags::PRIVATE7;
+        // Mirrors apply.cpp's file-local kSfSiggood (the standard signature-good
+        // cache); batch signer sigs are now verified and cached alongside the
+        // outer signature in checkSign/checkValidity.
+        constexpr HashRouterFlags kSfSiggood = HashRouterFlags::PRIVATE2;
 
         // Valid batch: alice (outer) + an inner from bob, who co-signs.
         auto buildValidBatch = [](Env& env) {
@@ -5885,9 +5847,9 @@ class Batch_test : public beast::unit_test::Suite
             auto jt = buildValidBatch(env);
             auto const txid = jt.stx->getTransactionID();
 
-            BEAST_EXPECT(!any(env.app().getHashRouter().getFlags(txid) & kSfBatchSigGood));
+            BEAST_EXPECT(!any(env.app().getHashRouter().getFlags(txid) & kSfSiggood));
             env(jt, Ter(tesSUCCESS));
-            BEAST_EXPECT(any(env.app().getHashRouter().getFlags(txid) & kSfBatchSigGood));
+            BEAST_EXPECT(any(env.app().getHashRouter().getFlags(txid) & kSfSiggood));
             env.close();
         }
 
@@ -5901,7 +5863,7 @@ class Batch_test : public beast::unit_test::Suite
             auto jt = buildValidBatch(env);
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfTxnSignature.jsonName] =
                 "00";
-            env(jt.jv, Ter(temBAD_SIGNATURE));
+            env(jt.jv, Ter(telENV_RPC_FAILED));
             env.close();
         }
         {
@@ -5914,7 +5876,7 @@ class Batch_test : public beast::unit_test::Suite
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfTxnSignature.jsonName] =
                 "00";
             auto const txid = STTx{parse(jt.jv)}.getTransactionID();
-            env.app().getHashRouter().setFlags(txid, kSfBatchSigGood);
+            env.app().getHashRouter().setFlags(txid, kSfSiggood);
             env(jt.jv, Ter(tesSUCCESS));
             env.close();
         }

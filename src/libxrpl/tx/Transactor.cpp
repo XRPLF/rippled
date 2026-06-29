@@ -244,8 +244,11 @@ Transactor::preflight2(PreflightContext const& ctx)
         return *ret;
     }
 
-    // Skip signature check on batch inner transactions. These flag and
-    // parentBatchId checks duplicate preflight1 as defense in depth.
+    // Skip the signature check on batch inner transactions. preflight1 already
+    // enforces both conditions; re-checking them as defense in depth guarantees
+    // we never return success (and so skip signature validation) for an inner
+    // transaction unless the amendment is enabled and it really sits inside a
+    // batch.
     if (ctx.tx.isFlag(tfInnerBatchTxn))
     {
         if (!ctx.rules.enabled(featureBatchV1_1))
@@ -710,16 +713,19 @@ Transactor::checkSign(
     std::optional<uint256 const> const& parentBatchId,
     AccountID const& idAccount,
     STObject const& sigObject,
-    beast::Journal const j)
+    beast::Journal const j,
+    bool permitUncreatedAccount)
 {
     {
         auto const sle = view.read(keylet::account(idAccount));
 
-        if (view.rules().enabled(featureLendingProtocol) && isPseudoAccount(sle))
+        if ((view.rules().enabled(featureLendingProtocol) ||
+             view.rules().enabled(featureBatchV1_1) || view.rules().enabled(fixCleanup3_3_0)) &&
+            isPseudoAccount(sle))
         {
-            // Pseudo-accounts can't sign transactions. This check is gated on
-            // the Lending Protocol amendment because that's the project it was
-            // added under, and it doesn't justify another amendment
+            // Pseudo-accounts can't sign transactions. This check is gated on a
+            // few different amendments so that it takes effect as soon as any of
+            // them is activated.
             return tefBAD_AUTH;
         }
     }
@@ -764,7 +770,16 @@ Transactor::checkSign(
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const sleAccount = view.read(keylet::account(idAccount));
     if (!sleAccount)
-        return terNO_ACCOUNT;
+    {
+        // An account that does not exist yet can only be authorized by its own
+        // master key, and only where an un-created signer is permitted (a batch
+        // whose earlier inner creates the account). Otherwise it cannot sign.
+        if (!permitUncreatedAccount)
+            return terNO_ACCOUNT;
+        if (idAccount != idSigner)
+            return tefBAD_AUTH;
+        return tesSUCCESS;
+    }
 
     return checkSingleSign(view, idSigner, idAccount, sleAccount, j);
 }

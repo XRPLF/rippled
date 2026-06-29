@@ -281,6 +281,17 @@ STTx::checkSign(Rules const& rules) const
         if (auto const ret = checkSign(rules, counterSig); !ret)
             return std::unexpected("Counterparty: " + ret.error());
     }
+
+    // Verify the batch signer signatures here too, so they are cached with the
+    // rest of signature checking (checkValidity / SF_SIGGOOD) and stay out of
+    // the transaction engine. Gated on a batch (batchTxnIds_ seated) that
+    // actually carries signers; a batch whose inners are all from the outer
+    // account has no sfBatchSigners and needs no signer crypto.
+    if (batchTxnIds_ && isFieldPresent(sfBatchSigners))
+    {
+        if (auto const ret = checkBatchSign(rules); !ret)
+            return ret;
+    }
     return {};
 }
 
@@ -581,12 +592,13 @@ STTx::buildBatchTxnIds()
 
     auto const& raw = getFieldArray(sfRawTransactions);
 
-    if (raw.size() > kMaxBatchTxCount)
-        return;
-
-    batchTxnIds_.reserve(raw.size());
+    // Seated for any batch with raw transactions. The count is validated in
+    // preflight and at the relay boundary, so build every id here; this keeps
+    // the invariant batchTxnIds_->size() == rawTransactions.size().
+    auto& ids = batchTxnIds_.emplace();
+    ids.reserve(raw.size());
     for (STObject const& rb : raw)
-        batchTxnIds_.push_back(rb.getHash(HashPrefix::TransactionId));
+        ids.push_back(rb.getHash(HashPrefix::TransactionId));
 }
 
 std::vector<uint256> const&
@@ -594,11 +606,11 @@ STTx::getBatchTransactionIDs() const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : batch transaction");
     XRPL_ASSERT(
-        !batchTxnIds_.empty(), "STTx::getBatchTransactionIDs : batch transaction IDs not built");
+        batchTxnIds_.has_value(), "STTx::getBatchTransactionIDs : batch transaction IDs built");
     XRPL_ASSERT(
-        batchTxnIds_.size() == getFieldArray(sfRawTransactions).size(),
+        batchTxnIds_->size() == getFieldArray(sfRawTransactions).size(),
         "STTx::getBatchTransactionIDs : batch transaction IDs size mismatch");
-    return batchTxnIds_;
+    return *batchTxnIds_;
 }
 
 //------------------------------------------------------------------------------
@@ -740,10 +752,14 @@ isBatchRawTransactionOkay(STObject const& st, std::string& reason)
     if (!st.isFieldPresent(sfRawTransactions))
         return true;
 
-    // sfRawTransactions only appears on a Batch.
-    XRPL_ASSERT(
-        safeCast<TxType>(st.getFieldU16(sfTransactionType)) == ttBATCH,
-        "xrpl::isBatchRawTransactionOkay : batch transaction");
+    // sfRawTransactions only appears on a Batch. passesLocalChecks runs on
+    // unverified user and peer input, so reject (rather than assert) a non-batch
+    // transaction that carries it.
+    if (safeCast<TxType>(st.getFieldU16(sfTransactionType)) != ttBATCH)
+    {
+        reason = "Only Batch transactions may contain raw transactions.";
+        return false;
+    }
 
     if (st.isFieldPresent(sfBatchSigners) &&
         st.getFieldArray(sfBatchSigners).size() > kMaxBatchSigners)

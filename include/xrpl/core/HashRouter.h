@@ -28,9 +28,7 @@ enum class HashRouterFlags : std::uint16_t {
     PRIVATE4 = 0x0800,
     // Used in EscrowFinish.cpp
     PRIVATE5 = 0x1000,
-    PRIVATE6 = 0x2000,
-    // Used in Batch.cpp
-    PRIVATE7 = 0x4000
+    PRIVATE6 = 0x2000
 };
 
 constexpr HashRouterFlags
