@@ -334,9 +334,9 @@ TrustSet::doApply()
 
     std::uint32_t const uOwnerCount = ownerCount(*sponsorSle ? *sponsorSle : sle, j_);
 
-    bool const isSponsoredAndPreFunded = *sponsorSle && !isSponsorReserveCoSigning(ctx_.tx);
-    // If PreFunded Sponsor, it must be checked whether sufficient
-    // ReserveCount exists.
+    // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
+    // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
+    // prefunded budget), so the reserve check always runs.
     bool const freeTrustLine = uOwnerCount < 2 && !*sponsorSle;
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
@@ -540,7 +540,7 @@ TrustSet::doApply()
             // calling adjustOwnerCount().
             if (auto const ret = checkInsufficientReserve(
                     view(), ctx_.tx, sleLowAccount, preFeeBalance_, *sponsorSle, 1, 0, j_);
-                isSponsoredAndPreFunded && !isTesSuccess(ret))
+                *sponsorSle && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for low account.
@@ -569,7 +569,7 @@ TrustSet::doApply()
             // calling adjustOwnerCount().
             if (auto const ret = checkInsufficientReserve(
                     view(), ctx_.tx, sleHighAccount, preFeeBalance_, *sponsorSle, 1, 0, j_);
-                isSponsoredAndPreFunded && !isTesSuccess(ret))
+                *sponsorSle && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for high account.
