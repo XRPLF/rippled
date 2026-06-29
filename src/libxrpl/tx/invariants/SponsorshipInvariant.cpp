@@ -11,7 +11,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <cstdint>
 #include <memory>
