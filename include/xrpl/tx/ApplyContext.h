@@ -112,11 +112,11 @@ public:
     TER
     checkInvariants(TER const result, XRPAmount const fee);
 
-    ApplyViewContext&
+    ApplyViewContext
     getApplyViewContext()
     {
-        XRPL_ASSERT(view_.has_value() && (&viewCtx_.view == &*view_), "Previous view discarded");
-        return viewCtx_;
+        XRPL_ASSERT(view_.has_value(), "Previous view exists");
+        return {.view = *view_, .tx = tx};
     }
 
 private:
