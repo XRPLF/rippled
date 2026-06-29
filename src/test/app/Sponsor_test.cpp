@@ -404,8 +404,6 @@ public:
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor("sponsor");
-        Account const invalid("invalid");
-
         Account const signer1("signer1");
         Account const signer2("signer2");
 
@@ -682,7 +680,7 @@ public:
         Account const sponsor("sponsor");
 
         {
-            // both pre-funded and co-signed,pre-funded value is used
+            // Both pre-funded and co-signed; the pre-funded value is used.
             Env env{*this, testableAmendments()};
             env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
@@ -710,7 +708,7 @@ public:
 
             sle = env.le(keylet::sponsorship(sponsor, alice));
             BEAST_EXPECT(sle);
-            BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 99);  // not paybacked
+            BEAST_EXPECT(sle->at(sfRemainingOwnerCount) == 99);  // not restored
             BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(99));
         }
 
@@ -799,8 +797,7 @@ public:
             Account const alice("alice");
             Account const bob("bob");
             Account const sponsor1("sponsor1");
-            Account const sponsor2("sponsor2");
-            env.fund(XRP(10000), alice, bob, sponsor1, sponsor2);
+            env.fund(XRP(10000), alice, bob, sponsor1);
             env.close();
 
             env(sponsor::transfer(
@@ -1473,10 +1470,8 @@ public:
             env.close();
 
             {
-                // Fee should be checked before permission check,
-                // otherwise tecNO_SPONSOR_PERMISSION returned when permission
-                // check fails could cause context reset to pay Fee because it
-                // is tec error
+                // Fee should be checked before sponsor permission, otherwise a tec
+                // result from a later check could cause context reset to pay Fee.
                 auto aliceBalance = env.balance(alice);
                 auto bobBalance = env.balance(bob);
                 auto sponsorBalance = env.balance(sponsor);
@@ -1553,8 +1548,6 @@ public:
             {
                 // below reserve
                 adjustAccountXRPBalance(env, sponsor, env.current()->fees().reserve);
-                env.close();
-                auto const feeAmt = XRP(4);
 
                 env(noop(alice),
                     Fee(env.current()->fees().base),
@@ -1588,10 +1581,8 @@ public:
             };
 
             {
-                // Fee should be checked before permission check,
-                // otherwise tecNO_SPONSOR_PERMISSION returned when permission
-                // check fails could cause context reset to pay Fee because it
-                // is tec error
+                // Fee should be checked before sponsor permission, otherwise a tec
+                // result from a later check could cause context reset to pay Fee.
                 auto aliceBalance = env.balance(alice);
                 auto bobBalance = env.balance(bob);
                 auto sponsorBalance = env.balance(sponsor);
@@ -2227,7 +2218,7 @@ public:
             env.fund(XRP(10000), alice, bob, sponsor, sponsor2);
             env.close();
 
-            // CheckCreate -> Check = 0Cancel
+            // CheckCreate -> Check -> CheckCancel
 
             uint32_t seq = 0;
             testEachSponsorship(
@@ -2293,7 +2284,7 @@ public:
             env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
-            // CheckCreate -> = 0 CheckCash
+            // CheckCreate -> CheckCash
             uint32_t seq2 = 0;
             testEachSponsorship(
                 env,
@@ -2334,7 +2325,7 @@ public:
             env(pay(gw, alice, usd(100)));
             env.close();
 
-            // CheckCreat = 0e -> CheckCash
+            // CheckCreate -> CheckCash
             uint32_t seq2 = 0;
             testEachSponsorship(
                 env,
@@ -2476,8 +2467,7 @@ public:
                 env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
                 env.close();
                 env(sponsor::transfer(alice, tfSponsorshipReassign, keylet.key),
-                    sponsor::As(sponsor2, spfSponsorReserve),
-                    Sig(sfSponsorSignature, sponsor2));
+                    sponsor::As(sponsor2, spfSponsorReserve));
                 env.close();
             }
 
@@ -2485,6 +2475,13 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            if (!cosigning)
+            {
+                auto const sponsorshipSle = env.le(keylet::sponsorship(sponsor2, alice));
+                BEAST_EXPECT(sponsorshipSle);
+                if (sponsorshipSle)
+                    BEAST_EXPECT(sponsorshipSle->getFieldU32(sfRemainingOwnerCount) == 0);
+            }
 
             // DepositPreauthDelete
             env(deposit::unauth(alice, sponsor));
@@ -2828,14 +2825,11 @@ public:
             env(jv);
             env.close();
 
-            // for free mptoken checks
-            // adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
+            // Create tickets so the sponsor is past free-tier reserve behavior.
             std::uint32_t const ticketSeq{env.seq(sponsor) + 1};
             env(ticket::create(sponsor, 2));
             env.close();
 
-            // adjustAccountXRPBalance(env, sponsor, reserve(env, 3) -
-            // drops(1));
             jv = {};
             jv[sfTransactionType] = jss::MPTokenAuthorize;
             jv[sfAccount] = bob.human();
@@ -3649,7 +3643,7 @@ public:
                 jt.jv[sfSponsorSignature.jsonName][sfSigningPubKey.jsonName] = "";
 
                 auto const seq = env.seq(alice);
-                // should fail BatchSigners does have signer for SponsorSignature
+                // should fail because BatchSigners does not have signer for SponsorSignature
                 env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
                     batch::Inner(jt.jv, seq + 1),
                     batch::Inner(ticket::create(alice, 1), seq + 2),
