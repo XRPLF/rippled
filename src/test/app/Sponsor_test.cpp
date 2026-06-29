@@ -1484,7 +1484,7 @@ public:
             BEAST_EXPECT(env.le(keylet::unchecked(ticketID)));
             checkBlocked(ticketID);
 
-            env(did::set(alice));
+            env(did::setValid(alice));
             env.close();
             auto const didKeylet = keylet::did(alice.id());
             BEAST_EXPECT(env.le(didKeylet));
@@ -3802,7 +3802,7 @@ public:
 
         checkBlocked(ticket::create(alice, 1));
         checkBlocked(offer(alice, XRP(100), bob["USD"](100)));
-        checkBlocked(did::set(alice));
+        checkBlocked(did::setValid(alice));
         checkBlocked(token::mint(alice, 0u));
         checkBlocked(sponsor::set(alice, 0, 10, XRP(10)));
     }
