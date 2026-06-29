@@ -104,7 +104,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
 std::expected<MPTID, TER>
 MPTokenIssuanceCreate::create(
-    ApplyViewContext& ctx,
+    ApplyViewContext ctx,
     beast::Journal journal,
     MPTCreateArgs const& args)
 {

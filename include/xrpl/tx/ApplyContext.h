@@ -112,11 +112,11 @@ public:
     TER
     checkInvariants(TER const result, XRPAmount const fee);
 
-    ApplyViewContext&
+    ApplyViewContext
     getApplyViewContext()
     {
-        XRPL_ASSERT(view_.has_value() && (&viewCtx_.view == &*view_), "Previous view discarded");
-        return viewCtx_;
+        XRPL_ASSERT(view_.has_value(), "Previous view exists");
+        return {.view = *view_, .tx = tx};
     }
 
 private:
@@ -133,11 +133,6 @@ private:
 
     // The ID of the batch transaction we are executing under, if seated.
     std::optional<uint256 const> parentBatchId_;
-
-    // A temporary helper object that passes around ApplyContext info
-    // Only necessary (for now) because the ApplyContext can't be passed into helpers due to
-    // levelization
-    ApplyViewContext viewCtx_;
 };
 
 }  // namespace xrpl

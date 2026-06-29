@@ -369,14 +369,14 @@ checkInsufficientReserve(
 {
     if (sponsorSle)
     {
-        auto const isCoSigning = isSponsorReserveCoSigning(tx);
-
         auto const sle = view.read(
             keylet::sponsorship(
                 sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
-        // prefunded sponsor should have a sponsorship entry
-        if (!isCoSigning && !sle)
+        // A reserve-sponsored tx must carry a sponsor signature
+        // (cosigning path) and/or have a pre-existing sponsorship SLE
+        // (prefunded path). Absence of both is an internal invariant break.
+        if (isReserveSponsored(tx) && !sle && !tx.isFieldPresent(sfSponsorSignature))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (sle)

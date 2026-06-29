@@ -125,7 +125,7 @@ canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyViewContext& ctx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
@@ -148,7 +148,7 @@ addEmptyHolding(
 
 [[nodiscard]] TER
 authorizeMPToken(
-    ApplyViewContext& ctx,
+    ApplyViewContext ctx,
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
@@ -193,17 +193,16 @@ authorizeMPToken(
         //      - create the MPToken object for the holder
 
         auto const isSponsored = ctx.reserveContext.isSponsored();
-        auto const isSponsoredAndPreFunded = isSponsored && !isSponsorReserveCoSigning(ctx.tx);
 
         // The reserve that is required to create the MPToken. Note
         // that although the reserve increases with every item
         // an account owns, in the case of MPTokens we only
         // *enforce* a reserve if the user owns more than two
         // items. This is similar to the reserve requirements of trust lines.
-        // If PreFunded Sponsor, it must be checked whether sufficient
-        // ReserveCount exists.
-        if (ownerCount(view, isSponsored ? ctx.reserveContext.sponsorSle : sleAcct, journal) >= 2 ||
-            isSponsoredAndPreFunded)
+        // The "free-tier" shortcut (ownerCount < 2) does not apply once a sponsor is on
+        // the tx — the sponsor must always cover the reserve (via balance or prefunded
+        // budget), so this check always runs for sponsored transactions.
+        if (isSponsored || ownerCount(view, sleAcct, journal) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
                     view,
@@ -285,7 +284,7 @@ authorizeMPToken(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyViewContext& ctx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
     beast::Journal journal)
@@ -417,7 +416,7 @@ requireAuth(
 
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
-    ApplyViewContext& ctx,
+    ApplyViewContext ctx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization

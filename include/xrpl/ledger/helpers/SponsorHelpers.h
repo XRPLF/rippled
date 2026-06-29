@@ -24,14 +24,6 @@ isReserveSponsored(STTx const& tx)
     return (tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve) != 0u;
 }
 
-inline bool
-isSponsorReserveCoSigning(STTx const& tx)
-{
-    if (!tx.isFieldPresent(sfSponsorSignature))
-        return false;
-    return isReserveSponsored(tx);
-}
-
 inline std::optional<AccountID>
 getTxReserveSponsorAccountID(STTx const& tx)
 {
@@ -43,7 +35,7 @@ getTxReserveSponsorAccountID(STTx const& tx)
 }
 
 inline std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyViewContext& ctx)
+getTxReserveSponsor(ApplyViewContext ctx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(ctx.tx);
     if (sponsorID)
