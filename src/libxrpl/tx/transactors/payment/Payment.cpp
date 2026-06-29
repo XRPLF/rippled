@@ -283,16 +283,59 @@ Payment::checkGranularSemantics(
     if (tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset)
         return terNO_DELEGATE_PERMISSION;
 
-    // PaymentMint and PaymentBurn apply to both IOU and MPT direct payments.
-    if (heldGranularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfAccount])
-        return tesSUCCESS;
+    if (isXRP(amountAsset))
+        return terNO_DELEGATE_PERMISSION;
 
-    if (heldGranularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfDestination])
-        return tesSUCCESS;
+    return amountAsset.visit(
+        [&](MPTIssue const& mptIssue) -> NotTEC {
+            // For MPT payments, the MPTokenIssuanceID encodes the issuer unambiguously,
+            // unlike IOU, there is no endpoint aliasing where either side of the
+            // trustline can appear as the issuer.
+            if (heldGranularPermissions.contains(PaymentMint) &&
+                mptIssue.getIssuer() == tx[sfAccount])
+                return tesSUCCESS;
+            if (heldGranularPermissions.contains(PaymentBurn) &&
+                mptIssue.getIssuer() == tx[sfDestination])
+                return tesSUCCESS;
+            return terNO_DELEGATE_PERMISSION;
+        },
+        [&](Issue const& issue) -> NotTEC {
+            // For IOU payments, either endpoint may be encoded as the issuer in
+            // sfAmount. PaySteps normalizes those endpoint aliases, so sfAmount.issuer
+            // alone does not reliably identify whether the transaction issues or redeems
+            // IOUs. We determine PaymentMint vs PaymentBurn from the trustline balance
+            // direction instead.
+            auto const account = tx[sfAccount];
+            auto const destination = tx[sfDestination];
 
-    return terNO_DELEGATE_PERMISSION;
+            // Reject if neither endpoint is the issuer.
+            if (issue.getIssuer() != account && issue.getIssuer() != destination)
+                return terNO_DELEGATE_PERMISSION;
+
+            auto const sle = view.read(keylet::trustLine(account, destination, issue.currency));
+            if (!sle)
+                return terNO_DELEGATE_PERMISSION;
+
+            bool const accountIsLow = (account < destination);
+            auto const destLimit = sle->getFieldAmount(accountIsLow ? sfHighLimit : sfLowLimit);
+            auto const rawBalance = sle->getFieldAmount(sfBalance);
+            bool const accountIsHolder =
+                accountIsLow ? rawBalance > beast::kZero : rawBalance < beast::kZero;
+
+            // PaymentMint requires the destination to be the holder and the account to be the
+            // issuer. destLimit > 0: destination is willing to hold account's IOUs (account is the
+            // issuer). !accountIsHolder: DirectStepI will issue, not redeem.
+            if (heldGranularPermissions.contains(PaymentMint) && destLimit > beast::kZero &&
+                !accountIsHolder)
+                return tesSUCCESS;
+
+            // PaymentBurn requires the source account to be the holder and the destination to be
+            // the issuer. accountIsHolder: DirectStepI will redeem, not issue.
+            if (heldGranularPermissions.contains(PaymentBurn) && accountIsHolder)
+                return tesSUCCESS;
+
+            return terNO_DELEGATE_PERMISSION;
+        });
 }
 
 TER

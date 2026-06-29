@@ -133,7 +133,6 @@ getTypeName(FieldType typeID)
         case FieldType::TwoAccountArrayField:
             return "length-2 array of Accounts";
         case FieldType::UInt32Field:
-            return "number";
         case FieldType::UInt64Field:
             return "number";
         default:
@@ -308,7 +307,6 @@ class LedgerEntry_test : public beast::unit_test::Suite
             case FieldType::TwoAccountArrayField:
                 return kTwoAccountArray;
             case FieldType::UInt32Field:
-                return 1;
             case FieldType::UInt64Field:
                 return 1;
             default:

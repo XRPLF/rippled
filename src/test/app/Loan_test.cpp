@@ -92,23 +92,6 @@ protected:
     // even if they are set to unsupported.
 
     FeatureBitset const all_{jtx::testableAmendments()};
-
-    // All 2^N permutations of `all_` with each subset of the given features
-    // excluded. The first entry is always `all_` itself (empty exclusion);
-    // the last excludes every feature in the list.
-    std::vector<FeatureBitset>
-    amendmentCombinations(std::initializer_list<uint256> features) const
-    {
-        std::vector<FeatureBitset> result{all_};
-        for (auto const& f : features)
-        {
-            auto const n = result.size();
-            for (std::size_t i = 0; i < n; ++i)
-                result.push_back(result[i] - f);
-        }
-        return result;
-    }
-
     std::string const iouCurrency_{"IOU"};
 
     void
@@ -8624,8 +8607,8 @@ public:
     run() override
     {
         runAmendmentIndependent();
-        for (auto const& features :
-             amendmentCombinations({fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}))
+        for (auto const& features : jtx::amendmentCombinations(
+                 {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
     }
 };
