@@ -125,7 +125,8 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                             json::Value update = request->doUpdate(cache, false, continueCallback);
                             request->updateComplete();
                             update[jss::type] = "path_find";
-                            if ((ipSub = getSubscriber(request)))
+                            ipSub = getSubscriber(request);
+                            if (ipSub)
                             {
                                 ipSub->send(update, false);
                                 remove = false;

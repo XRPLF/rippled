@@ -7896,7 +7896,10 @@ class Vault_test : public beast::unit_test::Suite
 
                 // Depositor deep freeze → self-withdraw blocked
                 env(trust(issuer, asset(0), owner, tfSetFreeze | tfSetDeepFreeze));
+                // TODO: branches are identical - confirm the intended pre/post-fix330
+                // expectations and replace with the correct values (one branch may be wrong).
                 env(vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(1)}),
+                    // NOLINTNEXTLINE(bugprone-branch-clone)
                     Ter(fix330Enabled ? TER(tecFROZEN) : TER(tecFROZEN)));
                 env(trust(issuer, asset(0), owner, tfClearFreeze | tfClearDeepFreeze));
 
