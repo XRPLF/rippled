@@ -63,7 +63,7 @@ baseAccountReserve(ReadView const& view, std::int32_t ownerCount);
 
 [[nodiscard]] TER
 checkInsufficientReserve(
-    ReadView const& view,
+    ApplyView const& view,
     STTx const& tx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
