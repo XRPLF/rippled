@@ -322,7 +322,8 @@ SignerListSet::replaceSignerList()
     // We check the reserve against the starting balance because we want to
     // allow dipping into the reserve to pay fees.  This behavior is consistent
     // with TicketCreate.
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const sponsorSle = getTxReserveSponsor(applyViewContext);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(

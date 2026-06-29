@@ -197,8 +197,9 @@ TER
 MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
+    auto applyViewContext = ctx_.getApplyViewContext();
     auto const result = create(
-        ctx_.getApplyViewContext(),
+        applyViewContext,
         j_,
         {
             .priorBalance = preFeeBalance_,

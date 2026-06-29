@@ -90,7 +90,8 @@ PaymentChannelFund::doApply()
     {
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
-        auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+        auto applyViewContext = ctx_.getApplyViewContext();
+        auto const sponsorSle = getTxReserveSponsor(applyViewContext);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret =
