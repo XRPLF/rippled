@@ -205,7 +205,7 @@ authorizeMPToken(
         // The "free-tier" shortcut (ownerCount < 2) does not apply once a sponsor is on
         // the tx — the sponsor must always cover the reserve (via balance or prefunded
         // budget), so this check always runs for sponsored transactions.
-        if (ownerCount(view, *sponsorSle ? *sponsorSle : sleAcct, journal) >= 2 || *sponsorSle)
+        if (*sponsorSle || ownerCount(view, sleAcct, journal) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
                     view, tx, sleAcct, priorBalance, *sponsorSle, 1, 0, journal);
