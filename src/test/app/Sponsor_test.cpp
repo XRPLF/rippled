@@ -771,7 +771,7 @@ public:
         mptt.create();
 
         // Free-tier trust line cosigned by an undercapitalized sponsor must
-        // fail — the holder's free-first-item shortcut does not let the
+        // fail — the holder's free-first-two-items shortcut does not let the
         // sponsor skip the reserve check.
         env(trust(alice, issuer["USD"](100)),
             sponsor::As(sponsor, spfSponsorReserve),
