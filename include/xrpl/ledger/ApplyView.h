@@ -398,7 +398,7 @@ public:
     emptyDirDelete(Keylet const& directory);
 };
 
-struct ReserveTxContext
+struct ReserveContext
 {
     AccountID const accountID;
     SLE::pointer accountSle;
@@ -411,7 +411,7 @@ struct ReserveTxContext
     {
         XRPL_ASSERT(
             sponsorID.has_value() == !!sponsorSle,
-            "ReserveTxContext::isSponsored : sponsor existence matches sponsorSle existence");
+            "ReserveContext::isSponsored : sponsor existence matches sponsorSle existence");
         return sponsorID.has_value();
     }
 
@@ -421,8 +421,8 @@ struct ReserveTxContext
         return !!sponsorshipSle;
     }
 
-    static ReserveTxContext
-    make(ApplyView& view, STTx const& tx)
+    static ReserveContext
+    makeFromTx(ApplyView& view, STTx const& tx)
     {
         auto const account = tx[sfAccount];
         auto const sponsor = tx[~sfSponsor];
@@ -435,13 +435,16 @@ struct ReserveTxContext
             sponsor ? view.peek(keylet::sponsorship(*sponsor, account)) : nullptr,
         };
     }
+
+    static ReserveContext
+    makeFromObject(ApplyView& view, SLE::ref objectSle, SLE::pointer ownerSle);
 };
 
 struct ApplyViewContext
 {
     ApplyView& view;
     STTx const& tx;
-    ReserveTxContext reserveContext;
+    ReserveContext reserveContext;
 };
 
 namespace directory {

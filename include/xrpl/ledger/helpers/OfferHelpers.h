@@ -21,6 +21,6 @@ namespace xrpl {
 */
 // [[nodiscard]] // nodiscard commented out so Flow, BookTip and others compile.
 TER
-offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j);
+offerDelete(ApplyViewContext& ctx, SLE::ref sle, beast::Journal j);
 
 }  // namespace xrpl

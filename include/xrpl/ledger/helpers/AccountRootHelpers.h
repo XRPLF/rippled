@@ -88,23 +88,10 @@ adjustOwnerCount(
 
 void
 adjustOwnerCountObj(
-    ApplyView& view,
-    SLE::ref accountSle,
+    ApplyViewContext& ctx,
     SLE::ref objectSle,
     std::int32_t amount,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
-
-inline void
-adjustOwnerCountObj(
-    ApplyView& view,
-    AccountID const& account,
-    SLE::ref objectSle,
-    std::int32_t amount,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-{
-    SLE::ref accountSle = view.peek(keylet::account(account));
-    adjustOwnerCountObj(view, accountSle, objectSle, amount, j);
-}
 
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
  * the fee as fractions of 1 billion. For example, 1% transfer rate

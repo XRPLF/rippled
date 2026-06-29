@@ -226,7 +226,7 @@ transferRate(ReadView const& view, AccountID const& issuer)
 }
 
 static void
-adjustOwnerCountHlp(
+adjustOwnerCountValue(
     ApplyView& view,
     SLE::ref sle,
     SF_UINT32 const& sfield,
@@ -244,14 +244,18 @@ adjustOwnerCountHlp(
 }
 
 void
-adjustOwnerCount(ApplyViewContext& ctx, std::int32_t adjustment, beast::Journal j)
+adjustOwnerCountImpl(
+    ApplyView& view,
+    ReserveContext& reserveCtx,
+    std::int32_t adjustment,
+    beast::Journal j)
 {
-    auto& accountSle = ctx.reserveContext.accountSle;
+    auto& accountSle = reserveCtx.accountSle;
     if (!accountSle)
         Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid account sle");
 
-    auto const sleType = ctx.reserveContext.accountSle->getType();
-    bool const validType = ctx.reserveContext.sponsorSle
+    auto const sleType = reserveCtx.accountSle->getType();
+    bool const validType = reserveCtx.sponsorSle
         ? sleType == ltACCOUNT_ROOT
         : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
     if (!validType)
@@ -261,54 +265,54 @@ adjustOwnerCount(ApplyViewContext& ctx, std::int32_t adjustment, beast::Journal 
     if (adjustment == 0)
         return;
 
-    if (ctx.reserveContext.isSponsored())
+    if (reserveCtx.isSponsored())
     {
-        if (ctx.reserveContext.sponsorSle->getType() != ltACCOUNT_ROOT)
+        if (reserveCtx.sponsorSle->getType() != ltACCOUNT_ROOT)
             Throw<std::logic_error>("xrpl::adjustOwnerCount : valid sponsor sle type");
 
-        adjustOwnerCountHlp(
+        adjustOwnerCountValue(
             ctx.view,
-            ctx.reserveContext.accountSle,
+            reserveCtx.accountSle,
             sfSponsoredOwnerCount,
-            ctx.reserveContext.accountID,
+            reserveCtx.accountID,
             adjustment,
             j);
-        adjustOwnerCountHlp(
+        adjustOwnerCountValue(
             ctx.view,
-            ctx.reserveContext.sponsorSle,
+            reserveCtx.sponsorSle,
             sfSponsoringOwnerCount,
-            *ctx.reserveContext.sponsorID,
+            *reserveCtx.sponsorID,
             adjustment,
             j);
 
-        if (ctx.reserveContext.sponsorshipSle && adjustment > 0)
+        if (reserveCtx.sponsorshipSle && adjustment > 0)
         {
             // update the pre-funded RemainingOwnerCount on Sponsorship ledger object
             // Remaining owner count moves opposite to adjustment:
             // +adjustment => consume reserve (-),
-            adjustOwnerCountHlp(
+            adjustOwnerCountValue(
                 ctx.view,
-                ctx.reserveContext.sponsorshipSle,
+                reserveCtx.sponsorshipSle,
                 sfRemainingOwnerCount,
-                *ctx.reserveContext.sponsorID,
+                *reserveCtx.sponsorID,
                 -adjustment,
                 j,
                 false);
         }
     }
-    adjustOwnerCountHlp(
-        ctx.view,
-        ctx.reserveContext.accountSle,
-        sfOwnerCount,
-        ctx.reserveContext.accountID,
-        adjustment,
-        j);
+    adjustOwnerCountValue(
+        ctx.view, reserveCtx.accountSle, sfOwnerCount, reserveCtx.accountID, adjustment, j);
+}
+
+void
+adjustOwnerCount(ApplyViewContext& ctx, std::int32_t amount, beast::Journal j)
+{
+    return adjustOwnerCountImpl(ctx.view, ctx.reserveCtx, amount, j);
 }
 
 void
 adjustOwnerCountObj(
-    ApplyViewContext& view,
-    SLE::ref accountSle,
+    ApplyViewContext& ctx,
     SLE::ref objectSle,
     std::int32_t amount,
     beast::Journal j)
@@ -318,8 +322,12 @@ adjustOwnerCountObj(
     if (objectSle->getType() == ltACCOUNT_ROOT)
         Throw<std::logic_error>("xrpl::adjustOwnerCount : valid object sle type");
 
-    SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
-    adjustOwnerCount(view, accountSle, sponsorSle, amount, j);
+    SLE::ref sponsorSle = getLedgerEntryReserveSponsor(ctx.view, objectSle);
+    adjustOwnerCountImpl(
+        ctx.view,
+        ReserveContext::makeFromObj(ctx.view, objectSle, ctx.reserveCtx.accountSle),
+        amount,
+        j);
 }
 
 XRPAmount

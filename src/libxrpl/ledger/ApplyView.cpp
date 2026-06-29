@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -413,6 +414,19 @@ ApplyView::dirDelete(Keylet const& directory, std::function<void(uint256 const&)
     } while (pi);
 
     return true;
+}
+
+static ReserveContext
+ReserveContext::makeFromObject(ApplyView& view, SLE::ref objectSle, SLE::pointer ownerSle)
+{
+    SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
+    std::optional<AccountID> const sponsorID =
+        sponsorSle ? sponsorSle->getAccountID(sfAccount) : std::nullopt;
+    return
+    {
+        ownerSle->getAccountID(sfAccount), ownerSle, sponsorID, sponsorSle,
+            sponsorID ? view.peek(keylet::sponsorship(*sponsorID, account)) : nullptr,
+    }
 }
 
 }  // namespace xrpl

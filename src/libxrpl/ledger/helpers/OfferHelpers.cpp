@@ -15,7 +15,7 @@
 namespace xrpl {
 
 TER
-offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
+offerDelete(ApplyViewContext& ctx, SLE::ref sle, beast::Journal j)
 {
     if (!sle)
         return tesSUCCESS;
@@ -55,7 +55,7 @@ offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
         }
     }
 
-    adjustOwnerCountObj(view, owner, sle, -1, j);
+    adjustOwnerCountObj(ctx, sle, -1, j);
 
     view.erase(sle);
 
