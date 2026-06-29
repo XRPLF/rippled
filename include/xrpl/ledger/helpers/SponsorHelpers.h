@@ -24,14 +24,6 @@ isReserveSponsored(STTx const& tx)
     return (tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve) != 0u;
 }
 
-inline bool
-isSponsorReserveCoSigning(STTx const& tx)
-{
-    if (!tx.isFieldPresent(sfSponsorSignature))
-        return false;
-    return isReserveSponsored(tx);
-}
-
 inline std::optional<AccountID>
 getTxReserveSponsorAccountID(STTx const& tx)
 {
