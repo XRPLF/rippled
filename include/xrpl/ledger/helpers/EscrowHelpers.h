@@ -17,7 +17,7 @@ namespace xrpl {
 template <ValidIssueType T>
 TER
 escrowUnlockApplyHelper(
-    ApplyViewContext ctx,
+    ApplyViewContext& ctx,
     Rate lockedRate,
     SLE::ref sleDest,
     STAmount const& xrpBalance,
@@ -31,7 +31,7 @@ escrowUnlockApplyHelper(
 template <>
 inline TER
 escrowUnlockApplyHelper<Issue>(
-    ApplyViewContext ctx,
+    ApplyViewContext& ctx,
     Rate lockedRate,
     SLE::ref sleDest,
     STAmount const& xrpBalance,
@@ -168,7 +168,7 @@ escrowUnlockApplyHelper<Issue>(
 template <>
 inline TER
 escrowUnlockApplyHelper<MPTIssue>(
-    ApplyViewContext ctx,
+    ApplyViewContext& ctx,
     Rate lockedRate,
     SLE::ref sleDest,
     STAmount const& xrpBalance,

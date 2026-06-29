@@ -195,7 +195,8 @@ CheckCreate::doApply()
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const sponsorSle = getTxReserveSponsor(applyViewContext);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(

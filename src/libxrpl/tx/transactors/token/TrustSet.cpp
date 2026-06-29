@@ -328,11 +328,12 @@ TrustSet::doApply()
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
 
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const sponsorSle = getTxReserveSponsor(applyViewContext);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 
-    std::uint32_t const uOwnerCount = ownerCount(view(), *sponsorSle ? *sponsorSle : sle, j_);
+    std::uint32_t const uOwnerCount = ownerCount(*sponsorSle ? *sponsorSle : sle, j_);
 
     // The "free-tier" shortcut (ownerCount < 2) only applies when there is no sponsor.
     // With any sponsor on the tx, the sponsor must cover the reserve (via balance or
