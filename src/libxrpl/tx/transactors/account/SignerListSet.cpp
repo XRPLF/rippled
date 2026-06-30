@@ -356,7 +356,8 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, sponsorSle, kAddedOwnerCount, viewJ);
+    adjustOwnerCount(
+        view(), ReserveContext::makeFromAccount(view(), sle, sponsorSle), kAddedOwnerCount, viewJ);
     addSponsorToLedgerEntry(signerList, sponsorSle);
     return tesSUCCESS;
 }

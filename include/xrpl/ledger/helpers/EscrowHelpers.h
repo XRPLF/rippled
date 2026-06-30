@@ -202,7 +202,8 @@ escrowUnlockApplyHelper<MPTIssue>(
         }
 
         // update owner count.
-        adjustOwnerCount(view, sleDest, sponsorSle, 1, journal);
+        adjustOwnerCount(
+            view, ReserveContext::makeFromAccount(view, sleDest, sponsorSle), 1, journal);
         auto mptSle = view.peek(mptKeylet);
         addSponsorToLedgerEntry(mptSle, sponsorSle);
     }

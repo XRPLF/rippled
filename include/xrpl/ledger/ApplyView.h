@@ -437,6 +437,9 @@ struct ReserveContext
     }
 
     static ReserveContext
+    makeFromAccount(ApplyView& view, SLE::pointer accountSle, SLE::pointer sponsorSle);
+
+    static ReserveContext
     makeFromObject(ApplyView& view, SLE::ref objectSle, SLE::pointer ownerSle);
 };
 

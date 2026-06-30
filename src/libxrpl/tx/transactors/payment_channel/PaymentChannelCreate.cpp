@@ -204,7 +204,11 @@ PaymentChannelCreate::doApply()
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     auto const applyViewContext = ctx_.getApplyViewContext();
     auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
-    adjustOwnerCount(ctx_.view(), sle, sponsorSle, 1, ctx_.journal);
+    adjustOwnerCount(
+        ctx_.view(),
+        ReserveContext::makeFromAccount(ctx_.view(), sle, sponsorSle),
+        1,
+        ctx_.journal);
     addSponsorToLedgerEntry(slep, sponsorSle);
     ctx_.view().update(sle);
 

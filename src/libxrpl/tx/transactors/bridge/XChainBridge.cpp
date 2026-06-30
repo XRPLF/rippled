@@ -728,7 +728,8 @@ finalizeClaimHelper(
             // Remove the claim id from the ledger
             outerSb.erase(sleClaimID);
 
-            adjustOwnerCount(outerSb, sleOwner, {}, -1, j);
+            adjustOwnerCount(
+                outerSb, ReserveContext::makeFromAccount(outerSb, sleOwner, nullptr), -1, j);
         }
     }
 
@@ -1137,7 +1138,7 @@ applyCreateAccountAttestations(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
-        adjustOwnerCount(psb, sleDoor, {}, 1, j);
+        adjustOwnerCount(psb, ReserveContext::makeFromAccount(psb, sleDoor, nullptr), 1, j);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
     }
@@ -1480,7 +1481,11 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
+    adjustOwnerCount(
+        ctx_.view(),
+        ReserveContext::makeFromAccount(ctx_.view(), sleAcct, nullptr),
+        1,
+        ctx_.journal);
 
     ctx_.view().insert(sleBridge);
     ctx_.view().update(sleAcct);
@@ -2041,7 +2046,11 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, {}, 1, ctx_.journal);
+    adjustOwnerCount(
+        ctx_.view(),
+        ReserveContext::makeFromAccount(ctx_.view(), sleAcct, nullptr),
+        1,
+        ctx_.journal);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);

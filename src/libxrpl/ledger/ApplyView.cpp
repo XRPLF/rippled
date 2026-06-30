@@ -417,6 +417,24 @@ ApplyView::dirDelete(Keylet const& directory, std::function<void(uint256 const&)
 }
 
 ReserveContext
+ReserveContext::makeFromAccount(ApplyView& view, SLE::pointer accountSle, SLE::pointer sponsorSle)
+{
+    if (!accountSle)
+        Throw<std::runtime_error>("ReserveContext::makeFromAccount : valid account sle");
+
+    auto const accountID = accountSle->getAccountID(sfAccount);
+    std::optional<AccountID> const sponsorID =
+        sponsorSle ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)} : std::nullopt;
+    return {
+        accountID,
+        accountSle,
+        sponsorID,
+        sponsorSle,
+        sponsorID ? view.peek(keylet::sponsorship(*sponsorID, accountID)) : nullptr,
+    };
+}
+
+ReserveContext
 ReserveContext::makeFromObject(ApplyView& view, SLE::ref objectSle, SLE::pointer ownerSle)
 {
     auto const accountID = ownerSle->getAccountID(sfAccount);

@@ -542,7 +542,11 @@ TrustSet::doApply()
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, sponsorSle, 1, viewJ);
+            adjustOwnerCount(
+                view(),
+                ReserveContext::makeFromAccount(view(), sleLowAccount, sponsorSle),
+                1,
+                viewJ);
             uFlagsOut |= lsfLowReserve;
 
             addSponsorToLedgerEntry(sleRippleState, sponsorSle, sfLowSponsor);
@@ -554,7 +558,11 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, currentLowSponsor, -1, viewJ);
+            adjustOwnerCount(
+                view(),
+                ReserveContext::makeFromAccount(view(), sleLowAccount, currentLowSponsor),
+                -1,
+                viewJ);
             uFlagsOut &= ~lsfLowReserve;
 
             removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
@@ -571,7 +579,11 @@ TrustSet::doApply()
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, sponsorSle, 1, viewJ);
+            adjustOwnerCount(
+                view(),
+                ReserveContext::makeFromAccount(view(), sleHighAccount, sponsorSle),
+                1,
+                viewJ);
             uFlagsOut |= lsfHighReserve;
 
             addSponsorToLedgerEntry(sleRippleState, sponsorSle, sfHighSponsor);
@@ -583,7 +595,11 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, currentHighSponsor, -1, viewJ);
+            adjustOwnerCount(
+                view(),
+                ReserveContext::makeFromAccount(view(), sleHighAccount, currentHighSponsor),
+                -1,
+                viewJ);
             uFlagsOut &= ~lsfHighReserve;
 
             removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);

@@ -274,71 +274,6 @@ adjustOwnerCount(
 }
 
 void
-adjustOwnerCount(ApplyViewContext const& ctx, std::int32_t ownerCountAdj, beast::Journal j)
-{
-    return adjustOwnerCount(ctx.view, ctx.reserveContext, ownerCountAdj, j);
-}
-
-void
-adjustOwnerCount(
-    ApplyView& view,
-    AccountID const& account,
-    SLE::pointer sponsorSle,
-    std::int32_t ownerCountAdj,
-    beast::Journal j)
-{
-    auto const sponsorID = sponsorSle
-        ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)}
-        : std::optional<AccountID>{};
-    return adjustOwnerCount(
-        view,
-        ReserveContext{
-            account, view.peek(keylet::account(account)), sponsorID, sponsorSle, nullptr},
-        ownerCountAdj,
-        j);
-}
-
-void
-adjustOwnerCount(
-    ApplyView& view,
-    SLE::pointer accountSle,
-    SLE::pointer sponsorSle,
-    std::int32_t ownerCountAdj,
-    beast::Journal j)
-{
-    if (!accountSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid account sle");
-    auto const sponsorID = sponsorSle
-        ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)}
-        : std::optional<AccountID>{};
-    return adjustOwnerCount(
-        view,
-        ReserveContext{
-            accountSle->getAccountID(sfAccount), accountSle, sponsorID, sponsorSle, nullptr},
-        ownerCountAdj,
-        j);
-}
-
-void
-adjustOwnerCountObj(
-    ApplyViewContext const& ctx,
-    SLE::ref objectSle,
-    std::int32_t ownerCountAdj,
-    beast::Journal j)
-{
-    if (!objectSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid object sle");
-    if (objectSle->getType() == ltACCOUNT_ROOT)
-        Throw<std::logic_error>("xrpl::adjustOwnerCount : valid object sle type");
-
-    adjustOwnerCount(
-        ctx.view,
-        ReserveContext::makeFromObject(ctx.view, objectSle, ctx.reserveContext.accountSle),
-        ownerCountAdj,
-        j);
-}
-
-void
 adjustOwnerCountObj(
     ApplyView& view,
     SLE::pointer ownerSle,
@@ -354,19 +289,6 @@ adjustOwnerCountObj(
     adjustOwnerCount(
         view, ReserveContext::makeFromObject(view, objectSle, ownerSle), ownerCountAdj, j);
 }
-
-void
-adjustOwnerCountObj(
-    ApplyView& view,
-    AccountID const& ownerID,
-    SLE::ref objectSle,
-    std::int32_t ownerCountAdj,
-    beast::Journal j)
-{
-    return adjustOwnerCountObj(
-        view, view.peek(keylet::account(ownerID)), objectSle, ownerCountAdj, j);
-}
-
 XRPAmount
 accountReserve(
     ReadView const& view,

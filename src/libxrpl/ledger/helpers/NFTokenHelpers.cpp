@@ -271,7 +271,8 @@ insertToken(ApplyViewContext& ctx, AccountID owner, STObject&& nft)
     // the NFT.
     SLE::pointer const page = getPageForToken(
         ctx, owner, nft[sfNFTokenID], [](ApplyViewContext& ctx, AccountID const& owner) {
-            adjustOwnerCount(ctx, 1, beast::Journal{beast::Journal::getNullSink()});
+            adjustOwnerCount(
+                ctx.view, ctx.reserveContext, 1, beast::Journal{beast::Journal::getNullSink()});
         });
 
     if (!page)
@@ -419,7 +420,11 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
 
         if (cnt != 0)
         {
-            adjustOwnerCount(view, owner, {}, cnt, beast::Journal{beast::Journal::getNullSink()});
+            adjustOwnerCount(
+                view,
+                ReserveContext::makeFromAccount(view, view.peek(keylet::account(owner)), nullptr),
+                cnt,
+                beast::Journal{beast::Journal::getNullSink()});
         }
 
         return tesSUCCESS;
@@ -454,7 +459,11 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
-            adjustOwnerCount(view, owner, {}, -1, beast::Journal{beast::Journal::getNullSink()});
+            adjustOwnerCount(
+                view,
+                ReserveContext::makeFromAccount(view, view.peek(keylet::account(owner)), nullptr),
+                -1,
+                beast::Journal{beast::Journal::getNullSink()});
 
             view.update(curr);
             view.erase(prev);
@@ -509,7 +518,11 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
         cnt++;
 
-    adjustOwnerCount(view, owner, {}, -1 * cnt, beast::Journal{beast::Journal::getNullSink()});
+    adjustOwnerCount(
+        view,
+        ReserveContext::makeFromAccount(view, view.peek(keylet::account(owner)), nullptr),
+        -1 * cnt,
+        beast::Journal{beast::Journal::getNullSink()});
 
     return tesSUCCESS;
 }
@@ -625,7 +638,11 @@ deleteTokenOffer(ApplyView& view, SLE::ref offer)
             false))
         return false;
 
-    adjustOwnerCount(view, owner, {}, -1, beast::Journal{beast::Journal::getNullSink()});
+    adjustOwnerCount(
+        view,
+        ReserveContext::makeFromAccount(view, view.peek(keylet::account(owner)), nullptr),
+        -1,
+        beast::Journal{beast::Journal::getNullSink()});
 
     view.erase(offer);
     return true;
@@ -967,7 +984,11 @@ tokenOfferCreateApply(
     }
 
     // Update owner count.
-    adjustOwnerCount(view, acctID, {}, 1, j);
+    adjustOwnerCount(
+        view,
+        ReserveContext::makeFromAccount(view, view.peek(keylet::account(acctID)), nullptr),
+        1,
+        j);
 
     return tesSUCCESS;
 }

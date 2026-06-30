@@ -91,7 +91,7 @@ CheckCancel::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    adjustOwnerCountObj(view(), srcId, sleCheck, -1, viewJ);
+    adjustOwnerCountObj(view(), view().peek(keylet::account(srcId)), sleCheck, -1, viewJ);
 
     // Remove check from ledger.
     view().erase(sleCheck);

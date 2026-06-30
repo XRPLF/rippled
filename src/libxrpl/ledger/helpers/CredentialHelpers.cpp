@@ -97,7 +97,7 @@ deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
         }
 
         if (isOwner)
-            adjustOwnerCountObj(view, account, sleCredential, -1, j);
+            adjustOwnerCountObj(view, view.peek(keylet::account(account)), sleCredential, -1, j);
 
         return tesSUCCESS;
     };

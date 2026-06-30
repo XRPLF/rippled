@@ -540,7 +540,11 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    adjustOwnerCount(ctx_.view(), sle, sponsorSle, 1, ctx_.journal);
+    adjustOwnerCount(
+        ctx_.view(),
+        ReserveContext::makeFromAccount(ctx_.view(), sle, sponsorSle),
+        1,
+        ctx_.journal);
     addSponsorToLedgerEntry(slep, sponsorSle);
     ctx_.view().update(sle);
     return tesSUCCESS;
