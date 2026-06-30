@@ -15,9 +15,13 @@ doNFTBuyOffers(RPC::JsonContext& context)
     if (!context.params.isMember(jss::nft_id))
         return RPC::missingFieldError(jss::nft_id);
 
+    auto const& nftIdField = context.params[jss::nft_id];
+    if (!nftIdField.isString())
+        return RPC::expectedFieldError(jss::nft_id, "string");
+
     uint256 nftId;
 
-    if (!nftId.parseHex(context.params[jss::nft_id].asString()))
+    if (!nftId.parseHex(nftIdField.asString()))
         return RPC::invalidFieldError(jss::nft_id);
 
     return enumerateNFTOffers(context, nftId, keylet::nftBuys(nftId));
