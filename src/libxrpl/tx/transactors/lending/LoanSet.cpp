@@ -57,6 +57,12 @@ LoanSet::preflight(PreflightContext const& ctx)
 
     auto const& tx = ctx.tx;
 
+    if (tx.isFieldPresent(sfSponsorFlags) && isReserveSponsored(tx))
+    {
+        JLOG(ctx.j.debug()) << "LoanSet: reserve sponsorship is not allowed.";
+        return temINVALID_FLAG;
+    }
+
     // Special case for Batch inner transactions
     if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch) &&
         !tx.isFieldPresent(sfCounterparty))
@@ -294,14 +300,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // signature check with terNO_ACCOUNT.
         JLOG(ctx.j.warn()) << "Borrower does not exist.";
         return terNO_ACCOUNT;
-    }
-
-    // A reserve sponsor only covers tx.Account's own objects, not counterparty's
-    if (isReserveSponsored(tx) && borrower != account)
-    {
-        JLOG(ctx.j.warn())
-            << "LoanSet: reserve sponsorship cannot cover the counterparty borrower.";
-        return tecNO_PERMISSION;
     }
 
     auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));

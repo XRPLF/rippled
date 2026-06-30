@@ -145,16 +145,7 @@ addEmptyHolding(
     if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;
 
-    return authorizeMPToken(
-        view,
-        tx,
-        priorBalance,
-        mptID,
-        accountID,
-        journal,
-        0,
-        std::nullopt,
-        accountID == tx[sfAccount]);
+    return authorizeMPToken(view, tx, priorBalance, mptID, accountID, journal, 0, std::nullopt);
 }
 
 [[nodiscard]] TER
@@ -166,8 +157,7 @@ authorizeMPToken(
     AccountID const& account,
     beast::Journal journal,
     std::uint32_t flags,
-    std::optional<AccountID> holderID,
-    bool allowSponsor)
+    std::optional<AccountID> holderID)
 {
     auto const sleAcct = view.peek(keylet::account(account));
     if (!sleAcct)
@@ -205,7 +195,7 @@ authorizeMPToken(
         //      - create the MPToken object for the holder
 
         SLE::pointer sponsorSle;
-        if (allowSponsor)
+        if (account == tx[sfAccount])
         {
             auto sle = getTxReserveSponsor(view, tx);
             if (!sle)
