@@ -192,15 +192,6 @@ checkWithdrawFreeze(
     if (auto const ret = checkIndividualFrozen(view, pseudoAcct, asset); !isTesSuccess(ret))
         return ret;
 
-    if (asset.holds<MPTIssue>() &&
-        isVaultPseudoAccountFrozen(view, pseudoAcct, asset.get<MPTIssue>(), 0))
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::checkWithdrawFreeze : pseudo-account backed object holds shares");
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
-
     // Check submitter's individual freeze only when Submitter != Destination (a regular freeze
     // should not block self-withdrawal).
     if (submitterAcct != dstAcct)
@@ -210,7 +201,19 @@ checkWithdrawFreeze(
     }
 
     // The destination account must not be deep frozen to receive the funds
-    return checkDeepFrozen(view, dstAcct, asset);
+    if (auto const ret = checkDeepFrozen(view, dstAcct, asset); !isTesSuccess(ret))
+        return ret;
+
+    if (asset.holds<MPTIssue>() &&
+        isVaultPseudoAccountFrozen(view, pseudoAcct, asset.get<MPTIssue>(), 0))
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::checkWithdrawFreeze : pseudo-account backed object holds shares");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    return tesSUCCESS;
 }
 
 [[nodiscard]] TER
@@ -234,6 +237,17 @@ checkDepositFreeze(
     if (auto const ret = checkGlobalFrozen(view, asset); !isTesSuccess(ret))
         return ret;
 
+    if (srcAcct != asset.getIssuer())
+    {
+        if (auto const ret = checkIndividualFrozen(view, srcAcct, asset); !isTesSuccess(ret))
+            return ret;
+    }
+
+    // Unlike regular accounts, pseudo-accounts cannot receive deposits under a regular freeze
+    // because those funds cannot be later withdrawn
+    if (auto const ret = checkIndividualFrozen(view, pseudoAcct, asset); !isTesSuccess(ret))
+        return ret;
+
     if (asset.holds<MPTIssue>() &&
         isVaultPseudoAccountFrozen(view, pseudoAcct, asset.get<MPTIssue>(), 0))
     {
@@ -243,15 +257,7 @@ checkDepositFreeze(
         // LCOV_EXCL_STOP
     }
 
-    if (srcAcct != asset.getIssuer())
-    {
-        if (auto const ret = checkIndividualFrozen(view, srcAcct, asset); !isTesSuccess(ret))
-            return ret;
-    }
-
-    // Unlike regular accounts, pseudo-accounts cannot receive deposits under a regular freeze
-    // because those funds cannot be later withdrawn
-    return checkIndividualFrozen(view, pseudoAcct, asset);
+    return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------

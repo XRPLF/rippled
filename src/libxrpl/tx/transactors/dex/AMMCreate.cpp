@@ -194,24 +194,21 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             accountId == beast::kZero)
             return terADDRESS_COLLISION;
 
-        if (ctx.view.rules().enabled(featureMPTokensV2))
+        auto const isMPTIssuerPseudo = [&](Asset const& asset) {
+            if (asset.native())
+                return false;
+
+            if (asset.holds<Issue>())
+                return false;
+
+            return isPseudoAccount(ctx.view, asset.getIssuer());
+        };
+
+        if (isMPTIssuerPseudo(amount.asset()) || isMPTIssuerPseudo(amount2.asset()))
         {
-            auto const isVaultShare = [&](Asset const& asset) {
-                if (asset.native())
-                    return false;
-
-                if (asset.holds<Issue>())
-                    return false;
-
-                return isPseudoAccount(ctx.view, asset.getIssuer());
-            };
-
-            if (isVaultShare(amount.asset()) || isVaultShare(amount2.asset()))
-            {
-                JLOG(ctx.j.debug())
-                    << "AMM Instance: can't create with vault shares " << amount << " " << amount2;
-                return tecWRONG_ASSET;
-            }
+            JLOG(ctx.j.debug()) << "AMM Instance: can't create with vault shares " << amount << " "
+                                << amount2;
+            return tecWRONG_ASSET;
         }
     }
 
