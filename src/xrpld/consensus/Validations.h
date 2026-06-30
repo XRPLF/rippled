@@ -817,16 +817,15 @@ public:
         if (!preferred)
         {
             // fall back to majority over acquiring ledgers
-            auto it = std::max_element(
-                acquiring_.begin(), acquiring_.end(), [](auto const& a, auto const& b) {
-                    std::pair<Seq, ID> const& aKey = a.first;
-                    typename hash_set<NodeID>::size_type const& aSize = a.second.size();
-                    std::pair<Seq, ID> const& bKey = b.first;
-                    typename hash_set<NodeID>::size_type const& bSize = b.second.size();
-                    // order by number of trusted peers validating that ledger
-                    // break ties with ledger ID
-                    return std::tie(aSize, aKey.second) < std::tie(bSize, bKey.second);
-                });
+            auto it = std::ranges::max_element(acquiring_, [](auto const& a, auto const& b) {
+                std::pair<Seq, ID> const& aKey = a.first;
+                typename hash_set<NodeID>::size_type const& aSize = a.second.size();
+                std::pair<Seq, ID> const& bKey = b.first;
+                typename hash_set<NodeID>::size_type const& bSize = b.second.size();
+                // order by number of trusted peers validating that ledger
+                // break ties with ledger ID
+                return std::tie(aSize, aKey.second) < std::tie(bSize, bKey.second);
+            });
             if (it != acquiring_.end())
                 return it->first;
             return std::nullopt;
@@ -896,7 +895,7 @@ public:
             return (preferred->first >= minSeq) ? preferred->second : lcl.id();
 
         // Otherwise, rely on peer ledgers
-        auto it = std::max_element(peerCounts.begin(), peerCounts.end(), [](auto& a, auto& b) {
+        auto it = std::ranges::max_element(peerCounts, [](auto const& a, auto const& b) {
             // Prefer larger counts, then larger ids on ties
             // (max_element expects this to return true if a < b)
             return std::tie(a.second, a.first) < std::tie(b.second, b.first);
@@ -932,7 +931,7 @@ public:
         }
 
         // Count parent ledgers as fallback
-        return std::count_if(lastLedger_.begin(), lastLedger_.end(), [&ledgerID](auto const& it) {
+        return std::ranges::count_if(lastLedger_, [&ledgerID](auto const& it) {
             auto const& curr = it.second;
             return curr.seq() > Seq{0} && curr[curr.seq() - Seq{1}] == ledgerID;
         });
