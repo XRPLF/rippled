@@ -38,6 +38,7 @@
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <expected>
 #include <limits>
@@ -301,10 +302,8 @@ onNewAttestations(
         }
 
         auto const& claimSigningAccount = att->attestationSignerAccount;
-        if (auto i = std::find_if(
-                attestations.begin(),
-                attestations.end(),
-                [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
+        if (auto i = std::ranges::find_if(
+                attestations, [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
             i != attestations.end())
         {
             // existing attestation
