@@ -445,6 +445,12 @@ struct ApplyViewContext
     ApplyView& view;
     STTx const& tx;
     ReserveContext reserveContext;
+
+    static ApplyViewContext
+    makeFromTx(ApplyView& view, STTx const& tx)
+    {
+        return {.view = view, .tx = tx, .reserveContext = ReserveContext::makeFromTx(view, tx)};
+    }
 };
 
 namespace directory {

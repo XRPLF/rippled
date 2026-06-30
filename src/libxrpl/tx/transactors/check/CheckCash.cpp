@@ -390,10 +390,7 @@ CheckCash::doApply()
             STAmount const flowDeliver{
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
-            auto applyViewContext = ApplyViewContext(
-                {.view = psb,
-                 .tx = ctx_.tx,
-                 .reserveContext = ReserveContext::makeFromTx(psb, ctx_.tx)});
+            auto applyViewContext = ApplyViewContext::makeFromTx(psb, ctx_.tx);
             auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
 
             // Check reserve. Return destination account SLE if enough reserve,
