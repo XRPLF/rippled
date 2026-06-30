@@ -214,20 +214,6 @@ STTx::getSeqValue() const
     return getSeqProxy().value();
 }
 
-AccountID
-STTx::getFeePayer() const
-{
-    // If sfDelegate is present, the delegate account is the payer
-    // note: if a delegate is specified, its authorization to act on behalf of the account is
-    // enforced in `Transactor::invokeCheckPermission`
-    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
-    if (isFieldPresent(sfDelegate))
-        return getAccountID(sfDelegate);
-
-    // Default payer
-    return getAccountID(sfAccount);
-}
-
 void
 STTx::sign(
     PublicKey const& publicKey,

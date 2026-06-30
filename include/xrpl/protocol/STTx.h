@@ -84,9 +84,6 @@ public:
     [[nodiscard]] std::uint32_t
     getSeqValue() const;
 
-    [[nodiscard]] AccountID
-    getFeePayer() const;
-
     [[nodiscard]] boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
