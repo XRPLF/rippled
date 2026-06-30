@@ -183,7 +183,7 @@ authorizeMPToken(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            adjustOwnerCountObj(view, sleAcct, sleMpt, -1, journal);
+            decreaseOwnerCountForObject(view, sleAcct, sleMpt, 1, journal);
 
             view.erase(sleMpt);
             return tesSUCCESS;
@@ -235,7 +235,7 @@ authorizeMPToken(
         view.insert(mptoken);
 
         // Update owner count.
-        adjustOwnerCount(view, sleAcct, *sponsorSle, 1, journal);
+        increaseOwnerCount(view, sleAcct, *sponsorSle, 1, journal);
         addSponsorToLedgerEntry(mptoken, *sponsorSle);
 
         return tesSUCCESS;
@@ -962,7 +962,7 @@ checkCreateMPT(
             return tecINTERNAL;
         }
 
-        adjustOwnerCount(view, sleAcct, sponsorSle, 1, j);
+        increaseOwnerCount(view, sleAcct, sponsorSle, 1, j);
     }
     return tesSUCCESS;
 }

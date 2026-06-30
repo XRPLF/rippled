@@ -161,7 +161,7 @@ deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
         // LCOV_EXCL_STOP
     }
 
-    adjustOwnerCountObj(view, sponsorAccSle, sle, -1, j);
+    decreaseOwnerCountForObject(view, sponsorAccSle, sle, 1, j);
 
     // transfer feeAmount back to the sponsor
     if (sle->isFieldPresent(sfFeeAmount))
@@ -263,7 +263,7 @@ SponsorshipSet::doApply()
         (*newSle)[sfSponseeNode] = *sponseePage;
 
         // NOLINTNEXTLINE(readability-suspicious-call-argument)
-        adjustOwnerCount(view(), sponsorAccSle, *reserveSponsorAccSle, 1, ctx_.journal);
+        increaseOwnerCount(view(), sponsorAccSle, *reserveSponsorAccSle, 1, ctx_.journal);
         addSponsorToLedgerEntry(newSle, *reserveSponsorAccSle);
 
         ctx_.view().insert(newSle);

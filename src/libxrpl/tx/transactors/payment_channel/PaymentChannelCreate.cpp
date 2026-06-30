@@ -206,7 +206,7 @@ PaymentChannelCreate::doApply()
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
-    adjustOwnerCount(ctx_.view(), sle, *sponsorSle, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.view(), sle, *sponsorSle, 1, ctx_.journal);
     addSponsorToLedgerEntry(slep, *sponsorSle);
     ctx_.view().update(sle);
 

@@ -212,66 +212,96 @@ adjustOwnerCountImpl(
     view.update(sle);
 }
 
-void
-adjustOwnerCount(
+static void
+adjustOwnerCountSigned(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
-    std::int32_t ownerCountAdj,
+    std::int32_t adjustment,
     beast::Journal j)
 {
     if (!accountSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid account sle");
+        Throw<std::runtime_error>("xrpl::adjustOwnerCountSigned : valid account sle");
 
     auto const sleType = accountSle->getType();
     bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
                                       : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
     if (!validType)
-        Throw<std::logic_error>("xrpl::adjustOwnerCount : valid account sle type");
+        Throw<std::logic_error>("xrpl::adjustOwnerCountSigned : valid account sle type");
 
-    XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCount : nonzero ownerCountAdj input");
-    if (ownerCountAdj == 0)
+    XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
+    if (adjustment == 0)
         return;
 
     auto const accountID = accountSle->getAccountID(sfAccount);
     if (sponsorSle)
     {
         if (sponsorSle->getType() != ltACCOUNT_ROOT)
-            Throw<std::logic_error>("xrpl::adjustOwnerCount : valid sponsor sle type");
+            Throw<std::logic_error>("xrpl::adjustOwnerCountSigned : valid sponsor sle type");
         auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
-        adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, ownerCountAdj, j);
-        adjustOwnerCountImpl(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, ownerCountAdj, j);
+        adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
+        adjustOwnerCountImpl(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
 
         auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
-        if (sponsorshipSle && ownerCountAdj > 0)
+        if (sponsorshipSle && adjustment > 0)
         {
             // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
             // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount
             // back. Don't call hook because this counter is not something that require reserve
             // (like other sf...OwnerCounts do).
             adjustOwnerCountImpl(
-                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -ownerCountAdj, j, false);
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
         }
     }
-    adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, ownerCountAdj, j);
+    adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
 }
 
 void
-adjustOwnerCountObj(
+increaseOwnerCount(
+    ApplyView& view,
+    SLE::ref accountSle,
+    SLE::ref sponsorSle,
+    std::int32_t count,
+    beast::Journal j)
+{
+    XRPL_ASSERT(count > 0, "xrpl::increaseOwnerCount : positive count input");
+    if (count <= 0)
+        return;
+
+    adjustOwnerCountSigned(view, accountSle, sponsorSle, count, j);
+}
+
+void
+decreaseOwnerCount(
+    ApplyView& view,
+    SLE::ref accountSle,
+    SLE::ref sponsorSle,
+    std::int32_t count,
+    beast::Journal j)
+{
+    XRPL_ASSERT(count > 0, "xrpl::decreaseOwnerCount : positive count input");
+    if (count <= 0)
+        return;
+
+    adjustOwnerCountSigned(view, accountSle, sponsorSle, -count, j);
+}
+
+void
+decreaseOwnerCountForObject(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref objectSle,
-    std::int32_t accountCountAdj,
+    std::int32_t count,
     beast::Journal j)
 {
     if (!objectSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid object sle");
+        Throw<std::runtime_error>("xrpl::decreaseOwnerCountForObject : valid object sle");
     if (objectSle->getType() == ltACCOUNT_ROOT)
-        Throw<std::logic_error>("xrpl::adjustOwnerCount : valid object sle type");
+        Throw<std::logic_error>("xrpl::decreaseOwnerCountForObject : valid object sle type");
 
     SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
-    adjustOwnerCount(view, accountSle, sponsorSle, accountCountAdj, j);
+    decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
 }
 
 XRPAmount

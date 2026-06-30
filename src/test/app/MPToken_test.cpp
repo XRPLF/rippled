@@ -7561,7 +7561,7 @@ class MPToken_test : public beast::unit_test::Suite
     void
     testFixDoubleOwnerCount(FeatureBitset all)
     {
-        testcase("Fix Double adjustOwnerCount in AMMWithdraw");
+        testcase("Fix Double OwnerCount in AMMWithdraw");
 
         using namespace jtx;
 

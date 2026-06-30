@@ -129,21 +129,25 @@ checkInsufficientReserve(
 std::uint32_t
 ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj = 0);
 
-/** Adjust the owner counters of the account up or down. If sponsor provided adjust its counters
- *  too.
+/** Increase owner-count fields when the caller supplies the sponsor.
+ *
+ *  This helper does not create a ledger object. It updates reserve accounting
+ *  after the caller has created/updated an object.
+ *  If sponsorSle is provided, this also adjusts the account's sponsored count
+ *  and the sponsor's sponsoring count.
  *
  *  @param view The apply view for making changes
  *  @param accountSle The account's ledger entry
  *  @param sponsorSle The sponsor's ledger entry (if applicable)
- *  @param accountCountAdj Adjustment amount for the account count
+ *  @param count Positive amount to add to the owner count
  *  @param j Journal for logging (default: null sink)
  */
 void
-adjustOwnerCount(
+increaseOwnerCount(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
-    std::int32_t accountCountAdj,
+    std::int32_t count,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 /** Convenience overload that accepts AccountID instead of SLE references.
@@ -151,40 +155,89 @@ adjustOwnerCount(
  *  @param view The apply view for making changes
  *  @param account The account ID
  *  @param sponsor The optional sponsor account ID
- *  @param accountCountAdj Adjustment amount for the account count
+ *  @param count Positive amount to add to the owner count
  *  @param j Journal for logging (default: null sink)
  */
 inline void
-adjustOwnerCount(
+increaseOwnerCount(
     ApplyView& view,
     AccountID const& account,
     std::optional<AccountID> const& sponsor,
-    std::int32_t accountCountAdj,
+    std::int32_t count,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
-    adjustOwnerCount(
+    increaseOwnerCount(
         view,
         view.peek(keylet::account(account)),
         sponsor ? view.peek(keylet::account(*sponsor)) : SLE::pointer(),
-        accountCountAdj,
+        count,
         j);
 }
 
-/** Adjust the owner counters of the account up or down. If object has sponsor adjust its counters
- *  too. Used primarily just before deleting the object.
+/** Decrease owner-count fields when the caller supplies the sponsor.
+ *
+ *  This helper does not delete a ledger object. It updates reserve accounting
+ *  after the caller has removed an owner-counted reserve, or for special
+ *  owner-count changes whose sponsor cannot be derived from an object's
+ *  sfSponsor field.
+ *
+ *  @param view The apply view for making changes
+ *  @param accountSle The account's ledger entry
+ *  @param sponsorSle The sponsor's ledger entry (if applicable)
+ *  @param count Positive amount to remove from the owner count
+ *  @param j Journal for logging (default: null sink)
+ */
+void
+decreaseOwnerCount(
+    ApplyView& view,
+    SLE::ref accountSle,
+    SLE::ref sponsorSle,
+    std::int32_t count,
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+
+/** Convenience overload that accepts AccountID instead of SLE references.
+ *
+ *  @param view The apply view for making changes
+ *  @param account The account ID
+ *  @param sponsor The optional sponsor account ID
+ *  @param count Positive amount to remove from the owner count
+ *  @param j Journal for logging (default: null sink)
+ */
+inline void
+decreaseOwnerCount(
+    ApplyView& view,
+    AccountID const& account,
+    std::optional<AccountID> const& sponsor,
+    std::int32_t count,
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+{
+    decreaseOwnerCount(
+        view,
+        view.peek(keylet::account(account)),
+        sponsor ? view.peek(keylet::account(*sponsor)) : SLE::pointer(),
+        count,
+        j);
+}
+
+/** Decrease owner-count fields for an existing ledger object.
+ *
+ *  This helper derives the reserve sponsor from objectSle's sfSponsor field,
+ *  then updates the same owner-count fields as decreaseOwnerCount. Use this
+ *  when removing an existing object whose reserve sponsor is stored on that
+ *  object.
  *
  *  @param view The apply view for making changes
  *  @param accountSle The account's ledger entry
  *  @param objectSle The object's ledger entry
- *  @param accountCountAdj Adjustment amount for the account count
+ *  @param count Positive amount to remove from the owner count
  *  @param j Journal for logging (default: null sink)
  */
 void
-adjustOwnerCountObj(
+decreaseOwnerCountForObject(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref objectSle,
-    std::int32_t accountCountAdj,
+    std::int32_t count,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 /** Convenience overload that accepts AccountID instead of account SLE reference.
@@ -192,19 +245,19 @@ adjustOwnerCountObj(
  *  @param view The apply view for making changes
  *  @param account The account ID
  *  @param objectSle The object's ledger entry
- *  @param accountCountAdj Adjustment amount for the account count
+ *  @param count Positive amount to remove from the owner count
  *  @param j Journal for logging (default: null sink)
  */
 inline void
-adjustOwnerCountObj(
+decreaseOwnerCountForObject(
     ApplyView& view,
     AccountID const& account,
     SLE::ref objectSle,
-    std::int32_t accountCountAdj,
+    std::int32_t count,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
     SLE::ref accountSle = view.peek(keylet::account(account));
-    adjustOwnerCountObj(view, accountSle, objectSle, accountCountAdj, j);
+    decreaseOwnerCountForObject(view, accountSle, objectSle, count, j);
 }
 
 /** Returns IOU issuer transfer fee as Rate. Rate specifies

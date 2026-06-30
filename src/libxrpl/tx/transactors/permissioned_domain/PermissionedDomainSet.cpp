@@ -125,7 +125,7 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), ownerSle, {}, 1, ctx_.journal);
+        increaseOwnerCount(view(), ownerSle, {}, 1, ctx_.journal);
         view().insert(slePd);
     }
 

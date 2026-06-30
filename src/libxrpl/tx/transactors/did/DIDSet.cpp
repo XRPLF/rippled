@@ -89,7 +89,7 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    adjustOwnerCount(ctx.view(), sleAccount, {}, 1, ctx.journal);
+    increaseOwnerCount(ctx.view(), sleAccount, {}, 1, ctx.journal);
     ctx.view().update(sleAccount);
 
     return tesSUCCESS;

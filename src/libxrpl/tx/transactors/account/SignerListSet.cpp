@@ -148,8 +148,6 @@ SignerListSet::preCompute()
     Transactor::preCompute();
 }
 
-// The return type is signed so it is compatible with the 3rd argument
-// of adjustOwnerCount() (which must be signed).
 static int
 signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
 {
@@ -197,12 +195,11 @@ removeSignersFromLedger(
     // There are two different ways that the OwnerCount could be managed.
     // If the lsfOneOwnerCount bit is set then remove just one owner count.
     // Otherwise use the pre-MultiSignReserve amendment calculation.
-    int removeFromOwnerCount = -1;
+    int removeFromOwnerCount = 1;
     if (!signers->isFlag(lsfOneOwnerCount))
     {
         STArray const& actualList = signers->getFieldArray(sfSignerEntries);
-        removeFromOwnerCount =
-            signerCountBasedOwnerCountDelta(actualList.size(), view.rules()) * -1;
+        removeFromOwnerCount = signerCountBasedOwnerCountDelta(actualList.size(), view.rules());
     }
 
     // Remove the node from the account directory.
@@ -216,7 +213,7 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    adjustOwnerCountObj(
+    decreaseOwnerCountForObject(
         view, view.peek(accountKeylet), signers, removeFromOwnerCount, registry.getJournal("View"));
 
     view.erase(signers);
@@ -357,7 +354,7 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, *sponsorSle, kAddedOwnerCount, viewJ);
+    increaseOwnerCount(view(), sle, *sponsorSle, kAddedOwnerCount, viewJ);
     addSponsorToLedgerEntry(signerList, *sponsorSle);
     return tesSUCCESS;
 }
