@@ -31,12 +31,16 @@ struct OwnerCounts
         , sponsored(sle[sfSponsoredOwnerCount])
         , sponsoring(sle[sfSponsoringOwnerCount])
     {
+        XRPL_ASSERT(
+            owner >= sponsored,
+            "xrpl::OwnerCounts : OwnerCount must be greater than or equal to "
+            "SponsoredOwnerCount");
     }
 
     [[nodiscard]] std::uint32_t
     count() const
     {
-        int64_t const x = static_cast<int64_t>(owner) - sponsored + sponsoring;
+        std::int64_t const x = static_cast<int64_t>(owner) - sponsored + sponsoring;
         if (x < 0)
             return 0;
         if (x > std::numeric_limits<std::uint32_t>::max())
