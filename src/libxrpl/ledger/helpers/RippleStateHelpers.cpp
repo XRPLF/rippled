@@ -633,7 +633,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 
 TER
 addEmptyHolding(
-    ApplyViewContext const& ctx,
+    ApplyViewContext&& ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
@@ -702,7 +702,7 @@ addEmptyHolding(
 
 TER
 removeEmptyHolding(
-    ApplyViewContext const& ctx,
+    ApplyViewContext&& ctx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal)
