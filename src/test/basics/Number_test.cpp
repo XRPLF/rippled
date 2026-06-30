@@ -180,6 +180,35 @@ public:
             caught = true;
         }
         BEAST_EXPECT(caught);
+
+        if (scale == MantissaRange::MantissaScale::Large330)
+        {
+            // Normalization with the other scales, including the older large mantissa scales, will
+            // overflow. See testLimits().
+            Number const bigNum{Number::kMaxRepUp, Number::kMaxExponent, Number::Normalized{}};
+            // The display of large exponents won't go above kMaxExponent
+            BEAST_EXPECTS(to_string(bigNum) == "9223372036854775810e32768", to_string(bigNum));
+            // Perhaps surprisingly, this is ok, because the exponent range is related to when the
+            // number is _normalized_, and for mantissas > kMaxRep, the accessors return values that
+            // are not normalized.
+            BEAST_EXPECTS(bigNum.mantissa() == 922337203685477581ULL, to_string(bigNum.mantissa()));
+            BEAST_EXPECTS(bigNum.exponent() == 32769, to_string(bigNum.exponent()));
+        }
+        else
+        {
+            try
+            {
+                Number{Number::kMaxRepUp, Number::kMaxExponent, Number::Normalized{}};
+                fail();
+            }
+            catch (std::overflow_error const& e)
+            {
+                std::string const expected =
+                    (scale == MantissaRange::MantissaScale::Small ? "Number::normalize 1"
+                                                                  : "Number::normalize 1.5");
+                BEAST_EXPECTS(e.what() == expected, e.what());
+            }
+        }
     }
 
     void
@@ -191,6 +220,7 @@ public:
         BEAST_EXPECT(Number::getround() == Number::RoundingMode::ToNearest);
 
         using Case = std::tuple<Number, Number, Number, int>;
+        // TODO: Move these to the blocks where they're used
         auto const cSmall = std::to_array<Case>({
             {Number{1'000'000'000'000'000, -15},
              Number{6'555'555'555'555'555, -29},
@@ -337,6 +367,21 @@ public:
             else
             {
                 test(cLargeCorrected);
+
+                // This has to be created in this block, because normalization with the other
+                // scales, including the older large mantissa scales, will overflow.
+                Number const bigResult{
+                    Number::kMaxRepUp, Number::kMaxExponent, Number::Normalized{}};
+                auto const cBigNums = std::to_array<Case>({
+                    {
+                        // Add 3 to the mantissa to avoid rounding
+                        Number::max(),
+                        Number{3, Number::kMaxExponent},
+                        bigResult,
+                        __LINE__,
+                    },
+                });
+                test(cBigNums);
             }
         }
         {
