@@ -463,8 +463,9 @@ private:
 
         // Provide micro amounts to compensate for fees to make results round
         // nice.
-        auto const startingXrp =
-            XRP(100) + baseAccountReserve(*env.current(), 2) + env.current()->fees().base * 3;
+        auto const startingXrp = XRP(100) +
+            baseAccountReserve(*env.current(), {.ownerCountDelta = 2}) +
+            env.current()->fees().base * 3;
 
         env.fund(startingXrp, gw_, alice_);
         env.fund(XRP(2'000), bob_);

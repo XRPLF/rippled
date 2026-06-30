@@ -331,8 +331,7 @@ SignerListSet::replaceSignerList()
             sle,
             preFeeBalance_,
             *sponsorSle,
-            kAddedOwnerCount,
-            0,
+            {.ownerCountDelta = kAddedOwnerCount},
             ctx_.journal);
         !isTesSuccess(ret))
         return ret;

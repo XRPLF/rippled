@@ -165,7 +165,10 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     // Pseudo-accounts have no reserve requirement
     auto const reserve = isPseudoAccount(sle)
         ? XRPAmount{0}
-        : baseAccountReserve(view, currentOwnerCount, currentAccountCount);
+        : baseAccountReserve(
+              view,
+              {.ownerCountDelta = static_cast<std::int32_t>(currentOwnerCount),
+               .accountCountDelta = static_cast<std::int32_t>(currentAccountCount) - 1});
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -275,29 +278,27 @@ adjustOwnerCountObj(
 }
 
 XRPAmount
-accountReserve(
-    ReadView const& view,
-    SLE::const_ref sle,
-    beast::Journal j,
-    std::int32_t ownerCountAdj,
-    std::int32_t accountCountAdj)
+accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)
 {
     if (!sle)
         Throw<std::runtime_error>("xrpl::accountReserve : valid sle");
     if (sle->getType() != ltACCOUNT_ROOT)
         Throw<std::logic_error>("xrpl::accountReserve : valid sle type");
 
-    std::uint32_t const currentOwnerCount = ownerCount(sle, j, ownerCountAdj);
-    std::uint32_t const currentAccountCount = accountCountImpl(sle, accountCountAdj, j);
+    std::uint32_t const currentOwnerCount = ownerCount(sle, j, adj.ownerCountDelta);
+    std::uint32_t const currentAccountCount = accountCountImpl(sle, adj.accountCountDelta, j);
 
-    return baseAccountReserve(view, currentOwnerCount, currentAccountCount);
+    return baseAccountReserve(
+        view,
+        {.ownerCountDelta = static_cast<std::int32_t>(currentOwnerCount),
+         .accountCountDelta = static_cast<std::int32_t>(currentAccountCount) - 1});
 }
 
 XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount)
+baseAccountReserve(ReadView const& view, Adjustment adj)
 {
     auto const& fees = view.fees();
-    return (fees.reserve * accountCount) + (fees.increment * ownerCount);
+    return (fees.reserve * (1 + adj.accountCountDelta)) + (fees.increment * adj.ownerCountDelta);
 }
 
 TER
@@ -307,8 +308,7 @@ checkInsufficientReserve(
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
-    std::int32_t ownerCountAdj,
-    std::int32_t accountCountAdj,
+    Adjustment adj,
     beast::Journal j)
 {
     if (sponsorSle)
@@ -326,20 +326,20 @@ checkInsufficientReserve(
         if (sle)
         {
             auto const ownerCountAllowed = sle->getFieldU32(sfRemainingOwnerCount);
-            if (ownerCountAllowed < ownerCountAdj)
+            if (adj.ownerCountDelta > 0 &&
+                ownerCountAllowed < static_cast<std::uint32_t>(adj.ownerCountDelta))
                 return tecINSUFFICIENT_RESERVE;
         }
 
         auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
-        STAmount const sponsorReserve =
-            accountReserve(view, sponsorSle, j, ownerCountAdj, accountCountAdj);
+        STAmount const sponsorReserve = accountReserve(view, sponsorSle, j, adj);
 
         if (sponsorBalance < sponsorReserve)
             return tecINSUFFICIENT_RESERVE;
     }
     else
     {
-        STAmount const reserve = accountReserve(view, accSle, j, ownerCountAdj, accountCountAdj);
+        STAmount const reserve = accountReserve(view, accSle, j, adj);
         if (accBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

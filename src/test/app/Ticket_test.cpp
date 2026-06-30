@@ -504,7 +504,7 @@ class Ticket_test : public beast::unit_test::Suite
         Account const alice{"alice"};
 
         // Fund alice not quite enough to make the reserve for a Ticket.
-        env.fund(baseAccountReserve(*env.current(), 1) - drops(1), alice);
+        env.fund(baseAccountReserve(*env.current(), {.ownerCountDelta = 1}) - drops(1), alice);
         env.close();
 
         env(ticket::create(alice, 1), Ter(tecINSUFFICIENT_RESERVE));
@@ -512,7 +512,10 @@ class Ticket_test : public beast::unit_test::Suite
         env.require(Owners(alice, 0), tickets(alice, 0));
 
         // Give alice enough to exactly meet the reserve for one Ticket.
-        env(pay(env.master, alice, baseAccountReserve(*env.current(), 1) - env.balance(alice)));
+        env(
+            pay(env.master,
+                alice,
+                baseAccountReserve(*env.current(), {.ownerCountDelta = 1}) - env.balance(alice)));
         env.close();
 
         env(ticket::create(alice, 1));
@@ -525,7 +528,8 @@ class Ticket_test : public beast::unit_test::Suite
         env(
             pay(env.master,
                 alice,
-                baseAccountReserve(*env.current(), 250) - drops(1) - env.balance(alice)));
+                baseAccountReserve(*env.current(), {.ownerCountDelta = 250}) - drops(1) -
+                    env.balance(alice)));
         env.close();
 
         // alice doesn't quite have the reserve for a total of 250
@@ -536,7 +540,10 @@ class Ticket_test : public beast::unit_test::Suite
 
         // Give alice enough so she can make the reserve for all 250
         // Tickets.
-        env(pay(env.master, alice, baseAccountReserve(*env.current(), 250) - env.balance(alice)));
+        env(
+            pay(env.master,
+                alice,
+                baseAccountReserve(*env.current(), {.ownerCountDelta = 250}) - env.balance(alice)));
         env.close();
 
         std::uint32_t const ticketSeq{env.seq(alice) + 1};

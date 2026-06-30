@@ -198,7 +198,8 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
 XRPAmount
 AMMTest::reserve(jtx::Env& env, std::uint32_t count)
 {
-    return baseAccountReserve(*env.current(), count);
+    return baseAccountReserve(
+        *env.current(), {.ownerCountDelta = static_cast<std::int32_t>(count)});
 }
 
 XRPAmount

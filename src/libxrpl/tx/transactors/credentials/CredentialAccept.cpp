@@ -94,7 +94,7 @@ CredentialAccept::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
-        STAmount const reserve{accountReserve(view(), sleSubject, j_, 1)};
+        STAmount const reserve{accountReserve(view(), sleSubject, j_, {.ownerCountDelta = 1})};
         if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

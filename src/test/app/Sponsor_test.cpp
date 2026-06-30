@@ -69,7 +69,8 @@ accountReserve(jtx::Env& env, std::uint32_t count = 1)
 static STAmount
 reserve(jtx::Env& env, std::uint32_t count)
 {
-    return baseAccountReserve(*env.current(), count);
+    return baseAccountReserve(
+        *env.current(), {.ownerCountDelta = static_cast<std::int32_t>(count)});
 }
 
 static void
@@ -1964,7 +1965,7 @@ public:
 
         // Account is not sponsored by normal Sponsor specification
         {
-            env(pay(alice, bob, drops(baseAccountReserve(*env.current(), 0))),
+            env(pay(alice, bob, drops(baseAccountReserve(*env.current(), {.ownerCountDelta = 0}))),
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor));
             env.close();

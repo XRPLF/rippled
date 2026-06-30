@@ -546,8 +546,9 @@ private:
         // fees:
         //  1 for each trust limit == 3 (alice_ < mtgox/amazon/bitstamp) +
         //  1 for payment          == 4
-        auto const startingXrp =
-            XRP(100) + baseAccountReserve(*env.current(), 3) + env.current()->fees().base * 4;
+        auto const startingXrp = XRP(100) +
+            baseAccountReserve(*env.current(), {.ownerCountDelta = 3}) +
+            env.current()->fees().base * 4;
 
         env.fund(startingXrp, gw1, gw2, gw3, localAlice);
         env.fund(XRP(2'000), localBob);

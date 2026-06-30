@@ -219,8 +219,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 sponseeSle,
                 sponseeSle->getFieldAmount(sfBalance),
                 newSponsorSle,
-                ownerCountDelta,
-                0,
+                {.ownerCountDelta = ownerCountDelta},
                 ctx.j);
             !isTesSuccess(ter))
             return ter;
@@ -271,8 +270,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 sponseeSle,
                 sponseeSle->getFieldAmount(sfBalance),
                 newSponsorSle,
-                0,
-                1,
+                {.accountCountDelta = 1},
                 ctx.j);
             !isTesSuccess(ter))
             return ter;

@@ -61,7 +61,8 @@ class OfferBaseUtil_test : public beast::unit_test::Suite
     static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
-        return baseAccountReserve(*env.current(), count);
+        return baseAccountReserve(
+            *env.current(), {.ownerCountDelta = static_cast<std::int32_t>(count)});
     }
 
     static std::uint32_t
@@ -1962,8 +1963,9 @@ public:
         // fees:
         //  1 for each trust limit == 3 (alice < mtgox/amazon/bitstamp) +
         //  1 for payment          == 4
-        auto const startingXrp =
-            XRP(100) + baseAccountReserve(*env.current(), 3) + env.current()->fees().base * 4;
+        auto const startingXrp = XRP(100) +
+            baseAccountReserve(*env.current(), {.ownerCountDelta = 3}) +
+            env.current()->fees().base * 4;
 
         env.fund(startingXrp, gw1, gw2, gw3, alice, bob);
         env.close();
@@ -1986,7 +1988,7 @@ public:
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            STAmount(baseAccountReserve(*env.current(), 3)).getText());
+            STAmount(baseAccountReserve(*env.current(), {.ownerCountDelta = 3})).getText());
 
         jrr = ledgerEntryState(env, bob, gw1, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
@@ -2045,8 +2047,9 @@ public:
         auto const bob = Account{"bob"};
         auto const usd = gw["USD"];
 
-        auto const startingXrp =
-            XRP(100) + baseAccountReserve(*env.current(), 1) + env.current()->fees().base * 2;
+        auto const startingXrp = XRP(100) +
+            baseAccountReserve(*env.current(), {.ownerCountDelta = 1}) +
+            env.current()->fees().base * 2;
 
         env.fund(startingXrp, gw, alice, bob);
         env.close();
@@ -2067,7 +2070,7 @@ public:
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            STAmount(baseAccountReserve(*env.current(), 1)).getText());
+            STAmount(baseAccountReserve(*env.current(), {.ownerCountDelta = 1})).getText());
 
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-400");
@@ -2087,8 +2090,9 @@ public:
         auto const bob = Account{"bob"};
         auto const usd = gw["USD"];
 
-        auto const startingXrp =
-            XRP(100) + baseAccountReserve(*env.current(), 1) + env.current()->fees().base * 2;
+        auto const startingXrp = XRP(100) +
+            baseAccountReserve(*env.current(), {.ownerCountDelta = 1}) +
+            env.current()->fees().base * 2;
 
         env.fund(startingXrp, gw, alice, bob);
         env.close();
@@ -2111,7 +2115,7 @@ public:
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            STAmount(baseAccountReserve(*env.current(), 1)).getText());
+            STAmount(baseAccountReserve(*env.current(), {.ownerCountDelta = 1})).getText());
 
         jrr = ledgerEntryState(env, bob, gw, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-300");
@@ -2132,8 +2136,9 @@ public:
         auto const xts = gw["XTS"];
         auto const xxx = gw["XXX"];
 
-        auto const startingXrp =
-            XRP(100.1) + baseAccountReserve(*env.current(), 1) + env.current()->fees().base * 2;
+        auto const startingXrp = XRP(100.1) +
+            baseAccountReserve(*env.current(), {.ownerCountDelta = 1}) +
+            env.current()->fees().base * 2;
 
         env.fund(startingXrp, gw, alice, bob);
         env.close();

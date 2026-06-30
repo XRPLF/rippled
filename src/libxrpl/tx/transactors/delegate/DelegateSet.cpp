@@ -99,7 +99,13 @@ DelegateSet::doApply()
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sleOwner, preFeeBalance_, *sponsorSle, 1, 0, ctx_.journal);
+            view(),
+            ctx_.tx,
+            sleOwner,
+            preFeeBalance_,
+            *sponsorSle,
+            {.ownerCountDelta = 1},
+            ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 

@@ -676,8 +676,8 @@ addEmptyHolding(
     }
 
     // Can the account cover the trust line reserve ?
-    if (auto const ret =
-            checkInsufficientReserve(view, tx, sleDst, priorBalance, sponsorSle, 1, 0, journal);
+    if (auto const ret = checkInsufficientReserve(
+            view, tx, sleDst, priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
         !isTesSuccess(ret))
         return tecNO_LINE_INSUF_RESERVE;
 

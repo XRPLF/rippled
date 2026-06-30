@@ -140,7 +140,13 @@ PaymentChannelCreate::doApply()
         if (!sponsorSle)
             return sponsorSle.error();
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, STAmount{preFeeBalance_}, *sponsorSle, 1, 0, j_);
+                ctx_.view(),
+                ctx_.tx,
+                sle,
+                STAmount{preFeeBalance_},
+                *sponsorSle,
+                {.ownerCountDelta = 1},
+                j_);
             !isTesSuccess(ret))
             return ret;
         if (auto const ret = checkInsufficientReserve(
@@ -149,8 +155,7 @@ PaymentChannelCreate::doApply()
                 sle,
                 STAmount{preFeeBalance_ - ctx_.tx[sfAmount].xrp()},
                 {},
-                1,
-                0,
+                {.ownerCountDelta = 1},
                 j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;

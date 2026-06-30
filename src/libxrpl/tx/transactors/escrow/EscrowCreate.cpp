@@ -439,8 +439,8 @@ EscrowCreate::doApply()
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
-    if (auto const ret =
-            checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, *sponsorSle, 1, 0, j_);
+    if (auto const ret = checkInsufficientReserve(
+            ctx_.view(), ctx_.tx, sle, balance, *sponsorSle, {.ownerCountDelta = 1}, j_);
         !isTesSuccess(ret))
         return ret;
 
@@ -448,7 +448,13 @@ EscrowCreate::doApply()
     if (isXRP(amount))
     {
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, balance - STAmount(amount).xrp(), {}, 1, 0, j_);
+                ctx_.view(),
+                ctx_.tx,
+                sle,
+                balance - STAmount(amount).xrp(),
+                {},
+                {.ownerCountDelta = 1},
+                j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }

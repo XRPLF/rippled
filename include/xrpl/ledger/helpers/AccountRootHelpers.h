@@ -39,6 +39,12 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 [[nodiscard]] XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j);
 
+struct Adjustment
+{
+    std::int32_t ownerCountDelta = 0;
+    std::int32_t accountCountDelta = 0;
+};
+
 /** Returns the account reserve, in drops.
  *
  *  Actual owner count can be adjusted by delta in ownerCountAdj
@@ -55,12 +61,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
  *  @return The account reserve amount in drops
  */
 [[nodiscard]] XRPAmount
-accountReserve(
-    ReadView const& view,
-    SLE::const_ref sle,
-    beast::Journal j,
-    std::int32_t ownerCountAdj = 0,
-    std::int32_t accountCountAdj = 0);
+accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj = {});
 
 /** Convenience overload that accepts AccountID instead of SLE.
  *
@@ -72,28 +73,19 @@ accountReserve(
  *  @return The account reserve amount in drops
  */
 [[nodiscard]] inline XRPAmount
-accountReserve(
-    ReadView const& view,
-    AccountID const& id,
-    beast::Journal j,
-    std::int32_t ownerCountAdj = 0,
-    std::int32_t accountCountAdj = 0)
+accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adjustment adj = {})
 {
-    return accountReserve(view, view.read(keylet::account(id)), j, ownerCountAdj, accountCountAdj);
+    return accountReserve(view, view.read(keylet::account(id)), j, adj);
 }
 
 /** @brief Return the hypothetical reserve required by an account with the provided counters.
  *
  *  @param view The ledger view to read from
- *  @param ownerCount Number of objects for which the account will be responsible.
- *  @param accountCount Number of accounts for which the account will be responsible.
- *                      Defaults to 1, as normally every account is responsible for its own reserve.
- *                      Can be 0 if the account is sponsored.
- *                      Can be greater than 1 if the account is sponsoring other accounts.
+ *  @param adj Adjustment to the default account reserve.
  *  @return The hypothetical reserve amount
  */
 XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount = 1);
+baseAccountReserve(ReadView const& view, Adjustment adj);
 
 /** Check if an account has insufficient reserve.
  *
@@ -114,8 +106,7 @@ checkInsufficientReserve(
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
-    std::int32_t ownerCountAdj,
-    std::int32_t accountCountAdj = 0,
+    Adjustment adj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 /** Return number of the objects which reserve is covered by the account(sle) (so called "owner
@@ -143,7 +134,7 @@ adjustOwnerCount(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
-    std::int32_t accountCountAdj,
+    std::int32_t ownerCountAdj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 /** Convenience overload that accepts AccountID instead of SLE references.
@@ -159,14 +150,14 @@ adjustOwnerCount(
     ApplyView& view,
     AccountID const& account,
     std::optional<AccountID> const& sponsor,
-    std::int32_t accountCountAdj,
+    std::int32_t ownerCountAdj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
     adjustOwnerCount(
         view,
         view.peek(keylet::account(account)),
         sponsor ? view.peek(keylet::account(*sponsor)) : SLE::pointer(),
-        accountCountAdj,
+        ownerCountAdj,
         j);
 }
 
@@ -184,7 +175,7 @@ adjustOwnerCountObj(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref objectSle,
-    std::int32_t accountCountAdj,
+    std::int32_t ownerCountAdj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 /** Convenience overload that accepts AccountID instead of account SLE reference.
@@ -200,11 +191,11 @@ adjustOwnerCountObj(
     ApplyView& view,
     AccountID const& account,
     SLE::ref objectSle,
-    std::int32_t accountCountAdj,
+    std::int32_t ownerCountAdj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
     SLE::ref accountSle = view.peek(keylet::account(account));
-    adjustOwnerCountObj(view, accountSle, objectSle, accountCountAdj, j);
+    adjustOwnerCountObj(view, accountSle, objectSle, ownerCountAdj, j);
 }
 
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
