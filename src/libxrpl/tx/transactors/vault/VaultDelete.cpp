@@ -88,13 +88,13 @@ TER
 VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
-    auto applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
 
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (auto ter = removeEmptyHolding(applyViewContext, vault->at(sfAccount), asset, j_);
         !isTesSuccess(ter))
         return ter;

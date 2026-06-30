@@ -205,7 +205,7 @@ getPageForToken(
     cp->setFieldH256(sfPreviousPageMin, np->key());
     view.update(cp);
 
-    createCallback(view, owner);
+    createCallback(ctx, owner);
 
     return (first.key < np->key()) ? np : cp;
 }
@@ -263,6 +263,7 @@ changeTokenURI(
 TER
 insertToken(ApplyViewContext& ctx, AccountID owner, STObject&& nft)
 {
+    auto& view = ctx.view;
     XRPL_ASSERT(nft.isFieldPresent(sfNFTokenID), "xrpl::nft::insertToken : has NFT token");
 
     // First, we need to locate the page the NFT belongs to, creating it
@@ -270,7 +271,7 @@ insertToken(ApplyViewContext& ctx, AccountID owner, STObject&& nft)
     // the NFT.
     SLE::pointer const page = getPageForToken(
         ctx, owner, nft[sfNFTokenID], [](ApplyViewContext& ctx, AccountID const& owner) {
-            adjustOwnerCount(ctx, owner, {}, 1, beast::Journal{beast::Journal::getNullSink()});
+            adjustOwnerCount(ctx, 1, beast::Journal{beast::Journal::getNullSink()});
         });
 
     if (!page)

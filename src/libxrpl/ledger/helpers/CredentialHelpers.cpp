@@ -70,13 +70,12 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 }
 
 TER
-deleteSLE(ApplyViewContext& ctx, SLE::ref sleCredential, beast::Journal j)
+deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j)
 {
-    auto& view = ctx.view;
     if (!sleCredential)
         return tecNO_ENTRY;
 
-    auto delSLE = [&ctx, &view, &sleCredential, j](
+    auto delSLE = [&view, &sleCredential, j](
                       AccountID const& account, SField const& node, bool isOwner) -> TER {
         auto const sleAccount = view.peek(keylet::account(account));
         if (!sleAccount)
@@ -98,7 +97,7 @@ deleteSLE(ApplyViewContext& ctx, SLE::ref sleCredential, beast::Journal j)
         }
 
         if (isOwner)
-            adjustOwnerCount(ctx, -1, j);
+            adjustOwnerCountObj(view, account, sleCredential, -1, j);
 
         return tesSUCCESS;
     };

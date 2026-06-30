@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <memory>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -389,10 +390,11 @@ CheckCash::doApply()
             STAmount const flowDeliver{
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
-            auto applyViewContext = ApplyViewContext({.view = psb, .tx = ctx_.tx});
-            auto const sponsorSle = getTxReserveSponsor(applyViewContext);
-            if (!sponsorSle)
-                return sponsorSle.error();  // LCOV_EXCL_LINE
+            auto applyViewContext = ApplyViewContext(
+                {.view = psb,
+                 .tx = ctx_.tx,
+                 .reserveContext = ReserveContext::makeFromTx(psb, ctx_.tx)});
+            auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
@@ -401,7 +403,7 @@ CheckCash::doApply()
 
                 // Can the account cover the trust line's or MPT reserve?
                 if (auto const ret = checkInsufficientReserve(
-                        psb, ctx_.tx, sleDst, preFeeBalance_, *sponsorSle, 1, 0, j_);
+                        psb, ctx_.tx, sleDst, preFeeBalance_, sponsorSle, 1, 0, j_);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
@@ -459,7 +461,7 @@ CheckCash::doApply()
                                 Issue(currency, accountID_),        // limit of zero
                                 0,                                  // quality in
                                 0,                                  // quality out
-                                *sponsorSle,                        // sponsor
+                                sponsorSle,                         // sponsor
                                 viewJ);                             // journal
                             !isTesSuccess(ter))
                         {
@@ -507,7 +509,7 @@ CheckCash::doApply()
                                 return tecINSUFFICIENT_RESERVE;
 
                             if (auto const err =
-                                    checkCreateMPT(psb, mptID, accountID_, *sponsorSle, j_);
+                                    checkCreateMPT(applyViewContext, issue, accountID_, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;

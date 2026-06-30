@@ -12,6 +12,8 @@
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Rate.h>
 
+#include <utility>
+
 namespace xrpl {
 
 template <ValidIssueType T>

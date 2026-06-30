@@ -235,12 +235,33 @@ addEmptyHolding(
     Issue const& issue,
     beast::Journal journal);
 
+[[nodiscard]] inline TER
+addEmptyHolding(
+    ApplyViewContext&& ctx,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    Issue const& issue,
+    beast::Journal journal)
+{
+    return addEmptyHolding(ctx, accountID, priorBalance, issue, journal);
+}
+
 [[nodiscard]] TER
 removeEmptyHolding(
     ApplyViewContext& ctx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal);
+
+[[nodiscard]] inline TER
+removeEmptyHolding(
+    ApplyViewContext&& ctx,
+    AccountID const& accountID,
+    Issue const& issue,
+    beast::Journal journal)
+{
+    return removeEmptyHolding(ctx, accountID, issue, journal);
+}
 
 /** Delete trustline to AMM. The passed `sle` must be obtained from a prior
  * call to view.peek(). Fail if neither side of the trustline is AMM or

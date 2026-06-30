@@ -181,7 +181,7 @@ isDeepFrozen(
 
 TER
 trustCreate(
-    ApplyViewContext& ctx,
+    ApplyView& view,
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
@@ -284,7 +284,7 @@ trustCreate(
     }
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
-    adjustOwnerCount(ctx, 1, j);
+    adjustOwnerCount(view, sleAccount, sponsorSle, 1, j);
 
     addSponsorToLedgerEntry(sleRippleState, sponsorSle, bSetHigh ? sfHighSponsor : sfLowSponsor);
 
@@ -755,7 +755,7 @@ removeEmptyHolding(
 
         auto const currentHighSponsor = getLedgerEntryReserveSponsor(view, line, sfHighSponsor);
 
-        adjustOwnerCountObj(view, sleHighAccount, currentHighSponsor, -1, journal);
+        adjustOwnerCount(view, sleHighAccount, currentHighSponsor, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.

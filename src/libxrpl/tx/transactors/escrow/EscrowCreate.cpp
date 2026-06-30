@@ -436,8 +436,7 @@ EscrowCreate::doApply()
     STAmount const amount{ctx_.tx[sfAmount]};
 
     auto const balance = sle->getFieldAmount(sfBalance).xrp();
-    auto applyViewContext = ctx_.getApplyViewContext();
-    auto const sponsorSle = getTxReserveSponsor(applyViewContext);
+    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret =

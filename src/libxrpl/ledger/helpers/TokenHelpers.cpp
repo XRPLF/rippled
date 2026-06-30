@@ -32,6 +32,7 @@
 #include <initializer_list>
 #include <limits>
 #include <string>
+#include <utility>
 #include <variant>
 
 namespace xrpl {
@@ -551,7 +552,7 @@ canTransfer(
 // --> bCheckIssuer : normally require issuer to be involved.
 static TER
 directSendNoFeeIOU(
-    ApplyViewContext& ctx,
+    ApplyView& view,
     AccountID const& uSenderID,
     AccountID const& uReceiverID,
     STAmount const& saAmount,
@@ -629,7 +630,10 @@ directSendNoFeeIOU(
             // Clear the reserve of the sender, possibly delete the line!
             auto const currentSponsor = getLedgerEntryReserveSponsor(
                 view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
-            adjustOwnerCountObj(ctx, currentSponsor, -1, j);
+            auto const senderSle = view.peek(keylet::account(uSenderID));
+            if (!senderSle)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            adjustOwnerCount(view, senderSle, currentSponsor, -1, j);
 
             removeSponsorFromLedgerEntry(
                 sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);

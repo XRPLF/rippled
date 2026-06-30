@@ -50,6 +50,12 @@ getTxReserveSponsor(ApplyViewContext& ctx)
     return SLE::pointer();
 }
 
+inline std::expected<SLE::pointer, TER>
+getTxReserveSponsor(ApplyViewContext&& ctx)
+{
+    return getTxReserveSponsor(ctx);
+}
+
 inline std::expected<SLE::const_pointer, TER>
 getTxReserveSponsor(ReadView const& view, STTx const& tx)
 {

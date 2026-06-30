@@ -116,7 +116,7 @@ public:
     getApplyViewContext()
     {
         XRPL_ASSERT(view_.has_value(), "Previous view exists");
-        return {.view = *view_, .tx = tx};
+        return {.view = *view_, .tx = tx, .reserveContext = ReserveContext::makeFromTx(*view_, tx)};
     }
 
 private:

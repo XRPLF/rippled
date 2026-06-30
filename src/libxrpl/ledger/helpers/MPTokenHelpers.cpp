@@ -34,6 +34,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace xrpl {
 
@@ -182,7 +183,7 @@ authorizeMPToken(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            adjustOwnerCountObj(view, sleAcct, sleMpt, -1, journal);
+            adjustOwnerCountObj(ctx, sleMpt, -1, journal);
 
             view.erase(sleMpt);
             return tesSUCCESS;
@@ -202,14 +203,14 @@ authorizeMPToken(
         // The "free-tier" shortcut (ownerCount < 2) does not apply once a sponsor is on
         // the tx — the sponsor must always cover the reserve (via balance or prefunded
         // budget), so this check always runs for sponsored transactions.
-        if (isSponsored || ownerCount(view, sleAcct, journal) >= 2)
+        if (isSponsored || ownerCount(sleAcct, journal) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
                     view,
                     ctx.tx,
                     sleAcct,
                     priorBalance,
-                    *ctx.reserveContext.sponsorSle,
+                    ctx.reserveContext.sponsorSle,
                     1,
                     0,
                     journal);
@@ -938,9 +939,10 @@ createMPToken(
     return tesSUCCESS;
 }
 
-TER
-checkCreateMPT(
-    xrpl::ApplyViewContext& ctx,
+static TER
+checkCreateMPTWithReserve(
+    ApplyView& view,
+    ReserveContext const& reserveCtx,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
     beast::Journal j)
@@ -952,7 +954,8 @@ checkCreateMPT(
     auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
     if (!view.exists(mptokenID))
     {
-        if (auto const err = createMPToken(view, mptIssue.getMptID(), holder, sponsorSle, 0);
+        if (auto const err =
+                createMPToken(view, mptIssue.getMptID(), holder, reserveCtx.sponsorSle, 0);
             !isTesSuccess(err))
         {
             return err;
@@ -963,9 +966,38 @@ checkCreateMPT(
             return tecINTERNAL;
         }
 
-        adjustOwnerCount(ctx, 1, j);
+        adjustOwnerCount(view, reserveCtx, 1, j);
     }
     return tesSUCCESS;
+}
+
+TER
+checkCreateMPT(
+    xrpl::ApplyViewContext& ctx,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
+    beast::Journal j)
+{
+    return checkCreateMPTWithReserve(ctx.view, ctx.reserveContext, mptIssue, holder, j);
+}
+
+TER
+checkCreateMPT(
+    ApplyView& view,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
+    SLE::ref sponsorSle,
+    beast::Journal j)
+{
+    auto const sponsorID = sponsorSle
+        ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)}
+        : std::optional<AccountID>{};
+    return checkCreateMPTWithReserve(
+        view,
+        ReserveContext{holder, view.peek(keylet::account(holder)), sponsorID, sponsorSle, nullptr},
+        mptIssue,
+        holder,
+        j);
 }
 
 std::int64_t

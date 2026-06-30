@@ -236,12 +236,33 @@ addEmptyHolding(
     Asset const& asset,
     beast::Journal journal);
 
+[[nodiscard]] inline TER
+addEmptyHolding(
+    ApplyViewContext&& ctx,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    return addEmptyHolding(ctx, accountID, priorBalance, asset, journal);
+}
+
 [[nodiscard]] TER
 removeEmptyHolding(
     ApplyViewContext& ctx,
     AccountID const& accountID,
     Asset const& asset,
     beast::Journal journal);
+
+[[nodiscard]] inline TER
+removeEmptyHolding(
+    ApplyViewContext&& ctx,
+    AccountID const& accountID,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    return removeEmptyHolding(ctx, accountID, asset, journal);
+}
 
 //------------------------------------------------------------------------------
 //

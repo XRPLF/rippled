@@ -146,7 +146,6 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
-    auto applyViewContext = ctx_.getApplyViewContext();
     auto const sequence = tx.getSeqValue();
     auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
@@ -168,6 +167,7 @@ VaultCreate::doApply()
     AccountID const pseudoId = pseudo->at(sfAccount);
     auto const asset = tx[sfAsset];
 
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (auto ter = addEmptyHolding(applyViewContext, pseudoId, preFeeBalance_, asset, j_);
         !isTesSuccess(ter))
         return ter;
@@ -245,7 +245,7 @@ VaultCreate::doApply()
 
     // Explicitly create MPToken for the vault owner
     if (auto const err = authorizeMPToken(
-            applyViewContext, preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
+            ctx_.getApplyViewContext(), preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
         !isTesSuccess(err))
         return err;
 
@@ -253,7 +253,7 @@ VaultCreate::doApply()
     if (tx.isFlag(tfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
-                applyViewContext,
+                ctx_.getApplyViewContext(),
                 preFeeBalance_,
                 mptIssuanceID,
                 pseudoId,

@@ -79,6 +79,19 @@ authorizeMPToken(
     std::uint32_t flags = 0,
     std::optional<AccountID> holderID = std::nullopt);
 
+[[nodiscard]] inline TER
+authorizeMPToken(
+    ApplyViewContext&& ctx,
+    XRPAmount const& priorBalance,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    beast::Journal journal,
+    std::uint32_t flags = 0,
+    std::optional<AccountID> holderID = std::nullopt)
+{
+    return authorizeMPToken(ctx, priorBalance, mptIssuanceID, account, journal, flags, holderID);
+}
+
 /** Check if the account lacks required authorization for MPT.
  *
  * requireAuth check is recursive for MPT shares in a vault, descending to
@@ -107,6 +120,17 @@ enforceMPTokenAuthorization(
     AccountID const& account,
     XRPAmount const& priorBalance,
     beast::Journal j);
+
+[[nodiscard]] inline TER
+enforceMPTokenAuthorization(
+    ApplyViewContext&& ctx,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    XRPAmount const& priorBalance,
+    beast::Journal j)
+{
+    return enforceMPTokenAuthorization(ctx, mptIssuanceID, account, priorBalance, j);
+}
 
 /** Resolve the underlying asset of a vault share.
  *
@@ -194,12 +218,33 @@ addEmptyHolding(
     MPTIssue const& mptIssue,
     beast::Journal journal);
 
+[[nodiscard]] inline TER
+addEmptyHolding(
+    ApplyViewContext&& ctx,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    MPTIssue const& mptIssue,
+    beast::Journal journal)
+{
+    return addEmptyHolding(ctx, accountID, priorBalance, mptIssue, journal);
+}
+
 [[nodiscard]] TER
 removeEmptyHolding(
     ApplyViewContext& ctx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
     beast::Journal journal);
+
+[[nodiscard]] inline TER
+removeEmptyHolding(
+    ApplyViewContext&& ctx,
+    AccountID const& accountID,
+    MPTIssue const& mptIssue,
+    beast::Journal journal)
+{
+    return removeEmptyHolding(ctx, accountID, mptIssue, journal);
+}
 
 //------------------------------------------------------------------------------
 //
@@ -233,9 +278,27 @@ createMPToken(
 
 TER
 checkCreateMPT(
-    xrpl::ApplyViewContext& view,
+    xrpl::ApplyViewContext& ctx,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
+    beast::Journal j);
+
+inline TER
+checkCreateMPT(
+    xrpl::ApplyViewContext&& ctx,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
+    beast::Journal j)
+{
+    return checkCreateMPT(ctx, mptIssue, holder, j);
+}
+
+TER
+checkCreateMPT(
+    ApplyView& view,
+    xrpl::MPTIssue const& mptIssue,
+    xrpl::AccountID const& holder,
+    SLE::ref sponsorSle,
     beast::Journal j);
 
 //------------------------------------------------------------------------------

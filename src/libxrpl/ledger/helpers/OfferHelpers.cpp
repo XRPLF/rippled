@@ -17,11 +17,16 @@ namespace xrpl {
 TER
 offerDelete(ApplyViewContext& ctx, SLE::ref sle, beast::Journal j)
 {
+    return offerDelete(ctx.view, sle, j);
+}
+
+TER
+offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
+{
     if (!sle)
         return tesSUCCESS;
     auto offerIndex = sle->key();
     auto owner = sle->getAccountID(sfAccount);
-    auto& view = ctx.view();
 
     // Detect legacy directories.
     uint256 const uDirectory = sle->getFieldH256(sfBookDirectory);
@@ -56,7 +61,8 @@ offerDelete(ApplyViewContext& ctx, SLE::ref sle, beast::Journal j)
         }
     }
 
-    adjustOwnerCountObj(ctx, sle, -1, j);
+    auto const ownerSle = view.peek(keylet::account(owner));
+    adjustOwnerCountObj(view, ownerSle, sle, -1, j);
 
     view.erase(sle);
 

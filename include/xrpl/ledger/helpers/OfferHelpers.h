@@ -23,4 +23,7 @@ namespace xrpl {
 TER
 offerDelete(ApplyViewContext& ctx, SLE::ref sle, beast::Journal j);
 
+TER
+offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j);
+
 }  // namespace xrpl
