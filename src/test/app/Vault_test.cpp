@@ -7728,7 +7728,7 @@ class Vault_test : public beast::unit_test::Suite
         env.enableFeature(fixCleanup3_3_0);
     }
 
-    // Focused demonstration: a depositor under a individual IOU freeze
+    // Focused demonstration: a depositor under an individual IOU freeze
     // can still withdraw to themselves (self-withdrawal), but is blocked from
     // withdrawing to a third party.
     //
@@ -7770,7 +7770,7 @@ class Vault_test : public beast::unit_test::Suite
         auto runTests = [&]() {
             auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
 
-            // Set a individual freeze on the owner's IOU trustline.
+            // Set an individual freeze on the owner's IOU trustline.
             env(trust(issuer, asset(0), owner, tfSetFreeze));
             env.close();
 

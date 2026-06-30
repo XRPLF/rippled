@@ -174,7 +174,7 @@ checkWithdrawFreeze(
     XRPL_ASSERT(
         !isPseudoAccount(view, dstAcct),
         "xrpl::checkWithdrawFreeze : destination is not a pseudo-account");
-    // AMM,Vault,LoanBroker cannot be created using Vault Shares as an asset
+    // The asset being withdrawn must not be issued by a pseudo-account
     XRPL_ASSERT(
         !isPseudoAccount(view, asset.getIssuer()),
         "xrpl::checkWithdrawFreeze : asset issuer cannot be a pseudo-account");
@@ -229,7 +229,7 @@ checkDepositFreeze(
     XRPL_ASSERT(
         !isPseudoAccount(view, srcAcct),
         "xrpl::checkDepositFreeze : source is not a pseudo-account");
-    // AMM,Vault,LoanBroker cannot be created using Vault Shares as an asset
+    // The asset being deposited must not be issued by a pseudo-account
     XRPL_ASSERT(
         !isPseudoAccount(view, asset.getIssuer()),
         "xrpl::checkDepositFreeze : asset issuer cannot be a pseudo-account");
