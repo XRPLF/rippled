@@ -36,7 +36,6 @@
 #include <rocksdb/write_batch.h>
 
 #include <atomic>
-#include <bit>
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -286,7 +285,7 @@ public:
         Status status = Status::Ok;
 
         rocksdb::ReadOptions const options;
-        rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), keyBytes);
+        rocksdb::Slice const slice(reinterpret_cast<char const*>(hash.data()), keyBytes);
 
         std::string string;
 
@@ -349,8 +348,9 @@ public:
             EncodedBlob const encoded(e);
 
             wb.Put(
-                rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), keyBytes),
-                rocksdb::Slice(std::bit_cast<char const*>(encoded.getData()), encoded.getSize()));
+                rocksdb::Slice(reinterpret_cast<char const*>(encoded.getKey()), keyBytes),
+                rocksdb::Slice(
+                    reinterpret_cast<char const*>(encoded.getData()), encoded.getSize()));
         }
 
         rocksdb::WriteOptions const options;

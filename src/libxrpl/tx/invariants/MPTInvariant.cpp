@@ -1,9 +1,13 @@
 #include <xrpl/tx/invariants/MPTInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -21,10 +25,45 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+
 namespace xrpl {
+
+namespace {
+constexpr auto kConfidentialMptTxTypes = std::to_array<TxType>({
+    ttCONFIDENTIAL_MPT_SEND,
+    ttCONFIDENTIAL_MPT_CONVERT,
+    ttCONFIDENTIAL_MPT_CONVERT_BACK,
+    ttCONFIDENTIAL_MPT_MERGE_INBOX,
+    ttCONFIDENTIAL_MPT_CLAWBACK,
+});
+
+// Clamp to the cap (== INT64_MAX) before the signed conversion. Invariant
+// tests can inject INT64_MAX + 1, which would result in undefined behavior
+// under UBSan if converted directly.
+std::int64_t
+toSignedMPTAmount(std::uint64_t amount)
+{
+    return static_cast<std::int64_t>(std::min(amount, kMaxMpTokenAmount));
+}
+
+std::int64_t
+addMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
+{
+    return delta + toSignedMPTAmount(amount);
+}
+
+std::int64_t
+subtractMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
+{
+    return delta - toSignedMPTAmount(amount);
+}
+
+}  // namespace
 
 void
 ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
@@ -436,6 +475,16 @@ ValidMPTPayment::finalize(
 {
     if (isTesSuccess(result))
     {
+        // Confidential transactions are validated by ValidConfidentialMPToken.
+        // They modify encrypted fields and sfConfidentialOutstandingAmount
+        // rather than sfMPTAmount/sfOutstandingAmount in the standard way,
+        // so ValidMPTPayment's accounting does not apply to them.
+        if (std::ranges::find(kConfidentialMptTxTypes, tx.getTxnType()) !=
+            kConfidentialMptTxTypes.end())
+        {
+            return true;
+        }
+
         bool const invariantPasses = !view.rules().enabled(featureMPTokensV2);
         if (overflow_)
         {
@@ -460,6 +509,261 @@ ValidMPTPayment::finalize(
                                 << " " << data.mptAmount;
                 return invariantPasses;
             }
+        }
+    }
+
+    return true;
+}
+
+void
+ValidConfidentialMPToken::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    // Helper to get MPToken Issuance ID safely
+    auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> uint192 {
+        if (!sle)
+            return beast::kZero;
+        if (sle->getType() == ltMPTOKEN)
+            return sle->getFieldH192(sfMPTokenIssuanceID);
+        if (sle->getType() == ltMPTOKEN_ISSUANCE)
+            return makeMptID(sle->getFieldU32(sfSequence), sle->getAccountID(sfIssuer));
+        return beast::kZero;
+    };
+
+    if (before && before->getType() == ltMPTOKEN)
+    {
+        uint192 const id = getMptID(before);
+        auto& change = changes_[id];
+        change.mptAmountDelta =
+            subtractMPTAmountDelta(change.mptAmountDelta, before->getFieldU64(sfMPTAmount));
+
+        // Cannot delete MPToken with non-zero confidential state or non-zero public amount
+        if (isDelete)
+        {
+            bool const hasPublicBalance = before->getFieldU64(sfMPTAmount) > 0;
+            bool const hasEncryptedFields = before->isFieldPresent(sfConfidentialBalanceSpending) ||
+                before->isFieldPresent(sfConfidentialBalanceInbox) ||
+                before->isFieldPresent(sfIssuerEncryptedBalance) ||
+                before->isFieldPresent(sfAuditorEncryptedBalance);
+
+            if (hasPublicBalance || hasEncryptedFields)
+                changes_[id].deletedWithEncrypted = true;
+        }
+    }
+
+    if (after && after->getType() == ltMPTOKEN)
+    {
+        uint192 const id = getMptID(after);
+        auto& change = changes_[id];
+        change.mptAmountDelta =
+            addMPTAmountDelta(change.mptAmountDelta, after->getFieldU64(sfMPTAmount));
+
+        // Encrypted field existence consistency
+        bool const hasIssuerBalance = after->isFieldPresent(sfIssuerEncryptedBalance);
+        bool const hasHolderInbox = after->isFieldPresent(sfConfidentialBalanceInbox);
+        bool const hasHolderSpending = after->isFieldPresent(sfConfidentialBalanceSpending);
+        bool const hasAuditorBalance = after->isFieldPresent(sfAuditorEncryptedBalance);
+
+        // The core encrypted balances must all exist or not exist at the same time. The auditor
+        // balance is optional, but cannot exist without the core fields.
+        if (hasHolderInbox != hasHolderSpending || hasHolderInbox != hasIssuerBalance ||
+            (hasAuditorBalance && !hasIssuerBalance))
+            changes_[id].badConsistency = true;
+
+        auto const confidentialBalanceFieldChanged = [&before, &after](auto const& field) {
+            auto const afterValue = (*after)[~field];
+            if (!afterValue)
+                return false;
+
+            if (!before || before->getType() != ltMPTOKEN)
+                return true;  // LCOV_EXCL_LINE
+
+            return (*before)[~field] != afterValue;
+        };
+
+        if (confidentialBalanceFieldChanged(sfConfidentialBalanceInbox) ||
+            confidentialBalanceFieldChanged(sfConfidentialBalanceSpending) ||
+            confidentialBalanceFieldChanged(sfIssuerEncryptedBalance) ||
+            confidentialBalanceFieldChanged(sfAuditorEncryptedBalance))
+        {
+            changes_[id].changesConfidentialFields = true;
+        }
+    }
+
+    if (before && before->getType() == ltMPTOKEN_ISSUANCE)
+    {
+        uint192 const id = getMptID(before);
+        auto& change = changes_[id];
+        if (before->isFieldPresent(sfConfidentialOutstandingAmount))
+        {
+            change.coaDelta = subtractMPTAmountDelta(
+                change.coaDelta, before->getFieldU64(sfConfidentialOutstandingAmount));
+        }
+        change.outstandingDelta = subtractMPTAmountDelta(
+            change.outstandingDelta, before->getFieldU64(sfOutstandingAmount));
+    }
+
+    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    {
+        uint192 const id = getMptID(after);
+        auto& change = changes_[id];
+
+        bool const hasCOA = after->isFieldPresent(sfConfidentialOutstandingAmount);
+        std::uint64_t const coa = (*after)[~sfConfidentialOutstandingAmount].value_or(0);
+        std::uint64_t const oa = after->getFieldU64(sfOutstandingAmount);
+
+        if (hasCOA)
+            change.coaDelta = addMPTAmountDelta(change.coaDelta, coa);
+
+        change.outstandingDelta = addMPTAmountDelta(change.outstandingDelta, oa);
+        change.issuance = after;
+
+        // COA <= OutstandingAmount
+        if (coa > oa)
+            change.badCOA = true;
+    }
+
+    if (before && after && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
+    {
+        uint192 const id = getMptID(after);
+
+        // sfConfidentialBalanceVersion must change when spending changes
+        auto const spendingBefore = (*before)[~sfConfidentialBalanceSpending];
+        auto const spendingAfter = (*after)[~sfConfidentialBalanceSpending];
+        auto const versionBefore = (*before)[~sfConfidentialBalanceVersion];
+        auto const versionAfter = (*after)[~sfConfidentialBalanceVersion];
+
+        if (spendingBefore.has_value() && spendingBefore != spendingAfter)
+        {
+            if (versionBefore == versionAfter)
+                changes_[id].badVersion = true;
+        }
+    }
+}
+
+bool
+ValidConfidentialMPToken::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (result != tesSUCCESS)
+        return true;
+
+    for (auto const& [id, checks] : changes_)
+    {
+        // Find the MPTokenIssuance
+        auto const issuance = [&]() -> std::shared_ptr<SLE const> {
+            if (checks.issuance)
+                return checks.issuance;
+            return view.read(keylet::mptokenIssuance(id));
+        }();
+
+        // Skip all invariance checks if issuance doesn't exist because that means the MPT has been
+        // deleted
+        if (!issuance)
+            continue;
+
+        // Cannot delete MPToken with non-zero confidential state
+        if (checks.deletedWithEncrypted)
+        {
+            if ((*issuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: MPToken deleted with encrypted fields while COA > 0";
+                return false;
+            }
+        }
+
+        // Encrypted field existence consistency
+        if (checks.badConsistency)
+        {
+            JLOG(j.fatal()) << "Invariant failed: MPToken encrypted field "
+                               "existence inconsistency";
+            return false;
+        }
+
+        // COA <= OutstandingAmount
+        if (checks.badCOA)
+        {
+            JLOG(j.fatal()) << "Invariant failed: Confidential outstanding amount "
+                               "exceeds total outstanding amount";
+            return false;
+        }
+
+        // Confidential balance fields may remain on a holder MPToken after all
+        // confidential balances have returned to zero. Only creating or
+        // changing those fields requires the issuance privacy flag.
+        if (checks.changesConfidentialFields)
+        {
+            if (!issuance->isFlag(lsfMPTCanHoldConfidentialBalance))
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPToken has encrypted "
+                                   "fields but Issuance does not have "
+                                   "lsfMPTCanHoldConfidentialBalance set";
+                return false;
+            }
+        }
+
+        // We only enforce this when Confidential Outstanding Amount changes (Convert, ConvertBack,
+        // ConfidentialClawback). This avoids falsely failing on Escrow or AMM operations that lock
+        // public tokens outside of ltMPTOKEN. Convert / ConvertBack:
+        // - COA and MPTAmount must have opposite deltas, which cancel each other out to zero.
+        // - OA remains unchanged.
+        // - Therefore, the net delta on both sides of the equation is zero.
+        //
+        // Clawback:
+        // - MPTAmount remains unchanged.
+        // - COA and OA must have identical deltas (mirrored on each side).
+        // - The equation remains balanced as both sides have equal offsets.
+        if (checks.coaDelta != 0)
+        {
+            if (checks.mptAmountDelta + checks.coaDelta != checks.outstandingDelta)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Token conservation "
+                                   "violation for MPT "
+                                << to_string(id);
+                return false;
+            }
+        }
+        else if (
+            std::ranges::find(kConfidentialMptTxTypes, tx.getTxnType()) !=
+            kConfidentialMptTxTypes.end())
+        {
+            // Confidential Txns should not modify public MPTAmount balance
+            // if Confidential Amount Delta is 0
+            if (checks.mptAmountDelta != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPTAmount changed by confidential "
+                                   "transaction that should not modify this field."
+                                << to_string(id);
+                return false;
+            }
+
+            // Among confidential MPT transactions, only ConfidentialMPTSend and
+            // ConfidentialMPTMergeInbox leave coaDelta unmodified. Therefore, if a confidential MPT
+            // transaction reaches here, it must be one of these two types, neither of which will
+            // modify sfOutstandingAmount
+            if (checks.outstandingDelta != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: OutstandingAmount changed "
+                                   "by confidential transaction that should not "
+                                   "modify it for MPT "
+                                << to_string(id);
+                return false;
+            }
+        }
+
+        if (checks.badVersion)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: MPToken sfConfidentialBalanceVersion not updated when "
+                   "sfConfidentialBalanceSpending changed";
+            return false;
         }
     }
 
@@ -509,6 +813,15 @@ ValidMPTTransfer::isAuthorized(
     AccountID const& holder,
     bool reqAuth) const
 {
+    // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of their
+    // participants and are implicitly authorized for any MPT they hold,
+    // including vault shares whose underlying asset would otherwise require
+    // auth.  Exempt them here rather than relying on requireAuth: the recursive
+    // share -> underlying descent in requireAuth fails for a pseudo-account
+    // that holds the share but not the underlying.
+    if (isPseudoAccount(view, holder, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
+        return true;
+
     auto const key = keylet::mptoken(mptid, holder);
     auto const it = deletedAuthorized_.find(key.key);
     if (it != deletedAuthorized_.end())
@@ -524,6 +837,8 @@ ValidMPTTransfer::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
+    auto const fix330Enabled = view.rules().enabled(fixCleanup3_3_0);
+
     if (hasPrivilege(tx, OverrideFreeze))
         return true;
 
@@ -584,12 +899,29 @@ ValidMPTTransfer::finalize(
                     ++senders;
                 }
 
-                // Check once: if any involved account is frozen, the whole
-                // issuance transfer is considered frozen. Only need to check for
-                // frozen if there is a transfer of funds.
+                // Check once: if any involved account is frozen, the whole issuance transfer is
+                // considered frozen. Only need to check for frozen if there is a transfer of funds.
+                //
+                // Post-fix330: full isFrozen() applies — vault-share transitive freeze is part of
+                // the freeze semantics for all changed holders.
+                //
+                // Pre-fix330: legacy AMM withdraw only checked individual freeze on the
+                // destination, not the transitive vault freeze.  All other paths (and the AMM
+                // account itself as sender) did apply the full check.
+                MPTIssue const issue{mptID};
+                auto const legacyAccountFrozen = [&] {
+                    if (isGlobalFrozen(view, issue) || isIndividualFrozen(view, account, issue))
+                        return true;
+                    bool const isReceiver =
+                        !value.amtBefore.has_value() || *value.amtAfter > *value.amtBefore;
+                    if (txnType == ttAMM_WITHDRAW && isReceiver)
+                        return false;
+                    return isVaultPseudoAccountFrozen(view, account, issue, 0);
+                };
+                bool const accountFrozen =
+                    fix330Enabled ? isFrozen(view, account, issue) : legacyAccountFrozen();
                 if (!invalidTransfer &&
-                    (isFrozen(view, account, MPTIssue{mptID}) ||
-                     !isAuthorized(view, mptID, account, reqAuth)))
+                    (accountFrozen || !isAuthorized(view, mptID, account, reqAuth)))
                 {
                     invalidTransfer = true;
                 }
