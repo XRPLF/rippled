@@ -10,6 +10,7 @@ libxrpl.crypto > xrpl.basics
 libxrpl.json > xrpl.basics
 libxrpl.json > xrpl.json
 libxrpl.ledger > xrpl.basics
+libxrpl.ledger > xrpl.core
 libxrpl.ledger > xrpl.json
 libxrpl.ledger > xrpl.ledger
 libxrpl.ledger > xrpl.nodestore
@@ -207,6 +208,7 @@ tests.libxrpl > xrpl.net
 tests.libxrpl > xrpl.nodestore
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
+tests.libxrpl > xrpl.rdb
 tests.libxrpl > xrpl.server
 tests.libxrpl > xrpl.shamap
 tests.libxrpl > xrpl.tx

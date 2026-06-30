@@ -1,18 +1,24 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Mutex.hpp>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/core/StartUpType.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/Wallet.h>
 
 #include <boost/asio/io_context.hpp>
 
 #include <helpers/TestFamily.h>
 #include <helpers/TestSink.h>
 
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <stdexcept>
 
@@ -81,6 +87,7 @@ class TestServiceRegistry : public ServiceRegistry
         logs_.journal("TaggedCache")};
     PendingSaves pendingSaves_;
     std::optional<uint256> trapTxID_;
+    Mutex<std::unique_ptr<DatabaseCon>> walletDB_;
 
 public:
     TestServiceRegistry() = default;
@@ -358,10 +365,20 @@ public:
         return trapTxID_;
     }
 
+    /** Returns a lazily-created in-memory wallet DB suitable for tests. */
     DatabaseCon&
     getWalletDB() override
     {
-        throw std::logic_error("TestServiceRegistry::getWalletDB() not implemented");
+        auto lock = walletDB_.lock();
+        auto& walletDB = *lock;
+        if (!walletDB)
+        {
+            DatabaseCon::Setup setup;
+            setup.standAlone = true;
+            setup.startUp = StartUpType::Normal;
+            walletDB = makeWalletDB(setup, logs_.journal("WalletDB"));
+        }
+        return *walletDB;
     }
 
     // Temporary: Get the underlying Application
