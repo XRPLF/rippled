@@ -630,15 +630,14 @@ AMMWithdraw::withdraw(
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            STAmount const balance = (*sleAccount)[sfBalance];
-            std::uint32_t const currentOwnerCount = ownerCount(view, sleAccount, journal);
-
+            auto const balance = (*sleAccount)[sfBalance]->xrp();
+            std::uint32_t const currentOwnerCount = ownerCount(sleAccount, journal);
             // See also TrustSet::doApply() and MPTokenAuthorize::authorize()
             XRPAmount const reserve(
                 (currentOwnerCount < 2) ? XRPAmount(beast::kZero)
                                         : accountReserve(view, sleAccount, journal, 1));
 
-            auto const balanceAdj = isIssue ? std::max(priorBalance, balance.xrp()) : priorBalance;
+            auto const balanceAdj = isIssue ? std::max(priorBalance, balance) : priorBalance;
             if (balanceAdj < reserve)
                 return tecINSUFFICIENT_RESERVE;
         }
