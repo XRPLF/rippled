@@ -398,6 +398,10 @@ TxQ::canBeHeld(
         ((flags & TapFailHard) != 0u))
         return telCAN_NOT_QUEUE;
 
+    // Disallow delegated transactions from being queued.
+    if (tx.isFieldPresent(sfDelegate))
+        return telCAN_NOT_QUEUE;
+
     {
         // To be queued and relayed, the transaction needs to
         // promise to stick around for long enough that it has
@@ -760,7 +764,7 @@ TxQ::apply(
     // If the transaction needs a Ticket is that Ticket in the ledger?
     SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
-    if (txSeqProx.isTicket() && !view.exists(keylet::kTicket(account, txSeqProx)))
+    if (txSeqProx.isTicket() && !view.exists(keylet::ticket(account, txSeqProx)))
     {
         if (txSeqProx.value() < acctSeqProx.value())
         {
