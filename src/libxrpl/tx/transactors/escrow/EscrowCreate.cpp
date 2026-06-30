@@ -436,7 +436,9 @@ EscrowCreate::doApply()
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
 
-    auto const balance = sle->getFieldAmount(sfBalance).xrp();
+    auto const balance = view().rules().enabled(featureSponsor)
+        ? preFeeBalance_
+        : sle->getFieldAmount(sfBalance).xrp();
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
