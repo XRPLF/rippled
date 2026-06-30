@@ -128,6 +128,7 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
     temBAD_MPT,
+    temBAD_CIPHERTEXT,
 };
 
 //------------------------------------------------------------------------------
@@ -358,6 +359,11 @@ enum TECcodes : TERUnderlyingType {
     tecLIMIT_EXCEEDED = 195,
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
+    // DEPRECATED: This error code tecNO_DELEGATE_PERMISSION is reserved for
+    // backward compatibility with historical data on non-prod networks, can be
+    // reclaimed after those networks reset.
+    tecNO_DELEGATE_PERMISSION = 198,
+    tecBAD_PROOF = 199,
 };
 
 //------------------------------------------------------------------------------

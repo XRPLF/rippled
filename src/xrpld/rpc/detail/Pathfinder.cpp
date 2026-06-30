@@ -646,21 +646,17 @@ Pathfinder::getBestPaths(
         {
             usePath = true;
         }
-        else if (extraPathsIterator->quality < pathsIterator->quality)
+        else if (extraPathsIterator->quality != pathsIterator->quality)
         {
-            useExtraPath = true;
+            // Prefer the lower (better) quality value
+            useExtraPath = extraPathsIterator->quality < pathsIterator->quality;
+            usePath = !useExtraPath;
         }
-        else if (extraPathsIterator->quality > pathsIterator->quality)
+        else if (extraPathsIterator->liquidity != pathsIterator->liquidity)
         {
-            usePath = true;
-        }
-        else if (extraPathsIterator->liquidity > pathsIterator->liquidity)
-        {
-            useExtraPath = true;
-        }
-        else if (extraPathsIterator->liquidity < pathsIterator->liquidity)
-        {
-            usePath = true;
+            // Equal quality: prefer the higher liquidity
+            useExtraPath = extraPathsIterator->liquidity > pathsIterator->liquidity;
+            usePath = !useExtraPath;
         }
         else
         {
@@ -795,31 +791,22 @@ Pathfinder::getPathsOut(
                     for (auto const& rspEntry : *lines)
                     {
                         if (pathAsset.get<Currency>() != rspEntry.getLimit().get<Issue>().currency)
-                        {
-                        }
-                        else if (
-                            rspEntry.getBalance() <= beast::kZero &&
+                            continue;
+                        if (rspEntry.getBalance() <= beast::kZero &&
                             (!rspEntry.getLimitPeer() ||
                              -rspEntry.getBalance() >= rspEntry.getLimitPeer() ||
                              (bAuthRequired && !rspEntry.getAuth())))
-                        {
-                        }
-                        else if (isDstAsset && dstAccount == rspEntry.getAccountIDPeer())
+                            continue;
+                        if (isDstAsset && dstAccount == rspEntry.getAccountIDPeer())
                         {
                             count += 10000;  // count a path to the destination extra
+                            continue;
                         }
-                        else if (rspEntry.getNoRipplePeer())
-                        {
-                            // This probably isn't a useful path out
-                        }
-                        else if (rspEntry.getFreezePeer())
-                        {
-                            // Not a useful path out
-                        }
-                        else
-                        {
-                            ++count;
-                        }
+                        if (rspEntry.getNoRipplePeer())
+                            continue;  // This probably isn't a useful path out
+                        if (rspEntry.getFreezePeer())
+                            continue;  // Not a useful path out
+                        ++count;
                     }
                 }
             },
@@ -828,26 +815,17 @@ Pathfinder::getPathsOut(
                 {
                     for (auto const& mpt : *mpts)
                     {
-                        if (pathAsset.get<MPTID>() != mpt.getMptID())
-                        {
-                        }
-                        else if (mpt.isZeroBalance() || mpt.isMaxedOut())
-                        {
-                        }
-                        else if (bAuthRequired)
-                        {
-                        }
-                        else if (isDstAsset && dstAccount == getMPTIssuer(mpt))
+                        if (pathAsset.get<MPTID>() != mpt.getMptID() || mpt.isZeroBalance() ||
+                            mpt.isMaxedOut() || bAuthRequired)
+                            continue;
+                        if (isDstAsset && dstAccount == getMPTIssuer(mpt))
                         {
                             count += 10000;
+                            continue;
                         }
-                        else if (isIndividualFrozen(*ledger_, account, MPTIssue{mpt.getMptID()}))
-                        {
-                        }
-                        else
-                        {
-                            ++count;
-                        }
+                        if (isIndividualFrozen(*ledger_, account, MPTIssue{mpt.getMptID()}))
+                            continue;
+                        ++count;
                     }
                 }
             });
@@ -951,7 +929,7 @@ Pathfinder::isNoRipple(
     AccountID const& toAccount,
     Currency const& currency)
 {
-    auto sleRipple = ledger_->read(keylet::line(toAccount, fromAccount, currency));
+    auto sleRipple = ledger_->read(keylet::trustLine(toAccount, fromAccount, currency));
 
     auto const flag((toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
 
@@ -1117,8 +1095,9 @@ Pathfinder::addLink(
                             if (checkAsset())
                             {
                                 // Can't leave on this path
+                                continue;
                             }
-                            else if (bToDestination)
+                            if (bToDestination)
                             {
                                 // destination is always worth trying
                                 if (uEndPathAsset == dstAmount_.asset())

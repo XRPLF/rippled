@@ -72,7 +72,6 @@ jobs:
       issues: write
       contents: read
     with:
-      check_only_changed: false
       create_issue_on_failure: ${{ github.event_name == 'schedule' }}
 
   build-test:

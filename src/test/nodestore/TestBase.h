@@ -73,9 +73,7 @@ public:
                     case 2:
                         return NodeObjectType::TransactionNode;
                     case 3:
-                        return NodeObjectType::Unknown;
                     default:
-                        // will never happen, but make static analysis tool happy.
                         return NodeObjectType::Unknown;
                 }
             }();
