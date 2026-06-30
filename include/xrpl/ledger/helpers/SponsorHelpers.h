@@ -34,18 +34,6 @@ getTxReserveSponsorAccountID(STTx const& tx)
     return {};
 }
 
-inline std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyViewContext const& ctx)
-{
-    return ctx.reserveContext.sponsorSle;
-}
-
-inline std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyViewContext&& ctx)
-{
-    return getTxReserveSponsor(ctx);
-}
-
 inline std::expected<SLE::const_pointer, TER>
 getTxReserveSponsor(ReadView const& view, STTx const& tx)
 {
