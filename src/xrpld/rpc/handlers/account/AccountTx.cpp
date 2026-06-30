@@ -39,8 +39,8 @@
 
 namespace xrpl {
 
-std::expected<DelegateFilter, json::Value>
-DelegateFilter::create(json::Value const& delegateNode)
+static std::expected<DelegateFilter, json::Value>
+parseDelegateFilter(json::Value const& delegateNode)
 {
     if (!delegateNode.isObject())
         return std::unexpected(RPC::invalidFieldError(jss::delegate));
@@ -430,6 +430,10 @@ populateJsonResponse(
 //   limit: integer,                 // optional
 //   marker: object {ledger: ledger_index, seq: txn_sequence} // optional,
 //   resume previous query
+//   delegate: object {              // optional
+//     delegate_filter: string,      // required; "actor" or "authorizer"
+//     counter_party: account        // optional
+//   }
 // }
 json::Value
 doAccountTx(RPC::JsonContext& context)
@@ -500,7 +504,7 @@ doAccountTx(RPC::JsonContext& context)
 
     if (params.isMember(jss::delegate))
     {
-        if (auto const filter = DelegateFilter::create(params[jss::delegate]); filter.has_value())
+        if (auto const filter = parseDelegateFilter(params[jss::delegate]); filter.has_value())
         {
             args.delegate = *filter;
         }

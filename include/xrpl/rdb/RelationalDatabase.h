@@ -3,7 +3,6 @@
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/LedgerShortcut.h>
@@ -13,8 +12,6 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
-
-#include <expected>
 
 namespace xrpl {
 
@@ -44,11 +41,6 @@ enum class DelegateType {
 
 struct DelegateFilter
 {
-    // Parses a "delegate" JSON node into a DelegateFilter.
-    // Returns an error json::Value if the node is malformed.
-    static std::expected<DelegateFilter, json::Value>
-    create(json::Value const& delegateNode);
-
     DelegateType type = DelegateType::Actor;
     std::optional<AccountID> counterparty;
 };
