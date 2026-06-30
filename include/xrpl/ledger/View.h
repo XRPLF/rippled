@@ -201,26 +201,13 @@ canWithdraw(ReadView const& view, STTx const& tx);
 
 [[nodiscard]] TER
 doWithdraw(
-    ApplyViewContext& ctx,
-    AccountID const& senderAcct,
-    AccountID const& dstAcct,
-    AccountID const& sourceAcct,
-    XRPAmount priorBalance,
-    STAmount const& amount,
-    beast::Journal j);
-
-inline TER
-doWithdraw(
     ApplyViewContext&& ctx,
     AccountID const& senderAcct,
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
     XRPAmount priorBalance,
     STAmount const& amount,
-    beast::Journal j)
-{
-    return doWithdraw(ctx, senderAcct, dstAcct, sourceAcct, priorBalance, amount, j);
-}
+    beast::Journal j);
 
 /** Deleter function prototype. Returns the status of the entry deletion
  * (if should not be skipped) and if the entry should be skipped. The status

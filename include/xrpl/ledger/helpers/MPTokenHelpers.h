@@ -71,26 +71,13 @@ canAddHolding(ReadView const& view, MPTIssue const& mptIssue);
 
 [[nodiscard]] TER
 authorizeMPToken(
-    ApplyViewContext& ctx,
-    XRPAmount const& priorBalance,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    beast::Journal journal,
-    std::uint32_t flags = 0,
-    std::optional<AccountID> holderID = std::nullopt);
-
-[[nodiscard]] inline TER
-authorizeMPToken(
     ApplyViewContext&& ctx,
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     beast::Journal journal,
     std::uint32_t flags = 0,
-    std::optional<AccountID> holderID = std::nullopt)
-{
-    return authorizeMPToken(ctx, priorBalance, mptIssuanceID, account, journal, flags, holderID);
-}
+    std::optional<AccountID> holderID = std::nullopt);
 
 /** Check if the account lacks required authorization for MPT.
  *
@@ -115,22 +102,11 @@ requireAuth(
  */
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
-    ApplyViewContext& ctx,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    XRPAmount const& priorBalance,
-    beast::Journal j);
-
-[[nodiscard]] inline TER
-enforceMPTokenAuthorization(
     ApplyViewContext&& ctx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,
-    beast::Journal j)
-{
-    return enforceMPTokenAuthorization(ctx, mptIssuanceID, account, priorBalance, j);
-}
+    beast::Journal j);
 
 /** Resolve the underlying asset of a vault share.
  *
@@ -212,39 +188,18 @@ canMPTTradeAndTransfer(
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyViewContext& ctx,
-    AccountID const& accountID,
-    XRPAmount priorBalance,
-    MPTIssue const& mptIssue,
-    beast::Journal journal);
-
-[[nodiscard]] inline TER
-addEmptyHolding(
     ApplyViewContext&& ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
-    beast::Journal journal)
-{
-    return addEmptyHolding(ctx, accountID, priorBalance, mptIssue, journal);
-}
+    beast::Journal journal);
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyViewContext& ctx,
-    AccountID const& accountID,
-    MPTIssue const& mptIssue,
-    beast::Journal journal);
-
-[[nodiscard]] inline TER
-removeEmptyHolding(
     ApplyViewContext&& ctx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
-    beast::Journal journal)
-{
-    return removeEmptyHolding(ctx, accountID, mptIssue, journal);
-}
+    beast::Journal journal);
 
 //------------------------------------------------------------------------------
 //

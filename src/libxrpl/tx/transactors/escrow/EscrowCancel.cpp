@@ -178,11 +178,10 @@ EscrowCancel::doApply()
 
         auto const issuer = amount.getIssuer();
         bool const createAsset = account == accountID_;
-        auto applyViewContext = ctx_.getApplyViewContext();
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        applyViewContext,
+                        ctx_.getApplyViewContext(),
                         kParityRate,
                         ctx_.view().rules().enabled(fixCleanup3_2_0) ? sle : slep,
                         preFeeBalance_,

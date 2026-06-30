@@ -167,8 +167,7 @@ VaultCreate::doApply()
     AccountID const pseudoId = pseudo->at(sfAccount);
     auto const asset = tx[sfAsset];
 
-    auto applyViewContext = ctx_.getApplyViewContext();
-    if (auto ter = addEmptyHolding(applyViewContext, pseudoId, preFeeBalance_, asset, j_);
+    if (auto ter = addEmptyHolding(ctx_.getApplyViewContext(), pseudoId, preFeeBalance_, asset, j_);
         !isTesSuccess(ter))
         return ter;
 
@@ -198,7 +197,7 @@ VaultCreate::doApply()
             : keylet::line(pseudoId, asset.get<Issue>()).key;
     }();
     auto const maybeShare = MPTokenIssuanceCreate::create(
-        applyViewContext,
+        ctx_.getApplyViewContext(),
         j_,
         {
             .priorBalance = std::nullopt,
