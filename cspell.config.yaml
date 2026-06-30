@@ -60,6 +60,7 @@ words:
   - autobridging
   - bimap
   - bindir
+  - blindings
   - bookdir
   - Bougalis
   - Britto
@@ -95,6 +96,7 @@ words:
   - daria
   - dcmake
   - dearmor
+  - decryptor
   - dedented
   - deleteme
   - demultiplexer
@@ -106,6 +108,7 @@ words:
   - distro
   - doxyfile
   - dxrpl
+  - elgamal
   - enabled
   - enablerepo
   - endmacro
@@ -119,6 +122,7 @@ words:
   - fmtdur
   - fsanitize
   - funclets
+  - Gamal
   - gcov
   - gcovr
   - ghead
@@ -216,6 +220,7 @@ words:
   - partitioner
   - paychan
   - paychans
+  - Pedersen
   - permdex
   - perminute
   - permissioned
@@ -239,6 +244,10 @@ words:
   - Raphson
   - rcflags
   - replayer
+  - rerandomize
+  - rerandomization
+  - rerandomized
+  - rerandomizes
   - rerere
   - retriable
   - RIPD
@@ -255,6 +264,7 @@ words:
   - sahyadri
   - Satoshi
   - scons
+  - Schnorr
   - secp
   - sendq
   - seqit
@@ -285,6 +295,7 @@ words:
   - stvar
   - stvector
   - stxchainattestations
+  - summands
   - superpeer
   - superpeers
   - takergets

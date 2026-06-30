@@ -8,6 +8,7 @@
 #include <boost/asio/spawn.hpp>
 #include <boost/system/detail/error_code.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <condition_variable>  // IWYU pragma: keep
 #include <cstddef>
@@ -94,18 +95,14 @@ class io_latency_probe_test : public beast::unit_test::Suite, public beast::test
         auto
         getMax()
         {
-            return std::chrono::duration_cast<D>(
-                       *std::max_element(elapsedTimes.begin(), elapsedTimes.end()))
-                .count();
+            return std::chrono::duration_cast<D>(*std::ranges::max_element(elapsedTimes)).count();
         }
 
         template <class D>
         auto
         getMin()
         {
-            return std::chrono::duration_cast<D>(
-                       *std::min_element(elapsedTimes.begin(), elapsedTimes.end()))
-                .count();
+            return std::chrono::duration_cast<D>(*std::ranges::min_element(elapsedTimes)).count();
         }
     };
 #endif
