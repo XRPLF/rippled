@@ -47,6 +47,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -923,20 +924,44 @@ class AccountTx_test : public beast::unit_test::Suite
         env.close();
 
         auto const countTxs = [&](AccountID const& account,
-                                  json::Value const& delegateParams) -> int {
-            json::Value params;
-            params[jss::account] = toBase58(account);
-            params[jss::ledger_index_min] = -1;
-            params[jss::ledger_index_max] = -1;
+                                  json::Value const& delegateParams,
+                                  std::optional<std::uint32_t> const limit = std::nullopt) -> int {
+            int count = 0;
+            json::Value marker;
+            bool haveMarker = false;
+            int pages = 0;
 
-            if (!delegateParams.isNull())
-                params[jss::delegate] = delegateParams;
+            while (true)
+            {
+                json::Value params;
+                params[jss::account] = toBase58(account);
+                params[jss::ledger_index_min] = -1;
+                params[jss::ledger_index_max] = -1;
 
-            auto const res = env.rpc("json", "account_tx", to_string(params));
+                if (!delegateParams.isNull())
+                    params[jss::delegate] = delegateParams;
+                if (limit)
+                    params[jss::limit] = *limit;
+                if (haveMarker)
+                    params[jss::marker] = marker;
 
-            if (res[jss::result].isMember(jss::transactions))
-                return res[jss::result][jss::transactions].size();
-            return 0;
+                auto const res = env.rpc("json", "account_tx", to_string(params));
+                auto const& result = res[jss::result];
+
+                if (result.isMember(jss::transactions))
+                    count += result[jss::transactions].size();
+
+                if (!limit || !result.isMember(jss::marker))
+                    break;
+
+                marker = result[jss::marker];
+                haveMarker = true;
+                ++pages;
+                if (!BEAST_EXPECT(pages < 20))
+                    break;
+            }
+
+            return count;
         };
 
         auto const checkError = [&](json::Value const& delegateParams,
@@ -1066,6 +1091,34 @@ class AccountTx_test : public beast::unit_test::Suite
             json::Value p;
             p[jss::delegate_filter] = "actor";
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
+        }
+
+        // Regular-key-signed non-delegated TX: Alice pays Bob, signed by Bob
+        // as Alice's regular key. This must not be treated as delegation.
+        {
+            env(regkey(alice, bob));
+            env.close();
+            env(pay(alice, bob, XRP(1)));
+            env.close();
+
+            json::Value actorFilter;
+            actorFilter[jss::delegate_filter] = "actor";
+            BEAST_EXPECT(countTxs(alice.id(), actorFilter) == 1);
+            // limit: 1 forces pagination past newer non-delegated rows.
+            BEAST_EXPECT(countTxs(alice.id(), actorFilter, 1) == 1);
+
+            actorFilter[jss::counter_party] = bob.human();
+            BEAST_EXPECT(countTxs(alice.id(), actorFilter) == 1);
+            BEAST_EXPECT(countTxs(alice.id(), actorFilter, 1) == 1);
+
+            json::Value authorizerFilter;
+            authorizerFilter[jss::delegate_filter] = "authorizer";
+            BEAST_EXPECT(countTxs(bob.id(), authorizerFilter) == 1);
+            BEAST_EXPECT(countTxs(bob.id(), authorizerFilter, 1) == 1);
+
+            authorizerFilter[jss::counter_party] = alice.human();
+            BEAST_EXPECT(countTxs(bob.id(), authorizerFilter) == 1);
+            BEAST_EXPECT(countTxs(bob.id(), authorizerFilter, 1) == 1);
         }
     }
 

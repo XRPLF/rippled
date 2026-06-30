@@ -29,7 +29,6 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
@@ -1012,19 +1011,10 @@ passesDelegateFilter(
 
     AccountID const txOwner = tx.getAccountID(sfAccount);
 
-    // Use delegate if present, otherwise check if multisign is done
-    AccountID txSigner;
-    if (tx.isFieldPresent(sfDelegate))
-    {
-        txSigner = tx.getAccountID(sfDelegate);
-    }
-    else
-    {
-        auto const signingPubKeyBlob = tx.getSigningPubKey();
-        if (signingPubKeyBlob.empty())
-            return false;
-        txSigner = calcAccountID(PublicKey(makeSlice(signingPubKeyBlob)));
-    }
+    if (!tx.isFieldPresent(sfDelegate))
+        return false;
+
+    AccountID const txSigner = tx.getAccountID(sfDelegate);
 
     switch (filter.type)
     {
@@ -1081,6 +1071,7 @@ accountTxPage(
 {
     int total = 0;
 
+    bool const hasDelegateFilter = options.delegate.has_value();
     bool lookingForMarker = options.marker.has_value();
 
     std::uint32_t numberOfResults = 0;
@@ -1119,11 +1110,11 @@ accountTxPage(
           AND AccountTransactions.Account = '%s' WHERE
           )");
 
-    std::string sql;
-
     // SQL's BETWEEN uses a closed interval ([a,b])
 
     char const* const order = forward ? "ASC" : "DESC";
+
+    std::string sql;
 
     if (findLedger == 0)
     {
@@ -1168,6 +1159,11 @@ accountTxPage(
     {
         Blob rawData;
         Blob rawMeta;
+        // Delegate filtering happens after SQL, so skipped rows need their own
+        // continuation marker accounting.
+        std::uint32_t fetchedRows = 0;
+        std::optional<RelationalDatabase::AccountTxMarker> lastEmitted;
+        std::optional<RelationalDatabase::AccountTxMarker> lastScanned;
 
         // SOCI requires boost::optional (not std::optional) as parameters.
         boost::optional<std::uint64_t> ledgerSeq;
@@ -1189,18 +1185,31 @@ accountTxPage(
 
         while (st.fetch())
         {
+            if (hasDelegateFilter)
+            {
+                ++fetchedRows;
+                lastScanned = {
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
+            }
+
             if (lookingForMarker)
             {
                 if (findLedger == ledgerSeq.value_or(0) && findSeq == txnSeq.value_or(0))
                 {
                     lookingForMarker = false;
+                    // Delegate markers are continuation cursors for the last
+                    // scanned row, so resume after the marker row.
+                    if (hasDelegateFilter)
+                        continue;
                 }
                 else
                 {
                     continue;
                 }
             }
-            else if (numberOfResults == 0)
+
+            if (!hasDelegateFilter && numberOfResults == 0)
             {
                 newmarker = {
                     .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
@@ -1226,10 +1235,21 @@ accountTxPage(
                 rawMeta.clear();
             }
 
-            if (options.delegate.has_value() && !rawData.empty())
+            if (hasDelegateFilter)
             {
-                if (!passesDelegateFilter(rawData, options.delegate.value(), options.account))
+                if (rawData.empty() ||
+                    !passesDelegateFilter(rawData, options.delegate.value(), options.account))
+                {
+                    rawData.clear();
+                    rawMeta.clear();
                     continue;
+                }
+
+                if (numberOfResults == 0)
+                {
+                    newmarker = lastEmitted;
+                    break;
+                }
             }
 
             // Work around a bug that could leave the metadata missing
@@ -1253,7 +1273,18 @@ accountTxPage(
 
             --numberOfResults;
             total++;
+            if (hasDelegateFilter)
+            {
+                lastEmitted = {
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
+            }
         }
+
+        // If this filtered page did not fill the requested number of results,
+        // still return a marker so the caller can continue scanning later rows.
+        if (hasDelegateFilter && !newmarker && !lookingForMarker && fetchedRows == queryLimit)
+            newmarker = lastScanned;
     }
 
     return {newmarker, total};
