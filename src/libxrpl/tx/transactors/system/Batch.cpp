@@ -484,9 +484,8 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         }
     }
 
-    // Every required signer must be matched. This is cheaper than the signature
-    // check below, so verify it first. Also covers sfBatchSigners being absent
-    // while inner txns require signers (numReqSignersMatched stays 0).
+    // Every required signer must be matched. Also covers sfBatchSigners being
+    // absent while inner txns require signers (numReqSignersMatched stays 0).
     if (numReqSignersMatched != requiredSigners.size())
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "

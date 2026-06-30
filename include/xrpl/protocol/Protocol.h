@@ -310,8 +310,8 @@ constexpr std::size_t kPermissionMaxSize = 10;
 
 /** The maximum number of transactions that can be in a batch. */
 constexpr std::size_t kMaxBatchTxCount = 8;
-  
-  /** The maximum number of batch signers. */
+
+/** The maximum number of batch signers. */
 constexpr std::size_t kMaxBatchSigners = kMaxBatchTxCount * 3;
 
 /** Length of a secp256k1 scalar in bytes. */

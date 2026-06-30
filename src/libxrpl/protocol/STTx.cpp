@@ -755,7 +755,7 @@ isBatchRawTransactionOkay(STObject const& st, std::string& reason)
     // sfRawTransactions only appears on a Batch. passesLocalChecks runs on
     // unverified user and peer input, so reject (rather than assert) a non-batch
     // transaction that carries it.
-    if (safeCast<TxType>(st.getFieldU16(sfTransactionType)) != ttBATCH)
+    if (st.getFieldU16(sfTransactionType) != ttBATCH)
     {
         reason = "Only Batch transactions may contain raw transactions.";
         return false;
