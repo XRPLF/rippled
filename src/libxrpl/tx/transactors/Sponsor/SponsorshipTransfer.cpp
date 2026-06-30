@@ -16,7 +16,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <bit>
 #include <cstdint>
@@ -123,29 +122,15 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
 {
     switch (sle->getType())
     {
-        case ltNFTOKEN_OFFER:
-        case ltORACLE:
-        case ltPERMISSIONED_DOMAIN:
-        case ltVAULT:
-        case ltLOAN_BROKER:
-            return sle->getAccountID(sfOwner);
         case ltCHECK:
-        case ltDID:
-        case ltTICKET:
-        case ltOFFER:
-        case ltXCHAIN_OWNED_CLAIM_ID:
-        case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
         case ltESCROW:
         case ltPAYCHAN:
         case ltMPTOKEN:
         case ltDELEGATE:
-        case ltBRIDGE:
         case ltDEPOSIT_PREAUTH:
             return sle->getAccountID(sfAccount);
         case ltMPTOKEN_ISSUANCE:
             return sle->getAccountID(sfIssuer);
-        case ltLOAN:
-            return sle->getAccountID(sfBorrower);
         case ltSIGNER_LIST: {
             auto const signerList = view.read(keylet::signers(account));
             if (!signerList)
@@ -158,12 +143,6 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
             if (sle->isFlag(lsfAccepted))
                 return sle->getAccountID(sfSubject);
             return sle->getAccountID(sfIssuer);
-        }
-        case ltNFTOKEN_PAGE: {
-            // the upper 20 bytes of the index of ltNFTokenPage are the Owner's
-            // AccountID
-            uint256 const& key = sle->key();
-            return AccountID::fromVoid(key.data());
         }
         case ltRIPPLE_STATE: {
             if (sle->isFlag(lsfHighReserve))
@@ -180,38 +159,11 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
             }
             return std::nullopt;
         }
-        case ltACCOUNT_ROOT: {
-            // AccountRoot is not supported for object sponsorship
-            return std::nullopt;
-        }
-        case ltNEGATIVE_UNL:
-        case ltDIR_NODE:
-        case ltAMENDMENTS:
-        case ltLEDGER_HASHES:
-        case ltFEE_SETTINGS:
-        case ltAMM:
-            return std::nullopt;
         default:
+            UNREACHABLE("Object is not supported by sponsorship.");
             return std::nullopt;
     };
 }
-
-template <typename T>
-inline std::uint32_t
-getLedgerEntryOwnerCount(T const& sle)
-{
-    switch (sle->getType())
-    {
-        case ltORACLE: {
-            return OracleSet::calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
-        }
-        // Vaults require 2 owner counts (the vault and a pseudo-account)
-        case ltVAULT:
-            return 2;
-        default:
-            return 1;
-    }
-};
 
 template <typename T>
 inline SF_ACCOUNT const&
@@ -277,13 +229,9 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             case ltDEPOSIT_PREAUTH:
             case ltMPTOKEN:
             case ltMPTOKEN_ISSUANCE:
-            case ltLOAN:
             case ltCREDENTIAL:
             case ltRIPPLE_STATE:
             case ltSIGNER_LIST:
-            // TBD object types (Check / Escrow / PaymentChannel) — kept
-            // sponsorable in v1; revisit when their tx-level support is
-            // formalized.
             case ltCHECK:
             case ltESCROW:
             case ltPAYCHAN:
@@ -292,7 +240,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 return tecNO_PERMISSION;
         }
 
-        auto const ownerCountDelta = getLedgerEntryOwnerCount(sle);
+        std::uint32_t const ownerCountDelta = 1;
 
         auto const owner = getLedgerEntryOwner(ctx.view, sle, sponseeID);
         if (!owner || owner != sponseeID)
@@ -477,7 +425,7 @@ SponsorshipTransfer::doApply()
         if (!ownerSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        std::int64_t const ownerCountDelta = getLedgerEntryOwnerCount(objSle);
+        std::int64_t const ownerCountDelta = 1;
 
         auto const& sponsorField = getLedgerEntrySponsorField(objSle, *ownerID);
 

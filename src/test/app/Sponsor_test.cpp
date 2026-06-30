@@ -28,6 +28,7 @@
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
@@ -1469,8 +1470,8 @@ public:
             env.fund(XRP(10000), alice, sponsor);
             env.close();
 
-            auto const checkBlocked = [&](uint256 const& objectID) {
-                env(sponsor::transfer(alice, tfSponsorshipCreate, objectID),
+            auto const checkBlocked = [&](Account const& account, uint256 const& objectID) {
+                env(sponsor::transfer(account, tfSponsorshipCreate, objectID),
                     sponsor::As(sponsor, spfSponsorReserve),
                     Sig(sfSponsorSignature, sponsor),
                     Ter(tecNO_PERMISSION));
@@ -1482,19 +1483,49 @@ public:
             env.close();
             auto const ticketID = keylet::TicketT()(alice, ticketSeq + 1).key;
             BEAST_EXPECT(env.le(keylet::unchecked(ticketID)));
-            checkBlocked(ticketID);
+            checkBlocked(alice, ticketID);
 
             env(did::setValid(alice));
             env.close();
             auto const didKeylet = keylet::did(alice.id());
             BEAST_EXPECT(env.le(didKeylet));
-            checkBlocked(didKeylet.key);
+            checkBlocked(alice, didKeylet.key);
 
             env(token::mint(alice, 0u));
             env.close();
             auto const nftPageKeylet = keylet::nftpageMax(alice);
             BEAST_EXPECT(env.le(nftPageKeylet));
-            checkBlocked(nftPageKeylet.key);
+            checkBlocked(alice, nftPageKeylet.key);
+
+            Account const borrower("borrower");
+            env.fund(XRP(1000000), borrower);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = xrpAsset});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(1000)}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            env(loanBroker::set(alice, vaultKeylet.key),
+                loanBroker::kDebtMaximum(xrpAsset(1000).value()),
+                loanBroker::kManagementFeeRate(TenthBips16{0}),
+                loanBroker::kCoverRateMinimum(TenthBips32{0}),
+                loanBroker::kCoverRateLiquidation(TenthBips32{0}));
+            env.close();
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            env(loan::set(borrower, brokerKeylet.key, xrpAsset(100).value()),
+                Sig(sfCounterpartySignature, alice),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+            BEAST_EXPECT(env.le(loanKeylet));
+            checkBlocked(borrower, loanKeylet.key);
         }
     }
 
@@ -3805,6 +3836,8 @@ public:
         checkBlocked(did::setValid(alice));
         checkBlocked(token::mint(alice, 0u));
         checkBlocked(sponsor::set(alice, 0, 10, XRP(10)));
+        checkBlocked(acctdelete(alice, bob));
+        checkBlocked(loan::set(alice, uint256(1), Number{1}));
     }
 
     void
