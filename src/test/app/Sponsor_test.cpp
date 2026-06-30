@@ -2607,9 +2607,11 @@ public:
                 auto const sponsor2Sle = env.le(keylet::sponsorship(sponsor2, alice));
                 BEAST_EXPECT(sponsor2Sle);
                 if (sponsor2Sle)
+                {
                     BEAST_EXPECT(
                         !sponsor2Sle->isFieldPresent(sfRemainingOwnerCount) ||
                         sponsor2Sle->getFieldU32(sfRemainingOwnerCount) == 0);
+                }
             }
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2719,9 +2721,11 @@ public:
                 auto const sponsorshipSle = env.le(keylet::sponsorship(sponsor2, alice));
                 BEAST_EXPECT(sponsorshipSle);
                 if (sponsorshipSle)
+                {
                     BEAST_EXPECT(
                         !sponsorshipSle->isFieldPresent(sfRemainingOwnerCount) ||
                         sponsorshipSle->getFieldU32(sfRemainingOwnerCount) == 0);
+                }
             }
 
             // DIDDelete
