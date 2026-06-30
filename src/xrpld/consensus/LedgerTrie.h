@@ -21,8 +21,8 @@ template <class Ledger>
 class SpanTip
 {
 public:
-    using Seq = typename Ledger::Seq;
-    using ID = typename Ledger::ID;
+    using Seq = Ledger::Seq;
+    using ID = Ledger::ID;
 
     SpanTip(Seq s, ID i, Ledger const lgr) : seq{s}, id{i}, ledger_{std::move(lgr)}
     {
@@ -58,8 +58,8 @@ namespace ledger_trie_detail {
 template <class Ledger>
 class Span
 {
-    using Seq = typename Ledger::Seq;
-    using ID = typename Ledger::ID;
+    using Seq = Ledger::Seq;
+    using ID = Ledger::ID;
 
     // The span is the half-open interval [start,end) of ledger_
     Seq start_{0};
@@ -204,10 +204,8 @@ struct Node
     void
     erase(Node const* child)
     {
-        auto it = std::find_if(
-            children.begin(), children.end(), [child](std::unique_ptr<Node> const& curr) {
-                return curr.get() == child;
-            });
+        auto it = std::ranges::find_if(
+            children, [child](std::unique_ptr<Node> const& curr) { return curr.get() == child; });
         XRPL_ASSERT(it != children.end(), "xrpl::Node::erase : valid input");
         std::swap(*it, children.back());
         children.pop_back();
@@ -323,8 +321,8 @@ struct Node
 template <class Ledger>
 class LedgerTrie
 {
-    using Seq = typename Ledger::Seq;
-    using ID = typename Ledger::ID;
+    using Seq = Ledger::Seq;
+    using ID = Ledger::ID;
 
     using Node = ledger_trie_detail::Node<Ledger>;
     using Span = ledger_trie_detail::Span<Ledger>;

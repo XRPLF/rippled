@@ -1612,7 +1612,9 @@ ApplicationImp::signalStop(std::string const& msg)
             JLOG(journal_.warn()) << "Server stopping";
         }
         else
+        {
             JLOG(journal_.warn()) << "Server stopping: " << msg;
+        }
 
         isTimeToStop.notify_all();
     }
@@ -1679,7 +1681,7 @@ ApplicationImp::startGenesisLedger()
     auto const next = std::make_shared<Ledger>(*genesis, getTimeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
-        next->header().seq < kXrpLedgerEarliestFees || next->read(keylet::fees()),
+        next->header().seq < kXrpLedgerEarliestFees || next->read(keylet::feeSettings()),
         "xrpl::ApplicationImp::startGenesisLedger : valid ledger fees");
     next->setImmutable();
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
@@ -1701,7 +1703,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         XRPL_ASSERT(
-            ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::fees()),
+            ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
             "xrpl::ApplicationImp::getLastFullLedger : valid ledger fees");
         ledger->setImmutable();
 
@@ -1852,7 +1854,8 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         loadLedger->stateMap().flushDirty(NodeObjectType::AccountNode);
 
         XRPL_ASSERT(
-            loadLedger->header().seq < kXrpLedgerEarliestFees || loadLedger->read(keylet::fees()),
+            loadLedger->header().seq < kXrpLedgerEarliestFees ||
+                loadLedger->read(keylet::feeSettings()),
             "xrpl::ApplicationImp::loadLedgerFromFile : valid ledger fees");
         loadLedger->setAccepted(closeTime, closeTimeResolution, !closeTimeEstimated);
 

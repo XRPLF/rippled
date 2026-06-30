@@ -14,18 +14,46 @@
 #include <optional>
 #include <utility>
 
-/** Batch operations */
+/** @brief Helpers for constructing Batch test transactions. */
 namespace xrpl::test::jtx::batch {
 
-/** Calculate Batch Fee. */
+/**
+ * @brief Calculate the expected outer Batch transaction fee.
+ *
+ * @param env The test environment providing ledger fee settings.
+ * @param numSigners Number of outer transaction signers.
+ * @param txns Number of inner transactions in the batch.
+ * @return The expected Batch fee.
+ */
 XRPAmount
 calcBatchFee(jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns = 0);
 
-/** Batch. */
+/**
+ * @brief Calculate the expected Batch fee when inner transactions are
+ * confidential MPT transactions.
+ *
+ * @param env The test environment providing ledger fee settings.
+ * @param numSigners Number of outer transaction signers.
+ * @param txns Number of confidential MPT inner transactions in the batch.
+ * @return The expected Batch fee including confidential transaction fee
+ *         multipliers.
+ */
+XRPAmount
+calcConfidentialBatchFee(jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns = 0);
+
+/**
+ * @brief Build an outer Batch transaction JSON object.
+ *
+ * @param account The account submitting the outer Batch transaction.
+ * @param seq The sequence number for the outer Batch transaction.
+ * @param fee The fee to set on the outer Batch transaction.
+ * @param flags The transaction flags to set.
+ * @return The outer Batch transaction JSON object.
+ */
 json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags);
 
-/** Adds a new Batch Txn on a JTx and autofills. */
+/** @brief Adds an inner Batch transaction to a JTx and autofills it. */
 class Inner
 {
 private:
@@ -75,7 +103,7 @@ public:
     }
 };
 
-/** Set a batch signature on a JTx. */
+/** @brief Sets the Batch transaction signers on a JTx. */
 class Sig
 {
 public:
@@ -98,7 +126,7 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-/** Set a batch nested multi-signature on a JTx. */
+/** @brief Sets a nested multi-signature for a Batch transaction on a JTx. */
 class Msig
 {
 public:

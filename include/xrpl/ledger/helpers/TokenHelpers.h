@@ -131,6 +131,75 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, MPTIssue const& 
 [[nodiscard]] TER
 checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& asset);
 
+/**
+ * Checks freeze compliance for withdrawing an asset from a pseudo-account (e.g. Vault, AMM,
+ * LoanBroker) to a destination account.
+ *
+ * Asserts that sourceAcct is a pseudo-account and that submitterAcct and dstAcct are not.
+ *
+ * Issuer exemption: returns tesSUCCESS immediately when dstAcct is the asset issuer — the issuer
+ * can always receive their own token, even when the pool is frozen.  Callers that need to block
+ * withdrawals from a frozen pool even for the issuer (e.g. because the pool math cannot handle it)
+ * must check checkFrozen(sourceAcct, asset) separately before calling this function.
+ *
+ * Otherwise checks, in order:
+ *   1. If the asset is globally frozen the remaining checks are redundant.
+ *   2. For MPT shares: The pseudo-account's vault share must not be transitively frozen via its
+ * underlying asset.
+ *   3. The pseudo-account's trustline / MPToken must not be frozen for sending.
+ *   4. Skipped when submitter == dst (self-withdrawal); a regular freeze should not prevent
+ * recovering one's own funds.
+ *   5. The destination must not be deep-frozen (cannot receive under any circumstance).
+ *
+ * For IOUs a regular individual freeze on the withdrawer does NOT block self-withdrawal; only deep
+ * freeze does.  For MPTs "locked" is equivalent to deep-frozen, so locked MPT holders are always
+ * blocked.
+ *
+ * @param view          Ledger view to read freeze state from.
+ * @param srcAcct       Pseudo-account the funds are withdrawn from (sender).
+ * @param submitterAcct Account that submitted the withdrawal transaction.
+ * @param dstAcct       Account receiving the withdrawn funds.
+ * @param asset         Asset being withdrawn.
+ * @return tesSUCCESS if the withdrawal is permitted, otherwise a freeze
+ *         result (tecFROZEN for IOUs, tecLOCKED for MPTs).
+ */
+[[nodiscard]] TER
+checkWithdrawFreeze(
+    ReadView const& view,
+    AccountID const& srcAcct,
+    AccountID const& submitterAcct,
+    AccountID const& dstAcct,
+    Asset const& asset);
+
+/**
+ * Checks freeze compliance for depositing an asset into a pseudo-account (e.g. Vault, AMM,
+ * LoanBroker).
+ *
+ *
+ * Checks, in order:
+ *   1. If the asset is globally frozen the remaining checks are redundant.
+ *   2. For MPT shares: the pseudo-account's vault share must not be transitively frozen via its
+ * underlying asset (returns tecLOCKED).
+ *   3. The depositor must not be individually frozen. Skipped when srcAcct is the asset issuer,
+ * since the issuer can always send its own asset.
+ *   4. The pseudo-account must not be individually frozen for the asset.  Unlike regular accounts,
+ * pseudo-accounts cannot receive deposits under a regular freeze because the deposited funds
+ * could not later be withdrawn.
+ *
+ * @param view    Ledger view to read freeze state from.
+ * @param srcAcct Depositor sending the funds.
+ * @param dstAcct Pseudo-account receiving the deposit.
+ * @param asset   Asset being deposited.
+ * @return tesSUCCESS if the deposit is permitted, otherwise a freeze result
+ *         (tecFROZEN for IOUs, tecLOCKED for MPTs).
+ */
+[[nodiscard]] TER
+checkDepositFreeze(
+    ReadView const& view,
+    AccountID const& srcAcct,
+    AccountID const& dstAcct,
+    Asset const& asset);
+
 //------------------------------------------------------------------------------
 //
 // Account balance functions (Asset-based dispatchers)

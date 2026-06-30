@@ -42,6 +42,9 @@ PaymentChannelClaim::getFlagsMask(PreflightContext const&)
 NotTEC
 PaymentChannelClaim::preflight(PreflightContext const& ctx)
 {
+    if (ctx.rules.enabled(fixCleanup3_2_0) && ctx.tx[sfChannel] == beast::kZero)
+        return temMALFORMED;
+
     auto const bal = ctx.tx[~sfBalance];
     if (bal && (!isXRP(*bal) || *bal <= beast::kZero))
         return temBAD_AMOUNT;
@@ -116,12 +119,10 @@ PaymentChannelClaim::doApply()
     AccountID const txAccount = ctx_.tx[sfAccount];
 
     auto const curExpiration = (*slep)[~sfExpiration];
+    if (isChannelExpired(ctx_.view(), (*slep)[~sfCancelAfter]) ||
+        isChannelExpired(ctx_.view(), curExpiration))
     {
-        auto const cancelAfter = (*slep)[~sfCancelAfter];
-        auto const closeTime = ctx_.view().header().parentCloseTime.time_since_epoch().count();
-        if ((cancelAfter && closeTime >= *cancelAfter) ||
-            (curExpiration && closeTime >= *curExpiration))
-            return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
+        return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
     }
 
     if (txAccount != src && txAccount != dst)
@@ -134,13 +135,19 @@ PaymentChannelClaim::doApply()
         auto const reqBalance = ctx_.tx[sfBalance].xrp();
 
         if (txAccount == dst && !ctx_.tx[~sfSignature])
-            return temBAD_SIGNATURE;
+        {
+            return ctx_.view().rules().enabled(fixCleanup3_2_0) ? TER{tecNO_PERMISSION}
+                                                                : TER{temBAD_SIGNATURE};
+        }
 
         if (ctx_.tx[~sfSignature])
         {
             PublicKey const pk((*slep)[sfPublicKey]);
             if (ctx_.tx[sfPublicKey] != pk)
-                return temBAD_SIGNER;
+            {
+                return ctx_.view().rules().enabled(fixCleanup3_2_0) ? TER{tecNO_PERMISSION}
+                                                                    : TER{temBAD_SIGNER};
+            }
         }
 
         if (reqBalance > chanFunds)
@@ -184,9 +191,10 @@ PaymentChannelClaim::doApply()
         if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
             return closeChannel(slep, ctx_.view(), k.key, ctx_.registry.get().getJournal("View"));
 
-        auto const settleExpiration =
-            ctx_.view().header().parentCloseTime.time_since_epoch().count() +
-            (*slep)[sfSettleDelay];
+        auto const settleExpiration = saturatingAdd(
+            ctx_.view().rules(),
+            ctx_.view().header().parentCloseTime.time_since_epoch().count(),
+            (*slep)[sfSettleDelay]);
 
         if (!curExpiration || *curExpiration > settleExpiration)
         {

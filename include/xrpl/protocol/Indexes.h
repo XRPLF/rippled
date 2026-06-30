@@ -68,21 +68,15 @@ skip(LedgerIndex ledger) noexcept;
 
 /** The (fixed) index of the object containing the ledger fees. */
 Keylet const&
-fees() noexcept;
+feeSettings() noexcept;
 
 /** The (fixed) index of the object containing the ledger negativeUNL. */
 Keylet const&
 negativeUNL() noexcept;
 
 /** The beginning of an order book */
-struct BookT
-{
-    explicit BookT() = default;
-
-    Keylet
-    operator()(Book const& b) const;
-};
-static BookT const kBook{};
+Keylet
+book(Book const& b);
 
 /** The index of a trust line for a given currency
 
@@ -93,12 +87,12 @@ static BookT const kBook{};
 */
 /** @{ */
 Keylet
-line(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
+trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
 
 inline Keylet
-line(AccountID const& id, Issue const& issue) noexcept
+trustLine(AccountID const& id, Issue const& issue) noexcept
 {
-    return line(id, issue.account, issue.currency);
+    return trustLine(id, issue.account, issue.currency);
 }
 /** @} */
 
@@ -119,37 +113,27 @@ Keylet
 quality(Keylet const& k, std::uint64_t q) noexcept;
 
 /** The directory for the next lower quality */
-struct NextT
-{
-    explicit NextT() = default;
-
-    Keylet
-    operator()(Keylet const& k) const;
-};
-static NextT const kNext{};
+Keylet
+next(Keylet const& k);
 
 /** A ticket belonging to an account */
-struct TicketT
+/** @{ */
+Keylet
+ticket(AccountID const& id, std::uint32_t ticketSeq);
+
+Keylet
+ticket(AccountID const& id, SeqProxy ticketSeq);
+
+inline Keylet
+ticket(uint256 const& key)
 {
-    explicit TicketT() = default;
-
-    Keylet
-    operator()(AccountID const& id, std::uint32_t ticketSeq) const;
-
-    Keylet
-    operator()(AccountID const& id, SeqProxy ticketSeq) const;
-
-    Keylet
-    operator()(uint256 const& key) const
-    {
-        return {ltTICKET, key};
-    }
-};
-static TicketT const kTicket{};
+    return {ltTICKET, key};
+}
+/** @} */
 
 /** A SignerList */
 Keylet
-signers(AccountID const& account) noexcept;
+signerList(AccountID const& account) noexcept;
 
 /** A Check */
 /** @{ */
@@ -209,7 +193,7 @@ escrow(AccountID const& src, std::uint32_t seq) noexcept;
 
 /** A PaymentChannel */
 Keylet
-payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
+payChannel(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
 
 /** NFT page keylets
 
@@ -221,22 +205,22 @@ payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
 /** @{ */
 /** A keylet for the owner's first possible NFT page. */
 Keylet
-nftpageMin(AccountID const& owner);
+nftokenPageMin(AccountID const& owner);
 
 /** A keylet for the owner's last possible NFT page. */
 Keylet
-nftpageMax(AccountID const& owner);
+nftokenPageMax(AccountID const& owner);
 
 Keylet
-nftpage(Keylet const& k, uint256 const& token);
+nftokenPage(Keylet const& k, uint256 const& token);
 /** @} */
 
 /** An offer from an account to buy or sell an NFT */
 Keylet
-nftoffer(AccountID const& owner, std::uint32_t seq);
+nftokenOffer(AccountID const& owner, std::uint32_t seq);
 
 inline Keylet
-nftoffer(uint256 const& offer)
+nftokenOffer(uint256 const& offer)
 {
     return {ltNFTOKEN_OFFER, offer};
 }
@@ -287,13 +271,13 @@ credential(uint256 const& key) noexcept
 }
 
 Keylet
-mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
+mptokenIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
 
 Keylet
-mptIssuance(MPTID const& issuanceID) noexcept;
+mptokenIssuance(MPTID const& issuanceID) noexcept;
 
 inline Keylet
-mptIssuance(uint256 const& issuanceKey)
+mptokenIssuance(uint256 const& issuanceKey)
 {
     return {ltMPTOKEN_ISSUANCE, issuanceKey};
 }
@@ -320,10 +304,10 @@ vault(uint256 const& vaultKey)
 }
 
 Keylet
-loanbroker(AccountID const& owner, std::uint32_t seq) noexcept;
+loanBroker(AccountID const& owner, std::uint32_t seq) noexcept;
 
 inline Keylet
-loanbroker(uint256 const& key)
+loanBroker(uint256 const& key)
 {
     return {ltLOAN_BROKER, key};
 }
@@ -376,11 +360,15 @@ struct KeyletDesc
 std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
     {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
      {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
-     {.function = &keylet::signers, .expectedLEName = jss::SignerList, .includeInTests = true},
+     {.function = &keylet::signerList, .expectedLEName = jss::SignerList, .includeInTests = true},
      // It's normally impossible to create an item at nftpage_min, but
      // test it anyway, since the invariant checks for it.
-     {.function = &keylet::nftpageMin, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
-     {.function = &keylet::nftpageMax, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
+     {.function = &keylet::nftokenPageMin,
+      .expectedLEName = jss::NFTokenPage,
+      .includeInTests = true},
+     {.function = &keylet::nftokenPageMax,
+      .expectedLEName = jss::NFTokenPage,
+      .includeInTests = true},
      {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
 
 MPTID
