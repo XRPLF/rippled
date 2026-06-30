@@ -666,10 +666,7 @@ addEmptyHolding(
     SLE::pointer sponsorSle;
     if (!isPseudoAccount(sleDst))
     {
-        auto sle = getTxReserveSponsor(ctx);
-        if (!sle)
-            return sle.error();  // LCOV_EXCL_LINE
-        sponsorSle = std::move(*sle);
+        sponsorSle = ctx.reserveContext.sponsorSle;
     }
 
     // Can the account cover the trust line reserve ?

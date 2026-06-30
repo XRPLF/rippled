@@ -136,11 +136,10 @@ PaymentChannelCreate::doApply()
 
     if (ctx_.view().rules().enabled(featureSponsor))
     {
-        auto const sponsorSle = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-        if (!sponsorSle)
-            return sponsorSle.error();
+        auto const applyViewContext = ctx_.getApplyViewContext();
+        auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, STAmount{preFeeBalance_}, *sponsorSle, 1, 0, j_);
+                ctx_.view(), ctx_.tx, sle, STAmount{preFeeBalance_}, sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
         if (auto const ret = checkInsufficientReserve(
@@ -203,11 +202,10 @@ PaymentChannelCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-    adjustOwnerCount(ctx_.view(), sle, *sponsorSle, 1, ctx_.journal);
-    addSponsorToLedgerEntry(slep, *sponsorSle);
+    auto const applyViewContext = ctx_.getApplyViewContext();
+    auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
+    adjustOwnerCount(ctx_.view(), sle, sponsorSle, 1, ctx_.journal);
+    addSponsorToLedgerEntry(slep, sponsorSle);
     ctx_.view().update(sle);
 
     return tesSUCCESS;

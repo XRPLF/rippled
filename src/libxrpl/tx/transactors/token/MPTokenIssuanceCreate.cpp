@@ -116,10 +116,7 @@ MPTokenIssuanceCreate::create(
     SLE::pointer sponsorSle;
     if (!isPseudoAccount(acct))
     {
-        auto sle = getTxReserveSponsor(ctx);
-        if (!sle)
-            return std::unexpected(sle.error());
-        sponsorSle = std::move(*sle);
+        sponsorSle = ctx.reserveContext.sponsorSle;
     }
 
     if (args.priorBalance)

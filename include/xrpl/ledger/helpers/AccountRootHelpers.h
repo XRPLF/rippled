@@ -140,7 +140,7 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj = 0)
  */
 void
 adjustOwnerCount(
-    ApplyViewContext& ctx,
+    ApplyViewContext const& ctx,
     std::int32_t ownerCountAdj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
@@ -178,7 +178,7 @@ adjustOwnerCount(
  */
 void
 adjustOwnerCountObj(
-    ApplyViewContext& ctx,
+    ApplyViewContext const& ctx,
     SLE::ref objectSle,
     std::int32_t ownerCountAdj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});

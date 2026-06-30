@@ -203,9 +203,8 @@ SponsorshipSet::doApply()
     auto const feeAmount = ctx_.tx[~sfFeeAmount];
     auto const maxFee = ctx_.tx[~sfMaxFee];
     auto const remainingOwnerCount = ctx_.tx[~sfRemainingOwnerCount];
-    auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-    if (!reserveSponsorAccSle)
-        return reserveSponsorAccSle.error();  // LCOV_EXCL_LINE
+    auto const applyViewContext = ctx_.getApplyViewContext();
+    auto const reserveSponsorAccSle = applyViewContext.reserveContext.sponsorSle;
 
     if (!sponsorshipSle)
     {
@@ -228,7 +227,7 @@ SponsorshipSet::doApply()
                 ctx_.tx,
                 sponsorAccSle,
                 STAmount{(*sponsorAccSle)[sfBalance]}.xrp(),
-                *reserveSponsorAccSle,
+                reserveSponsorAccSle,
                 1,
                 0,
                 ctx_.journal);
@@ -262,8 +261,8 @@ SponsorshipSet::doApply()
         (*newSle)[sfSponseeNode] = *sponseePage;
 
         // NOLINTNEXTLINE(readability-suspicious-call-argument)
-        adjustOwnerCount(view(), sponsorAccSle, *reserveSponsorAccSle, 1, ctx_.journal);
-        addSponsorToLedgerEntry(newSle, *reserveSponsorAccSle);
+        adjustOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, ctx_.journal);
+        addSponsorToLedgerEntry(newSle, reserveSponsorAccSle);
 
         ctx_.view().insert(newSle);
         return tesSUCCESS;
@@ -297,7 +296,7 @@ SponsorshipSet::doApply()
                     ctx_.tx,
                     sponsorAccSle,
                     STAmount{(*sponsorAccSle)[sfBalance]}.xrp(),
-                    *reserveSponsorAccSle,
+                    reserveSponsorAccSle,
                     0,
                     0,
                     ctx_.journal);

@@ -274,7 +274,7 @@ adjustOwnerCount(
 }
 
 void
-adjustOwnerCount(ApplyViewContext& ctx, std::int32_t ownerCountAdj, beast::Journal j)
+adjustOwnerCount(ApplyViewContext const& ctx, std::int32_t ownerCountAdj, beast::Journal j)
 {
     return adjustOwnerCount(ctx.view, ctx.reserveContext, ownerCountAdj, j);
 }
@@ -321,7 +321,7 @@ adjustOwnerCount(
 
 void
 adjustOwnerCountObj(
-    ApplyViewContext& ctx,
+    ApplyViewContext const& ctx,
     SLE::ref objectSle,
     std::int32_t ownerCountAdj,
     beast::Journal j)

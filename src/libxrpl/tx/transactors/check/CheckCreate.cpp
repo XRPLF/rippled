@@ -195,11 +195,10 @@ CheckCreate::doApply()
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
+    auto const applyViewContext = ctx_.getApplyViewContext();
+    auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 1, 0, ctx_.journal);
+            view(), ctx_.tx, sle, preFeeBalance_, sponsorSle, 1, 0, ctx_.journal);
         !isTesSuccess(ret))
         return ret;
     // Note that we use the value from the sequence or ticket as the
@@ -255,8 +254,8 @@ CheckCreate::doApply()
     }
     // If we succeeded, the new entry counts against the creator's reserve.
 
-    adjustOwnerCount(view(), sle, *sponsorSle, 1, viewJ);
-    addSponsorToLedgerEntry(sleCheck, *sponsorSle);
+    adjustOwnerCount(view(), sle, sponsorSle, 1, viewJ);
+    addSponsorToLedgerEntry(sleCheck, sponsorSle);
     return tesSUCCESS;
 }
 
