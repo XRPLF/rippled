@@ -803,55 +803,88 @@ public:
         testcase("Transfer Sponsor");
         using namespace test::jtx;
 
+        // Verify preflight checks
         {
-            // invalid fields
             Env env{*this, testableAmendments()};
             Account const alice("alice");
             Account const bob("bob");
-            Account const sponsor1("sponsor1");
-            env.fund(XRP(10000), alice, bob, sponsor1);
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
-            env(sponsor::transfer(
-                    alice, (tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd) + 1),
-                Ter(temINVALID_FLAG));
+            // Test invalid flags for SponsorshipTransfer
+            {
+                // Invalid flag is provided
+                env(sponsor::transfer(
+                        alice,
+                        (tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd) + 1),
+                    Ter(temINVALID_FLAG));
 
-            // invalid combination of flags
-            for (auto flag : {
-                     tfSponsorshipCreate | tfSponsorshipReassign,
-                     tfSponsorshipCreate | tfSponsorshipEnd,
-                     tfSponsorshipReassign | tfSponsorshipEnd,
-                     tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd,
-                 })
-                env(sponsor::transfer(alice, flag), Ter(temINVALID_FLAG));
+                // No SponsorshipTransfer flag is provided
+                env(sponsor::transfer(alice, 0), Ter(temINVALID_FLAG));
 
-            // invalid tfSponsorshipCreate
-            // no sponsor field present
-            env(sponsor::transfer(alice, tfSponsorshipCreate), Ter(temINVALID_FLAG));
-            // sponsee field present
-            env(sponsor::transfer(alice, tfSponsorshipCreate),
-                sponsor::SponseeAcc(bob),
-                sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(temMALFORMED));
+                // Only one of the three valid flags can be set.
+                // Setting more than one flag is invalid
+                for (auto flag : {
+                         tfSponsorshipCreate | tfSponsorshipReassign,
+                         tfSponsorshipCreate | tfSponsorshipEnd,
+                         tfSponsorshipReassign | tfSponsorshipEnd,
+                         tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd,
+                     })
+                    env(sponsor::transfer(alice, flag), Ter(temINVALID_FLAG));
+            }
 
-            // invalid tfSponsorshipReassign
-            // no sponsor field present
-            env(sponsor::transfer(alice, tfSponsorshipReassign), Ter(temINVALID_FLAG));
-            // sponsee field present
-            env(sponsor::transfer(alice, tfSponsorshipReassign),
-                sponsor::SponseeAcc(bob),
-                sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(temMALFORMED));
+            // Malformed tests for tfSponsorshipCreate
+            {
+                // No sponsor field present
+                env(sponsor::transfer(alice, tfSponsorshipCreate), Ter(temMALFORMED));
 
-            // invalid tfSponsorshipEnd
-            // sponsor field present
-            env(sponsor::transfer(alice, tfSponsorshipEnd),
-                sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(temINVALID_FLAG));
-            // account = sponsee
-            env(sponsor::transfer(alice, tfSponsorshipEnd),
-                sponsor::SponseeAcc(alice),
-                Ter(temMALFORMED));
+                // Sponsor field present without spfSponsorReserve
+                env(sponsor::transfer(alice, tfSponsorshipCreate),
+                    sponsor::As(sponsor, spfSponsorFee),
+                    Ter(temINVALID_FLAG));
+
+                // Sponsee field present
+                env(sponsor::transfer(alice, tfSponsorshipCreate),
+                    sponsor::SponseeAcc(bob),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(temMALFORMED));
+            }
+
+            // Malformed tests for tfSponsorshipReassign
+            {
+                // No sponsor field present
+                env(sponsor::transfer(alice, tfSponsorshipReassign), Ter(temMALFORMED));
+
+                // Sponsor field present without spfSponsorReserve
+                env(sponsor::transfer(alice, tfSponsorshipReassign),
+                    sponsor::As(sponsor, spfSponsorFee),
+                    Ter(temINVALID_FLAG));
+
+                // Sponsee field present
+                env(sponsor::transfer(alice, tfSponsorshipReassign),
+                    sponsor::SponseeAcc(bob),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(temMALFORMED));
+            }
+
+            // Malformed tests for tfSponsorshipEnd
+            {
+                // Sponsor field present
+                env(sponsor::transfer(alice, tfSponsorshipEnd),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(temMALFORMED));
+
+                // SponsorFlags field present
+                auto tx = sponsor::transfer(alice, tfSponsorshipEnd);
+                tx[sfSponsorFlags.jsonName] = spfSponsorFee;
+                env(tx, Ter(temINVALID_FLAG));
+
+                // Account = Sponsee
+                env(sponsor::transfer(alice, tfSponsorshipEnd),
+                    sponsor::SponseeAcc(alice),
+                    Ter(temMALFORMED));
+            }
         }
 
         {
