@@ -662,7 +662,7 @@ addEmptyHolding(
     if (view.read(index))
         return tecDUPLICATE;
 
-    auto const reserveCtx = accountID == ctx.reserveContext.accountID
+    auto const reserveCtx = accountID == ctx.reserveContext.accountID()
         ? ctx.reserveContext
         : ReserveContext::makeFromAccount(view, sleDst, nullptr);
     SLE::pointer const sponsorSle = isPseudoAccount(sleDst) ? nullptr : reserveCtx.sponsorSle;

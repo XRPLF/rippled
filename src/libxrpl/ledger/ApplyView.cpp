@@ -426,9 +426,7 @@ ReserveContext::makeFromTx(ApplyView& view, STTx const& tx)
         isReserveSponsored(tx) ? std::optional<AccountID>{tx[sfSponsor]} : std::nullopt;
 
     return {
-        .accountID = account,
         .accountSle = view.peek(keylet::account(account)),
-        .sponsorID = sponsor,
         .sponsorSle = sponsor ? view.peek(keylet::account(*sponsor)) : nullptr,
         .sponsorshipSle = sponsor ? view.peek(keylet::sponsorship(*sponsor, account)) : nullptr,
     };
@@ -444,9 +442,7 @@ ReserveContext::makeFromAccount(ApplyView& view, SLE::pointer accountSle, SLE::p
     std::optional<AccountID> const sponsorID =
         sponsorSle ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)} : std::nullopt;
     return {
-        .accountID = accountID,
         .accountSle = accountSle,
-        .sponsorID = sponsorID,
         .sponsorSle = sponsorSle,
         .sponsorshipSle =
             sponsorID ? view.peek(keylet::sponsorship(*sponsorID, accountID)) : nullptr,
@@ -461,9 +457,7 @@ ReserveContext::makeFromObject(ApplyView& view, SLE::ref objectSle, SLE::pointer
     std::optional<AccountID> const sponsorID =
         sponsorSle ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)} : std::nullopt;
     return {
-        .accountID = accountID,
         .accountSle = ownerSle,
-        .sponsorID = sponsorID,
         .sponsorSle = sponsorSle,
         .sponsorshipSle =
             sponsorID ? view.peek(keylet::sponsorship(*sponsorID, accountID)) : nullptr,

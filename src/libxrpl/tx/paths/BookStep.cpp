@@ -733,7 +733,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // Therefore, the owner count remains the same.
             if (auto const err = checkCreateMPT(
                     sb,
-                    ReserveContext{owner, sb.peek(keylet::account(owner)), {}, nullptr, nullptr},
+                    ReserveContext::makeFromAccount(sb, sb.peek(keylet::account(owner)), nullptr),
                     assetIn.get<MPTIssue>(),
                     owner,
                     j_);

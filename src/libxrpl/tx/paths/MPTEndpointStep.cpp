@@ -413,12 +413,7 @@ MPTEndpointOfferCrossingStep::checkCreateMPTForStep(ApplyView& view, xrpl::DebtD
         // crossed. See CreateOffer::applyGuts() for reserve check.
         if (auto const err = xrpl::checkCreateMPT(
                 view,
-                ReserveContext{
-                    .accountID = dst_,
-                    .accountSle = view.peek(keylet::account(dst_)),
-                    .sponsorID = {},
-                    .sponsorSle = nullptr,
-                    .sponsorshipSle = nullptr},
+                ReserveContext::makeFromAccount(view, view.peek(keylet::account(dst_)), nullptr),
                 mptIssue_,
                 dst_,
                 j_);

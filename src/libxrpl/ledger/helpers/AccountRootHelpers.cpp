@@ -243,14 +243,14 @@ adjustOwnerCount(
             view,
             reserveCtx.accountSle,
             sfSponsoredOwnerCount,
-            reserveCtx.accountID,
+            reserveCtx.accountID(),
             ownerCountAdj,
             j);
         adjustOwnerCountValue(
             view,
             reserveCtx.sponsorSle,
             sfSponsoringOwnerCount,
-            *reserveCtx.sponsorID,
+            reserveCtx.sponsorID().value(),
             ownerCountAdj,
             j);
 
@@ -263,14 +263,14 @@ adjustOwnerCount(
                 view,
                 reserveCtx.sponsorshipSle,
                 sfRemainingOwnerCount,
-                *reserveCtx.sponsorID,
+                reserveCtx.sponsorID().value(),
                 -ownerCountAdj,
                 j,
                 false);
         }
     }
     adjustOwnerCountValue(
-        view, reserveCtx.accountSle, sfOwnerCount, reserveCtx.accountID, ownerCountAdj, j);
+        view, reserveCtx.accountSle, sfOwnerCount, reserveCtx.accountID(), ownerCountAdj, j);
 }
 
 void

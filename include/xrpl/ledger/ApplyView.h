@@ -400,25 +400,33 @@ public:
 
 struct ReserveContext
 {
-    AccountID const accountID;
     SLE::pointer accountSle;
-    std::optional<AccountID> const sponsorID;
     SLE::pointer sponsorSle;
     SLE::pointer sponsorshipSle;
+
+    [[nodiscard]] AccountID const
+    accountID() const
+    {
+        return accountSle->getAccountID(sfAccount);
+    }
+
+    [[nodiscard]] std::optional<AccountID> const
+    sponsorID() const
+    {
+        return sponsorSle ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)}
+                          : std::nullopt;
+    }
 
     [[nodiscard]] bool
     isSponsored() const
     {
-        XRPL_ASSERT(
-            sponsorID.has_value() == !!sponsorSle,
-            "ReserveContext::isSponsored : sponsor existence matches sponsorSle existence");
-        return sponsorID.has_value();
+        return sponsorSle != nullptr;
     }
 
     [[nodiscard]] bool
     hasSponsorshipObj() const
     {
-        return !!sponsorshipSle;
+        return sponsorshipSle != nullptr;
     }
 
     static ReserveContext

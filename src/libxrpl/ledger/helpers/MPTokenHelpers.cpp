@@ -162,7 +162,7 @@ authorizeMPToken(
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const reserveCtx = account == ctx.reserveContext.accountID
+    auto const reserveCtx = account == ctx.reserveContext.accountID()
         ? ctx.reserveContext
         : ReserveContext::makeFromAccount(view, sleAcct, nullptr);
 
@@ -945,7 +945,7 @@ checkCreateMPT(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        reserveCtx.accountID == holder, "xrpl::checkCreateMPT : reserve context matches holder");
+        reserveCtx.accountID() == holder, "xrpl::checkCreateMPT : reserve context matches holder");
 
     if (mptIssue.getIssuer() == holder)
         return tesSUCCESS;
