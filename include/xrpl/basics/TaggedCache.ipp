@@ -596,11 +596,33 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     std::vector<key_type> v;
 
     {
+        // Keep track of how many iterations are needed. Exit the loop if the number of retries gets
+        // absurd. (Note that if this somehow ever happens, one more allocation will be done under
+        // lock, which is undesirable, but really should be almost impossible. Also, assert that
+        // there were fewer than 3 needed after the loop, because in a normal operating environment,
+        // even 2 is going to be unusual, and 3 shouldn't be needed.
+        std::size_t allocationIterations = 0;
         std::unique_lock lock(mutex_);
-        for (auto size = cache_.size(); v.capacity() < size; size = cache_.size())
+        for (auto size = cache_.size(); v.capacity() < size && allocationIterations < 20;
+             size = cache_.size())
         {
             ScopeUnlock const unlock(lock);
+            // Allocate the current size plus a little extra, in case the cache grows while
+            // allocating. Each time another allocation is needed, the extra also gets bigger until
+            // it ultimately doubles the size + 1.
+            size += (size >> (4 - std::min(allocationIterations, 4ul))) + 1;
             v.reserve(size);
+            ++allocationIterations;
+        }
+        XRPL_ASSERT(
+            allocationIterations < 3,
+            "xrpl::TaggedCache::getKeys(): limited allocation iterations");
+        if (v.capacity() < cache_.size())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::TaggedCache::getKeys(): failed to allocate sufficient capacity");
+            v.reserve(cache_.size());
+            // LCOV_EXCL_STOP
         }
         XRPL_ASSERT(lock.owns_lock(), "xrpl::TaggedCache::getKeys(): owns lock");
         XRPL_ASSERT(
