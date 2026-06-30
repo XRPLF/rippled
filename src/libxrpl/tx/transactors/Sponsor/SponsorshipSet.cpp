@@ -221,8 +221,8 @@ SponsorshipSet::doApply()
         if (feeAmount && (*feeAmount).xrp() > (*sponsorAccSle)[sfBalance])
             return tecUNFUNDED;
 
-        auto sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
-        if (feeAmount && *feeAmount > XRPAmount{0})
+        auto sponsorBalanceAfterFee = STAmount{(*sponsorAccSle)[sfBalance]};
+        if (feeAmount && *feeAmount > beast::kZero)
             sponsorBalanceAfterFee -= *feeAmount;
 
         if (auto const ret = checkInsufficientReserve(
@@ -237,10 +237,10 @@ SponsorshipSet::doApply()
             !isTesSuccess(ret))
             return tecUNFUNDED;
 
-        if (feeAmount && *feeAmount > XRPAmount{0})
+        if (feeAmount && *feeAmount > beast::kZero)
             (*newSle)[sfFeeAmount] = *feeAmount;
 
-        if (maxFee && *maxFee > XRPAmount{0})
+        if (maxFee && *maxFee > beast::kZero)
             (*newSle)[sfMaxFee] = *maxFee;
         if (remainingOwnerCount && *remainingOwnerCount > 0)
             (*newSle)[sfRemainingOwnerCount] = *remainingOwnerCount;
@@ -266,7 +266,7 @@ SponsorshipSet::doApply()
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*newSle)[sfSponseeNode] = *sponseePage;
 
-        if (feeAmount && *feeAmount > XRPAmount{0})
+        if (feeAmount && *feeAmount > beast::kZero)
             (*sponsorAccSle)[sfBalance] -= *feeAmount;
 
         // NOLINTNEXTLINE(readability-suspicious-call-argument)
@@ -289,7 +289,7 @@ SponsorshipSet::doApply()
         // Transfer FeeAmount to or from the Sponsorship ledger entry.
         if (feeAmountDelta != beast::kZero)
         {
-            auto sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
+            auto sponsorBalanceAfterFee = STAmount{(*sponsorAccSle)[sfBalance]};
             sponsorBalanceAfterFee -= STAmount{feeAmountDelta};
 
             if (auto const ret = checkInsufficientReserve(
@@ -305,7 +305,7 @@ SponsorshipSet::doApply()
                 return tecUNFUNDED;
 
             (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
-            if (*feeAmount == XRPAmount{0})
+            if (*feeAmount == beast::kZero)
             {
                 (*sponsorshipSle).makeFieldAbsent(sfFeeAmount);
             }
@@ -319,7 +319,7 @@ SponsorshipSet::doApply()
 
     if (maxFee)
     {
-        if (*maxFee == XRPAmount{0})
+        if (*maxFee == beast::kZero)
         {
             (*sponsorshipSle).makeFieldAbsent(sfMaxFee);
         }
