@@ -99,12 +99,12 @@ public:
     issuerSelfDebitMPT(MPTIssue const& issue, std::uint64_t amount, std::int64_t origBalance);
 
     void
-    ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next);
+    ownerCount(AccountID const& id, OwnerCounts const& cur, OwnerCounts const& next);
 
     // Get the adjusted owner count. Since DeferredCredits is meant to be used
     // in payments, and payments only decrease owner counts, return the max
     // remembered owner count.
-    [[nodiscard]] std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<OwnerCounts>
     ownerCount(AccountID const& id) const;
 
     void
@@ -116,7 +116,7 @@ private:
 
     std::map<KeyIOU, ValueIOU> creditsIOU_;
     std::map<MPTID, IssuerValueMPT> creditsMPT_;
-    std::map<AccountID, std::uint32_t> ownerCounts_;
+    std::map<AccountID, OwnerCounts> ownerCounts_;
 };
 
 }  // namespace detail
@@ -210,10 +210,11 @@ public:
         override;
 
     void
-    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next) override;
+    adjustOwnerCountHook(AccountID const& account, OwnerCounts const& cur, OwnerCounts const& next)
+        override;
 
-    [[nodiscard]] std::uint32_t
-    ownerCountHook(AccountID const& account, std::uint32_t count) const override;
+    [[nodiscard]] OwnerCounts
+    ownerCountHook(AccountID const& account, OwnerCounts const& count) const override;
 
     /** Apply changes to base view.
 
