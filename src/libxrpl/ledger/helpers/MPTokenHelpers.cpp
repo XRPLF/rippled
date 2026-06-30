@@ -158,6 +158,7 @@ authorizeMPToken(
     std::optional<AccountID> holderID)
 {
     auto& view = ctx.view;
+    auto const tx = ctx.tx;
     auto const sleAcct = view.peek(keylet::account(account));
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -213,7 +214,7 @@ authorizeMPToken(
         if (sponsorSle || ownerCount(sleAcct, journal) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
-                    view, ctx.tx, sleAcct, priorBalance, sponsorSle, 1, 0, journal);
+                    view, tx, sleAcct, priorBalance, sponsorSle, 1, 0, journal);
                 !isTesSuccess(ret))
                 return ret;
         }
