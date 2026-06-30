@@ -271,8 +271,12 @@ insertToken(ApplyViewContext& ctx, AccountID owner, STObject&& nft)
     // the NFT.
     SLE::pointer const page = getPageForToken(
         ctx, owner, nft[sfNFTokenID], [](ApplyViewContext& ctx, AccountID const& owner) {
+            auto const reserveCtx = owner == ctx.reserveContext.accountID
+                ? ctx.reserveContext
+                : ReserveContext::makeFromAccount(
+                      ctx.view, ctx.view.peek(keylet::account(owner)), nullptr);
             adjustOwnerCount(
-                ctx.view, ctx.reserveContext, 1, beast::Journal{beast::Journal::getNullSink()});
+                ctx.view, reserveCtx, 1, beast::Journal{beast::Journal::getNullSink()});
         });
 
     if (!page)

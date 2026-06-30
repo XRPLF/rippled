@@ -15,12 +15,6 @@
 namespace xrpl {
 
 TER
-offerDelete(ApplyViewContext& ctx, SLE::ref sle, beast::Journal j)
-{
-    return offerDelete(ctx.view, sle, j);
-}
-
-TER
 offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
 {
     if (!sle)

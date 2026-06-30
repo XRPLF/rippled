@@ -505,11 +505,7 @@ CheckCash::doApply()
                                 return tecINSUFFICIENT_RESERVE;
 
                             if (auto const err = checkCreateMPT(
-                                    applyViewContext.view,
-                                    applyViewContext.reserveContext,
-                                    issue,
-                                    accountID_,
-                                    j_);
+                                    psb, applyViewContext.reserveContext, mptID, accountID_, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;

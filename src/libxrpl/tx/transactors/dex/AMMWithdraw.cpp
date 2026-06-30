@@ -656,8 +656,7 @@ AMMWithdraw::withdraw(
 
             if (auto const err = checkCreateMPT(
                     view,
-                    ReserveContext{
-                        account, view.peek(keylet::account(account)), {}, nullptr, nullptr},
+                    ReserveContext::makeFromAccount(view, view.peek(keylet::account(account)), {}),
                     mptIssue,
                     account,
                     journal);
