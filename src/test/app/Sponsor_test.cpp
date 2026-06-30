@@ -2711,6 +2711,84 @@ public:
                 sponsor2.id());
         }
         {
+            // IOU EscrowFinish recycles reserve when the same sponsor backs
+            // the escrow being removed and the destination line being created.
+            Env env{*this, testableAmendments()};
+            auto const baseFee = env.current()->fees().base;
+
+            env.fund(XRP(1000000), alice, bob, gw, sponsor);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+
+            env.trust(usd(1000000), alice);
+            env.close();
+            env(pay(gw, alice, usd(10000)));
+            env.close();
+
+            uint32_t seq = 0;
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    seq = env.seq(alice);
+                    submit(
+                        escrow::create(alice, bob, usd(100)),
+                        escrow::kCondition(escrow::kCb1),
+                        escrow::kCancelTime(env.now() + 100s));
+                });
+
+            BEAST_EXPECT(
+                env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
+
+            if (cosigning)
+            {
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(bob));
+                env.close();
+            }
+
+            if (cosigning)
+            {
+                env(escrow::finish(bob, alice, seq),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kFulfillment(escrow::kFb1),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Fee(baseFee * 150),
+                    Ter(tesSUCCESS));
+            }
+            else
+            {
+                env(escrow::finish(bob, alice, seq),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kFulfillment(escrow::kFb1),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Fee(baseFee * 150),
+                    Ter(tesSUCCESS));
+            }
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            BEAST_EXPECT(
+                env.le(keylet::line(bob, gw, usd.currency))->getAccountID(sfHighSponsor) ==
+                sponsor.id());
+        }
+        {
             // MPT Escrow
             Env env{*this, testableAmendments()};
             env.fund(XRP(1000000), bob, sponsor);
@@ -2748,6 +2826,83 @@ public:
             BEAST_EXPECT(ownerCount(env, bob) == 1);
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        }
+        {
+            // MPT EscrowFinish has the same reserve recycling behavior as IOU
+            // when it creates the destination MPToken.
+            Env env{*this, testableAmendments()};
+            auto const baseFee = env.current()->fees().base;
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            MPTTester mptGw(env, gw, {.holders = {alice}});
+            mptGw.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env.close();
+
+            uint32_t seq = 0;
+            testEachSponsorship(
+                env,
+                cosigning,
+                sponsor,
+                alice,
+                1,
+                1,
+                tecINSUFFICIENT_RESERVE,
+                [&](Env& env, auto const& submit) {
+                    seq = env.seq(alice);
+                    submit(
+                        escrow::create(alice, bob, mpt(100)),
+                        escrow::kCondition(escrow::kCb1),
+                        escrow::kCancelTime(env.now() + 100s));
+                });
+
+            BEAST_EXPECT(
+                env.le(keylet::escrow(alice, seq))->getAccountID(sfSponsor) == sponsor.id());
+
+            if (cosigning)
+            {
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(bob));
+                env.close();
+            }
+
+            if (cosigning)
+            {
+                env(escrow::finish(bob, alice, seq),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kFulfillment(escrow::kFb1),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Fee(baseFee * 150),
+                    Ter(tesSUCCESS));
+            }
+            else
+            {
+                env(escrow::finish(bob, alice, seq),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kFulfillment(escrow::kFb1),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Fee(baseFee * 150),
+                    Ter(tesSUCCESS));
+            }
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            BEAST_EXPECT(
+                env.le(keylet::mptoken(mptGw.issuanceID(), bob))->getAccountID(sfSponsor) ==
+                sponsor.id());
         }
     }
 

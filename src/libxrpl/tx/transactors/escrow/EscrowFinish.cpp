@@ -346,6 +346,11 @@ EscrowFinish::doApply()
         }
     }
 
+    // Release the escrow reserve before delivery. Token delivery can
+    // auto-create a destination holding, and the same sponsor may cover both
+    // the escrow being removed and the holding being created.
+    adjustOwnerCountObj(ctx_.view(), account, slep, -1, ctx_.journal);
+
     STAmount const amount = slep->getFieldAmount(sfAmount);
     // Transfer amount to destination
     if (isXRP(amount))
@@ -395,9 +400,6 @@ EscrowFinish::doApply()
     }
 
     ctx_.view().update(sled);
-
-    // Adjust source owner count
-    adjustOwnerCountObj(ctx_.view(), account, slep, -1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);
