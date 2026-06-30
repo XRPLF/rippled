@@ -168,7 +168,6 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
             return std::nullopt;
         }
         default:
-            UNREACHABLE("Object is not supported by sponsorship.");
             return std::nullopt;
     };
 }
