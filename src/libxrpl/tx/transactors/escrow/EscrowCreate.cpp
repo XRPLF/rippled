@@ -439,17 +439,22 @@ EscrowCreate::doApply()
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
+    // Whoever is on the hook for the new owner increment (sponsor if
+    // sponsored, source otherwise) must cover it.
     if (auto const ret =
             checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, *sponsorSle, 1, 0, j_);
         !isTesSuccess(ret))
         return ret;
 
-    // Check reserve and funds availability
     if (isXRP(amount))
     {
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, balance - STAmount(amount).xrp(), {}, 1, 0, j_);
-            !isTesSuccess(ret))
+        // After locking the escrowed amount, the source must still meet
+        // its own reserve floor. When sponsored, the sponsor covers the
+        // new object's increment (validated above), so the source only
+        // needs its base reserve. When unsponsored, the source covers
+        // everything.
+        auto const sourceReserve = accountReserve(view(), sle, j_, *sponsorSle ? 0 : 1, 0);
+        if (balance - STAmount(amount).xrp() < sourceReserve)
             return tecUNFUNDED;
     }
 

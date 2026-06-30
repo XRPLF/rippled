@@ -134,25 +134,30 @@ PaymentChannelCreate::doApply()
             return tecEXPIRED;
     }
 
+    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+
     if (ctx_.view().rules().enabled(featureSponsor))
     {
-        auto const sponsorSle = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-        if (!sponsorSle)
-            return sponsorSle.error();
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, STAmount{preFeeBalance_}, *sponsorSle, 1, 0, j_);
-            !isTesSuccess(ret))
-            return ret;
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
-                sle,
-                STAmount{preFeeBalance_ - ctx_.tx[sfAmount].xrp()},
-                {},
-                1,
-                0,
-                j_);
-            !isTesSuccess(ret))
+        // When sponsored, the sponsor must cover the new owner increment.
+        // When unsponsored, this check is redundant with the post-lock
+        // check below (which is strictly stricter since sfAmount > 0).
+        if (*sponsorSle)
+        {
+            if (auto const ret = checkInsufficientReserve(
+                    ctx_.view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 1, 0, j_);
+                !isTesSuccess(ret))
+                return ret;
+        }
+
+        // The source must cover its own reserve floor after locking
+        // sfAmount. When sponsored, the sponsor covers the new owner
+        // increment (validated above), so the source only needs its base
+        // reserve (ownerCountAdj=0). When unsponsored, the source covers
+        // everything (ownerCountAdj=1).
+        auto const sourceReserve = accountReserve(view(), sle, j_, *sponsorSle ? 0 : 1, 0);
+        if (preFeeBalance_ - ctx_.tx[sfAmount].xrp() < sourceReserve)
             return tecUNFUNDED;
     }
 
@@ -203,9 +208,6 @@ PaymentChannelCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
     adjustOwnerCount(ctx_.view(), sle, *sponsorSle, 1, ctx_.journal);
     addSponsorToLedgerEntry(slep, *sponsorSle);
     ctx_.view().update(sle);
