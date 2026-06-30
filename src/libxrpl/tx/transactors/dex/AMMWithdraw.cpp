@@ -90,12 +90,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         if (lpTokens || amount || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if (ctx.tx.isFlag(tfOneAssetWithdrawAll))
-    {
-        if (!amount || lpTokens || amount2 || ePrice)
-            return temMALFORMED;
-    }
-    else if (ctx.tx.isFlag(tfSingleAsset))
+    else if (ctx.tx.isFlag(tfOneAssetWithdrawAll) || ctx.tx.isFlag(tfSingleAsset))
     {
         if (!amount || lpTokens || amount2 || ePrice)
             return temMALFORMED;
@@ -238,21 +233,36 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                     << "AMM Withdraw: account is not authorized, " << amount->asset();
                 return ter;
             }
-            // AMM account or currency frozen
-            if (auto const ter = checkFrozen(ctx.view, ammAccountID, amount->asset());
-                !isTesSuccess(ter))
+            if (ctx.view.rules().enabled(fixCleanup3_3_0))
             {
-                JLOG(ctx.j.debug()) << "AMM Withdraw: AMM account or currency is frozen or locked, "
-                                    << to_string(accountID);
-                return ter;
+                if (auto const ret = checkWithdrawFreeze(
+                        ctx.view, ammAccountID, accountID, accountID, amount->asset()))
+                {
+                    JLOG(ctx.j.debug()) << "AMM Withdraw: frozen, " << to_string(accountID) << " "
+                                        << to_string(amount->asset());
+                    return ret;
+                }
             }
-            // Account frozen
-            if (auto const ter = checkIndividualFrozen(ctx.view, accountID, amount->asset());
-                !isTesSuccess(ter))
+            else
             {
-                JLOG(ctx.j.debug()) << "AMM Withdraw: account is frozen or locked, "
-                                    << to_string(accountID) << " " << to_string(amount->asset());
-                return ter;
+                // AMM account or currency frozen
+                if (auto const ter = checkFrozen(ctx.view, ammAccountID, amount->asset());
+                    !isTesSuccess(ter))
+                {
+                    JLOG(ctx.j.debug())
+                        << "AMM Withdraw: AMM account or currency is frozen or locked, "
+                        << to_string(accountID);
+                    return ter;
+                }
+                // Account frozen
+                if (auto const ter = checkIndividualFrozen(ctx.view, accountID, amount->asset());
+                    !isTesSuccess(ter))
+                {
+                    JLOG(ctx.j.debug())
+                        << "AMM Withdraw: account is frozen or locked, " << to_string(accountID)
+                        << " " << to_string(amount->asset());
+                    return ter;
+                }
             }
         }
         return tesSUCCESS;
@@ -302,6 +312,25 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+FreezeHandling
+AMMWithdraw::issuerFreezeHandling() const
+{
+    // When the withdrawer is the issuer of a pool asset, the issuer can
+    // always receive their own token — even when the pool is frozen.
+    // Use IgnoreFreeze so ammHolds returns real balances instead of zero.
+    if (!ctx_.view().rules().enabled(fixCleanup3_3_0))
+        return FreezeHandling::ZeroIfFrozen;
+
+    auto const asset1 = Asset{ctx_.tx[sfAsset]};
+    auto const asset2 = Asset{ctx_.tx[sfAsset2]};
+    if (!asset1.native() && accountID_ == asset1.getIssuer())
+        return FreezeHandling::IgnoreFreeze;
+    if (!asset2.native() && accountID_ == asset2.getIssuer())
+        return FreezeHandling::IgnoreFreeze;
+
+    return FreezeHandling::ZeroIfFrozen;
+}
+
 std::pair<TER, bool>
 AMMWithdraw::applyGuts(Sandbox& sb)
 {
@@ -329,18 +358,19 @@ AMMWithdraw::applyGuts(Sandbox& sb)
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, accountID_);
 
+    auto const freezeHandling = issuerFreezeHandling();
+
     auto const expected = ammHolds(
         sb,
         *ammSle,
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
-        FreezeHandling::ZeroIfFrozen,
+        freezeHandling,
         AuthHandling::ZeroIfUnauthorized,
         ctx_.journal);
     if (!expected)
         return {expected.error(), false};
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
-
     auto const subTxType = ctx_.tx.getFlags() & tfWithdrawSubTx;
 
     auto const [result, newLPTokenBalance] = [&,
@@ -469,7 +499,7 @@ AMMWithdraw::withdraw(
         lpTokensAMMBalance,
         lpTokensWithdraw,
         tfee,
-        FreezeHandling::ZeroIfFrozen,
+        issuerFreezeHandling(),
         AuthHandling::ZeroIfUnauthorized,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
@@ -615,8 +645,8 @@ AMMWithdraw::withdraw(
         bool const isIssue = asset.holds<Issue>();
         bool const assetNotExists = [&] {
             if (isIssue)
-                return !view.exists(keylet::line(account, asset.get<Issue>()));
-            auto const issuanceKey = keylet::mptIssuance(asset.get<MPTIssue>());
+                return !view.exists(keylet::trustLine(account, asset.get<Issue>()));
+            auto const issuanceKey = keylet::mptokenIssuance(asset.get<MPTIssue>());
             mptokenKey = keylet::mptoken(issuanceKey.key, account);
             if (!view.exists(*mptokenKey))
                 return true;
@@ -756,7 +786,7 @@ AMMWithdraw::equalWithdrawTokens(
         lpTokens,
         lpTokensWithdraw,
         tfee,
-        FreezeHandling::ZeroIfFrozen,
+        issuerFreezeHandling(),
         AuthHandling::ZeroIfUnauthorized,
         isWithdrawAll(ctx_.tx),
         preFeeBalance_,
