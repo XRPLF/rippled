@@ -664,7 +664,9 @@ addEmptyHolding(
         return tecDUPLICATE;
 
     SLE::pointer sponsorSle;
-    if (!isPseudoAccount(sleDst))
+
+    // A reserve sponsor only covers tx.Account's own objects.
+    if (!isPseudoAccount(sleDst) && accountID == tx[sfAccount])
     {
         auto sle = getTxReserveSponsor({.view = ctx.view, .tx = ctx.tx});
         if (!sle)

@@ -34,6 +34,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace xrpl {
 
@@ -143,8 +144,7 @@ addEmptyHolding(
     if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;
 
-    return authorizeMPToken(
-        {.view = ctx.view, .tx = ctx.tx}, priorBalance, mptID, accountID, journal);
+    return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal, 0, std::nullopt);
 }
 
 [[nodiscard]] TER
@@ -193,9 +193,14 @@ authorizeMPToken(
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
-        auto const sponsorSle = getTxReserveSponsor({.view = ctx.view, .tx = ctx.tx});
-        if (!sponsorSle)
-            return sponsorSle.error();  // LCOV_EXCL_LINE
+        SLE::pointer sponsorSle;
+        if (account == tx[sfAccount])
+        {
+            auto sle = getTxReserveSponsor(ctx);
+            if (!sle)
+                return sle.error();  // LCOV_EXCL_LINE
+            sponsorSle = std::move(*sle);
+        }
 
         // The reserve that is required to create the MPToken. Note
         // that although the reserve increases with every item
@@ -205,10 +210,10 @@ authorizeMPToken(
         // The "free-tier" shortcut (ownerCount < 2) does not apply once a sponsor is on
         // the tx — the sponsor must always cover the reserve (via balance or prefunded
         // budget), so this check always runs for sponsored transactions.
-        if (*sponsorSle || ownerCount(sleAcct, journal) >= 2)
+        if (sponsorSle || ownerCount(sleAcct, journal) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
-                    view, ctx.tx, sleAcct, priorBalance, *sponsorSle, 1, 0, journal);
+                    view, ctx.tx, sleAcct, priorBalance, sponsorSle, 1, 0, journal);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -235,8 +240,8 @@ authorizeMPToken(
         view.insert(mptoken);
 
         // Update owner count.
-        adjustOwnerCount(view, sleAcct, *sponsorSle, 1, journal);
-        addSponsorToLedgerEntry(mptoken, *sponsorSle);
+        adjustOwnerCount(view, sleAcct, sponsorSle, 1, journal);
+        addSponsorToLedgerEntry(mptoken, sponsorSle);
 
         return tesSUCCESS;
     }
