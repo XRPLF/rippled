@@ -197,14 +197,10 @@ LoanBrokerCoverWithdraw::doApply()
     view().update(broker);
 
     associateAsset(*broker, vaultAsset);
+
+    auto applyViewContext = ctx_.getApplyViewContext();
     return doWithdraw(
-        ctx_.getApplyViewContext(),
-        accountID_,
-        dstAcct,
-        brokerPseudoID,
-        preFeeBalance_,
-        amount,
-        j_);
+        applyViewContext, accountID_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
 }
 
 void

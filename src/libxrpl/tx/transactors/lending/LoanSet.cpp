@@ -538,12 +538,9 @@ LoanSet::doApply()
         borrower == accountID_ || borrower == counterparty,
         "xrpl::LoanSet::doApply",
         "borrower signed transaction");
+    auto applyViewContext = ctx_.getApplyViewContext();
     if (auto const ter = addEmptyHolding(
-            ctx_.getApplyViewContext(),
-            borrower,
-            borrowerSle->at(sfBalance).value().xrp(),
-            vaultAsset,
-            j_);
+            applyViewContext, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
         ter && ter != tecDUPLICATE)
     {
         // ignore tecDUPLICATE. That means the holding already exists, and
@@ -566,7 +563,7 @@ LoanSet::doApply()
             "broker owner signed transaction");
 
         if (auto const ter = addEmptyHolding(
-                ctx_.getApplyViewContext(),
+                applyViewContext,
                 brokerOwner,
                 brokerOwnerSle->at(sfBalance).value().xrp(),
                 vaultAsset,

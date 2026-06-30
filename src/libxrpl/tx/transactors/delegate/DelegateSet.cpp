@@ -94,7 +94,9 @@ DelegateSet::doApply()
     auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
     if (permissions.empty())
         return tecINTERNAL;  // LCOV_EXCL_LINE
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+
+    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const sponsorSle = getTxReserveSponsor(applyViewContext);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(

@@ -17,7 +17,7 @@ namespace xrpl {
 template <ValidIssueType T>
 TER
 escrowUnlockApplyHelper(
-    ApplyViewContext&& ctx,
+    ApplyViewContext& ctx,
     Rate lockedRate,
     SLE::ref sleDest,
     STAmount const& xrpBalance,
@@ -31,7 +31,7 @@ escrowUnlockApplyHelper(
 template <>
 inline TER
 escrowUnlockApplyHelper<Issue>(
-    ApplyViewContext&& ctx,
+    ApplyViewContext& ctx,
     Rate lockedRate,
     SLE::ref sleDest,
     STAmount const& xrpBalance,
@@ -58,7 +58,7 @@ escrowUnlockApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsorSle = getTxReserveSponsor({.view = ctx.view, .tx = ctx.tx});
+        auto const sponsorSle = getTxReserveSponsor(ctx);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
@@ -168,7 +168,7 @@ escrowUnlockApplyHelper<Issue>(
 template <>
 inline TER
 escrowUnlockApplyHelper<MPTIssue>(
-    ApplyViewContext&& ctx,
+    ApplyViewContext& ctx,
     Rate lockedRate,
     SLE::ref sleDest,
     STAmount const& xrpBalance,
@@ -188,7 +188,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        auto const sponsorSle = getTxReserveSponsor({.view = ctx.view, .tx = ctx.tx});
+        auto const sponsorSle = getTxReserveSponsor(ctx);
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 

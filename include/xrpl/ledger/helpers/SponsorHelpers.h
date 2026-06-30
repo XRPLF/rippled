@@ -35,7 +35,7 @@ getTxReserveSponsorAccountID(STTx const& tx)
 }
 
 inline std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyViewContext&& ctx)
+getTxReserveSponsor(ApplyViewContext& ctx)
 {
     auto const sponsorID = getTxReserveSponsorAccountID(ctx.tx);
     if (sponsorID)

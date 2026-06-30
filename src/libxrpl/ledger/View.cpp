@@ -432,7 +432,7 @@ canWithdraw(ReadView const& view, STTx const& tx)
 
 TER
 doWithdraw(
-    ApplyViewContext&& ctx,
+    ApplyViewContext& ctx,
     AccountID const& senderAcct,
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
@@ -443,8 +443,7 @@ doWithdraw(
     // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(
-                {.view = ctx.view, .tx = ctx.tx}, senderAcct, priorBalance, amount.asset(), j);
+        if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
             !isTesSuccess(ter) && ter != tecDUPLICATE)
             return ter;
     }
@@ -470,7 +469,7 @@ doWithdraw(
         // LCOV_EXCL_STOP
     }
 
-    auto const sponsorSle = getTxReserveSponsor({.view = ctx.view, .tx = ctx.tx});
+    auto const sponsorSle = getTxReserveSponsor(ctx);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 

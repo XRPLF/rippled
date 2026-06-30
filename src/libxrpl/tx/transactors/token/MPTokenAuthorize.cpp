@@ -143,8 +143,9 @@ TER
 MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;
+    auto applyViewContext = ctx_.getApplyViewContext();
     return authorizeMPToken(
-        ctx_.getApplyViewContext(),
+        applyViewContext,
         preFeeBalance_,
         tx[sfMPTokenIssuanceID],
         accountID_,

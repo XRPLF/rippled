@@ -362,10 +362,11 @@ EscrowFinish::doApply()
             : kParityRate;
         auto const issuer = amount.getIssuer();
         bool const createAsset = destID == accountID_;
+        auto applyViewContext = ctx_.getApplyViewContext();
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
-                        ctx_.getApplyViewContext(),
+                        applyViewContext,
                         lockedRate,
                         sled,
                         preFeeBalance_,

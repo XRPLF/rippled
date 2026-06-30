@@ -624,8 +624,9 @@ LoanPay::doApply()
         if (brokerPayee == accountID_)
         {
             // The broker may have deleted their holding. Recreate it if needed
+            auto applyViewContext = ctx_.getApplyViewContext();
             if (auto const ter = addEmptyHolding(
-                    ctx_.getApplyViewContext(),
+                    applyViewContext,
                     brokerPayee,
                     brokerPayeeSle->at(sfBalance).value().xrp(),
                     asset,
