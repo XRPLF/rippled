@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstdint>
+#include <exception>
 #include <initializer_list>
 #include <limits>
 #include <stdexcept>
