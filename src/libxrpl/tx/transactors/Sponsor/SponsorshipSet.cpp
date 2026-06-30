@@ -42,7 +42,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     bool const hasSponsor = ctx.tx.isFieldPresent(sfCounterpartySponsor);
     bool const hasSponsee = ctx.tx.isFieldPresent(sfSponsee);
 
-    //  The transaction must specify either Sponsor or Sponsee, but not both.
+    // The transaction must specify either Sponsor or Sponsee, but not both.
     if (hasSponsor == hasSponsee)
         return temMALFORMED;
 
@@ -54,7 +54,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFlag(tfDeleteObject))
     {
-        // Cannot combine modification flags with deletion.
+        // Delete transactions cannot set modification flags.
         constexpr std::uint32_t kModifyFlags = tfSponsorshipSetRequireSignForFee |
             tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForFee |
             tfSponsorshipClearRequireSignForReserve;
@@ -62,19 +62,19 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
         if ((ctx.tx.getFlags() & kModifyFlags) != 0u)
             return temINVALID_FLAG;
 
-        // Cannot include modification fields when deleting.
+        // Delete transactions cannot include modification fields.
         if (ctx.tx.isFieldPresent(sfFeeAmount) || ctx.tx.isFieldPresent(sfRemainingOwnerCount) ||
             ctx.tx.isFieldPresent(sfMaxFee))
             return temMALFORMED;
     }
     else
     {
-        // although both Sponsor and Sponsee can delete,
-        // only the Sponsor can create or update sponsorship.
+        // Both sponsor and sponsee can delete a Sponsorship object, but only
+        // the sponsor can create or update one.
         if (account != sponsorID)
             return temMALFORMED;
 
-        // Check FeeAmount and MaxFee
+        // FeeAmount and MaxFee must be non-negative XRP amounts when present.
         auto const checkOptionalAmountField = [&](SField const& field) -> NotTEC {
             if (!ctx.tx.isFieldPresent(field))
                 return tesSUCCESS;
@@ -109,21 +109,19 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     if (sponseeID == sponsorID)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // Check sponsor.
     auto const sponsorAccSle = ctx.view.read(keylet::account(sponsorID));
     if (!sponsorAccSle)
         return tecNO_DST;
 
-    // Check sponsee.
     auto const sponseeSle = ctx.view.read(keylet::account(sponseeID));
     if (!sponseeSle)
         return tecNO_DST;
 
-    // Pseudo accounts cannot be sponsors or sponsees
+    // Pseudo-accounts cannot participate in sponsorship.
     if (isPseudoAccount(sponsorAccSle) || isPseudoAccount(sponseeSle))
         return tecNO_PERMISSION;
 
-    // Check if object exists.
+    // Deleting a Sponsorship object requires the object to already exist.
     auto const sponsorshipSle = ctx.view.read(keylet::sponsorship(sponsorID, sponseeID));
 
     if (ctx.tx.isFlag(tfDeleteObject) && !sponsorshipSle)
@@ -141,7 +139,8 @@ deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
     auto const sponsorID = (*sle)[sfOwner];
     auto const sponseeID = (*sle)[sfSponsee];
 
-    // The reserve for the Sponsorship object is held by the sponsor (Owner).
+    // The sponsor owns the Sponsorship object, so deletion releases the
+    // sponsor's owner reserve.
     auto sponsorAccSle = view.peek(keylet::account(sponsorID));
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -163,7 +162,7 @@ deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
 
     adjustOwnerCountObj(view, sponsorAccSle, sle, -1, j);
 
-    // Transfer FeeAmount back to the sponsor.
+    // Return any prefunded fee amount to the sponsor before erasing the object.
     if (sle->isFieldPresent(sfFeeAmount))
     {
         (*sponsorAccSle)[sfBalance] += sle->getFieldAmount(sfFeeAmount);
@@ -196,7 +195,6 @@ SponsorshipSet::doApply()
 
     if (ctx_.tx.isFlag(tfDeleteObject))
     {
-        // Delete
         if (!sponsorshipSle)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -213,7 +211,7 @@ SponsorshipSet::doApply()
 
     if (!sponsorshipSle)
     {
-        // Create
+        // Create a new Sponsorship object between the sponsor and sponsee.
         auto newSle = std::make_shared<SLE>(sponsorKeylet);
 
         (*newSle)[sfOwner] = sponsorID;
@@ -277,7 +275,7 @@ SponsorshipSet::doApply()
         return tesSUCCESS;
     }
 
-    // Update
+    // Update the existing Sponsorship object.
     if (feeAmount)
     {
         auto const currentFeeAmount = (*sponsorshipSle)[~sfFeeAmount].valueOr(XRPAmount{0});
@@ -286,7 +284,8 @@ SponsorshipSet::doApply()
         if (feeAmountDelta > beast::kZero && feeAmountDelta > (*sponsorAccSle)[sfBalance])
             return tecUNFUNDED;
 
-        // Transfer FeeAmount to or from the Sponsorship ledger entry.
+        // Move the FeeAmount delta between the sponsor balance and Sponsorship
+        // object.
         if (feeAmountDelta != beast::kZero)
         {
             auto sponsorBalanceAfterFee = STAmount{(*sponsorAccSle)[sfBalance]};
@@ -341,7 +340,7 @@ SponsorshipSet::doApply()
         }
     }
 
-    // update Flags
+    // Apply requested flag changes.
     auto flags = sponsorshipSle->getFieldU32(sfFlags);
     if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
         flags |= lsfSponsorshipRequireSignForFee;
