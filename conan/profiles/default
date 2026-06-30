@@ -10,16 +10,16 @@
 os={{ os }}
 arch={{ arch }}
 build_type=Debug
-compiler={{compiler}}
+compiler={{ compiler }}
 compiler.version={{ compiler_version }}
 compiler.cppstd=23
 {% if os == "Windows" %}
 compiler.runtime=static
 {% else %}
-compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
+compiler.libcxx={{ detect_api.detect_libcxx(compiler, version, compiler_exe) }}
 {% endif %}
 
 [conf]
-cppstd_version={{compiler.cppstd}}
+cppstd_version={{ compiler.cppstd }}
 {# Only conf values that are used in package_id computation should be added here #}
 tools.info.package_id:confs+=["cppstd_version"]
