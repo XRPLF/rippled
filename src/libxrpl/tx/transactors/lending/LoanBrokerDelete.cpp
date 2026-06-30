@@ -184,6 +184,10 @@ LoanBrokerDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
     }
 
+    view().erase(brokerPseudoSLE);
+
+    view().erase(broker);
+
     {
         auto owner = view().peek(keylet::account(accountID_));
         if (!owner)
@@ -192,14 +196,9 @@ LoanBrokerDelete::doApply()
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
         // LoanBroker object can be sponsored
-        adjustOwnerCountObj(view(), owner, broker, -1, j_);
-
-        // pseudo-account cannot be sponsored
-        adjustOwnerCount(view(), owner, {}, -1, j_);
+        adjustOwnerCount(view(), owner, {}, -2, j_);
     }
 
-    view().erase(brokerPseudoSLE);
-    view().erase(broker);
     associateAsset(*broker, vaultAsset);
 
     return tesSUCCESS;

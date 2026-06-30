@@ -127,32 +127,32 @@ LEDGER_ENTRY(ltTICKET, 0x0054, Ticket, ticket, ({
     \sa keylet::account
  */
 LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
-    {sfAccount,              SoeRequired},
-    {sfSequence,             SoeRequired},
-    {sfBalance,              SoeRequired},
-    {sfOwnerCount,           SoeRequired},
-    {sfPreviousTxnID,        SoeRequired},
-    {sfPreviousTxnLgrSeq,    SoeRequired},
-    {sfAccountTxnID,         SoeOptional},
-    {sfRegularKey,           SoeOptional},
-    {sfEmailHash,            SoeOptional},
-    {sfWalletLocator,        SoeOptional},
-    {sfWalletSize,           SoeOptional},
-    {sfMessageKey,           SoeOptional},
-    {sfTransferRate,         SoeOptional},
-    {sfDomain,               SoeOptional},
-    {sfTickSize,             SoeOptional},
-    {sfTicketCount,          SoeOptional},
-    {sfNFTokenMinter,        SoeOptional},
-    {sfMintedNFTokens,       SoeDefault},
-    {sfBurnedNFTokens,       SoeDefault},
-    {sfFirstNFTokenSequence, SoeOptional},
-    {sfAMMID,                SoeOptional}, // pseudo-account designator
-    {sfVaultID,              SoeOptional}, // pseudo-account designator
-    {sfLoanBrokerID,         SoeOptional}, // pseudo-account designator
-    {sfSponsoredOwnerCount,  SoeDefault},
-    {sfSponsoringOwnerCount, SoeDefault},
-    {sfSponsoringAccountCount,SoeDefault},
+    {sfAccount,                SoeRequired},
+    {sfSequence,               SoeRequired},
+    {sfBalance,                SoeRequired},
+    {sfOwnerCount,             SoeRequired},
+    {sfPreviousTxnID,          SoeRequired},
+    {sfPreviousTxnLgrSeq,      SoeRequired},
+    {sfAccountTxnID,           SoeOptional},
+    {sfRegularKey,             SoeOptional},
+    {sfEmailHash,              SoeOptional},
+    {sfWalletLocator,          SoeOptional},
+    {sfWalletSize,             SoeOptional},
+    {sfMessageKey,             SoeOptional},
+    {sfTransferRate,           SoeOptional},
+    {sfDomain,                 SoeOptional},
+    {sfTickSize,               SoeOptional},
+    {sfTicketCount,            SoeOptional},
+    {sfNFTokenMinter,          SoeOptional},
+    {sfMintedNFTokens,         SoeDefault},
+    {sfBurnedNFTokens,         SoeDefault},
+    {sfFirstNFTokenSequence,   SoeOptional},
+    {sfSponsoredOwnerCount,    SoeDefault},
+    {sfSponsoringOwnerCount,   SoeDefault},
+    {sfSponsoringAccountCount, SoeDefault},
+    {sfAMMID,                  SoeOptional}, // pseudo-account designator
+    {sfVaultID,                SoeOptional}, // pseudo-account designator
+    {sfLoanBrokerID,           SoeOptional}, // pseudo-account designator
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -613,7 +613,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
 }))
 
 /** A ledger object representing a sponsorship.
-    \sa keylet::sponsor
+    \sa keylet::sponsorship
  */
 LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
     {sfPreviousTxnID,        SoeRequired},
@@ -622,7 +622,7 @@ LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
     {sfSponsee,              SoeRequired},
     {sfFeeAmount,            SoeOptional},
     {sfMaxFee,               SoeOptional},
-    {sfReserveCount,         SoeDefault},
+    {sfRemainingOwnerCount,  SoeDefault},
     {sfOwnerNode,            SoeRequired},
     {sfSponseeNode,          SoeRequired},
 }))

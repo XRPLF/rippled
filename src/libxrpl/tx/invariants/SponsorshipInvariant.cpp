@@ -4,13 +4,13 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <cstdint>
 #include <memory>
@@ -62,7 +62,7 @@ SponsorshipOwnerCountsMatch::visitEntry(
                 if (!sle->isFieldPresent(sfSponsor))
                     return 0;
                 auto const priceDataSeries = sle->getFieldArray(sfPriceDataSeries);
-                return OracleSet::calculateOracleReserve(priceDataSeries.size());
+                return calculateOracleReserve(priceDataSeries.size());
             }
             case ltVAULT: {
                 if (!sle->isFieldPresent(sfSponsor))
@@ -93,7 +93,7 @@ SponsorshipOwnerCountsMatch::visitEntry(
         (afterSponsoredObjectOwnerCount - beforeSponsoredObjectOwnerCount);
 
     if (getOwnerCount(after) < getSponsored(after))
-        invalidOwnerCountLessThanSponsoredOwnerCount_ += 1;
+        ownerCountBelowSponsored_ += 1;
 }
 
 bool
@@ -111,17 +111,17 @@ SponsorshipOwnerCountsMatch::finalize(
         return false;
     }
 
+    if (ownerCountBelowSponsored_ > 0)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: OwnerCount must be greater than or equal to SponsoredOwnerCount.";
+        return false;
+    }
+
     if (deltaSponsoredObjectOwnerCount_ != deltaSponsoredOwnerCount_)
     {
         JLOG(j.fatal()) << "Invariant failed: SponsoredObjectOwnerCount does not "
                            "equal SponsoredOwnerCount delta.";
-        return false;
-    }
-
-    if (invalidOwnerCountLessThanSponsoredOwnerCount_ > 0)
-    {
-        JLOG(j.fatal())
-            << "Invariant failed: OwnerCount must be greater than or equal to SponsoredOwnerCount.";
         return false;
     }
 

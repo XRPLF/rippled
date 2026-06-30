@@ -51,141 +51,103 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 // Returns adjusted owner count.
 static std::uint32_t
 confineOwnerCount(
-    std::uint32_t current,
-    std::int32_t adjustment,
+    std::uint32_t currentOwnerCount,
+    std::int32_t ownerCountAdj,
     std::optional<AccountID> const& id = std::nullopt,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
 {
-    std::uint32_t adjusted{current + adjustment};
-    if (adjustment > 0)
+    std::uint32_t totalOwnerCount{currentOwnerCount + ownerCountAdj};
+    if (ownerCountAdj > 0)
     {
         // Overflow is well defined on unsigned
-        if (adjusted < current)
+        if (totalOwnerCount < currentOwnerCount)
         {
             if (id)
             {
                 JLOG(j.fatal()) << "Account " << *id << " owner count exceeds max!";
             }
-            adjusted = std::numeric_limits<std::uint32_t>::max();
+            totalOwnerCount = std::numeric_limits<std::uint32_t>::max();
         }
     }
     else
     {
         // Underflow is well defined on unsigned
-        if (adjusted > current)
+        if (totalOwnerCount > currentOwnerCount)
         {
             if (id)
             {
                 JLOG(j.fatal()) << "Account " << *id << " owner count set below 0!";
             }
-            adjusted = 0;
+            totalOwnerCount = 0;
             XRPL_ASSERT(!id, "xrpl::confineOwnerCount : id is not set");
         }
     }
-    return adjusted;
+    return totalOwnerCount;
 }
 
+// Return number of the accounts which reserve is covered by current account (so called "reserve
+// count")
 static std::uint32_t
-ownerCountHlp(
-    ReadView const& view,
-    SLE::const_ref sle,
-    std::int32_t adjustment,
-    bool reportConfine,
-    beast::Journal j)
+accountCountImpl(SLE::const_ref sle, std::int32_t accountCountAdj, beast::Journal j)
 {
-    AccountID const id = sle->getAccountID(sfAccount);
-    std::uint32_t const savedCount = sle->at(sfOwnerCount);
-    std::uint32_t const hookedCount = view.ownerCountHook(id, savedCount);
+    bool const isSponsored = sle->isFieldPresent(sfSponsor);
+    std::int64_t const sponsoringAccountCount = sle->getFieldU32(sfSponsoringAccountCount);
+    std::int64_t const currentAccountCount = (isSponsored ? 0 : 1) + sponsoringAccountCount;
 
-    std::uint32_t const sponsoredCount = sle->at(sfSponsoredOwnerCount);
-    std::uint32_t const sponsoringCount = sle->at(sfSponsoringOwnerCount);
-
-    if (hookedCount < sponsoredCount)
+    std::int64_t totalAccountCount{currentAccountCount + accountCountAdj};
+    if (totalAccountCount > std::numeric_limits<std::uint32_t>::max())
     {
-        Throw<std::logic_error>(
-            "xrpl::ownerCountHlp : OwnerCount must be greater than or equal to "
-            "SponsoredOwnerCount");
+        JLOG(j.error()) << "Reserve count exceeds max!";
+        totalAccountCount = std::numeric_limits<std::uint32_t>::max();
+    }
+    else if (totalAccountCount < 0)
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::accountCountImpl : Reserve count set below 0");
+        JLOG(j.fatal()) << "Reserve count set below 0";
+        totalAccountCount = 0;
+        // LCOV_EXCL_STOP
     }
 
+    return totalAccountCount;
+}
+
+std::uint32_t
+ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj)
+{
+    XRPL_ASSERT(sle && sle->getType() == ltACCOUNT_ROOT, "xrpl::ownerCount : sle is account root");
+
+    AccountID const id = sle->getAccountID(sfAccount);
+    std::uint32_t const currentOwnerCount = sle->at(sfOwnerCount);
+    std::uint32_t const sponsoredOwnerCount = sle->at(sfSponsoredOwnerCount);
+    std::uint32_t const sponsoringOwnerCount = sle->at(sfSponsoringOwnerCount);
+
+    XRPL_ASSERT(
+        currentOwnerCount >= sponsoredOwnerCount,
+        "xrpl::ownerCount : OwnerCount must be greater than or equal to "
+        "SponsoredOwnerCount");
+
     std::int64_t deltaCount =
-        static_cast<std::int64_t>(adjustment) - sponsoredCount + sponsoringCount;
+        static_cast<std::int64_t>(ownerCountAdj) - sponsoredOwnerCount + sponsoringOwnerCount;
+
     if (deltaCount > std::numeric_limits<std::int32_t>::max())
     {
         deltaCount = std::numeric_limits<std::int32_t>::max();
         JLOG(j.fatal()) << "Account " << id << " delta count exceeds max, "
-                        << "adjustment: " << adjustment << ", sponsoredCount: " << sponsoredCount
-                        << ", sponsoringOwnerCount: " << sponsoringCount;
+                        << "adjustment: " << ownerCountAdj
+                        << ", sponsoredCount: " << sponsoredOwnerCount
+                        << ", sponsoringOwnerCount: " << sponsoringOwnerCount;
     }
     else if (deltaCount < std::numeric_limits<std::int32_t>::min())
     {
         deltaCount = std::numeric_limits<std::int32_t>::min();
-        JLOG(j.fatal()) << "Account " << id << " delta count exceeds min, "
-                        << "adjustment: " << adjustment << ", sponsoredCount: " << sponsoredCount
-                        << ", sponsoringCount: " << sponsoringCount;
+        JLOG(j.fatal()) << "Account " << id << " delta count is below min, "
+                        << "adjustment: " << ownerCountAdj
+                        << ", sponsoredCount: " << sponsoredOwnerCount
+                        << ", sponsoringCount: " << sponsoringOwnerCount;
     }
 
-    std::uint32_t const confinedCount = reportConfine
-        ? confineOwnerCount(hookedCount, deltaCount, id, j)
-        : confineOwnerCount(hookedCount, deltaCount);
-
-    return confinedCount;
-}
-
-static std::uint32_t
-reserveCountHlp(SLE::const_ref sle, std::int32_t adjustment, beast::Journal j)
-{
-    bool const isSponsored = sle->isFieldPresent(sfSponsor);
-    std::uint32_t const sponsoringCount = sle->getFieldU32(sfSponsoringAccountCount);
-    std::uint32_t const reserveCount = (isSponsored ? 0 : 1) + sponsoringCount;
-
-    std::uint32_t adjusted{reserveCount + adjustment};
-    if (adjustment > 0)
-    {
-        // Overflow is well defined on unsigned
-        if (adjusted < reserveCount)
-        {
-            JLOG(j.fatal()) << "Reserve count exceeds max!";
-            adjusted = std::numeric_limits<std::uint32_t>::max();
-        }
-    }
-    else
-    {
-        // Underflow is well defined on unsigned
-        if (adjusted > reserveCount)
-        {
-            JLOG(j.fatal()) << "Reserve count set below 0!";
-            adjusted = 0;
-        }
-    }
-    return adjusted;
-}
-
-static inline XRPAmount
-baseReserveHlp(ReadView const& view, std::uint32_t ownerCount, std::uint32_t reserveCount)
-{
-    auto const& fees = view.fees();
-    return (fees.reserve * reserveCount) + (fees.increment * ownerCount);
-}
-
-static XRPAmount
-reserveHlp(
-    ReadView const& view,
-    SLE::const_ref sle,
-    std::uint32_t ownerCount,
-    std::uint32_t reserveCount)
-{
-    // Pseudo-accounts have no reserve requirement
-    if (isPseudoAccount(sle))
-        return XRPAmount(0);
-
-    auto const reserve = baseReserveHlp(view, ownerCount, reserveCount);
-    return reserve;
-}
-
-std::uint32_t
-ownerCount(ReadView const& view, SLE::const_ref sle, beast::Journal j, std::int32_t adjustment)
-{
-    return ownerCountHlp(view, sle, adjustment, true, j);
+    return confineOwnerCount(currentOwnerCount, deltaCount);
 }
 
 XRPAmount
@@ -195,9 +157,15 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     if (sle == nullptr)
         return beast::kZero;
 
-    std::uint32_t const ownerCount = ownerCountHlp(view, sle, ownerCountAdj, false, j);
-    std::uint32_t const reserveCount = reserveCountHlp(sle, 0, j);
-    auto const reserve = reserveHlp(view, sle, ownerCount, reserveCount);
+    // Return balance minus reserve
+    std::uint32_t const currentOwnerCount =
+        confineOwnerCount(view.ownerCountHook(id, ownerCount(sle, j)), ownerCountAdj);
+    std::uint32_t const currentAccountCount = accountCountImpl(sle, 0, j);
+
+    // Pseudo-accounts have no reserve requirement
+    auto const reserve = isPseudoAccount(sle)
+        ? XRPAmount{0}
+        : baseAccountReserve(view, currentOwnerCount, currentAccountCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -209,7 +177,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
                     << " amount=" << amount.getFullText()
                     << " fullBalance=" << fullBalance.getFullText()
                     << " balance=" << balance.getFullText() << " reserve=" << reserve
-                    << " ownerCount=" << ownerCount << " ownerCountAdj=" << ownerCountAdj;
+                    << " ownerCount=" << currentOwnerCount << " ownerCountAdj=" << ownerCountAdj;
 
     return amount.xrp();
 }
@@ -226,20 +194,21 @@ transferRate(ReadView const& view, AccountID const& issuer)
 }
 
 static void
-adjustOwnerCountHlp(
+adjustOwnerCountImpl(
     ApplyView& view,
     SLE::ref sle,
     SF_UINT32 const& sfield,
     AccountID const& accID,
-    std::int32_t adjustment,
+    std::int32_t ownerCountAdj,
     beast::Journal j,
     bool callHook = true)
 {
-    std::uint32_t const current = sle->at(sfield);
-    std::uint32_t const adjusted = confineOwnerCount(current, adjustment, accID, j);
+    std::uint32_t const currentOwnerCount = sle->at(sfield);
+    std::uint32_t const totalOwnerCount =
+        confineOwnerCount(currentOwnerCount, ownerCountAdj, accID, j);
     if (callHook)
-        view.adjustOwnerCountHook(accID, current, adjusted);
-    sle->at(sfield) = adjusted;
+        view.adjustOwnerCountHook(accID, currentOwnerCount, totalOwnerCount);
+    sle->at(sfield) = totalOwnerCount;
     view.update(sle);
 }
 
@@ -248,7 +217,7 @@ adjustOwnerCount(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
-    std::int32_t adjustment,
+    std::int32_t ownerCountAdj,
     beast::Journal j)
 {
     if (!accountSle)
@@ -260,8 +229,8 @@ adjustOwnerCount(
     if (!validType)
         Throw<std::logic_error>("xrpl::adjustOwnerCount : valid account sle type");
 
-    XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
-    if (adjustment == 0)
+    XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCount : nonzero ownerCountAdj input");
+    if (ownerCountAdj == 0)
         return;
 
     auto const accountID = accountSle->getAccountID(sfAccount);
@@ -271,19 +240,21 @@ adjustOwnerCount(
             Throw<std::logic_error>("xrpl::adjustOwnerCount : valid sponsor sle type");
         auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
-        adjustOwnerCountHlp(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
-        adjustOwnerCountHlp(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
+        adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, ownerCountAdj, j);
+        adjustOwnerCountImpl(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, ownerCountAdj, j);
 
-        auto sponsorObjSle = view.peek(keylet::sponsor(sponsorID, accountID));
-        if (sponsorObjSle && adjustment > 0)
+        auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
+        if (sponsorshipSle && ownerCountAdj > 0)
         {
-            // update the pre-funded ReserveCount on Sponsorship ledger object
-            // Reserve count moves opposite to adjustment: +adjustment => consume reserve (-),
-            adjustOwnerCountHlp(
-                view, sponsorObjSle, sfReserveCount, sponsorID, -adjustment, j, false);
+            // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
+            // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount
+            // back. Don't call hook because this counter is not something that require reserve
+            // (like other sf...OwnerCounts do).
+            adjustOwnerCountImpl(
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -ownerCountAdj, j, false);
         }
     }
-    adjustOwnerCountHlp(view, accountSle, sfOwnerCount, accountID, adjustment, j);
+    adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, ownerCountAdj, j);
 }
 
 void
@@ -291,7 +262,7 @@ adjustOwnerCountObj(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref objectSle,
-    std::int32_t amount,
+    std::int32_t accountCountAdj,
     beast::Journal j)
 {
     if (!objectSle)
@@ -300,7 +271,7 @@ adjustOwnerCountObj(
         Throw<std::logic_error>("xrpl::adjustOwnerCount : valid object sle type");
 
     SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
-    adjustOwnerCount(view, accountSle, sponsorSle, amount, j);
+    adjustOwnerCount(view, accountSle, sponsorSle, accountCountAdj, j);
 }
 
 XRPAmount
@@ -309,24 +280,24 @@ accountReserve(
     SLE::const_ref sle,
     beast::Journal j,
     std::int32_t ownerCountAdj,
-    std::int32_t reserveCountAdj)
+    std::int32_t accountCountAdj)
 {
     if (!sle)
         Throw<std::runtime_error>("xrpl::accountReserve : valid sle");
     if (sle->getType() != ltACCOUNT_ROOT)
         Throw<std::logic_error>("xrpl::accountReserve : valid sle type");
 
-    std::uint32_t const ownerCount = ownerCountHlp(view, sle, ownerCountAdj, true, j);
-    std::uint32_t const reserveCount = reserveCountHlp(sle, reserveCountAdj, j);
+    std::uint32_t const currentOwnerCount = ownerCount(sle, j, ownerCountAdj);
+    std::uint32_t const currentAccountCount = accountCountImpl(sle, accountCountAdj, j);
 
-    return reserveHlp(view, sle, ownerCount, reserveCount);
+    return baseAccountReserve(view, currentOwnerCount, currentAccountCount);
 }
 
 XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount)
+baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount)
 {
-    auto const reserve = baseReserveHlp(view, ownerCount, 1);
-    return reserve;
+    auto const& fees = view.fees();
+    return (fees.reserve * accountCount) + (fees.increment * ownerCount);
 }
 
 TER
@@ -336,39 +307,39 @@ checkInsufficientReserve(
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
-    std::int32_t ownerCountDelta,
-    std::int32_t reserveCountDelta,
+    std::int32_t ownerCountAdj,
+    std::int32_t accountCountAdj,
     beast::Journal j)
 {
     if (sponsorSle)
     {
-        auto const isCoSigning = isSponsorReserveCoSigning(tx);
-
         auto const sle = view.read(
-            keylet::sponsor(sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
+            keylet::sponsorship(
+                sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
-        // prefunded sponsor should have a sponsorship entry
-        if (!isCoSigning && !sle)
+        // A reserve-sponsored tx must carry a sponsor signature
+        // (cosigning path) and/or have a pre-existing sponsorship SLE
+        // (prefunded path). Absence of both is an internal invariant break.
+        if (isReserveSponsored(tx) && !sle && !tx.isFieldPresent(sfSponsorSignature))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (sle)
         {
-            auto const ownerCountAllowed = sle->getFieldU32(sfReserveCount);
-            if (ownerCountAllowed < ownerCountDelta)
+            auto const ownerCountAllowed = sle->getFieldU32(sfRemainingOwnerCount);
+            if (ownerCountAllowed < ownerCountAdj)
                 return tecINSUFFICIENT_RESERVE;
         }
 
         auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
         STAmount const sponsorReserve =
-            accountReserve(view, sponsorSle, j, ownerCountDelta, reserveCountDelta);
+            accountReserve(view, sponsorSle, j, ownerCountAdj, accountCountAdj);
 
         if (sponsorBalance < sponsorReserve)
             return tecINSUFFICIENT_RESERVE;
     }
     else
     {
-        STAmount const reserve =
-            accountReserve(view, accSle, j, ownerCountDelta, reserveCountDelta);
+        STAmount const reserve = accountReserve(view, accSle, j, ownerCountAdj, accountCountAdj);
         if (accBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

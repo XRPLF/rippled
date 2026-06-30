@@ -225,7 +225,6 @@ AMMClawback::applyGuts(Sandbox& sb)
         std::tie(result, newLPTokenBalance, amountWithdraw, amount2Withdraw) =
             AMMWithdraw::equalWithdrawTokens(
                 sb,
-                ctx_.tx,
                 *ammSle,
                 holder,
                 ammAccount,
@@ -258,6 +257,16 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     if (!isTesSuccess(result))
         return result;  // LCOV_EXCL_LINE
+
+    if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
+    {
+        if (auto const ter =
+                checkAMMPrecisionLoss(sb, ammAccount, asset, asset2, newLPTokenBalance, j_);
+            !isTesSuccess(ter))
+        {
+            return ter;
+        }
+    }
 
     auto const res =
         AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammSle, newLPTokenBalance, asset, asset2, j_);
@@ -313,7 +322,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         // tfee is actually not used, so pass tfee as 0.
         return AMMWithdraw::equalWithdrawTokens(
             sb,
-            ctx_.tx,
             ammSle,
             holder,
             ammAccount,
@@ -347,7 +355,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 
         return AMMWithdraw::withdraw(
             sb,
-            ctx_.tx,
             ammSle,
             ammAccount,
             holder,
@@ -368,7 +375,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     // tfee is actually not used, so pass tfee as 0.
     return AMMWithdraw::withdraw(
         sb,
-        ctx_.tx,
         ammSle,
         ammAccount,
         holder,

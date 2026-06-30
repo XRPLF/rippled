@@ -40,12 +40,12 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     auto const mintedNFTokensValue = canonical_UINT32();
     auto const burnedNFTokensValue = canonical_UINT32();
     auto const firstNFTokenSequenceValue = canonical_UINT32();
-    auto const aMMIDValue = canonical_UINT256();
-    auto const vaultIDValue = canonical_UINT256();
-    auto const loanBrokerIDValue = canonical_UINT256();
     auto const sponsoredOwnerCountValue = canonical_UINT32();
     auto const sponsoringOwnerCountValue = canonical_UINT32();
     auto const sponsoringAccountCountValue = canonical_UINT32();
+    auto const aMMIDValue = canonical_UINT256();
+    auto const vaultIDValue = canonical_UINT256();
+    auto const loanBrokerIDValue = canonical_UINT256();
 
     AccountRootBuilder builder{
         accountValue,
@@ -70,12 +70,12 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     builder.setMintedNFTokens(mintedNFTokensValue);
     builder.setBurnedNFTokens(burnedNFTokensValue);
     builder.setFirstNFTokenSequence(firstNFTokenSequenceValue);
-    builder.setAMMID(aMMIDValue);
-    builder.setVaultID(vaultIDValue);
-    builder.setLoanBrokerID(loanBrokerIDValue);
     builder.setSponsoredOwnerCount(sponsoredOwnerCountValue);
     builder.setSponsoringOwnerCount(sponsoringOwnerCountValue);
     builder.setSponsoringAccountCount(sponsoringAccountCountValue);
+    builder.setAMMID(aMMIDValue);
+    builder.setVaultID(vaultIDValue);
+    builder.setLoanBrokerID(loanBrokerIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -235,30 +235,6 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = aMMIDValue;
-        auto const actualOpt = entry.getAMMID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfAMMID");
-        EXPECT_TRUE(entry.hasAMMID());
-    }
-
-    {
-        auto const& expected = vaultIDValue;
-        auto const actualOpt = entry.getVaultID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfVaultID");
-        EXPECT_TRUE(entry.hasVaultID());
-    }
-
-    {
-        auto const& expected = loanBrokerIDValue;
-        auto const actualOpt = entry.getLoanBrokerID();
-        ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
-        EXPECT_TRUE(entry.hasLoanBrokerID());
-    }
-
-    {
         auto const& expected = sponsoredOwnerCountValue;
         auto const actualOpt = entry.getSponsoredOwnerCount();
         ASSERT_TRUE(actualOpt.has_value());
@@ -280,6 +256,30 @@ TEST(AccountRootTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value());
         expectEqualField(expected, *actualOpt, "sfSponsoringAccountCount");
         EXPECT_TRUE(entry.hasSponsoringAccountCount());
+    }
+
+    {
+        auto const& expected = aMMIDValue;
+        auto const actualOpt = entry.getAMMID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAMMID");
+        EXPECT_TRUE(entry.hasAMMID());
+    }
+
+    {
+        auto const& expected = vaultIDValue;
+        auto const actualOpt = entry.getVaultID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfVaultID");
+        EXPECT_TRUE(entry.hasVaultID());
+    }
+
+    {
+        auto const& expected = loanBrokerIDValue;
+        auto const actualOpt = entry.getLoanBrokerID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLoanBrokerID");
+        EXPECT_TRUE(entry.hasLoanBrokerID());
     }
 
     EXPECT_TRUE(entry.hasLedgerIndex());
@@ -315,12 +315,12 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     auto const mintedNFTokensValue = canonical_UINT32();
     auto const burnedNFTokensValue = canonical_UINT32();
     auto const firstNFTokenSequenceValue = canonical_UINT32();
-    auto const aMMIDValue = canonical_UINT256();
-    auto const vaultIDValue = canonical_UINT256();
-    auto const loanBrokerIDValue = canonical_UINT256();
     auto const sponsoredOwnerCountValue = canonical_UINT32();
     auto const sponsoringOwnerCountValue = canonical_UINT32();
     auto const sponsoringAccountCountValue = canonical_UINT32();
+    auto const aMMIDValue = canonical_UINT256();
+    auto const vaultIDValue = canonical_UINT256();
+    auto const loanBrokerIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(AccountRoot::entryType, index);
 
@@ -344,12 +344,12 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     sle->at(sfMintedNFTokens) = mintedNFTokensValue;
     sle->at(sfBurnedNFTokens) = burnedNFTokensValue;
     sle->at(sfFirstNFTokenSequence) = firstNFTokenSequenceValue;
-    sle->at(sfAMMID) = aMMIDValue;
-    sle->at(sfVaultID) = vaultIDValue;
-    sle->at(sfLoanBrokerID) = loanBrokerIDValue;
     sle->at(sfSponsoredOwnerCount) = sponsoredOwnerCountValue;
     sle->at(sfSponsoringOwnerCount) = sponsoringOwnerCountValue;
     sle->at(sfSponsoringAccountCount) = sponsoringAccountCountValue;
+    sle->at(sfAMMID) = aMMIDValue;
+    sle->at(sfVaultID) = vaultIDValue;
+    sle->at(sfLoanBrokerID) = loanBrokerIDValue;
 
     AccountRootBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -603,45 +603,6 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = aMMIDValue;
-
-        auto const fromSleOpt = entryFromSle.getAMMID();
-        auto const fromBuilderOpt = entryFromBuilder.getAMMID();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfAMMID");
-        expectEqualField(expected, *fromBuilderOpt, "sfAMMID");
-    }
-
-    {
-        auto const& expected = vaultIDValue;
-
-        auto const fromSleOpt = entryFromSle.getVaultID();
-        auto const fromBuilderOpt = entryFromBuilder.getVaultID();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfVaultID");
-        expectEqualField(expected, *fromBuilderOpt, "sfVaultID");
-    }
-
-    {
-        auto const& expected = loanBrokerIDValue;
-
-        auto const fromSleOpt = entryFromSle.getLoanBrokerID();
-        auto const fromBuilderOpt = entryFromBuilder.getLoanBrokerID();
-
-        ASSERT_TRUE(fromSleOpt.has_value());
-        ASSERT_TRUE(fromBuilderOpt.has_value());
-
-        expectEqualField(expected, *fromSleOpt, "sfLoanBrokerID");
-        expectEqualField(expected, *fromBuilderOpt, "sfLoanBrokerID");
-    }
-
-    {
         auto const& expected = sponsoredOwnerCountValue;
 
         auto const fromSleOpt = entryFromSle.getSponsoredOwnerCount();
@@ -678,6 +639,45 @@ TEST(AccountRootTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfSponsoringAccountCount");
         expectEqualField(expected, *fromBuilderOpt, "sfSponsoringAccountCount");
+    }
+
+    {
+        auto const& expected = aMMIDValue;
+
+        auto const fromSleOpt = entryFromSle.getAMMID();
+        auto const fromBuilderOpt = entryFromBuilder.getAMMID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAMMID");
+        expectEqualField(expected, *fromBuilderOpt, "sfAMMID");
+    }
+
+    {
+        auto const& expected = vaultIDValue;
+
+        auto const fromSleOpt = entryFromSle.getVaultID();
+        auto const fromBuilderOpt = entryFromBuilder.getVaultID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfVaultID");
+        expectEqualField(expected, *fromBuilderOpt, "sfVaultID");
+    }
+
+    {
+        auto const& expected = loanBrokerIDValue;
+
+        auto const fromSleOpt = entryFromSle.getLoanBrokerID();
+        auto const fromBuilderOpt = entryFromBuilder.getLoanBrokerID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLoanBrokerID");
+        expectEqualField(expected, *fromBuilderOpt, "sfLoanBrokerID");
     }
 
     EXPECT_EQ(entryFromSle.getKey(), index);
@@ -772,17 +772,17 @@ TEST(AccountRootTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getBurnedNFTokens().has_value());
     EXPECT_FALSE(entry.hasFirstNFTokenSequence());
     EXPECT_FALSE(entry.getFirstNFTokenSequence().has_value());
-    EXPECT_FALSE(entry.hasAMMID());
-    EXPECT_FALSE(entry.getAMMID().has_value());
-    EXPECT_FALSE(entry.hasVaultID());
-    EXPECT_FALSE(entry.getVaultID().has_value());
-    EXPECT_FALSE(entry.hasLoanBrokerID());
-    EXPECT_FALSE(entry.getLoanBrokerID().has_value());
     EXPECT_FALSE(entry.hasSponsoredOwnerCount());
     EXPECT_FALSE(entry.getSponsoredOwnerCount().has_value());
     EXPECT_FALSE(entry.hasSponsoringOwnerCount());
     EXPECT_FALSE(entry.getSponsoringOwnerCount().has_value());
     EXPECT_FALSE(entry.hasSponsoringAccountCount());
     EXPECT_FALSE(entry.getSponsoringAccountCount().has_value());
+    EXPECT_FALSE(entry.hasAMMID());
+    EXPECT_FALSE(entry.getAMMID().has_value());
+    EXPECT_FALSE(entry.hasVaultID());
+    EXPECT_FALSE(entry.getVaultID().has_value());
+    EXPECT_FALSE(entry.hasLoanBrokerID());
+    EXPECT_FALSE(entry.getLoanBrokerID().has_value());
 }
 }
