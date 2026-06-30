@@ -140,24 +140,35 @@ PaymentChannelCreate::doApply()
 
     if (ctx_.view().rules().enabled(featureSponsor))
     {
-        // When sponsored, the sponsor must cover the new owner increment.
-        // When unsponsored, this check is redundant with the post-lock
-        // check below (which is strictly stricter since sfAmount > 0).
-        if (*sponsorSle)
-        {
-            if (auto const ret = checkInsufficientReserve(
-                    ctx_.view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 1, 0, j_);
-                !isTesSuccess(ret))
-                return ret;
-        }
+        // First check: whoever is on the hook for the new owner increment
+        // can cover it. When sponsored this hits the sponsor branch and
+        // validates the sponsor's reserve + remaining credit. When
+        // unsponsored this hits the source branch and validates the
+        // source's pre-lock balance against base + (currentOC+1)*increment.
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 1, 0, j_);
+            !isTesSuccess(ret))
+            return ret;
 
-        // The source must cover its own reserve floor after locking
-        // sfAmount. When sponsored, the sponsor covers the new owner
-        // increment (validated above), so the source only needs its base
-        // reserve (ownerCountAdj=0). When unsponsored, the source covers
-        // everything (ownerCountAdj=1).
-        auto const sourceReserve = accountReserve(view(), sle, j_, *sponsorSle ? 0 : 1, 0);
-        if (preFeeBalance_ - ctx_.tx[sfAmount].xrp() < sourceReserve)
+        // Second check: after locking sfAmount in the channel, the source
+        // must still meet its own reserve floor. Always passes `{}` so the
+        // source branch runs (the sponsor's reserve was already validated
+        // above; here we're verifying the source can fund the lock without
+        // dipping below its own reserve). ownerCountAdj differs by case:
+        // - sponsored:   adj=0  — sponsor covers the new owner increment,
+        //                so the source only owes its base reserve.
+        // - unsponsored: adj=1  — source owes base + the new increment.
+        std::int32_t const ownerCountAdj = *sponsorSle ? 0 : 1;
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(),
+                ctx_.tx,
+                sle,
+                preFeeBalance_ - ctx_.tx[sfAmount].xrp(),
+                {},
+                ownerCountAdj,
+                0,
+                j_);
+            !isTesSuccess(ret))
             return tecUNFUNDED;
     }
 

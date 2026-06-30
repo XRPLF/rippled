@@ -439,8 +439,11 @@ EscrowCreate::doApply()
     auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
-    // Whoever is on the hook for the new owner increment (sponsor if
-    // sponsored, source otherwise) must cover it.
+    // First check: whoever is on the hook for the new owner increment
+    // can cover it. When sponsored this hits the sponsor branch and
+    // validates the sponsor's reserve + remaining credit. When
+    // unsponsored this hits the source branch and validates the
+    // source's pre-lock balance against base + (currentOC+1)*increment.
     if (auto const ret =
             checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, *sponsorSle, 1, 0, j_);
         !isTesSuccess(ret))
@@ -448,13 +451,26 @@ EscrowCreate::doApply()
 
     if (isXRP(amount))
     {
-        // After locking the escrowed amount, the source must still meet
-        // its own reserve floor. When sponsored, the sponsor covers the
-        // new object's increment (validated above), so the source only
-        // needs its base reserve. When unsponsored, the source covers
-        // everything.
-        auto const sourceReserve = accountReserve(view(), sle, j_, *sponsorSle ? 0 : 1, 0);
-        if (balance - STAmount(amount).xrp() < sourceReserve)
+        // Second check (XRP escrow only): after locking the escrowed
+        // amount, the source must still meet its own reserve floor.
+        // Always passes `{}` so the source branch runs (the sponsor's
+        // reserve was already validated above; here we're verifying the
+        // source can fund the lock without dipping below its own
+        // reserve). ownerCountAdj differs by case:
+        // - sponsored:   adj=0  — sponsor covers the new owner increment,
+        //                so the source only owes its base reserve.
+        // - unsponsored: adj=1  — source owes base + the new increment.
+        std::int32_t const ownerCountAdj = *sponsorSle ? 0 : 1;
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(),
+                ctx_.tx,
+                sle,
+                balance - STAmount(amount).xrp(),
+                {},
+                ownerCountAdj,
+                0,
+                j_);
+            !isTesSuccess(ret))
             return tecUNFUNDED;
     }
 
