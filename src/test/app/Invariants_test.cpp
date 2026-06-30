@@ -4605,10 +4605,11 @@ class Invariants_test : public beast::unit_test::Suite
         {
             Account const gw{"gw"};
             MPTID shareID{};
-            AccountID vaultPseudoID{};
 
             // Vault setup: a1 and a2 both deposit IOU and hold vault shares.
-            auto const setupVault = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+            auto const setupVault = [&](Account const& a1,
+                                        Account const& a2,
+                                        Env& env) -> std::tuple<MPTID, AccountID> {
                 env.fund(XRP(1'000), gw);
                 env.trust(gw["IOU"](10'000), a1);
                 env.trust(gw["IOU"](10'000), a2);
@@ -4627,9 +4628,7 @@ class Invariants_test : public beast::unit_test::Suite
                     {.depositor = a2, .id = vaultKeylet.key, .amount = gw["IOU"](100)}));
                 env.close();
 
-                shareID = env.le(vaultKeylet)->at(sfShareMPTID);
-                vaultPseudoID = env.le(vaultKeylet)->at(sfAccount);
-                return true;
+                return {env.le(vaultKeylet)->at(sfShareMPTID), env.le(vaultKeylet)->at(sfAccount)};
             };
 
             // Simulate a vault-share transfer: a1 sends 10 shares to a2.
@@ -4649,10 +4648,9 @@ class Invariants_test : public beast::unit_test::Suite
             // Case: vault pseudo-account's IOU trustline is frozen.
             {
                 auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
-                    if (!setupVault(a1, a2, env))
-                        return false;
-                    env(trust(
-                        gw, gw["IOU"](0), Account{"vaultPseudo", vaultPseudoID}, tfSetFreeze));
+                    auto [sid, vid] = setupVault(a1, a2, env);
+                    shareID = sid;
+                    env(trust(gw, gw["IOU"](0), Account{"vaultPseudo", vid}, tfSetFreeze));
                     env.close();
                     return true;
                 };
@@ -4670,8 +4668,8 @@ class Invariants_test : public beast::unit_test::Suite
             // Case: receiver's (a2's) IOU trustline is frozen.
             {
                 auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
-                    if (!setupVault(a1, a2, env))
-                        return false;
+                    auto [sid, vid] = setupVault(a1, a2, env);
+                    shareID = sid;
                     env(trust(gw, gw["IOU"](0), a2, tfSetFreeze));
                     env.close();
                     return true;
