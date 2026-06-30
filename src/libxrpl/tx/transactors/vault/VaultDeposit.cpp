@@ -6,7 +6,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -343,19 +342,9 @@ VaultDeposit::doApply()
         }
     }
 
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
-
     // Transfer shares from vault to depositor.
     if (auto const ter = accountSend(
-            view(),
-            vaultAccount,
-            accountID_,
-            sharesCreated,
-            j_,
-            *sponsorSle,
-            WaiveTransferFee::Yes);
+            view(), vaultAccount, accountID_, sharesCreated, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
 

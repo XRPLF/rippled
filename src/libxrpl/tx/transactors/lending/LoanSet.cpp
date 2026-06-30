@@ -57,6 +57,12 @@ LoanSet::preflight(PreflightContext const& ctx)
 
     auto const& tx = ctx.tx;
 
+    if (tx.isFieldPresent(sfSponsorFlags) && isReserveSponsored(tx))
+    {
+        JLOG(ctx.j.debug()) << "LoanSet: reserve sponsorship is not allowed.";
+        return temINVALID_FLAG;
+    }
+
     // Special case for Batch inner transactions
     if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch) &&
         !tx.isFieldPresent(sfCounterparty))
@@ -513,18 +519,14 @@ LoanSet::doApply()
         }
     }
 
-    auto const sponsorSle = getTxReserveSponsor(view, tx);
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
+    adjustOwnerCount(view, borrowerSle, {}, 1, j_);
+
     {
         auto const balance =
             accountID_ == borrower ? preFeeBalance_ : borrowerSle->at(sfBalance).value().xrp();
-        if (auto const ret =
-                checkInsufficientReserve(view, tx, borrowerSle, balance, *sponsorSle, 1, 0, j_);
-            !isTesSuccess(ret))
-            return ret;
+        if (balance < accountReserve(view, borrowerSle, j_))
+            return tecINSUFFICIENT_RESERVE;
     }
-    adjustOwnerCount(view, borrowerSle, *sponsorSle, 1, j_);
 
     // Account for the origination fee using two payments
     //
@@ -624,7 +626,6 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
-    addSponsorToLedgerEntry(loan, *sponsorSle);
     view.insert(loan);
 
     // Update the balances in the vault
