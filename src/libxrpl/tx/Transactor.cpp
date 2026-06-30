@@ -599,7 +599,24 @@ Transactor::payFee()
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const feeAmountAfter = sle->getFieldAmount(feePayer.balanceField) - feePaid;
+    if (feePaid == beast::kZero)
+        return tesSUCCESS;
+
+    XRPAmount balance = beast::kZero;
+    if (sle->isFieldPresent(feePayer.balanceField))
+        balance = sle->getFieldAmount(feePayer.balanceField).xrp();
+    else if (feePayer.balanceField != sfFeeAmount)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    if (feePaid > balance)
+    {
+        if ((balance > beast::kZero) && !view().open())
+            return tecINSUFF_FEE;
+
+        return terINSUF_FEE_B;
+    }
+
+    auto const feeAmountAfter = balance - feePaid;
 
     if (feeAmountAfter == beast::kZero && feePayer.balanceField == sfFeeAmount)
     {
@@ -1261,7 +1278,11 @@ Transactor::reset(XRPAmount fee)
     if (!payerSle)
         return {tefINTERNAL, beast::kZero};  // LCOV_EXCL_LINE
 
-    auto const balance = payerSle->getFieldAmount(feePayer.balanceField).xrp();
+    XRPAmount balance = beast::kZero;
+    if (payerSle->isFieldPresent(feePayer.balanceField))
+        balance = payerSle->getFieldAmount(feePayer.balanceField).xrp();
+    else if (feePayer.balanceField != sfFeeAmount)
+        return {tefINTERNAL, beast::kZero};  // LCOV_EXCL_LINE
 
     if (feePayer.type == FeePayerType::SponsorPreFunded && payerSle->isFieldPresent(sfMaxFee))
     {

@@ -11,6 +11,7 @@
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/ledgerStateFix.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
@@ -1759,6 +1760,66 @@ public:
             BEAST_EXPECT(sle);
             BEAST_EXPECT(sle->isFieldPresent(sfFeeAmount));
             BEAST_EXPECT(sle->getFieldAmount(sfFeeAmount) == drops(990));  // 1000 - MaxFee(10)
+        }
+
+        // LedgerStateFix charges an owner-reserve fee and can claim that fee
+        // while returning tecFAILED_PROCESSING. That path must be safe when the
+        // fee is pre-funded by a sponsorship object.
+        {
+            Env env{*this, testableAmendments()};
+            Account const alice("alice");
+            Account const sponsor("sponsor");
+            env.fund(XRP(1000), alice, sponsor);
+            env.close();
+
+            auto const fixFee = drops(env.current()->fees().increment);
+            env(sponsor::set_fee(sponsor, 0, fixFee), sponsor::SponseeAcc(alice));
+            env.close();
+
+            env(ledgerStateFix::nftPageLinks(alice, alice),
+                Fee(fixFee),
+                sponsor::As(sponsor, spfSponsorFee),
+                Ter(tecFAILED_PROCESSING));
+
+            if (auto const sle = env.le(keylet::sponsorship(sponsor, alice)); BEAST_EXPECT(sle))
+                BEAST_EXPECT(!sle->isFieldPresent(sfFeeAmount));
+        }
+
+        // If preclaim saw spendable sponsored FeeAmount but the apply view no
+        // longer has it, the fee path should fail cleanly instead of throwing.
+        {
+            Env env{*this, testableAmendments()};
+            Account const alice("alice");
+            Account const sponsor("sponsor");
+            env.fund(XRP(1000), alice, sponsor);
+            env.close();
+
+            auto const fixFee = drops(env.current()->fees().increment);
+            env(sponsor::set_fee(sponsor, 0, fixFee), sponsor::SponseeAcc(alice));
+            env.close();
+
+            OpenView overlay(&*env.closed());
+            auto jt = env.jt(
+                ledgerStateFix::nftPageLinks(alice, alice),
+                Fee(fixFee),
+                sponsor::As(sponsor, spfSponsorFee));
+
+            auto const pf = preflight(env.app(), overlay.rules(), *jt.stx, TapNone, env.journal);
+            BEAST_EXPECT(isTesSuccess(pf.ter));
+            auto const pc = preclaim(pf, env.app(), overlay);
+            BEAST_EXPECT(isTesSuccess(pc.ter));
+
+            auto const original = overlay.read(keylet::sponsorship(sponsor, alice));
+            if (BEAST_EXPECT(original))
+            {
+                auto sle = std::make_shared<SLE>(*original);
+                sle->makeFieldAbsent(sfFeeAmount);
+                overlay.rawReplace(sle);
+            }
+
+            auto const result = doApply(pc, env.app(), overlay);
+            BEAST_EXPECT(result.ter == terINSUF_FEE_B);
+            BEAST_EXPECT(!result.applied);
         }
 
         // test lsfSponsorshipRequireSignForFee
