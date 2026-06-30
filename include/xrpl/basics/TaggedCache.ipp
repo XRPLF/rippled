@@ -610,7 +610,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             // Allocate the current size plus a little extra, in case the cache grows while
             // allocating. Each time another allocation is needed, the extra also gets bigger until
             // it ultimately doubles the size + 1.
-            size += (size >> (4 - std::min(allocationIterations, 4ul))) + 1;
+            size += (size >> (4 - std::min(allocationIterations, std::size_t{4}))) + 1;
             v.reserve(size);
             ++allocationIterations;
         }
