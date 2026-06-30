@@ -140,7 +140,7 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj = 0)
  *  @param accountSle The account's ledger entry
  *  @param sponsorSle The sponsor's ledger entry (if applicable)
  *  @param count Positive amount to add to the owner count
- *  @param j Journal for logging (default: null sink)
+ *  @param j Journal for logging
  */
 void
 increaseOwnerCount(
@@ -148,7 +148,7 @@ increaseOwnerCount(
     SLE::ref accountSle,
     SLE::ref sponsorSle,
     std::int32_t count,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+    beast::Journal j);
 
 /** Convenience overload that accepts AccountID instead of SLE references.
  *
@@ -156,7 +156,7 @@ increaseOwnerCount(
  *  @param account The account ID
  *  @param sponsor The optional sponsor account ID
  *  @param count Positive amount to add to the owner count
- *  @param j Journal for logging (default: null sink)
+ *  @param j Journal for logging
  */
 inline void
 increaseOwnerCount(
@@ -164,7 +164,7 @@ increaseOwnerCount(
     AccountID const& account,
     std::optional<AccountID> const& sponsor,
     std::int32_t count,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+    beast::Journal j)
 {
     increaseOwnerCount(
         view,
@@ -185,7 +185,7 @@ increaseOwnerCount(
  *  @param accountSle The account's ledger entry
  *  @param sponsorSle The sponsor's ledger entry (if applicable)
  *  @param count Positive amount to remove from the owner count
- *  @param j Journal for logging (default: null sink)
+ *  @param j Journal for logging
  */
 void
 decreaseOwnerCount(
@@ -193,7 +193,7 @@ decreaseOwnerCount(
     SLE::ref accountSle,
     SLE::ref sponsorSle,
     std::int32_t count,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+    beast::Journal j);
 
 /** Convenience overload that accepts AccountID instead of SLE references.
  *
@@ -201,7 +201,7 @@ decreaseOwnerCount(
  *  @param account The account ID
  *  @param sponsor The optional sponsor account ID
  *  @param count Positive amount to remove from the owner count
- *  @param j Journal for logging (default: null sink)
+ *  @param j Journal for logging
  */
 inline void
 decreaseOwnerCount(
@@ -209,7 +209,7 @@ decreaseOwnerCount(
     AccountID const& account,
     std::optional<AccountID> const& sponsor,
     std::int32_t count,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+    beast::Journal j)
 {
     decreaseOwnerCount(
         view,
@@ -230,7 +230,7 @@ decreaseOwnerCount(
  *  @param accountSle The account's ledger entry
  *  @param objectSle The object's ledger entry
  *  @param count Positive amount to remove from the owner count
- *  @param j Journal for logging (default: null sink)
+ *  @param j Journal for logging
  */
 void
 decreaseOwnerCountForObject(
@@ -238,7 +238,7 @@ decreaseOwnerCountForObject(
     SLE::ref accountSle,
     SLE::ref objectSle,
     std::int32_t count,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+    beast::Journal j);
 
 /** Convenience overload that accepts AccountID instead of account SLE reference.
  *
@@ -246,7 +246,7 @@ decreaseOwnerCountForObject(
  *  @param account The account ID
  *  @param objectSle The object's ledger entry
  *  @param count Positive amount to remove from the owner count
- *  @param j Journal for logging (default: null sink)
+ *  @param j Journal for logging
  */
 inline void
 decreaseOwnerCountForObject(
@@ -254,7 +254,7 @@ decreaseOwnerCountForObject(
     AccountID const& account,
     SLE::ref objectSle,
     std::int32_t count,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+    beast::Journal j)
 {
     SLE::ref accountSle = view.peek(keylet::account(account));
     decreaseOwnerCountForObject(view, accountSle, objectSle, count, j);

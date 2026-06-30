@@ -220,14 +220,16 @@ adjustOwnerCountSigned(
     std::int32_t adjustment,
     beast::Journal j)
 {
+    XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
     if (!accountSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCountSigned : valid account sle");
+        return;
 
     auto const sleType = accountSle->getType();
     bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
                                       : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
+    XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
     if (!validType)
-        Throw<std::logic_error>("xrpl::adjustOwnerCountSigned : valid account sle type");
+        return;
 
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
     if (adjustment == 0)
@@ -236,8 +238,10 @@ adjustOwnerCountSigned(
     auto const accountID = accountSle->getAccountID(sfAccount);
     if (sponsorSle)
     {
-        if (sponsorSle->getType() != ltACCOUNT_ROOT)
-            Throw<std::logic_error>("xrpl::adjustOwnerCountSigned : valid sponsor sle type");
+        bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
+        XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
+        if (!validSponsorType)
+            return;
         auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
         adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);

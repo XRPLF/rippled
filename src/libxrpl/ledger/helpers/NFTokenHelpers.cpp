@@ -417,7 +417,8 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
 
         if (cnt != 0)
         {
-            increaseOwnerCount(view, owner, {}, cnt, beast::Journal{beast::Journal::getNullSink()});
+            decreaseOwnerCount(
+                view, owner, {}, -cnt, beast::Journal{beast::Journal::getNullSink()});
         }
 
         return tesSUCCESS;
