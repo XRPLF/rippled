@@ -25,12 +25,6 @@ public:
     {
     }
 
-    static uint32_t
-    calculateOracleReserve(std::size_t count)
-    {
-        return count > 5 ? 2 : 1;
-    }
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 
