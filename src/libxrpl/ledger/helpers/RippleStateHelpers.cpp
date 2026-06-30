@@ -663,11 +663,10 @@ addEmptyHolding(
     if (view.read(index))
         return tecDUPLICATE;
 
-    SLE::pointer sponsorSle;
-    if (!isPseudoAccount(sleDst))
-    {
-        sponsorSle = ctx.reserveContext.sponsorSle;
-    }
+    auto const reserveCtx = accountID == ctx.reserveContext.accountID
+        ? ctx.reserveContext
+        : ReserveContext::makeFromAccount(view, sleDst, nullptr);
+    SLE::pointer const sponsorSle = isPseudoAccount(sleDst) ? nullptr : reserveCtx.sponsorSle;
 
     // Can the account cover the trust line reserve ?
     if (auto const ret =

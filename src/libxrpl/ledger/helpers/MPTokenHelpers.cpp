@@ -162,6 +162,10 @@ authorizeMPToken(
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const reserveCtx = account == ctx.reserveContext.accountID
+        ? ctx.reserveContext
+        : ReserveContext::makeFromAccount(view, sleAcct, nullptr);
+
     // If the account that submitted the tx is a holder
     // Note: `account_` is holder's account
     //       `holderID` is NOT used
@@ -183,7 +187,7 @@ authorizeMPToken(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            adjustOwnerCountObj(ctx.view, ctx.reserveContext.accountSle, sleMpt, -1, journal);
+            adjustOwnerCountObj(ctx.view, reserveCtx.accountSle, sleMpt, -1, journal);
 
             view.erase(sleMpt);
             return tesSUCCESS;
@@ -193,7 +197,7 @@ authorizeMPToken(
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
-        auto const isSponsored = ctx.reserveContext.isSponsored();
+        auto const isSponsored = reserveCtx.isSponsored();
 
         // The reserve that is required to create the MPToken. Note
         // that although the reserve increases with every item
@@ -206,14 +210,7 @@ authorizeMPToken(
         if (isSponsored || ownerCount(sleAcct, journal) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
-                    view,
-                    ctx.tx,
-                    sleAcct,
-                    priorBalance,
-                    ctx.reserveContext.sponsorSle,
-                    1,
-                    0,
-                    journal);
+                    view, ctx.tx, sleAcct, priorBalance, reserveCtx.sponsorSle, 1, 0, journal);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -240,8 +237,8 @@ authorizeMPToken(
         view.insert(mptoken);
 
         // Update owner count.
-        adjustOwnerCount(view, ctx.reserveContext, 1, journal);
-        addSponsorToLedgerEntry(mptoken, ctx.reserveContext.sponsorSle);
+        adjustOwnerCount(view, reserveCtx, 1, journal);
+        addSponsorToLedgerEntry(mptoken, reserveCtx.sponsorSle);
 
         return tesSUCCESS;
     }

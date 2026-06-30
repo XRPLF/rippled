@@ -422,19 +422,7 @@ struct ReserveContext
     }
 
     static ReserveContext
-    makeFromTx(ApplyView& view, STTx const& tx)
-    {
-        auto const account = tx[sfAccount];
-        auto const sponsor = tx[~sfSponsor];
-
-        return {
-            account,
-            view.peek(keylet::account(account)),
-            sponsor,
-            sponsor ? view.peek(keylet::account(*sponsor)) : nullptr,
-            sponsor ? view.peek(keylet::sponsorship(*sponsor, account)) : nullptr,
-        };
-    }
+    makeFromTx(ApplyView& view, STTx const& tx);
 
     static ReserveContext
     makeFromAccount(ApplyView& view, SLE::pointer accountSle, SLE::pointer sponsorSle);
