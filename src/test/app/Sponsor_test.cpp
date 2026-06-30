@@ -14,6 +14,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sendmax.h>
@@ -22,10 +23,12 @@
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
+#include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
@@ -677,6 +680,7 @@ public:
         using namespace test::jtx;
         Account const alice("alice");
         Account const bob("bob");
+        Account const charlie("charlie");
         Account const sponsor("sponsor");
 
         {
@@ -715,10 +719,10 @@ public:
         {
             // if pre-funded value is not enough, error
             Env env{*this, testableAmendments()};
-            env.fund(XRP(10000), alice, bob, sponsor);
+            env.fund(XRP(10000), alice, bob, charlie, sponsor);
             env.close();
 
-            env(sponsor::set(sponsor, 0, 10, XRP(10), XRP(100)),
+            env(sponsor::set(sponsor, 0, 1, XRP(10), XRP(100)),
                 sponsor::SponseeAcc(alice),
                 Ter(tesSUCCESS));
             env.close();
@@ -847,19 +851,21 @@ public:
             Env env{*this, testableAmendments()};
             Account const alice("alice");
             Account const bob("bob");
+            Account const charlie("charlie");
             Account const sponsor("sponsor");
             env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
             {
                 // sponsor object
-                env(did::set(alice),
-                    did::Uri("uri"),
+                env.fund(XRP(1000), charlie);
+                env.close();
+                env(deposit::auth(alice, charlie),
                     sponsor::As(sponsor, spfSponsorReserve),
                     Sig(sfSponsorSignature, sponsor));
                 env.close();
 
-                auto const keylet = keylet::did(alice);
+                auto const keylet = keylet::depositPreauth(alice, charlie);
                 env(sponsor::transfer(bob, tfSponsorshipEnd, keylet.key),
                     sponsor::SponseeAcc(alice),
                     Ter(tecNO_PERMISSION));
@@ -1451,6 +1457,73 @@ public:
                     Ter(tecNO_PERMISSION));
             }
         }
+
+        {
+            // existing owner objects that are outside the v1 SponsorshipTransfer
+            // object allow-list
+            Env env{*this, testableAmendments()};
+            Account const alice("alice");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, sponsor);
+            env.close();
+
+            auto const checkBlocked = [&](Account const& account, uint256 const& objectID) {
+                env(sponsor::transfer(account, tfSponsorshipCreate, objectID),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(tecNO_PERMISSION));
+                env.close();
+            };
+
+            auto const ticketSeq = env.seq(alice);
+            env(ticket::create(alice, 1));
+            env.close();
+            auto const ticketID = keylet::TicketT()(alice, ticketSeq + 1).key;
+            BEAST_EXPECT(env.le(keylet::unchecked(ticketID)));
+            checkBlocked(alice, ticketID);
+
+            env(did::setValid(alice));
+            env.close();
+            auto const didKeylet = keylet::did(alice.id());
+            BEAST_EXPECT(env.le(didKeylet));
+            checkBlocked(alice, didKeylet.key);
+
+            env(token::mint(alice, 0u));
+            env.close();
+            auto const nftPageKeylet = keylet::nftpageMax(alice);
+            BEAST_EXPECT(env.le(nftPageKeylet));
+            checkBlocked(alice, nftPageKeylet.key);
+
+            Account const borrower("borrower");
+            env.fund(XRP(1000000), borrower);
+            env.close();
+
+            PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+            Vault const vault{env};
+            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = xrpAsset});
+            env(vaultTx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(1000)}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            env(loanBroker::set(alice, vaultKeylet.key),
+                loanBroker::kDebtMaximum(xrpAsset(1000).value()),
+                loanBroker::kManagementFeeRate(TenthBips16{0}),
+                loanBroker::kCoverRateMinimum(TenthBips32{0}),
+                loanBroker::kCoverRateLiquidation(TenthBips32{0}));
+            env.close();
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            env(loan::set(borrower, brokerKeylet.key, xrpAsset(100).value()),
+                Sig(sfCounterpartySignature, alice),
+                Fee(env.current()->fees().base * 2));
+            env.close();
+            BEAST_EXPECT(env.le(loanKeylet));
+            checkBlocked(borrower, loanKeylet.key);
+        }
     }
 
     void
@@ -2041,7 +2114,6 @@ public:
         env.fund(XRP(10000), alice, bob, sponsor);
         env.close();
 
-        // test Sufficient sponsor balance
         if (cosigning)
         {
             adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
@@ -3017,6 +3089,105 @@ public:
     }
 
     void
+    testSponsoredTrustLineNoFreeReserve()
+    {
+        // An account with ownerCount < 2 may create its first trust lines even
+        // without meeting the reserve. In any case, the sponsor pays the full
+        // reserve in all cases, even for the sponsee's very first trust line.
+        testcase("Sponsored trust line gets no free-reserve exception");
+        using namespace test::jtx;
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(10000), issuer, alice, sponsor);
+        env.close();
+
+        auto const usd = issuer["usd"];
+        auto const lineKeylet = keylet::line(alice, issuer, usd.currency);
+
+        // Sponsor funded for exactly its base reserve
+        adjustAccountXRPBalance(env, sponsor, reserve(env, 0));
+
+        // alice's ownerCount is 0, so an unsponsored first trust line would be
+        // free; but because it is sponsored, the reserve check is enforced
+        // against the sponsor, which is one increment short.
+        env(trust(alice, usd(100)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tecNO_LINE_INSUF_RESERVE));
+        env.close();
+
+        BEAST_EXPECT(!env.le(lineKeylet));
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+        // Give the sponsor has exactly one owner-reserve increment; the same
+        // sponsored first trust line now succeeds and the sponsor pays for it.
+        adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+
+        env(trust(alice, usd(100)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+
+        BEAST_EXPECT(env.le(lineKeylet));
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+    }
+
+    void
+    testCoSignReserveBoundedBySponsorshipBudget()
+    {
+        // sponsor co-signs, so a fee-only object (ReserveCount == 0) makes a co-signed
+        // reserve sponsorship fail -- with no fallback to the sponsor's balance.
+        testcase("Co-signed reserve sponsorship is bounded by Sponsorship budget");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const sponsor("sponsor");
+        Account const sponsee("sponsee");
+        env.fund(XRP(10000), sponsor, sponsee);
+        env.close();
+
+        // Prefund a FEE-only Sponsorship for the sponsee; ReserveCount
+        // defaults to 0.
+        env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::SponseeAcc(sponsee));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::sponsorship(sponsor, sponsee)));
+
+        // Sponsee creates a Check with the sponsor co-signing the reserve. The
+        // fee-only Sponsorship's has ReserveCount (0), so this fails
+        // with tecINSUFFICIENT_RESERVE
+        env(check::create(sponsee, sponsor, XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, sponsee) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, sponsee) == 0);
+
+        // Bumping the Sponsorship's ReserveCount budget makes the same
+        // co-signed reserve sponsorship succeed, the budget is what gates it.
+        env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(sponsee));
+        env.close();
+
+        env(check::create(sponsee, sponsor, XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tesSUCCESS));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, sponsee) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, sponsee) == 1);
+    }
+
+    void
     testTrustSet(bool cosigning)
     {
         testcase("TrustSet");
@@ -3728,6 +3899,40 @@ public:
         }
     }
 
+    // Verify that the central allow-list in preflight1Sponsor rejects
+    // spfSponsorReserve for transaction types that v1 does not permit.
+    void
+    testReserveSponsorGate()
+    {
+        testcase("Reserve sponsor allow-list gate");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, bob, sponsor);
+        env.close();
+
+        env(sponsor::set(sponsor, 0, 10, XRP(10)), sponsor::SponseeAcc(alice));
+        env.close();
+
+        auto checkBlocked = [&](json::Value const& jv) {
+            env(jv,
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(temINVALID_FLAG));
+        };
+
+        checkBlocked(ticket::create(alice, 1));
+        checkBlocked(offer(alice, XRP(100), bob["USD"](100)));
+        checkBlocked(did::setValid(alice));
+        checkBlocked(token::mint(alice, 0u));
+        checkBlocked(sponsor::set(alice, 0, 10, XRP(10)));
+        checkBlocked(acctdelete(alice, bob));
+        checkBlocked(loan::set(alice, uint256(1), Number{1}));
+    }
+
     void
     testSponsorReserve(bool cosigning)
     {
@@ -3769,6 +3974,10 @@ protected:
 
         testDelegatePermission();
         testBatch();
+
+        testSponsoredTrustLineNoFreeReserve();
+        testCoSignReserveBoundedBySponsorshipBudget();
+        testReserveSponsorGate();
     }
 
     void

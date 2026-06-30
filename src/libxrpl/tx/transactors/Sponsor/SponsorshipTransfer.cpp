@@ -146,7 +146,30 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         if (!sle)
             return tecNO_ENTRY;
 
-        auto const ownerCountDelta = getLedgerEntryOwnerCount(sle);
+        // v1 scope: an object is only sponsorable via SponsorshipTransfer if
+        // its creating transaction type is itself permitted to set
+        // spfSponsorReserve (the allow-list in preflight1Sponsor). Otherwise
+        // an Oracle / Ticket / DID / etc. could be retroactively sponsored
+        // even though its creating tx cannot be, leaving downstream
+        // transactors with no path to maintain the sponsorship invariants.
+        switch (sle->getType())
+        {
+            case ltDELEGATE:
+            case ltDEPOSIT_PREAUTH:
+            case ltMPTOKEN:
+            case ltMPTOKEN_ISSUANCE:
+            case ltCREDENTIAL:
+            case ltRIPPLE_STATE:
+            case ltSIGNER_LIST:
+            case ltCHECK:
+            case ltESCROW:
+            case ltPAYCHAN:
+                break;
+            default:
+                return tecNO_PERMISSION;
+        }
+
+        std::uint32_t const ownerCountDelta = 1;
 
         auto const owner = getLedgerEntryOwner(ctx.view, sle, sponseeID);
         if (!owner.has_value() || owner.value() != sponseeID)
@@ -331,7 +354,7 @@ SponsorshipTransfer::doApply()
         if (!ownerSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        std::int64_t const ownerCountDelta = getLedgerEntryOwnerCount(objSle);
+        std::int64_t const ownerCountDelta = 1;
 
         auto const& sponsorField = getLedgerEntrySponsorField(objSle, *ownerID);
 
