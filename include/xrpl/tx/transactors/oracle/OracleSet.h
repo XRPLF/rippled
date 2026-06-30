@@ -2,6 +2,9 @@
 
 #include <xrpl/tx/Transactor.h>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace xrpl {
 
 /**

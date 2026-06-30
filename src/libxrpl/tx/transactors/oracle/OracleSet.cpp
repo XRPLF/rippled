@@ -150,8 +150,9 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         if (!pairsDel.empty())
             return tecTOKEN_PAIR_NOT_FOUND;
 
-        auto const oldCount = calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
-        auto const newCount = calculateOracleReserve(pairs.size());
+        auto const oldCount =
+            OracleSet::calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
+        auto const newCount = OracleSet::calculateOracleReserve(pairs.size());
 
         adjustReserve = newCount - oldCount;
     }
@@ -161,7 +162,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 
         if (!ctx.tx.isFieldPresent(sfProvider) || !ctx.tx.isFieldPresent(sfAssetClass))
             return temMALFORMED;
-        adjustReserve = calculateOracleReserve(pairs.size());
+        adjustReserve = OracleSet::calculateOracleReserve(pairs.size());
     }
 
     if (pairs.empty())
@@ -235,7 +236,7 @@ OracleSet::doApply()
             priceData.setFieldCurrency(sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
             pairs.emplace(tokenPairKey(entry), std::move(priceData));
         }
-        auto const oldCount = calculateOracleReserve(pairs.size());
+        auto const oldCount = OracleSet::calculateOracleReserve(pairs.size());
         // update/add/delete pairs
         for (auto const& entry : ctx_.tx.getFieldArray(sfPriceDataSeries))
         {
@@ -273,7 +274,7 @@ OracleSet::doApply()
             (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
         }
 
-        auto const newCount = calculateOracleReserve(pairs.size());
+        auto const newCount = OracleSet::calculateOracleReserve(pairs.size());
         int32_t const adjust = newCount - oldCount;
 
         if (adjust != 0 && !adjustOracleOwnerCount(ctx_, adjust))
@@ -325,7 +326,7 @@ OracleSet::doApply()
 
         (*sle)[sfOwnerNode] = *page;
 
-        auto const count = calculateOracleReserve(series.size());
+        auto const count = OracleSet::calculateOracleReserve(series.size());
         if (!adjustOracleOwnerCount(ctx_, count))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
