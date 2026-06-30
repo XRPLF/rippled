@@ -147,6 +147,9 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         if (!sle)
             return tecNO_ENTRY;
 
+        if (!isLedgerEntrySupportedBySponsorship(sle))
+            return tecNO_PERMISSION;
+
         auto const owner = getLedgerEntryOwner(ctx.view, sle, sponseeID);
         if (!owner.has_value() || owner.value() != sponseeID)
             return tecNO_PERMISSION;

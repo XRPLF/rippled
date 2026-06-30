@@ -168,7 +168,30 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
             return std::nullopt;
         }
         default:
+            UNREACHABLE("Object is not supported by sponsorship.");
             return std::nullopt;
+    };
+}
+
+template <typename T>
+inline bool
+isLedgerEntrySupportedBySponsorship(T const& sle)
+{
+    switch (sle->getType())
+    {
+        case ltCHECK:
+        case ltESCROW:
+        case ltPAYCHAN:
+        case ltMPTOKEN:
+        case ltDELEGATE:
+        case ltDEPOSIT_PREAUTH:
+        case ltMPTOKEN_ISSUANCE:
+        case ltSIGNER_LIST:
+        case ltCREDENTIAL:
+        case ltRIPPLE_STATE:
+            return true;
+        default:
+            return false;
     };
 }
 
