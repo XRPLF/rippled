@@ -50,6 +50,7 @@ words:
   - AMMXRP
   - amt
   - amts
+  - archs
   - asnode
   - asynchrony
   - attestation
@@ -59,6 +60,7 @@ words:
   - autobridging
   - bimap
   - bindir
+  - blindings
   - bookdir
   - Bougalis
   - Britto
@@ -83,6 +85,7 @@ words:
   - coro
   - coros
   - cowid
+  - cpack
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
@@ -93,6 +96,8 @@ words:
   - daria
   - dcmake
   - dearmor
+  - decryptor
+  - dedented
   - deleteme
   - demultiplexer
   - deserializaton
@@ -103,9 +108,11 @@ words:
   - distro
   - doxyfile
   - dxrpl
+  - elgamal
   - enabled
   - enablerepo
   - endmacro
+  - envrc
   - exceptioned
   - EXPECT_STREQ
   - Falco
@@ -115,6 +122,7 @@ words:
   - fmtdur
   - fsanitize
   - funclets
+  - Gamal
   - gcov
   - gcovr
   - ghead
@@ -133,6 +141,7 @@ words:
   - iou
   - ious
   - isrdc
+  - isystem
   - itype
   - jemalloc
   - jlog
@@ -199,16 +208,19 @@ words:
   - nonxrp
   - noreplace
   - noripple
+  - nostdinc
   - notifempty
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
+  - onlatest
   - ostr
   - pargs
   - partitioner
   - paychan
   - paychans
+  - Pedersen
   - permdex
   - perminute
   - permissioned
@@ -227,9 +239,15 @@ words:
   - pyenv
   - pyparsing
   - qalloc
+  - qbsprofile
   - queuable
   - Raphson
+  - rcflags
   - replayer
+  - rerandomize
+  - rerandomization
+  - rerandomized
+  - rerandomizes
   - rerere
   - retriable
   - RIPD
@@ -246,6 +264,7 @@ words:
   - sahyadri
   - Satoshi
   - scons
+  - Schnorr
   - secp
   - sendq
   - seqit
@@ -254,6 +273,7 @@ words:
   - sfields
   - shamap
   - shamapitem
+  - shfmt
   - shlibs
   - sidechain
   - SIGGOOD
@@ -275,6 +295,7 @@ words:
   - stvar
   - stvector
   - stxchainattestations
+  - summands
   - superpeer
   - superpeers
   - takergets
@@ -291,6 +312,7 @@ words:
   - txs
   - ubsan
   - UBSAN
+  - ufdio
   - umant
   - unacquired
   - unambiguity
@@ -298,6 +320,7 @@ words:
   - unauthorizing
   - unergonomic
   - unfetched
+  - unfindable
   - unflatten
   - unfund
   - unimpair

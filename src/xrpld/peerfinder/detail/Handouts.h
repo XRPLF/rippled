@@ -143,7 +143,7 @@ RedirectHandouts::tryInsert(Endpoint const& ep)
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(list_.begin(), list_.end(), [&ep](Endpoint const& other) {
+    if (std::ranges::any_of(list_, [&ep](Endpoint const& other) {
             // Ignore port for security reasons
             return other.address.address() == ep.address.address();
         }))
@@ -222,7 +222,7 @@ SlotHandouts::tryInsert(Endpoint const& ep)
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(list_.begin(), list_.end(), [&ep](Endpoint const& other) {
+    if (std::ranges::any_of(list_, [&ep](Endpoint const& other) {
             // Ignore port for security reasons
             return other.address.address() == ep.address.address();
         }))
@@ -311,7 +311,7 @@ ConnectHandouts::tryInsert(beast::IP::Endpoint const& endpoint)
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(list_.begin(), list_.end(), [&endpoint](beast::IP::Endpoint const& other) {
+    if (std::ranges::any_of(list_, [&endpoint](beast::IP::Endpoint const& other) {
             // Ignore port for security reasons
             return other.address() == endpoint.address();
         }))

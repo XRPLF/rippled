@@ -65,12 +65,12 @@ public:
         };
 
     public:
-        using iterator = boost::transform_iterator<Transform, typename list_type::const_iterator>;
+        using iterator = boost::transform_iterator<Transform, list_type::const_iterator>;
 
         using const_iterator = iterator;
 
         using reverse_iterator =
-            boost::transform_iterator<Transform, typename list_type::const_reverse_iterator>;
+            boost::transform_iterator<Transform, list_type::const_reverse_iterator>;
 
         using const_reverse_iterator = reverse_iterator;
 
@@ -132,7 +132,7 @@ public:
         }
 
     private:
-        explicit Hop(typename beast::MaybeConst<IsConst, list_type>::type& list) : list_(list)
+        explicit Hop(beast::MaybeConst<IsConst, list_type>::type& list) : list_(list)
         {
         }
 
@@ -145,7 +145,7 @@ protected:
     // Work-around to call Hop's private constructor from Livecache
     template <bool IsConst>
     static Hop<IsConst>
-    makeHop(typename beast::MaybeConst<IsConst, list_type>::type& list)
+    makeHop(beast::MaybeConst<IsConst, list_type>::type& list)
     {
         return Hop<IsConst>(list);
     }
@@ -208,30 +208,29 @@ public:
         template <bool IsConst>
         struct Transform
         {
-            using first_argument = typename lists_type::value_type;
+            using first_argument = lists_type::value_type;
             using result_type = Hop<IsConst>;
 
             explicit Transform() = default;
 
             Hop<IsConst>
-            operator()(typename beast::MaybeConst<IsConst, typename lists_type::value_type>::type&
-                           list) const
+            operator()(beast::MaybeConst<IsConst, lists_type::value_type>::type& list) const
             {
                 return makeHop<IsConst>(list);
             }
         };
 
     public:
-        using iterator = boost::transform_iterator<Transform<false>, typename lists_type::iterator>;
+        using iterator = boost::transform_iterator<Transform<false>, lists_type::iterator>;
 
         using const_iterator =
-            boost::transform_iterator<Transform<true>, typename lists_type::const_iterator>;
+            boost::transform_iterator<Transform<true>, lists_type::const_iterator>;
 
         using reverse_iterator =
-            boost::transform_iterator<Transform<false>, typename lists_type::reverse_iterator>;
+            boost::transform_iterator<Transform<false>, lists_type::reverse_iterator>;
 
         using const_reverse_iterator =
-            boost::transform_iterator<Transform<true>, typename lists_type::const_reverse_iterator>;
+            boost::transform_iterator<Transform<true>, lists_type::const_reverse_iterator>;
 
         iterator
         begin()
@@ -338,7 +337,7 @@ public:
     }
 
     /** Returns the number of entries in the cache. */
-    typename cache_type::size_type
+    cache_type::size_type
     size() const
     {
         return cache_.size();

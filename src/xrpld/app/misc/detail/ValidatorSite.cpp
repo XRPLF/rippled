@@ -114,7 +114,7 @@ ValidatorSite::ValidatorSite(
 
 ValidatorSite::~ValidatorSite()
 {
-    std::unique_lock<std::mutex> lock{state_mutex_};
+    std::unique_lock<std::mutex> lock{stateMutex_};
     if (timer_.expiry() > clock_type::time_point{})
     {
         if (!stopping_)
@@ -141,7 +141,7 @@ ValidatorSite::load(std::vector<std::string> const& siteURIs)
 {
     JLOG(j_.debug()) << "Loading configured validator list sites";
 
-    std::scoped_lock const lock{sites_mutex_};
+    std::scoped_lock const lock{sitesMutex_};
 
     return load(siteURIs, lock);
 }
@@ -182,8 +182,8 @@ ValidatorSite::load(
 void
 ValidatorSite::start()
 {
-    std::scoped_lock const l0{sites_mutex_};
-    std::scoped_lock const l1{state_mutex_};
+    std::scoped_lock const l0{sitesMutex_};
+    std::scoped_lock const l1{stateMutex_};
     if (timer_.expiry() == clock_type::time_point{})
         setTimer(l0, l1);
 }
@@ -191,14 +191,14 @@ ValidatorSite::start()
 void
 ValidatorSite::join()
 {
-    std::unique_lock<std::mutex> lock{state_mutex_};
+    std::unique_lock<std::mutex> lock{stateMutex_};
     cv_.wait(lock, [&] { return !pending_; });
 }
 
 void
 ValidatorSite::stop()
 {
-    std::unique_lock<std::mutex> lock{state_mutex_};
+    std::unique_lock<std::mutex> lock{stateMutex_};
     stopping_ = true;
     // work::cancel() must be called before the
     // cv wait in order to kick any asio async operations
@@ -260,7 +260,7 @@ ValidatorSite::makeRequest(
     sites_[siteIdx].activeResource = resource;
     std::shared_ptr<detail::Work> sp;
     auto timeoutCancel = [this]() {
-        std::scoped_lock const lockState{state_mutex_};
+        std::scoped_lock const lockState{stateMutex_};
         // docs indicate cancel_one() can throw, but this
         // should be reconsidered if it changes to noexcept
         try
@@ -326,7 +326,7 @@ ValidatorSite::makeRequest(
     sp->run();
     // start a timer for the request, which shouldn't take more
     // than requestTimeout_ to complete
-    std::scoped_lock const lockState{state_mutex_};
+    std::scoped_lock const lockState{stateMutex_};
     timer_.expires_after(requestTimeout_);
     timer_.async_wait([this, siteIdx](boost::system::error_code const& ec) {
         this->onRequestTimeout(siteIdx, ec);
@@ -340,7 +340,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
         return;
 
     {
-        std::scoped_lock const lockSite{sites_mutex_};
+        std::scoped_lock const lockSite{sitesMutex_};
         // In some circumstances, both this function and the response
         // handler (onSiteFetch or onTextFetch) can get queued and
         // processed. In all observed cases, the response handler
@@ -353,14 +353,16 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
             JLOG(j_.warn()) << "Request for " << site.activeResource->uri << " took too long";
         }
         else
+        {
             JLOG(j_.error()) << "Request took too long, but a response has "
                                 "already been processed";
+        }
         if (!site.lastRefreshStatus)
             site.lastRefreshStatus.emplace(
                 Site::Status{clock_type::now(), ListDisposition::invalid, "timeout"});
     }
 
-    std::scoped_lock const lockState{state_mutex_};
+    std::scoped_lock const lockState{stateMutex_};
     if (auto sp = work_.lock())
         sp->cancel();
 }
@@ -379,7 +381,7 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
 
     try
     {
-        std::scoped_lock const lock{sites_mutex_};
+        std::scoped_lock const lock{sitesMutex_};
         sites_[siteIdx].nextRefresh = clock_type::now() + sites_[siteIdx].refreshInterval;
         sites_[siteIdx].redirCount = 0;
         // the WorkSSL client ctor can throw if SSL init fails
@@ -562,7 +564,7 @@ ValidatorSite::onSiteFetch(
     detail::response_type const& res,
     std::size_t siteIdx)
 {
-    std::scoped_lock lockSites{sites_mutex_};
+    std::scoped_lock lockSites{sitesMutex_};
     {
         if (endpoint != endpoint_type{})
             sites_[siteIdx].lastRequestEndpoint = endpoint;
@@ -634,7 +636,7 @@ ValidatorSite::onSiteFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::scoped_lock const lockState{state_mutex_};
+    std::scoped_lock const lockState{stateMutex_};
     fetching_ = false;
     if (!stopping_)
         setTimer(lockSites, lockState);
@@ -647,7 +649,7 @@ ValidatorSite::onTextFetch(
     std::string const& res,
     std::size_t siteIdx)
 {
-    std::scoped_lock const lockSites{sites_mutex_};
+    std::scoped_lock const lockSites{sitesMutex_};
     {
         try
         {
@@ -674,7 +676,7 @@ ValidatorSite::onTextFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::scoped_lock const lockState{state_mutex_};
+    std::scoped_lock const lockState{stateMutex_};
     fetching_ = false;
     if (!stopping_)
         setTimer(lockSites, lockState);
@@ -690,7 +692,7 @@ ValidatorSite::getJson() const
     json::Value jrr(json::ValueType::Object);
     json::Value& jSites = (jrr[jss::validator_sites] = json::ValueType::Array);
     {
-        std::scoped_lock const lock{sites_mutex_};
+        std::scoped_lock const lock{sitesMutex_};
         for (Site const& site : sites_)
         {
             json::Value& v = jSites.append(json::ValueType::Object);

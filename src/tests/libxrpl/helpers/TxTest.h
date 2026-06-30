@@ -44,7 +44,7 @@ namespace xrpl::test {
  */
 template <std::integral T>
 constexpr XRPAmount
-XRP(T xrp)
+XRP(T xrp)  // NOLINT(readability-identifier-naming)
 {
     return XRPAmount{static_cast<std::int64_t>(xrp) * kDropsPerXrp.drops()};
 }

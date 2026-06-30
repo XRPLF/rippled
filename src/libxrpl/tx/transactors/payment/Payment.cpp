@@ -8,7 +8,6 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -29,7 +28,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -123,6 +121,12 @@ Payment::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     if (!mpTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
+        return temMALFORMED;
+
+    // A zero DomainID is invalid for a PermissionedDomain ledger entry because
+    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    if (auto const domainID = tx[~sfDomainID];
+        ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
         return temMALFORMED;
 
     bool const partialPaymentAllowed = tx.isFlag(tfPartialPayment);
@@ -267,42 +271,71 @@ Payment::preflight(PreflightContext const& ctx)
 }
 
 NotTEC
-Payment::checkPermission(ReadView const& view, STTx const& tx)
+Payment::checkGranularSemantics(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType> const& heldGranularPermissions)
 {
-    auto const delegate = tx[~sfDelegate];
-    if (!delegate)
-        return tesSUCCESS;
-
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
-    if (!sle)
-        return terNO_DELEGATE_PERMISSION;
-
-    if (isTesSuccess(checkTxPermission(sle, tx)))
-        return tesSUCCESS;
-
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    loadGranularPermission(sle, ttPAYMENT, granularPermissions);
-
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
     auto const& amountAsset = dstAmount.asset();
 
     // Granular permissions are only valid for direct payments.
-    if ((tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset) ||
-        tx.isFieldPresent(sfPaths))
+    if (tx.isFieldPresent(sfSendMax) && tx[sfSendMax].asset() != amountAsset)
         return terNO_DELEGATE_PERMISSION;
 
-    // PaymentMint and PaymentBurn apply to both IOU and MPT direct payments.
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfAccount])
-        return tesSUCCESS;
+    if (isXRP(amountAsset))
+        return terNO_DELEGATE_PERMISSION;
 
-    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfDestination])
-        return tesSUCCESS;
+    return amountAsset.visit(
+        [&](MPTIssue const& mptIssue) -> NotTEC {
+            // For MPT payments, the MPTokenIssuanceID encodes the issuer unambiguously,
+            // unlike IOU, there is no endpoint aliasing where either side of the
+            // trustline can appear as the issuer.
+            if (heldGranularPermissions.contains(PaymentMint) &&
+                mptIssue.getIssuer() == tx[sfAccount])
+                return tesSUCCESS;
+            if (heldGranularPermissions.contains(PaymentBurn) &&
+                mptIssue.getIssuer() == tx[sfDestination])
+                return tesSUCCESS;
+            return terNO_DELEGATE_PERMISSION;
+        },
+        [&](Issue const& issue) -> NotTEC {
+            // For IOU payments, either endpoint may be encoded as the issuer in
+            // sfAmount. PaySteps normalizes those endpoint aliases, so sfAmount.issuer
+            // alone does not reliably identify whether the transaction issues or redeems
+            // IOUs. We determine PaymentMint vs PaymentBurn from the trustline balance
+            // direction instead.
+            auto const account = tx[sfAccount];
+            auto const destination = tx[sfDestination];
 
-    return terNO_DELEGATE_PERMISSION;
+            // Reject if neither endpoint is the issuer.
+            if (issue.getIssuer() != account && issue.getIssuer() != destination)
+                return terNO_DELEGATE_PERMISSION;
+
+            auto const sle = view.read(keylet::trustLine(account, destination, issue.currency));
+            if (!sle)
+                return terNO_DELEGATE_PERMISSION;
+
+            bool const accountIsLow = (account < destination);
+            auto const destLimit = sle->getFieldAmount(accountIsLow ? sfHighLimit : sfLowLimit);
+            auto const rawBalance = sle->getFieldAmount(sfBalance);
+            bool const accountIsHolder =
+                accountIsLow ? rawBalance > beast::kZero : rawBalance < beast::kZero;
+
+            // PaymentMint requires the destination to be the holder and the account to be the
+            // issuer. destLimit > 0: destination is willing to hold account's IOUs (account is the
+            // issuer). !accountIsHolder: DirectStepI will issue, not redeem.
+            if (heldGranularPermissions.contains(PaymentMint) && destLimit > beast::kZero &&
+                !accountIsHolder)
+                return tesSUCCESS;
+
+            // PaymentBurn requires the source account to be the holder and the destination to be
+            // the issuer. accountIsHolder: DirectStepI will redeem, not issue.
+            if (heldGranularPermissions.contains(PaymentBurn) && accountIsHolder)
+                return tesSUCCESS;
+
+            return terNO_DELEGATE_PERMISSION;
+        });
 }
 
 TER
@@ -673,10 +706,7 @@ Payment::doApply()
 }
 
 void
-Payment::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+Payment::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

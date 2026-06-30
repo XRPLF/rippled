@@ -111,7 +111,7 @@ public:
     virtual void
     run() = 0;
     virtual void
-    signalStop(std::string msg) = 0;
+    signalStop(std::string const& msg) = 0;
     [[nodiscard]] virtual bool
     checkSigs() const = 0;
     virtual void

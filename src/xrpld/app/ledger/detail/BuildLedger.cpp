@@ -73,7 +73,7 @@ buildLedgerImpl(
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::fees()),
+        built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::feeSettings()),
         "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
@@ -204,9 +204,11 @@ buildLedger(
                                 << accum.txCount();
             }
             else
+            {
                 JLOG(j.debug()) << "Applied " << applied << " transactions. "
                                 << "Total transactions in ledger (including Inner Batch): "
                                 << accum.txCount();
+            }
         });
 }
 

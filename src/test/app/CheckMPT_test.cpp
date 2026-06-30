@@ -42,7 +42,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
-#include <memory>
 #include <ostream>
 #include <stdexcept>
 #include <string>
@@ -54,11 +53,11 @@ namespace xrpl {
 class CheckMPT_test : public beast::unit_test::Suite
 {
     // Helper function that returns the Checks on an account.
-    static std::vector<std::shared_ptr<SLE const>>
+    static std::vector<SLE::const_pointer>
     checksOnAccount(test::jtx::Env& env, test::jtx::Account account)
     {
-        std::vector<std::shared_ptr<SLE const>> result;
-        forEachItem(*env.current(), account, [&result](std::shared_ptr<SLE const> const& sle) {
+        std::vector<SLE::const_pointer> result;
+        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
             if (sle && sle->getType() == ltCHECK)
                 result.push_back(sle);
         });
@@ -1860,10 +1859,10 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Use offers to automatically create MPT.
             MPT const oF4 = gw1["OF4"];
             gw1.set(oF4, tfMPTLock);
-            env(offer(gw1, XRP(92), oF4(92)), Ter(tecFROZEN));
+            env(offer(gw1, XRP(92), oF4(92)), Ter(tecLOCKED));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF4, alice)) == nullptr);
-            env(offer(alice, oF4(92), XRP(92)), Ter(tecFROZEN));
+            env(offer(alice, oF4(92), XRP(92)), Ter(tecLOCKED));
             env.close();
 
             // No one's owner count should have changed.
@@ -1951,10 +1950,10 @@ class CheckMPT_test : public beast::unit_test::Suite
             // Use offers to automatically create MPT.
             MPT const oF4 = gw1["OF4"];
             gw1.set(oF4, tfMPTLock);
-            env(offer(alice, XRP(91), oF4(91)), Ter(tecFROZEN));
+            env(offer(alice, XRP(91), oF4(91)), Ter(tecLOCKED));
             env.close();
             BEAST_EXPECT(env.le(keylet::mptoken(oF4, alice)) == nullptr);
-            env(offer(bob, oF4(91), XRP(91)), Ter(tecFROZEN));
+            env(offer(bob, oF4(91), XRP(91)), Ter(tecLOCKED));
             env.close();
 
             // No one's owner count should have changed.

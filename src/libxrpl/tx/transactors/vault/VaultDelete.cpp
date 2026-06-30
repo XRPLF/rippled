@@ -17,8 +17,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <memory>
-
 namespace xrpl {
 
 NotTEC
@@ -59,7 +57,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    auto const sleMPT = ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
 
     if (!sleMPT)
     {
@@ -112,7 +110,7 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    auto const mpt = view().peek(keylet::mptIssuance(shareMPTID));
+    auto const mpt = view().peek(keylet::mptokenIssuance(shareMPTID));
     if (!mpt)
     {
         // LCOV_EXCL_START
@@ -213,10 +211,7 @@ VaultDelete::doApply()
 }
 
 void
-VaultDelete::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+VaultDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

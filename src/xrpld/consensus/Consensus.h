@@ -276,11 +276,11 @@ checkConsensus(
 template <class Adaptor>
 class Consensus
 {
-    using Ledger_t = typename Adaptor::Ledger_t;
-    using TxSet_t = typename Adaptor::TxSet_t;
-    using NodeID_t = typename Adaptor::NodeID_t;
-    using Tx_t = typename TxSet_t::Tx;
-    using PeerPosition_t = typename Adaptor::PeerPosition_t;
+    using Ledger_t = Adaptor::Ledger_t;
+    using TxSet_t = Adaptor::TxSet_t;
+    using NodeID_t = Adaptor::NodeID_t;
+    using Tx_t = TxSet_t::Tx;
+    using PeerPosition_t = Adaptor::PeerPosition_t;
     using Proposal_t = ConsensusProposal<NodeID_t, typename Ledger_t::ID, typename TxSet_t::ID>;
 
     using Result = ConsensusResult<Adaptor>;
@@ -341,7 +341,7 @@ public:
     void
     startRound(
         NetClock::time_point const& now,
-        typename Ledger_t::ID const& prevLedgerID,
+        Ledger_t::ID const& prevLedgerID,
         Ledger_t prevLedger,
         hash_set<NodeID_t> const& nowUntrusted,
         bool proposing,
@@ -402,7 +402,7 @@ public:
 
         @return ID of previous ledger
     */
-    typename Ledger_t::ID
+    Ledger_t::ID
     prevLedgerID() const
     {
         return prevLedgerID_;
@@ -428,16 +428,14 @@ private:
     void
     startRoundInternal(
         NetClock::time_point const& now,
-        typename Ledger_t::ID const& prevLedgerID,
+        Ledger_t::ID const& prevLedgerID,
         Ledger_t const& prevLedger,
         ConsensusMode mode,
         std::unique_ptr<std::stringstream> const& clog);
 
     // Change our view of the previous ledger
     void
-    handleWrongLedger(
-        typename Ledger_t::ID const& lgrId,
-        std::unique_ptr<std::stringstream> const& clog);
+    handleWrongLedger(Ledger_t::ID const& lgrId, std::unique_ptr<std::stringstream> const& clog);
 
     /** Check if our previous ledger matches the network's.
 
@@ -568,7 +566,7 @@ private:
     // Non-peer (self) consensus data
 
     // Last validated ledger ID provided to consensus
-    typename Ledger_t::ID prevLedgerID_;
+    Ledger_t::ID prevLedgerID_;
     // Last validated ledger seen by consensus
     Ledger_t previousLedger_;
 
@@ -616,7 +614,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::startRound(
     NetClock::time_point const& now,
-    typename Ledger_t::ID const& prevLedgerID,
+    Ledger_t::ID const& prevLedgerID,
     Ledger_t prevLedger,
     hash_set<NodeID_t> const& nowUntrusted,
     bool proposing,
@@ -625,7 +623,7 @@ Consensus<Adaptor>::startRound(
     if (firstRound_)
     {
         // take our initial view of closeTime_ from the seed ledger
-        prevRoundTime_ = adaptor_.parms().ledgerIDLE_INTERVAL;
+        prevRoundTime_ = adaptor_.parms().ledgerIdleInterval;
         prevCloseTime_ = prevLedger.closeTime();
         firstRound_ = false;
     }
@@ -661,7 +659,7 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::startRoundInternal(
     NetClock::time_point const& now,
-    typename Ledger_t::ID const& prevLedgerID,
+    Ledger_t::ID const& prevLedgerID,
     Ledger_t const& prevLedger,
     ConsensusMode mode,
     std::unique_ptr<std::stringstream> const& clog)
@@ -811,7 +809,9 @@ Consensus<Adaptor>::peerProposalInternal(
                 gotTxSet(now_, *set);
             }
             else
+            {
                 JLOG(j_.debug()) << "Don't have tx set for peer";
+            }
         }
         else if (result_)
         {
@@ -1025,7 +1025,7 @@ Consensus<Adaptor>::getJson(bool full) const
 template <class Adaptor>
 void
 Consensus<Adaptor>::handleWrongLedger(
-    typename Ledger_t::ID const& lgrId,
+    Ledger_t::ID const& lgrId,
     std::unique_ptr<std::stringstream> const& clog)
 {
     CLOG(clog) << "handleWrongLedger. ";
@@ -1169,9 +1169,9 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
     }
 
     auto const idleInterval = std::max<milliseconds>(
-        adaptor_.parms().ledgerIDLE_INTERVAL, 2 * previousLedger_.closeTimeResolution());
+        adaptor_.parms().ledgerIdleInterval, 2 * previousLedger_.closeTimeResolution());
     CLOG(clog) << "idle interval set to " << idleInterval.count() << "ms based on "
-               << "ledgerIDLE_INTERVAL: " << adaptor_.parms().ledgerIDLE_INTERVAL.count()
+               << "ledgerIDLE_INTERVAL: " << adaptor_.parms().ledgerIdleInterval.count()
                << ", previous ledger close time resolution: "
                << previousLedger_.closeTimeResolution().count() << "ms. ";
 
@@ -1218,7 +1218,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
          << "roundTime: " << result_->roundTime.read().count()
          << ", "
          // NOLINTEND(bugprone-unchecked-optional-access)
-         << "max consensus time: " << parms.ledgerMAX_CONSENSUS.count() << ", "
+         << "max consensus time: " << parms.ledgerMaxConsensus.count() << ", "
          << "validators: " << totalValidators << ", "
          << "laggards: " << laggards << ", "
          << "offline: " << offline << ", "
@@ -1227,7 +1227,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
     if ((ahead == 0u) || (laggards == 0u) || (totalValidators == 0u) || !adaptor_.validator() ||
         !adaptor_.haveValidated() ||
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) result_ set as shouldPause called
-        result_->roundTime.read() > parms.ledgerMAX_CONSENSUS)
+        result_->roundTime.read() > parms.ledgerMaxConsensus)
     {
         j_.debug() << "not pausing (early)" << vars.str();
         CLOG(clog) << "Not pausing (early). ";
@@ -1337,17 +1337,17 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
     result_->proposers = currPeerPositions_.size();
 
     convergePercent_ = result_->roundTime.read() * 100 /
-        std::max<milliseconds>(prevRoundTime_, parms.avMIN_CONSENSUS_TIME);
+        std::max<milliseconds>(prevRoundTime_, parms.avMinConsensusTime);
     CLOG(clog) << "convergePercent_ " << convergePercent_
                << " is based on round duration so far: " << result_->roundTime.read().count()
                << "ms, "
                << "previous round duration: " << prevRoundTime_.count() << "ms, "
-               << "avMIN_CONSENSUS_TIME: " << parms.avMIN_CONSENSUS_TIME.count() << "ms. ";
+               << "avMIN_CONSENSUS_TIME: " << parms.avMinConsensusTime.count() << "ms. ";
 
     // Give everyone a chance to take an initial position
-    if (result_->roundTime.read() < parms.ledgerMIN_CONSENSUS)
+    if (result_->roundTime.read() < parms.ledgerMinConsensus)
     {
-        CLOG(clog) << "ledgerMIN_CONSENSUS not reached: " << parms.ledgerMIN_CONSENSUS.count()
+        CLOG(clog) << "ledgerMIN_CONSENSUS not reached: " << parms.ledgerMinConsensus.count()
                    << "ms. ";
         return;
     }
@@ -1542,7 +1542,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         int threshVote = participantsNeeded(participants, neededWeight);
 
         // Threshold to declare consensus
-        int const threshConsensus = participantsNeeded(participants, parms.avCT_CONSENSUS_PCT);
+        int const threshConsensus = participantsNeeded(participants, parms.avCtConsensusPct);
 
         std::stringstream ss;
         ss << "Proposers:" << currPeerPositions_.size() << " nw:" << neededWeight
@@ -1696,7 +1696,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     // Consensus has taken far too long. Drop out of the round.
     if (result_->state == ConsensusState::Expired)
     {
-        static auto const kMinimumCounter = parms.avalancheCutoffs.size() * parms.avMIN_ROUNDS;
+        static auto const kMinimumCounter = parms.avalancheCutoffs.size() * parms.avMinRounds;
         std::stringstream ss;
         if (establishCounter_ < kMinimumCounter)
         {
