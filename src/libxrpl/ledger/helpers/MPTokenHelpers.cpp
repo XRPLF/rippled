@@ -939,14 +939,18 @@ createMPToken(
     return tesSUCCESS;
 }
 
-static TER
-checkCreateMPTWithReserve(
+TER
+checkCreateMPT(
     ApplyView& view,
     ReserveContext const& reserveCtx,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
     beast::Journal j)
 {
+    XRPL_ASSERT(
+        reserveCtx.accountID == holder,
+        "xrpl::checkCreateMPTWithReserve : reserve context matches holder");
+
     if (mptIssue.getIssuer() == holder)
         return tesSUCCESS;
 
@@ -969,35 +973,6 @@ checkCreateMPTWithReserve(
         adjustOwnerCount(view, reserveCtx, 1, j);
     }
     return tesSUCCESS;
-}
-
-TER
-checkCreateMPT(
-    xrpl::ApplyViewContext& ctx,
-    xrpl::MPTIssue const& mptIssue,
-    xrpl::AccountID const& holder,
-    beast::Journal j)
-{
-    return checkCreateMPTWithReserve(ctx.view, ctx.reserveContext, mptIssue, holder, j);
-}
-
-TER
-checkCreateMPT(
-    ApplyView& view,
-    xrpl::MPTIssue const& mptIssue,
-    xrpl::AccountID const& holder,
-    SLE::ref sponsorSle,
-    beast::Journal j)
-{
-    auto const sponsorID = sponsorSle
-        ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)}
-        : std::optional<AccountID>{};
-    return checkCreateMPTWithReserve(
-        view,
-        ReserveContext{holder, view.peek(keylet::account(holder)), sponsorID, sponsorSle, nullptr},
-        mptIssue,
-        holder,
-        j);
 }
 
 std::int64_t

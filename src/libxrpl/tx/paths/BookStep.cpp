@@ -731,11 +731,14 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // Create MPToken for the offer's owner. No need to check
             // for the reserve since the offer is removed if it is consumed.
             // Therefore, the owner count remains the same.
-            if (auto const err = checkCreateMPT(sb, assetIn.get<MPTIssue>(), owner, {}, j_);
+            if (auto const err = checkCreateMPT(
+                    sb,
+                    ReserveContext{owner, sb.peek(keylet::account(owner)), {}, nullptr, nullptr},
+                    assetIn.get<MPTIssue>(),
+                    owner,
+                    j_);
                 !isTesSuccess(err))
-            {
                 return true;
-            }
         }
 
         // It shouldn't matter from auth point of view whether it's sb

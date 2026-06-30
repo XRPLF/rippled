@@ -233,27 +233,10 @@ createMPToken(
 
 TER
 checkCreateMPT(
-    xrpl::ApplyViewContext& ctx,
-    xrpl::MPTIssue const& mptIssue,
-    xrpl::AccountID const& holder,
-    beast::Journal j);
-
-inline TER
-checkCreateMPT(
-    xrpl::ApplyViewContext&& ctx,
-    xrpl::MPTIssue const& mptIssue,
-    xrpl::AccountID const& holder,
-    beast::Journal j)
-{
-    return checkCreateMPT(ctx, mptIssue, holder, j);
-}
-
-TER
-checkCreateMPT(
     ApplyView& view,
+    ReserveContext const& reserveCtx,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
-    SLE::ref sponsorSle,
     beast::Journal j);
 
 //------------------------------------------------------------------------------

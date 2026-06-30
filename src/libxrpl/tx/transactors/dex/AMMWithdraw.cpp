@@ -654,11 +654,15 @@ AMMWithdraw::withdraw(
                 !isTesSuccess(err))
                 return err;
 
-            if (auto const err = checkCreateMPT(view, mptIssue, account, {}, journal);
+            if (auto const err = checkCreateMPT(
+                    view,
+                    ReserveContext{
+                        account, view.peek(keylet::account(account)), {}, nullptr, nullptr},
+                    mptIssue,
+                    account,
+                    journal);
                 !isTesSuccess(err))
-            {
                 return err;
-            }
         }
         return tesSUCCESS;
     };

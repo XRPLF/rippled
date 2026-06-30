@@ -410,7 +410,12 @@ MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view, xrpl::DebtDirectio
         // for the reserve since the offer doesn't go on the books
         // if crossed. Insufficient reserve is allowed if the offer
         // crossed. See CreateOffer::applyGuts() for reserve check.
-        if (auto const err = xrpl::checkCreateMPT(view, mptIssue_, dst_, {}, j_);
+        if (auto const err = xrpl::checkCreateMPT(
+                view,
+                ReserveContext{dst_, view.peek(keylet::account(dst_)), {}, nullptr, nullptr},
+                mptIssue_,
+                dst_,
+                j_);
             !isTesSuccess(err))
         {
             JLOG(j_.trace()) << "MPTEndpointStep::checkCreateMPT: failed create MPT";
