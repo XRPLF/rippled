@@ -20,4 +20,6 @@ compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
 {% endif %}
 
 [conf]
-tools.info.package_id:confs+=["compiler.cppstd"]
+cppstd_version={{compiler.cppstd}}
+{# Only conf values that are used in package_id computation should be added here #}
+tools.info.package_id:confs+=["cppstd_version"]
