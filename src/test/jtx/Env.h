@@ -469,18 +469,27 @@ public:
     class ParseFailureGuard final
     {
         Env& self_;
-        bool oldExpected = self_.parseFailureExpected_;
+        bool oldExpected_ = self_.parseFailureExpected_;
 
     public:
         ParseFailureGuard(Env& self, bool b) : self_(self)
         {
+            assert(self_.parseFailureExpected_ == oldExpected_);
             self_.setParseFailureExpected(b);
         }
 
         ~ParseFailureGuard()
         {
-            self_.setParseFailureExpected(oldExpected);
+            self_.setParseFailureExpected(oldExpected_);
         }
+
+        // No copy, no move
+        ParseFailureGuard(ParseFailureGuard const&) = delete;
+        ParseFailureGuard&
+        operator=(ParseFailureGuard const&) = delete;
+        ParseFailureGuard(ParseFailureGuard&& other) = delete;
+        ParseFailureGuard&
+        operator=(ParseFailureGuard&&) = delete;
     };
 
     /** Gets an RAII guard to set and restore the parse failure flag
@@ -488,7 +497,7 @@ public:
      * Usage:
      * auto const guard = env.getParseFailureGuard(true/false);
      */
-    ParseFailureGuard
+    [[nodiscard]] ParseFailureGuard
     getParseFailureGuard(bool b)
     {
         return ParseFailureGuard{*this, b};
