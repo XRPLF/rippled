@@ -48,6 +48,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/tx/applySteps.h>
 
 #include <cstdint>
 #include <functional>

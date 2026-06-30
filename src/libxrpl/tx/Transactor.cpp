@@ -604,9 +604,13 @@ Transactor::payFee()
 
     XRPAmount balance = beast::kZero;
     if (sle->isFieldPresent(feePayer.balanceField))
+    {
         balance = sle->getFieldAmount(feePayer.balanceField).xrp();
+    }
     else if (feePayer.balanceField != sfFeeAmount)
+    {
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     if (feePaid > balance)
     {
@@ -1280,9 +1284,13 @@ Transactor::reset(XRPAmount fee)
 
     XRPAmount balance = beast::kZero;
     if (payerSle->isFieldPresent(feePayer.balanceField))
+    {
         balance = payerSle->getFieldAmount(feePayer.balanceField).xrp();
+    }
     else if (feePayer.balanceField != sfFeeAmount)
+    {
         return {tefINTERNAL, beast::kZero};  // LCOV_EXCL_LINE
+    }
 
     if (feePayer.type == FeePayerType::SponsorPreFunded && payerSle->isFieldPresent(sfMaxFee))
     {
