@@ -306,9 +306,8 @@ struct BalanceTransfer
     [[nodiscard]] bool
     payeesReceived(STAmount const& reward) const
     {
-        return std::all_of(rewardAccounts.begin(), rewardAccounts.end(), [&](balance const& b) {
-            return b.diff() == reward;
-        });
+        return std::ranges::all_of(
+            rewardAccounts, [&](balance const& b) { return b.diff() == reward; });
     }
 
     bool
