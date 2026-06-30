@@ -218,9 +218,10 @@ authorizeMPToken(
         // an account owns, in the case of MPTokens we only
         // *enforce* a reserve if the user owns more than two
         // items. This is similar to the reserve requirements of trust lines.
-        // The free-tier shortcut (ownerCount < 2) does not apply once
-        // a sponsor is on the tx; the sponsor must cover the reserve.
-        if (sponsorSle || ownerCount(view, sleAcct, journal) >= 2)
+        // The "free-tier" shortcut (ownerCount < 2) does not apply once a sponsor is on
+        // the tx — the sponsor must always cover the reserve (via balance or prefunded
+        // budget), so this check always runs for sponsored transactions.
+        if (sponsorSle || ownerCount(sleAcct, journal) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
                     view, tx, sleAcct, priorBalance, sponsorSle, 1, 0, journal);
