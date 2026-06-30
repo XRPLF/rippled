@@ -5,10 +5,15 @@
 
 namespace xrpl {
 
+constexpr uint32_t kMinOracleReserveCount = 1;
+constexpr uint32_t kMaxOracleReserveCount = 2;
+constexpr std::size_t kOracleReserveCountThreshold = 5;
+
 inline uint32_t
-calculateOracleReserve(std::size_t count)
+calculateOracleReserve(std::size_t priceDataSeriesCount)
 {
-    return count > 5 ? 2 : 1;
+    return priceDataSeriesCount > kOracleReserveCountThreshold ? kMaxOracleReserveCount
+                                                               : kMinOracleReserveCount;
 }
 
 }  // namespace xrpl
