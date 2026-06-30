@@ -16,7 +16,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <bit>
 #include <cstdint>
@@ -54,6 +53,9 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFlag(tfSponsorshipCreate))
     {
+        // Sponsor must be included
+        // SponsorFlags.spfSponsorReserve must be included
+        // Sponsee must be excluded
         if (!isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug())
@@ -69,6 +71,9 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     }
     if (ctx.tx.isFlag(tfSponsorshipReassign))
     {
+        // Sponsor must be included
+        // SponsorFlags.spfSponsorReserve must be included
+        // Sponsee must be excluded
         if (!isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug())
@@ -84,6 +89,8 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     }
     if (ctx.tx.isFlag(tfSponsorshipEnd))
     {
+        // Sponsor must be excluded
+        // SponsorFlags.spfSponsorReserve must be excluded
         if (isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug())
@@ -117,143 +124,18 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-template <typename T>
-inline std::optional<AccountID>
-getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account)
-{
-    switch (sle->getType())
-    {
-        case ltNFTOKEN_OFFER:
-        case ltORACLE:
-        case ltPERMISSIONED_DOMAIN:
-        case ltVAULT:
-        case ltLOAN_BROKER:
-            return sle->getAccountID(sfOwner);
-        case ltCHECK:
-        case ltDID:
-        case ltTICKET:
-        case ltOFFER:
-        case ltXCHAIN_OWNED_CLAIM_ID:
-        case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
-        case ltESCROW:
-        case ltPAYCHAN:
-        case ltMPTOKEN:
-        case ltDELEGATE:
-        case ltBRIDGE:
-        case ltDEPOSIT_PREAUTH:
-            return sle->getAccountID(sfAccount);
-        case ltMPTOKEN_ISSUANCE:
-            return sle->getAccountID(sfIssuer);
-        case ltLOAN:
-            return sle->getAccountID(sfBorrower);
-        case ltSIGNER_LIST: {
-            auto const signerList = view.read(keylet::signers(account));
-            if (!signerList)
-                return std::nullopt;
-            if (signerList->key() == sle->key())
-                return account;
-            return std::nullopt;
-        }
-        case ltCREDENTIAL: {
-            if (sle->isFlag(lsfAccepted))
-                return sle->getAccountID(sfSubject);
-            return sle->getAccountID(sfIssuer);
-        }
-        case ltNFTOKEN_PAGE: {
-            // the upper 20 bytes of the index of ltNFTokenPage are the Owner's
-            // AccountID
-            uint256 const& key = sle->key();
-            return AccountID::fromVoid(key.data());
-        }
-        case ltRIPPLE_STATE: {
-            if (sle->isFlag(lsfHighReserve))
-            {
-                auto const highAccount = sle->getFieldAmount(sfHighLimit).getIssuer();
-                if (highAccount == account)
-                    return highAccount;
-            }
-            if (sle->isFlag(lsfLowReserve))
-            {
-                auto const lowAccount = sle->getFieldAmount(sfLowLimit).getIssuer();
-                if (lowAccount == account)
-                    return lowAccount;
-            }
-            return std::nullopt;
-        }
-        case ltACCOUNT_ROOT: {
-            // AccountRoot is not supported for object sponsorship
-            return std::nullopt;
-        }
-        case ltNEGATIVE_UNL:
-        case ltDIR_NODE:
-        case ltAMENDMENTS:
-        case ltLEDGER_HASHES:
-        case ltFEE_SETTINGS:
-        case ltAMM:
-            return std::nullopt;
-        default:
-            return std::nullopt;
-    };
-}
-
-template <typename T>
-inline std::uint32_t
-getLedgerEntryOwnerCount(T const& sle)
-{
-    switch (sle->getType())
-    {
-        case ltORACLE: {
-            return OracleSet::calculateOracleReserve(sle->getFieldArray(sfPriceDataSeries).size());
-        }
-        // Vaults require 2 owner counts (the vault and a pseudo-account)
-        case ltVAULT:
-            return 2;
-        default:
-            return 1;
-    }
-};
-
-template <typename T>
-inline SF_ACCOUNT const&
-getLedgerEntrySponsorField(T const& sle, AccountID const& owner)
-{
-    switch (sle->getType())
-    {
-        case ltRIPPLE_STATE: {
-            if (sle->isFlag(lsfHighReserve))
-            {
-                auto const highAccount = sle->getFieldAmount(sfHighLimit).getIssuer();
-                if (highAccount == owner)
-                    return sfHighSponsor;
-            }
-            if (sle->isFlag(lsfLowReserve))
-            {
-                auto const lowAccount = sle->getFieldAmount(sfLowLimit).getIssuer();
-                if (lowAccount == owner)
-                    return sfLowSponsor;
-            }
-            // LCOV_EXCL_START
-            UNREACHABLE("Should not happen. Owner should be checked before calling this function.");
-            return sfSponsor;
-            // LCOV_EXCL_STOP
-        }
-        default:
-            return sfSponsor;
-    }
-};
-
 TER
 SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 {
     auto const index = ctx.tx[~sfObjectID];
-    auto const newSponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
-    if (!newSponsorSle)
-        return newSponsorSle.error();  // LCOV_EXCL_LINE
+    auto const newSponsorSleExpected = getTxReserveSponsor(ctx.view, ctx.tx);
+    if (!newSponsorSleExpected)
+        return newSponsorSleExpected.error();  // LCOV_EXCL_LINE
+    auto const newSponsorSle = *newSponsorSleExpected;
 
-    bool const isObjectSponsor = index != std::nullopt;
+    bool const isObjectSponsor = !!index;
 
     auto const account = ctx.tx[sfAccount];
-
     auto const sponseeID = ctx.tx[~sfSponsee].value_or(account);
     auto const sponseeSle = ctx.view.read(keylet::account(sponseeID));
     if (!sponseeSle)
@@ -265,26 +147,49 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         if (!sle)
             return tecNO_ENTRY;
 
-        auto const ownerCountDelta = getLedgerEntryOwnerCount(sle);
+        // v1 scope: an object is only sponsorable via SponsorshipTransfer if
+        // its creating transaction type is itself permitted to set
+        // spfSponsorReserve (the allow-list in preflight1Sponsor). Otherwise
+        // an Oracle / Ticket / DID / etc. could be retroactively sponsored
+        // even though its creating tx cannot be, leaving downstream
+        // transactors with no path to maintain the sponsorship invariants.
+        switch (sle->getType())
+        {
+            case ltDELEGATE:
+            case ltDEPOSIT_PREAUTH:
+            case ltMPTOKEN:
+            case ltMPTOKEN_ISSUANCE:
+            case ltCREDENTIAL:
+            case ltRIPPLE_STATE:
+            case ltSIGNER_LIST:
+            case ltCHECK:
+            case ltESCROW:
+            case ltPAYCHAN:
+                break;
+            default:
+                return tecNO_PERMISSION;
+        }
+
+        std::uint32_t const ownerCountDelta = 1;
 
         auto const owner = getLedgerEntryOwner(ctx.view, sle, sponseeID);
-        if (!owner || owner != sponseeID)
+        if (!owner.has_value() || owner.value() != sponseeID)
             return tecNO_PERMISSION;
 
-        auto const& sponsorField = getLedgerEntrySponsorField(sle, *owner);
+        auto const& sponsorField = getLedgerEntrySponsorField(sle, owner.value());
 
         if (ctx.tx.isFlag(tfSponsorshipCreate))
         {
-            if (!*newSponsorSle)
+            if (!newSponsorSle)
                 return tecNO_PERMISSION;
 
-            // check object is not sponsored yet
+            // check that the object is not sponsored yet
             if (sle->isFieldPresent(sponsorField))
                 return tecNO_PERMISSION;
         }
         else if (ctx.tx.isFlag(tfSponsorshipReassign))
         {
-            if (!*newSponsorSle)
+            if (!newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check object is already ctx.sponsored
@@ -293,7 +198,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         }
         else if (ctx.tx.isFlag(tfSponsorshipEnd))
         {
-            if (*newSponsorSle)
+            if (newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check object is sponsored
@@ -313,7 +218,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 ctx.tx,
                 sponseeSle,
                 sponseeSle->getFieldAmount(sfBalance),
-                *newSponsorSle,
+                newSponsorSle,
                 ownerCountDelta,
                 0,
                 ctx.j);
@@ -324,7 +229,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
     {
         if (ctx.tx.isFlag(tfSponsorshipCreate))
         {
-            if (!*newSponsorSle)
+            if (!newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check account is not sponsored yet
@@ -333,7 +238,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         }
         else if (ctx.tx.isFlag(tfSponsorshipReassign))
         {
-            if (!*newSponsorSle)
+            if (!newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check account is already sponsored
@@ -342,7 +247,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         }
         else if (ctx.tx.isFlag(tfSponsorshipEnd))
         {
-            if (*newSponsorSle)
+            if (newSponsorSle)
                 return tecNO_PERMISSION;
 
             // check account is sponsored
@@ -365,7 +270,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 ctx.tx,
                 sponseeSle,
                 sponseeSle->getFieldAmount(sfBalance),
-                *newSponsorSle,
+                newSponsorSle,
                 0,
                 1,
                 ctx.j);
@@ -450,7 +355,7 @@ SponsorshipTransfer::doApply()
         if (!ownerSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        std::int64_t const ownerCountDelta = getLedgerEntryOwnerCount(objSle);
+        std::int64_t const ownerCountDelta = 1;
 
         auto const& sponsorField = getLedgerEntrySponsorField(objSle, *ownerID);
 

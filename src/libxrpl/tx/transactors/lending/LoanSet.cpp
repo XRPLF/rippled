@@ -8,6 +8,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -55,6 +56,12 @@ LoanSet::preflight(PreflightContext const& ctx)
     using namespace Lending;
 
     auto const& tx = ctx.tx;
+
+    if (tx.isFieldPresent(sfSponsorFlags) && isReserveSponsored(tx))
+    {
+        JLOG(ctx.j.debug()) << "LoanSet: reserve sponsorship is not allowed.";
+        return temINVALID_FLAG;
+    }
 
     // Special case for Batch inner transactions
     if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch) &&

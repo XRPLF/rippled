@@ -15,6 +15,7 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -396,6 +397,10 @@ TxQ::canBeHeld(
     // TapFailHard transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
         ((flags & TapFailHard) != 0u))
+        return telCAN_NOT_QUEUE;
+
+    // Disallow sponsored transactions from being queued.
+    if (tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx))
         return telCAN_NOT_QUEUE;
 
     {
