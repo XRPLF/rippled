@@ -82,7 +82,7 @@ parseIndex(json::Value const& params, json::StaticString const fieldName, unsign
         if (index == jss::amendments.cStr())
             return keylet::amendments().key;
         if (index == jss::fee.cStr())
-            return keylet::fees().key;
+            return keylet::feeSettings().key;
         if (index == jss::nunl)
             return keylet::negativeUNL().key;
         if (index == jss::hashes)
@@ -434,7 +434,7 @@ parseEscrow(
     return keylet::escrow(*id, *seq).key;
 }
 
-auto const parseFeeSettings = fixed(keylet::fees());
+auto const parseFeeSettings = fixed(keylet::feeSettings());
 
 static std::expected<uint256, json::Value>
 parseFixed(
@@ -493,7 +493,7 @@ parseLoanBroker(
     if (!seq)
         return std::unexpected(seq.error());
 
-    return keylet::loanbroker(*id, *seq).key;
+    return keylet::loanBroker(*id, *seq).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -555,7 +555,7 @@ parseMPTokenIssuance(
             "malformedMPTokenIssuance", fieldName, "Hash192");
     }
 
-    return keylet::mptIssuance(*mptIssuanceID).key;
+    return keylet::mptokenIssuance(*mptIssuanceID).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -707,7 +707,7 @@ parseRippleState(
             "malformedCurrency", jss::currency, "Currency");
     }
 
-    return keylet::line(*id1, *id2, uCurrency).key;
+    return keylet::trustLine(*id1, *id2, uCurrency).key;
 }
 
 static std::expected<uint256, json::Value>

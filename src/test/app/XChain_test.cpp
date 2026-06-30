@@ -2164,14 +2164,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                     scAttester, jvb, mcAlice, amt, payees[i], true, claimID, dst, signers[i]);
 
                 TER const expectedTER = i < quorum ? tesSUCCESS : TER{tecXCHAIN_NO_CLAIM_ID};
-                if (i + 1 == quorum)
-                {
-                    scEnv.tx(att, Ter(expectedTER)).close();
-                }
-                else
-                {
-                    scEnv.tx(att, Ter(expectedTER)).close();
-                }
+                scEnv.tx(att, Ter(expectedTER)).close();
 
                 if (i + 1 < quorum)
                 {
@@ -4375,6 +4368,7 @@ public:
     {
         using namespace jtx;
         uint64_t time = 0;
+        // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
         std::mt19937 gen(27);  // Standard mersenne_twister_engine
         std::uniform_int_distribution<uint32_t> distrib(0, 9);
 

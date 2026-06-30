@@ -14,7 +14,7 @@
 
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
-
+XRPL_FEATURE(ConfidentialTransfer,        Supported::No, VoteBehavior::DefaultNo)
 XRPL_FIX    (Cleanup3_3_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (Cleanup3_2_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(MPTokensV2,                  Supported::No,  VoteBehavior::DefaultNo)
@@ -58,13 +58,11 @@ XRPL_FIX    (EmptyDID,                   Supported::Yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(PriceOracle,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMOverflowOffer,           Supported::Yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (InnerObjTemplate,           Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (NFTokenReserve,             Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (FillOrKill,                 Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DID,                        Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (DisallowIncomingV1,         Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(XChainBridge,               Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(AMM,                        Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(Clawback,                   Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(XRPFees,                    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::Yes, VoteBehavior::DefaultYes)
 
@@ -105,6 +103,7 @@ XRPL_RETIRE_FIX(CheckThreading)
 XRPL_RETIRE_FIX(MasterKeyAsRegularKey)
 XRPL_RETIRE_FIX(NonFungibleTokensV1_2)
 XRPL_RETIRE_FIX(NFTokenRemint)
+XRPL_RETIRE_FIX(NFTokenReserve)
 XRPL_RETIRE_FIX(PayChanRecipientOwnerDir)
 XRPL_RETIRE_FIX(QualityUpperBound)
 XRPL_RETIRE_FIX(ReducedOffersV1)
@@ -116,6 +115,7 @@ XRPL_RETIRE_FIX(UniversalNumber)
 
 XRPL_RETIRE_FEATURE(Checks)
 XRPL_RETIRE_FEATURE(CheckCashMakesTrustLine)
+XRPL_RETIRE_FEATURE(Clawback)
 XRPL_RETIRE_FEATURE(CryptoConditions)
 XRPL_RETIRE_FEATURE(CryptoConditionsSuite)
 XRPL_RETIRE_FEATURE(DeletableAccounts)
