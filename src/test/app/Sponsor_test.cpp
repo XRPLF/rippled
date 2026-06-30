@@ -3089,6 +3089,105 @@ public:
     }
 
     void
+    testSponsoredTrustLineNoFreeReserve()
+    {
+        // An account with ownerCount < 2 may create its first trust lines even
+        // without meeting the reserve. In any case, the sponsor pays the full
+        // reserve in all cases, even for the sponsee's very first trust line.
+        testcase("Sponsored trust line gets no free-reserve exception");
+        using namespace test::jtx;
+
+        Account const issuer("issuer");
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(10000), issuer, alice, sponsor);
+        env.close();
+
+        auto const usd = issuer["usd"];
+        auto const lineKeylet = keylet::line(alice, issuer, usd.currency);
+
+        // Sponsor funded for exactly its base reserve
+        adjustAccountXRPBalance(env, sponsor, reserve(env, 0));
+
+        // alice's ownerCount is 0, so an unsponsored first trust line would be
+        // free; but because it is sponsored, the reserve check is enforced
+        // against the sponsor, which is one increment short.
+        env(trust(alice, usd(100)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tecNO_LINE_INSUF_RESERVE));
+        env.close();
+
+        BEAST_EXPECT(!env.le(lineKeylet));
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+        // Give the sponsor has exactly one owner-reserve increment; the same
+        // sponsored first trust line now succeeds and the sponsor pays for it.
+        adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+
+        env(trust(alice, usd(100)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor));
+        env.close();
+
+        BEAST_EXPECT(env.le(lineKeylet));
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+    }
+
+    void
+    testCoSignReserveBoundedBySponsorshipBudget()
+    {
+        // sponsor co-signs, so a fee-only object (ReserveCount == 0) makes a co-signed
+        // reserve sponsorship fail -- with no fallback to the sponsor's balance.
+        testcase("Co-signed reserve sponsorship is bounded by Sponsorship budget");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const sponsor("sponsor");
+        Account const sponsee("sponsee");
+        env.fund(XRP(10000), sponsor, sponsee);
+        env.close();
+
+        // Prefund a FEE-only Sponsorship for the sponsee; ReserveCount
+        // defaults to 0.
+        env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::SponseeAcc(sponsee));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::sponsorship(sponsor, sponsee)));
+
+        // Sponsee creates a Check with the sponsor co-signing the reserve. The
+        // fee-only Sponsorship's has ReserveCount (0), so this fails
+        // with tecINSUFFICIENT_RESERVE
+        env(check::create(sponsee, sponsor, XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, sponsee) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, sponsee) == 0);
+
+        // Bumping the Sponsorship's ReserveCount budget makes the same
+        // co-signed reserve sponsorship succeed, the budget is what gates it.
+        env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(sponsee));
+        env.close();
+
+        env(check::create(sponsee, sponsor, XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsor),
+            Ter(tesSUCCESS));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, sponsee) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, sponsee) == 1);
+    }
+
+    void
     testTrustSet(bool cosigning)
     {
         testcase("TrustSet");
@@ -3876,6 +3975,8 @@ protected:
         testDelegatePermission();
         testBatch();
 
+        testSponsoredTrustLineNoFreeReserve();
+        testCoSignReserveBoundedBySponsorshipBudget();
         testReserveSponsorGate();
     }
 
