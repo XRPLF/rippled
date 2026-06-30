@@ -184,9 +184,13 @@ adjustOracleOwnerCount(ApplyContext& ctx, int count)
     if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
         if (count > 0)
+        {
             increaseOwnerCount(ctx.view(), sleAccount, {}, count, ctx.journal);
+        }
         else if (count < 0)
+        {
             decreaseOwnerCount(ctx.view(), sleAccount, {}, -count, ctx.journal);
+        }
         return true;
     }
 
