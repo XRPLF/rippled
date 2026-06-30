@@ -111,20 +111,9 @@ class MPToken_test : public beast::unit_test::Suite
                  .metadata = "test",
                  .err = temMALFORMED});
 
-            if (!features[featureSingleAssetVault])
+            if (!features[featureSingleAssetVault] || !features[featurePermissionedDomains])
             {
-                // tries to set DomainID when SAV is disabled
-                mptAlice.create(
-                    {.maxAmt = 100,
-                     .assetScale = 0,
-                     .metadata = "test",
-                     .flags = tfMPTRequireAuth,
-                     .domainID = uint256(42),
-                     .err = temDISABLED});
-            }
-            else if (!features[featurePermissionedDomains])
-            {
-                // tries to set DomainID when PD is disabled
+                // tries to set DomainID when SAV or PD is disabled
                 mptAlice.create(
                     {.maxAmt = 100,
                      .assetScale = 0,

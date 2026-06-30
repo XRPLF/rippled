@@ -90,12 +90,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         if (lpTokens || amount || amount2 || ePrice)
             return temMALFORMED;
     }
-    else if (ctx.tx.isFlag(tfOneAssetWithdrawAll))
-    {
-        if (!amount || lpTokens || amount2 || ePrice)
-            return temMALFORMED;
-    }
-    else if (ctx.tx.isFlag(tfSingleAsset))
+    else if (ctx.tx.isFlag(tfOneAssetWithdrawAll) || ctx.tx.isFlag(tfSingleAsset))
     {
         if (!amount || lpTokens || amount2 || ePrice)
             return temMALFORMED;

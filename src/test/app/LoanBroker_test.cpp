@@ -283,7 +283,8 @@ class LoanBroker_test : public beast::unit_test::Suite
                 [&env, &vault, &pseudoAccount, &broker, &keylet, this](auto n) {
                     using namespace jtx;
 
-                    if (BEAST_EXPECT(broker = env.le(keylet)))
+                    broker = env.le(keylet);
+                    if (BEAST_EXPECT(broker))
                     {
                         auto const amount = vault.asset(n);
                         BEAST_EXPECT(broker->at(sfCoverAvailable) == amount.number());
@@ -473,7 +474,8 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.close();
 
             // Check the results of modifications
-            if (BEAST_EXPECT(broker = env.le(keylet)) && checkChangedBroker)
+            broker = env.le(keylet);
+            if (BEAST_EXPECT(broker) && checkChangedBroker)
                 checkChangedBroker(broker);
 
             // Verify that fields get removed when set to default values
@@ -486,7 +488,8 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.close();
 
             // Check the updated fields
-            if (BEAST_EXPECT(broker = env.le(keylet)))
+            broker = env.le(keylet);
+            if (BEAST_EXPECT(broker))
             {
                 BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
                 BEAST_EXPECT(!broker->isFieldPresent(sfData));

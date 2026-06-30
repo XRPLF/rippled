@@ -96,10 +96,10 @@ jobs:
           set -o pipefail
           run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" -quiet -fix -allow-no-checks ${TARGETS} 2>&1 | tee "${OUTPUT_FILE}"
 
-      - name: Print errors
+      - name: Print filtered clang-tidy errors
         if: ${{ steps.run_clang_tidy.outcome != 'success' }}
         run: |
-          sed '/error\||/!d' "${OUTPUT_FILE}"
+          bin/filter-clang-tidy.py "${OUTPUT_FILE}"
 
       - name: Upload clang-tidy output
         if: ${{ github.event.repository.visibility == 'public' && steps.run_clang_tidy.outcome != 'success' }}
@@ -143,12 +143,12 @@ jobs:
           \`\`\`
           EOF
 
-      - name: Append clang-tidy output to issue body (filter for errors and warnings)
+      - name: Append filtered clang-tidy output to issue body
         if: ${{ steps.run_clang_tidy.outcome != 'success' }}
         run: |
           if [ -f "${OUTPUT_FILE}" ]; then
-              # Extract lines containing 'error:', 'warning:', or 'note:'
-              grep -E '(error:|warning:|note:)' "${OUTPUT_FILE}" >"${FILTERED_OUTPUT_FILE}" || true
+              # Filter to the unique errors with their source context.
+              bin/filter-clang-tidy.py "${OUTPUT_FILE}" >"${FILTERED_OUTPUT_FILE}" || true
 
               # If filtered output is empty, use original (might be a different error format)
               if [ ! -s "${FILTERED_OUTPUT_FILE}" ]; then
