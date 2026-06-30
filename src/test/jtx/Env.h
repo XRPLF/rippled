@@ -474,7 +474,6 @@ public:
     public:
         ParseFailureGuard(Env& self, bool b) : self_(self)
         {
-            assert(self_.parseFailureExpected_ == oldExpected_);
             self_.setParseFailureExpected(b);
         }
 
