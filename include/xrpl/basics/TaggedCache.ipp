@@ -4,6 +4,8 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/scope.h>
 
+#include <algorithm>
+
 namespace xrpl {
 
 namespace detail {
