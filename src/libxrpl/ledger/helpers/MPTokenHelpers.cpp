@@ -948,8 +948,7 @@ checkCreateMPT(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        reserveCtx.accountID == holder,
-        "xrpl::checkCreateMPTWithReserve : reserve context matches holder");
+        reserveCtx.accountID == holder, "xrpl::checkCreateMPT : reserve context matches holder");
 
     if (mptIssue.getIssuer() == holder)
         return tesSUCCESS;
