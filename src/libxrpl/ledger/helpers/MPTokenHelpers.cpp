@@ -144,7 +144,7 @@ addEmptyHolding(
     if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;
 
-    return authorizeMPToken(std::move(ctx), priorBalance, mptID, accountID, journal);
+    return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal);
 }
 
 [[nodiscard]] TER
@@ -305,7 +305,7 @@ removeEmptyHolding(
         return tecHAS_OBLIGATIONS;
 
     return authorizeMPToken(
-        std::move(ctx),
+        ctx,
         {},  // priorBalance
         mptID,
         accountID,
@@ -496,7 +496,7 @@ enforceMPTokenAuthorization(
             maybeDomainID.has_value() && sleToken == nullptr,
             "xrpl::enforceMPTokenAuthorization : new MPToken for domain");
         if (auto const err = authorizeMPToken(
-                std::move(ctx),
+                ctx,
                 priorBalance,   // priorBalance
                 mptIssuanceID,  // mptIssuanceID
                 account,        // account

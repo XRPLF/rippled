@@ -4,6 +4,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -11,6 +12,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STVector256.h>
 
 #include <algorithm>
@@ -424,11 +426,11 @@ ReserveContext::makeFromTx(ApplyView& view, STTx const& tx)
         isReserveSponsored(tx) ? std::optional<AccountID>{tx[sfSponsor]} : std::nullopt;
 
     return {
-        account,
-        view.peek(keylet::account(account)),
-        sponsor,
-        sponsor ? view.peek(keylet::account(*sponsor)) : nullptr,
-        sponsor ? view.peek(keylet::sponsorship(*sponsor, account)) : nullptr,
+        .accountID = account,
+        .accountSle = view.peek(keylet::account(account)),
+        .sponsorID = sponsor,
+        .sponsorSle = sponsor ? view.peek(keylet::account(*sponsor)) : nullptr,
+        .sponsorshipSle = sponsor ? view.peek(keylet::sponsorship(*sponsor, account)) : nullptr,
     };
 }
 
@@ -442,11 +444,12 @@ ReserveContext::makeFromAccount(ApplyView& view, SLE::pointer accountSle, SLE::p
     std::optional<AccountID> const sponsorID =
         sponsorSle ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)} : std::nullopt;
     return {
-        accountID,
-        accountSle,
-        sponsorID,
-        sponsorSle,
-        sponsorID ? view.peek(keylet::sponsorship(*sponsorID, accountID)) : nullptr,
+        .accountID = accountID,
+        .accountSle = accountSle,
+        .sponsorID = sponsorID,
+        .sponsorSle = sponsorSle,
+        .sponsorshipSle =
+            sponsorID ? view.peek(keylet::sponsorship(*sponsorID, accountID)) : nullptr,
     };
 }
 
@@ -458,11 +461,12 @@ ReserveContext::makeFromObject(ApplyView& view, SLE::ref objectSle, SLE::pointer
     std::optional<AccountID> const sponsorID =
         sponsorSle ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)} : std::nullopt;
     return {
-        accountID,
-        ownerSle,
-        sponsorID,
-        sponsorSle,
-        sponsorID ? view.peek(keylet::sponsorship(*sponsorID, accountID)) : nullptr,
+        .accountID = accountID,
+        .accountSle = ownerSle,
+        .sponsorID = sponsorID,
+        .sponsorSle = sponsorSle,
+        .sponsorshipSle =
+            sponsorID ? view.peek(keylet::sponsorship(*sponsorID, accountID)) : nullptr,
     };
 }
 

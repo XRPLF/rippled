@@ -406,7 +406,7 @@ struct ReserveContext
     SLE::pointer sponsorSle;
     SLE::pointer sponsorshipSle;
 
-    bool
+    [[nodiscard]] bool
     isSponsored() const
     {
         XRPL_ASSERT(
@@ -415,7 +415,7 @@ struct ReserveContext
         return sponsorID.has_value();
     }
 
-    bool
+    [[nodiscard]] bool
     hasSponsorshipObj() const
     {
         return !!sponsorshipSle;

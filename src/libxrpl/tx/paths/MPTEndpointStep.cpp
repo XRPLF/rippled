@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -412,7 +413,12 @@ MPTEndpointOfferCrossingStep::checkCreateMPTForStep(ApplyView& view, xrpl::DebtD
         // crossed. See CreateOffer::applyGuts() for reserve check.
         if (auto const err = xrpl::checkCreateMPT(
                 view,
-                ReserveContext{dst_, view.peek(keylet::account(dst_)), {}, nullptr, nullptr},
+                ReserveContext{
+                    .accountID = dst_,
+                    .accountSle = view.peek(keylet::account(dst_)),
+                    .sponsorID = {},
+                    .sponsorSle = nullptr,
+                    .sponsorshipSle = nullptr},
                 mptIssue_,
                 dst_,
                 j_);
