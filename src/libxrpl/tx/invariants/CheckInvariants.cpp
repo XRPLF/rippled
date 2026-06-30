@@ -17,7 +17,6 @@
 #include <exception>
 #include <functional>
 #include <optional>
-#include <string>
 #include <tuple>
 #include <utility>
 
@@ -43,133 +42,55 @@ checkInvariantsHelper(
     std::index_sequence<Is...>)
 {
     auto checkers = getInvariantChecks();
+    bool allOk = true;
 
-    // Phase 1 — state collection.
-    // One walk feeds both layers. Per-layer try-catch isolates faults: a throw
-    // in txCheck stops only txCheck from visiting further entries; the protocol
-    // fold keeps going (and vice-versa). A layer that threw skips finalize.
-    bool txCollectionOk = true;
-    bool protoCollectionOk = true;
-    std::string txCollectionEx;
-    std::string protoCollectionEx;
-
-    ctx.visit([&](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
-        if (txCheck && txCollectionOk)
-        {
-            try
-            {
+    try
+    {
+        ctx.visit([&](uint256 const&, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+            if (txCheck)
                 txCheck->get().visitEntry(isDelete, before, after);
-            }
-            catch (std::exception const& ex)
-            {
-                txCollectionOk = false;
-                txCollectionEx = ex.what();
-            }
-        }
+            (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
+        });
 
-        if (protoCollectionOk)
-        {
-            try
-            {
-                (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
-            }
-            catch (std::exception const& ex)
-            {
-                protoCollectionOk = false;
-                protoCollectionEx = ex.what();
-            }
-        }
-    });
-
-    // Phase 2 — evaluate invariant conditions.
-    auto const txResult = [&]() -> TER {
-        if (!txCheck)
-            return result;
-
-        if (!txCollectionOk)
-        {
-            JLOG(ctx.journal.fatal())
-                << "Transaction caused an exception while collecting transaction invariant state"
-                << ", ex: " << txCollectionEx
-                << ", tx: " << to_string(ctx.tx.getJson(JsonOptions::Values::None));
-            return tecINVARIANT_FAILED;
-        }
-
-        try
+        if (txCheck)
         {
             if (!txCheck->get().finalize(ctx.tx, result, fee, ctx.view(), ctx.journal))
             {
                 JLOG(ctx.journal.fatal())
                     << "Transaction has failed one or more transaction invariants: "
                     << to_string(ctx.tx.getJson(JsonOptions::Values::None));
-                return tecINVARIANT_FAILED;
+                allOk = false;
             }
         }
-        catch (std::exception const& ex)
+
+        // Note: do not replace this logic with a `...&&` fold expression.
+        // The fold expression will only run until the first check fails (it
+        // short-circuits). While the logic is still correct, the log
+        // message won't be. Every failed invariant should write to the log,
+        // not just the first one.
+        std::array<bool, sizeof...(Is)> const finalizers{{std::get<Is>(checkers).finalize(
+            ctx.tx,
+            result,
+            fee,
+            ctx.view(),
+            ctx.journal)...}};  // NOLINT(bugprone-unchecked-optional-access)
+
+        if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
         {
-            JLOG(ctx.journal.fatal())
-                << "Transaction caused an exception in a transaction invariant"
-                << ", ex: " << ex.what()
-                << ", tx: " << to_string(ctx.tx.getJson(JsonOptions::Values::None));
-            return tecINVARIANT_FAILED;
+            JLOG(ctx.journal.fatal()) << "Transaction has failed one or more global invariants: "
+                                      << to_string(ctx.tx.getJson(JsonOptions::Values::None));
+            allOk = false;
         }
+    }
+    catch (std::exception const& ex)
+    {
+        JLOG(ctx.journal.fatal()) << "Transaction caused an exception during invariant checks"
+                                  << ", ex: " << ex.what() << ", tx: "
+                                  << to_string(ctx.tx.getJson(JsonOptions::Values::None));
+        return failInvariantCheck(result);
+    }
 
-        return result;
-    }();
-
-    auto const protoResult = [&]() -> TER {
-        if (!protoCollectionOk)
-        {
-            JLOG(ctx.journal.fatal())
-                << "Transaction caused an exception while collecting global invariant state"
-                << ", ex: " << protoCollectionEx
-                << ", tx: " << to_string(ctx.tx.getJson(JsonOptions::Values::None));
-            return failInvariantCheck(result);
-        }
-
-        bool protoOk = true;
-        try
-        {
-            // Note: do not replace this logic with a `...&&` fold expression.
-            // The fold expression will only run until the first check fails (it
-            // short-circuits). While the logic is still correct, the log
-            // message won't be. Every failed invariant should write to the log,
-            // not just the first one.
-            std::array<bool, sizeof...(Is)> const finalizers{{std::get<Is>(checkers).finalize(
-                ctx.tx,
-                result,
-                fee,
-                ctx.view(),
-                ctx.journal)...}};  // NOLINT(bugprone-unchecked-optional-access)
-
-            protoOk = std::all_of(
-                finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; });
-            if (!protoOk)
-            {
-                JLOG(ctx.journal.fatal())
-                    << "Transaction has failed one or more global invariants: "
-                    << to_string(ctx.tx.getJson(JsonOptions::Values::None));
-            }
-        }
-        catch (std::exception const& ex)
-        {
-            JLOG(ctx.journal.fatal())
-                << "Transaction caused an exception in a global invariant"
-                << ", ex: " << ex.what()
-                << ", tx: " << to_string(ctx.tx.getJson(JsonOptions::Values::None));
-            protoOk = false;
-        }
-
-        return protoOk ? result : failInvariantCheck(result);
-    }();
-
-    // Fail if either check failed. tef (fatal) takes priority over tec.
-    if (protoResult == tefINVARIANT_FAILED)
-        return tefINVARIANT_FAILED;
-    if (txResult == tecINVARIANT_FAILED || protoResult == tecINVARIANT_FAILED)
-        return tecINVARIANT_FAILED;
-
-    return result;
+    return allOk ? result : failInvariantCheck(result);
 }
 
 }  // namespace

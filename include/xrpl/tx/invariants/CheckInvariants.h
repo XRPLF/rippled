@@ -101,17 +101,11 @@ public:
  * `visitEntry` accumulates state on the same traversal that drives the
  * protocol checkers, then both layers' `finalize` run on the complete state.
  *
- * On the first invariant pass both a protocol fault and a transaction fault
- * return @c tecINVARIANT_FAILED.  If that result triggers a fee-claim reset
- * and invariants are checked again, the incoming @p result is already
- * @c tecINVARIANT_FAILED; a second failure then escalates to
- * @c tefINVARIANT_FAILED (via @c failInvariantCheck), which excludes the
- * transaction from the ledger entirely.
- *
- * Every transaction is guaranteed to supply a @p txCheck (either a real check
- * or a no-op stub).  The invariant contract requires @c finalize to handle
- * failed results gracefully, so passing the same @p txCheck after a fee-claim
- * reset is safe.
+ * Any failure (a `finalize` returning false or an exception anywhere in the
+ * check) returns @c failInvariantCheck(result).  On the first pass that yields
+ * @c tecINVARIANT_FAILED.  If that triggers a fee-claim reset and invariants
+ * are checked again, a second failure escalates to @c tefINVARIANT_FAILED,
+ * which excludes the transaction from the ledger entirely.
  *
  * @param ctx     the apply context for the current transaction.
  * @param result  the tentative TER from transaction processing.
