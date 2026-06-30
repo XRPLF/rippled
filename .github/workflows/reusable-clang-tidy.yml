@@ -3,10 +3,6 @@ name: Run clang-tidy on files
 on:
   workflow_call:
     inputs:
-      check_only_changed:
-        description: "Check only changed files in PR. If false, checks all files in the repository."
-        type: boolean
-        default: false
       create_issue_on_failure:
         description: "Whether to create an issue if the check failed"
         type: boolean
@@ -29,15 +25,14 @@ env:
 
 jobs:
   determine-files:
-    if: ${{ inputs.check_only_changed }}
     permissions:
       contents: read
-    uses: XRPLF/actions/.github/workflows/determine-tidy-files.yml@c7045074aafe9fb92fa537aa4446f81fbfc17e8b
+    uses: XRPLF/actions/.github/workflows/determine-tidy-files.yml@d041ac9f1fa9f07a4ba335eb4c1c82233fb3fef6
 
   run-clang-tidy:
     name: Run clang tidy
     needs: [determine-files]
-    if: ${{ always() && !cancelled() && (!inputs.check_only_changed || needs.determine-files.outputs.cpp_changed_files != '' || needs.determine-files.outputs.clang_tidy_config_changed == 'true') }}
+    if: ${{ needs.determine-files.outputs.cpp_changed_files != '' || needs.determine-files.outputs.need_full_run == 'true' }}
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
     container: "ghcr.io/xrplf/xrpld/nix-debian:sha-e29b523"
     permissions:
@@ -96,15 +91,15 @@ jobs:
         id: run_clang_tidy
         continue-on-error: true
         env:
-          TARGETS: ${{ (needs.determine-files.outputs.clang_tidy_config_changed != 'true' && inputs.check_only_changed) && needs.determine-files.outputs.cpp_changed_files || 'src tests' }}
+          TARGETS: ${{ needs.determine-files.outputs.need_full_run != 'true' && needs.determine-files.outputs.cpp_changed_files || 'src tests' }}
         run: |
           set -o pipefail
           run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" -quiet -fix -allow-no-checks ${TARGETS} 2>&1 | tee "${OUTPUT_FILE}"
 
-      - name: Print errors
+      - name: Print filtered clang-tidy errors
         if: ${{ steps.run_clang_tidy.outcome != 'success' }}
         run: |
-          sed '/error\||/!d' "${OUTPUT_FILE}"
+          bin/filter-clang-tidy.py "${OUTPUT_FILE}"
 
       - name: Upload clang-tidy output
         if: ${{ github.event.repository.visibility == 'public' && steps.run_clang_tidy.outcome != 'success' }}
@@ -148,12 +143,12 @@ jobs:
           \`\`\`
           EOF
 
-      - name: Append clang-tidy output to issue body (filter for errors and warnings)
+      - name: Append filtered clang-tidy output to issue body
         if: ${{ steps.run_clang_tidy.outcome != 'success' }}
         run: |
           if [ -f "${OUTPUT_FILE}" ]; then
-              # Extract lines containing 'error:', 'warning:', or 'note:'
-              grep -E '(error:|warning:|note:)' "${OUTPUT_FILE}" >"${FILTERED_OUTPUT_FILE}" || true
+              # Filter to the unique errors with their source context.
+              bin/filter-clang-tidy.py "${OUTPUT_FILE}" >"${FILTERED_OUTPUT_FILE}" || true
 
               # If filtered output is empty, use original (might be a different error format)
               if [ ! -s "${FILTERED_OUTPUT_FILE}" ]; then

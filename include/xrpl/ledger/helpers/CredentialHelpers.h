@@ -63,6 +63,39 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 TER
 verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j);
 
+/**
+ * @brief Check whether src is authorized to deposit to dst.
+ *
+ * @param tx Transaction containing optional credential IDs.
+ * @param view Read-only ledger view.
+ * @param src Source account.
+ * @param dst Destination account.
+ * @param sleDst Destination AccountRoot, if it exists.
+ * @param j Journal for diagnostics.
+ * @return tesSUCCESS if the deposit is allowed, otherwise an authorization
+ *         error.
+ */
+TER
+checkDepositPreauth(
+    STTx const& tx,
+    ReadView const& view,
+    AccountID const& src,
+    AccountID const& dst,
+    std::shared_ptr<SLE const> const& sleDst,
+    beast::Journal j);
+
+/**
+ * @brief Remove expired credentials referenced by the transaction.
+ *
+ * @param tx Transaction containing optional sfCredentialIDs.
+ * @param view Mutable ledger view.
+ * @param j Journal for diagnostics.
+ * @return tesSUCCESS if no referenced credentials expired, tecEXPIRED if any
+ *         were removed, or an error from credential deletion.
+ */
+TER
+cleanupExpiredCredentials(STTx const& tx, ApplyView& view, beast::Journal j);
+
 // Check expired credentials and for existing DepositPreauth ledger object
 TER
 verifyDepositPreauth(

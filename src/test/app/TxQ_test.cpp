@@ -5,6 +5,7 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -2336,6 +2337,42 @@ public:
     }
 
     void
+    testDelegateTxCannotQueue()
+    {
+        using namespace jtx;
+        testcase("disallow delegate transaction from being queued");
+
+        Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        env.fund(XRP(50000), alice, bob);
+        env.close();
+        env.fund(XRP(50000), carol);
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        fillQueue(env, alice);
+        checkMetrics(*this, env, 0, 8, 5, 4);
+
+        // Delegated transactions are not allowed to be queued.
+        env(pay(alice, carol, drops(1)), delegate::As(bob), Ter(telCAN_NOT_QUEUE));
+        checkMetrics(*this, env, 0, 8, 5, 4);
+
+        // Delegated transactions may still apply directly if they pay the
+        // open ledger fee. They just cannot be held in the queue.
+        env(pay(alice, carol, drops(1)),
+            delegate::As(bob),
+            Fee(openLedgerCost(env)),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, 8, 6, 4);
+    }
+
+    void
     testConsequences()
     {
         using namespace jtx;
@@ -4662,6 +4699,7 @@ public:
         testBlockersSeq();
         testBlockersTicket();
         testInFlightBalance();
+        testDelegateTxCannotQueue();
         testConsequences();
     }
 
