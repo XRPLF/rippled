@@ -451,24 +451,35 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     if (auto const sponsorSle = getTxReserveSponsor(view, tx); !sponsorSle)
         return terNO_ACCOUNT;
 
+    // Co-signing takes precedence over pre-funded sponsorship.
     auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
 
     if (hasSponsorSignature)
         return tesSUCCESS;
 
+    auto const sponsor = tx.getAccountID(sfSponsor);
+    auto const initiator = tx.getInitiator();
+
     // If the transaction contains sfDelegate, the Sponsorship object should be
     // between the sponsor and the delegate.
-    auto const sponsorshipSle =
-        view.read(keylet::sponsorship(tx.getAccountID(sfSponsor), tx.getInitiator()));
+    auto const sponsorshipSle = view.read(keylet::sponsorship(sponsor, initiator));
 
-    // sponsorship object missing for pre-funded tx
-    if (!sponsorshipSle)
+    if (sponsorshipSle)
+    {
+        if (isFeeSponsored(tx) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForFee))
+            return terNO_SPONSORSHIP;
+
+        if (isReserveSponsored(tx) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForReserve))
+            return terNO_SPONSORSHIP;
+
+        return tesSUCCESS;
+    }
+
+    // Granular permission SponsorFee/SponsorReserve
+    if (isFeeSponsored(tx) && !hasSponsorPermission(view, sponsor, initiator, SponsorFee))
         return terNO_SPONSORSHIP;
 
-    if (isFeeSponsored(tx) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForFee))
-        return terNO_SPONSORSHIP;
-
-    if (isReserveSponsored(tx) && sponsorshipSle->isFlag(lsfSponsorshipRequireSignForReserve))
+    if (isReserveSponsored(tx) && !hasSponsorPermission(view, sponsor, initiator, SponsorReserve))
         return terNO_SPONSORSHIP;
 
     return tesSUCCESS;
@@ -1378,10 +1389,11 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
         auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
         auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeID);
 
-        // if pre-funded sponsorship exists, prefer it
-        if (hasSponsorSignature && !view.exists(sponsorshipKeylet))
+        // Co-signing takes precedence. If there is no pre-funded Sponsorship
+        // object, checkSponsor has already authorized the sponsor permission
+        // path, which also pays from the sponsor account.
+        if (hasSponsorSignature || !view.exists(sponsorshipKeylet))
         {
-            // co-signed
             return FeePayer{
                 .entry = keylet::account(sponsorID),
                 .balanceField = sfBalance,

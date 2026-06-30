@@ -344,11 +344,17 @@ checkInsufficientReserve(
             keylet::sponsorship(
                 sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
-        // A reserve-sponsored tx must carry a sponsor signature
-        // (cosigning path) and/or have a pre-existing sponsorship SLE
-        // (prefunded path). Absence of both is an internal invariant break.
-        if (isReserveSponsored(tx) && !sle && !tx.isFieldPresent(sfSponsorSignature))
+        auto const isSponsoredReserve = isReserveSponsored(tx);
+        auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
+        auto const hasSponsorReservePermission = hasSponsorPermission(
+            view, sponsorSle->getAccountID(sfAccount), tx.getInitiator(), SponsorReserve);
+
+        // A reserve-sponsored tx must be authorized by co-signing,
+        // pre-funded sponsorship, or SponsorReserve permission.
+        if (isSponsoredReserve && !hasSponsorSignature && !sle && !hasSponsorReservePermission)
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
 
         if (sle)
         {

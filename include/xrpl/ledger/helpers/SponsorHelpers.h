@@ -41,6 +41,26 @@ getTxReserveSponsorAccountID(STTx const& tx)
     return {};
 }
 
+inline bool
+hasSponsorPermission(
+    ReadView const& view,
+    AccountID const& sponsor,
+    AccountID const& actor,
+    GranularPermissionType permissionType)
+{
+    auto const sle = view.read(keylet::delegate(sponsor, actor));
+    if (!sle)
+        return false;
+
+    for (auto const& permission : sle->getFieldArray(sfPermissions))
+    {
+        if (permission[sfPermissionValue] == static_cast<std::uint32_t>(permissionType))
+            return true;
+    }
+
+    return false;
+}
+
 inline std::expected<SLE::pointer, TER>
 getTxReserveSponsor(ApplyView& view, STTx const& tx)
 {
