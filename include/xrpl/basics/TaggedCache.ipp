@@ -600,9 +600,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     {
         // Keep track of how many iterations are needed. Exit the loop if the number of retries gets
         // absurd. (Note that if this somehow ever happens, one more allocation will be done under
-        // lock, which is undesirable, but really should be almost impossible. Also, assert that
-        // there were fewer than 3 needed after the loop, because in a normal operating environment,
-        // even 2 is going to be unusual, and 3 shouldn't be needed.
+        // lock, which is undesirable, but really should be almost impossible.)
         std::size_t allocationIterations = 0;
         std::unique_lock lock(mutex_);
         for (auto size = cache_.size(); v.capacity() < size && allocationIterations < 20;
@@ -616,6 +614,10 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             v.reserve(size);
             ++allocationIterations;
         }
+        // In a normal operating environment, because of the padding added to size before
+        // allocating, even 2 iterations is going to be very rare. If 3 or more are ever needed,
+        // that's unusual enough that I want to know about it. Don't ask me to change it without
+        // empirical data. - Ed H.
         XRPL_ASSERT(
             allocationIterations < 3,
             "xrpl::TaggedCache::getKeys(): limited allocation iterations");
