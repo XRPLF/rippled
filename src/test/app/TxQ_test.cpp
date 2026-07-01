@@ -61,8 +61,7 @@ namespace xrpl::test {
 
 class TxQPosNegFlows_test : public beast::unit_test::Suite
 {
-    // Same as corresponding values from TxQ.h
-    static constexpr FeeLevel64 kBaseFeeLevel{256};
+    static constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
     static constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
     static void

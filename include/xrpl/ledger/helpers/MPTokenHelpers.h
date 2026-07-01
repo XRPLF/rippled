@@ -23,6 +23,15 @@ namespace xrpl {
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
+/** Returns true if @p account's MPToken for @p mptIssue carries the
+ *  individual-lock flag (lsfMPTLocked).
+ *
+ *  @warning This checks only the raw per-holder lock bit.  It does **not**
+ *  perform the transitive vault pseudo-account check: if @p mptIssue is a
+ *  vault share whose underlying asset is frozen, this function returns false.
+ *  Call @ref isFrozen instead when determining whether an account may send or
+ *  receive tokens — it combines isIndividualFrozen, isGlobalFrozen, and
+ *  isVaultPseudoAccountFrozen into a single complete check. */
 [[nodiscard]] bool
 isIndividualFrozen(ReadView const& view, AccountID const& account, MPTIssue const& mptIssue);
 
