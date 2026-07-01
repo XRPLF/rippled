@@ -7,6 +7,7 @@
 #include <xrpl/protocol/STObject.h>
 
 #include <stdexcept>
+#include <vector>
 
 namespace xrpl::test::jtx {
 
@@ -50,5 +51,4 @@ fillSeq(json::Value& jv, ReadView const& view);
 /** Given an xrpld unit test rpc command, return the corresponding JSON. */
 json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion);
-
 }  // namespace xrpl::test::jtx

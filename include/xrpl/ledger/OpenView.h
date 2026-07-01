@@ -28,7 +28,7 @@ inline constexpr struct OpenLedgerT
 /** Batch view construction tag.
 
     Views constructed with this tag are part of a stack of views
-    used during batch transaction applied.
+    used during batch transaction application.
  */
 inline constexpr struct BatchViewT
 {

@@ -57,7 +57,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     auto const& tx = ctx.tx;
 
     // Special case for Batch inner transactions
-    if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch) &&
+    if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatchV1_1) &&
         !tx.isFieldPresent(sfCounterparty))
     {
         auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});

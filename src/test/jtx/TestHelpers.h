@@ -731,8 +731,8 @@ create(jtx::Account const& account, jtx::Account const& dest, STAmount const& se
 
 }  // namespace check
 
-static constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
-static constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
+inline constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
+inline constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
 inline uint256
 getCheckIndex(AccountID const& account, std::uint32_t uSequence)
