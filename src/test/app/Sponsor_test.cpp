@@ -3065,7 +3065,7 @@ public:
                 });
 
             // transfer sponsor
-            auto const mptIssuanceKeylet = keylet::mptIssuance(mptid);
+            auto const mptIssuanceKeylet = keylet::mptokenIssuance(mptid);
 
             if (cosigning)
             {
