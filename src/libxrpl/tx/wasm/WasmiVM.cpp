@@ -899,7 +899,7 @@ WasmiEngine::check(
     }
     // LCOV_EXCL_STOP
 
-    return temBAD_WASM;
+    return temINVALID_BYTECODE;
 }
 
 NotTEC

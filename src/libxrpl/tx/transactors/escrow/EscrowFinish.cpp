@@ -264,7 +264,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
                 if (!ctx.tx.isFieldPresent(sfGas))
                 {
                     JLOG(ctx.j.debug()) << "Bytecode requires Gas";
-                    return tefWASM_FIELD_NOT_INCLUDED;
+                    return tefBYTECODE_NOT_INCLUDED;
                 }
             }
             else
@@ -273,7 +273,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
                 {
                     JLOG(ctx.j.debug()) << "Bytecode not present, "
                                            "Gas present";
-                    return tefNO_WASM;
+                    return tefNO_BYTECODE;
                 }
             }
         }
@@ -446,7 +446,7 @@ EscrowFinish::doApply()
 
             if (reValue <= 0)
             {
-                return tecWASM_REJECTED;
+                return tecBYTECODE_REJECTED;
             }
         }
         else

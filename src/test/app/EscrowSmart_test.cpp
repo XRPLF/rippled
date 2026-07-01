@@ -340,7 +340,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 escrow::Bytecode(badWasmHex),
                 escrow::kCancelTime(env.now() + 100s),
                 Fee(txnFees),
-                Ter(temBAD_WASM));
+                Ter(temINVALID_BYTECODE));
             env.close();
         }
     }
@@ -464,7 +464,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
         {
             // no Gas field
-            env(escrow::finish(carol, alice, seq), Ter(tefWASM_FIELD_NOT_INCLUDED));
+            env(escrow::finish(carol, alice, seq), Ter(tefBYTECODE_NOT_INCLUDED));
         }
 
         {
@@ -508,7 +508,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 Fee(env.current()->fees().base +
                     (allowance * env.current()->fees().gasPrice) / microDropsPerDrop + 1),
                 escrow::Gas(allowance),
-                Ter(tefNO_WASM));
+                Ter(tefNO_BYTECODE));
         }
     }
 
@@ -556,23 +556,23 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 env(escrow::finish(carol, alice, seq),
                     escrow::Gas(allowance),
                     Fee(finishFee),
-                    Ter(tecWASM_REJECTED));
+                    Ter(tecBYTECODE_REJECTED));
                 env(escrow::finish(alice, alice, seq),
                     escrow::Gas(allowance),
                     Fee(finishFee),
-                    Ter(tecWASM_REJECTED));
+                    Ter(tecBYTECODE_REJECTED));
                 env(escrow::finish(alice, alice, seq),
                     escrow::Gas(allowance),
                     Fee(finishFee),
-                    Ter(tecWASM_REJECTED));
+                    Ter(tecBYTECODE_REJECTED));
                 env(escrow::finish(carol, alice, seq),
                     escrow::Gas(allowance),
                     Fee(finishFee),
-                    Ter(tecWASM_REJECTED));
+                    Ter(tecBYTECODE_REJECTED));
                 env(escrow::finish(carol, alice, seq),
                     escrow::Gas(allowance),
                     Fee(finishFee),
-                    Ter(tecWASM_REJECTED));
+                    Ter(tecBYTECODE_REJECTED));
                 env.close();
 
                 {
@@ -640,7 +640,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                     escrow::kFulfillment(escrow::kFb1),
                     escrow::Gas(allowance),
                     Fee(conditionFinishFee),
-                    Ter(tecWASM_REJECTED));
+                    Ter(tecBYTECODE_REJECTED));
                 if (BEAST_EXPECT(env.meta()->isFieldPresent(sfGasUsed)))
                 {
                     BEAST_EXPECTS(
@@ -771,7 +771,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 env(escrow::finish(carol, alice, seq),
                     escrow::Gas(allowance),
                     Fee(finishFee),
-                    Ter(tecWASM_REJECTED));
+                    Ter(tecBYTECODE_REJECTED));
                 if (BEAST_EXPECT(env.meta()->isFieldPresent(sfGasUsed)))
                 {
                     BEAST_EXPECTS(
@@ -842,7 +842,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             env(escrow::finish(alice, alice, seq),
                 escrow::Gas(allowance),
                 Fee(finishFee),
-                Ter(tecWASM_REJECTED));
+                Ter(tecBYTECODE_REJECTED));
 
             auto const txMeta = env.meta();
             if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
