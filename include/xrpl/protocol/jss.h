@@ -137,6 +137,7 @@ JSS(authorized_credentials);      // in: ledger_entry DepositPreauth
 JSS(auth_accounts);               // out: amm_info
 JSS(auth_change);                 // out: AccountInfo
 JSS(auth_change_queued);          // out: AccountInfo
+JSS(auditor_encrypted_balance);   // out: mpt_holders (confidential MPT)
 JSS(available);                   // out: ValidatorList
 JSS(avg_bps_recv);                // out: Peers
 JSS(avg_bps_sent);                // out: Peers
@@ -161,9 +162,6 @@ JSS(build_path);                  // in: TransactionSign
 JSS(build_version);               // out: NetworkOPs
 JSS(cancel_after);                // out: AccountChannels
 JSS(can_delete);                  // out: CanDelete
-JSS(mpt_amount);                  // out: mpt_holders
-JSS(mpt_issuance_id);             // in: Payment, mpt_holders
-JSS(mptoken_index);               // out: mpt_holders
 JSS(changes);                     // out: BookChanges
 JSS(channel_id);                  // out: AccountChannels
 JSS(channels);                    // out: AccountChannels
@@ -185,165 +183,170 @@ JSS(command);                     // in: RPCHandler
 JSS(common);                      // out: RPC server_definitions
 JSS(complete);                    // out: NetworkOPs, InboundLedger
 JSS(complete_ledgers);            // out: NetworkOPs, PeerImp
-JSS(consensus);                   // out: NetworkOPs, LedgerConsensus
-JSS(converge_time);               // out: NetworkOPs
-JSS(converge_time_s);             // out: NetworkOPs
-JSS(cookie);                      // out: NetworkOPs
-JSS(count);                       // in: AccountTx*, ValidatorList
-JSS(counters);                    // in/out: retrieve counters
-JSS(credentials);                 // in: deposit_authorized
-JSS(credential_type);             // in: LedgerEntry DepositPreauth
-JSS(ctid);                        // in/out: Tx RPC
-JSS(currency_a);                  // out: BookChanges
-JSS(currency_b);                  // out: BookChanges
-JSS(currency);                    // in: paths/PathRequest, STAmount
-                                  // out: STPathSet, STAmount, AccountLines
-JSS(current);                     // out: OwnerInfo
-JSS(current_activities);          //
-JSS(current_ledger_size);         // out: TxQ
-JSS(current_queue_size);          // out: TxQ
-JSS(data);                        // out: LedgerData
-JSS(date);                        // out: tx/Transaction, NetworkOPs
-JSS(dbKBLedger);                  // out: getCounts
-JSS(dbKBTotal);                   // out: getCounts
-JSS(dbKBTransaction);             // out: getCounts
-JSS(debug_signing);               // in: TransactionSign
-JSS(deletion_blockers_only);      // in: AccountObjects
-JSS(delivered_amount);            // out: insertDeliveredAmount
-JSS(deposit_authorized);          // out: deposit_authorized
-JSS(deprecated);                  //
-JSS(descending);                  // in: AccountTx*
-JSS(description);                 // in/out: Reservations
-JSS(destination);                 // in: nft_buy_offers, nft_sell_offers
-JSS(destination_account);         // in: PathRequest, RipplePathFind, account_lines
-                                  // out: AccountChannels
-JSS(destination_amount);          // in: PathRequest, RipplePathFind
-JSS(destination_currencies);      // in: PathRequest, RipplePathFind
-JSS(destination_tag);             // in: PathRequest
-                                  // out: AccountChannels
-JSS(details);                     // out: Manifest, server_info
-JSS(dir_entry);                   // out: DirectoryEntryIterator
-JSS(dir_index);                   // out: DirectoryEntryIterator
-JSS(dir_root);                    // out: DirectoryEntryIterator
-JSS(discounted_fee);              // out: amm_info
-JSS(domain);                      // out: ValidatorInfo, Manifest
-JSS(drops);                       // out: TxQ
-JSS(duration_us);                 // out: NetworkOPs
-JSS(effective);                   // out: ValidatorList
-                                  // in: UNL
-JSS(enabled);                     // out: AmendmentTable
-JSS(engine_result);               // out: NetworkOPs, TransactionSign, Submit
-JSS(engine_result_code);          // out: NetworkOPs, TransactionSign, Submit
-JSS(engine_result_message);       // out: NetworkOPs, TransactionSign, Submit
-JSS(entire_set);                  // out: get_aggregate_price
-JSS(ephemeral_key);               // out: ValidatorInfo
-                                  // in/out: Manifest
-JSS(error);                       // out: error
-JSS(errored);                     //
-JSS(error_code);                  // out: error
-JSS(error_exception);             // out: Submit
-JSS(error_message);               // out: error
-JSS(expand);                      // in: handler/Ledger
-JSS(expected_date);               // out: any (warnings)
-JSS(expected_date_UTC);           // out: any (warnings)
-JSS(expected_ledger_size);        // out: TxQ
-JSS(expiration);                  // out: AccountOffers, AccountChannels, ValidatorList, amm_info
-JSS(fail_hard);                   // in: Sign, Submit
-JSS(failed);                      // out: InboundLedger
-JSS(feature);                     // in: Feature
-JSS(features);                    // out: Feature
-JSS(fee_base);                    // out: NetworkOPs
-JSS(fee_div_max);                 // in: TransactionSign
-JSS(fee_level);                   // out: AccountInfo
-JSS(fee_mult_max);                // in: TransactionSign
-JSS(fee_ref);                     // out: NetworkOPs, DEPRECATED
-JSS(fetch_pack);                  // out: NetworkOPs
-JSS(FIELDS);                      // out: RPC server_definitions
-                                  // matches definitions.json format
-JSS(first);                       // out: rpc/Version
-JSS(finished);                    //
-JSS(fix_txns);                    // in: LedgerCleaner
-JSS(flags);                       // out: AccountOffers, NetworkOPs
-JSS(forward);                     // in: AccountTx
-JSS(freeze);                      // out: AccountLines
-JSS(freeze_peer);                 // out: AccountLines
-JSS(deep_freeze);                 // out: AccountLines
-JSS(deep_freeze_peer);            // out: AccountLines
-JSS(frozen_balances);             // out: GatewayBalances
-JSS(full);                        // in: LedgerClearer, handlers/Ledger
-JSS(full_reply);                  // out: PathFind
-JSS(fullbelow_size);              // out: GetCounts
-JSS(git);                         // out: server_info
-JSS(good);                        // out: RPCVersion
-JSS(hash);                        // out: NetworkOPs, InboundLedger, LedgerToJson, STTx; field
-JSS(have_header);                 // out: InboundLedger
-JSS(have_state);                  // out: InboundLedger
-JSS(have_transactions);           // out: InboundLedger
-JSS(high);                        // out: BookChanges
-JSS(highest_sequence);            // out: AccountInfo
-JSS(highest_ticket);              // out: AccountInfo
-JSS(historical_perminute);        // historical_perminute.
-JSS(holders);                     // out: MPTHolders
-JSS(hostid);                      // out: NetworkOPs
-JSS(hotwallet);                   // in: GatewayBalances
-JSS(id);                          // websocket.
-JSS(ident);                       // in: AccountCurrencies, AccountInfo, OwnerInfo
-JSS(ignore_default);              // in: AccountLines
-JSS(in);                          // out: OverlayImpl
-JSS(inLedger);                    // out: tx/Transaction
-JSS(inbound);                     // out: PeerImp
-JSS(index);                       // in: LedgerEntry
-                                  // out: STLedgerEntry, LedgerEntry, TxHistory, LedgerData
-JSS(info);                        // out: ServerInfo, ConsensusInfo, FetchInfo
-JSS(initial_sync_duration_us);    //
-JSS(internal_command);            // in: Internal
-JSS(invalid_API_version);         // out: Many, when a request has an invalid version
-JSS(io_latency_ms);               // out: NetworkOPs
-JSS(ip);                          // in: Connect, out: OverlayImpl
-JSS(is_burned);                   // out: nft_info (clio)
-JSS(isSerialized);                // out: RPC server_definitions
-                                  // matches definitions.json format
-JSS(isSigningField);              // out: RPC server_definitions
-                                  // matches definitions.json format
-JSS(isVLEncoded);                 // out: RPC server_definitions
-                                  // matches definitions.json format
-JSS(issuer);                      // in: RipplePathFind, Subscribe, Unsubscribe, BookOffers
-                                  // out: STPathSet, STAmount
-JSS(job);                         //
-JSS(job_queue);                   //
-JSS(jobs);                        //
-JSS(jsonrpc);                     // json version
-JSS(jq_trans_overflow);           // JobQueue transaction limit overflow.
-JSS(kept);                        // out: SubmitTransaction
-JSS(key);                         // out
-JSS(key_type);                    // in/out: WalletPropose, TransactionSign
-JSS(latency);                     // out: PeerImp
-JSS(last);                        // out: RPCVersion
-JSS(last_close);                  // out: NetworkOPs
-JSS(last_refresh_time);           // out: ValidatorSite
-JSS(last_refresh_status);         // out: ValidatorSite
-JSS(last_refresh_message);        // out: ValidatorSite
-JSS(ledger);                      // in: NetworkOPs, LedgerCleaner, RPCHelpers
-                                  // out: NetworkOPs, PeerImp
-JSS(ledger_current_index);        // out: NetworkOPs, RPCHelpers, LedgerCurrent, LedgerAccept,
-                                  //      AccountLines
-JSS(ledger_data);                 // out: LedgerHeader
-JSS(ledger_hash);                 // in: RPCHelpers, LedgerRequest, RipplePathFind,
-                                  //     TransactionEntry, handlers/Ledger
-                                  // out: NetworkOPs, RPCHelpers, LedgerClosed, LedgerData,
-                                  //      AccountLines
-JSS(ledger_hit_rate);             // out: GetCounts
-JSS(ledger_index);                // in/out: many
-JSS(ledger_index_max);            // in, out: AccountTx*
-JSS(ledger_index_min);            // in, out: AccountTx*
-JSS(ledger_max);                  // in, out: AccountTx*
-JSS(ledger_min);                  // in, out: AccountTx*
-JSS(ledger_time);                 // out: NetworkOPs
-JSS(LEDGER_ENTRY_TYPES);          // out: RPC server_definitions
-                                  // matches definitions.json format
-JSS(LEDGER_ENTRY_FLAGS);          // out: RPC server_definitions
-JSS(LEDGER_ENTRY_FORMATS);        // out: RPC server_definitions
-JSS(levels);                      // LogLevels
+JSS(confidential_balance_inbox);  // out: mpt_holders (confidential MPT)
+JSS(confidential_balance_spending);  // out: mpt_holders (confidential MPT)
+JSS(confidential_balance_version);   // out: mpt_holders (confidential MPT)
+JSS(consensus);                      // out: NetworkOPs, LedgerConsensus
+JSS(converge_time);                  // out: NetworkOPs
+JSS(converge_time_s);                // out: NetworkOPs
+JSS(cookie);                         // out: NetworkOPs
+JSS(count);                          // in: AccountTx*, ValidatorList
+JSS(counters);                       // in/out: retrieve counters
+JSS(credentials);                    // in: deposit_authorized
+JSS(credential_type);                // in: LedgerEntry DepositPreauth
+JSS(ctid);                           // in/out: Tx RPC
+JSS(currency_a);                     // out: BookChanges
+JSS(currency_b);                     // out: BookChanges
+JSS(currency);                       // in: paths/PathRequest, STAmount
+                                     // out: STPathSet, STAmount, AccountLines
+JSS(current);                        // out: OwnerInfo
+JSS(current_activities);             //
+JSS(current_ledger_size);            // out: TxQ
+JSS(current_queue_size);             // out: TxQ
+JSS(data);                           // out: LedgerData
+JSS(date);                           // out: tx/Transaction, NetworkOPs
+JSS(dbKBLedger);                     // out: getCounts
+JSS(dbKBTotal);                      // out: getCounts
+JSS(dbKBTransaction);                // out: getCounts
+JSS(debug_signing);                  // in: TransactionSign
+JSS(deletion_blockers_only);         // in: AccountObjects
+JSS(delivered_amount);               // out: insertDeliveredAmount
+JSS(deposit_authorized);             // out: deposit_authorized
+JSS(deprecated);                     //
+JSS(descending);                     // in: AccountTx*
+JSS(description);                    // in/out: Reservations
+JSS(destination);                    // in: nft_buy_offers, nft_sell_offers
+JSS(destination_account);            // in: PathRequest, RipplePathFind, account_lines
+                                     // out: AccountChannels
+JSS(destination_amount);             // in: PathRequest, RipplePathFind
+JSS(destination_currencies);         // in: PathRequest, RipplePathFind
+JSS(destination_tag);                // in: PathRequest
+                                     // out: AccountChannels
+JSS(details);                        // out: Manifest, server_info
+JSS(dir_entry);                      // out: DirectoryEntryIterator
+JSS(dir_index);                      // out: DirectoryEntryIterator
+JSS(dir_root);                       // out: DirectoryEntryIterator
+JSS(discounted_fee);                 // out: amm_info
+JSS(domain);                         // out: ValidatorInfo, Manifest
+JSS(drops);                          // out: TxQ
+JSS(duration_us);                    // out: NetworkOPs
+JSS(effective);                      // out: ValidatorList
+                                     // in: UNL
+JSS(enabled);                        // out: AmendmentTable
+JSS(engine_result);                  // out: NetworkOPs, TransactionSign, Submit
+JSS(engine_result_code);             // out: NetworkOPs, TransactionSign, Submit
+JSS(engine_result_message);          // out: NetworkOPs, TransactionSign, Submit
+JSS(entire_set);                     // out: get_aggregate_price
+JSS(ephemeral_key);                  // out: ValidatorInfo
+                                     // in/out: Manifest
+JSS(error);                          // out: error
+JSS(errored);                        //
+JSS(error_code);                     // out: error
+JSS(error_exception);                // out: Submit
+JSS(error_message);                  // out: error
+JSS(expand);                         // in: handler/Ledger
+JSS(expected_date);                  // out: any (warnings)
+JSS(expected_date_UTC);              // out: any (warnings)
+JSS(expected_ledger_size);           // out: TxQ
+JSS(expiration);                     // out: AccountOffers, AccountChannels, ValidatorList, amm_info
+JSS(fail_hard);                      // in: Sign, Submit
+JSS(failed);                         // out: InboundLedger
+JSS(feature);                        // in: Feature
+JSS(features);                       // out: Feature
+JSS(fee_base);                       // out: NetworkOPs
+JSS(fee_div_max);                    // in: TransactionSign
+JSS(fee_level);                      // out: AccountInfo
+JSS(fee_mult_max);                   // in: TransactionSign
+JSS(fee_ref);                        // out: NetworkOPs, DEPRECATED
+JSS(fetch_pack);                     // out: NetworkOPs
+JSS(FIELDS);                         // out: RPC server_definitions
+                                     // matches definitions.json format
+JSS(first);                          // out: rpc/Version
+JSS(finished);                       //
+JSS(fix_txns);                       // in: LedgerCleaner
+JSS(flags);                          // out: AccountOffers, NetworkOPs
+JSS(forward);                        // in: AccountTx
+JSS(freeze);                         // out: AccountLines
+JSS(freeze_peer);                    // out: AccountLines
+JSS(deep_freeze);                    // out: AccountLines
+JSS(deep_freeze_peer);               // out: AccountLines
+JSS(frozen_balances);                // out: GatewayBalances
+JSS(full);                           // in: LedgerClearer, handlers/Ledger
+JSS(full_reply);                     // out: PathFind
+JSS(fullbelow_size);                 // out: GetCounts
+JSS(git);                            // out: server_info
+JSS(good);                           // out: RPCVersion
+JSS(hash);                           // out: NetworkOPs, InboundLedger, LedgerToJson, STTx; field
+JSS(have_header);                    // out: InboundLedger
+JSS(have_state);                     // out: InboundLedger
+JSS(have_transactions);              // out: InboundLedger
+JSS(high);                           // out: BookChanges
+JSS(highest_sequence);               // out: AccountInfo
+JSS(highest_ticket);                 // out: AccountInfo
+JSS(historical_perminute);           // historical_perminute.
+JSS(holders);                        // out: MPTHolders
+JSS(holder_encryption_key);          // out: mpt_holders (confidential MPT)
+JSS(hostid);                         // out: NetworkOPs
+JSS(hotwallet);                      // in: GatewayBalances
+JSS(id);                             // websocket.
+JSS(ident);                          // in: AccountCurrencies, AccountInfo, OwnerInfo
+JSS(ignore_default);                 // in: AccountLines
+JSS(in);                             // out: OverlayImpl
+JSS(inLedger);                       // out: tx/Transaction
+JSS(inbound);                        // out: PeerImp
+JSS(index);                          // in: LedgerEntry
+                                     // out: STLedgerEntry, LedgerEntry, TxHistory, LedgerData
+JSS(info);                           // out: ServerInfo, ConsensusInfo, FetchInfo
+JSS(initial_sync_duration_us);       //
+JSS(internal_command);               // in: Internal
+JSS(invalid_API_version);            // out: Many, when a request has an invalid version
+JSS(io_latency_ms);                  // out: NetworkOPs
+JSS(ip);                             // in: Connect, out: OverlayImpl
+JSS(is_burned);                      // out: nft_info (clio)
+JSS(isSerialized);                   // out: RPC server_definitions
+                                     // matches definitions.json format
+JSS(isSigningField);                 // out: RPC server_definitions
+                                     // matches definitions.json format
+JSS(isVLEncoded);                    // out: RPC server_definitions
+                                     // matches definitions.json format
+JSS(issuer);                         // in: RipplePathFind, Subscribe, Unsubscribe, BookOffers
+                                     // out: STPathSet, STAmount
+JSS(issuer_encrypted_balance);       // out: mpt_holders (confidential MPT)
+JSS(job);                            //
+JSS(job_queue);                      //
+JSS(jobs);                           //
+JSS(jsonrpc);                        // json version
+JSS(jq_trans_overflow);              // JobQueue transaction limit overflow.
+JSS(kept);                           // out: SubmitTransaction
+JSS(key);                            // out
+JSS(key_type);                       // in/out: WalletPropose, TransactionSign
+JSS(latency);                        // out: PeerImp
+JSS(last);                           // out: RPCVersion
+JSS(last_close);                     // out: NetworkOPs
+JSS(last_refresh_time);              // out: ValidatorSite
+JSS(last_refresh_status);            // out: ValidatorSite
+JSS(last_refresh_message);           // out: ValidatorSite
+JSS(ledger);                         // in: NetworkOPs, LedgerCleaner, RPCHelpers
+                                     // out: NetworkOPs, PeerImp
+JSS(ledger_current_index);           // out: NetworkOPs, RPCHelpers, LedgerCurrent, LedgerAccept,
+                                     //      AccountLines
+JSS(ledger_data);                    // out: LedgerHeader
+JSS(ledger_hash);                    // in: RPCHelpers, LedgerRequest, RipplePathFind,
+                                     //     TransactionEntry, handlers/Ledger
+                                     // out: NetworkOPs, RPCHelpers, LedgerClosed, LedgerData,
+                                     //      AccountLines
+JSS(ledger_hit_rate);                // out: GetCounts
+JSS(ledger_index);                   // in/out: many
+JSS(ledger_index_max);               // in, out: AccountTx*
+JSS(ledger_index_min);               // in, out: AccountTx*
+JSS(ledger_max);                     // in, out: AccountTx*
+JSS(ledger_min);                     // in, out: AccountTx*
+JSS(ledger_time);                    // out: NetworkOPs
+JSS(LEDGER_ENTRY_TYPES);             // out: RPC server_definitions
+                                     // matches definitions.json format
+JSS(LEDGER_ENTRY_FLAGS);             // out: RPC server_definitions
+JSS(LEDGER_ENTRY_FORMATS);           // out: RPC server_definitions
+JSS(levels);                         // LogLevels
 JSS(limit);                       // in/out: AccountTx*, AccountOffers, AccountLines, AccountObjects
                                   // in: LedgerData, BookOffers
 JSS(limit_peer);                  // out: AccountLines
@@ -401,6 +404,9 @@ JSS(min_ledger);                  // in: LedgerCleaner
 JSS(minimum_fee);                 // out: TxQ
 JSS(minimum_level);               // out: TxQ
 JSS(missingCommand);              // error
+JSS(mpt_amount);                  // out: mpt_holders
+JSS(mpt_issuance_id);             // in: Payment, mpt_holders
+JSS(mptoken_index);               // out: mpt_holders
 JSS(mpt_issuance_id_a);           // out: BookChanges
 JSS(mpt_issuance_id_b);           // out: BookChanges
 JSS(name);                        // out: AmendmentTableImpl, PeerImp

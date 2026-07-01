@@ -1,4 +1,5 @@
 #pragma once
+
 #include <xrpl/shamap/SHAMapInnerNode.h>
 
 #include <cstddef>

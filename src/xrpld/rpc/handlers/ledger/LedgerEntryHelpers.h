@@ -1,3 +1,5 @@
+#pragma once
+
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/StringUtilities.h>

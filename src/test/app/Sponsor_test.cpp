@@ -91,7 +91,7 @@ adjustAccountXRPBalance(jtx::Env& env, jtx::Account const& account, STAmount con
     auto const baseFee = env.current()->fees().base;
     if (currentBalance > balanceTo)
     {
-        env(pay(account, env.master, currentBalance - (balanceTo)),
+        env(pay(account, env.master, currentBalance - balanceTo),
             Fee(XRP(1)),
             sponsor::As(env.master, spfSponsorFee),
             Sig(sfSponsorSignature, env.master));
@@ -1136,7 +1136,7 @@ public:
             auto const ticketSeq = env.seq(alice);
             env(ticket::create(alice, 1));
             env.close();
-            auto ticketId = keylet::TicketT()(alice, ticketSeq + 1).key;
+            auto ticketId = keylet::ticket(alice, ticketSeq + 1).key;
             BEAST_EXPECT(env.le(keylet::unchecked(ticketId)));
             env(sponsor::transfer(alice, tfSponsorshipEnd, ticketId), Ter(tecNO_PERMISSION));
             env.close();
@@ -1401,7 +1401,7 @@ public:
                 env(trust(user, issuer["usd"](100)));
                 env.close();
 
-                auto const trustId = keylet::line(user, issuer, currency);
+                auto const trustId = keylet::trustLine(user, issuer, currency);
                 BEAST_EXPECT(env.le(trustId));
 
                 // transfer sponsor
@@ -1453,7 +1453,7 @@ public:
                 keylet::account(alice),
                 // keylet::amendments(),
                 keylet::skip(),
-                keylet::fees(),
+                keylet::feeSettings(),
                 // keylet::negativeUNL(),
                 keylet::ownerDir(alice),
             };
@@ -1486,7 +1486,7 @@ public:
             auto const ticketSeq = env.seq(alice);
             env(ticket::create(alice, 1));
             env.close();
-            auto const ticketID = keylet::TicketT()(alice, ticketSeq + 1).key;
+            auto const ticketID = keylet::ticket(alice, ticketSeq + 1).key;
             BEAST_EXPECT(env.le(keylet::unchecked(ticketID)));
             checkBlocked(alice, ticketID);
 
@@ -1498,7 +1498,7 @@ public:
 
             env(token::mint(alice, 0u));
             env.close();
-            auto const nftPageKeylet = keylet::nftpageMax(alice);
+            auto const nftPageKeylet = keylet::nftokenPageMax(alice);
             BEAST_EXPECT(env.le(nftPageKeylet));
             checkBlocked(alice, nftPageKeylet.key);
 
@@ -1516,7 +1516,7 @@ public:
                 {.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(1000)}));
             env.close();
 
-            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
             env(loanBroker::set(alice, vaultKeylet.key),
                 loanBroker::kDebtMaximum(xrpAsset(1000).value()),
                 loanBroker::kManagementFeeRate(TenthBips16{0}),
@@ -2943,7 +2943,7 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
             BEAST_EXPECT(
-                env.le(keylet::line(bob, gw, usd.currency))->getAccountID(sfHighSponsor) ==
+                env.le(keylet::trustLine(bob, gw, usd.currency))->getAccountID(sfHighSponsor) ==
                 sponsor2.id());
         }
         {
@@ -3065,7 +3065,7 @@ public:
                 });
 
             // transfer sponsor
-            auto const mptIssuanceKeylet = keylet::mptIssuance(mptid);
+            auto const mptIssuanceKeylet = keylet::mptokenIssuance(mptid);
 
             if (cosigning)
             {
@@ -3369,7 +3369,7 @@ public:
         {
             // invalid signer list owner 1
             // account doesn't have signer list but specified signer list exists
-            env(sponsor::transfer(bob, tfSponsorshipReassign, keylet::signers(alice).key),
+            env(sponsor::transfer(bob, tfSponsorshipReassign, keylet::signerList(alice).key),
                 sponsor::As(sponsor2, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor2),
                 Ter(tecNO_PERMISSION));
@@ -3377,11 +3377,11 @@ public:
             // account has signer list and specified signer list exists
             env(signers(bob, 1, {{alice, 1}}));
             env.close();
-            env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::signers(bob).key),
+            env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::signerList(bob).key),
                 sponsor::As(sponsor2, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor2),
                 Ter(tecNO_PERMISSION));
-            env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::signers(alice).key),
+            env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::signerList(alice).key),
                 sponsor::As(sponsor2, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor2));
             env.close();
@@ -3390,7 +3390,7 @@ public:
         {
             env(sponsor::set_reserve(sponsor2, 0, 1), sponsor::SponseeAcc(alice));
             env.close();
-            env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::signers(alice).key),
+            env(sponsor::transfer(alice, tfSponsorshipReassign, keylet::signerList(alice).key),
                 sponsor::As(sponsor2, spfSponsorReserve));
             env.close();
         }
@@ -3428,7 +3428,7 @@ public:
         env.close();
 
         auto const usd = issuer["usd"];
-        auto const lineKeylet = keylet::line(alice, issuer, usd.currency);
+        auto const lineKeylet = keylet::trustLine(alice, issuer, usd.currency);
 
         // Sponsor funded for exactly its base reserve
         adjustAccountXRPBalance(env, sponsor, reserve(env, 0));
@@ -3561,7 +3561,7 @@ public:
                 tecNO_LINE_INSUF_RESERVE,
                 [&](Env& env, auto const& submit) { submit(trust(user, usd(100))); });
 
-            auto const keylet = keylet::line(user, issuer, currency);
+            auto const keylet = keylet::trustLine(user, issuer, currency);
 
             if (cosigning)
             {
@@ -3617,7 +3617,7 @@ public:
             env(trust(issuer, user["usd"](100)));
             env.close();
 
-            BEAST_EXPECT(env.le(keylet::line(user, issuer, currency)));
+            BEAST_EXPECT(env.le(keylet::trustLine(user, issuer, currency)));
 
             if (cosigning)
             {
@@ -3636,7 +3636,7 @@ public:
                 tecINSUF_RESERVE_LINE,
                 [&](Env& env, auto const& submit) { submit(trust(user, usd(100))); });
 
-            auto const line = env.le(keylet::line(user, issuer, currency));
+            auto const line = env.le(keylet::trustLine(user, issuer, currency));
             validateSponsoredTrustline(line, isIssuerHigh, sponsor);
 
             // update TrustLine from user to clear reserve
@@ -3646,12 +3646,12 @@ public:
             BEAST_EXPECT(ownerCount(env, user) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, user) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(env.le(keylet::line(user, issuer, currency)));
+            BEAST_EXPECT(env.le(keylet::trustLine(user, issuer, currency)));
 
             // remove TrustLine from issuer
             env(trust(issuer, user["usd"](0)));
             env.close();
-            BEAST_EXPECT(!env.le(keylet::line(user, issuer, currency)));
+            BEAST_EXPECT(!env.le(keylet::trustLine(user, issuer, currency)));
         }
 
         // both High and Low sponsored
@@ -3670,7 +3670,7 @@ public:
                 Sig(sfSponsorSignature, sponsor));
             env.close();
 
-            auto sle = env.le(keylet::line(alice, bob, alice["usd"].currency));
+            auto sle = env.le(keylet::trustLine(alice, bob, alice["usd"].currency));
             BEAST_EXPECT(sle);
             BEAST_EXPECT(sle->isFlag(lsfHighReserve));
             BEAST_EXPECT(sle->isFlag(lsfLowReserve));
@@ -3689,7 +3689,7 @@ public:
             env(trust(bob, alice["usd"](0)));
             env.close();
 
-            sle = env.le(keylet::line(alice, bob, alice["usd"].currency));
+            sle = env.le(keylet::trustLine(alice, bob, alice["usd"].currency));
             BEAST_EXPECT(!sle);
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
@@ -3787,7 +3787,7 @@ public:
             env.close();
 
             // Transfer reserve sponsorship of trust line to sponsor
-            auto const trustId = keylet::line(alice, gw, usd.currency);
+            auto const trustId = keylet::trustLine(alice, gw, usd.currency);
             BEAST_EXPECT(env.le(trustId));
 
             env(sponsor::transfer(alice, tfSponsorshipCreate, trustId.key),
