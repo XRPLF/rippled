@@ -1486,7 +1486,7 @@ public:
             auto const ticketSeq = env.seq(alice);
             env(ticket::create(alice, 1));
             env.close();
-            auto const ticketID = keylet::TicketT()(alice, ticketSeq + 1).key;
+            auto const ticketID = keylet::ticket(alice, ticketSeq + 1).key;
             BEAST_EXPECT(env.le(keylet::unchecked(ticketID)));
             checkBlocked(alice, ticketID);
 

@@ -5927,8 +5927,9 @@ class Vault_test : public beast::unit_test::Suite
                 token->setFieldVL(*field, gMakeZeroBuffer(kEcGamalEncryptedTotalLength));
                 sb.update(token);
 
+                auto const dummyTx = *env.jt(noop(account)).stx;
                 BEAST_EXPECT(
-                    removeEmptyHolding(sb, holder.id(), MPTIssue(mpt.issuanceID()), j) ==
+                    removeEmptyHolding({sb, dummyTx}, holder.id(), MPTIssue(mpt.issuanceID()), j) ==
                     tecHAS_OBLIGATIONS);
                 BEAST_EXPECT(sb.peek(tokenKeylet) != nullptr);
             }
