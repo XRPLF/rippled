@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -34,10 +32,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -64,6 +59,12 @@ public:
         ttLOAN_MANAGE,
         ttLOAN_PAY,
     });
+
+private:
+    // Skips signature verification for inner txns, so keep it private: it must
+    // only be reached through Batch::checkSign.
+    static NotTEC
+    checkBatchSign(PreclaimContext const& ctx);
 };
 
 }  // namespace xrpl

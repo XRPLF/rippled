@@ -1,6 +1,5 @@
 #include <xrpl/tx/Transactor.h>
 
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -20,9 +19,9 @@
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
@@ -45,9 +44,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
-#include <memory>
+#include <map>
 #include <optional>
 #include <stdexcept>
+#include <tuple>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -177,6 +178,16 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 
         if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
             return temBAD_SIGNER;
+
+        auto const& perm = Permission::getInstance();
+        auto const txType = ctx.tx.getTxnType();
+
+        // If the transaction is not delegable and does not have granular permissions, fail earlier
+        // with temINVALID. This is to prevent transactions that are not delegable at all from
+        // being processed further in the invokeCheckPermission function.
+        if (!perm.isDelegable(Permission::txToPermissionType(txType), ctx.rules) &&
+            !perm.hasGranularPermissions(txType))
+            return temINVALID;
     }
 
     if (auto const ret = preflight0(ctx, flagMask))
@@ -209,13 +220,15 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     if (ctx.tx.getSeqProxy().isTicket() && ctx.tx.isFieldPresent(sfAccountTxnID))
         return temINVALID;
 
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatchV1_1))
         return temINVALID_FLAG;
 
-    XRPL_ASSERT(
-        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
-            !ctx.rules.enabled(featureBatch),
-        "Inner batch transaction must have a parent batch ID.");
+    // Reject if the inner batch flag and parentBatchId are inconsistent.
+    // A standalone tx with tfInnerBatchTxn but no parentBatchId is an
+    // attack attempt. A tx with parentBatchId but without tfInnerBatchTxn
+    // is a programming error.
+    if (ctx.tx.isFlag(tfInnerBatchTxn) != ctx.parentBatchId.has_value())
+        return temINVALID_INNER_BATCH;
 
     return tesSUCCESS;
 }
@@ -231,15 +244,19 @@ Transactor::preflight2(PreflightContext const& ctx)
         return *ret;
     }
 
-    // It should be impossible for the InnerBatchTxn flag to be set without
-    // featureBatch being enabled
-    XRPL_ASSERT_PARTS(
-        !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatch),
-        "xrpl::Transactor::preflight2",
-        "InnerBatch flag only set if feature enabled");
-    // Skip signature check on batch inner transactions
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch))
+    // Skip the signature check on batch inner transactions. preflight1 already
+    // enforces both conditions; re-checking them as defense in depth guarantees
+    // we never return success (and so skip signature validation) for an inner
+    // transaction unless the amendment is enabled and it really sits inside a
+    // batch.
+    if (ctx.tx.isFlag(tfInnerBatchTxn))
+    {
+        if (!ctx.rules.enabled(featureBatchV1_1))
+            return temINVALID_FLAG;
+        if (!ctx.parentBatchId.has_value())
+            return temINVALID_INNER_BATCH;
         return tesSUCCESS;
+    }
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 
@@ -297,19 +314,33 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
 }
 
 NotTEC
-Transactor::checkPermission(ReadView const& view, STTx const& tx)
+Transactor::checkPermission(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType>& heldGranularPermissions)
 {
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
         return tesSUCCESS;
 
-    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
-    auto const sle = view.read(delegateKey);
-
+    auto const sle = view.read(keylet::delegate(tx[sfAccount], *delegate));
     if (!sle)
         return terNO_DELEGATE_PERMISSION;
 
-    return checkTxPermission(sle, tx);
+    if (isTesSuccess(checkTxPermission(sle, tx)))
+        return tesSUCCESS;
+
+    if (!Permission::getInstance().hasGranularPermissions(tx.getTxnType()))
+        return terNO_DELEGATE_PERMISSION;
+
+    heldGranularPermissions = getGranularPermission(sle, tx.getTxnType());
+    if (heldGranularPermissions.empty())
+        return terNO_DELEGATE_PERMISSION;
+
+    if (!Permission::getInstance().checkGranularSandbox(tx, heldGranularPermissions))
+        return terNO_DELEGATE_PERMISSION;
+
+    return tesSUCCESS;
 }
 
 XRPAmount
@@ -328,6 +359,15 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
     return baseFee + (signerCount * baseFee);
+}
+
+XRPAmount
+Transactor::calculateBaseFee(
+    ReadView const& view,
+    STTx const& tx,
+    std::uint32_t extraBaseFeeMultiplier)
+{
+    return calculateBaseFee(view, tx) + view.fees().base * extraBaseFeeMultiplier;
 }
 
 // Returns the fee in fee units, not scaled for load.
@@ -502,7 +542,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
         }
 
         // Transaction can never succeed if the Ticket is not in the ledger.
-        if (!view.exists(keylet::kTicket(id, tSeqProx)))
+        if (!view.exists(keylet::ticket(id, tSeqProx)))
         {
             JLOG(j.trace()) << "applyTransaction: ticket already used or never created "
                             << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
@@ -567,7 +607,7 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::kTicket(ticketIndex));
+    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
     if (!sleTicket)
     {
         // LCOV_EXCL_START
@@ -673,23 +713,26 @@ Transactor::checkSign(
     std::optional<uint256 const> const& parentBatchId,
     AccountID const& idAccount,
     STObject const& sigObject,
-    beast::Journal const j)
+    beast::Journal const j,
+    bool permitUncreatedAccount)
 {
     {
         auto const sle = view.read(keylet::account(idAccount));
 
-        if (view.rules().enabled(featureLendingProtocol) && isPseudoAccount(sle))
+        if ((view.rules().enabled(featureLendingProtocol) ||
+             view.rules().enabled(featureBatchV1_1) || view.rules().enabled(fixCleanup3_3_0)) &&
+            isPseudoAccount(sle))
         {
-            // Pseudo-accounts can't sign transactions. This check is gated on
-            // the Lending Protocol amendment because that's the project it was
-            // added under, and it doesn't justify another amendment
+            // Pseudo-accounts can't sign transactions. This check is gated on a
+            // few different amendments so that it takes effect as soon as any of
+            // them is activated.
             return tefBAD_AUTH;
         }
     }
 
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
-    if (parentBatchId && view.rules().enabled(featureBatch))
+    if (parentBatchId && view.rules().enabled(featureBatchV1_1))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
@@ -727,7 +770,16 @@ Transactor::checkSign(
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const sleAccount = view.read(keylet::account(idAccount));
     if (!sleAccount)
-        return terNO_ACCOUNT;
+    {
+        // An account that does not exist yet can only be authorized by its own
+        // master key, and only where an un-created signer is permitted (a batch
+        // whose earlier inner creates the account). Otherwise it cannot sign.
+        if (!permitUncreatedAccount)
+            return terNO_ACCOUNT;
+        if (idAccount != idSigner)
+            return tefBAD_AUTH;
+        return tesSUCCESS;
+    }
 
     return checkSingleSign(view, idSigner, idAccount, sleAccount, j);
 }
@@ -741,55 +793,11 @@ Transactor::checkSign(PreclaimContext const& ctx)
 }
 
 NotTEC
-Transactor::checkBatchSign(PreclaimContext const& ctx)
-{
-    NotTEC ret = tesSUCCESS;
-    STArray const& signers{ctx.tx.getFieldArray(sfBatchSigners)};
-    for (auto const& signer : signers)
-    {
-        auto const idAccount = signer.getAccountID(sfAccount);
-
-        Blob const& pkSigner = signer.getFieldVL(sfSigningPubKey);
-        if (pkSigner.empty())
-        {
-            if (ret = checkMultiSign(ctx.view, ctx.flags, idAccount, signer, ctx.j);
-                !isTesSuccess(ret))
-                return ret;
-        }
-        else
-        {
-            // LCOV_EXCL_START
-            if (!publicKeyType(makeSlice(pkSigner)))
-                return tefBAD_AUTH;
-            // LCOV_EXCL_STOP
-
-            auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
-            auto const sleAccount = ctx.view.read(keylet::account(idAccount));
-
-            // A batch can include transactions from an un-created account ONLY
-            // when the account master key is the signer
-            if (!sleAccount)
-            {
-                if (idAccount != idSigner)
-                    return tefBAD_AUTH;
-
-                return tesSUCCESS;
-            }
-
-            if (ret = checkSingleSign(ctx.view, idSigner, idAccount, sleAccount, ctx.j);
-                !isTesSuccess(ret))
-                return ret;
-        }
-    }
-    return ret;
-}
-
-NotTEC
 Transactor::checkSingleSign(
     ReadView const& view,
     AccountID const& idSigner,
     AccountID const& idAccount,
-    std::shared_ptr<SLE const> sleAccount,
+    SLE::const_pointer sleAccount,
     beast::Journal const j)
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
@@ -825,7 +833,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
+    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signerList(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -1005,7 +1013,7 @@ removeExpiredNFTokenOffers(
 
     for (auto const& index : offers)
     {
-        if (auto const offer = view.peek(keylet::nftoffer(index)))
+        if (auto const offer = view.peek(keylet::nftokenOffer(index)))
         {
             nft::deleteTokenOffer(view, offer);
             if (++removed == kExpiredOfferRemoveLimit)
@@ -1054,26 +1062,6 @@ removeDeletedTrustLines(
     }
 }
 
-static void
-removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Journal viewJ)
-{
-    // There could be at most two MPTs - one for each side of AMM pool
-    if (mpts.size() > 2)
-    {
-        JLOG(viewJ.error()) << "removeDeletedMPTs: deleted mpts exceed 2 " << mpts.size();
-        return;
-    }
-
-    for (auto const& index : mpts)
-    {
-        if (auto const sleState = view.peek({ltMPTOKEN, index}); sleState &&
-            deleteAMMMPToken(view, sleState, (*sleState)[sfIssuer], viewJ) != tesSUCCESS)
-        {
-            JLOG(viewJ.error()) << "removeDeletedMPTs: failed to delete AMM MPT";
-        }
-    }
-}
-
 /** Reset the context, discarding any changes made and adjust the fee.
 
     @param fee The transaction fee to be charged.
@@ -1099,7 +1087,7 @@ Transactor::reset(XRPAmount fee)
 
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
-        balance != beast::kZero && (!view().open() || balance >= fee),
+        (fee == beast::kZero || balance != beast::kZero) && (!view().open() || balance >= fee),
         "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or
@@ -1134,6 +1122,118 @@ void
 Transactor::trapTransaction(uint256 txHash) const
 {
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
+}
+
+std::tuple<TER, XRPAmount, bool>
+Transactor::processPersistentChanges(TER result, XRPAmount fee)
+{
+    JLOG(j_.trace()) << "reapplying because of " << transToken(result);
+
+    // FIXME: This mechanism for doing work while returning a `tec` is
+    //        awkward and very limiting. A more general purpose approach
+    //        should be used, making it possible to do more useful work
+    //        when transactions fail with a `tec` code.
+
+    auto typesForResult = [](TER const ter) {
+        std::unordered_set<LedgerEntryType> types;
+        if ((ter == tecOVERSIZE) || (ter == tecKILLED))
+        {
+            types.insert(ltOFFER);
+        }
+        else if (ter == tecINCOMPLETE)
+        {
+            types.insert(ltRIPPLE_STATE);
+        }
+        else if (ter == tecEXPIRED)
+        {
+            types.insert(ltNFTOKEN_OFFER);
+            types.insert(ltCREDENTIAL);
+        }
+        return types;
+    };
+
+    // Build a list of ledger entry types to collect, based on the
+    // result code. Only deleted objects of these types will be
+    // re-applied after the context is reset.
+    auto const typesToCollect = typesForResult(result);
+
+    std::map<LedgerEntryType, std::vector<uint256>> deletedObjects;
+    if (!typesToCollect.empty())
+    {
+        ctx_.visit(
+            [&typesToCollect, &deletedObjects](
+                uint256 const& index, bool isDelete, SLE::const_ref before, SLE::const_ref after) {
+                if (isDelete)
+                {
+                    XRPL_ASSERT(
+                        before && after,
+                        "xrpl::Transactor::processPersistentChanges : non-null "
+                        "SLE inputs");
+                    if (before && after)
+                    {
+                        auto const type = before->getType();
+                        if (typesToCollect.contains(type))
+                        {
+                            // For offers, only collect unfunded removals
+                            // (where TakerPays is unchanged)
+                            if (type == ltOFFER &&
+                                before->getFieldAmount(sfTakerPays) !=
+                                    after->getFieldAmount(sfTakerPays))
+                                return;
+
+                            deletedObjects[type].push_back(index);
+                        }
+                    }
+                }
+            });
+    }
+
+    // Reset the context, potentially adjusting the fee.
+    {
+        auto const resetResult = reset(fee);
+        if (!isTesSuccess(resetResult.first))
+            result = resetResult.first;
+
+        fee = resetResult.second;
+    }
+
+    // Re-apply the collected deletions, but only if the reset succeeded
+    // and the post-reset result still allows the same deletion type.
+    auto const typesToApply = typesForResult(result);
+    if (isTecClaim(result) && !typesToApply.empty())
+    {
+        auto const viewJ = ctx_.registry.get().getJournal("View");
+        for (auto const& [type, ids] : deletedObjects)
+        {
+            if (ids.empty() || !typesToApply.contains(type))
+                continue;
+
+            switch (type)
+            {
+                case ltOFFER:
+                    removeUnfundedOffers(view(), ids, viewJ);
+                    break;
+                case ltNFTOKEN_OFFER:
+                    removeExpiredNFTokenOffers(view(), ids, viewJ);
+                    break;
+                case ltRIPPLE_STATE:
+                    removeDeletedTrustLines(view(), ids, viewJ);
+                    break;
+                case ltCREDENTIAL:
+                    removeExpiredCredentials(view(), ids, viewJ);
+                    break;
+                // LCOV_EXCL_START
+                default:
+                    UNREACHABLE(
+                        "xrpl::Transactor::processPersistentChanges() : "
+                        "unexpected type");
+                    break;
+                    // LCOV_EXCL_STOP
+            }
+        }
+    }
+
+    return {result, fee, isTecClaim(result)};
 }
 
 [[nodiscard]] TER
@@ -1173,22 +1273,19 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
 [[nodiscard]] TER
 Transactor::checkInvariants(TER result, XRPAmount fee)
 {
-    // Transaction invariants first (more specific). These check post-conditions of the specific
-    // transaction. If these fail, the transaction's core logic is wrong.
-    auto const txResult = checkTransactionInvariants(result, fee);
-
-    // Protocol invariants second (broader). These check properties that must hold regardless of
-    // transaction type.
-    auto const protoResult = ctx_.checkInvariants(result, fee);
-
-    // Fail if either check failed. tef (fatal) takes priority over tec.
-    if (protoResult == tefINVARIANT_FAILED)
-        return tefINVARIANT_FAILED;
-    if (txResult == tecINVARIANT_FAILED || protoResult == tecINVARIANT_FAILED)
-        return tecINVARIANT_FAILED;
-
-    return result;
+    /*
+     * DISABLED for 3.2.0 — Must be re-introduced for 3.3.0
+     *
+     * Transaction invariants are disabled due to a performance regression:
+     * the two-pass design (transaction-specific invariants + protocol invariants)
+     * iterates over modified ledger entries twice per transaction.
+     *
+     * Until resolved, only protocol invariants are checked (delegated to ctx_).
+     * This is safe because all transaction invariants in 3.2.0 are  no-ops.
+     */
+    return ctx_.checkInvariants(result, fee);
 }
+
 //------------------------------------------------------------------------------
 ApplyResult
 Transactor::operator()()
@@ -1200,8 +1297,6 @@ Transactor::operator()()
     // with_txn_type().
     //
     // raii classes for the current ledger rules.
-    // fixUniversalNumber predate the rulesGuard and should be replaced.
-    NumberSO const stNumberSO{view().rules().enabled(fixUniversalNumber)};
     CurrentTransactionRulesGuard const currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
@@ -1257,108 +1352,7 @@ Transactor::operator()()
         (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
         (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
     {
-        JLOG(j_.trace()) << "reapplying because of " << transToken(result);
-
-        // FIXME: This mechanism for doing work while returning a `tec` is
-        //        awkward and very limiting. A more general purpose approach
-        //        should be used, making it possible to do more useful work
-        //        when transactions fail with a `tec` code.
-        std::vector<uint256> removedOffers;
-        std::vector<uint256> removedTrustLines;
-        std::vector<uint256> removedMPTs;
-        std::vector<uint256> expiredNFTokenOffers;
-        std::vector<uint256> expiredCredentials;
-
-        bool const doOffers = ((result == tecOVERSIZE) || (result == tecKILLED));
-        bool const doLinesOrMPTs = (result == tecINCOMPLETE);
-        bool const doNFTokenOffers = (result == tecEXPIRED);
-        bool const doCredentials = (result == tecEXPIRED);
-        if (doOffers || doLinesOrMPTs || doNFTokenOffers || doCredentials)
-        {
-            ctx_.visit([doOffers,
-                        &removedOffers,
-                        doLinesOrMPTs,
-                        &removedTrustLines,
-                        &removedMPTs,
-                        doNFTokenOffers,
-                        &expiredNFTokenOffers,
-                        doCredentials,
-                        &expiredCredentials](
-                           uint256 const& index,
-                           bool isDelete,
-                           std::shared_ptr<SLE const> const& before,
-                           std::shared_ptr<SLE const> const& after) {
-                if (isDelete)
-                {
-                    XRPL_ASSERT(
-                        before && after,
-                        "xrpl::Transactor::operator()::visit : non-null SLE "
-                        "inputs");
-                    if (doOffers && before && after && (before->getType() == ltOFFER) &&
-                        (before->getFieldAmount(sfTakerPays) == after->getFieldAmount(sfTakerPays)))
-                    {
-                        // Removal of offer found or made unfunded
-                        removedOffers.push_back(index);
-                    }
-
-                    if (doLinesOrMPTs && before && after)
-                    {
-                        // Removal of obsolete AMM trust line
-                        if (before->getType() == ltRIPPLE_STATE)
-                        {
-                            removedTrustLines.push_back(index);
-                        }
-                        else if (before->getType() == ltMPTOKEN)
-                        {
-                            removedMPTs.push_back(index);
-                        }
-                    }
-
-                    if (doNFTokenOffers && before && after &&
-                        (before->getType() == ltNFTOKEN_OFFER))
-                        expiredNFTokenOffers.push_back(index);
-
-                    if (doCredentials && before && after && (before->getType() == ltCREDENTIAL))
-                        expiredCredentials.push_back(index);
-                }
-            });
-        }
-
-        // Reset the context, potentially adjusting the fee.
-        {
-            auto const resetResult = reset(fee);
-            if (!isTesSuccess(resetResult.first))
-                result = resetResult.first;
-
-            fee = resetResult.second;
-        }
-
-        // If necessary, remove any offers found unfunded during processing
-        if ((result == tecOVERSIZE) || (result == tecKILLED))
-        {
-            removeUnfundedOffers(view(), removedOffers, ctx_.registry.get().getJournal("View"));
-        }
-
-        if (result == tecEXPIRED)
-        {
-            removeExpiredNFTokenOffers(
-                view(), expiredNFTokenOffers, ctx_.registry.get().getJournal("View"));
-        }
-
-        if (result == tecINCOMPLETE)
-        {
-            removeDeletedTrustLines(
-                view(), removedTrustLines, ctx_.registry.get().getJournal("View"));
-            removeDeletedMPTs(view(), removedMPTs, ctx_.registry.get().getJournal("View"));
-        }
-
-        if (result == tecEXPIRED)
-        {
-            removeExpiredCredentials(
-                view(), expiredCredentials, ctx_.registry.get().getJournal("View"));
-        }
-
-        applied = isTecClaim(result);
+        std::tie(result, fee, applied) = processPersistentChanges(result, fee);
     }
 
     if (applied)

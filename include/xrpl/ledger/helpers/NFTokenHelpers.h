@@ -20,10 +20,6 @@ removeTokenOffersWithLimit(
     Keylet const& directory,
     std::size_t maxDeletableOffers);
 
-/** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
-TER
-notTooManyOffers(ReadView const& view, uint256 const& nftokenID);
-
 /** Finds the specified token in the owner's token directory. */
 std::optional<STObject>
 findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID);
@@ -32,10 +28,9 @@ findToken(ReadView const& view, AccountID const& owner, uint256 const& nftokenID
 struct TokenAndPage
 {
     STObject token;
-    std::shared_ptr<SLE> page;
+    SLE::pointer page;
 
-    TokenAndPage(STObject token, std::shared_ptr<SLE> page)
-        : token(std::move(token)), page(std::move(page))
+    TokenAndPage(STObject token, SLE::pointer page) : token(std::move(token)), page(std::move(page))
     {
     }
 };
@@ -51,11 +46,7 @@ TER
 removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID);
 
 TER
-removeToken(
-    ApplyView& view,
-    AccountID const& owner,
-    uint256 const& nftokenID,
-    std::shared_ptr<SLE> const& page);
+removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, SLE::ref page);
 
 /** Deletes the given token offer.
 
@@ -67,7 +58,7 @@ removeToken(
     The offer also consumes one incremental reserve.
  */
 bool
-deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer);
+deleteTokenOffer(ApplyView& view, SLE::ref offer);
 
 /** Repairs the links in an NFTokenPage directory.
 

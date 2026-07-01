@@ -1,8 +1,9 @@
 #pragma once
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <expected>
 
 namespace xrpl {
 
@@ -51,10 +52,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -64,7 +62,7 @@ public:
         ReadView const& view,
         beast::Journal const& j) override;
 
-    static Expected<MPTID, TER>
+    static std::expected<MPTID, TER>
     create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args);
 };
 

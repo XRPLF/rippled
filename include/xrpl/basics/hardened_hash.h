@@ -75,7 +75,7 @@ private:
     detail::seed_pair seeds_{detail::makeSeedPair<>()};
 
 public:
-    using result_type = typename HashAlgorithm::result_type;
+    using result_type = HashAlgorithm::result_type;
 
     HardenedHash() = default;
 

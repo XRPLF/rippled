@@ -57,8 +57,8 @@ public:
     {
         using iterator_category = std::forward_iterator_tag;
         partition_map_type* map{nullptr};
-        typename partition_map_type::iterator ait{};
-        typename map_type::iterator mit;
+        partition_map_type::iterator ait{};
+        map_type::iterator mit;
 
         Iterator() = default;
 
@@ -126,8 +126,8 @@ public:
         using iterator_category = std::forward_iterator_tag;
 
         partition_map_type* map{nullptr};
-        typename partition_map_type::iterator ait{};
-        typename map_type::iterator mit;
+        partition_map_type::iterator ait{};
+        map_type::iterator mit;
 
         ConstIterator() = default;
 

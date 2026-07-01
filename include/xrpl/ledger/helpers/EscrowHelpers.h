@@ -18,7 +18,7 @@ TER
 escrowUnlockApplyHelper(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -32,7 +32,7 @@ inline TER
 escrowUnlockApplyHelper<Issue>(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -42,7 +42,7 @@ escrowUnlockApplyHelper<Issue>(
     beast::Journal journal)
 {
     Issue const& issue = amount.get<Issue>();
-    Keylet const trustLineKey = keylet::line(receiver, issue);
+    Keylet const trustLineKey = keylet::trustLine(receiver, issue);
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
@@ -162,7 +162,7 @@ inline TER
 escrowUnlockApplyHelper<MPTIssue>(
     ApplyView& view,
     Rate lockedRate,
-    std::shared_ptr<SLE> const& sleDest,
+    SLE::ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -175,7 +175,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     bool const receiverIssuer = issuer == receiver;
 
     auto const mptID = amount.get<MPTIssue>().getMptID();
-    auto const issuanceKey = keylet::mptIssuance(mptID);
+    auto const issuanceKey = keylet::mptokenIssuance(mptID);
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && createAsset && !receiverIssuer)
     {
         if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};

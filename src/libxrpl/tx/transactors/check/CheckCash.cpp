@@ -31,7 +31,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -193,7 +192,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 [&](Issue const& issue) -> TER {
                     Currency const currency{issue.currency};
                     auto const sleTrustLine =
-                        ctx.view.read(keylet::line(dstId, issuerId, currency));
+                        ctx.view.read(keylet::trustLine(dstId, issuerId, currency));
 
                     auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
                     if (!sleIssuer)
@@ -388,7 +387,7 @@ CheckCash::doApply()
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
-            auto checkReserve = [&]() -> std::shared_ptr<SLE> {
+            auto checkReserve = [&]() -> SLE::pointer {
                 auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?
@@ -412,7 +411,7 @@ CheckCash::doApply()
                     // If a trust line does not exist yet create one.
                     Issue const& trustLineIssue = issue;
                     AccountID const truster = deliverIssuer == accountID_ ? srcId : accountID_;
-                    trustLineKey = keylet::line(truster, trustLineIssue);
+                    trustLineKey = keylet::trustLine(truster, trustLineIssue);
                     destLow = deliverIssuer > accountID_;
 
                     if (!psb.exists(*trustLineKey))
@@ -592,10 +591,7 @@ CheckCash::doApply()
 }
 
 void
-CheckCash::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
+CheckCash::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
 {
     // No transaction-specific invariants yet (future work).
 }

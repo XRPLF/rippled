@@ -58,7 +58,6 @@ public:
             case TokenCodecErrc::InvalidEncodingChar:
                 return "invalid encoding char";
             case TokenCodecErrc::Unknown:
-                return "unknown";
             default:
                 return "unknown";
         }

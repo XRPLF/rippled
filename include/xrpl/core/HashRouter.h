@@ -19,12 +19,14 @@ enum class HashRouterFlags : std::uint16_t {
     HELD = 0x08,     // Held by LedgerMaster after potential processing failure
     TRUSTED = 0x10,  // Comes from a trusted source
 
-    // Private flags (used internally in apply.cpp)
-    // Do not attempt to read, set, or reuse.
+    // Private flags. Each group is owned by one file; do not read, set, or
+    // reuse a flag outside the file noted.
+    // Used in apply.cpp
     PRIVATE1 = 0x0100,
     PRIVATE2 = 0x0200,
     PRIVATE3 = 0x0400,
     PRIVATE4 = 0x0800,
+    // Used in EscrowFinish.cpp
     PRIVATE5 = 0x1000,
     PRIVATE6 = 0x2000
 };

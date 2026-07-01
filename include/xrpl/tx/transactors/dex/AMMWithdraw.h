@@ -72,10 +72,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -155,13 +152,18 @@ public:
     static std::pair<TER, bool>
     deleteAMMAccountIfEmpty(
         Sandbox& sb,
-        std::shared_ptr<SLE> const ammSle,
+        SLE::pointer const ammSle,
         STAmount const& lpTokenBalance,
         Asset const& asset1,
         Asset const& asset2,
         beast::Journal const& journal);
 
 private:
+    /** Returns IgnoreFreeze when the withdrawer is the issuer of a pool
+     *  asset (post-fixCleanup3_3_0), ZeroIfFrozen otherwise. */
+    [[nodiscard]] FreezeHandling
+    issuerFreezeHandling() const;
+
     std::pair<TER, bool>
     applyGuts(Sandbox& view);
 

@@ -28,7 +28,7 @@ inline constexpr struct OpenLedgerT
 /** Batch view construction tag.
 
     Views constructed with this tag are part of a stack of views
-    used during batch transaction applied.
+    used during batch transaction application.
  */
 inline constexpr struct BatchViewT
 {
@@ -197,7 +197,7 @@ public:
     std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
-    std::shared_ptr<SLE const>
+    SLE::const_pointer
     read(Keylet const& k) const override;
 
     std::unique_ptr<SlesType::iter_base>
@@ -224,13 +224,13 @@ public:
     // RawView
 
     void
-    rawErase(std::shared_ptr<SLE> const& sle) override;
+    rawErase(SLE::ref sle) override;
 
     void
-    rawInsert(std::shared_ptr<SLE> const& sle) override;
+    rawInsert(SLE::ref sle) override;
 
     void
-    rawReplace(std::shared_ptr<SLE> const& sle) override;
+    rawReplace(SLE::ref sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& fee) override;

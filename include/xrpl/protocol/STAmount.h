@@ -559,7 +559,7 @@ STAmount::fromNumber(A const& a, Number const& number)
         return STAmount{asset, intValue, 0, negative};
     }
 
-    auto const [mantissa, exponent] = working.normalizeToRange(kMinValue, kMaxValue);
+    auto const [mantissa, exponent] = working.normalizeToRange<kMinValue, kMaxValue>();
 
     return STAmount{asset, mantissa, exponent, negative};
 }

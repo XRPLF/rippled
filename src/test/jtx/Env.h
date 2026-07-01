@@ -96,6 +96,26 @@ testableAmendments()
     return kIds;
 }
 
+/**
+ * Returns all 2^N permutations of a seed FeatureBitset with each subset of
+ * the given features excluded.  The seed is included as the first element.
+ *
+ * Useful for running a test over every combination of optional amendments
+ * so that each case is exercised both with and without each feature.
+ */
+inline std::vector<FeatureBitset>
+amendmentCombinations(std::initializer_list<uint256> features, FeatureBitset seed)
+{
+    std::vector<FeatureBitset> result{seed};
+    for (auto const& f : features)
+    {
+        auto const n = result.size();
+        for (std::size_t i = 0; i < n; ++i)
+            result.push_back(result[i] - f);
+    }
+    return result;
+}
+
 //------------------------------------------------------------------------------
 
 class SuiteLogs : public Logs
@@ -531,13 +551,13 @@ public:
     /** Return an account root.
         @return empty if the account does not exist.
     */
-    [[nodiscard]] std::shared_ptr<SLE const>
+    [[nodiscard]] SLE::const_pointer
     le(Account const& account) const;
 
     /** Return a ledger entry.
         @return empty if the ledger entry does not exist
     */
-    [[nodiscard]] std::shared_ptr<SLE const>
+    [[nodiscard]] SLE::const_pointer
     le(Keylet const& k) const;
 
     /** Create a JTx from parameters. */

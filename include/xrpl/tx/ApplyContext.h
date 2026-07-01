@@ -24,6 +24,10 @@ public:
         ApplyFlags flags,
         beast::Journal journal = beast::Journal{beast::Journal::getNullSink()});
 
+    // Convenience constructor used only by tests that build an ApplyContext
+    // directly (e.g. invariant checks). Production always uses the parentBatchId
+    // constructor above; this one fixes parentBatchId to std::nullopt and so is
+    // never valid for a batch inner (hence the TapBatch assert).
     explicit ApplyContext(
         ServiceRegistry& registry,
         OpenView& base,
@@ -93,8 +97,8 @@ public:
         std::function<void(
             uint256 const& key,
             bool isDelete,
-            std::shared_ptr<SLE const> const& before,
-            std::shared_ptr<SLE const> const& after)> const& func);
+            SLE::const_ref before,
+            SLE::const_ref after)> const& func);
 
     void
     destroyXRP(XRPAmount const& fee)
@@ -124,7 +128,7 @@ private:
     ApplyFlags flags_;
     std::optional<ApplyViewImpl> view_;
 
-    // The ID of the batch transaction we are executing under, if seated.
+    // The ID of the batch transaction we are executing under, if set.
     std::optional<uint256 const> parentBatchId_;
 };
 
