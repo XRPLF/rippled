@@ -30,6 +30,7 @@
 #include <boost/filesystem/path.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -643,16 +644,46 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 SHAMapStoreImp::HealthResult
 SHAMapStoreImp::healthWait()
 {
-    auto index = ledgerMaster_->getValidLedgerIndex();
-    auto age = ledgerMaster_->getValidatedLedgerAge();
-    OperatingMode mode = netOPs_->getOperatingMode();
+    // Gets the current status of the server from ledgerMaster_ and netOPs_. Must be called
+    // while mutex_ is unlocked to avoid unlikely, but possible, deadlock with ledgerMaster_'s
+    // completeLock_.
+    // Releasing the lock may mean that status will be slightly out of date when the lock is
+    // reacquired, but it's close enough. In a normal rotation, healthWait() is called frequently,
+    // so a false positive will be detected on the next call, and a false negative wil be detected
+    // in the next loop interation. Database rotation is important, but not timely, so an extra
+    // delay is fine.
+    auto readServerStatus = [this](
+                                LedgerIndex& index,
+                                std::chrono::seconds& age,
+                                OperatingMode& mode,
+                                std::size_t& numMissing,
+                                LedgerIndex const lowerBound,
+                                ScopeUnlock<decltype(mutex_)> const&) {
+        index = ledgerMaster_->getValidLedgerIndex();
+        age = ledgerMaster_->getValidatedLedgerAge();
+        mode = netOPs_->getOperatingMode();
+
+        numMissing =
+            lowerBound == 0 ? 0 : ledgerMaster_->missingFromCompleteLedgerRange(lowerBound, index);
+    };
+
+    // Tracked server status properties
+    LedgerIndex index;
+    std::chrono::seconds age;
+    OperatingMode mode;
+    std::size_t numMissing;
+
     std::unique_lock lock(mutex_);
 
     auto const waitTime = recoveryWaitTime_;
     auto const ageThreshold = ageThreshold_;
-    auto numMissing = lastGoodValidatedLedger_ == 0
-        ? 0
-        : ledgerMaster_->missingFromCompleteLedgerRange(lastGoodValidatedLedger_, index);
+    {
+        auto const lowerBound = lastGoodValidatedLedger_;
+
+        ScopeUnlock const unlock(lock);
+
+        readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
+    }
     while (!stop_ && (mode != OperatingMode::FULL || age > ageThreshold || numMissing > 0))
     {
         // this value shouldn't change, so grab it while we have the
@@ -668,11 +699,8 @@ SHAMapStoreImp::healthWait()
                      << "s. Missing ledgers: " << numMissing << ".  Expect: " << lowerBound << "-"
                      << index << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
         std::this_thread::sleep_for(waitTime);
-        index = ledgerMaster_->getValidLedgerIndex();
-        age = ledgerMaster_->getValidatedLedgerAge();
-        mode = netOPs_->getOperatingMode();
-        numMissing =
-            lowerBound == 0 ? 0 : ledgerMaster_->missingFromCompleteLedgerRange(lowerBound, index);
+
+        readServerStatus(index, age, mode, numMissing, lowerBound, unlock);
     }
 
     return stop_ ? HealthResult::Stopping : HealthResult::KeepGoing;
