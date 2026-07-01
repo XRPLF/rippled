@@ -25,7 +25,7 @@ namespace xrpl {
 class AcceptedLedger : public CountedObject<AcceptedLedger>
 {
 public:
-    AcceptedLedger(std::shared_ptr<ReadView const> const& ledger);
+    AcceptedLedger(std::shared_ptr<ReadView const> ledger);
 
     [[nodiscard]] std::shared_ptr<ReadView const> const&
     getLedger() const

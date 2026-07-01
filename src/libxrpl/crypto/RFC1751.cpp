@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <cstring>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -306,7 +307,7 @@ RFC1751::standard(std::string& strWord)
 
 // Binary search of dictionary.
 int
-RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
+RFC1751::wsrch(std::string_view strWord, int iMin, int iMax)
 {
     int iResult = -1;
 

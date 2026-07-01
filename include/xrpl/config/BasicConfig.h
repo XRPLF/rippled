@@ -298,7 +298,8 @@ set(T& target, std::string const& name, Section const& section)
     try
     {
         auto const val = section.get<T>(name);
-        if ((foundAndValid = val.has_value()))
+        foundAndValid = val.has_value();
+        if (foundAndValid)
             target = *val;
     }
     catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)

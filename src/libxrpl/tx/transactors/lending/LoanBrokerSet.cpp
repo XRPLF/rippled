@@ -1,6 +1,5 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerSet.h>
 
-#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -25,6 +24,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <expected>
 #include <memory>
 #include <vector>
 
@@ -120,19 +120,19 @@ LoanBrokerSet::getValueFields()
  * @param id The vault ID to look up.
  * @return The vault SLE on success, or a TER error.
  */
-[[nodiscard]] static Expected<std::shared_ptr<SLE const>, TER>
+[[nodiscard]] static std::expected<std::shared_ptr<SLE const>, TER>
 readVault(PreclaimContext const& ctx, AccountID const& account, uint256 const& id)
 {
     auto const sle = ctx.view.read(keylet::vault(id));
     if (!sle)
     {
         JLOG(ctx.j.warn()) << "Vault does not exist.";
-        return Unexpected(tecNO_ENTRY);
+        return std::unexpected(tecNO_ENTRY);
     }
     if (account != sle->at(sfOwner))
     {
         JLOG(ctx.j.warn()) << "Account is not the owner of the Vault.";
-        return Unexpected(tecNO_PERMISSION);
+        return std::unexpected(tecNO_PERMISSION);
     }
     return sle;
 }
@@ -144,7 +144,7 @@ readVault(PreclaimContext const& ctx, AccountID const& account, uint256 const& i
  * @param brokerID The LoanBroker ID to update.
  * @return The vault SLE on success, or a TER error.
  */
-[[nodiscard]] static Expected<std::shared_ptr<SLE const>, TER>
+[[nodiscard]] static std::expected<std::shared_ptr<SLE const>, TER>
 preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 const& brokerID)
 {
     auto const& tx = ctx.tx;
@@ -156,11 +156,11 @@ preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 con
     if (fixEnabled)
     {
         // Post-amendment: VaultID is not in the tx, read it from broker
-        sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
+        sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
         if (!sleBroker)
         {
             JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
-            return Unexpected(tecNO_ENTRY);
+            return std::unexpected(tecNO_ENTRY);
         }
 
         auto const vault = readVault(ctx, account, sleBroker->at(sfVaultID));
@@ -180,16 +180,16 @@ preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 con
             return vault;
         sleVault = *vault;
 
-        sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
+        sleBroker = ctx.view.read(keylet::loanBroker(brokerID));
         if (!sleBroker)
         {
             JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
-            return Unexpected(tecNO_ENTRY);
+            return std::unexpected(tecNO_ENTRY);
         }
         if (tx[sfVaultID] != sleBroker->at(sfVaultID))
         {
             JLOG(ctx.j.warn()) << "Can not change VaultID on an existing LoanBroker.";
-            return Unexpected(tecNO_PERMISSION);
+            return std::unexpected(tecNO_PERMISSION);
         }
     }
 
@@ -198,7 +198,7 @@ preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 con
     if (account != sleBroker->at(sfOwner))
     {
         JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
-        return Unexpected(tecNO_PERMISSION);
+        return std::unexpected(tecNO_PERMISSION);
     }
 
     if (auto const debtMax = tx[~sfDebtMaximum])
@@ -207,7 +207,7 @@ preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 con
         if (*debtMax != 0 && *debtMax < currentDebtTotal)
         {
             JLOG(ctx.j.warn()) << "Cannot reduce DebtMaximum below current DebtTotal.";
-            return Unexpected(tecLIMIT_EXCEEDED);
+            return std::unexpected(tecLIMIT_EXCEEDED);
         }
     }
 
@@ -220,7 +220,7 @@ preclaimUpdate(PreclaimContext const& ctx, AccountID const& account, uint256 con
  * @param account The transaction submitter (vault owner).
  * @return The vault SLE on success, or a TER error.
  */
-[[nodiscard]] static Expected<std::shared_ptr<SLE const>, TER>
+[[nodiscard]] static std::expected<std::shared_ptr<SLE const>, TER>
 preclaimCreate(PreclaimContext const& ctx, AccountID const& account)
 {
     XRPL_ASSERT(
@@ -233,12 +233,12 @@ preclaimCreate(PreclaimContext const& ctx, AccountID const& account)
 
     Asset const asset = sleVault->at(sfAsset);
     if (auto const ter = canAddHolding(ctx.view, asset))
-        return Unexpected(ter);
+        return std::unexpected(ter);
 
     if (auto const ter = checkFrozen(ctx.view, sleVault->at(sfAccount), sleVault->at(sfAsset)))
     {
         JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
-        return Unexpected(ter);
+        return std::unexpected(ter);
     }
 
     return sleVault;
@@ -249,7 +249,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
 
-    auto const maybeVault = [&]() -> Expected<std::shared_ptr<SLE const>, TER> {
+    auto const maybeVault = [&]() -> std::expected<std::shared_ptr<SLE const>, TER> {
         if (auto const brokerID = ctx.tx[~sfLoanBrokerID])
             return preclaimUpdate(ctx, account, *brokerID);
         return preclaimCreate(ctx, account);
@@ -283,7 +283,7 @@ LoanBrokerSet::doApply()
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         // Modify an existing LoanBroker
-        auto broker = view.peek(keylet::loanbroker(*brokerID));
+        auto broker = view.peek(keylet::loanBroker(*brokerID));
         if (!broker)
         {
             // This should be impossible
@@ -334,7 +334,7 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto broker = std::make_shared<SLE>(keylet::loanbroker(accountID_, sequence));
+        auto broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));
 
         if (auto const ter = dirLink(view, accountID_, broker))
             return ter;  // LCOV_EXCL_LINE
