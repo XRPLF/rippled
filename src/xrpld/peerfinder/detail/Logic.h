@@ -573,19 +573,17 @@ public:
                 // build list of active slots
                 std::vector<SlotImp::ptr> activeSlots;
                 activeSlots.reserve(slots.size());
-                std::for_each(
-                    slots.cbegin(), slots.cend(), [&activeSlots](Slots::value_type const& value) {
-                        if (value.second->state() == Slot::State::Active)
-                            activeSlots.emplace_back(value.second);
-                    });
+                std::ranges::for_each(slots, [&activeSlots](Slots::value_type const& value) {
+                    if (value.second->state() == Slot::State::Active)
+                        activeSlots.emplace_back(value.second);
+                });
                 std::shuffle(activeSlots.begin(), activeSlots.end(), defaultPrng());
 
                 // build target vector
                 targets.reserve(activeSlots.size());
-                std::for_each(
-                    activeSlots.cbegin(), activeSlots.cend(), [&targets](SlotImp::ptr const& slot) {
-                        targets.emplace_back(slot);
-                    });
+                std::ranges::for_each(activeSlots, [&targets](SlotImp::ptr const& slot) {
+                    targets.emplace_back(slot);
+                });
             }
 
             /* VFALCO NOTE
@@ -987,7 +985,7 @@ public:
         {
             auto const& address(iter->first.address());
             if (iter->second.when() <= now && squelches.find(address) == squelches.end() &&
-                std::none_of(slots.cbegin(), slots.cend(), [address](Slots::value_type const& v) {
+                std::ranges::none_of(slots, [address](Slots::value_type const& v) {
                     return address == v.first.address();
                 }))
             {
