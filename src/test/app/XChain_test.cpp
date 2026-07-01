@@ -22,7 +22,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -142,7 +141,7 @@ struct SEnv
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return baseAccountReserve(*env.current(), count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
@@ -371,7 +370,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return baseAccountReserve(*XEnv(*this).env.current(), count);
+        return XEnv(*this).env.current()->fees().accountReserve(count, 1);
     }
 
     XRPAmount
