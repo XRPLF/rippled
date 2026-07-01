@@ -25,6 +25,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -390,6 +391,12 @@ TxQ::canBeHeld(
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock)
 {
+    // A Batch is never queued: its inner transactions can change the sequence
+    // numbers of multiple accounts, which the TxQ's per-account model cannot
+    // forecast. It must apply straight to the open ledger or not at all.
+    if (tx.getTxnType() == ttBATCH)
+        return telCAN_NOT_QUEUE;
+
     // PreviousTxnID is deprecated and should never be used.
     // AccountTxnID is not supported by the transaction
     // queue yet, but should be added in the future.

@@ -375,16 +375,35 @@ public:
  */
 class ValidAmounts
 {
-    std::vector<std::shared_ptr<SLE const>> afterEntries_;
+    std::vector<SLE::const_pointer> afterEntries_;
 
 public:
     void
-    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
+/*
+ * Verify that when an object with an associated pseudo-account is deleted,
+ * its pseudo-account is also deleted.
+ *
+ * The reverse (pseudo-account deleted → object deleted) is enforced by
+ * AccountRootsDeletedClean via getPseudoAccountFields().
+ */
+class ObjectHasPseudoAccount
+{
+public:
+    void
+    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
+
+private:
+    std::vector<SLE::const_pointer> deletedObjSles_;
+};
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -416,7 +435,8 @@ using InvariantChecks = std::tuple<
     ValidConfidentialMPToken,
     ValidMPTPayment,
     ValidAmounts,
-    ValidMPTTransfer>;
+    ValidMPTTransfer,
+    ObjectHasPseudoAccount>;
 
 /**
  * @brief get a tuple of all invariant checks

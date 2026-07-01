@@ -160,19 +160,24 @@ checkDeepFrozen(ReadView const& view, AccountID const& account, Asset const& ass
 [[nodiscard]] TER
 checkWithdrawFreeze(
     ReadView const& view,
-    AccountID const& srcAcct,
+    AccountID const& pseudoAcct,
     AccountID const& submitterAcct,
     AccountID const& dstAcct,
     Asset const& asset)
 {
     XRPL_ASSERT(
-        isPseudoAccount(view, srcAcct), "xrpl::checkWithdrawFreeze : source is a pseudo-account");
+        isPseudoAccount(view, pseudoAcct),
+        "xrpl::checkWithdrawFreeze : source is a pseudo-account");
     XRPL_ASSERT(
         !isPseudoAccount(view, submitterAcct),
         "xrpl::checkWithdrawFreeze : submitter is not a pseudo-account");
     XRPL_ASSERT(
         !isPseudoAccount(view, dstAcct),
         "xrpl::checkWithdrawFreeze : destination is not a pseudo-account");
+    // The asset being withdrawn must not be issued by a pseudo-account
+    XRPL_ASSERT(
+        !isPseudoAccount(view, asset.getIssuer()),
+        "xrpl::checkWithdrawFreeze : asset issuer cannot be a pseudo-account");
 
     // Funds can always be sent to the issuer
     if (dstAcct == asset.getIssuer())
@@ -182,16 +187,9 @@ checkWithdrawFreeze(
     if (auto const ret = checkGlobalFrozen(view, asset); !isTesSuccess(ret))
         return ret;
 
-    // Special case for shares - check if the shares (and the transitive asset) is not frozen
-    if (asset.holds<MPTIssue>() &&
-        isVaultPseudoAccountFrozen(view, srcAcct, asset.get<MPTIssue>(), 0))
-    {
-        return tecLOCKED;
-    }
-
     // The transfer is from Submitter to Destination via Source (pseudo-account)
     // Both Source and Submitter must not be frozen to allow sending funds
-    if (auto const ret = checkIndividualFrozen(view, srcAcct, asset); !isTesSuccess(ret))
+    if (auto const ret = checkIndividualFrozen(view, pseudoAcct, asset); !isTesSuccess(ret))
         return ret;
 
     // Check submitter's individual freeze only when Submitter != Destination (a regular freeze
@@ -203,32 +201,41 @@ checkWithdrawFreeze(
     }
 
     // The destination account must not be deep frozen to receive the funds
-    return checkDeepFrozen(view, dstAcct, asset);
+    if (auto const ret = checkDeepFrozen(view, dstAcct, asset); !isTesSuccess(ret))
+        return ret;
+
+    if (asset.holds<MPTIssue>() &&
+        isVaultPseudoAccountFrozen(view, pseudoAcct, asset.get<MPTIssue>(), 0))
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::checkWithdrawFreeze : pseudo-account backed object holds shares");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    return tesSUCCESS;
 }
 
 [[nodiscard]] TER
 checkDepositFreeze(
     ReadView const& view,
     AccountID const& srcAcct,
-    AccountID const& dstAcct,
+    AccountID const& pseudoAcct,
     Asset const& asset)
 {
     XRPL_ASSERT(
-        isPseudoAccount(view, dstAcct),
+        isPseudoAccount(view, pseudoAcct),
         "xrpl::checkDepositFreeze : destination is a pseudo-account");
     XRPL_ASSERT(
         !isPseudoAccount(view, srcAcct),
         "xrpl::checkDepositFreeze : source is not a pseudo-account");
+    // The asset being deposited must not be issued by a pseudo-account
+    XRPL_ASSERT(
+        !isPseudoAccount(view, asset.getIssuer()),
+        "xrpl::checkDepositFreeze : asset issuer cannot be a pseudo-account");
 
     if (auto const ret = checkGlobalFrozen(view, asset); !isTesSuccess(ret))
         return ret;
-
-    // Special case for shares - check if the shares and the transitive asset is not frozen
-    if (asset.holds<MPTIssue>() &&
-        isVaultPseudoAccountFrozen(view, dstAcct, asset.get<MPTIssue>(), 0))
-    {
-        return tecLOCKED;
-    }
 
     if (srcAcct != asset.getIssuer())
     {
@@ -238,7 +245,19 @@ checkDepositFreeze(
 
     // Unlike regular accounts, pseudo-accounts cannot receive deposits under a regular freeze
     // because those funds cannot be later withdrawn
-    return checkIndividualFrozen(view, dstAcct, asset);
+    if (auto const ret = checkIndividualFrozen(view, pseudoAcct, asset); !isTesSuccess(ret))
+        return ret;
+
+    if (asset.holds<MPTIssue>() &&
+        isVaultPseudoAccountFrozen(view, pseudoAcct, asset.get<MPTIssue>(), 0))
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::checkDepositFreeze : pseudo-account backed object holds shares");
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------
