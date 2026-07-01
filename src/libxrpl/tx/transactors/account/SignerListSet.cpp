@@ -323,8 +323,7 @@ SignerListSet::replaceSignerList()
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            ctx_.view(),
-            ctx_.tx,
+            ctx_.getApplyViewContext(),
             sle,
             preFeeBalance_,
             *sponsorSle,

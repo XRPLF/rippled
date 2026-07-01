@@ -342,8 +342,7 @@ baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t a
 
 TER
 checkInsufficientReserve(
-    ApplyView const& view,
-    STTx const& tx,
+    ApplyViewContext const& ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
@@ -353,14 +352,14 @@ checkInsufficientReserve(
 {
     if (sponsorSle)
     {
-        auto const sle = view.read(
+        auto const sle = ctx.view.read(
             keylet::sponsorship(
                 sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
         // A reserve-sponsored tx must carry a sponsor signature
         // (cosigning path) and/or have a pre-existing sponsorship SLE
         // (prefunded path). Absence of both is an internal invariant break.
-        if (isReserveSponsored(tx) && !sle && !tx.isFieldPresent(sfSponsorSignature))
+        if (isReserveSponsored(ctx.tx) && !sle && !ctx.tx.isFieldPresent(sfSponsorSignature))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (sle)
@@ -372,14 +371,15 @@ checkInsufficientReserve(
 
         auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
         STAmount const sponsorReserve =
-            accountReserve(view, sponsorSle, j, ownerCountAdj, accountCountAdj);
+            accountReserve(ctx.view, sponsorSle, j, ownerCountAdj, accountCountAdj);
 
         if (sponsorBalance < sponsorReserve)
             return tecINSUFFICIENT_RESERVE;
     }
     else
     {
-        STAmount const reserve = accountReserve(view, accSle, j, ownerCountAdj, accountCountAdj);
+        STAmount const reserve =
+            accountReserve(ctx.view, accSle, j, ownerCountAdj, accountCountAdj);
         if (accBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

@@ -166,7 +166,7 @@ DepositPreauth::doApply()
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret = checkInsufficientReserve(
-                view(), ctx_.tx, sleOwner, preFeeBalance_, *sponsorSle, 1, 0, j_);
+                ctx_.getApplyViewContext(), sleOwner, preFeeBalance_, *sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -214,7 +214,7 @@ DepositPreauth::doApply()
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
         if (auto const ret = checkInsufficientReserve(
-                view(), ctx_.tx, sleOwner, preFeeBalance_, *sponsorSle, 1, 0, j_);
+                ctx_.getApplyViewContext(), sleOwner, preFeeBalance_, *sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
