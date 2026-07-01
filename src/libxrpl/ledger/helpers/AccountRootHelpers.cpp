@@ -268,7 +268,7 @@ increaseOwnerCount(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        count <= std::numeric_limits<std::int32_t>::max(),
+        count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
         "xrpl::increaseOwnerCount : count in signed delta range");
     if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
         return;
@@ -285,7 +285,7 @@ decreaseOwnerCount(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        count <= std::numeric_limits<std::int32_t>::max(),
+        count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
         "xrpl::decreaseOwnerCount : count in signed delta range");
     if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
         return;
@@ -301,10 +301,14 @@ decreaseOwnerCountForObject(
     std::uint32_t count,
     beast::Journal j)
 {
+    XRPL_ASSERT(objectSle, "xrpl::decreaseOwnerCountForObject : valid object sle");
     if (!objectSle)
-        Throw<std::runtime_error>("xrpl::decreaseOwnerCountForObject : valid object sle");
-    if (objectSle->getType() == ltACCOUNT_ROOT)
-        Throw<std::logic_error>("xrpl::decreaseOwnerCountForObject : valid object sle type");
+        return;
+
+    bool const validObjectType = objectSle->getType() != ltACCOUNT_ROOT;
+    XRPL_ASSERT(validObjectType, "xrpl::decreaseOwnerCountForObject : valid object sle type");
+    if (!validObjectType)
+        return;
 
     SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
     decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
