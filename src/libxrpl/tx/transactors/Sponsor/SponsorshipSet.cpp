@@ -231,8 +231,7 @@ SponsorshipSet::doApply()
                 sponsorAccSle,
                 STAmount{sponsorBalanceAfterFee}.xrp(),
                 *reserveSponsorAccSle,
-                1,
-                0,
+                {.ownerCountDelta = 1},
                 ctx_.journal);
             !isTesSuccess(ret))
             return tecUNFUNDED;
@@ -299,8 +298,7 @@ SponsorshipSet::doApply()
                     sponsorAccSle,
                     STAmount{sponsorBalanceAfterFee}.xrp(),
                     *reserveSponsorAccSle,
-                    0,
-                    0,
+                    {},
                     ctx_.journal);
                 !isTesSuccess(ret))
                 return tecUNFUNDED;

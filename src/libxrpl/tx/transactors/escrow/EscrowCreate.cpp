@@ -445,8 +445,8 @@ EscrowCreate::doApply()
     // validates the sponsor's reserve + remaining credit. When
     // unsponsored this hits the source branch and validates the
     // source's pre-lock balance against base + (currentOC+1)*increment.
-    if (auto const ret =
-            checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, *sponsorSle, 1, 0, j_);
+    if (auto const ret = checkInsufficientReserve(
+            ctx_.view(), ctx_.tx, sle, balance, *sponsorSle, {.ownerCountDelta = 1}, j_);
         !isTesSuccess(ret))
         return ret;
 
@@ -468,8 +468,7 @@ EscrowCreate::doApply()
                 sle,
                 balance - STAmount(amount).xrp(),
                 {},
-                ownerCountAdj,
-                0,
+                {.ownerCountDelta = ownerCountAdj},
                 j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;

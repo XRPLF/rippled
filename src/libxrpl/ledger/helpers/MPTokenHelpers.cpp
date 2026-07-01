@@ -214,7 +214,7 @@ authorizeMPToken(
         if (sponsorSle || ownerCount(sleAcct, journal) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
-                    view, tx, sleAcct, priorBalance, sponsorSle, 1, 0, journal);
+                    view, tx, sleAcct, priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
                 !isTesSuccess(ret))
                 return ret;
         }

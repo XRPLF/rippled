@@ -327,8 +327,7 @@ SponsorshipTransfer::doApply()
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
                     newSponsorSle,
-                    ownerCountDelta,
-                    0,
+                    {.ownerCountDelta = ownerCountDelta},
                     ctx_.journal);
                 !isTesSuccess(ter))
                 return ter;
@@ -382,8 +381,7 @@ SponsorshipTransfer::doApply()
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
                     newSponsorSle,
-                    ownerCountDelta,
-                    0,
+                    {.ownerCountDelta = ownerCountDelta},
                     ctx_.journal);
                 !isTesSuccess(ter))
                 return ter;
@@ -432,8 +430,7 @@ SponsorshipTransfer::doApply()
                     ownerSle,
                     balanceBeforeFee(ownerSle),
                     SLE::pointer(),
-                    ownerCountDelta,
-                    0,
+                    {.ownerCountDelta = ownerCountDelta},
                     ctx_.journal);
                 !isTesSuccess(ter))
                 return ter;
@@ -474,8 +471,7 @@ SponsorshipTransfer::doApply()
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
                     newSponsorSle,
-                    0,
-                    1,
+                    {.accountCountDelta = 1},
                     ctx_.journal);
                 !isTesSuccess(ter))
                 return ter;
@@ -504,8 +500,7 @@ SponsorshipTransfer::doApply()
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
                     newSponsorSle,
-                    0,
-                    1,
+                    {.accountCountDelta = 1},
                     ctx_.journal);
                 !isTesSuccess(ter))
                 return ter;
@@ -542,8 +537,7 @@ SponsorshipTransfer::doApply()
                     sponseeSle,
                     balanceBeforeFee(sponseeSle),
                     SLE::pointer(),
-                    0,
-                    1,
+                    {.accountCountDelta = 1},
                     ctx_.journal);
                 !isTesSuccess(ter))
                 return ter;

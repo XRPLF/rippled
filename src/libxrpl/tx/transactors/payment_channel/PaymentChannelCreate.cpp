@@ -147,7 +147,7 @@ PaymentChannelCreate::doApply()
         // unsponsored this hits the source branch and validates the
         // source's pre-lock balance against base + (currentOC+1)*increment.
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 1, 0, j_);
+                ctx_.view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -166,8 +166,7 @@ PaymentChannelCreate::doApply()
                 sle,
                 preFeeBalance_ - ctx_.tx[sfAmount].xrp(),
                 {},
-                ownerCountAdj,
-                0,
+                {.ownerCountDelta = ownerCountAdj},
                 j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;

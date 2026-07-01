@@ -913,7 +913,8 @@ tokenOfferCreateApply(
     std::uint32_t txFlags)
 {
     Keylet const acctKeylet = keylet::account(acctID);
-    if (auto const acct = view.read(acctKeylet); priorBalance < accountReserve(view, acct, j, 1))
+    if (auto const acct = view.read(acctKeylet);
+        priorBalance < accountReserve(view, acct, j, {.ownerCountDelta = 1}))
         return tecINSUFFICIENT_RESERVE;
 
     auto const offerID = keylet::nftokenOffer(acctID, seqProxy.value());

@@ -63,8 +63,8 @@ escrowUnlockApplyHelper<Issue>(
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
-        if (auto const ret =
-                checkInsufficientReserve(view, tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
+        if (auto const ret = checkInsufficientReserve(
+                view, tx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -193,8 +193,8 @@ escrowUnlockApplyHelper<MPTIssue>(
         if (!sponsorSle)
             return sponsorSle.error();  // LCOV_EXCL_LINE
 
-        if (auto const ret =
-                checkInsufficientReserve(view, tx, sleDest, xrpBalance, *sponsorSle, 1, 0, journal);
+        if (auto const ret = checkInsufficientReserve(
+                view, tx, sleDest, xrpBalance, *sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return ret;
 
