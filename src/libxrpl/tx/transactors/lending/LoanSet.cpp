@@ -519,7 +519,7 @@ LoanSet::doApply()
         }
     }
 
-    adjustOwnerCount(view, borrowerSle, {}, 1, j_);
+    increaseOwnerCount(view, borrowerSle, {}, 1, j_);
 
     {
         auto const balance =
@@ -641,7 +641,7 @@ LoanSet::doApply()
     adjustImpreciseNumber(brokerSle->at(sfDebtTotal), newDebtDelta, vaultAsset, vaultScale);
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
-    adjustOwnerCount(view, brokerSle, {}, 1, j_);
+    increaseOwnerCount(view, brokerSle, {}, 1, j_);
     loanSequenceProxy += 1;
     // The sequence should be extremely unlikely to roll over, but fail if it
     // does
