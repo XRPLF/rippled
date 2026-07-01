@@ -117,10 +117,10 @@ struct base_uint_test : beast::unit_test::Suite
         }
     }
 
-#ifdef NDEBUG
     void
     testFromRawSizeMismatch()
     {
+#ifdef NDEBUG
         testcase("base_uint: fromRaw size mismatch");
 
         // Container smaller than the base_uint (8 bytes vs 12 bytes for
@@ -142,15 +142,13 @@ struct base_uint_test : beast::unit_test::Suite
             auto const resultText = to_string(result);
             BEAST_EXPECTS(resultText == "0102030405060708090A0B0C", resultText);
         }
-    }
 #endif
+    }
 
     void
     run() override
     {
-#ifdef NDEBUG
         testFromRawSizeMismatch();
-#endif
 
         testcase("base_uint: general purpose tests");
 
