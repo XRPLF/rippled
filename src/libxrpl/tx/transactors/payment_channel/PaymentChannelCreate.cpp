@@ -22,6 +22,7 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <cstdint>
 #include <memory>
 
 namespace xrpl {
@@ -134,21 +135,40 @@ PaymentChannelCreate::doApply()
             return tecEXPIRED;
     }
 
+    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+
     if (ctx_.view().rules().enabled(featureSponsor))
     {
         auto const applyViewContext = ctx_.getApplyViewContext();
         auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
+        // First check: whoever is on the hook for the new owner increment
+        // can cover it. When sponsored this hits the sponsor branch and
+        // validates the sponsor's reserve + remaining credit. When
+        // unsponsored this hits the source branch and validates the
+        // source's pre-lock balance against base + (currentOC+1)*increment.
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, STAmount{preFeeBalance_}, sponsorSle, 1, 0, j_);
+                ctx_.view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
+
+        // Second check: after locking sfAmount in the channel, the source
+        // must still meet its own reserve floor. Always passes `{}` so the
+        // source branch runs (the sponsor's reserve was already validated
+        // above; here we're verifying the source can fund the lock without
+        // dipping below its own reserve). ownerCountAdj differs by case:
+        // - sponsored:   adj=0  — sponsor covers the new owner increment,
+        //                so the source only owes its base reserve.
+        // - unsponsored: adj=1  — source owes base + the new increment.
+        std::int32_t const ownerCountAdj = *sponsorSle ? 0 : 1;
         if (auto const ret = checkInsufficientReserve(
                 ctx_.view(),
                 ctx_.tx,
                 sle,
-                STAmount{preFeeBalance_ - ctx_.tx[sfAmount].xrp()},
+                preFeeBalance_ - ctx_.tx[sfAmount].xrp(),
                 {},
-                1,
+                ownerCountAdj,
                 0,
                 j_);
             !isTesSuccess(ret))

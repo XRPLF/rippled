@@ -126,7 +126,7 @@ canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
@@ -149,7 +149,7 @@ addEmptyHolding(
 
 [[nodiscard]] TER
 authorizeMPToken(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
@@ -158,6 +158,7 @@ authorizeMPToken(
     std::optional<AccountID> holderID)
 {
     auto& view = ctx.view;
+    auto const tx = ctx.tx;
     auto const sleAcct = view.peek(keylet::account(account));
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -282,7 +283,7 @@ authorizeMPToken(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
     beast::Journal journal)
@@ -414,7 +415,7 @@ requireAuth(
 
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization

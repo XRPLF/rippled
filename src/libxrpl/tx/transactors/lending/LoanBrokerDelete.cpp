@@ -159,6 +159,7 @@ LoanBrokerDelete::doApply()
                 view(), brokerPseudoID, accountID_, coverAvailable, j_, {}, WaiveTransferFee::Yes))
             return ter;
     }
+
     if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
         return ter;
 

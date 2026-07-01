@@ -197,6 +197,7 @@ LoanBrokerCoverWithdraw::doApply()
     view().update(broker);
 
     associateAsset(*broker, vaultAsset);
+
     return doWithdraw(
         ctx_.getApplyViewContext(),
         accountID_,

@@ -632,13 +632,14 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 
 TER
 addEmptyHolding(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
     beast::Journal journal)
 {
     auto& view = ctx.view;
+    auto const tx = ctx.tx;
     // Every account can hold XRP. An issuer can issue directly.
     if (issue.native() || accountID == issue.getIssuer())
         return tesSUCCESS;
@@ -669,7 +670,7 @@ addEmptyHolding(
 
     // Can the account cover the trust line reserve ?
     if (auto const ret =
-            checkInsufficientReserve(view, ctx.tx, sleDst, priorBalance, sponsorSle, 1, 0, journal);
+            checkInsufficientReserve(view, tx, sleDst, priorBalance, sponsorSle, 1, 0, journal);
         !isTesSuccess(ret))
         return tecNO_LINE_INSUF_RESERVE;
 
@@ -694,7 +695,7 @@ addEmptyHolding(
 
 TER
 removeEmptyHolding(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal)

@@ -431,7 +431,7 @@ canWithdraw(ReadView const& view, STTx const& tx)
 
 TER
 doWithdraw(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     AccountID const& senderAcct,
     AccountID const& dstAcct,
     AccountID const& sourceAcct,
@@ -442,12 +442,7 @@ doWithdraw(
     // Create trust line or MPToken for the receiving account
     if (dstAcct == senderAcct)
     {
-        if (auto const ter = addEmptyHolding(
-                ApplyViewContext::makeFromTx(ctx.view, ctx.tx),
-                senderAcct,
-                priorBalance,
-                amount.asset(),
-                j);
+        if (auto const ter = addEmptyHolding(ctx, senderAcct, priorBalance, amount.asset(), j);
             !isTesSuccess(ter) && ter != tecDUPLICATE)
             return ter;
     }

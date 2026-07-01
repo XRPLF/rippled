@@ -248,6 +248,7 @@ LoanBrokerSet::doApply()
             return maybePseudo.error();  // LCOV_EXCL_LINE
         auto& pseudo = *maybePseudo;
         auto pseudoId = pseudo->at(sfAccount);
+
         if (auto ter = addEmptyHolding(
                 ctx_.getApplyViewContext(), pseudoId, preFeeBalance_, sleVault->at(sfAsset), j_))
             return ter;
