@@ -3891,6 +3891,108 @@ public:
                 Ter(tesSUCCESS));
             env.close();
         }
+
+        //
+        // Permission SponsorFee
+        //
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, carol);
+            env.close();
+            auto const testFeePermission = [&](TER result) {
+                // FeeAmount
+                env(sponsor::set(alice, 0, std::nullopt, XRP(100)),
+                    sponsor::SponseeAcc(bob),
+                    delegate::As(carol),
+                    Ter(result));
+                // MaxFee
+                env(sponsor::set(alice, 0, std::nullopt, std::nullopt, XRP(100)),
+                    sponsor::SponseeAcc(bob),
+                    delegate::As(carol),
+                    Ter(result));
+                // SetRequireSignForFee flag
+                env(sponsor::set(alice, tfSponsorshipSetRequireSignForFee),
+                    sponsor::SponseeAcc(bob),
+                    delegate::As(carol),
+                    Ter(result));
+                // ClearRequireSignForFee flag
+                env(sponsor::set(alice, tfSponsorshipClearRequireSignForFee),
+                    sponsor::SponseeAcc(bob),
+                    delegate::As(carol),
+                    Ter(result));
+                env.close();
+            };
+
+            // no delegated
+            testFeePermission(terNO_DELEGATE_PERMISSION);
+
+            // set non-SponsorFee Permission
+            env(delegate::set(alice, carol, {"SponsorReserve"}));
+            env.close();
+
+            testFeePermission(terNO_DELEGATE_PERMISSION);
+
+            // set SponsorFee Permission
+            env(delegate::set(alice, carol, {"SponsorFee"}));
+            env.close();
+
+            testFeePermission(tesSUCCESS);
+
+            // test with SponsorReserve (should failed)
+            env(sponsor::set(alice, 0, 100, XRP(100)),
+                sponsor::SponseeAcc(bob),
+                delegate::As(carol),
+                Ter(terNO_DELEGATE_PERMISSION));
+        }
+
+        //
+        // Permission SponsorReserve
+        //
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(1000000), alice, bob, carol);
+            env.close();
+
+            auto const testReservePermission = [&](TER result) {
+                // ReserveCount
+                env(sponsor::set(alice, 0, 100),
+                    sponsor::SponseeAcc(bob),
+                    delegate::As(carol),
+                    Ter(result));
+                // SetRequireSignForReserve flag
+                env(sponsor::set(alice, tfSponsorshipSetRequireSignForReserve),
+                    sponsor::SponseeAcc(bob),
+                    delegate::As(carol),
+                    Ter(result));
+                // ClearRequireSignForReserve flag
+                env(sponsor::set(alice, tfSponsorshipClearRequireSignForReserve),
+                    sponsor::SponseeAcc(bob),
+                    delegate::As(carol),
+                    Ter(result));
+                env.close();
+            };
+
+            // no delegated
+            testReservePermission(terNO_DELEGATE_PERMISSION);
+
+            // set non-SponsorReserve Permission
+            env(delegate::set(alice, carol, {"SponsorFee"}));
+            env.close();
+
+            testReservePermission(terNO_DELEGATE_PERMISSION);
+
+            // set SponsorReserve Permission
+            env(delegate::set(alice, carol, {"SponsorReserve"}));
+            env.close();
+
+            testReservePermission(tesSUCCESS);
+
+            // test with SponsorFee (should failed)
+            env(sponsor::set(alice, 0, 100, XRP(100)),
+                sponsor::SponseeAcc(bob),
+                delegate::As(carol),
+                Ter(terNO_DELEGATE_PERMISSION));
+        }
     }
 
     void
