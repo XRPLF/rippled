@@ -61,7 +61,7 @@ private:
         // Insufficient reserve
         {
             Env env(*this);
-            env.fund(baseAccountReserve(*env.current(), {.ownerCountDelta = 0}), owner);
+            env.fund(baseAccountReserve(*env.current(), 0), owner);
             Oracle const oracle(
                 env,
                 {.owner = owner,
@@ -71,10 +71,7 @@ private:
         // Insufficient reserve if the data series extends to greater than 5
         {
             Env env(*this);
-            env.fund(
-                baseAccountReserve(*env.current(), {.ownerCountDelta = 1}) +
-                    env.current()->fees().base * 2,
-                owner);
+            env.fund(baseAccountReserve(*env.current(), 1) + env.current()->fees().base * 2, owner);
             Oracle oracle(
                 env, {.owner = owner, .fee = static_cast<int>(env.current()->fees().base.drops())});
             BEAST_EXPECT(oracle.exists());
@@ -642,10 +639,7 @@ private:
         {
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(
-                baseAccountReserve(*env.current(), {.ownerCountDelta = 1}) +
-                    env.current()->fees().base * 2,
-                owner);
+            env.fund(baseAccountReserve(*env.current(), 1) + env.current()->fees().base * 2, owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             oracle.set(UpdateArg{.series = {{"XRP", "USD", 742, 2}}, .fee = baseFee});
         }

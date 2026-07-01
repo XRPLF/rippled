@@ -85,7 +85,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
  *  @return The hypothetical reserve amount
  */
 XRPAmount
-baseAccountReserve(ReadView const& view, Adjustment adj);
+baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount = 1);
 
 /** Check if an account has insufficient reserve.
  *

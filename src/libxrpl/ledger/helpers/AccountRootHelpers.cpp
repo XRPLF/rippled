@@ -165,10 +165,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     // Pseudo-accounts have no reserve requirement
     auto const reserve = isPseudoAccount(sle)
         ? XRPAmount{0}
-        : baseAccountReserve(
-              view,
-              {.ownerCountDelta = static_cast<std::int32_t>(currentOwnerCount),
-               .accountCountDelta = static_cast<std::int32_t>(currentAccountCount) - 1});
+        : baseAccountReserve(view, currentOwnerCount, currentAccountCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -288,10 +285,7 @@ accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjus
     std::uint32_t const currentOwnerCount = ownerCount(sle, j, adj.ownerCountDelta);
     std::uint32_t const currentAccountCount = accountCountImpl(sle, adj.accountCountDelta, j);
 
-    return baseAccountReserve(
-        view,
-        {.ownerCountDelta = static_cast<std::int32_t>(currentOwnerCount),
-         .accountCountDelta = static_cast<std::int32_t>(currentAccountCount) - 1});
+    return baseAccountReserve(view, currentOwnerCount, currentAccountCount);
 }
 
 XRPAmount

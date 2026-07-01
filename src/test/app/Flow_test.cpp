@@ -707,8 +707,7 @@ struct Flow_test : public beast::unit_test::Suite
     static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
-        return baseAccountReserve(
-            *env.current(), {.ownerCountDelta = static_cast<std::int32_t>(count)});
+        return baseAccountReserve(*env.current(), count);
     }
 
     // Helper function that returns the Offers on an account.

@@ -690,22 +690,11 @@ protected:
             case AssetType::MPT: {
                 // Enough to cover initial fees
                 if (!env.le(keylet::account(issuer)))
-                {
-                    env.fund(
-                        baseAccountReserve(*env.current(), {.ownerCountDelta = 10}) * 10, issuer);
-                }
+                    env.fund(baseAccountReserve(*env.current(), 10) * 10, issuer);
                 if (!env.le(keylet::account(lender)))
-                {
-                    env.fund(
-                        baseAccountReserve(*env.current(), {.ownerCountDelta = 10}) * 10,
-                        noripple(lender));
-                }
+                    env.fund(baseAccountReserve(*env.current(), 10) * 10, noripple(lender));
                 if (!env.le(keylet::account(borrower)))
-                {
-                    env.fund(
-                        baseAccountReserve(*env.current(), {.ownerCountDelta = 10}) * 10,
-                        noripple(borrower));
-                }
+                    env.fund(baseAccountReserve(*env.current(), 10) * 10, noripple(borrower));
 
                 MPTTester mptt{env, issuer, kMptInitNoFund};
                 mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
@@ -790,18 +779,11 @@ protected:
         using namespace jtx;
 
         // Enough to cover initial fees
-        env.fund(baseAccountReserve(*env.current(), {.ownerCountDelta = 10}) * 10, issuer);
+        env.fund(baseAccountReserve(*env.current(), 10) * 10, issuer);
         if (lender != issuer)
-        {
-            env.fund(
-                baseAccountReserve(*env.current(), {.ownerCountDelta = 10}) * 10, noripple(lender));
-        }
+            env.fund(baseAccountReserve(*env.current(), 10) * 10, noripple(lender));
         if (borrower != issuer && borrower != lender)
-        {
-            env.fund(
-                baseAccountReserve(*env.current(), {.ownerCountDelta = 10}) * 10,
-                noripple(borrower));
-        }
+            env.fund(baseAccountReserve(*env.current(), 10) * 10, noripple(borrower));
 
         describeLoan(env, brokerParams, loanParams, assetType, issuer, lender, borrower);
 
@@ -3107,8 +3089,7 @@ protected:
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
-                baseAccountReserve(*env.current(), {.ownerCountDelta = 0}).drops() /
-                    kDropsPerXrp.drops(),
+                baseAccountReserve(*env.current(), 0).drops() / kDropsPerXrp.drops(),
                 env.current()->fees().increment.drops() / kDropsPerXrp.drops()};
         }();
 

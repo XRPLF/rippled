@@ -192,7 +192,7 @@ public:
 
         auto const txFee = env.current()->fees().base;
         auto const baseReserve = env.current()->fees().reserve;
-        auto const threelineReserve = baseAccountReserve(*env.current(), {.ownerCountDelta = 3});
+        auto const threelineReserve = baseAccountReserve(*env.current(), 3);
 
         env.fund(XRP(10000), gwA, gwB, assistor);
 

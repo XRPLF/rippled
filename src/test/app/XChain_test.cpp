@@ -142,8 +142,7 @@ struct SEnv
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return baseAccountReserve(
-            *env.current(), {.ownerCountDelta = static_cast<std::int32_t>(count)});
+        return baseAccountReserve(*env.current(), count);
     }
 
     XRPAmount
@@ -373,8 +372,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
     XRPAmount
     reserve(std::uint32_t count)
     {
-        return baseAccountReserve(
-            *XEnv(*this).env.current(), {.ownerCountDelta = static_cast<std::int32_t>(count)});
+        return baseAccountReserve(*XEnv(*this).env.current(), count);
     }
 
     XRPAmount

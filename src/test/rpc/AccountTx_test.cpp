@@ -776,9 +776,7 @@ class AccountTx_test : public beast::unit_test::Suite
 
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
-        env(pay(alice,
-                becky,
-                drops(baseAccountReserve(*env.current(), {.ownerCountDelta = 0})) - drops(1)),
+        env(pay(alice, becky, drops(baseAccountReserve(*env.current(), 0)) - drops(1)),
             Ter(tecNO_DST_INSUF_XRP));
         env.close();
 
