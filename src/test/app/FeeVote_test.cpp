@@ -89,10 +89,9 @@ createFeeTx(
         if (rules.enabled(featureSmartEscrow) || forceAllFields)
         {
             obj.setFieldU32(
-                sfExtensionComputeLimit,
-                fields.extensionComputeLimit ? *fields.extensionComputeLimit : 0);
+                sfGasLimit, fields.extensionComputeLimit ? *fields.extensionComputeLimit : 0);
             obj.setFieldU32(
-                sfExtensionSizeLimit, fields.extensionSizeLimit ? *fields.extensionSizeLimit : 0);
+                sfBytecodeSizeLimit, fields.extensionSizeLimit ? *fields.extensionSizeLimit : 0);
             obj.setFieldU32(sfGasPrice, fields.gasPrice ? *fields.gasPrice : 0);
         }
     };
@@ -145,8 +144,8 @@ createInvalidFeeTx(
             }
             if (rules.enabled(featureSmartEscrow))
             {
-                obj.setFieldU32(sfExtensionComputeLimit, 100 + uniqueValue);
-                obj.setFieldU32(sfExtensionSizeLimit, 200 + uniqueValue);
+                obj.setFieldU32(sfGasLimit, 100 + uniqueValue);
+                obj.setFieldU32(sfBytecodeSizeLimit, 200 + uniqueValue);
                 obj.setFieldU32(sfGasPrice, 300 + uniqueValue);
             }
         }
@@ -213,18 +212,17 @@ verifyFeeObject(
     }
     if (rules.enabled(featureSmartEscrow))
     {
-        if (!checkEquality(sfExtensionComputeLimit, expected.extensionComputeLimit.value_or(0)))
+        if (!checkEquality(sfGasLimit, expected.extensionComputeLimit.value_or(0)))
             return false;
-        if (!checkEquality(sfExtensionSizeLimit, expected.extensionSizeLimit.value_or(0)))
+        if (!checkEquality(sfBytecodeSizeLimit, expected.extensionSizeLimit.value_or(0)))
             return false;
         if (!checkEquality(sfGasPrice, expected.gasPrice.value_or(0)))
             return false;
     }
     else
     {
-        if (feeObject->isFieldPresent(sfExtensionComputeLimit) ||
-            feeObject->isFieldPresent(sfExtensionSizeLimit) ||
-            feeObject->isFieldPresent(sfGasPrice))
+        if (feeObject->isFieldPresent(sfGasLimit) ||
+            feeObject->isFieldPresent(sfBytecodeSizeLimit) || feeObject->isFieldPresent(sfGasPrice))
             return false;
     }
 
@@ -993,8 +991,8 @@ class FeeVote_test : public beast::unit_test::Suite
                         v.setFieldAmount(sfBaseFeeDrops, XRPAmount{setup.reference_fee});
                         v.setFieldAmount(sfReserveBaseDrops, XRPAmount{setup.account_reserve});
                         v.setFieldAmount(sfReserveIncrementDrops, XRPAmount{setup.owner_reserve});
-                        v.setFieldU32(sfExtensionComputeLimit, setup.extension_compute_limit);
-                        v.setFieldU32(sfExtensionSizeLimit, setup.extension_size_limit);
+                        v.setFieldU32(sfGasLimit, setup.extension_compute_limit);
+                        v.setFieldU32(sfBytecodeSizeLimit, setup.extension_size_limit);
                         v.setFieldU32(sfGasPrice, setup.gas_price);
                     });
                 if (i % 2)
@@ -1041,10 +1039,9 @@ class FeeVote_test : public beast::unit_test::Suite
             BEAST_EXPECTS(
                 feeTx.getFieldAmount(sfReserveIncrementDrops) == XRPAmount{setup.owner_reserve},
                 line);
+            BEAST_EXPECTS(feeTx.getFieldU32(sfGasLimit) == setup.extension_compute_limit, line);
             BEAST_EXPECTS(
-                feeTx.getFieldU32(sfExtensionComputeLimit) == setup.extension_compute_limit, line);
-            BEAST_EXPECTS(
-                feeTx.getFieldU32(sfExtensionSizeLimit) == setup.extension_size_limit, line);
+                feeTx.getFieldU32(sfBytecodeSizeLimit) == setup.extension_size_limit, line);
             BEAST_EXPECTS(feeTx.getFieldU32(sfGasPrice) == setup.gas_price, line);
         };
 

@@ -180,7 +180,7 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
                 lastFees.extensionComputeLimit,
                 target_.extension_compute_limit,
                 "extension compute limit",
-                sfExtensionComputeLimit);
+                sfGasLimit);
         }
         if (target_.extension_size_limit <= kMaxExtensionSizeLimit)
         {
@@ -188,7 +188,7 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
                 lastFees.extensionSizeLimit,
                 target_.extension_size_limit,
                 "extension size limit",
-                sfExtensionSizeLimit);
+                sfBytecodeSizeLimit);
         }
         vote(lastFees.gasPrice, target_.gas_price, "gas price", sfGasPrice);
     }
@@ -328,8 +328,8 @@ FeeVoteImpl::doVoting(
         {
             if (!val->isTrusted())
                 continue;
-            doVote(val, extensionComputeVote, sfExtensionComputeLimit, kMaxExtensionComputeLimit);
-            doVote(val, extensionSizeVote, sfExtensionSizeLimit, kMaxExtensionSizeLimit);
+            doVote(val, extensionComputeVote, sfGasLimit, kMaxExtensionComputeLimit);
+            doVote(val, extensionSizeVote, sfBytecodeSizeLimit, kMaxExtensionSizeLimit);
             doVote(val, gasPriceVote, sfGasPrice, std::numeric_limits<std::uint32_t>::max());
         }
     }
@@ -376,8 +376,8 @@ FeeVoteImpl::doVoting(
             }
             if (rules.enabled(featureSmartEscrow))
             {
-                obj[sfExtensionComputeLimit] = extensionCompute.first;
-                obj[sfExtensionSizeLimit] = extensionSize.first;
+                obj[sfGasLimit] = extensionCompute.first;
+                obj[sfBytecodeSizeLimit] = extensionSize.first;
                 obj[sfGasPrice] = gasPrice.first;
             }
         });

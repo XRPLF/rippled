@@ -1111,8 +1111,8 @@ TRANSACTION(ttFEE, 101, SetFee,
     {sfReserveBaseDrops, SoeOptional},
     {sfReserveIncrementDrops, SoeOptional},
     // Smart Escrow fields
-    {sfExtensionComputeLimit, SoeOptional},
-    {sfExtensionSizeLimit, SoeOptional},
+    {sfGasLimit, SoeOptional},
+    {sfBytecodeSizeLimit, SoeOptional},
     {sfGasPrice, SoeOptional},
 }))
 

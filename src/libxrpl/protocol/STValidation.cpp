@@ -60,8 +60,8 @@ STValidation::validationFormat()
         {sfReserveBaseDrops,      SoeOptional},
         {sfReserveIncrementDrops, SoeOptional},
         // featureSmartEscrow
-        {sfExtensionComputeLimit,  SoeOptional},
-        {sfExtensionSizeLimit,     SoeOptional},
+        {sfGasLimit,               SoeOptional},
+        {sfBytecodeSizeLimit,      SoeOptional},
         {sfGasPrice,               SoeOptional},
     };
     // clang-format on
