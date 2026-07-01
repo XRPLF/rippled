@@ -222,14 +222,14 @@ adjustOwnerCountSigned(
 {
     XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
     if (!accountSle)
-        return;
+        return;  // LCOV_EXCL_LINE
 
     auto const sleType = accountSle->getType();
     bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
                                       : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
     XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
     if (!validType)
-        return;
+        return;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
 
@@ -239,7 +239,7 @@ adjustOwnerCountSigned(
         bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
         XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
         if (!validSponsorType)
-            return;
+            return;  // LCOV_EXCL_LINE
         auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
         adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
@@ -271,7 +271,7 @@ increaseOwnerCount(
         count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
         "xrpl::increaseOwnerCount : count in signed delta range");
     if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
-        return;
+        return;  // LCOV_EXCL_LINE
 
     adjustOwnerCountSigned(view, accountSle, sponsorSle, static_cast<std::int32_t>(count), j);
 }
@@ -288,7 +288,7 @@ decreaseOwnerCount(
         count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
         "xrpl::decreaseOwnerCount : count in signed delta range");
     if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
-        return;
+        return;  // LCOV_EXCL_LINE
 
     adjustOwnerCountSigned(view, accountSle, sponsorSle, -static_cast<std::int32_t>(count), j);
 }
@@ -303,12 +303,12 @@ decreaseOwnerCountForObject(
 {
     XRPL_ASSERT(objectSle, "xrpl::decreaseOwnerCountForObject : valid object sle");
     if (!objectSle)
-        return;
+        return;  // LCOV_EXCL_LINE
 
     bool const validObjectType = objectSle->getType() != ltACCOUNT_ROOT;
     XRPL_ASSERT(validObjectType, "xrpl::decreaseOwnerCountForObject : valid object sle type");
     if (!validObjectType)
-        return;
+        return;  // LCOV_EXCL_LINE
 
     SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
     decreaseOwnerCount(view, accountSle, sponsorSle, count, j);
