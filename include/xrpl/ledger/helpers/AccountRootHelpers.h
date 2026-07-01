@@ -39,6 +39,12 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 [[nodiscard]] XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j);
 
+struct Adjustment
+{
+    std::int32_t ownerCountDelta = 0;
+    std::int32_t accountCountDelta = 0;
+};
+
 /** Returns the account reserve, in drops.
  *
  *  Actual owner count can be adjusted by delta in ownerCountAdj
@@ -55,12 +61,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
  *  @return The account reserve amount in drops
  */
 [[nodiscard]] XRPAmount
-accountReserve(
-    ReadView const& view,
-    SLE::const_ref sle,
-    beast::Journal j,
-    std::int32_t ownerCountAdj = 0,
-    std::int32_t accountCountAdj = 0);
+accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj = {});
 
 /** Convenience overload that accepts AccountID instead of SLE.
  *
@@ -72,14 +73,9 @@ accountReserve(
  *  @return The account reserve amount in drops
  */
 [[nodiscard]] inline XRPAmount
-accountReserve(
-    ReadView const& view,
-    AccountID const& id,
-    beast::Journal j,
-    std::int32_t ownerCountAdj = 0,
-    std::int32_t accountCountAdj = 0)
+accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adjustment adj = {})
 {
-    return accountReserve(view, view.read(keylet::account(id)), j, ownerCountAdj, accountCountAdj);
+    return accountReserve(view, view.read(keylet::account(id)), j, adj);
 }
 
 /** Check if an account has insufficient reserve.
@@ -100,8 +96,7 @@ checkInsufficientReserve(
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
-    std::int32_t ownerCountAdj,
-    std::int32_t accountCountAdj = 0,
+    Adjustment adj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
 /** Return number of the objects which reserve is covered by the account(sle) (so called "owner

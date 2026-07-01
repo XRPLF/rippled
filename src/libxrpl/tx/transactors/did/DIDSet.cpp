@@ -72,7 +72,8 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
     // Check reserve availability for new object creation
     {
         auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-        auto const reserve = accountReserve(ctx.view(), sleAccount, ctx.journal, 1);
+        auto const reserve =
+            accountReserve(ctx.view(), sleAccount, ctx.journal, {.ownerCountDelta = 1});
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;

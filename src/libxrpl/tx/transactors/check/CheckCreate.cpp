@@ -199,7 +199,12 @@ CheckCreate::doApply()
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            ctx_.getApplyViewContext(), sle, preFeeBalance_, *sponsorSle, 1, 0, ctx_.journal);
+            ctx_.getApplyViewContext(),
+            sle,
+            preFeeBalance_,
+            *sponsorSle,
+            {.ownerCountDelta = 1},
+            ctx_.journal);
         !isTesSuccess(ret))
         return ret;
     // Note that we use the value from the sequence or ticket as the
