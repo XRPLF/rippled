@@ -2,6 +2,9 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>  // IWYU pragma: keep
+#include <test/jtx/envconfig.h>
+
+#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -13,6 +16,9 @@
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+
+#include <memory>
 
 namespace xrpl::test {
 
