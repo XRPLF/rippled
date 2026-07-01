@@ -266,14 +266,16 @@ increaseOwnerCount(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
-    std::int32_t count,
+    std::uint32_t count,
     beast::Journal j)
 {
-    XRPL_ASSERT(count > 0, "xrpl::increaseOwnerCount : positive count input");
-    if (count <= 0)
+    XRPL_ASSERT(
+        count > 0 && count <= std::numeric_limits<std::int32_t>::max(),
+        "xrpl::increaseOwnerCount : count in signed delta range");
+    if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
         return;
 
-    adjustOwnerCountSigned(view, accountSle, sponsorSle, count, j);
+    adjustOwnerCountSigned(view, accountSle, sponsorSle, static_cast<std::int32_t>(count), j);
 }
 
 void
@@ -281,14 +283,16 @@ decreaseOwnerCount(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
-    std::int32_t count,
+    std::uint32_t count,
     beast::Journal j)
 {
-    XRPL_ASSERT(count > 0, "xrpl::decreaseOwnerCount : positive count input");
-    if (count <= 0)
+    XRPL_ASSERT(
+        count > 0 && count <= std::numeric_limits<std::int32_t>::max(),
+        "xrpl::decreaseOwnerCount : count in signed delta range");
+    if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
         return;
 
-    adjustOwnerCountSigned(view, accountSle, sponsorSle, -count, j);
+    adjustOwnerCountSigned(view, accountSle, sponsorSle, -static_cast<std::int32_t>(count), j);
 }
 
 void
@@ -296,7 +300,7 @@ decreaseOwnerCountForObject(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref objectSle,
-    std::int32_t count,
+    std::uint32_t count,
     beast::Journal j)
 {
     if (!objectSle)

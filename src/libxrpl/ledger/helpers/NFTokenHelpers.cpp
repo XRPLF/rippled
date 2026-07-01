@@ -407,18 +407,17 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
         curr->setFieldArray(sfNFTokens, arr);
         view.update(curr);
 
-        int cnt = 0;
+        std::uint32_t cnt = 0;
 
         if (prev && mergePages(view, prev, curr))
-            cnt--;
+            ++cnt;
 
         if (next && mergePages(view, curr, next))
-            cnt--;
+            ++cnt;
 
         if (cnt != 0)
         {
-            decreaseOwnerCount(
-                view, owner, {}, -cnt, beast::Journal{beast::Journal::getNullSink()});
+            decreaseOwnerCount(view, owner, {}, cnt, beast::Journal{beast::Journal::getNullSink()});
         }
 
         return tesSUCCESS;
@@ -491,7 +490,7 @@ removeToken(ApplyView& view, AccountID const& owner, uint256 const& nftokenID, S
 
     view.erase(curr);
 
-    int cnt = 1;
+    uint32_t cnt = 1;
 
     // Since we're here, try to consolidate the previous and current pages
     // of the page we removed (if any) into one.  mergePages() _should_

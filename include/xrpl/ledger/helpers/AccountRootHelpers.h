@@ -139,7 +139,7 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj = 0)
  *  @param view The apply view for making changes
  *  @param accountSle The account's ledger entry
  *  @param sponsorSle The sponsor's ledger entry (if applicable)
- *  @param count Positive amount to add to the owner count
+ *  @param count Amount to add to the owner count
  *  @param j Journal for logging
  */
 void
@@ -147,7 +147,7 @@ increaseOwnerCount(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
-    std::int32_t count,
+    std::uint32_t count,
     beast::Journal j);
 
 /** Convenience overload that accepts AccountID instead of SLE references.
@@ -155,7 +155,7 @@ increaseOwnerCount(
  *  @param view The apply view for making changes
  *  @param account The account ID
  *  @param sponsor The optional sponsor account ID
- *  @param count Positive amount to add to the owner count
+ *  @param count Amount to add to the owner count
  *  @param j Journal for logging
  */
 inline void
@@ -163,7 +163,7 @@ increaseOwnerCount(
     ApplyView& view,
     AccountID const& account,
     std::optional<AccountID> const& sponsor,
-    std::int32_t count,
+    std::uint32_t count,
     beast::Journal j)
 {
     increaseOwnerCount(
@@ -184,7 +184,7 @@ increaseOwnerCount(
  *  @param view The apply view for making changes
  *  @param accountSle The account's ledger entry
  *  @param sponsorSle The sponsor's ledger entry (if applicable)
- *  @param count Positive amount to remove from the owner count
+ *  @param count Amount to remove from the owner count
  *  @param j Journal for logging
  */
 void
@@ -192,7 +192,7 @@ decreaseOwnerCount(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
-    std::int32_t count,
+    std::uint32_t count,
     beast::Journal j);
 
 /** Convenience overload that accepts AccountID instead of SLE references.
@@ -200,7 +200,7 @@ decreaseOwnerCount(
  *  @param view The apply view for making changes
  *  @param account The account ID
  *  @param sponsor The optional sponsor account ID
- *  @param count Positive amount to remove from the owner count
+ *  @param count Amount to remove from the owner count
  *  @param j Journal for logging
  */
 inline void
@@ -208,7 +208,7 @@ decreaseOwnerCount(
     ApplyView& view,
     AccountID const& account,
     std::optional<AccountID> const& sponsor,
-    std::int32_t count,
+    std::uint32_t count,
     beast::Journal j)
 {
     decreaseOwnerCount(
@@ -229,7 +229,7 @@ decreaseOwnerCount(
  *  @param view The apply view for making changes
  *  @param accountSle The account's ledger entry
  *  @param objectSle The object's ledger entry
- *  @param count Positive amount to remove from the owner count
+ *  @param count Amount to remove from the owner count
  *  @param j Journal for logging
  */
 void
@@ -237,7 +237,7 @@ decreaseOwnerCountForObject(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref objectSle,
-    std::int32_t count,
+    std::uint32_t count,
     beast::Journal j);
 
 /** Convenience overload that accepts AccountID instead of account SLE reference.
@@ -245,7 +245,7 @@ decreaseOwnerCountForObject(
  *  @param view The apply view for making changes
  *  @param account The account ID
  *  @param objectSle The object's ledger entry
- *  @param count Positive amount to remove from the owner count
+ *  @param count Amount to remove from the owner count
  *  @param j Journal for logging
  */
 inline void
@@ -253,7 +253,7 @@ decreaseOwnerCountForObject(
     ApplyView& view,
     AccountID const& account,
     SLE::ref objectSle,
-    std::int32_t count,
+    std::uint32_t count,
     beast::Journal j)
 {
     SLE::ref accountSle = view.peek(keylet::account(account));

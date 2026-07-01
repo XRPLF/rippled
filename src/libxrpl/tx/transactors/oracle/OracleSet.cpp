@@ -186,11 +186,13 @@ adjustOracleOwnerCount(ApplyContext& ctx, int count)
     {
         if (count > 0)
         {
-            increaseOwnerCount(ctx.view(), sleAccount, {}, count, ctx.journal);
+            increaseOwnerCount(
+                ctx.view(), sleAccount, {}, static_cast<std::uint32_t>(count), ctx.journal);
         }
         else if (count < 0)
         {
-            decreaseOwnerCount(ctx.view(), sleAccount, {}, -count, ctx.journal);
+            decreaseOwnerCount(
+                ctx.view(), sleAccount, {}, static_cast<std::uint32_t>(-count), ctx.journal);
         }
         return true;
     }
