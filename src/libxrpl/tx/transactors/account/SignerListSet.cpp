@@ -148,7 +148,7 @@ SignerListSet::preCompute()
     Transactor::preCompute();
 }
 
-static int
+static std::uint32_t
 signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
 {
     // We always compute the full change in OwnerCount, taking into account:
@@ -164,7 +164,7 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
     //
     // The static_cast should always be safe since entryCount should always
-    // be in the range from 1 to 32.
+    // be in the range from 1 to 32, so the result is always positive.
     // We've got a lot of room to grow.
     XRPL_ASSERT(
         entryCount >= STTx::kMinMultiSigners,
@@ -195,7 +195,7 @@ removeSignersFromLedger(
     // There are two different ways that the OwnerCount could be managed.
     // If the lsfOneOwnerCount bit is set then remove just one owner count.
     // Otherwise use the pre-MultiSignReserve amendment calculation.
-    int removeFromOwnerCount = 1;
+    std::uint32_t removeFromOwnerCount = 1;
     if (!signers->isFlag(lsfOneOwnerCount))
     {
         STArray const& actualList = signers->getFieldArray(sfSignerEntries);

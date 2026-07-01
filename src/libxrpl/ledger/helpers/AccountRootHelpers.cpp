@@ -232,8 +232,6 @@ adjustOwnerCountSigned(
         return;
 
     XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
-    if (adjustment == 0)
-        return;
 
     auto const accountID = accountSle->getAccountID(sfAccount);
     if (sponsorSle)
@@ -252,7 +250,7 @@ adjustOwnerCountSigned(
         {
             // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
             // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount
-            // back. Don't call hook because this counter is not something that require reserve
+            // back. Don't call hook because this counter is not something that requires reserve
             // (like other sf...OwnerCounts do).
             adjustOwnerCountImpl(
                 view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
@@ -270,7 +268,7 @@ increaseOwnerCount(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        count > 0 && count <= std::numeric_limits<std::int32_t>::max(),
+        count <= std::numeric_limits<std::int32_t>::max(),
         "xrpl::increaseOwnerCount : count in signed delta range");
     if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
         return;
@@ -287,7 +285,7 @@ decreaseOwnerCount(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        count > 0 && count <= std::numeric_limits<std::int32_t>::max(),
+        count <= std::numeric_limits<std::int32_t>::max(),
         "xrpl::decreaseOwnerCount : count in signed delta range");
     if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
         return;
