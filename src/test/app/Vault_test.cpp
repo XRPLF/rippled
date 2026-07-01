@@ -8169,7 +8169,7 @@ class Vault_test : public beast::unit_test::Suite
             auto const sleVault = env.le(vaultKeylet);
             BEAST_EXPECT(sleVault != nullptr);
 
-            auto const sleIssuance = env.le(keylet::mptIssuance(sleVault->at(sfShareMPTID)));
+            auto const sleIssuance = env.le(keylet::mptokenIssuance(sleVault->at(sfShareMPTID)));
             BEAST_EXPECT(sleIssuance != nullptr);
 
             return sleIssuance->at(sfOutstandingAmount);
