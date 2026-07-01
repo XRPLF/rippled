@@ -1385,7 +1385,7 @@ public:
             params[jss::secret] = toBase58(generateSeed("alice"));
             params[jss::tx_json] = offer(alice, eur(1), XRP(2));
             auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
-            BEAST_EXPECT(res[jss::status].asString() == "success");
+            BEAST_EXPECT(res[jss::engine_result].asString() == "tesSUCCESS");
             seqs.push_back(env.seq(alice));
         }
 
@@ -1400,7 +1400,7 @@ public:
             params[jss::secret] = toBase58(generateSeed("alice"));
             params[jss::tx_json] = offerCancel(alice, s - 1);
             auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
-            BEAST_EXPECT(res[jss::status].asString() == "success");
+            BEAST_EXPECT(res[jss::engine_result].asString() == "tesSUCCESS");
         }
 
         res = rpcAccountObjects();
@@ -1417,7 +1417,7 @@ public:
             txJson["NFTokenTaxon"] = 1;
             params[jss::tx_json] = txJson;
             auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
-            BEAST_EXPECT(res[jss::status].asString() == "success");
+            BEAST_EXPECT(res[jss::engine_result].asString() == "tesSUCCESS");
         }
         env.close();
 
