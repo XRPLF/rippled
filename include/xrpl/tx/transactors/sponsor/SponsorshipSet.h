@@ -2,6 +2,8 @@
 
 #include <xrpl/tx/Transactor.h>
 
+#include <memory>
+
 namespace xrpl {
 
 class SponsorshipSet : public Transactor
