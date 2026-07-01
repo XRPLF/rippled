@@ -1,29 +1,10 @@
+#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/credentials.h>
-#include <test/jtx/escrow.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/flags.h>
-#include <test/jtx/mpt.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/paths.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/permissioned_domains.h>
-#include <test/jtx/rate.h>
-#include <test/jtx/sendmax.h>
-#include <test/jtx/seq.h>
-#include <test/jtx/sig.h>
-#include <test/jtx/tags.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/ticket.h>
-#include <test/jtx/trust.h>
-#include <test/jtx/utility.h>
-#include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -5927,9 +5908,9 @@ class Vault_test : public beast::unit_test::Suite
                 token->setFieldVL(*field, gMakeZeroBuffer(kEcGamalEncryptedTotalLength));
                 sb.update(token);
 
-                auto const dummyTx = *env.jt(noop(account)).stx;
+                auto const dummyTx = *env.jt(noop(holder)).stx;
                 BEAST_EXPECT(
-                    removeEmptyHolding({sb, dummyTx}, holder.id(), MPTIssue(mpt.issuanceID()), j) ==
+                    removeEmptyHolding(sb, dummyTx, holder.id(), MPTIssue(mpt.issuanceID()), j) ==
                     tecHAS_OBLIGATIONS);
                 BEAST_EXPECT(sb.peek(tokenKeylet) != nullptr);
             }

@@ -91,7 +91,7 @@ adjustAccountXRPBalance(jtx::Env& env, jtx::Account const& account, STAmount con
     auto const baseFee = env.current()->fees().base;
     if (currentBalance > balanceTo)
     {
-        env(pay(account, env.master, currentBalance - (balanceTo)),
+        env(pay(account, env.master, currentBalance - balanceTo),
             Fee(XRP(1)),
             sponsor::As(env.master, spfSponsorFee),
             Sig(sfSponsorSignature, env.master));
