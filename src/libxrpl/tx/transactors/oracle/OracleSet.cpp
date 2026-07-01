@@ -4,6 +4,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -179,11 +180,20 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 }
 
 static bool
-adjustOwnerCount(ApplyContext& ctx, int count)
+adjustOracleOwnerCount(ApplyContext& ctx, int count)
 {
     if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
-        adjustOwnerCount(ctx.view(), sleAccount, {}, count, ctx.journal);
+        if (count > 0)
+        {
+            increaseOwnerCount(
+                ctx.view(), sleAccount, {}, static_cast<std::uint32_t>(count), ctx.journal);
+        }
+        else if (count < 0)
+        {
+            decreaseOwnerCount(
+                ctx.view(), sleAccount, {}, static_cast<std::uint32_t>(-count), ctx.journal);
+        }
         return true;
     }
 
@@ -269,7 +279,7 @@ OracleSet::doApply()
         auto const newCount = calculateOracleReserve(pairs.size());
         int32_t const adjust = newCount - oldCount;
 
-        if (adjust != 0 && !adjustOwnerCount(ctx_, adjust))
+        if (adjust != 0 && !adjustOracleOwnerCount(ctx_, adjust))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         ctx_.view().update(sle);
@@ -319,7 +329,7 @@ OracleSet::doApply()
         (*sle)[sfOwnerNode] = *page;
 
         auto const count = calculateOracleReserve(series.size());
-        if (!adjustOwnerCount(ctx_, count))
+        if (!adjustOracleOwnerCount(ctx_, count))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         ctx_.view().insert(sle);

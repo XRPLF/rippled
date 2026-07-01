@@ -148,9 +148,7 @@ SignerListSet::preCompute()
     Transactor::preCompute();
 }
 
-// The return type is signed so it is compatible with the 3rd argument
-// of adjustOwnerCount() (which must be signed).
-static int
+static std::uint32_t
 signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
 {
     // We always compute the full change in OwnerCount, taking into account:
@@ -166,7 +164,7 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
     //
     // The static_cast should always be safe since entryCount should always
-    // be in the range from 1 to 32.
+    // be in the range from 1 to 32, so the result is always positive.
     // We've got a lot of room to grow.
     XRPL_ASSERT(
         entryCount >= STTx::kMinMultiSigners,
@@ -197,12 +195,11 @@ removeSignersFromLedger(
     // There are two different ways that the OwnerCount could be managed.
     // If the lsfOneOwnerCount bit is set then remove just one owner count.
     // Otherwise use the pre-MultiSignReserve amendment calculation.
-    int removeFromOwnerCount = -1;
+    std::uint32_t removeFromOwnerCount = 1;
     if (!signers->isFlag(lsfOneOwnerCount))
     {
         STArray const& actualList = signers->getFieldArray(sfSignerEntries);
-        removeFromOwnerCount =
-            signerCountBasedOwnerCountDelta(actualList.size(), view.rules()) * -1;
+        removeFromOwnerCount = signerCountBasedOwnerCountDelta(actualList.size(), view.rules());
     }
 
     // Remove the node from the account directory.
@@ -216,7 +213,7 @@ removeSignersFromLedger(
         // LCOV_EXCL_STOP
     }
 
-    adjustOwnerCountObj(
+    decreaseOwnerCountForObject(
         view, view.peek(accountKeylet), signers, removeFromOwnerCount, registry.getJournal("View"));
 
     view.erase(signers);
@@ -357,7 +354,7 @@ SignerListSet::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, *sponsorSle, kAddedOwnerCount, viewJ);
+    increaseOwnerCount(view(), sle, *sponsorSle, kAddedOwnerCount, viewJ);
     addSponsorToLedgerEntry(signerList, *sponsorSle);
     return tesSUCCESS;
 }

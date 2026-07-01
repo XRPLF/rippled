@@ -284,7 +284,7 @@ trustCreate(
     }
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
-    adjustOwnerCount(view, sleAccount, sponsorSle, 1, j);
+    increaseOwnerCount(view, sleAccount, sponsorSle, 1, j);
 
     addSponsorToLedgerEntry(sleRippleState, sponsorSle, bSetHigh ? sfHighSponsor : sfLowSponsor);
 
@@ -379,7 +379,7 @@ updateTrustLine(
         // Clear the reserve of the sender, possibly delete the line!
         auto const currentSponsor =
             getLedgerEntryReserveSponsor(view, state, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
-        adjustOwnerCount(view, sle, currentSponsor, -1, j);
+        decreaseOwnerCount(view, sle, currentSponsor, 1, j);
 
         // Clear reserve flag.
         state->clearFlag(senderReserveFlag);
@@ -738,7 +738,7 @@ removeEmptyHolding(
 
         auto const currentLowSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfLowSponsor);
 
-        adjustOwnerCount(ctx.view, sleLowAccount, currentLowSponsor, -1, journal);
+        decreaseOwnerCount(ctx.view, sleLowAccount, currentLowSponsor, 1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -755,7 +755,7 @@ removeEmptyHolding(
 
         auto const currentHighSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfHighSponsor);
 
-        adjustOwnerCount(ctx.view, sleHighAccount, currentHighSponsor, -1, journal);
+        decreaseOwnerCount(ctx.view, sleHighAccount, currentHighSponsor, 1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -817,7 +817,7 @@ deleteAMMTrustLine(
     if (!sleState->isFlag(uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, -1, j);
+    decreaseOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, 1, j);
 
     return tesSUCCESS;
 }

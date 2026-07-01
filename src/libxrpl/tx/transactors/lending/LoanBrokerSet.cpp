@@ -238,7 +238,7 @@ LoanBrokerSet::doApply()
 
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view, owner, {}, 2, j_);
+        increaseOwnerCount(view, owner, {}, 2, j_);
         if (preFeeBalance_ < accountReserve(view, owner, j_))
             return tecINSUFFICIENT_RESERVE;
 
