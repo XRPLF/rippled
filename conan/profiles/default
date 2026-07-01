@@ -20,6 +20,8 @@ compiler.libcxx={{ detect_api.detect_libcxx(compiler, version, compiler_exe) }}
 {% endif %}
 
 [conf]
-{# By default, conan tries compatibility mode to reuse binaries built with different cppstd versions #}
+{# By default, Conan tries to reuse binaries built with different cppstd versions. #}
+{# We want to avoid that to improve reproduceability, so we add the cppstd version to the package ID. #}
+{# More info: https://docs.conan.io/2/reference/extensions/binary_compatibility.html #}
 user.package:cppstd_version=23
 tools.info.package_id:confs+=["user.package:cppstd_version"]
