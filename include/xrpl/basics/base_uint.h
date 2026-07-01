@@ -297,7 +297,9 @@ public:
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
             "xrpl::BaseUInt::fromRaw(Container auto) : input size match");
-        std::memcpy(result.data_.data(), c.data(), size());
+        std::size_t const canCopy =
+            std::min(size(), c.size() * sizeof(typename Container::value_type));
+        std::memcpy(result.data_.data(), c.data(), canCopy);
         return result;
     }
 
@@ -311,7 +313,9 @@ public:
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
             "xrpl::BaseUInt::operator=(Container auto) : input size match");
-        std::memcpy(data_.data(), c.data(), size());
+        std::size_t const canCopy =
+            std::min(size(), c.size() * sizeof(typename Container::value_type));
+        std::memcpy(data_.data(), c.data(), canCopy);
         return *this;
     }
 
