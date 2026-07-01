@@ -49,7 +49,7 @@ creditLimit(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::line(account, issuer, currency));
+    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
 
     if (sleRippleState)
     {
@@ -80,7 +80,7 @@ creditBalance(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::line(account, issuer, currency));
+    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
 
     if (sleRippleState)
     {
@@ -116,7 +116,7 @@ isIndividualFrozen(
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        auto const sle = view.read(keylet::line(account, issuer, currency));
+        auto const sle = view.read(keylet::trustLine(account, issuer, currency));
         if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }
@@ -140,7 +140,7 @@ isFrozen(
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        sle = view.read(keylet::line(account, issuer, currency));
+        sle = view.read(keylet::trustLine(account, issuer, currency));
         if (sle && sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }
@@ -164,7 +164,7 @@ isDeepFrozen(
         return false;
     }
 
-    auto const sle = view.read(keylet::line(account, issuer, currency));
+    auto const sle = view.read(keylet::trustLine(account, issuer, currency));
     if (!sle)
     {
         return false;
@@ -415,7 +415,7 @@ issueIOU(
 
     bool const bSenderHigh = issue.account > account;
 
-    auto const index = keylet::line(issue.account, account, issue.currency);
+    auto const index = keylet::trustLine(issue.account, account, issue.currency);
 
     if (auto state = view.peek(index))
     {
@@ -510,7 +510,7 @@ redeemIOU(
 
     bool const bSenderHigh = account > issue.account;
 
-    if (auto state = view.peek(keylet::line(account, issue.account, issue.currency)))
+    if (auto state = view.peek(keylet::trustLine(account, issue.account, issue.currency)))
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -571,7 +571,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     if (isXRP(issue) || issue.account == account)
         return tesSUCCESS;
 
-    auto const trustLine = view.read(keylet::line(account, issue.account, issue.currency));
+    auto const trustLine = view.read(keylet::trustLine(account, issue.account, issue.currency));
     // If account has no line, and this is a strong check, fail
     if (!trustLine && authType == AuthType::StrongAuth)
         return tecNO_LINE;
@@ -609,7 +609,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
     auto const isRippleDisabled = [&](AccountID account) -> bool {
         // Line might not exist, but some transfers can create it. If this
         // is the case, just check the default ripple on the issuer account.
-        auto const line = view.read(keylet::line(account, issue));
+        auto const line = view.read(keylet::trustLine(account, issue));
         if (line)
         {
             bool const issuerHigh = issuerId > account;
@@ -651,7 +651,7 @@ addEmptyHolding(
     auto const& srcId = issuerId;
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
-    auto const index = keylet::line(srcId, dstId, currency);
+    auto const index = keylet::trustLine(srcId, dstId, currency);
     auto const sleSrc = ctx.view.peek(keylet::account(srcId));
     auto const sleDst = ctx.view.peek(keylet::account(dstId));
     if (!sleDst || !sleSrc)
@@ -722,7 +722,7 @@ removeEmptyHolding(
     // If the account is the issuer, then no line should exist. Check anyway.
     // If a line does exist, it will get deleted. If not, return success.
     bool const accountIsIssuer = accountID == issue.account;
-    auto const line = ctx.view.peek(keylet::line(accountID, issue));
+    auto const line = ctx.view.peek(keylet::trustLine(accountID, issue));
     if (!line)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     if (!accountIsIssuer && line->at(sfBalance)->iou() != beast::kZero)

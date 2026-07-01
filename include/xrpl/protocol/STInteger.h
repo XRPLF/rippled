@@ -120,7 +120,7 @@ STInteger<Integer>::operator=(value_type const& v)
 }
 
 template <typename Integer>
-inline typename STInteger<Integer>::value_type
+inline STInteger<Integer>::value_type
 STInteger<Integer>::value() const noexcept
 {
     return value_;

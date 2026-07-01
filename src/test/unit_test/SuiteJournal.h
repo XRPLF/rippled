@@ -60,9 +60,8 @@ SuiteJournalSink::writeAlways(beast::Severity level, std::string const& text)
                 return "WRN:";
             case Severity::Error:
                 return "ERR:";
-            default:
-                break;
             case Severity::Fatal:
+            default:
                 break;
         }
         return "FTL:";

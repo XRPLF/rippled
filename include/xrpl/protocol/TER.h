@@ -128,6 +128,7 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
     temBAD_MPT,
+    temBAD_CIPHERTEXT,
 };
 
 //------------------------------------------------------------------------------
@@ -174,6 +175,8 @@ enum TEFcodes : TERUnderlyingType {
     tefNO_TICKET,
     tefNFTOKEN_IS_NOT_TRANSFERABLE,
     tefINVALID_LEDGER_FIX_TYPE,
+    tefNO_DST_PARTIAL,
+    tefBAD_PATH_COUNT,
 };
 
 //------------------------------------------------------------------------------
@@ -359,7 +362,12 @@ enum TECcodes : TERUnderlyingType {
     tecLIMIT_EXCEEDED = 195,
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
-    tecNO_SPONSOR_PERMISSION = 198,
+    // DEPRECATED: This error code tecNO_DELEGATE_PERMISSION is reserved for
+    // backward compatibility with historical data on non-prod networks, can be
+    // reclaimed after those networks reset.
+    tecNO_DELEGATE_PERMISSION = 198,
+    tecBAD_PROOF = 199,
+    tecNO_SPONSOR_PERMISSION = 200,
 };
 
 //------------------------------------------------------------------------------
@@ -659,13 +667,13 @@ inline bool
 isTesSuccess(TER x) noexcept
 {
     // Makes use of TERSubset::operator bool()
-    return !(x);
+    return !x;
 }
 
 inline bool
 isTecClaim(TER x) noexcept
 {
-    return ((x) >= tecCLAIM);
+    return (x >= tecCLAIM);
 }
 
 std::unordered_map<TERUnderlyingType, std::pair<char const* const, char const* const>> const&
