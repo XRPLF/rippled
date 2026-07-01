@@ -43,6 +43,15 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer)
     return false;
 }
 
+AccountID
+getFeePayerID(STTx const& tx)
+{
+    if (tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx))
+        return tx[sfSponsor];
+
+    return tx.getInitiator();
+}
+
 // An owner count cannot be negative. If adjustment would cause a negative
 // owner count, clamp the owner count at 0. Similarly for overflow. This
 // adjustment allows the ownerCount to be adjusted up or down in multiple steps.

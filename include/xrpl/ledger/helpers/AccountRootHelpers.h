@@ -21,6 +21,17 @@ namespace xrpl {
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 
+/** Return fee payer account for given tx
+ *
+ *  This function looks for the account which made payment for the tx
+ *  including delegates and sponsors.
+ *
+ *  @param tx The transaction to check
+ *  @return Account which made fee payment for the tx
+ */
+AccountID
+getFeePayerID(STTx const& tx);
+
 /** Calculate liquid XRP balance for an account.
  *
  *  This function may be used to calculate the amount of XRP that

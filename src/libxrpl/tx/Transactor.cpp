@@ -558,7 +558,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return tesSUCCESS;
 
     auto const feePayer = getFeePayer(ctx.view, ctx.tx);
-    auto const payerSle = ctx.view.read(feePayer.entry);
+    auto const payerSle = ctx.view.read(feePayer.keylet);
 
     if (!payerSle)
     {
@@ -633,9 +633,9 @@ Transactor::payFee()
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
     auto const feePayer = getFeePayer(view(), ctx_.tx);
-    auto const sle = view().peek(feePayer.entry);
+    auto const sle = view().peek(feePayer.keylet);
 
-    JLOG(j_.trace()) << "Fee payer: " + to_string(feePayer.entry.key);
+    JLOG(j_.trace()) << "Fee payer: " + to_string(feePayer.id);
 
     if (!sle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -1318,7 +1318,7 @@ Transactor::reset(XRPAmount fee)
         return {tefINTERNAL, beast::kZero};
 
     auto const feePayer = getFeePayer(view(), ctx_.tx);
-    auto const payerSle = view().peek(feePayer.entry);
+    auto const payerSle = view().peek(feePayer.keylet);
 
     if (!payerSle)
         return {tefINTERNAL, beast::kZero};  // LCOV_EXCL_LINE
@@ -1391,27 +1391,33 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
         auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeID);
 
         // if pre-funded sponsorship exists, prefer it
-        if (hasSponsorSignature && !view.exists(sponsorshipKeylet))
+        if (view.exists(sponsorshipKeylet))
         {
-            // co-signed
+            // pre funded
             return FeePayer{
-                .entry = keylet::account(sponsorID),
-                .balanceField = sfBalance,
-                .type = FeePayerType::SponsorCoSigned};
+                .id = sponsorID,
+                .keylet = sponsorshipKeylet,
+                .balanceField = sfFeeAmount,
+                .type = FeePayerType::SponsorPreFunded};
         }
 
-        // pre funded
+        XRPL_ASSERT(hasSponsorSignature, "xrpl::getFeePayer valid sponsor signature");
+
+        // co-signed
         return FeePayer{
-            .entry = sponsorshipKeylet,
-            .balanceField = sfFeeAmount,
-            .type = FeePayerType::SponsorPreFunded};
+            .id = sponsorID,
+            .keylet = keylet::account(sponsorID),
+            .balanceField = sfBalance,
+            .type = FeePayerType::SponsorCoSigned};
     }
 
-    auto const payerAccountKeylet = keylet::account(tx.getInitiator());
+    AccountID const payerID = tx.getInitiator();
+    auto const payerAccountKeylet = keylet::account(payerID);
     auto const payerType =
         tx.isFieldPresent(sfDelegate) ? FeePayerType::Delegate : FeePayerType::Account;
 
-    return FeePayer{.entry = payerAccountKeylet, .balanceField = sfBalance, .type = payerType};
+    return FeePayer{
+        .id = payerID, .keylet = payerAccountKeylet, .balanceField = sfBalance, .type = payerType};
 }
 
 // The sole purpose of this function is to provide a convenient, named

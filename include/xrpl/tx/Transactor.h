@@ -119,7 +119,8 @@ enum class FeePayerType {
 
 struct FeePayer
 {
-    Keylet entry;
+    AccountID id;
+    Keylet keylet;
     SF_AMOUNT const& balanceField;
     FeePayerType type{FeePayerType::Account};
 };
