@@ -51,12 +51,12 @@ repos:
         exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
 
   - repo: https://github.com/BlankSpruce/gersemi-pre-commit
-    rev: faadd6a9d852369ca94f4d15b2404c967ba8cb01 # frozen: 0.27.6
+    rev: e98930bdc210d3387007f9252d8c1694ea7e410f # frozen: 0.27.7
     hooks:
       - id: gersemi
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: 515f543f5718ebfd6ce22e16708bb32c68ff96e1 # frozen: v3.8.3
+    rev: 39e2973981e6d2f9b6c543b0086a2d2393abdc89 # frozen: v3.9.4
     hooks:
       - id: prettier
         args: [--end-of-line=auto]
@@ -86,7 +86,7 @@ repos:
         files: \.md$
 
   - repo: https://github.com/streetsidesoftware/cspell-cli
-    rev: 4643f154907327ee0a2c7038f0296e0dd77d9776 # frozen: v10.0.0
+    rev: ea11f9efc0bec520073405bc30552da887ba71bc # frozen: v10.0.1
     hooks:
       - id: cspell # Spell check changed files
         exclude: |

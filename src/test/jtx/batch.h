@@ -58,7 +58,6 @@ class Inner
 {
 private:
     json::Value txn_;
-    std::uint32_t seq_;
     std::optional<std::uint32_t> ticket_;
 
 public:
@@ -66,10 +65,10 @@ public:
         json::Value txn,
         std::uint32_t const& sequence,
         std::optional<std::uint32_t> const& ticket = std::nullopt)
-        : txn_(std::move(txn)), seq_(sequence), ticket_(ticket)
+        : txn_(std::move(txn)), ticket_(ticket)
     {
         txn_[jss::SigningPubKey] = "";
-        txn_[jss::Sequence] = seq_;
+        txn_[jss::Sequence] = sequence;
         txn_[jss::Fee] = "0";
         txn_[jss::Flags] = txn_[jss::Flags].asUInt() | tfInnerBatchTxn;
 
