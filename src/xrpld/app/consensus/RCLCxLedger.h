@@ -32,7 +32,7 @@ public:
 
         @param l The ledger to wrap.
     */
-    RCLCxLedger(std::shared_ptr<Ledger const> const& l) : ledger{l}
+    RCLCxLedger(std::shared_ptr<Ledger const> l) : ledger{std::move(l)}
     {
     }
 

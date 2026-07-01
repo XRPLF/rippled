@@ -27,6 +27,7 @@ namespace xrpl::test::jtx {
 */
 template <
     class SField,
+    // NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
     class StoredValue = typename SField::type::value_type,
     class OutputValue = StoredValue>
 struct JTxField
@@ -213,8 +214,8 @@ template <class JTxField>
 struct JTxFieldWrapper
 {
     using JF = JTxField;
-    using SF = typename JF::SF;
-    using SV = typename JF::SV;
+    using SF = JF::SF;
+    using SV = JF::SV;
 
 protected:
     SF const& sfield_;
@@ -266,9 +267,11 @@ public:
     }
 };
 
+// NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
 template <class SField, class UnitTag, class ValueType = typename SField::type::value_type>
 using valueUnitWrapper = JTxFieldWrapper<ValueUnitField<SField, UnitTag, ValueType>>;
 
+// NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
 template <class SField, class StoredValue = typename SField::type::value_type>
 using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 

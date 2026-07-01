@@ -65,6 +65,7 @@ public:
         and no network connections.
 
     */
+    // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
     Sim() : sink{scheduler.clock()}, j{sink}, net{scheduler}
     {
     }

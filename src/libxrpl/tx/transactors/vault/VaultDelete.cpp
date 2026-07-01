@@ -34,8 +34,7 @@ VaultDelete::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     // The sfMemoData field is an optional field used to record the deletion reason.
-    if (auto const data = ctx.tx[~sfMemoData];
-        data && !validDataLength(data, kMaxDataPayloadLength))
+    if (!validDataLength(ctx.tx[~sfMemoData], kMaxDataPayloadLength))
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -67,7 +66,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    auto const sleMPT = ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
 
     if (!sleMPT)
     {
@@ -120,7 +119,7 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    auto const mpt = view().peek(keylet::mptIssuance(shareMPTID));
+    auto const mpt = view().peek(keylet::mptokenIssuance(shareMPTID));
     if (!mpt)
     {
         // LCOV_EXCL_START

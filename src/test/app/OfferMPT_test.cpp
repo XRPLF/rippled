@@ -1827,7 +1827,6 @@ public:
         using namespace jtx;
 
         Env env{*this, features};
-        env.enableFeature(fixUniversalNumber);
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
@@ -3432,7 +3431,7 @@ public:
         auto const gw = Account("gateway");
 
         auto const fee = env.current()->fees().base;
-        env.fund(reserve(env, 2) + drops(9999640) + (fee), ann);
+        env.fund(reserve(env, 2) + drops(9999640) + fee, ann);
         env.fund(reserve(env, 2) + (fee * 4), gw);
         env.close();
 
@@ -3468,7 +3467,7 @@ public:
         auto const bob = Account("bob");
 
         auto const fee = env.current()->fees().base;
-        env.fund(reserve(env, 2) + drops(400'000'000'000) + (fee), alice, bob);
+        env.fund(reserve(env, 2) + drops(400'000'000'000) + fee, alice, bob);
         env.fund(reserve(env, 2) + (fee * 4), gw);
         env.close();
 
@@ -3729,10 +3728,9 @@ public:
                     auto actorOffers = offersOnAccount(env, actor.acct);
                     auto const offerCount = std::distance(
                         actorOffers.begin(),
-                        std::remove_if(
-                            actorOffers.begin(), actorOffers.end(), [](SLE::const_pointer& offer) {
-                                return (*offer)[sfTakerGets].signum() == 0;
-                            }));
+                        std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
+                            return (*offer)[sfTakerGets].signum() == 0;
+                        }).begin());
                     BEAST_EXPECT(offerCount == actor.offers);
 
                     env.require(Balance(actor.acct, actor.xrp));
@@ -3899,10 +3897,9 @@ public:
                     auto actorOffers = offersOnAccount(env, actor.acct);
                     auto const offerCount = std::distance(
                         actorOffers.begin(),
-                        std::remove_if(
-                            actorOffers.begin(), actorOffers.end(), [](SLE::const_pointer& offer) {
-                                return (*offer)[sfTakerGets].signum() == 0;
-                            }));
+                        std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
+                            return (*offer)[sfTakerGets].signum() == 0;
+                        }).begin());
                     BEAST_EXPECT(offerCount == actor.offers);
 
                     env.require(Balance(actor.acct, actor.xrp));

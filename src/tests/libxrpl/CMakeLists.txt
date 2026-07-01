@@ -13,6 +13,7 @@ add_executable(
     helpers/TestSink.cpp
     helpers/TxTest.cpp
 )
+patch_nix_binary(xrpl_tests)
 set_target_properties(
     xrpl_tests
     PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
@@ -53,4 +54,4 @@ foreach(module IN LISTS test_modules)
     )
 endforeach()
 
-gtest_discover_tests(xrpl_tests)
+gtest_discover_tests(xrpl_tests DISCOVERY_TIMEOUT 60)
