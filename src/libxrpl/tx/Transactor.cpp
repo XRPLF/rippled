@@ -1,6 +1,5 @@
 #include <xrpl/tx/Transactor.h>
 
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -313,13 +312,15 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     if (ctx.tx.getSeqProxy().isTicket() && ctx.tx.isFieldPresent(sfAccountTxnID))
         return temINVALID;
 
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatchV1_1))
         return temINVALID_FLAG;
 
-    XRPL_ASSERT(
-        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
-            !ctx.rules.enabled(featureBatch),
-        "Inner batch transaction must have a parent batch ID.");
+    // Reject if the inner batch flag and parentBatchId are inconsistent.
+    // A standalone tx with tfInnerBatchTxn but no parentBatchId is an
+    // attack attempt. A tx with parentBatchId but without tfInnerBatchTxn
+    // is a programming error.
+    if (ctx.tx.isFlag(tfInnerBatchTxn) != ctx.parentBatchId.has_value())
+        return temINVALID_INNER_BATCH;
 
     if (auto const ter = preflight1Sponsor(ctx, id); !isTesSuccess(ter))
         return ter;
@@ -338,15 +339,19 @@ Transactor::preflight2(PreflightContext const& ctx)
         return *ret;
     }
 
-    // It should be impossible for the InnerBatchTxn flag to be set without
-    // featureBatch being enabled
-    XRPL_ASSERT_PARTS(
-        !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatch),
-        "xrpl::Transactor::preflight2",
-        "InnerBatch flag only set if feature enabled");
-    // Skip signature check on batch inner transactions
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch))
+    // Skip the signature check on batch inner transactions. preflight1 already
+    // enforces both conditions; re-checking them as defense in depth guarantees
+    // we never return success (and so skip signature validation) for an inner
+    // transaction unless the amendment is enabled and it really sits inside a
+    // batch.
+    if (ctx.tx.isFlag(tfInnerBatchTxn))
+    {
+        if (!ctx.rules.enabled(featureBatchV1_1))
+            return temINVALID_FLAG;
+        if (!ctx.parentBatchId.has_value())
+            return temINVALID_INNER_BATCH;
         return tesSUCCESS;
+    }
     // Do not add any checks after this point that are relevant for
     // batch inner transactions. They will be skipped.
 
@@ -488,6 +493,15 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
 
     return baseFee + ((signerCount + sponsorSignerCount) * baseFee);
+}
+
+XRPAmount
+Transactor::calculateBaseFee(
+    ReadView const& view,
+    STTx const& tx,
+    std::uint32_t extraBaseFeeMultiplier)
+{
+    return calculateBaseFee(view, tx) + view.fees().base * extraBaseFeeMultiplier;
 }
 
 // Returns the fee in fee units, not scaled for load.
@@ -733,7 +747,7 @@ Transactor::checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j
         }
 
         // Transaction can never succeed if the Ticket is not in the ledger.
-        if (!view.exists(keylet::kTicket(id, tSeqProx)))
+        if (!view.exists(keylet::ticket(id, tSeqProx)))
         {
             JLOG(j.trace()) << "applyTransaction: ticket already used or never created "
                             << "a_seq=" << aSeq << " t_seq=" << tSeqProx;
@@ -798,7 +812,7 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::kTicket(ticketIndex));
+    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
     if (!sleTicket)
     {
         // LCOV_EXCL_START
@@ -904,23 +918,26 @@ Transactor::checkSign(
     std::optional<uint256 const> const& parentBatchId,
     AccountID const& idAccount,
     STObject const& sigObject,
-    beast::Journal const j)
+    beast::Journal const j,
+    bool permitUncreatedAccount)
 {
     {
         auto const sle = view.read(keylet::account(idAccount));
 
-        if (view.rules().enabled(featureLendingProtocol) && isPseudoAccount(sle))
+        if ((view.rules().enabled(featureLendingProtocol) ||
+             view.rules().enabled(featureBatchV1_1) || view.rules().enabled(fixCleanup3_3_0)) &&
+            isPseudoAccount(sle))
         {
-            // Pseudo-accounts can't sign transactions. This check is gated on
-            // the Lending Protocol amendment because that's the project it was
-            // added under, and it doesn't justify another amendment
+            // Pseudo-accounts can't sign transactions. This check is gated on a
+            // few different amendments so that it takes effect as soon as any of
+            // them is activated.
             return tefBAD_AUTH;
         }
     }
 
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
-    if (parentBatchId && view.rules().enabled(featureBatch))
+    if (parentBatchId && view.rules().enabled(featureBatchV1_1))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
@@ -973,7 +990,16 @@ Transactor::checkSign(
     auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const sleAccount = view.read(keylet::account(idAccount));
     if (!sleAccount)
-        return terNO_ACCOUNT;
+    {
+        // An account that does not exist yet can only be authorized by its own
+        // master key, and only where an un-created signer is permitted (a batch
+        // whose earlier inner creates the account). Otherwise it cannot sign.
+        if (!permitUncreatedAccount)
+            return terNO_ACCOUNT;
+        if (idAccount != idSigner)
+            return tefBAD_AUTH;
+        return tesSUCCESS;
+    }
 
     return checkSingleSign(view, idSigner, idAccount, sleAccount, j);
 }
@@ -984,50 +1010,6 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const idAccount = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
                                                              : ctx.tx.getAccountID(sfAccount);
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
-}
-
-NotTEC
-Transactor::checkBatchSign(PreclaimContext const& ctx)
-{
-    NotTEC ret = tesSUCCESS;
-    STArray const& signers{ctx.tx.getFieldArray(sfBatchSigners)};
-    for (auto const& signer : signers)
-    {
-        auto const idAccount = signer.getAccountID(sfAccount);
-
-        Blob const& pkSigner = signer.getFieldVL(sfSigningPubKey);
-        if (pkSigner.empty())
-        {
-            if (ret = checkMultiSign(ctx.view, ctx.flags, idAccount, signer, ctx.j);
-                !isTesSuccess(ret))
-                return ret;
-        }
-        else
-        {
-            // LCOV_EXCL_START
-            if (!publicKeyType(makeSlice(pkSigner)))
-                return tefBAD_AUTH;
-            // LCOV_EXCL_STOP
-
-            auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
-            auto const sleAccount = ctx.view.read(keylet::account(idAccount));
-
-            // A batch can include transactions from an un-created account ONLY
-            // when the account master key is the signer
-            if (!sleAccount)
-            {
-                if (idAccount != idSigner)
-                    return tefBAD_AUTH;
-
-                return tesSUCCESS;
-            }
-
-            if (ret = checkSingleSign(ctx.view, idSigner, idAccount, sleAccount, ctx.j);
-                !isTesSuccess(ret))
-                return ret;
-        }
-    }
-    return ret;
 }
 
 NotTEC
@@ -1071,7 +1053,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signers(id));
+    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signerList(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -1251,7 +1233,7 @@ removeExpiredNFTokenOffers(
 
     for (auto const& index : offers)
     {
-        if (auto const offer = view.peek(keylet::nftoffer(index)))
+        if (auto const offer = view.peek(keylet::nftokenOffer(index)))
         {
             nft::deleteTokenOffer(view, offer);
             if (++removed == kExpiredOfferRemoveLimit)
@@ -1341,7 +1323,7 @@ Transactor::reset(XRPAmount fee)
 
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
-        balance != beast::kZero && (!view().open() || balance >= fee),
+        (fee == beast::kZero || balance != beast::kZero) && (!view().open() || balance >= fee),
         "xrpl::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or

@@ -12,8 +12,8 @@ template <int Window, typename Clock>
 class DecayingSample
 {
 public:
-    using value_type = typename Clock::duration::rep;
-    using time_point = typename Clock::time_point;
+    using value_type = Clock::duration::rep;
+    using time_point = Clock::time_point;
 
     DecayingSample() = delete;
 
@@ -93,7 +93,7 @@ template <int HalfLife, class Clock>
 class DecayWindow
 {
 public:
-    using time_point = typename Clock::time_point;
+    using time_point = Clock::time_point;
 
     explicit DecayWindow(time_point now) : when_(now)
     {

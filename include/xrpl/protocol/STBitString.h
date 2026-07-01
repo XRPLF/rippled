@@ -163,7 +163,7 @@ STBitString<Bits>::setValue(BaseUInt<Bits, Tag> const& v)
 }
 
 template <int Bits>
-typename STBitString<Bits>::value_type const&
+STBitString<Bits>::value_type const&
 STBitString<Bits>::value() const
 {
     return value_;
