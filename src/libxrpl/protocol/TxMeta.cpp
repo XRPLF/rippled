@@ -197,8 +197,8 @@ TxMeta::getAsObject() const
     if (gasUsed_.has_value())
         metaData.setFieldU32(sfGasUsed, *gasUsed_);
 
-    if (wasmReturnCode_.has_value())
-        metaData.setFieldI32(sfWasmReturnCode, *wasmReturnCode_);
+    if (vmReturnCode_.has_value())
+        metaData.setFieldI32(sfVMReturnCode, *vmReturnCode_);
 
     return metaData;
 }

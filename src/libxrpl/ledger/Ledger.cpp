@@ -200,8 +200,8 @@ Ledger::Ledger(
         }
         if (std::ranges::find(amendments, featureSmartEscrow) != amendments.end())
         {
-            sle->at(sfExtensionComputeLimit) = fees.extensionComputeLimit;
-            sle->at(sfExtensionSizeLimit) = fees.extensionSizeLimit;
+            sle->at(sfGasLimit) = fees.extensionComputeLimit;
+            sle->at(sfBytecodeSizeLimit) = fees.extensionSizeLimit;
             sle->at(sfGasPrice) = fees.gasPrice;
         }
         rawInsert(sle);
@@ -607,8 +607,8 @@ Ledger::setup()
                 newFees = baseFeeXRP || reserveBaseXRP || reserveIncrementXRP;
             }
             {
-                auto const extensionComputeLimit = sle->at(~sfExtensionComputeLimit);
-                auto const extensionSizeLimit = sle->at(~sfExtensionSizeLimit);
+                auto const extensionComputeLimit = sle->at(~sfGasLimit);
+                auto const extensionSizeLimit = sle->at(~sfBytecodeSizeLimit);
                 auto const gasPrice = sle->at(~sfGasPrice);
 
                 auto assign = [](std::uint32_t& dest, std::optional<std::uint32_t> const& src) {

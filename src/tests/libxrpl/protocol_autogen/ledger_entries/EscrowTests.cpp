@@ -27,7 +27,7 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     auto const conditionValue = canonical_VL();
     auto const cancelAfterValue = canonical_UINT32();
     auto const finishAfterValue = canonical_UINT32();
-    auto const finishFunctionValue = canonical_VL();
+    auto const bytecodeValue = canonical_VL();
     auto const dataValue = canonical_VL();
     auto const sourceTagValue = canonical_UINT32();
     auto const destinationTagValue = canonical_UINT32();
@@ -51,7 +51,7 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     builder.setCondition(conditionValue);
     builder.setCancelAfter(cancelAfterValue);
     builder.setFinishAfter(finishAfterValue);
-    builder.setFinishFunction(finishFunctionValue);
+    builder.setBytecode(bytecodeValue);
     builder.setData(dataValue);
     builder.setSourceTag(sourceTagValue);
     builder.setDestinationTag(destinationTagValue);
@@ -137,11 +137,11 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = finishFunctionValue;
-        auto const actualOpt = entry.getFinishFunction();
+        auto const& expected = bytecodeValue;
+        auto const actualOpt = entry.getBytecode();
         ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfFinishFunction");
-        EXPECT_TRUE(entry.hasFinishFunction());
+        expectEqualField(expected, *actualOpt, "sfBytecode");
+        EXPECT_TRUE(entry.hasBytecode());
     }
 
     {
@@ -212,7 +212,7 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
     auto const conditionValue = canonical_VL();
     auto const cancelAfterValue = canonical_UINT32();
     auto const finishAfterValue = canonical_UINT32();
-    auto const finishFunctionValue = canonical_VL();
+    auto const bytecodeValue = canonical_VL();
     auto const dataValue = canonical_VL();
     auto const sourceTagValue = canonical_UINT32();
     auto const destinationTagValue = canonical_UINT32();
@@ -232,7 +232,7 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
     sle->at(sfCondition) = conditionValue;
     sle->at(sfCancelAfter) = cancelAfterValue;
     sle->at(sfFinishAfter) = finishAfterValue;
-    sle->at(sfFinishFunction) = finishFunctionValue;
+    sle->at(sfBytecode) = bytecodeValue;
     sle->at(sfData) = dataValue;
     sle->at(sfSourceTag) = sourceTagValue;
     sle->at(sfDestinationTag) = destinationTagValue;
@@ -365,16 +365,16 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = finishFunctionValue;
+        auto const& expected = bytecodeValue;
 
-        auto const fromSleOpt = entryFromSle.getFinishFunction();
-        auto const fromBuilderOpt = entryFromBuilder.getFinishFunction();
+        auto const fromSleOpt = entryFromSle.getBytecode();
+        auto const fromBuilderOpt = entryFromBuilder.getBytecode();
 
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
 
-        expectEqualField(expected, *fromSleOpt, "sfFinishFunction");
-        expectEqualField(expected, *fromBuilderOpt, "sfFinishFunction");
+        expectEqualField(expected, *fromSleOpt, "sfBytecode");
+        expectEqualField(expected, *fromBuilderOpt, "sfBytecode");
     }
 
     {
@@ -527,8 +527,8 @@ TEST(EscrowTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getCancelAfter().has_value());
     EXPECT_FALSE(entry.hasFinishAfter());
     EXPECT_FALSE(entry.getFinishAfter().has_value());
-    EXPECT_FALSE(entry.hasFinishFunction());
-    EXPECT_FALSE(entry.getFinishFunction().has_value());
+    EXPECT_FALSE(entry.hasBytecode());
+    EXPECT_FALSE(entry.getBytecode().has_value());
     EXPECT_FALSE(entry.hasData());
     EXPECT_FALSE(entry.getData().has_value());
     EXPECT_FALSE(entry.hasSourceTag());

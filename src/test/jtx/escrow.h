@@ -77,29 +77,29 @@ auto const kCondition = JTxFieldWrapper<BlobField>(sfCondition);
 
 auto const kFulfillment = JTxFieldWrapper<BlobField>(sfFulfillment);
 
-struct FinishFunction
+struct Bytecode
 {
 private:
     std::string value_;
 
 public:
-    explicit FinishFunction(std::string func) : value_(std::move(func))
+    explicit Bytecode(std::string func) : value_(std::move(func))
     {
     }
 
-    explicit FinishFunction(Slice const& func) : value_(strHex(func))
+    explicit Bytecode(Slice const& func) : value_(strHex(func))
     {
     }
 
     template <size_t N>
-    explicit FinishFunction(std::array<std::uint8_t, N> const& f) : FinishFunction(makeSlice(f))
+    explicit Bytecode(std::array<std::uint8_t, N> const& f) : Bytecode(makeSlice(f))
     {
     }
 
     void
     operator()(Env&, JTx& jt) const
     {
-        jt.jv[sfFinishFunction.jsonName] = value_;
+        jt.jv[sfBytecode.jsonName] = value_;
     }
 };
 
@@ -129,20 +129,20 @@ public:
     }
 };
 
-struct CompAllowance
+struct Gas
 {
 private:
     std::uint32_t value_;
 
 public:
-    explicit CompAllowance(std::uint32_t const& value) : value_(value)
+    explicit Gas(std::uint32_t const& value) : value_(value)
     {
     }
 
     void
     operator()(Env&, JTx& jt) const
     {
-        jt.jv[sfComputationAllowance.jsonName] = value_;
+        jt.jv[sfGas.jsonName] = value_;
     }
 };
 

@@ -210,7 +210,7 @@ EscrowCancel::doApply()
         }
     }
 
-    auto const reserveToSubtract = calculateAdditionalReserve((*slep)[~sfFinishFunction]);
+    auto const reserveToSubtract = calculateAdditionalReserve((*slep)[~sfBytecode]);
     adjustOwnerCount(ctx_.view(), sle, -1 * reserveToSubtract, ctx_.journal);
     ctx_.view().update(sle);
 

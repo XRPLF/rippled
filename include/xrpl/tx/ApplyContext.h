@@ -85,9 +85,9 @@ public:
 
     /** Sets the gas used in the metadata */
     void
-    setWasmReturnCode(std::int32_t const wasmReturnCode)
+    setVMReturnCode(std::int32_t const vmReturnCode)
     {
-        wasmReturnCode_ = wasmReturnCode;
+        vmReturnCode_ = vmReturnCode;
     }
 
     /** Discard changes and start fresh. */
@@ -141,7 +141,7 @@ private:
     // The ID of the batch transaction we are executing under, if seated.
     std::optional<uint256 const> parentBatchId_;
     std::optional<std::uint32_t> gasUsed_;
-    std::optional<std::int32_t> wasmReturnCode_;
+    std::optional<std::int32_t> vmReturnCode_;
 };
 
 }  // namespace xrpl
