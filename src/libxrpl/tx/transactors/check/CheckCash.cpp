@@ -401,7 +401,7 @@ CheckCash::doApply()
 
                 // Can the account cover the trust line's or MPT reserve?
                 if (auto const ret = checkInsufficientReserve(
-                        ApplyViewContext{psb, ctx_.tx},
+                        ApplyViewContext{.view = psb, .tx = ctx_.tx},
                         sleDst,
                         preFeeBalance_,
                         *sponsorSle,
