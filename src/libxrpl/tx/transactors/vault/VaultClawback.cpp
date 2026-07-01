@@ -399,9 +399,8 @@ VaultClawback::doApply()
     // Keep MPToken if holder is the vault owner.
     if (holder != vault->at(sfOwner))
     {
-        auto applyViewContext = ctx_.getApplyViewContext();
         if (auto const ter =
-                removeEmptyHolding(applyViewContext, holder, sharesDestroyed.asset(), j_);
+                removeEmptyHolding(ctx_.getApplyViewContext(), holder, sharesDestroyed.asset(), j_);
             isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
