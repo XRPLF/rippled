@@ -45,7 +45,7 @@ escrowUnlockApplyHelper<Issue>(
     beast::Journal journal)
 {
     Issue const& issue = amount.get<Issue>();
-    Keylet const trustLineKey = keylet::line(receiver, issue);
+    Keylet const trustLineKey = keylet::trustLine(receiver, issue);
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
@@ -185,7 +185,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     bool const receiverIssuer = issuer == receiver;
 
     auto const mptID = amount.get<MPTIssue>().getMptID();
-    auto const issuanceKey = keylet::mptIssuance(mptID);
+    auto const issuanceKey = keylet::mptokenIssuance(mptID);
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {

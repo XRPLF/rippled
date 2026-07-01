@@ -14,7 +14,7 @@ namespace xrpl::reduce_relay {
 template <typename ClockType>
 class Squelch
 {
-    using time_point = typename ClockType::time_point;
+    using time_point = ClockType::time_point;
 
 public:
     explicit Squelch(beast::Journal journal) : journal_(journal)

@@ -140,7 +140,7 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
         case ltMPTOKEN_ISSUANCE:
             return sle->getAccountID(sfIssuer);
         case ltSIGNER_LIST: {
-            auto const signerList = view.read(keylet::signers(account));
+            auto const signerList = view.read(keylet::signerList(account));
             if (!signerList)
                 return std::nullopt;
             if (signerList->key() == sle->key())

@@ -78,15 +78,6 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
     return accountReserve(view, view.read(keylet::account(id)), j, adj);
 }
 
-/** @brief Return the hypothetical reserve required by an account with the provided counters.
- *
- *  @param view The ledger view to read from
- *  @param adj Adjustment to the default account reserve.
- *  @return The hypothetical reserve amount
- */
-XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount = 1);
-
 /** Check if an account has insufficient reserve.
  *
  *  @param view The ledger view to read from

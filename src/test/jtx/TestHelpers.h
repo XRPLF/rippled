@@ -27,6 +27,7 @@ namespace xrpl::test::jtx {
 */
 template <
     class SField,
+    // NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
     class StoredValue = typename SField::type::value_type,
     class OutputValue = StoredValue>
 struct JTxField
@@ -213,8 +214,8 @@ template <class JTxField>
 struct JTxFieldWrapper
 {
     using JF = JTxField;
-    using SF = typename JF::SF;
-    using SV = typename JF::SV;
+    using SF = JF::SF;
+    using SV = JF::SV;
 
 protected:
     SF const& sfield_;
@@ -266,9 +267,11 @@ public:
     }
 };
 
+// NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
 template <class SField, class UnitTag, class ValueType = typename SField::type::value_type>
 using valueUnitWrapper = JTxFieldWrapper<ValueUnitField<SField, UnitTag, ValueType>>;
 
+// NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
 template <class SField, class StoredValue = typename SField::type::value_type>
 using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 
@@ -740,8 +743,8 @@ create(jtx::Account const& account, jtx::Account const& dest, STAmount const& se
 
 }  // namespace check
 
-static constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
-static constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
+inline constexpr FeeLevel64 kBaseFeeLevel{TxQ::kBaseLevel};
+inline constexpr FeeLevel64 kMinEscalationFeeLevel = kBaseFeeLevel * 500;
 
 inline uint256
 getCheckIndex(AccountID const& account, std::uint32_t uSequence)

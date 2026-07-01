@@ -80,7 +80,7 @@ getTrustFlag(
     Currency const& cur,
     TrustFlag flag)
 {
-    if (auto sle = env.le(keylet::line(src, dst, cur)))
+    if (auto sle = env.le(keylet::trustLine(src, dst, cur)))
     {
         auto const useHigh = src.id() > dst.id();
         return sle->isFlag(trustFlag(flag, useHigh));
@@ -454,7 +454,7 @@ struct ExistingElementPool
                 for (auto const& c : currencies)
                 {
                     // Line balance
-                    auto const lk = keylet::line(*ai1, *ai2, c);
+                    auto const lk = keylet::trustLine(*ai1, *ai2, c);
                     auto const b1 = lineBalance(v1, lk);
                     auto const b2 = lineBalance(v2, lk);
                     if (b1 != b2)
