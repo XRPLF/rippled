@@ -901,10 +901,9 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         XRPL_ASSERT(
             (sType != STI_OBJECT) || (field->getFName().fieldType == STI_OBJECT),
             "xrpl::STObject::add : valid field type");
-        XRPL_ASSERT_PARTS(
-            getStyle(field->getFName()) != soeDEFAULT || !field->isDefault(),
-            "xrpl::STObject::add",
-            "non-default value");
+        XRPL_ASSERT(
+            getStyle(field->getFName()) != SoeDefault || !field->isDefault(),
+            "xrpl::STObject::add : non-default value");
 
         field->addFieldID(s);
         field->add(s);
