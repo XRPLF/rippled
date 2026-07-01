@@ -1296,13 +1296,7 @@ AgedAssociativeContainerTestBase::testChronological()
 
     typename Traits::template Cont<> c(v.begin(), v.end(), clock);
 
-    BEAST_EXPECT(
-        std::equal(
-            c.chronological.cbegin(),
-            c.chronological.cend(),
-            v.begin(),
-            v.end(),
-            EqualValue<Traits>()));
+    BEAST_EXPECT(std::ranges::equal(c.chronological, v, EqualValue<Traits>()));
 
     // Test touch() with a non-const iterator.
     for (auto iter(v.crbegin()); iter != v.crend(); ++iter)
@@ -1336,13 +1330,7 @@ AgedAssociativeContainerTestBase::testChronological()
         c.touch(found);
     }
 
-    BEAST_EXPECT(
-        std::equal(
-            c.chronological.cbegin(),
-            c.chronological.cend(),
-            v.cbegin(),
-            v.cend(),
-            EqualValue<Traits>()));
+    BEAST_EXPECT(std::ranges::equal(c.chronological, v, EqualValue<Traits>()));
 
     {
         // Because touch (reverse_iterator pos) is not allowed, the following
@@ -1407,8 +1395,8 @@ AgedAssociativeContainerTestBase::reverseFillAgedContainer(Container& c, Values 
     clk.set(0);
 
     Values rev(values);
-    std::sort(rev.begin(), rev.end());
-    std::reverse(rev.begin(), rev.end());
+    std::ranges::sort(rev);
+    std::ranges::reverse(rev);
     for (auto& v : rev)
     {
         // Add values in reverse order so they are reversed chronologically.
