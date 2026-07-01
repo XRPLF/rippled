@@ -1,17 +1,22 @@
 #pragma once
 
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 
 #include <boost/algorithm/string.hpp>
 
-#include <iomanip>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <utility>
 
 namespace xrpl::NodeStore {
 

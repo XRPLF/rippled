@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/detail/Bootcache.h>
 #include <xrpld/peerfinder/detail/Counts.h>
 #include <xrpld/peerfinder/detail/Fixed.h>
@@ -14,14 +15,29 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <map>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <set>
+#include <stdexcept>
+#include <string_view>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl::PeerFinder {
 

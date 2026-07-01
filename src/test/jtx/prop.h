@@ -1,6 +1,8 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/basic_prop.h>
 
 #include <memory>
 

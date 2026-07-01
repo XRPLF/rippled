@@ -4,9 +4,9 @@
 
 #include <chrono>
 #include <cstddef>
-#include <functional>
 #include <map>
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 

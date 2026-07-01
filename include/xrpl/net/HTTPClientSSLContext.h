@@ -10,6 +10,14 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/format.hpp>
 
+#include <openssl/err.h>
+#include <openssl/tls1.h>
+
+#include <functional>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
 namespace xrpl {
 
 class HTTPClientSSLContext

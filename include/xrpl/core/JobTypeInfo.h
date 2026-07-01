@@ -2,6 +2,10 @@
 
 #include <xrpl/core/Job.h>
 
+#include <chrono>
+#include <string>
+#include <utility>
+
 namespace xrpl {
 
 /** Holds all the 'static' information about a job, which does not change */
