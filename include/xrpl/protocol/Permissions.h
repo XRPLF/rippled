@@ -106,7 +106,7 @@ public:
     txToPermissionType(TxType type);
 
     // tx type value is permission value minus one
-    [[nodiscard]] static TxType
+    [[nodiscard]] static std::optional<TxType>
     permissionToTxType(std::uint32_t value);
 
     /**

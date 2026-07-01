@@ -94,7 +94,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             using namespace loanBroker;
             // Can't create a loan broker regardless of whether the vault exists
             env(set(alice, keylet.key), Ter(temDISABLED));
-            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
             // Other LoanBroker transactions are disabled, too.
             // 1. LoanBrokerCoverDeposit
             env(coverDeposit(alice, brokerKeylet.key, asset(1000)), Ter(temDISABLED));
@@ -180,7 +180,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         static PrettyAsset const kGhostIouAsset = kNonExistent["GST"];
         PrettyAsset const vaultPseudoIouAsset = vault.pseudoAccount["PSD"];
 
-        auto const badKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const badKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, badVault.vaultID));
         env.close();
         auto const badBrokerPseudo = [&]() {
@@ -193,7 +193,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         }();
         PrettyAsset const badBrokerPseudoIouAsset = badBrokerPseudo["WAT"];
 
-        auto const keylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const keylet = keylet::loanBroker(alice.id(), env.seq(alice));
         {
             // Start with default values
             auto jtx = env.jt(set(alice, vault.vaultID));
@@ -283,7 +283,8 @@ class LoanBroker_test : public beast::unit_test::Suite
                 [&env, &vault, &pseudoAccount, &broker, &keylet, this](auto n) {
                     using namespace jtx;
 
-                    if (BEAST_EXPECT(broker = env.le(keylet)))
+                    broker = env.le(keylet);
+                    if (BEAST_EXPECT(broker))
                     {
                         auto const amount = vault.asset(n);
                         BEAST_EXPECT(broker->at(sfCoverAvailable) == amount.number());
@@ -473,7 +474,8 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.close();
 
             // Check the results of modifications
-            if (BEAST_EXPECT(broker = env.le(keylet)) && checkChangedBroker)
+            broker = env.le(keylet);
+            if (BEAST_EXPECT(broker) && checkChangedBroker)
                 checkChangedBroker(broker);
 
             // Verify that fields get removed when set to default values
@@ -486,7 +488,8 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.close();
 
             // Check the updated fields
-            if (BEAST_EXPECT(broker = env.le(keylet)))
+            broker = env.le(keylet);
+            if (BEAST_EXPECT(broker))
             {
                 BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
                 BEAST_EXPECT(!broker->isFieldPresent(sfData));
@@ -736,7 +739,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                     // Modifications
 
                     // Update the fields
-                    auto const nextKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+                    auto const nextKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
 
                     // fields that can't be changed
                     // LoanBrokerID
@@ -892,7 +895,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, vaultInfo.vaultID));
         env.close();
 
@@ -936,11 +939,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env.close();
             env(coverDeposit(alice, brokerKeylet.key, vaultInfo.asset(10)),
                 Ter(tecINSUFFICIENT_FUNDS));
-
-            // preclaim: tecFROZEN
-            env(fset(issuer, asfGlobalFreeze));
-            env.close();
-            env(coverDeposit(alice, brokerKeylet.key, vaultInfo.asset(10)), Ter(tecFROZEN));
+            // Freeze/lock tests are in testCoverDepositFreezes/testCoverWithdrawFreezes
         }
         else
         {
@@ -966,35 +965,20 @@ class LoanBroker_test : public beast::unit_test::Suite
             // preclaim: tecDST_TAG_NEEDED
             Account const dest{"dest"};
             env.fund(XRP(1'000), dest);
+
             env(fset(dest, asfRequireDest));
-            env.close();
             env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
                 kDestination(dest),
                 Ter(tecDST_TAG_NEEDED));
+            env(fclear(dest, asfRequireDest));
 
             // preclaim: tecNO_PERMISSION
-            env(fclear(dest, asfRequireDest));
             env(fset(dest, asfDepositAuth));
-            env.close();
             env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
                 kDestination(dest),
                 Ter(tecNO_PERMISSION));
-
-            // preclaim: tecFROZEN
-            env(trust(dest, asset(1'000)));
             env(fclear(dest, asfDepositAuth));
-            env(fset(issuer, asfGlobalFreeze));
-            env.close();
-            env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
-                kDestination(dest),
-                Ter(tecFROZEN));
-
-            // preclaim:: tecFROZEN (deep frozen)
-            env(fclear(issuer, asfGlobalFreeze));
-            env(trust(issuer, asset(1'000), dest, tfSetFreeze | tfSetDeepFreeze));
-            env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
-                kDestination(dest),
-                Ter(tecFROZEN));
+            // Freeze/lock tests are in testCoverDepositFreezes/testCoverWithdrawFreezes
 
             // preclaim: tecPSEUDO_ACCOUNT
             env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
@@ -1231,7 +1215,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Predict LoanBroker key using alice's current sequence BEFORE submit
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
 
         // Create LoanBroker pointing to the vault
         env(loanBroker::set(alice, vaultKeylet.key));
@@ -1250,7 +1234,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
 
-        if (auto sleBroker = ac.view().peek(keylet::loanbroker(brokerKeylet.key)))
+        if (auto sleBroker = ac.view().peek(keylet::loanBroker(brokerKeylet.key)))
         {
             auto const vaultID = (*sleBroker)[sfVaultID];
             if (auto sleVault = ac.view().peek(keylet::vault(vaultID)))
@@ -1337,7 +1321,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 err);
         });
 
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         // Can create LoanBroker if the vault owner is not authorized
         forUnauthAuth([&](auto) { env(set(alice, vaultInfo.vaultID)); });
 
@@ -1415,7 +1399,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, vaultInfo.vaultID));
         env.close();
 
@@ -1503,7 +1487,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 Ter(err));
             env.close();
 
-            auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
+            auto const brokerKeylet = keylet::loanBroker(broker, env.seq(broker));
 
             env(loanBroker::set(broker, keylet.key));
             env.close();
@@ -1617,7 +1601,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create loan broker
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, vaultKeylet.key));
         env.close();
 
@@ -1734,7 +1718,7 @@ class LoanBroker_test : public beast::unit_test::Suite
         env.close();
 
         // Create loan broker
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
         env(set(alice, vaultKeylet.key));
         env.close();
 
@@ -1782,6 +1766,444 @@ class LoanBroker_test : public beast::unit_test::Suite
         // Alice's balance unchanged
         auto const aliceBalanceAfter = env.balance(alice, iou);
         BEAST_EXPECT(aliceBalanceAfter == aliceBalanceBefore);
+    }
+
+    void
+    testCoverDepositFreezes()
+    {
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+
+        // === IOU ===
+        {
+            testcase("LoanBrokerCoverDeposit IOU freeze checks");
+            Env env(*this);
+            Vault const vault{env};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env(trust(alice, issuer["IOU"](1'000'000)));
+            env.close();
+            PrettyAsset const asset(issuer["IOU"]);
+            env(pay(issuer, alice, asset(100'000)));
+            env.close();
+
+            auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx);
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+
+            auto const broker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(broker))
+                return;
+            Account const brokerPseudo("pseudo", broker->at(sfAccount));
+
+            env(coverDeposit(alice, brokerKeylet.key, asset(10)));
+            env.close();
+
+            auto runTests = [&]() {
+                auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
+
+                // Global freeze
+                env(fset(issuer, asfGlobalFreeze));
+                env(coverDeposit(alice, brokerKeylet.key, asset(1)), Ter(tecFROZEN));
+                env(fclear(issuer, asfGlobalFreeze));
+
+                // Source regular freeze
+                env(trust(issuer, asset(0), alice, tfSetFreeze));
+                env(coverDeposit(alice, brokerKeylet.key, asset(1)), Ter(tecFROZEN));
+                env(trust(issuer, asset(0), alice, tfClearFreeze));
+
+                // Source deep freeze
+                env(trust(issuer, asset(0), alice, tfSetFreeze | tfSetDeepFreeze));
+                env(coverDeposit(alice, brokerKeylet.key, asset(1)), Ter(tecFROZEN));
+                env(trust(issuer, asset(0), alice, tfClearFreeze | tfClearDeepFreeze));
+
+                // Pseudo regular freeze — post-fix blocks, pre-fix allows (BUG)
+                TER const pseudoTer = fix330Enabled ? TER(tecFROZEN) : TER(tesSUCCESS);
+                env(trust(issuer, asset(0), brokerPseudo, tfSetFreeze));
+                env(coverDeposit(alice, brokerKeylet.key, asset(1)), Ter(pseudoTer));
+                env(trust(issuer, asset(0), brokerPseudo, tfClearFreeze));
+
+                // Pseudo deep freeze
+                env(trust(issuer, asset(0), brokerPseudo, tfSetFreeze | tfSetDeepFreeze));
+                env(coverDeposit(alice, brokerKeylet.key, asset(1)), Ter(tecFROZEN));
+                env(trust(issuer, asset(0), brokerPseudo, tfClearFreeze | tfClearDeepFreeze));
+            };
+
+            runTests();
+            env.disableFeature(fixCleanup3_3_0);
+            runTests();
+            env.enableFeature(fixCleanup3_3_0);
+        }
+
+        // === MPT ===
+        {
+            testcase("LoanBrokerCoverDeposit MPT lock checks");
+            Env env(*this);
+            Vault const vault{env};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const mpt{mptt.issuanceID()};
+
+            mptt.authorize({.account = alice});
+            env(pay(issuer, alice, mpt(100'000)));
+            env.close();
+
+            auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = mpt});
+            env(tx);
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = mpt(50)}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+
+            auto const broker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(broker))
+                return;
+            Account const brokerPseudo("pseudo", broker->at(sfAccount));
+
+            env(coverDeposit(alice, brokerKeylet.key, mpt(10)));
+            env.close();
+
+            // For MPT isDeepFrozen == isFrozen, so all locks block in
+            // both pre- and post-fix. No behavioral difference.
+            auto runTests = [&]() {
+                // Global lock
+                mptt.set({.flags = tfMPTLock});
+                env.close();
+                env(coverDeposit(alice, brokerKeylet.key, mpt(1)), Ter(tecLOCKED));
+                mptt.set({.flags = tfMPTUnlock});
+                env.close();
+
+                // Source (alice) individual lock
+                mptt.set({.holder = alice, .flags = tfMPTLock});
+                env.close();
+                env(coverDeposit(alice, brokerKeylet.key, mpt(1)), Ter(tecLOCKED));
+                mptt.set({.holder = alice, .flags = tfMPTUnlock});
+                env.close();
+
+                // Pseudo individual lock
+                mptt.set({.holder = brokerPseudo, .flags = tfMPTLock});
+                env.close();
+                env(coverDeposit(alice, brokerKeylet.key, mpt(1)), Ter(tecLOCKED));
+                mptt.set({.holder = brokerPseudo, .flags = tfMPTUnlock});
+                env.close();
+            };
+
+            runTests();
+            env.disableFeature(fixCleanup3_3_0);
+            runTests();
+            env.enableFeature(fixCleanup3_3_0);
+        }
+    }
+
+    // Focused demonstration: a cover-withdraw submitter under a regular
+    // individual IOU freeze can still withdraw to themselves (self-withdrawal).
+    //
+    // Pre-fixCleanup3_3_0: the old code only checked the pseudo-account source
+    // and the destination for deep-freeze; it did not check the submitter's
+    // individual freeze at all. Self-withdrawal therefore always succeeded.
+    // Post-fixCleanup3_3_0: checkWithdrawFreeze explicitly skips the submitter
+    // freeze check when submitter == destination, preserving the same result.
+    void
+    testCoverWithdrawSelfWhileFrozen()
+    {
+        testcase("LoanBrokerCoverWithdraw IOU self-withdrawal while individually frozen");
+
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const dest{"dest"};
+        Env env{*this};
+        Vault const vault{env};
+
+        env.fund(XRP(100'000), issuer, alice, dest);
+        env(trust(alice, issuer["IOU"](1'000'000)));
+        env(trust(dest, issuer["IOU"](1'000'000)));
+        env.close();
+
+        PrettyAsset const asset(issuer["IOU"]);
+        env(pay(issuer, alice, asset(100'000)));
+        env.close();
+
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(vaultTx);
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
+        env(set(alice, vaultKeylet.key));
+        env.close();
+
+        env(coverDeposit(alice, brokerKeylet.key, asset(10)));
+        env.close();
+
+        auto runTests = [&]() {
+            auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
+
+            // Set a regular individual freeze on alice's IOU trustline.
+            env(trust(issuer, asset(0), alice, tfSetFreeze));
+            env.close();
+
+            // Self-withdrawal: submitter == destination (no sfDestination in tx).
+            // Both pre- and post-fixCleanup3_3_0 this succeeds:
+            //   pre-fix:  old code never checked the submitter's freeze.
+            //   post-fix: checkWithdrawFreeze skips submitter when submitter==dst.
+            env(coverWithdraw(alice, brokerKeylet.key, asset(1)), Ter(tesSUCCESS));
+
+            // Withdrawal to a third party is blocked by the submitter freeze
+            // under fixCleanup3_3_0; pre-fix it was not checked.
+            env(coverWithdraw(alice, brokerKeylet.key, asset(1)),
+                kDestination(dest),
+                Ter(fix330Enabled ? TER(tecFROZEN) : TER(tesSUCCESS)));
+
+            env(trust(issuer, asset(0), alice, tfClearFreeze));
+            env.close();
+        };
+
+        runTests();
+        env.disableFeature(fixCleanup3_3_0);
+        runTests();
+        env.enableFeature(fixCleanup3_3_0);
+    }
+
+    void
+    testCoverWithdrawFreezes()
+    {
+        using namespace jtx;
+        using namespace loanBroker;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+
+        // === IOU ===
+        {
+            testcase("LoanBrokerCoverWithdraw IOU freeze checks");
+            Env env(*this);
+            Vault const vault{env};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env(trust(alice, issuer["IOU"](1'000'000)));
+            env.close();
+            PrettyAsset const asset(issuer["IOU"]);
+            env(pay(issuer, alice, asset(100'000)));
+            env.close();
+
+            auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx);
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+
+            auto const broker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(broker))
+                return;
+            Account const brokerPseudo("pseudo", broker->at(sfAccount));
+
+            env(coverDeposit(alice, brokerKeylet.key, asset(10)));
+            env.close();
+
+            Account const dest{"dest"};
+            env.fund(XRP(1'000), dest);
+            env(trust(dest, asset(1'000)));
+
+            auto runTests = [&]() {
+                auto const fix330Enabled = env.current()->rules().enabled(fixCleanup3_3_0);
+                TER const expectedTec = fix330Enabled ? TER(tecFROZEN) : TER(tesSUCCESS);
+
+                // Global freeze
+                env(fset(issuer, asfGlobalFreeze));
+                env(coverWithdraw(alice, brokerKeylet.key, asset(1)),
+                    kDestination(dest),
+                    Ter(tecFROZEN));
+                env(fclear(issuer, asfGlobalFreeze));
+
+                // Source (pseudo) regular freeze
+                env(trust(issuer, asset(0), brokerPseudo, tfSetFreeze));
+                env(coverWithdraw(alice, brokerKeylet.key, asset(1)),
+                    kDestination(dest),
+                    Ter(tecFROZEN));
+                env(trust(issuer, asset(0), brokerPseudo, tfClearFreeze));
+
+                // Source (pseudo) deep freeze
+                env(trust(issuer, asset(0), brokerPseudo, tfSetFreeze | tfSetDeepFreeze));
+                env(coverWithdraw(alice, brokerKeylet.key, asset(1)),
+                    kDestination(dest),
+                    Ter(tecFROZEN));
+                env(trust(issuer, asset(0), brokerPseudo, tfClearFreeze | tfClearDeepFreeze));
+
+                // Submitter regular freeze → dest
+                env(trust(issuer, asset(0), alice, tfSetFreeze));
+                env(coverWithdraw(alice, brokerKeylet.key, asset(1)),
+                    kDestination(dest),
+                    Ter(expectedTec));
+                // Submitter regular freeze → self: always allowed
+                env(coverWithdraw(alice, brokerKeylet.key, asset(1)), Ter(tesSUCCESS));
+                env(trust(issuer, asset(0), alice, tfClearFreeze));
+                env(coverDeposit(
+                    alice, brokerKeylet.key, asset(isTesSuccess(expectedTec) ? 2 : 1)));
+
+                // Submitter deep freeze → dest
+                env(trust(issuer, asset(0), alice, tfSetFreeze | tfSetDeepFreeze));
+                env(coverWithdraw(alice, brokerKeylet.key, asset(1)),
+                    kDestination(dest),
+                    Ter(expectedTec));
+                // Submitter deep freeze → self: blocked (checkDeepFrozen)
+                env(coverWithdraw(alice, brokerKeylet.key, asset(1)), Ter(tecFROZEN));
+                env(trust(issuer, asset(0), alice, tfClearFreeze | tfClearDeepFreeze));
+                if (isTesSuccess(expectedTec))
+                    env(coverDeposit(alice, brokerKeylet.key, asset(1)));
+
+                // Destination regular freeze: only deep freeze blocks
+                env(trust(issuer, asset(0), dest, tfSetFreeze));
+                env(coverWithdraw(alice, brokerKeylet.key, asset(1)),
+                    kDestination(dest),
+                    Ter(tesSUCCESS));
+                env(trust(issuer, asset(0), dest, tfClearFreeze));
+                env(coverDeposit(alice, brokerKeylet.key, asset(1)));
+
+                // Destination deep freeze
+                env(trust(issuer, asset(0), dest, tfSetFreeze | tfSetDeepFreeze));
+                env(coverWithdraw(alice, brokerKeylet.key, asset(1)),
+                    kDestination(dest),
+                    Ter(tecFROZEN));
+                env(trust(issuer, asset(0), dest, tfClearFreeze | tfClearDeepFreeze));
+
+                // Submitter frozen → issuer: bypasses all freeze checks
+                env(trust(issuer, asset(0), alice, tfSetFreeze));
+                env(coverWithdraw(alice, brokerKeylet.key, asset(1)),
+                    kDestination(issuer),
+                    Ter(tesSUCCESS));
+                env(trust(issuer, asset(0), alice, tfClearFreeze));
+                env(coverDeposit(alice, brokerKeylet.key, asset(1)));
+            };
+
+            runTests();
+            env.disableFeature(fixCleanup3_3_0);
+            runTests();
+            env.enableFeature(fixCleanup3_3_0);
+        }
+
+        // === MPT ===
+        {
+            testcase("LoanBrokerCoverWithdraw MPT lock checks");
+            Env env(*this);
+            Vault const vault{env};
+
+            env.fund(XRP(100'000), issuer, alice);
+            env.close();
+
+            MPTTester mptt{env, issuer, kMptInitNoFund};
+            mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+            PrettyAsset const mpt{mptt.issuanceID()};
+
+            mptt.authorize({.account = alice});
+            env(pay(issuer, alice, mpt(100'000)));
+            env.close();
+
+            auto [tx, vaultKeylet] = vault.create({.owner = alice, .asset = mpt});
+            env(tx);
+            env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = mpt(50)}));
+            env.close();
+
+            auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
+            env(set(alice, vaultKeylet.key));
+            env.close();
+
+            auto const broker = env.le(brokerKeylet);
+            if (!BEAST_EXPECT(broker))
+                return;
+            Account const brokerPseudo("pseudo", broker->at(sfAccount));
+
+            env(coverDeposit(alice, brokerKeylet.key, mpt(10)));
+            env.close();
+
+            Account const dest{"dest"};
+            env.fund(XRP(1'000), dest);
+            mptt.authorize({.account = dest});
+            env.close();
+
+            auto runTests = [&]() {
+                auto const withFix = env.current()->rules().enabled(fixCleanup3_3_0);
+                // Only submitter-to-dest differs: post-fix blocks, pre-fix
+                // doesn't (BUG). All other locks block in both because for
+                // MPT isDeepFrozen == isFrozen.
+                TER const submitterToDest = withFix ? TER(tecLOCKED) : TER(tesSUCCESS);
+
+                // Global lock
+                mptt.set({.flags = tfMPTLock});
+                env.close();
+                env(coverWithdraw(alice, brokerKeylet.key, mpt(1)),
+                    kDestination(dest),
+                    Ter(tecLOCKED));
+                mptt.set({.flags = tfMPTUnlock});
+                env.close();
+
+                // Source (pseudo) individual lock
+                mptt.set({.holder = brokerPseudo, .flags = tfMPTLock});
+                env.close();
+                env(coverWithdraw(alice, brokerKeylet.key, mpt(1)),
+                    kDestination(dest),
+                    Ter(tecLOCKED));
+                mptt.set({.holder = brokerPseudo, .flags = tfMPTUnlock});
+                env.close();
+
+                // Submitter individual lock → dest
+                mptt.set({.holder = alice, .flags = tfMPTLock});
+                env.close();
+                env(coverWithdraw(alice, brokerKeylet.key, mpt(1)),
+                    kDestination(dest),
+                    Ter(submitterToDest));
+                // Submitter individual lock → self: blocked
+                env(coverWithdraw(alice, brokerKeylet.key, mpt(1)), Ter(tecLOCKED));
+                mptt.set({.holder = alice, .flags = tfMPTUnlock});
+                env.close();
+                if (isTesSuccess(submitterToDest))
+                    env(coverDeposit(alice, brokerKeylet.key, mpt(1)));
+                env.close();
+
+                // Dest individual lock: blocked
+                mptt.set({.holder = dest, .flags = tfMPTLock});
+                env.close();
+                env(coverWithdraw(alice, brokerKeylet.key, mpt(1)),
+                    kDestination(dest),
+                    Ter(tecLOCKED));
+                mptt.set({.holder = dest, .flags = tfMPTUnlock});
+                env.close();
+
+                // Submitter locked → issuer: bypasses all freeze checks
+                mptt.set({.holder = alice, .flags = tfMPTLock});
+                env.close();
+                env(coverWithdraw(alice, brokerKeylet.key, mpt(1)),
+                    kDestination(issuer),
+                    Ter(tesSUCCESS));
+                mptt.set({.holder = alice, .flags = tfMPTUnlock});
+                env(coverDeposit(alice, brokerKeylet.key, mpt(1)));
+                env.close();
+            };
+
+            runTests();
+            env.disableFeature(fixCleanup3_3_0);
+            runTests();
+            env.enableFeature(fixCleanup3_3_0);
+        }
     }
 
     void
@@ -1876,7 +2298,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(vault.withdraw({.depositor = broker, .id = keylet.key, .amount = token(1'000)}));
 
             // Test LoanBroker withdraw
-            auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
+            auto const brokerKeylet = keylet::loanBroker(broker, env.seq(broker));
 
             env(loanBroker::set(broker, keylet.key));
             env.close();
@@ -2004,7 +2426,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             }
 
             // Test LoanBroker withdraw
-            auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
+            auto const brokerKeylet = keylet::loanBroker(broker, env.seq(broker));
 
             env(loanBroker::set(broker, keylet.key));
             env.close();
@@ -2068,7 +2490,7 @@ class LoanBroker_test : public beast::unit_test::Suite
             env(createTx);
             env.close();
 
-            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
             env(set(alice, vaultKeylet.key));
             env.close();
 
@@ -2215,7 +2637,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 env(createTx);
                 env.close();
 
-                auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+                auto const brokerKeylet = keylet::loanBroker(alice.id(), env.seq(alice));
                 env(set(alice, vaultKeylet.key));
                 env.close();
 
@@ -2244,6 +2666,13 @@ public:
     void
     run() override
     {
+        testInvalidLoanBrokerCoverClawback();
+        testInvalidLoanBrokerCoverDeposit();
+        testInvalidLoanBrokerCoverWithdraw();
+        testCoverDepositFreezes();
+        testCoverWithdrawFreezes();
+        testCoverWithdrawSelfWhileFrozen();
+
         testCoverPrecisionGuard();
 
         testLoanBrokerSetDebtMaximum();
@@ -2251,9 +2680,6 @@ public:
 
         testDisabled();
         testLifecycle();
-        testInvalidLoanBrokerCoverClawback();
-        testInvalidLoanBrokerCoverDeposit();
-        testInvalidLoanBrokerCoverWithdraw();
         testInvalidLoanBrokerDelete();
         testInvalidLoanBrokerSet();
         testRequireAuth();
@@ -2268,7 +2694,6 @@ public:
 
         testLoanBrokerDeleteFrozenIOU(all_);
         testLoanBrokerDeleteFrozenIOU(all_ - fixCleanup3_2_0);
-
         // TODO: Write clawback failure tests with an issuer / MPT that doesn't
         // have the right flags set.
     }

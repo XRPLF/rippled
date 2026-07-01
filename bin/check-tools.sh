@@ -90,16 +90,19 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
     check perl
     check pkg-config
     check vim
+    check zip
 
     # These tools are present in our Linux CI images and in local development
     # setups, but not in the macOS CI environment. So check them everywhere
     # except when running in CI on macOS.
     if [ "${os}" = "linux" ] || [ -z "${CI:-}" ]; then
         check clang-format
+        check dot
         check doxygen
         check gcovr
         check gh
         check git-cliff
+        check git-lfs
         check gpg
         # pre-commit, or its alternative implementation prek
         check pre-commit sh -c 'pre-commit --version || prek --version'

@@ -194,7 +194,7 @@ VaultCreate::doApply()
             return std::nullopt;
         return asset.holds<MPTIssue>()
             ? keylet::mptoken(asset.get<MPTIssue>().getMptID(), pseudoId).key
-            : keylet::line(pseudoId, asset.get<Issue>()).key;
+            : keylet::trustLine(pseudoId, asset.get<Issue>()).key;
     }();
     auto const maybeShare = MPTokenIssuanceCreate::create(
         view(),
