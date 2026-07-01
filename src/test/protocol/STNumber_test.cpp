@@ -108,7 +108,7 @@ struct STNumber_test : public beast::unit_test::Suite
                 auto const expectParseThrows = [this, &parseNumber](std::string const& boundary) {
                     try
                     {
-                        auto const bad = parseNumber(boundary);
+                        parseNumber(boundary);
                         fail();
                     }
                     catch (std::exception const& e)

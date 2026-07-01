@@ -261,7 +261,7 @@ numberFromJson(SField const& field, json::Value const& value)
     // exponents match, or there are no more 0s. If the two results don't match exactly, then the
     // value has been rounded one way or another, and should not be used, because it may lead to an
     // unexpected result. canonicalizeParts is not to be confused with Number::canonicalize, because
-    // they're have completely different goals.
+    // they have completely different goals.
     auto canonicalizeParts = [](NumberParts p, int otherExponent) {
         if (p.mantissa == 0)
             return NumberParts{};
