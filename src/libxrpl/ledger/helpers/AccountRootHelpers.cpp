@@ -289,7 +289,7 @@ accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjus
 }
 
 XRPAmount
-baseAccountReserve(ReadView const& view, Adjustment adj)
+baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount = 1)
 {
     auto const& fees = view.fees();
     return (fees.reserve * (1 + adj.accountCountDelta)) + (fees.increment * adj.ownerCountDelta);
