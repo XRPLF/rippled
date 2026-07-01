@@ -13,6 +13,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 NotTEC
