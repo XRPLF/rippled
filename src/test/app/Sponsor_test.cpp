@@ -245,7 +245,7 @@ public:
         env(sponsor::set_fee(sponsor, 0, XRP(4)), sponsor::SponseeAcc(alice), Ter(tecUNFUNDED));
         env.close();
 
-        // insufficent reserve to create sponsorship
+        // insufficient reserve to create sponsorship
         adjustAccountXRPBalance(env, sponsor, XRP(100) + XRP(1) + reserve(env, 1) - drops(1));
         env(sponsor::set(sponsor, 0, 100, XRP(100)),
             sponsor::SponseeAcc(alice),
@@ -253,15 +253,15 @@ public:
             Ter(tecUNFUNDED));
         env.close();
 
-        //  FeeAmount + Fee > Balance
-        /// Balance = 1000XRP, FeeAmount = 1001XRP
+        // FeeAmount + Fee > Balance
+        // Balance = 1000XRP, FeeAmount = 1001XRP
         adjustAccountXRPBalance(env, sponsor, XRP(1000));
         env(sponsor::set_fee(sponsor, 0, XRP(1001)),
             sponsor::SponseeAcc(alice),
             Fee(XRP(1)),
             Ter(tecUNFUNDED));
         env.close();
-        /// Balance = 1000XRP, FeeAmount = 999XRP, Fee=2XRP
+        // Balance = 1000XRP, FeeAmount = 999XRP, Fee=2XRP
         adjustAccountXRPBalance(env, sponsor, XRP(1000));
         env(sponsor::set_fee(sponsor, 0, XRP(999)),
             sponsor::SponseeAcc(alice),
