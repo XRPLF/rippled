@@ -95,7 +95,7 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::kTicket(accountID_, curTicketSeq);
+        Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
         SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, accountID_);
@@ -116,12 +116,12 @@ TicketCreate::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].valueOr(0u);
+    std::uint32_t const oldTicketCount = (*sleAccountRoot)[~sfTicketCount].valueOr(0u);
 
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), accountID_, {}, ticketCount, viewJ);
+    increaseOwnerCount(view(), accountID_, {}, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

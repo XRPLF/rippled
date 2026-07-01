@@ -18,7 +18,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
@@ -61,7 +60,7 @@ private:
         // Insufficient reserve
         {
             Env env(*this);
-            env.fund(baseAccountReserve(*env.current(), 0), owner);
+            env.fund(env.current()->fees().accountReserve(0, 1), owner);
             Oracle const oracle(
                 env,
                 {.owner = owner,
@@ -71,7 +70,8 @@ private:
         // Insufficient reserve if the data series extends to greater than 5
         {
             Env env(*this);
-            env.fund(baseAccountReserve(*env.current(), 1) + env.current()->fees().base * 2, owner);
+            env.fund(
+                env.current()->fees().accountReserve(1, 1) + env.current()->fees().base * 2, owner);
             Oracle oracle(
                 env, {.owner = owner, .fee = static_cast<int>(env.current()->fees().base.drops())});
             BEAST_EXPECT(oracle.exists());
@@ -639,7 +639,8 @@ private:
         {
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            env.fund(baseAccountReserve(*env.current(), 1) + env.current()->fees().base * 2, owner);
+            env.fund(
+                env.current()->fees().accountReserve(1, 1) + env.current()->fees().base * 2, owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             oracle.set(UpdateArg{.series = {{"XRP", "USD", 742, 2}}, .fee = baseFee});
         }

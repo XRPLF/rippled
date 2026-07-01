@@ -1427,7 +1427,7 @@ public:
         }
 
         // Now sponsor bob's trust line
-        auto const trustId = keylet::line(bob, gw, usd.currency);
+        auto const trustId = keylet::trustLine(bob, gw, usd.currency);
         if (!BEAST_EXPECT(env.le(trustId)))
             return;
 
@@ -1491,7 +1491,7 @@ public:
             env(trust(user, usd(100)));
             env.close();
 
-            auto const trustId = keylet::line(user, issuer, usd.currency);
+            auto const trustId = keylet::trustLine(user, issuer, usd.currency);
             if (!BEAST_EXPECT(env.le(trustId)))
                 return;
 
