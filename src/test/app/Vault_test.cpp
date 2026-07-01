@@ -7512,6 +7512,74 @@ class Vault_test : public beast::unit_test::Suite
     }
 
     void
+    testVaultDeleteMemoData()
+    {
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        Account const owner{"owner"};
+        env.fund(XRP(1'000'000), owner);
+        env.close();
+
+        Vault const vault{env};
+
+        auto const keylet = keylet::vault(owner.id(), 1);
+        auto delTx = vault.del({.owner = owner, .id = keylet.key});
+
+        // Test VaultDelete with featureLendingProtocolV1_1 disabled
+        // Transaction fails if the data field is provided
+        {
+            testcase("VaultDelete memo data featureLendingProtocolV1_1 disabled");
+            env.disableFeature(featureLendingProtocolV1_1);
+            delTx[sfMemoData] = strHex(std::string(kMaxDataPayloadLength, 'A'));
+            env(delTx, Ter(temDISABLED));
+            env.enableFeature(featureLendingProtocolV1_1);
+            env.close();
+        }
+
+        // Transaction fails if the data field is too large
+        {
+            testcase("VaultDelete memo data featureLendingProtocolV1_1 enabled data too large");
+            delTx[sfMemoData] = strHex(std::string(kMaxDataPayloadLength + 1, 'A'));
+            env(delTx, Ter(temMALFORMED));
+            env.close();
+        }
+
+        // Transaction fails if the data field is set, but is empty
+        {
+            testcase("VaultDelete memo data featureLendingProtocolV1_1 enabled data empty");
+            delTx[sfMemoData] = strHex(std::string(0, 'A'));
+            env(delTx, Ter(temMALFORMED));
+            env.close();
+        }
+
+        {
+            testcase("VaultDelete memo data featureLendingProtocolV1_1 enabled no vault");
+            auto const keylet = keylet::vault(owner.id(), env.seq(owner));
+
+            // Recreate the transaction as the vault keylet changed
+            auto delTx = vault.del({.owner = owner, .id = keylet.key});
+            delTx[sfMemoData] = strHex(std::string(kMaxDataPayloadLength, 'A'));
+            env(delTx, Ter(tecNO_ENTRY));
+            env.close();
+        }
+
+        {
+            testcase("VaultDelete memo data featureLendingProtocolV1_1 enabled data valid");
+            PrettyAsset const xrpAsset = xrpIssue();
+            auto const [tx, keylet] = vault.create({.owner = owner, .asset = xrpAsset});
+            env(tx, Ter(tesSUCCESS));
+            env.close();
+            // Recreate the transaction as the vault keylet changed
+            auto delTx = vault.del({.owner = owner, .id = keylet.key});
+            delTx[sfMemoData] = strHex(std::string(kMaxDataPayloadLength, 'A'));
+            env(delTx, Ter(tesSUCCESS));
+            env.close();
+        }
+    }
+
+    void
     testVaultDepositFreeze()
     {
         using namespace test::jtx;
@@ -8082,6 +8150,7 @@ class Vault_test : public beast::unit_test::Suite
 
             runTests();
             env.disableFeature(fixCleanup3_3_0);
+
             runTests();
             env.enableFeature(fixCleanup3_3_0);
         }
@@ -8115,6 +8184,7 @@ public:
         testVaultClawbackAssets();
         testVaultEscrowedMPT();
         testAssetsMaximum();
+        testVaultDeleteMemoData();
         testBug6LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
         testRemoveEmptyHoldingConfidentialBalances();
