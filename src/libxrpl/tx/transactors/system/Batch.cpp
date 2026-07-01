@@ -440,7 +440,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     {
         // A delegated inner is signed by the delegate, not the account holder,
         // so the delegate is the required signer when present.
-        AccountID const authorizer = rb.getFeePayer();
+        AccountID const authorizer = rb.getInitiator();
 
         // The outer account signs the batch itself, so it is never added to the
         // required signers.

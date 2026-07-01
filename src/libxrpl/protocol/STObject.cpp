@@ -634,7 +634,7 @@ STObject::getAccountID(SField const& field) const
 }
 
 AccountID
-STObject::getFeePayer() const
+STObject::getInitiator() const
 {
     // If sfDelegate is present, the delegate account is the payer
     // note: if a delegate is specified, its authorization to act on behalf of the account is
