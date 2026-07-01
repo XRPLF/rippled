@@ -98,7 +98,7 @@ lz4Decompress(
     std::vector<std::uint8_t> compressed;
     std::uint8_t const* chunk = nullptr;
     int chunkSize = 0;
-    int copiedInSize = 0;
+    std::size_t copiedInSize = 0;
     auto const currentBytes = in.ByteCount();
 
     // Use the first chunk if it is >= inSize bytes of the compressed message.
@@ -106,21 +106,26 @@ lz4Decompress(
     // use the buffer to decompress.
     while (in.Next(reinterpret_cast<void const**>(&chunk), &chunkSize))
     {
+        if (chunkSize < 0)
+            Throw<std::runtime_error>("lz4 decompress: invalid chunk size");
+
+        auto const chunkSizeAsSizeT = static_cast<std::size_t>(chunkSize);
+
         if (copiedInSize == 0)
         {
-            if (chunkSize >= inSize)
+            if (chunkSizeAsSizeT >= inSize)
             {
                 copiedInSize = inSize;
                 break;
             }
             compressed.resize(inSize);
         }
+	
+        auto const bytesToCopy = std::min(chunkSizeAsSizeT, inSize - copiedInSize);
+        
+	std::copy(chunk, chunk + bytesToCopy, compressed.data() + copiedInSize);
 
-        chunkSize = chunkSize < (inSize - copiedInSize) ? chunkSize : (inSize - copiedInSize);
-
-        std::copy(chunk, chunk + chunkSize, compressed.data() + copiedInSize);
-
-        copiedInSize += chunkSize;
+        copiedInSize += bytesToCopy;
 
         if (copiedInSize == inSize)
         {
@@ -133,7 +138,7 @@ lz4Decompress(
     if (in.ByteCount() > (currentBytes + copiedInSize))
         in.BackUp(in.ByteCount() - currentBytes - copiedInSize);
 
-    if ((copiedInSize == 0 && chunkSize < inSize) || (copiedInSize > 0 && copiedInSize != inSize))
+    if (copiedInSize != inSize)
         Throw<std::runtime_error>("lz4 decompress: insufficient input size");
 
     return lz4Decompress(chunk, inSize, decompressed, decompressedSize);
