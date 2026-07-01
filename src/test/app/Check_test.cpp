@@ -471,7 +471,7 @@ class Check_test : public beast::unit_test::Suite
 
         // Insufficient reserve.
         Account const cheri{"cheri"};
-        env.fund(baseAccountReserve(*env.current(), 1) - drops(1), cheri);
+        env.fund(env.current()->fees().accountReserve(1, 1) - drops(1), cheri);
         env.close();
 
         env(check::create(cheri, bob, usd(50)),

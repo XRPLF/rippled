@@ -82,19 +82,6 @@ accountReserve(
     return accountReserve(view, view.read(keylet::account(id)), j, ownerCountAdj, accountCountAdj);
 }
 
-/** @brief Return the hypothetical reserve required by an account with the provided counters.
- *
- *  @param view The ledger view to read from
- *  @param ownerCount Number of objects for which the account will be responsible.
- *  @param accountCount Number of accounts for which the account will be responsible.
- *                      Defaults to 1, as normally every account is responsible for its own reserve.
- *                      Can be 0 if the account is sponsored.
- *                      Can be greater than 1 if the account is sponsoring other accounts.
- *  @return The hypothetical reserve amount
- */
-XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount = 1);
-
 /** Check if an account has insufficient reserve.
  *
  *  @param view The ledger view to read from

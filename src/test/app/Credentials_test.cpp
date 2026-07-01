@@ -639,8 +639,8 @@ struct Credentials_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
 
-            env.fund(drops(baseAccountReserve(*env.current(), 1)), issuer);
-            env.fund(drops(baseAccountReserve(*env.current(), 0)), subject);
+            env.fund(drops(env.current()->fees().accountReserve(1, 1)), issuer);
+            env.fund(drops(env.current()->fees().accountReserve(0, 1)), subject);
             env.close();
 
             {

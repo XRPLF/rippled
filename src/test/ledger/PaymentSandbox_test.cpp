@@ -331,7 +331,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         };
 
         auto reserve = [](jtx::Env& env, std::uint32_t count) -> XRPAmount {
-            return baseAccountReserve(*env.current(), count);
+            return env.current()->fees().accountReserve(count, 1);
         };
 
         Env env(*this, features);

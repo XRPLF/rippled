@@ -52,7 +52,7 @@ namespace xrpl::test {
 static XRPAmount
 reserve(jtx::Env& env, std::uint32_t count)
 {
-    return baseAccountReserve(*env.current(), count);
+    return env.current()->fees().accountReserve(count, 1);
 }
 
 // Helper function that returns true if acct has the lsfDepositAuth flag set.
@@ -1026,7 +1026,7 @@ struct DepositPreauth_test : public beast::unit_test::Suite
             {
                 // not enough reserve
                 Account const john{"john"};
-                env.fund(baseAccountReserve(*env.current(), 0), john);
+                env.fund(env.current()->fees().accountReserve(0, 1), john);
                 env.close();
                 auto jv =
                     deposit::authCredentials(john, {{.issuer = issuer, .credType = credType}});

@@ -410,7 +410,7 @@ class CheckMPT_test : public beast::unit_test::Suite
 
         // Insufficient reserve.
         Account const cheri{"cheri"};
-        env.fund(baseAccountReserve(*env.current(), 1) - drops(1), cheri);
+        env.fund(env.current()->fees().accountReserve(1, 1) - drops(1), cheri);
 
         env(check::create(cheri, bob, usd(50)),
             Fee(drops(env.current()->fees().base)),

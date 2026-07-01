@@ -165,7 +165,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     // Pseudo-accounts have no reserve requirement
     auto const reserve = isPseudoAccount(sle)
         ? XRPAmount{0}
-        : baseAccountReserve(view, currentOwnerCount, currentAccountCount);
+        : view.fees().accountReserve(currentOwnerCount, currentAccountCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -290,14 +290,7 @@ accountReserve(
     std::uint32_t const currentOwnerCount = ownerCount(sle, j, ownerCountAdj);
     std::uint32_t const currentAccountCount = accountCountImpl(sle, accountCountAdj, j);
 
-    return baseAccountReserve(view, currentOwnerCount, currentAccountCount);
-}
-
-XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount)
-{
-    auto const& fees = view.fees();
-    return (fees.reserve * accountCount) + (fees.increment * ownerCount);
+    return view.fees().accountReserve(currentOwnerCount, currentAccountCount);
 }
 
 TER
