@@ -2985,6 +2985,50 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
         }
+
+        // A sponsored EscrowCreate must still verify that the source
+        // can fund the escrow amount and stay above its own base
+        // reserve. The sponsor covers the new object's owner
+        // increment, but cannot cover the source's base reserve.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            // alice's balance is just above the base reserve. After
+            // locking escrowAmount she would dip below it.
+            adjustAccountXRPBalance(env, alice, accountReserve(env, 1) + XRP(1));
+
+            auto const escrowAmount = XRP(2);
+            auto const seq = env.seq(alice);
+
+            if (cosigning)
+            {
+                env(escrow::create(alice, bob, escrowAmount),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kCancelTime(env.now() + 100s),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(tecUNFUNDED));
+            }
+            else
+            {
+                env(sponsor::set(sponsor, 0, 1, XRP(1)), sponsor::SponseeAcc(alice));
+                env.close();
+
+                env(escrow::create(alice, bob, escrowAmount),
+                    escrow::kCondition(escrow::kCb1),
+                    escrow::kCancelTime(env.now() + 100s),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(tecUNFUNDED));
+            }
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::escrow(alice, seq)));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
     }
 
     void
@@ -3250,6 +3294,48 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
+        // A sponsored PaymentChannelCreate must still verify that the
+        // source can fund the channel amount and stay above its own
+        // base reserve. The sponsor covers the new object's owner
+        // increment, but cannot cover the source's base reserve.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            // alice's balance is just above the base reserve. After
+            // locking channelAmount she would dip below it.
+            adjustAccountXRPBalance(env, alice, accountReserve(env, 1) + XRP(1));
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 10s;
+            auto const channelAmount = XRP(2);
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+
+            if (cosigning)
+            {
+                env(paychan::create(alice, bob, channelAmount, settleDelay, pk),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(tecUNFUNDED));
+            }
+            else
+            {
+                env(sponsor::set(sponsor, 0, 1, XRP(1)), sponsor::SponseeAcc(alice));
+                env.close();
+
+                env(paychan::create(alice, bob, channelAmount, settleDelay, pk),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(tecUNFUNDED));
+            }
+            env.close();
+
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         }
     }
 
