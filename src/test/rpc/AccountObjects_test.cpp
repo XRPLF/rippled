@@ -1355,7 +1355,7 @@ public:
     void
     testAccountObjectDoesntShowCancelledOffers()
     {
-        testcase("AccountObjectDoesntShowCancelledOffers");
+        testcase("Account object doesn't show cancelled offers");
 
         using namespace jtx;
         Env env(*this);
