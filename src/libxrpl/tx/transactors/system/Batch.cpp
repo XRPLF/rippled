@@ -3,6 +3,8 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
@@ -21,11 +23,13 @@
 
 #include <algorithm>
 #include <bit>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -107,13 +111,13 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
 
     // Calculate the Signers/BatchSigners Fees
-    std::int32_t signerCount = 0;
+    std::uint32_t signerCount = 0;
     if (tx.isFieldPresent(sfBatchSigners))
     {
         auto const& signers = tx.getFieldArray(sfBatchSigners);
 
         // LCOV_EXCL_START
-        if (signers.size() > kMaxBatchTxCount)
+        if (signers.size() > kMaxBatchSigners)
         {
             JLOG(debugLog().error()) << "BatchTrace: Batch Signers array exceeds max entries.";
             return XRPAmount{kInitialXrp};
@@ -128,7 +132,16 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
             }
             else if (signer.isFieldPresent(sfSigners))
             {
-                signerCount += signer.getFieldArray(sfSigners).size();
+                auto const& nestedSigners = signer.getFieldArray(sfSigners);
+                // LCOV_EXCL_START
+                if (nestedSigners.size() > STTx::kMaxMultiSigners)
+                {
+                    JLOG(debugLog().error())
+                        << "BatchTrace: Nested Signers array exceeds max entries.";
+                    return kInitialXrp;
+                }
+                // LCOV_EXCL_STOP
+                signerCount += nestedSigners.size();
             }
         }
     }
@@ -149,7 +162,8 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in signerFees calculation.";
         return XRPAmount{kInitialXrp};
     }
-    if (txnFees + signerFees > maxAmount - batchBase)
+    XRPAmount const innerFees = txnFees + signerFees;
+    if (innerFees > maxAmount - batchBase)
     {
         JLOG(debugLog().error()) << "BatchTrace: XRPAmount overflow in total fee calculation.";
         return XRPAmount{kInitialXrp};
@@ -157,7 +171,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     // LCOV_EXCL_STOP
 
     // 10 drops per batch signature + sum of inner tx fees + batchBase
-    return signerFees + txnFees + batchBase;
+    return innerFees + batchBase;
 }
 
 std::uint32_t
@@ -224,6 +238,14 @@ Batch::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
                             << "txns array exceeds 8 entries.";
+        return temARRAY_TOO_LARGE;
+    }
+
+    if (ctx.tx.isFieldPresent(sfBatchSigners) &&
+        ctx.tx.getFieldArray(sfBatchSigners).size() > kMaxBatchSigners)
+    {
+        JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
+                            << "signers array exceeds " << kMaxBatchSigners << " entries.";
         return temARRAY_TOO_LARGE;
     }
 
@@ -384,46 +406,48 @@ Batch::preflight(PreflightContext const& ctx)
 NotTEC
 Batch::preflightSigValidated(PreflightContext const& ctx)
 {
+    XRPL_ASSERT(
+        ctx.tx.getTxnType() == ttBATCH, "xrpl::Batch::preflightSigValidated : batch transaction");
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
 
-    // Build the signers list
-    std::unordered_set<AccountID> requiredSigners;
+    // Accounts that must sign the batch: each inner authorizer and counterparty
+    // (excluding the outer account), sorted and de-duplicated to match against
+    // the ascending, unique batch signers.
+    std::vector<AccountID> requiredSigners;
+    requiredSigners.reserve(kMaxBatchSigners);
     for (STObject const& rb : rawTxns)
     {
-        auto const innerAccount = rb.getAccountID(sfAccount);
+        // A delegated inner is signed by the delegate, not the account holder,
+        // so the delegate is the required signer when present.
+        AccountID const authorizer = rb.getFeePayer();
 
-        // If the inner account is the same as the outer account, do not add the
-        // inner account to the required signers set.
-        if (innerAccount != outerAccount)
-            requiredSigners.insert(innerAccount);
+        // The outer account signs the batch itself, so it is never added to the
+        // required signers.
+        if (authorizer != outerAccount)
+            requiredSigners.push_back(authorizer);
         // Some transactions have a Counterparty, who must also sign the
         // transaction if they are not the outer account
-        if (auto const counterparty = rb.at(~sfCounterparty);
+        if (auto const counterparty = rb[~sfCounterparty];
             counterparty && counterparty != outerAccount)
-            requiredSigners.insert(*counterparty);
+            requiredSigners.push_back(*counterparty);
     }
+    std::ranges::sort(requiredSigners);
+    auto const dupes = std::ranges::unique(requiredSigners);
+    requiredSigners.erase(dupes.begin(), dupes.end());
+
+    std::size_t numReqSignersMatched = 0;
 
     // Validation Batch Signers
-    std::unordered_set<AccountID> batchSigners;
     if (ctx.tx.isFieldPresent(sfBatchSigners))
     {
         STArray const& signers = ctx.tx.getFieldArray(sfBatchSigners);
 
-        // Check that the batch signers array is not too large.
-        if (signers.size() > kMaxBatchTxCount)
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "signers array exceeds 8 entries.";
-            return temARRAY_TOO_LARGE;
-        }
-
-        // Add batch signers to the set to ensure all signer accounts are
-        // unique. Meanwhile, remove signer accounts from the set of inner
-        // transaction accounts (`requiredSigners`). By the end of the loop,
-        // `requiredSigners` should be empty, indicating that all inner
-        // accounts are matched with signers.
+        // Batch signers must be strictly ascending and match the required
+        // signers exactly; since both are sorted, each must be the next
+        // required signer.
+        AccountID lastBatchSigner{beast::kZero};
         for (auto const& signer : signers)
         {
             AccountID const signerAccount = signer.getAccountID(sfAccount);
@@ -434,39 +458,65 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
                 return temBAD_SIGNER;
             }
 
-            if (!batchSigners.insert(signerAccount).second)
+            if (lastBatchSigner == signerAccount)
             {
                 JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                     << "duplicate signer found: " << signerAccount;
-                return temREDUNDANT;
-            }
-
-            // Check that the batch signer is in the required signers set.
-            // Remove it if it does, as it can be crossed off the list.
-            if (requiredSigners.erase(signerAccount) == 0)
-            {
-                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                    << "no account signature for inner txn.";
                 return temBAD_SIGNER;
             }
-        }
 
-        // Check the batch signers signatures.
-        auto const sigResult = ctx.tx.checkBatchSign(ctx.rules);
+            if (lastBatchSigner > signerAccount)
+            {
+                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                    << "unsorted signers array: " << signerAccount;
+                return temBAD_SIGNER;
+            }
+            lastBatchSigner = signerAccount;
 
-        if (!sigResult)
-        {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "invalid batch txn signature: " << sigResult.error();
-            return temBAD_SIGNATURE;
+            if (numReqSignersMatched >= requiredSigners.size() ||
+                requiredSigners[numReqSignersMatched] != signerAccount)
+            {
+                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                    << "missing signer or extra signer provided: " << signerAccount;
+                return temBAD_SIGNER;
+            }
+            ++numReqSignersMatched;
         }
     }
 
-    if (!requiredSigners.empty())
+    // Every required signer must be matched. Also covers sfBatchSigners being
+    // absent while inner txns require signers (numReqSignersMatched stays 0).
+    if (numReqSignersMatched != requiredSigners.size())
     {
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                             << "invalid batch signers.";
         return temBAD_SIGNER;
+    }
+
+    return tesSUCCESS;
+}
+
+NotTEC
+Batch::checkBatchSign(PreclaimContext const& ctx)
+{
+    STArray const& signers{ctx.tx.getFieldArray(sfBatchSigners)};
+    for (auto const& signer : signers)
+    {
+        // Reuse the standard signer-authorization rules so the batch and
+        // non-batch paths cannot drift. permitUncreatedAccount allows an inner
+        // from an account that an earlier inner creates, which must be
+        // authorized by its own master key.
+        auto const idAccount = signer.getAccountID(sfAccount);
+        if (auto const ret = Transactor::checkSign(
+                ctx.view,
+                ctx.flags,
+                ctx.parentBatchId,
+                idAccount,
+                signer,
+                ctx.j,
+                /*permitUncreatedAccount=*/true);
+            !isTesSuccess(ret))
+            return ret;
     }
     return tesSUCCESS;
 }
@@ -479,7 +529,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
  * corresponding error code.
  *
  * Next, it verifies the batch-specific signature requirements by calling
- * Transactor::checkBatchSign. If this check fails, it also returns the
+ * Batch::checkBatchSign. If this check fails, it also returns the
  * corresponding error code.
  *
  * If both checks succeed, the function returns tesSUCCESS.
@@ -494,8 +544,11 @@ Batch::checkSign(PreclaimContext const& ctx)
     if (auto ret = Transactor::checkSign(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (auto ret = Transactor::checkBatchSign(ctx); !isTesSuccess(ret))
-        return ret;
+    if (ctx.tx.isFieldPresent(sfBatchSigners))
+    {
+        if (auto ret = checkBatchSign(ctx); !isTesSuccess(ret))
+            return ret;
+    }
 
     return tesSUCCESS;
 }
