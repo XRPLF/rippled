@@ -152,7 +152,7 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        adjustOwnerCount(view(), sleIssuer, {}, 1, j_);
+        increaseOwnerCount(view(), sleIssuer, {}, 1, j_);
     }
 
     if (subject == accountID_)

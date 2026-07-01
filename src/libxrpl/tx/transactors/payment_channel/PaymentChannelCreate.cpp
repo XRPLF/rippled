@@ -219,7 +219,7 @@ PaymentChannelCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    adjustOwnerCount(ctx_.view(), sle, *sponsorSle, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.view(), sle, *sponsorSle, 1, ctx_.journal);
     addSponsorToLedgerEntry(slep, *sponsorSle);
     ctx_.view().update(sle);
 

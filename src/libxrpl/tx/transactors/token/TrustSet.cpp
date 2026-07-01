@@ -535,9 +535,9 @@ TrustSet::doApply()
 
         if (bLowReserveSet && !bLowReserved)
         {
-            // should be checked PreFunded Sponsor before adjustOwnerCount()
+            // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
-            // calling adjustOwnerCount().
+            // calling increaseOwnerCount().
             if (auto const ret = checkInsufficientReserve(
                     view(),
                     ctx_.tx,
@@ -550,7 +550,7 @@ TrustSet::doApply()
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, *sponsorSle, 1, viewJ);
+            increaseOwnerCount(view(), sleLowAccount, *sponsorSle, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
             addSponsorToLedgerEntry(sleRippleState, *sponsorSle, sfLowSponsor);
@@ -562,7 +562,7 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, currentLowSponsor, -1, viewJ);
+            decreaseOwnerCount(view(), sleLowAccount, currentLowSponsor, 1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
 
             removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsor);
@@ -570,9 +570,9 @@ TrustSet::doApply()
 
         if (bHighReserveSet && !bHighReserved)
         {
-            // should be checked PreFunded Sponsor before adjustOwnerCount()
+            // should be checked PreFunded Sponsor before increaseOwnerCount()
             // For PreFunded sponsors, we need to check if there are sufficient reserves before
-            // calling adjustOwnerCount().
+            // calling increaseOwnerCount().
             if (auto const ret = checkInsufficientReserve(
                     view(),
                     ctx_.tx,
@@ -585,7 +585,7 @@ TrustSet::doApply()
                 return tecINSUF_RESERVE_LINE;
 
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, *sponsorSle, 1, viewJ);
+            increaseOwnerCount(view(), sleHighAccount, *sponsorSle, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
             addSponsorToLedgerEntry(sleRippleState, *sponsorSle, sfHighSponsor);
@@ -597,7 +597,7 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, currentHighSponsor, -1, viewJ);
+            decreaseOwnerCount(view(), sleHighAccount, currentHighSponsor, 1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
 
             removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsor);

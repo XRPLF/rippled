@@ -336,7 +336,7 @@ class Invariants_test : public beast::unit_test::Suite
                 // check.
                 sleA1->at(sfBalance) = beast::kZero;
                 BEAST_EXPECT(sleA1->at(sfOwnerCount) == 0);
-                adjustOwnerCount(ac.view(), sleA1, {}, 1, ac.journal);
+                increaseOwnerCount(ac.view(), sleA1, {}, 1, ac.journal);
 
                 ac.view().erase(sleA1);
 

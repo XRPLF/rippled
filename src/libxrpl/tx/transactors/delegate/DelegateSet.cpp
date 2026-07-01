@@ -135,7 +135,7 @@ DelegateSet::doApply()
     (*sle)[sfDestinationNode] = *destPage;
 
     ctx_.view().insert(sle);
-    adjustOwnerCount(ctx_.view(), sleOwner, *sponsorSle, 1, ctx_.journal);
+    increaseOwnerCount(ctx_.view(), sleOwner, *sponsorSle, 1, ctx_.journal);
     addSponsorToLedgerEntry(sle, *sponsorSle);
 
     return tesSUCCESS;
@@ -176,7 +176,7 @@ DelegateSet::deleteDelegate(ApplyView& view, SLE::ref sle, beast::Journal j)
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCountObj(view, sleOwner, sle, -1, j);
+    decreaseOwnerCountForObject(view, sleOwner, sle, 1, j);
 
     view.erase(sle);
 

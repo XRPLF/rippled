@@ -866,7 +866,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    adjustOwnerCount(sb, sleCreator, {}, 1, viewJ);
+    increaseOwnerCount(sb, sleCreator, {}, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset()) << " : "
                      << to_string(saTakerGets.asset())
