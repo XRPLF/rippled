@@ -174,6 +174,28 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
 }
 
 template <typename T>
+inline bool
+isLedgerEntrySupportedBySponsorship(T const& sle)
+{
+    switch (sle->getType())
+    {
+        case ltCHECK:
+        case ltESCROW:
+        case ltPAYCHAN:
+        case ltMPTOKEN:
+        case ltDELEGATE:
+        case ltDEPOSIT_PREAUTH:
+        case ltMPTOKEN_ISSUANCE:
+        case ltSIGNER_LIST:
+        case ltCREDENTIAL:
+        case ltRIPPLE_STATE:
+            return true;
+        default:
+            return false;
+    };
+}
+
+template <typename T>
 inline std::uint32_t
 getLedgerEntryOwnerCount(T const& sle)
 {

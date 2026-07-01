@@ -101,7 +101,7 @@ baseAccountReserve(ReadView const& view, Adjustment adj);
  */
 [[nodiscard]] TER
 checkInsufficientReserve(
-    ReadView const& view,
+    ApplyView const& view,
     STTx const& tx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
