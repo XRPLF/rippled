@@ -401,19 +401,28 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfDomainID,                 SoeOptional},
     {sfMutableFlags,             SoeDefault},
     {sfReferenceHolding,         SoeOptional},
+    {sfIssuerEncryptionKey,      SoeOptional},
+    {sfAuditorEncryptionKey,     SoeOptional},
+    {sfConfidentialOutstandingAmount, SoeDefault},
 }))
 
 /** A ledger object which tracks MPToken
     \sa keylet::mptoken
  */
 LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
-    {sfAccount,                  SoeRequired},
-    {sfMPTokenIssuanceID,        SoeRequired},
-    {sfMPTAmount,                SoeDefault},
-    {sfLockedAmount,             SoeOptional},
-    {sfOwnerNode,                SoeRequired},
-    {sfPreviousTxnID,            SoeRequired},
-    {sfPreviousTxnLgrSeq,        SoeRequired},
+    {sfAccount,                     SoeRequired},
+    {sfMPTokenIssuanceID,           SoeRequired},
+    {sfMPTAmount,                   SoeDefault},
+    {sfLockedAmount,                SoeOptional},
+    {sfOwnerNode,                   SoeRequired},
+    {sfPreviousTxnID,               SoeRequired},
+    {sfPreviousTxnLgrSeq,           SoeRequired},
+    {sfConfidentialBalanceInbox,    SoeOptional},
+    {sfConfidentialBalanceSpending, SoeOptional},
+    {sfConfidentialBalanceVersion,  SoeDefault},
+    {sfIssuerEncryptedBalance,      SoeOptional},
+    {sfAuditorEncryptedBalance,     SoeOptional},
+    {sfHolderEncryptionKey,         SoeOptional},
 }))
 
 /** A ledger object which tracks Oracle

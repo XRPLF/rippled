@@ -3728,10 +3728,9 @@ public:
                     auto actorOffers = offersOnAccount(env, actor.acct);
                     auto const offerCount = std::distance(
                         actorOffers.begin(),
-                        std::remove_if(
-                            actorOffers.begin(), actorOffers.end(), [](SLE::const_pointer& offer) {
-                                return (*offer)[sfTakerGets].signum() == 0;
-                            }));
+                        std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
+                            return (*offer)[sfTakerGets].signum() == 0;
+                        }).begin());
                     BEAST_EXPECT(offerCount == actor.offers);
 
                     env.require(Balance(actor.acct, actor.xrp));
@@ -3898,10 +3897,9 @@ public:
                     auto actorOffers = offersOnAccount(env, actor.acct);
                     auto const offerCount = std::distance(
                         actorOffers.begin(),
-                        std::remove_if(
-                            actorOffers.begin(), actorOffers.end(), [](SLE::const_pointer& offer) {
-                                return (*offer)[sfTakerGets].signum() == 0;
-                            }));
+                        std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
+                            return (*offer)[sfTakerGets].signum() == 0;
+                        }).begin());
                     BEAST_EXPECT(offerCount == actor.offers);
 
                     env.require(Balance(actor.acct, actor.xrp));

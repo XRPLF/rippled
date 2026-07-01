@@ -193,6 +193,23 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
                 pseudoAccountAddress(ctx.view, keylet::amm(amount.asset(), amount2.asset()).key);
             accountId == beast::kZero)
             return terADDRESS_COLLISION;
+
+        auto const isMPTIssuerPseudo = [&](Asset const& asset) {
+            if (asset.native())
+                return false;
+
+            if (asset.holds<Issue>())
+                return false;
+
+            return isPseudoAccount(ctx.view, asset.getIssuer());
+        };
+
+        if (isMPTIssuerPseudo(amount.asset()) || isMPTIssuerPseudo(amount2.asset()))
+        {
+            JLOG(ctx.j.debug()) << "AMM Instance: can't create with vault shares " << amount << " "
+                                << amount2;
+            return tecWRONG_ASSET;
+        }
     }
 
     if (auto const ter = canMPTTradeAndTransfer(ctx.view, amount.asset(), accountID, accountID);

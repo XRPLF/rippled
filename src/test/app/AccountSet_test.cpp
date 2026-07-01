@@ -383,6 +383,7 @@ public:
         auto const usd = gw["USD"];
 
         // Test gateway with a variety of allowed transfer rates
+        // NOLINTNEXTLINE(bugprone-float-loop-counter)
         for (double transferRate = 1.0; transferRate <= 2.0; transferRate += 0.03125)
         {
             Env env(*this);
