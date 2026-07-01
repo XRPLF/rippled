@@ -108,8 +108,7 @@ MPTokenIssuanceCreate::create(
     beast::Journal journal,
     MPTCreateArgs const& args)
 {
-    auto& view = ctx.view;
-    auto const acct = view.peek(keylet::account(args.account));
+    auto const acct = ctx.view.peek(keylet::account(args.account));
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
@@ -125,7 +124,7 @@ MPTokenIssuanceCreate::create(
     if (args.priorBalance)
     {
         if (auto const ret = checkInsufficientReserve(
-                view, ctx.tx, acct, *(args.priorBalance), sponsorSle, 1, 0, journal);
+                ctx.view, ctx.tx, acct, *(args.priorBalance), sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
             return std::unexpected(ret);  // tecINSUFFICIENT_RESERVE
     }
@@ -135,7 +134,7 @@ MPTokenIssuanceCreate::create(
 
     // create the MPTokenIssuance
     {
-        auto const ownerNode = view.dirInsert(
+        auto const ownerNode = ctx.view.dirInsert(
             keylet::ownerDir(args.account), mptIssuanceKeylet, describeOwnerDir(args.account));
 
         if (!ownerNode)
@@ -173,7 +172,7 @@ MPTokenIssuanceCreate::create(
             // populate this after the pseudo-account's MPToken /
             // RippleState has been installed. A missing holding here
             // would dangle the pointer and is a programmer error.
-            auto const sleHolding = view.read(keylet::unchecked(*args.referenceHolding));
+            auto const sleHolding = ctx.view.read(keylet::unchecked(*args.referenceHolding));
             if (!sleHolding)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             auto const type = sleHolding->getType();
@@ -184,11 +183,11 @@ MPTokenIssuanceCreate::create(
 
         addSponsorToLedgerEntry(mptIssuance, sponsorSle);
 
-        view.insert(mptIssuance);
+        ctx.view.insert(mptIssuance);
     }
 
     // Update owner count.
-    adjustOwnerCount(view, acct, sponsorSle, 1, journal);
+    adjustOwnerCount(ctx.view, acct, sponsorSle, 1, journal);
 
     return mptId;
 }
