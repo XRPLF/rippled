@@ -22,7 +22,21 @@ on:
       - unlabeled
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Concurrency is evaluated before the job-level `if` filters, so an unrelated
+  # `labeled`/`unlabeled` event (which GitHub cannot filter by label name in the
+  # `on:` block) would otherwise cancel an in-progress build and then run
+  # nothing, because `should-run` skips it. Give such no-op runs a unique group
+  # (suffixed with the run id) so they cancel nothing. Runs we act on — pushes,
+  # and changes to the 'Ready to merge'/'DraftRunCI' labels — share the per-ref
+  # group, so a newer one supersedes the previous as before. Keep this label
+  # list in sync with the `should-run` job's `if` condition.
+  group: >-
+    ${{ github.workflow }}-${{ github.ref }}${{
+      (github.event.action == 'labeled' || github.event.action == 'unlabeled')
+      && github.event.label.name != 'Ready to merge'
+      && github.event.label.name != 'DraftRunCI'
+      && format('-{0}', github.run_id) || ''
+    }}
   cancel-in-progress: true
 
 defaults:
