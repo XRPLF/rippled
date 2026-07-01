@@ -87,15 +87,15 @@ include(default)
 {% endif %}
 
 [conf]
-tools.build:defines+={{defines}}
-tools.build:cxxflags+={{sanitizer_compiler_flags}}
-tools.build:sharedlinkflags+={{sanitizer_linker_flags}}
-tools.build:exelinkflags+={{sanitizer_linker_flags}}
+tools.build:defines+={{ defines }}
+tools.build:cxxflags+={{ sanitizer_compiler_flags }}
+tools.build:sharedlinkflags+={{ sanitizer_linker_flags }}
+tools.build:exelinkflags+={{ sanitizer_linker_flags }}
 
 tools.info.package_id:confs+=["tools.build:cxxflags", "tools.build:exelinkflags", "tools.build:sharedlinkflags", "tools.build:defines"]
 
 # &: means "apply only to the consumer/root package"
-&:tools.cmake.cmaketoolchain:extra_variables={"SANITIZERS": "{{sanitizers}}", "SANITIZERS_COMPILER_FLAGS": "{{sanitizer_compiler_flags | join(' ')}}", "SANITIZERS_LINKER_FLAGS": "{{sanitizer_linker_flags | join(' ')}}"}
+&:tools.cmake.cmaketoolchain:extra_variables={"SANITIZERS": "{{ sanitizers }}", "SANITIZERS_COMPILER_FLAGS": "{{ sanitizer_compiler_flags | join(' ') }}", "SANITIZERS_LINKER_FLAGS": "{{ sanitizer_linker_flags | join(' ') }}"}
 
 [options]
 {% if enable_asan %}

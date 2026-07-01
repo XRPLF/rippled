@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -61,6 +59,12 @@ public:
         ttLOAN_MANAGE,
         ttLOAN_PAY,
     });
+
+private:
+    // Skips signature verification for inner txns, so keep it private: it must
+    // only be reached through Batch::checkSign.
+    static NotTEC
+    checkBatchSign(PreclaimContext const& ctx);
 };
 
 }  // namespace xrpl

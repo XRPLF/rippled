@@ -217,6 +217,11 @@ public:
     [[nodiscard]] AccountID
     getAccountID(SField const& field) const;
 
+    /** The account responsible for the fee and authorization: the delegate when
+        sfDelegate is present, otherwise the account. */
+    [[nodiscard]] AccountID
+    getFeePayer() const;
+
     [[nodiscard]] Blob
     getFieldVL(SField const& field) const;
     [[nodiscard]] STAmount const&
