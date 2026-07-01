@@ -180,9 +180,6 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
-    static NotTEC
-    checkBatchSign(PreclaimContext const& ctx);
-
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
@@ -373,7 +370,12 @@ protected:
         std::optional<uint256 const> const& parentBatchId,
         AccountID const& idAccount,
         STObject const& sigObject,
-        beast::Journal const j);
+        beast::Journal const j,
+        // A batch may carry an inner from an account that an earlier inner
+        // creates, so the signer account need not exist yet; when it does not,
+        // only its own master key may authorize it. Normal transactions require
+        // the account to already exist.
+        bool permitUncreatedAccount = false);
 
     // Base class always returns true
     static bool
@@ -413,25 +415,8 @@ protected:
         std::optional<T> value,
         unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
-private:
-    static NotTEC
-    checkPermission(
-        ReadView const& view,
-        STTx const& tx,
-        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
-
-    std::pair<TER, XRPAmount>
-    reset(XRPAmount fee);
-
-    TER
-    consumeSeqProxy(SLE::pointer const& sleAccount);
-
-    TER
-    payFee();
-
-    std::tuple<TER, XRPAmount, bool>
-    processPersistentChanges(TER result, XRPAmount fee);
-
+    // Signature-authorization helpers. protected so the Batch transactor can
+    // reuse them when validating each BatchSigner in Batch::checkBatchSign.
     static NotTEC
     checkSingleSign(
         ReadView const& view,
@@ -447,6 +432,24 @@ private:
         AccountID const& id,
         STObject const& sigObject,
         beast::Journal const j);
+
+private:
+    static NotTEC
+    checkPermission(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& heldGranularPermissions);
+
+    std::pair<TER, XRPAmount>
+    reset(XRPAmount fee);
+
+    TER
+    consumeSeqProxy(SLE::pointer const& sleAccount);
+    TER
+    payFee();
+
+    std::tuple<TER, XRPAmount, bool>
+    processPersistentChanges(TER result, XRPAmount fee);
 
     void trapTransaction(uint256) const;
 

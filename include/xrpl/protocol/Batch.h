@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
@@ -7,9 +8,16 @@
 namespace xrpl {
 
 inline void
-serializeBatch(Serializer& msg, std::uint32_t const& flags, std::vector<uint256> const& txids)
+serializeBatch(
+    Serializer& msg,
+    AccountID const& outerAccount,
+    std::uint32_t outerSeqValue,
+    std::uint32_t const& flags,
+    std::vector<uint256> const& txids)
 {
     msg.add32(HashPrefix::Batch);
+    msg.addBitString(outerAccount);
+    msg.add32(outerSeqValue);
     msg.add32(flags);
     msg.add32(std::uint32_t(txids.size()));
     for (auto const& txid : txids)

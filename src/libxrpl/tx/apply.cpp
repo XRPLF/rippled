@@ -8,7 +8,6 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
@@ -39,30 +38,14 @@ checkValidity(HashRouter& router, STTx const& tx, Rules const& rules)
     auto const id = tx.getTransactionID();
     auto const flags = router.getFlags(id);
 
-    // Ignore signature check on batch inner transactions
-    if (tx.isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
+    // Batch inner transactions are never independently valid: they are applied
+    // within their batch, not through checkValidity. Reaching here means one was
+    // relayed or submitted on its own, so mark it bad regardless of the
+    // amendment (like PeerImp and NetworkOPs).
+    if (tx.isFlag(tfInnerBatchTxn))
     {
-        // Defensive Check: These values are also checked in Batch::preflight
-        if (tx.isFieldPresent(sfTxnSignature) || !tx.getSigningPubKey().empty() ||
-            tx.isFieldPresent(sfSigners))
-            return {Validity::SigBad, "Malformed: Invalid inner batch transaction."};
-
-        // This block should probably have never been included in the
-        // original `Batch` implementation. An inner transaction never
-        // has a valid signature.
-        bool const neverValid = rules.enabled(fixBatchInnerSigs);
-        if (!neverValid)
-        {
-            std::string reason;
-            if (!passesLocalChecks(tx, reason))
-            {
-                router.setFlags(id, kSfLocalbad);
-                return {Validity::SigGoodOnly, reason};
-            }
-
-            router.setFlags(id, kSfSiggood);
-            return {Validity::Valid, ""};
-        }
+        router.setFlags(id, kSfSigbad);
+        return {Validity::SigBad, "Batch inner transactions are never considered validly signed."};
     }
 
     if (any(flags & kSfSigbad))
@@ -183,6 +166,9 @@ applyBatchTransactions(
 
         // If the transaction should be applied push its changes to the
         // whole-batch view.
+        // NOTE: each inner tx is individually capped at kOversizeMetaDataCap;
+        // there is no aggregate cap here. Bounded by kMaxBatchTxCount * cap,
+        // which standalone txns can already produce in one ledger.
         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
             perTxBatchView.apply(batchView);
 
