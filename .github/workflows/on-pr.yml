@@ -31,10 +31,19 @@ defaults:
 
 jobs:
   # This job determines whether the rest of the workflow should run. It runs
-  # when the PR is not a draft (which should also cover merge-group) or
-  # has the 'DraftRunCI' label.
+  # when the PR is not a draft (which should also cover merge-group) or has the
+  # 'DraftRunCI' label. For label events it only runs when the label added or
+  # removed is one we act on ('Ready to merge' or 'DraftRunCI'), so unrelated
+  # label changes do not trigger a redundant run.
   should-run:
-    if: ${{ !github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
+    if: >-
+      ${{
+        (github.event.action != 'labeled' && github.event.action != 'unlabeled'
+          || github.event.label.name == 'Ready to merge'
+          || github.event.label.name == 'DraftRunCI')
+        && (!github.event.pull_request.draft
+          || contains(github.event.pull_request.labels.*.name, 'DraftRunCI'))
+      }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
