@@ -4,13 +4,14 @@
   "configs": [
     {
       "build_type": "Release",
-      "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+      "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+      "minimal": true
     },
     {
       "build_type": "Debug",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
       "build_only": true,
-      "exclude_event_types": ["pull_request"]
+      "minimal": false
     }
   ]
 }

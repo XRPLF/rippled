@@ -15,6 +15,11 @@ on:
       - reopened
       - synchronize
       - ready_for_review
+      # Trigger on label changes so that adding the "Ready to merge" label
+      # launches the full matrix (and removing it falls back to the minimal
+      # one) without needing a new push.
+      - labeled
+      - unlabeled
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -142,7 +147,10 @@ jobs:
 
   package:
     needs: [should-run, build-test]
-    if: ${{ needs.should-run.outputs.go == 'true' }}
+    # Packaging consumes the debian/rhel release binaries, which are only built
+    # by the full matrix. Skip it for pull requests that are not yet labeled
+    # "Ready to merge" (i.e. whenever only the minimal matrix ran).
+    if: ${{ needs.should-run.outputs.go == 'true' && (github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Ready to merge')) }}
     uses: ./.github/workflows/reusable-package.yml
 
   upload-recipe:
