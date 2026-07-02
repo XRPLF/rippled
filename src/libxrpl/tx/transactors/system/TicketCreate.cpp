@@ -96,7 +96,7 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::kTicket(accountID_, curTicketSeq);
+        Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
         SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, accountID_);
@@ -117,12 +117,12 @@ TicketCreate::doApply()
     }
 
     // Update the record of the number of Tickets this account owns.
-    std::uint32_t const oldTicketCount = (*(sleAccountRoot))[~sfTicketCount].valueOr(0u);
+    std::uint32_t const oldTicketCount = (*sleAccountRoot)[~sfTicketCount].valueOr(0u);
 
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(
+    increaseOwnerCount(
         view(),
         ReserveContext::makeFromAccount(view(), view().peek(keylet::account(accountID_)), nullptr),
         ticketCount,

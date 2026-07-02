@@ -38,6 +38,7 @@
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <expected>
 #include <limits>
@@ -301,10 +302,8 @@ onNewAttestations(
         }
 
         auto const& claimSigningAccount = att->attestationSignerAccount;
-        if (auto i = std::find_if(
-                attestations.begin(),
-                attestations.end(),
-                [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
+        if (auto i = std::ranges::find_if(
+                attestations, [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
             i != attestations.end())
         {
             // existing attestation
@@ -728,7 +727,7 @@ finalizeClaimHelper(
             // Remove the claim id from the ledger
             outerSb.erase(sleClaimID);
 
-            adjustOwnerCount(
+            increaseOwnerCount(
                 outerSb, ReserveContext::makeFromAccount(outerSb, sleOwner, nullptr), -1, j);
         }
     }
@@ -759,7 +758,7 @@ getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journ
         return {r, q, tecINTERNAL};
     }
 
-    auto const sleS = view.read(keylet::signers(sleBridge[sfAccount]));
+    auto const sleS = view.read(keylet::signerList(sleBridge[sfAccount]));
     if (!sleS)
     {
         return {r, q, tecXCHAIN_NO_SIGNERS_LIST};
@@ -1138,7 +1137,7 @@ applyCreateAccountAttestations(
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // Reserve was already checked
-        adjustOwnerCount(psb, ReserveContext::makeFromAccount(psb, sleDoor, nullptr), 1, j);
+        increaseOwnerCount(psb, ReserveContext::makeFromAccount(psb, sleDoor, nullptr), 1, j);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
     }
@@ -1481,7 +1480,7 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(
+    increaseOwnerCount(
         ctx_.view(),
         ReserveContext::makeFromAccount(ctx_.view(), sleAcct, nullptr),
         1,
@@ -2046,7 +2045,7 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(
+    increaseOwnerCount(
         ctx_.view(),
         ReserveContext::makeFromAccount(ctx_.view(), sleAcct, nullptr),
         1,

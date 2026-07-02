@@ -165,7 +165,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
     // Pseudo-accounts have no reserve requirement
     auto const reserve = isPseudoAccount(sle)
         ? XRPAmount{0}
-        : baseAccountReserve(view, currentOwnerCount, currentAccountCount);
+        : view.fees().accountReserve(currentOwnerCount, currentAccountCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -213,7 +213,7 @@ adjustOwnerCountValue(
 }
 
 void
-adjustOwnerCount(
+increaseOwnerCount(
     ApplyView& view,
     ReserveContext const& reserveCtx,
     std::int32_t ownerCountAdj,
@@ -221,18 +221,16 @@ adjustOwnerCount(
 {
     auto& accountSle = reserveCtx.accountSle;
     if (!accountSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid account sle");
+        return;  // LCOV_EXCL_LINE
 
     auto const sleType = reserveCtx.accountSle->getType();
     bool const validType = reserveCtx.sponsorSle
         ? sleType == ltACCOUNT_ROOT
         : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
     if (!validType)
-        Throw<std::logic_error>("xrpl::adjustOwnerCount : valid account sle type");
+        return;  // LCOV_EXCL_LINE
 
-    XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCount : nonzero ownerCountAdj input");
-    if (ownerCountAdj == 0)
-        return;
+    XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
 
     if (reserveCtx.isSponsored())
     {
@@ -274,19 +272,23 @@ adjustOwnerCount(
 }
 
 void
-adjustOwnerCountObj(
+decreaseOwnerCountForObject(
     ApplyView& view,
     SLE::pointer ownerSle,
     SLE::ref objectSle,
     std::int32_t ownerCountAdj,
     beast::Journal j)
 {
+    XRPL_ASSERT(objectSle, "xrpl::decreaseOwnerCountForObject : valid object sle");
     if (!objectSle)
-        Throw<std::runtime_error>("xrpl::adjustOwnerCount : valid object sle");
-    if (objectSle->getType() == ltACCOUNT_ROOT)
-        Throw<std::logic_error>("xrpl::adjustOwnerCount : valid object sle type");
+        return;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(
+    bool const validObjectType = objectSle->getType() != ltACCOUNT_ROOT;
+    XRPL_ASSERT(validObjectType, "xrpl::decreaseOwnerCountForObject : valid object sle type");
+    if (!validObjectType)
+        return;  // LCOV_EXCL_LINE
+
+    increaseOwnerCount(
         view, ReserveContext::makeFromObject(view, objectSle, ownerSle), ownerCountAdj, j);
 }
 XRPAmount
@@ -305,20 +307,12 @@ accountReserve(
     std::uint32_t const currentOwnerCount = ownerCount(sle, j, ownerCountAdj);
     std::uint32_t const currentAccountCount = accountCountImpl(sle, accountCountAdj, j);
 
-    return baseAccountReserve(view, currentOwnerCount, currentAccountCount);
-}
-
-XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount)
-{
-    auto const& fees = view.fees();
-    return (fees.reserve * accountCount) + (fees.increment * ownerCount);
+    return view.fees().accountReserve(currentOwnerCount, currentAccountCount);
 }
 
 TER
 checkInsufficientReserve(
-    ApplyView const& view,
-    STTx const& tx,
+    ApplyViewContext const& ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
@@ -328,14 +322,14 @@ checkInsufficientReserve(
 {
     if (sponsorSle)
     {
-        auto const sle = view.read(
+        auto const sle = ctx.view.read(
             keylet::sponsorship(
                 sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
         // A reserve-sponsored tx must carry a sponsor signature
         // (cosigning path) and/or have a pre-existing sponsorship SLE
         // (prefunded path). Absence of both is an internal invariant break.
-        if (isReserveSponsored(tx) && !sle && !tx.isFieldPresent(sfSponsorSignature))
+        if (isReserveSponsored(ctx.tx) && !sle && !ctx.tx.isFieldPresent(sfSponsorSignature))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (sle)
@@ -347,14 +341,15 @@ checkInsufficientReserve(
 
         auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
         STAmount const sponsorReserve =
-            accountReserve(view, sponsorSle, j, ownerCountAdj, accountCountAdj);
+            accountReserve(ctx.view, sponsorSle, j, ownerCountAdj, accountCountAdj);
 
         if (sponsorBalance < sponsorReserve)
             return tecINSUFFICIENT_RESERVE;
     }
     else
     {
-        STAmount const reserve = accountReserve(view, accSle, j, ownerCountAdj, accountCountAdj);
+        STAmount const reserve =
+            accountReserve(ctx.view, accSle, j, ownerCountAdj, accountCountAdj);
         if (accBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

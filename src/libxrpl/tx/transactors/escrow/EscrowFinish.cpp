@@ -172,7 +172,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
         return tesSUCCESS;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptokenIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -391,7 +391,7 @@ EscrowFinish::doApply()
     ctx_.view().update(sled);
 
     // Adjust source owner count
-    adjustOwnerCountObj(
+    decreaseOwnerCountForObject(
         ctx_.view(), ctx_.view().peek(keylet::account(account)), slep, -1, ctx_.journal);
 
     // Remove escrow from ledger

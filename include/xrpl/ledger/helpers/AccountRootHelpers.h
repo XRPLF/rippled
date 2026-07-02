@@ -82,19 +82,6 @@ accountReserve(
     return accountReserve(view, view.read(keylet::account(id)), j, ownerCountAdj, accountCountAdj);
 }
 
-/** @brief Return the hypothetical reserve required by an account with the provided counters.
- *
- *  @param view The ledger view to read from
- *  @param ownerCount Number of objects for which the account will be responsible.
- *  @param accountCount Number of accounts for which the account will be responsible.
- *                      Defaults to 1, as normally every account is responsible for its own reserve.
- *                      Can be 0 if the account is sponsored.
- *                      Can be greater than 1 if the account is sponsoring other accounts.
- *  @return The hypothetical reserve amount
- */
-XRPAmount
-baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t accountCount = 1);
-
 /** Check if an account has insufficient reserve.
  *
  *  @param view The ledger view to read from
@@ -109,8 +96,7 @@ baseAccountReserve(ReadView const& view, std::int32_t ownerCount, std::int32_t a
  */
 [[nodiscard]] TER
 checkInsufficientReserve(
-    ApplyView const& view,
-    STTx const& tx,
+    ApplyViewContext const& ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
@@ -129,17 +115,21 @@ checkInsufficientReserve(
 std::uint32_t
 ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj = 0);
 
-/** Adjust the owner counters of the account up or down. If sponsor provided adjust its counters
- *  too.
+/** Increase owner-count fields when the caller supplies the sponsor.
+ *
+ *  This helper does not create a ledger object. It updates reserve accounting
+ *  after the caller has created/updated an object.
+ *  If sponsorSle is provided, this also adjusts the account's sponsored count
+ *  and the sponsor's sponsoring count.
  *
  *  @param view The apply view for making changes
  *  @param accountSle The account's ledger entry
  *  @param sponsorSle The sponsor's ledger entry (if applicable)
- *  @param accountCountAdj Adjustment amount for the account count
- *  @param j Journal for logging (default: null sink)
+ *  @param count Amount to add to the owner count
+ *  @param j Journal for logging
  */
 void
-adjustOwnerCount(
+increaseOwnerCount(
     ApplyView& view,
     ReserveContext const& reserveCtx,
     std::int32_t ownerCountAdj,
@@ -155,7 +145,7 @@ adjustOwnerCount(
  *  @param j Journal for logging (default: null sink)
  */
 void
-adjustOwnerCountObj(
+decreaseOwnerCountForObject(
     ApplyView& view,
     SLE::pointer ownerSle,
     SLE::ref objectSle,

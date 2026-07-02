@@ -149,7 +149,7 @@ PaymentChannelCreate::doApply()
         // unsponsored this hits the source branch and validates the
         // source's pre-lock balance against base + (currentOC+1)*increment.
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 1, 0, j_);
+                ctx_.getApplyViewContext(), sle, preFeeBalance_, *sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -163,8 +163,7 @@ PaymentChannelCreate::doApply()
         // - unsponsored: adj=1  — source owes base + the new increment.
         std::int32_t const ownerCountAdj = *sponsorSle ? 0 : 1;
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
+                ctx_.getApplyViewContext(),
                 sle,
                 preFeeBalance_ - ctx_.tx[sfAmount].xrp(),
                 {},
@@ -181,7 +180,7 @@ PaymentChannelCreate::doApply()
     //
     // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
-    Keylet const payChanKeylet = keylet::payChan(account, dst, ctx_.tx.getSeqValue());
+    Keylet const payChanKeylet = keylet::payChannel(account, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel
@@ -224,7 +223,7 @@ PaymentChannelCreate::doApply()
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     auto const applyViewContext = ctx_.getApplyViewContext();
     auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
-    adjustOwnerCount(
+    increaseOwnerCount(
         ctx_.view(),
         ReserveContext::makeFromAccount(ctx_.view(), sle, sponsorSle),
         1,

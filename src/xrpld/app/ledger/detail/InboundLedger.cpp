@@ -109,7 +109,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
     XRPL_ASSERT(
-        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
 
@@ -127,9 +127,8 @@ std::size_t
 InboundLedger::getPeerCount() const
 {
     auto const& peerIds = peerSet_->getPeerIds();
-    return std::count_if(peerIds.begin(), peerIds.end(), [this](auto id) {
-        return (app_.getOverlay().findPeerByShortID(id) != nullptr);
-    });
+    return std::ranges::count_if(
+        peerIds, [this](auto id) { return (app_.getOverlay().findPeerByShortID(id) != nullptr); });
 }
 
 void
@@ -331,7 +330,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
         XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
         ledger_->setImmutable();
     }
@@ -427,7 +426,7 @@ InboundLedger::done()
     if (complete_ && !failed_ && ledger_)
     {
         XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::fees()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
             "xrpl::InboundLedger::done : valid ledger fees");
         ledger_->setImmutable();
         switch (reason_)

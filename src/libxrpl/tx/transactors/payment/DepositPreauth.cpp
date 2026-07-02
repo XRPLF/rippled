@@ -165,7 +165,7 @@ DepositPreauth::doApply()
         auto const applyViewContext = ctx_.getApplyViewContext();
         auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
         if (auto const ret = checkInsufficientReserve(
-                view(), ctx_.tx, sleOwner, preFeeBalance_, sponsorSle, 1, 0, j_);
+                applyViewContext, sleOwner, preFeeBalance_, sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -191,7 +191,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(
+        increaseOwnerCount(
             view(), ReserveContext::makeFromAccount(view(), sleOwner, sponsorSle), 1, j_);
         addSponsorToLedgerEntry(slePreauth, sponsorSle);
     }
@@ -213,7 +213,7 @@ DepositPreauth::doApply()
         auto const applyViewContext = ctx_.getApplyViewContext();
         auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
         if (auto const ret = checkInsufficientReserve(
-                view(), ctx_.tx, sleOwner, preFeeBalance_, sponsorSle, 1, 0, j_);
+                applyViewContext, sleOwner, preFeeBalance_, sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -253,7 +253,7 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(
+        increaseOwnerCount(
             view(), ReserveContext::makeFromAccount(view(), sleOwner, sponsorSle), 1, j_);
         addSponsorToLedgerEntry(slePreauth, sponsorSle);
     }
@@ -293,7 +293,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCountObj(view, sleOwner, slePreauth, -1, j);
+    decreaseOwnerCountForObject(view, sleOwner, slePreauth, 1, j);
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);
 

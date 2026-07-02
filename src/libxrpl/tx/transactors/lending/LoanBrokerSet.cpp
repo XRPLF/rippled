@@ -115,7 +115,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     {
         // Updating an existing Broker
 
-        auto const sleBroker = ctx.view.read(keylet::loanbroker(*brokerID));
+        auto const sleBroker = ctx.view.read(keylet::loanBroker(*brokerID));
         if (!sleBroker)
         {
             JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
@@ -179,7 +179,7 @@ LoanBrokerSet::doApply()
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         // Modify an existing LoanBroker
-        auto broker = view.peek(keylet::loanbroker(*brokerID));
+        auto broker = view.peek(keylet::loanBroker(*brokerID));
         if (!broker)
         {
             // This should be impossible
@@ -230,7 +230,7 @@ LoanBrokerSet::doApply()
             return tefBAD_LEDGER;
             // LCOV_EXCL_STOP
         }
-        auto broker = std::make_shared<SLE>(keylet::loanbroker(accountID_, sequence));
+        auto broker = std::make_shared<SLE>(keylet::loanBroker(accountID_, sequence));
 
         if (auto const ter = dirLink(view, accountID_, broker))
             return ter;  // LCOV_EXCL_LINE
@@ -239,7 +239,7 @@ LoanBrokerSet::doApply()
 
         // Increases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
-        adjustOwnerCount(view, ReserveContext::makeFromAccount(view, owner, nullptr), 2, j_);
+        increaseOwnerCount(view, ReserveContext::makeFromAccount(view, owner, nullptr), 2, j_);
         if (preFeeBalance_ < accountReserve(view, owner, j_))
             return tecINSUFFICIENT_RESERVE;
 

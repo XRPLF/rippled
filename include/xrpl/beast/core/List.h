@@ -24,7 +24,7 @@ struct CopyConst<T const, U>
 {
     explicit CopyConst() = default;
 
-    using type = typename std::remove_const<U>::type const;
+    using type = std::remove_const<U>::type const;
 };
 /** @} */
 
@@ -56,7 +56,7 @@ class ListIterator
 {
 public:
     using iterator_category = std::bidirectional_iterator_tag;
-    using value_type = typename beast::detail::CopyConst<N, typename N::value_type>::type;
+    using value_type = beast::detail::CopyConst<N, typename N::value_type>::type;
     using difference_type = std::ptrdiff_t;
     using pointer = value_type*;
     using reference = value_type&;
@@ -259,7 +259,7 @@ template <typename T, typename Tag = void>
 class List
 {
 public:
-    using Node = typename detail::ListNode<T, Tag>;
+    using Node = detail::ListNode<T, Tag>;
 
     using value_type = T;
     using pointer = value_type*;

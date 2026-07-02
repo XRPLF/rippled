@@ -13,6 +13,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 NotTEC
@@ -69,7 +71,7 @@ OracleDelete::deleteOracle(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const count = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? -2 : -1;
-    adjustOwnerCount(view, ReserveContext::makeFromAccount(view, sleOwner, nullptr), count, j);
+    increaseOwnerCount(view, ReserveContext::makeFromAccount(view, sleOwner, nullptr), count, j);
     view.erase(sle);
 
     return tesSUCCESS;

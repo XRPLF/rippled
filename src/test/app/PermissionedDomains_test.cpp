@@ -8,18 +8,21 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <map>
 #include <optional>
@@ -526,6 +529,47 @@ class PermissionedDomains_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.ownerCount(alice) == 1);
     }
 
+    void
+    testTicket(FeatureBitset features)
+    {
+        testcase("Tickets");
+
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account const alice("alice");
+        env.fund(XRP(1000), alice);
+
+        pdomain::Credentials const credentials{
+            {.issuer = alice, .credType = "credential1"},
+        };
+
+        std::uint32_t seq{env.seq(alice)};
+        env(ticket::create(alice, 2));
+
+        {
+            env(pdomain::setTx(alice, credentials), ticket::Use(++seq));
+            auto domain = pdomain::getNewDomain(env.meta());
+            if (features[fixCleanup3_1_3])
+            {
+                BEAST_EXPECT(domain == keylet::permissionedDomain(alice.id(), seq).key);
+            }
+            else
+            {
+                BEAST_EXPECT(domain == keylet::permissionedDomain(alice.id(), 0).key);
+            }
+        }
+
+        if (features[fixCleanup3_1_3])
+        {
+            env(pdomain::setTx(alice, credentials), ticket::Use(++seq));
+        }
+        else
+        {
+            env(pdomain::setTx(alice, credentials), ticket::Use(++seq), Ter(tefEXCEPTION));
+        }
+    }
+
 public:
     void
     run() override
@@ -540,6 +584,8 @@ public:
         testDelete(withFix_);
         testAccountReserve(withFeature_);
         testAccountReserve(withFix_);
+        testTicket(withFeature_);
+        testTicket(withFix_);
     }
 };
 

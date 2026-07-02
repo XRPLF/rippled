@@ -158,7 +158,7 @@ VaultCreate::doApply()
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
     // We will create Vault and PseudoAccount, hence increase OwnerCount by 2
-    adjustOwnerCount(view(), ReserveContext::makeFromAccount(view(), owner, nullptr), 2, j_);
+    increaseOwnerCount(view(), ReserveContext::makeFromAccount(view(), owner, nullptr), 2, j_);
     if (preFeeBalance_ < accountReserve(view(), owner, j_))
         return tecINSUFFICIENT_RESERVE;
 
@@ -196,7 +196,7 @@ VaultCreate::doApply()
             return std::nullopt;
         return asset.holds<MPTIssue>()
             ? keylet::mptoken(asset.get<MPTIssue>().getMptID(), pseudoId).key
-            : keylet::line(pseudoId, asset.get<Issue>()).key;
+            : keylet::trustLine(pseudoId, asset.get<Issue>()).key;
     }();
     auto const maybeShare = MPTokenIssuanceCreate::create(
         applyViewContext,

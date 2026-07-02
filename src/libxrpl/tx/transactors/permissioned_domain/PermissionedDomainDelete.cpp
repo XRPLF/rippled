@@ -66,7 +66,7 @@ PermissionedDomainDelete::doApply()
     XRPL_ASSERT(
         ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
         "xrpl::PermissionedDomainDelete::doApply : nonzero owner count");
-    adjustOwnerCount(
+    increaseOwnerCount(
         view(), ReserveContext::makeFromAccount(view(), ownerSle, nullptr), -1, ctx_.journal);
     view().erase(slePd);
 

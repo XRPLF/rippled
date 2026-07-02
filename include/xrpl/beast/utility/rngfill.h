@@ -13,7 +13,7 @@ template <class Generator>
 void
 rngfill(void* const buffer, std::size_t const bytes, Generator& g)
 {
-    using result_type = typename Generator::result_type;
+    using result_type = Generator::result_type;
     constexpr std::size_t kResultSize = sizeof(result_type);
 
     std::uint8_t* const bufferStart = static_cast<std::uint8_t*>(buffer);
@@ -42,7 +42,7 @@ template <
 void
 rngfill(std::array<std::uint8_t, N>& a, Generator& g)
 {
-    using result_type = typename Generator::result_type;
+    using result_type = Generator::result_type;
     auto i = N / sizeof(result_type);
     result_type* p = reinterpret_cast<result_type*>(a.data());
     while (i--)

@@ -50,7 +50,7 @@ DIDDelete::deleteSLE(ApplyView& view, SLE::pointer sle, AccountID const owner, b
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, ReserveContext::makeFromAccount(view, sleOwner, nullptr), -1, j);
+    increaseOwnerCount(view, ReserveContext::makeFromAccount(view, sleOwner, nullptr), -1, j);
     view.update(sleOwner);
 
     // Remove object from ledger

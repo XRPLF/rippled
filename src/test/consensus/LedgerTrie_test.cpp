@@ -663,6 +663,7 @@ class LedgerTrie_test : public beast::unit_test::Suite
         std::uint32_t const iterations = 10000;
 
         // Use explicit seed to have same results for CI
+        // NOLINTNEXTLINE(bugprone-random-generator-seed): fixed seed for reproducible test
         std::mt19937 gen{42};
         std::uniform_int_distribution<> depthDist(0, depthConst - 1);
         std::uniform_int_distribution<> widthDist(0, width - 1);

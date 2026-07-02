@@ -8,8 +8,10 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
@@ -28,6 +30,12 @@ VaultDelete::preflight(PreflightContext const& ctx)
         JLOG(ctx.j.debug()) << "VaultDelete: zero/empty vault ID.";
         return temMALFORMED;
     }
+
+    if (ctx.tx.isFieldPresent(sfMemoData) && !ctx.rules.enabled(featureLendingProtocolV1_1))
+        return temDISABLED;
+
+    if (!validDataLength(ctx.tx[~sfMemoData], kMaxDataPayloadLength))
+        return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -58,7 +66,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    auto const sleMPT = ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
 
     if (!sleMPT)
     {
@@ -113,7 +121,7 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    auto const mpt = view().peek(keylet::mptIssuance(shareMPTID));
+    auto const mpt = view().peek(keylet::mptokenIssuance(shareMPTID));
     if (!mpt)
     {
         // LCOV_EXCL_START
@@ -147,7 +155,8 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), ReserveContext::makeFromAccount(view(), pseudoAcct, nullptr), -1, j_);
+    increaseOwnerCount(
+        view(), ReserveContext::makeFromAccount(view(), pseudoAcct, nullptr), -1, j_);
 
     view().erase(mpt);
 
@@ -206,7 +215,7 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    adjustOwnerCount(view(), ReserveContext::makeFromAccount(view(), owner, nullptr), -2, j_);
+    increaseOwnerCount(view(), ReserveContext::makeFromAccount(view(), owner, nullptr), -2, j_);
 
     // Destroy the vault.
     view().erase(vault);

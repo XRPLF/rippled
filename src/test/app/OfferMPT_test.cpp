@@ -22,7 +22,6 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -58,7 +57,7 @@ class OfferMPT_test : public beast::unit_test::Suite
     static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
-        return baseAccountReserve(*env.current(), count);
+        return env.current()->fees().accountReserve(count, 1);
     }
 
     static std::uint32_t
@@ -1793,7 +1792,8 @@ public:
             //  1 for each trust limit == 3 (alice < mtgox/amazon/bitstamp) +
             //  1 for payment          == 4
             auto const base = env.current()->fees().base;
-            auto const startingXrp = XRP(100) + baseAccountReserve(*env.current(), 3) + base * 4;
+            auto const startingXrp =
+                XRP(100) + env.current()->fees().accountReserve(3, 1) + base * 4;
 
             env.fund(startingXrp, gw1, gw2, gw3, alice, bob);
             env.close();
@@ -1813,7 +1813,8 @@ public:
             env(offer(alice, usD1(200), XRP(200)));
 
             BEAST_EXPECT(env.balance(alice, usD1) == usD1(100));
-            BEAST_EXPECT(env.balance(alice) == STAmount(baseAccountReserve(*env.current(), 3)));
+            BEAST_EXPECT(
+                env.balance(alice) == STAmount(env.current()->fees().accountReserve(3, 1)));
 
             BEAST_EXPECT(env.balance(bob, usD1) == usD1(400));
         };
@@ -1864,7 +1865,7 @@ public:
         auto const bob = Account{"bob"};
 
         auto const startingXrp =
-            XRP(100) + baseAccountReserve(*env.current(), 1) + env.current()->fees().base * 2;
+            XRP(100) + env.current()->fees().accountReserve(1, 1) + env.current()->fees().base * 2;
 
         env.fund(startingXrp, gw, alice, bob);
 
@@ -1883,7 +1884,7 @@ public:
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            STAmount(baseAccountReserve(*env.current(), 1)).getText());
+            STAmount(env.current()->fees().accountReserve(1, 1)).getText());
 
         jrr = ledgerEntryMPT(env, bob, usd);
         BEAST_EXPECT(jrr[jss::node][sfMPTAmount.fieldName] == "400");
@@ -1903,7 +1904,7 @@ public:
         auto const bob = Account{"bob"};
 
         auto const startingXrp =
-            XRP(100) + baseAccountReserve(*env.current(), 1) + env.current()->fees().base * 2;
+            XRP(100) + env.current()->fees().accountReserve(1, 1) + env.current()->fees().base * 2;
 
         env.fund(startingXrp, gw, alice, bob);
 
@@ -1924,7 +1925,7 @@ public:
         jrr = ledgerEntryRoot(env, alice);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            STAmount(baseAccountReserve(*env.current(), 1)).getText());
+            STAmount(env.current()->fees().accountReserve(1, 1)).getText());
 
         jrr = ledgerEntryMPT(env, bob, usd);
         BEAST_EXPECT(jrr[jss::node][sfMPTAmount.fieldName] == "300");
@@ -1944,7 +1945,8 @@ public:
             Env env{*this, features};
 
             auto const base = env.current()->fees().base;
-            auto const startingXrp = XRP(100.1) + baseAccountReserve(*env.current(), 1) + base * 2;
+            auto const startingXrp =
+                XRP(100.1) + env.current()->fees().accountReserve(1, 1) + base * 2;
 
             env.fund(startingXrp, gw, alice, bob);
             env.close();
@@ -3431,7 +3433,7 @@ public:
         auto const gw = Account("gateway");
 
         auto const fee = env.current()->fees().base;
-        env.fund(reserve(env, 2) + drops(9999640) + (fee), ann);
+        env.fund(reserve(env, 2) + drops(9999640) + fee, ann);
         env.fund(reserve(env, 2) + (fee * 4), gw);
         env.close();
 
@@ -3467,7 +3469,7 @@ public:
         auto const bob = Account("bob");
 
         auto const fee = env.current()->fees().base;
-        env.fund(reserve(env, 2) + drops(400'000'000'000) + (fee), alice, bob);
+        env.fund(reserve(env, 2) + drops(400'000'000'000) + fee, alice, bob);
         env.fund(reserve(env, 2) + (fee * 4), gw);
         env.close();
 
@@ -3728,10 +3730,9 @@ public:
                     auto actorOffers = offersOnAccount(env, actor.acct);
                     auto const offerCount = std::distance(
                         actorOffers.begin(),
-                        std::remove_if(
-                            actorOffers.begin(), actorOffers.end(), [](SLE::const_pointer& offer) {
-                                return (*offer)[sfTakerGets].signum() == 0;
-                            }));
+                        std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
+                            return (*offer)[sfTakerGets].signum() == 0;
+                        }).begin());
                     BEAST_EXPECT(offerCount == actor.offers);
 
                     env.require(Balance(actor.acct, actor.xrp));
@@ -3898,10 +3899,9 @@ public:
                     auto actorOffers = offersOnAccount(env, actor.acct);
                     auto const offerCount = std::distance(
                         actorOffers.begin(),
-                        std::remove_if(
-                            actorOffers.begin(), actorOffers.end(), [](SLE::const_pointer& offer) {
-                                return (*offer)[sfTakerGets].signum() == 0;
-                            }));
+                        std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
+                            return (*offer)[sfTakerGets].signum() == 0;
+                        }).begin());
                     BEAST_EXPECT(offerCount == actor.offers);
 
                     env.require(Balance(actor.acct, actor.xrp));
