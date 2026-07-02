@@ -27,7 +27,7 @@ original object.
 class TaggedCache_test : public beast::unit_test::Suite
 {
 public:
-    // Mutable value type for testing fetch_and_modify
+    // Mutable value type for testing fetchAndModify
     struct MutableValue
     {
         int counter = 0;
@@ -144,13 +144,13 @@ public:
             BEAST_EXPECT(c.getTrackSize() == 0);
         }
 
-        // Test fetch_and_modify: insert on miss, modify on hit
+        // Test fetchAndModify: insert on miss, modify on hit
         {
             using MutCache = TaggedCache<Key, MutableValue>;
             MutCache mc("mutable_test", 2, 2s, clock, journal);
 
-            // A. Insert on miss: fetch_and_modify creates entry and mutates it
-            mc.fetch_and_modify(5, [](MutableValue& v) {
+            // A. Insert on miss: fetchAndModify creates entry and mutates it
+            mc.fetchAndModify(5, [](MutableValue& v) {
                 v.counter = 42;
                 v.name = "initial";
             });
@@ -170,8 +170,8 @@ public:
             BEAST_EXPECT(p2 != nullptr);
             BEAST_EXPECT(p1.get() == p2.get());  // Same object
 
-            // Modify through fetch_and_modify
-            mc.fetch_and_modify(5, [](MutableValue& v) {
+            // Modify through fetchAndModify
+            mc.fetchAndModify(5, [](MutableValue& v) {
                 v.counter += 10;
                 v.name = "modified";
             });

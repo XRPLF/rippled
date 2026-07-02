@@ -257,7 +257,7 @@ public:
     */
     template <class Callback>
     void
-    fetch_and_modify(key_type const& key, Callback&& callback);
+    fetchAndModify(key_type const& key, Callback&& callback);
 
 private:
     SharedPointerType

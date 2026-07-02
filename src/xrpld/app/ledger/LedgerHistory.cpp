@@ -417,7 +417,7 @@ LedgerHistory::builtLedger(
     LedgerHash hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::builtLedger : nonzero hash");
 
-    m_consensus_validated.fetch_and_modify(index, [&](cv_entry& entry) {
+    m_consensus_validated.fetchAndModify(index, [&](cv_entry& entry) {
         if (entry.validated && !entry.built)
         {
             if (entry.validated.value() != hash)
@@ -453,7 +453,7 @@ LedgerHistory::validatedLedger(
     LedgerHash hash = ledger->header().hash;
     XRPL_ASSERT(!hash.isZero(), "xrpl::LedgerHistory::validatedLedger : nonzero hash");
 
-    m_consensus_validated.fetch_and_modify(index, [&](cv_entry& entry) {
+    m_consensus_validated.fetchAndModify(index, [&](cv_entry& entry) {
         if (entry.built && !entry.validated)
         {
             if (entry.built.value() != hash)

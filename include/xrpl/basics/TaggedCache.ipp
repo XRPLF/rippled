@@ -654,10 +654,10 @@ template <
 template <class Callback>
 inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    fetch_and_modify(key_type const& key, Callback&& callback)
+    fetchAndModify(key_type const& key, Callback&& callback)
 {
     static_assert(
-        !IsKeyCache, "fetch_and_modify is only supported for value caches, not key-only caches");
+        !IsKeyCache, "fetchAndModify is only supported for value caches, not key-only caches");
 
     std::scoped_lock const lock(mutex_);
 
