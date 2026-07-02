@@ -42,7 +42,7 @@ public:
 
             for (int i = 0; i < 1000; ++i)
             {
-                auto const value(nextRandomInt<IntType>(r));
+                auto const value = nextRandomInt<IntType>(r);
                 testInteger(value);
             }
         }

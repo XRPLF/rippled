@@ -640,14 +640,14 @@ StatsDGaugeImpl::doIncrement(GaugeImpl::difference_type amount)
 
     if (amount > 0)
     {
-        auto const d(static_cast<GaugeImpl::value_type>(amount));
+        auto const d = static_cast<GaugeImpl::value_type>(amount);
         value += (d >= std::numeric_limits<GaugeImpl::value_type>::max() - value_)
             ? std::numeric_limits<GaugeImpl::value_type>::max() - value_
             : d;
     }
     else if (amount < 0)
     {
-        auto const d(static_cast<GaugeImpl::value_type>(-amount));
+        auto const d = static_cast<GaugeImpl::value_type>(-amount);
         value = (d >= value) ? 0 : value - d;
     }
 

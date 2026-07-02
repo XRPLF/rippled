@@ -157,7 +157,7 @@ JobQueue::getJobCountGE(JobType t) const
 std::unique_ptr<LoadEvent>
 JobQueue::makeLoadEvent(JobType t, std::string const& name)
 {
-    auto const iter(jobData_.find(t));
+    auto const iter = jobData_.find(t);
     XRPL_ASSERT(iter != jobData_.end(), "xrpl::JobQueue::makeLoadEvent : valid job type input");
 
     if (iter == jobData_.end())
@@ -172,7 +172,7 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
     if (isStopped())
         logicError("JobQueue::addLoadEvents() called after JobQueue stopped");
 
-    auto const iter(jobData_.find(t));
+    auto const iter = jobData_.find(t);
     XRPL_ASSERT(iter != jobData_.end(), "xrpl::JobQueue::addLoadEvents : valid job type input");
     iter->second.load().addSamples(count, elapsed);
 }
@@ -250,7 +250,7 @@ JobQueue::rendezvous()
 JobTypeData&
 JobQueue::getJobTypeData(JobType type)
 {
-    auto const c(jobData_.find(type));
+    auto const c = jobData_.find(type);
     XRPL_ASSERT(c != jobData_.end(), "xrpl::JobQueue::getJobTypeData : valid job type input");
 
     // NIKB: This is ugly and I hate it. We must remove JtInvalid completely
