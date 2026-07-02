@@ -22,7 +22,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <cstdint>
 #include <memory>
 
 namespace xrpl {
