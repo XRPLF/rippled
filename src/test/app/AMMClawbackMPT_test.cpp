@@ -504,6 +504,74 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
     }
 
     void
+    testAMMClawbackAmountRoundsToZero(FeatureBitset features)
+    {
+        // Ensure a clawback that rounds down to zero MPT fails with
+        // tecAMM_FAILED instead of silently burning the holder's LP.
+        testcase("test AMMClawback amount that rounds down to zero");
+        using namespace jtx;
+
+        Env env(*this, features);
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000'000), gw, alice, bob);
+        env.close();
+
+        env(fset(gw, asfAllowTrustLineClawback));
+        env.close();
+
+        MPTTester mptBtc(
+            {.env = env,
+             .issuer = gw,
+             .holders = {alice, bob},
+             .pay = 1'000,
+             .flags = tfMPTCanClawback | kMptDexFlags});
+        MPT const btc = mptBtc;
+
+        AMM amm(env, alice, btc(3), XRP(333'000));
+        env.close();
+        amm.deposit(bob, btc(3), XRP(333'000));
+        env.close();
+
+        auto const [poolBtcBefore, poolXrpBefore, lptBefore] = amm.balances();
+        BEAST_EXPECT(poolBtcBefore == btc(6));
+
+        auto const issuerOABefore = mptBtc.getBalance(gw);
+        auto const aliceLpBefore = amm.getLPTokensBalance(alice.id());
+        auto const bobLpBefore = amm.getLPTokensBalance(bob.id());
+
+        // Attempt to clawback 1/6th of the BTC pool. With the amendment active,
+        // the rounded amount drops to 0 and should trigger tecAMM_FAILED.
+        env(amm::ammClawback(gw, alice, btc, XRP, btc(1)),
+            Ter(features[fixAMMClawbackRounding] ? TER{tecAMM_FAILED} : TER{tesSUCCESS}));
+        env.close();
+
+        auto const [poolBtcAfter, poolXrpAfter, lptAfter] = amm.balances();
+        auto const issuerOAAfter = mptBtc.getBalance(gw);
+        auto const aliceLpAfter = amm.getLPTokensBalance(alice.id());
+        auto const bobLpAfter = amm.getLPTokensBalance(bob.id());
+
+        if (features[fixAMMClawbackRounding])
+        {
+            // Clawback safely aborted. All balances must remain untouched.
+            BEAST_EXPECT(poolBtcAfter == poolBtcBefore);
+            BEAST_EXPECT(poolXrpAfter == poolXrpBefore);
+            BEAST_EXPECT(issuerOAAfter == issuerOABefore);
+            BEAST_EXPECT(aliceLpAfter == aliceLpBefore);
+            BEAST_EXPECT(bobLpAfter == bobLpBefore);
+        }
+        else
+        {
+            // Amendment disabled: clawback succeeds without rounding to zero.
+            BEAST_EXPECT(poolBtcAfter == btc(5));
+            BEAST_EXPECT(issuerOAAfter == issuerOABefore - 1);
+            BEAST_EXPECT(aliceLpAfter < aliceLpBefore);
+            BEAST_EXPECT(bobLpAfter == bobLpBefore);
+        }
+    }
+
+    void
     testAMMClawbackAll(FeatureBitset features)
     {
         testcase("test AMMClawback all");
@@ -1819,6 +1887,8 @@ class AMMClawbackMPT_test : public beast::unit_test::Suite
         testInvalidRequest(all);
         testFeatureDisabled(all);
         testAMMClawbackAmount(all);
+        testAMMClawbackAmountRoundsToZero(all);
+        testAMMClawbackAmountRoundsToZero(all - fixAMMClawbackRounding);
         testAMMClawbackAll(all);
         testAMMClawbackAmountSameIssuer(all);
         testAMMClawbackAllSameIssuer(all);

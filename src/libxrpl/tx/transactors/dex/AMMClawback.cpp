@@ -353,6 +353,12 @@ AMMClawback::equalWithdrawMatchingOneAmount(
 
         auto amountRounded = getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
 
+        // The requested clawback amount is likely too small and results in
+        // one-sided pool withdrawal due to round off. Fail so the issuer can
+        // clawback a larger amount.
+        if (amountRounded == beast::kZero || amount2Rounded == beast::kZero)
+            return {tecAMM_FAILED, STAmount{}, STAmount{}, STAmount{}};
+
         return AMMWithdraw::withdraw(
             sb,
             ammSle,
