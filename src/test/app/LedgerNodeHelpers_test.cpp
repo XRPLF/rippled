@@ -14,7 +14,6 @@
 
 #include <xrpl.pb.h>
 
-#include <bit>
 #include <cstdint>
 #include <string>
 
@@ -38,7 +37,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::Suite
         Serializer s;
         node->serializeForWire(s);
         auto const slice = s.slice();
-        return std::string(std::bit_cast<char const*>(slice.data()), slice.size());
+        return std::string(slice.begin(), slice.end());
     }
 
     void
