@@ -275,7 +275,7 @@ public:
 
     // Not applicable for payment
     static TER
-    checkCreateMPTForStep(ApplyView&, DebtDirection)
+    checkCreateMPT(ApplyView&, DebtDirection)
     {
         return tesSUCCESS;
     }
@@ -323,7 +323,7 @@ public:
 
     // Can be created in rev or fwd (if limiting step) direction.
     TER
-    checkCreateMPTForStep(ApplyView& view, DebtDirection srcDebtDir);
+    checkCreateMPT(ApplyView& view, DebtDirection srcDebtDir);
 };
 
 //------------------------------------------------------------------------------
@@ -402,7 +402,7 @@ MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, SLE::const_ref)
 }
 
 TER
-MPTEndpointOfferCrossingStep::checkCreateMPTForStep(ApplyView& view, xrpl::DebtDirection srcDebtDir)
+MPTEndpointOfferCrossingStep::checkCreateMPT(ApplyView& view, xrpl::DebtDirection srcDebtDir)
 {
     // TakerPays is the last step if offer crossing
     if (isLast_)
@@ -419,7 +419,7 @@ MPTEndpointOfferCrossingStep::checkCreateMPTForStep(ApplyView& view, xrpl::DebtD
                 j_);
             !isTesSuccess(err))
         {
-            JLOG(j_.trace()) << "MPTEndpointStep::checkCreateMPTForStep: failed create MPT";
+            JLOG(j_.trace()) << "MPTEndpointStep::checkCreateMPT: failed create MPT";
             resetCache(srcDebtDir);
             return err;
         }
@@ -499,7 +499,7 @@ MPTEndpointStep<TDerived>::revImp(
         return {beast::kZero, beast::kZero};
     }
 
-    if (auto const err = static_cast<TDerived*>(this)->checkCreateMPTForStep(sb, srcDebtDir);
+    if (auto const err = static_cast<TDerived*>(this)->checkCreateMPT(sb, srcDebtDir);
         !isTesSuccess(err))
         return {beast::kZero, beast::kZero};
 
@@ -630,7 +630,7 @@ MPTEndpointStep<TDerived>::fwdImp(
         return {beast::kZero, beast::kZero};
     }
 
-    if (auto const err = static_cast<TDerived*>(this)->checkCreateMPTForStep(sb, srcDebtDir);
+    if (auto const err = static_cast<TDerived*>(this)->checkCreateMPT(sb, srcDebtDir);
         !isTesSuccess(err))
         return {beast::kZero, beast::kZero};
 
