@@ -1,5 +1,6 @@
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -13,6 +14,8 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <cstdint>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <variant>
 
@@ -121,7 +124,9 @@ getAnyFieldData(FieldValue const& variantObj)
     if (uint256 const* const* u = std::get_if<uint256 const*>(&variantObj))
         return Bytes((*u)->begin(), (*u)->end());
 
-    return Unexpected(HostFunctionError::Internal);  // LCOV_EXCL_LINE
+    // Unreachable: the variant only holds the two alternatives above. If not,
+    // it's an xrpld bug -> tecINTERNAL (thrown, caught by HostFuncMain_wrap).
+    Throw<std::runtime_error>(std::string(hfErrInternal));  // LCOV_EXCL_LINE
 }
 
 static inline bool

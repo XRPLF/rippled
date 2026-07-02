@@ -22,6 +22,7 @@
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -77,6 +78,26 @@ printWasmError(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 #endif
 }
 // LCOV_EXCL_STOP
+
+// Extract a trap's message into a std::string (the only signal the C API gives
+// for classification; see the trap-signal constants in WasmCommon.h). Does not
+// take ownership of `trap`.
+std::string
+trapMessage(wasm_trap_t* trap)
+{
+    if (trap == nullptr)
+        return {};  // LCOV_EXCL_LINE
+    wasm_byte_vec_t msg WASM_EMPTY_VEC;
+    wasm_trap_message(trap, &msg);
+    std::string out;
+    if (msg.size != 0u)
+    {
+        // wasm_trap_message NUL-terminates, so drop the trailing NUL.
+        out.assign(msg.data, msg.size - 1);
+        wasm_byte_vec_delete(&msg);
+    }
+    return out;
+}
 
 }  // namespace
 
@@ -679,7 +700,24 @@ WasmiEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
 
     if (trap)
     {
-        ret.f = true;
+        // Classify the trap into a TER by matching tokens as substrings of the
+        // message (see the trap-signal constants in WasmCommon.h for why).
+        std::string const msg = trapMessage(trap);
+        auto const has = [&msg](std::string_view token) {
+            return msg.find(token) != std::string::npos;
+        };
+        if (has(hfErrInternal))
+        {
+            ret.ter = tecINTERNAL;
+        }
+        else if (has(hfErrOutOfGas) || has(wasmiTrapOutOfFuel))
+        {
+            ret.ter = tecOUT_OF_GAS;
+        }
+        else
+        {
+            ret.ter = tecFAILED_PROCESSING;
+        }
         printWasmError("failure to call func", trap, j_);
     }
 
@@ -719,7 +757,7 @@ checkImports(ImportVec const& imports, HostFunctions* hfs)
     }
 }
 
-Expected<WasmResult<int32_t>, TER>
+Expected<WasmResult<int32_t>, WasmTER>
 WasmiEngine::run(
     Bytes const& wasmCode,
     HostFunctions& hfs,
@@ -730,7 +768,7 @@ WasmiEngine::run(
     beast::Journal j)
 {
     if (gas <= 0)
-        return Unexpected<TER>(temBAD_AMOUNT);
+        return Unexpected(WasmTER{.ter = temBAD_AMOUNT, .cost = std::nullopt});
 
     try
     {
@@ -747,10 +785,12 @@ WasmiEngine::run(
         printWasmError(std::string("exception: unknown"), nullptr, j);
     }
     // LCOV_EXCL_STOP
-    return Unexpected<TER>(tecFAILED_PROCESSING);
+    // An exception escaping the engine is an xrpld-side fault -> tecINTERNAL,
+    // no gas. Genuine wasm faults don't throw; they surface as traps in runHlp.
+    return Unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
 }
 
-Expected<WasmResult<int32_t>, TER>
+Expected<WasmResult<int32_t>, WasmTER>
 WasmiEngine::runHlp(
     Bytes const& wasmCode,
     HostFunctions& hfs,
@@ -793,8 +833,24 @@ WasmiEngine::runHlp(
 
     auto const res = call<1>(f, p);
 
-    if (res.f)
-        Throw<std::runtime_error>("<" + std::string(funcName) + "> failure");
+    if (gas == -1)
+        gas = std::numeric_limits<decltype(gas)>::max();
+
+    if (res.ter.has_value())
+    {
+        // call() already classified the trap (see WasmiEngine::call).
+        // tecINTERNAL is an xrpld-side bug: report no gas.
+        if (*res.ter == tecINTERNAL)
+            return Unexpected(WasmTER{.ter = tecINTERNAL, .cost = std::nullopt});
+
+        // Out-of-gas / wasm faults report gas (caller writes it to metadata).
+        // Force fuel to 0 on out-of-gas so cost is the full limit (wasmi leaves
+        // nonzero leftover fuel on its own out-of-fuel trap).
+        if (*res.ter == tecOUT_OF_GAS)
+            iw.setGas(0);
+
+        return Unexpected(WasmTER{.ter = *res.ter, .cost = gas - moduleWrap_->getGas()});
+    }
 
     if (res.r.empty())
     {
@@ -809,8 +865,6 @@ WasmiEngine::runHlp(
             "> return type mismatch, ret: " + std::to_string(static_cast<int>(res.r[0].kind)));
     }
 
-    if (gas == -1)
-        gas = std::numeric_limits<decltype(gas)>::max();
     WasmResult<int32_t> const ret{.result = res.r[0].of.i32, .cost = gas - moduleWrap_->getGas()};
 
     // #ifdef DEBUG_OUTPUT

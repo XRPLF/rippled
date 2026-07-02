@@ -6,6 +6,8 @@
 #include <wasm.h>
 #include <wasmi.h>
 
+#include <optional>
+
 namespace xrpl {
 
 template <class T, void (*Create)(T*, size_t), void (*Destroy)(T*)>
@@ -120,7 +122,10 @@ using WasmImporttypeVec = WasmVec<
 struct WasmiResult
 {
     WasmValVec r;
-    bool f{false};  // failure flag
+    // Set iff the call trapped. Holds the TER the trap was classified into
+    // (tecINTERNAL / tecOUT_OF_GAS / tecFAILED_PROCESSING); see
+    // WasmiEngine::call. std::nullopt means the call returned normally.
+    std::optional<TER> ter;
 
     WasmiResult(unsigned n = 0) : r(n)
     {
@@ -304,7 +309,7 @@ public:
     static EnginePtr
     init();
 
-    Expected<WasmResult<int32_t>, TER>
+    Expected<WasmResult<int32_t>, WasmTER>
     run(Bytes const& wasmCode,
         HostFunctions& hfs,
         int64_t gas,
@@ -355,7 +360,7 @@ private:
         return moduleWrap_ ? moduleWrap_->getMem() : Wmem();
     }
 
-    Expected<WasmResult<int32_t>, TER>
+    Expected<WasmResult<int32_t>, WasmTER>
     runHlp(
         Bytes const& wasmCode,
         HostFunctions& hfs,

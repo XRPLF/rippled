@@ -135,7 +135,7 @@ public:
             return Bytes{s.begin(), s.end()};
         }
 
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     Expected<Bytes, HostFunctionError>

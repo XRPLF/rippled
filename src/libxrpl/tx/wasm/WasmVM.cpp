@@ -115,7 +115,7 @@ createWasmImport(HostFunctions& hfs)
     return i;
 }
 
-Expected<EscrowResult, TER>
+Expected<EscrowResult, WasmTER>
 runEscrowWasm(
     Bytes const& wasmCode,
     HostFunctions& hfs,
@@ -133,9 +133,12 @@ runEscrowWasm(
     if (!ret)
     {
 #ifdef DEBUG_OUTPUT
-        std::cout << ", error: " << ret.error() << std::endl;
+        std::cout << ", error: " << ret.error().ter << std::endl;
 #endif
-        return Unexpected<TER>(ret.error());
+        // Carries the TER (tecOUT_OF_GAS / tecFAILED_PROCESSING / tecINTERNAL /
+        // temBAD_AMOUNT) and, when meaningful, the gas consumed. The caller is
+        // responsible for writing that gas to tx metadata.
+        return Unexpected(ret.error());
     }
 
 #ifdef DEBUG_OUTPUT
@@ -174,7 +177,7 @@ WasmEngine::instance()
     return e;
 }
 
-Expected<WasmResult<int32_t>, TER>
+Expected<WasmResult<int32_t>, WasmTER>
 WasmEngine::run(
     Bytes const& wasmCode,
     HostFunctions& hfs,

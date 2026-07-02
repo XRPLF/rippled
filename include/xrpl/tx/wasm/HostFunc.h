@@ -113,398 +113,398 @@ public:
     virtual Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn() const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime() const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Hash, HostFunctionError>
     getParentLedgerHash() const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<uint32_t, HostFunctionError>
     getBaseFee() const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     isAmendmentEnabled(uint256 const& amendmentId) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     isAmendmentEnabled(std::string_view const& amendmentName) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     getTxField(SField const& fname) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjField(SField const& fname) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     getLedgerObjField(int32_t cacheIdx, SField const& fname) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     getTxNestedField(FieldLocator const& locator) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjNestedField(FieldLocator const& locator) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     getLedgerObjNestedField(int32_t cacheIdx, FieldLocator const& locator) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getTxArrayLen(SField const& fname) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getCurrentLedgerObjArrayLen(SField const& fname) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getTxNestedArrayLen(FieldLocator const& locator) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getCurrentLedgerObjNestedArrayLen(FieldLocator const& locator) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getLedgerObjNestedArrayLen(int32_t cacheIdx, FieldLocator const& locator) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     updateData(Slice const& data)
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     checkSignature(Slice const& message, Slice const& signature, Slice const& pubkey) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     accountKeylet(AccountID const& account) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     ammKeylet(Asset const& issue1, Asset const& issue2) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     checkKeylet(AccountID const& account, std::uint32_t seq) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     credentialKeylet(AccountID const& subject, AccountID const& issuer, Slice const& credentialType)
         const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     didKeylet(AccountID const& account) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     delegateKeylet(AccountID const& account, AccountID const& authorize) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     depositPreauthKeylet(AccountID const& account, AccountID const& authorize) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     escrowKeylet(AccountID const& account, std::uint32_t seq) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     lineKeylet(AccountID const& account1, AccountID const& account2, Currency const& currency) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     mptokenKeylet(MPTID const& mptid, AccountID const& holder) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     nftOfferKeylet(AccountID const& account, std::uint32_t seq) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     offerKeylet(AccountID const& account, std::uint32_t seq) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     oracleKeylet(AccountID const& account, std::uint32_t docId) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     paychanKeylet(AccountID const& account, AccountID const& destination, std::uint32_t seq) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     permissionedDomainKeylet(AccountID const& account, std::uint32_t seq) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     signersKeylet(AccountID const& account) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     ticketKeylet(AccountID const& account, std::uint32_t seq) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     vaultKeylet(AccountID const& account, std::uint32_t seq) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     getNFTIssuer(uint256 const& nftId) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<std::uint32_t, HostFunctionError>
     getNFTTaxon(uint256 const& nftId) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getNFTFlags(uint256 const& nftId) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getNFTTransferFee(uint256 const& nftId) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<std::uint32_t, HostFunctionError>
     getNFTSerial(uint256 const& nftId) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     trace(std::string_view const& msg, Slice const& data, bool asHex) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     traceAccount(std::string_view const& msg, AccountID const& account) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     traceAmount(std::string_view const& msg, STAmount const& amount) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatFromInt(int64_t x, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatFromUint(uint64_t x, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatFromSTAmount(STAmount const& x, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatFromSTNumber(STNumber const& x, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int64_t, HostFunctionError>
     floatToInt(Slice const& x, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<FloatPair, HostFunctionError>
     floatToMantExp(Slice const& x) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatAdd(Slice const& x, Slice const& y, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatSubtract(Slice const& x, Slice const& y, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatMultiply(Slice const& x, Slice const& y, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatDivide(Slice const& x, Slice const& y, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatRoot(Slice const& x, int32_t n, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     floatPower(Slice const& x, int32_t n, int32_t mode) const
     {
-        return Unexpected(HostFunctionError::Internal);
+        return Unexpected(HostFunctionError::Unimplemented);
     }
 
     virtual ~HostFunctions() = default;
