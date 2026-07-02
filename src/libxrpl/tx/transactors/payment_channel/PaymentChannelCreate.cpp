@@ -146,7 +146,7 @@ PaymentChannelCreate::doApply()
         // unsponsored this hits the source branch and validates the
         // source's pre-lock balance against base + (currentOC+1)*increment.
         if (auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(), sle, preFeeBalance_, {.ownerCountDelta = 1}, j_);
+                applyViewContext, sle, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -158,12 +158,11 @@ PaymentChannelCreate::doApply()
         // - sponsored:   adj=0  — sponsor covers the new owner increment,
         //                so the source only owes its base reserve.
         // - unsponsored: adj=1  — source owes base + the new increment.
-        std::int32_t const ownerCountAdj = sponsorSle ? 0 : 1;
         if (auto const ret = checkInsufficientReserve(
                 ctx_.getApplyViewContext(),
                 sle,
                 preFeeBalance_ - ctx_.tx[sfAmount].xrp(),
-                {.ownerCountDelta = ownerCountAdj},
+                {.ownerCountDelta = sponsorSle ? 0 : 1},
                 j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;

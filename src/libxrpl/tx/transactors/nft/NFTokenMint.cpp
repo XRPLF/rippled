@@ -305,8 +305,8 @@ NFTokenMint::doApply()
             object.setFieldVL(sfURI, *uri);
     });
 
-    auto applyViewContext = ctx_.getApplyViewContext();
-    if (TER const ret = nft::insertToken(applyViewContext, accountID_, std::move(newToken));
+    if (TER const ret =
+            nft::insertToken(ctx_.getApplyViewContext(), accountID_, std::move(newToken));
         !isTesSuccess(ret))
         return ret;
 

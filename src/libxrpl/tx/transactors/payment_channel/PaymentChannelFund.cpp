@@ -90,13 +90,12 @@ PaymentChannelFund::doApply()
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
         auto const applyViewContext = ctx_.getApplyViewContext();
-        if (auto const ret =
-                checkInsufficientReserve(ctx_.getApplyViewContext(), sle, balance, {}, j_);
+        if (auto const ret = checkInsufficientReserve(applyViewContext, sle, balance, {}, j_);
             !isTesSuccess(ret))
             return ret;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(), sle, balance - ctx_.tx[sfAmount], {}, j_);
+                applyViewContext, sle, balance - ctx_.tx[sfAmount], {}, j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }

@@ -373,9 +373,8 @@ NFTokenAcceptOffer::transferNFToken(
 
     std::uint32_t const buyerOwnerCountBefore = sleBuyer->getFieldU32(sfOwnerCount);
 
-    auto applyViewContext = ctx_.getApplyViewContext();
     auto const insertRet =
-        nft::insertToken(applyViewContext, buyer, std::move(tokenAndPage->token));
+        nft::insertToken(ctx_.getApplyViewContext(), buyer, std::move(tokenAndPage->token));
 
     // There was an issue where the buyer accepts a sell offer, the ledger
     // didn't check if the buyer has enough reserve, meaning that buyer can get

@@ -225,7 +225,7 @@ SponsorshipSet::doApply()
             sponsorBalanceAfterFee -= *feeAmount;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(),
+                applyViewContext,
                 sponsorAccSle,
                 sponsorBalanceAfterFee.xrp(),
                 {.ownerCountDelta = 1},
