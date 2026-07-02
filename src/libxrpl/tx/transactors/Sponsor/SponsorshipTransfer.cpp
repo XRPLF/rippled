@@ -330,7 +330,7 @@ SponsorshipTransfer::doApply()
         if (!ownerSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        std::int64_t const ownerCountDelta = 1;
+        auto const ownerCountDelta = static_cast<std::int32_t>(getLedgerEntryOwnerCount(objSle));
 
         auto const& sponsorField = getLedgerEntrySponsorField(objSle, *ownerID);
 
