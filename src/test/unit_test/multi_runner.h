@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/unit_test/global_suites.h>
 #include <xrpl/beast/unit_test/runner.h>
+#include <xrpl/beast/unit_test/suite_info.h>
 
 #include <boost/beast/core/static_string.hpp>
 #include <boost/container/static_vector.hpp>
@@ -12,11 +13,15 @@
 
 #include <atomic>
 #include <chrono>
-#include <numeric>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <memory>
+#include <ostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <thread>
-#include <unordered_set>
 #include <utility>
 
 namespace xrpl {

@@ -5,9 +5,13 @@
 #include <xrpl/json/json_value.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <iomanip>
+#include <map>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <sstream>
 #include <stack>
 #include <utility>

@@ -1,12 +1,17 @@
 #pragma once
 
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
+#include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/PlainWSPeer.h>
 
 #include <boost/beast/core/tcp_stream.hpp>
 
+#include <functional>
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 

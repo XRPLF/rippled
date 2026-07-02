@@ -2,6 +2,9 @@
 
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstddef>
+#include <cstdint>
+
 namespace xrpl {
 
 // Deprecated constant for backwards compatibility with pre-XRPFees amendment.

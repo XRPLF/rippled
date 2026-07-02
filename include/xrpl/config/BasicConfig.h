@@ -6,9 +6,13 @@
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <optional>
+#include <ostream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace xrpl {

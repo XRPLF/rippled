@@ -1,6 +1,13 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Scheduler.h>
+
+#include <functional>
+#include <memory>
+#include <string>
 
 namespace xrpl::NodeStore {
 

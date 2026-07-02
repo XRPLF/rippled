@@ -1,22 +1,21 @@
 #pragma once
 
+#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 
-#include <secp256k1_mpt.h>
+#include <secp256k1.h>
 
 #include <cstdint>
 #include <limits>
+#include <optional>
 
 namespace xrpl {
 

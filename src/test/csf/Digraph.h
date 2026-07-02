@@ -4,10 +4,11 @@
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/iterator_range.hpp>
 
+#include <cstddef>
 #include <fstream>
 #include <optional>
-#include <type_traits>
-#include <unordered_map>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 namespace detail {

@@ -1,8 +1,11 @@
 #pragma once
 
-#include <xrpl/protocol/STArray.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/STObject.h>
 
+#include <cstddef>
 #include <optional>
+#include <string>
 
 namespace xrpl {
 

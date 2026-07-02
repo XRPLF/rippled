@@ -3,7 +3,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <cstdint>
+#include <ostream>
 #include <sstream>
+#include <string>
+#include <type_traits>
 
 namespace beast {
 
