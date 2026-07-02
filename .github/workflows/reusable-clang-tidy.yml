@@ -79,6 +79,7 @@ jobs:
               -Dtests=ON \
               -Dwerr=ON \
               -Dxrpld=ON \
+              -Dverify_headers=ON \
               ..
 
       # clang-tidy needs headers generated from proto files
@@ -91,7 +92,7 @@ jobs:
         id: run_clang_tidy
         continue-on-error: true
         env:
-          TARGETS: ${{ needs.determine-files.outputs.need_full_run != 'true' && needs.determine-files.outputs.cpp_changed_files || 'src tests' }}
+          TARGETS: ${{ needs.determine-files.outputs.need_full_run != 'true' && needs.determine-files.outputs.cpp_changed_files || 'include src tests' }}
         run: |
           set -o pipefail
           run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" -quiet -fix -allow-no-checks ${TARGETS} 2>&1 | tee "${OUTPUT_FILE}"

@@ -1,17 +1,24 @@
 #pragma once
 
-#include <xrpl/basics/IntrusivePointer.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/SharedWeakCachePointer.ipp>
+#include <xrpl/basics/SharedWeakCachePointer.h>
+#include <xrpl/basics/SharedWeakCachePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/clock/abstract_clock.h>
-#include <xrpl/beast/insight/Insight.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/insight/NullCollector.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
+#include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
 #include <type_traits>
 #include <vector>

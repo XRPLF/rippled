@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpl/beast/net/IPEndpoint.h>
-
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/network_v4.hpp>
 #include <boost/asio/ip/network_v6.hpp>
@@ -11,6 +9,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <ostream>
 #include <set>
 #include <string>
 #include <vector>

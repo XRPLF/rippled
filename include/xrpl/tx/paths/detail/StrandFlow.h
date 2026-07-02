@@ -1,12 +1,21 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/QualityFunction.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
@@ -17,8 +26,16 @@
 #include <boost/container/flat_set.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <iterator>
+#include <memory>
 #include <numeric>
+#include <optional>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

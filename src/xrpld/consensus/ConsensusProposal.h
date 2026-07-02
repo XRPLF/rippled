@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <optional>
 #include <sstream>
+#include <string>
 
 namespace xrpl {
 /** Represents a proposed position taken during a round of consensus.

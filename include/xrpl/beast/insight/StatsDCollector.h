@@ -4,6 +4,9 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 
+#include <memory>
+#include <string>
+
 namespace beast::insight {
 
 /** A Collector that reports metrics to a StatsD server.

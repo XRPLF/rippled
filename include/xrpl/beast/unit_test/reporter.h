@@ -5,18 +5,21 @@
 #pragma once
 
 #include <xrpl/beast/unit_test/amount.h>
-#include <xrpl/beast/unit_test/recorder.h>
+#include <xrpl/beast/unit_test/runner.h>
+#include <xrpl/beast/unit_test/suite_info.h>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace beast::unit_test {
 
