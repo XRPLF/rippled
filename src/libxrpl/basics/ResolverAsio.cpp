@@ -291,8 +291,9 @@ public:
         // a port separator
 
         // Attempt to find the first and last non-whitespace
-        auto const findWhitespace = [](std::string::value_type c) {
-            return std::isspace<std::string::value_type>(c, std::locale());
+        std::locale const loc;
+        auto const findWhitespace = [&loc](std::string::value_type c) {
+            return std::isspace<std::string::value_type>(c, loc);
         };
 
         auto hostFirst = std::ranges::find_if_not(str, findWhitespace);
