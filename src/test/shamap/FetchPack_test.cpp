@@ -82,7 +82,7 @@ public:
     static void
     addRandomItems(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
-        while ((n--) != 0u)
+        for (std::size_t i = 0; i < n; ++i)
         {
             auto const result(t.addItem(SHAMapNodeType::TnAccountState, makeRandomItemMember(r)));
             assert(result);
