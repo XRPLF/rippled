@@ -722,8 +722,6 @@ directSendNoFeeIOU(
             // Clear the reserve of the sender, possibly delete the line!
             auto const currentSponsor = getLedgerEntryReserveSponsor(
                 view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
-            if (!senderSle)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
             decreaseOwnerCount(
                 view, ReserveContext::makeFromAccount(view, senderSle, currentSponsor), 1, j);
 

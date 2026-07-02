@@ -203,18 +203,17 @@ escrowUnlockApplyHelper<MPTIssue>(
         XRPL_ASSERT(
             sleDest->getAccountID(sfAccount) == ctx.tx[sfAccount],
             "EscrowHelpers::escrowUnlockApplyHelper : sleDest.Account == tx.Account");
-        auto const reserveCtx =
-            ReserveContext::makeFromAccount(ctx.view, sleDest, ctx.txReserveContext.sponsorSle);
 
-        if (auto const ter = createMPToken(ctx.view, mptID, reserveCtx, 0); !isTesSuccess(ter))
+        if (auto const ter = createMPToken(ctx.view, mptID, ctx.txReserveContext, 0);
+            !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }
 
         // update owner count.
-        increaseOwnerCount(ctx.view, reserveCtx, 1, journal);
+        increaseOwnerCount(ctx.view, ctx.txReserveContext, 1, journal);
         auto mptSle = ctx.view.peek(mptKeylet);
-        addSponsorToLedgerEntry(mptSle, reserveCtx.sponsorSle);
+        addSponsorToLedgerEntry(mptSle, ctx.txReserveContext.sponsorSle);
     }
 
     if (!ctx.view.exists(mptKeylet) && !receiverIssuer)
