@@ -207,7 +207,7 @@ SponsorshipSet::doApply()
 
     bool const hasPositiveFeeAmount = feeAmount.has_value() && *feeAmount > beast::kZero;
 
-    auto reserveSponsorAccSle = getTxReserveSponsor(view(), ctx_.tx);
+    auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!reserveSponsorAccSle)
         return reserveSponsorAccSle.error();  // LCOV_EXCL_LINE
 
@@ -221,24 +221,23 @@ SponsorshipSet::doApply()
         if (feeAmount && (*feeAmount).xrp() > (*sponsorAccSle)[sfBalance])
             return tecUNFUNDED;
 
-        auto sponsorBalanceAfterFee = STAmount{(*sponsorAccSle)[sfBalance]};
+        STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
         if (hasPositiveFeeAmount)
             sponsorBalanceAfterFee -= *feeAmount;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
+                ctx_.getApplyViewContext(),
                 sponsorAccSle,
-                STAmount{sponsorBalanceAfterFee}.xrp(),
+                sponsorBalanceAfterFee.xrp(),
                 *reserveSponsorAccSle,
-                1,
-                0,
+                {.ownerCountDelta = 1},
                 ctx_.journal);
             !isTesSuccess(ret))
             return tecUNFUNDED;
 
         if (hasPositiveFeeAmount)
         {
+            // New object: FeeAmount starts absent, so deduct and record the full amount
             (*newSle)[sfFeeAmount] = *feeAmount;
             (*sponsorAccSle)[sfBalance] -= *feeAmount;
         }
@@ -290,17 +289,15 @@ SponsorshipSet::doApply()
         // object.
         if (feeAmountDelta != beast::kZero)
         {
-            auto sponsorBalanceAfterFee = STAmount{(*sponsorAccSle)[sfBalance]};
-            sponsorBalanceAfterFee -= STAmount{feeAmountDelta};
+            STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
+            sponsorBalanceAfterFee -= feeAmountDelta;
 
             if (auto const ret = checkInsufficientReserve(
-                    ctx_.view(),
-                    ctx_.tx,
+                    ctx_.getApplyViewContext(),
                     sponsorAccSle,
-                    STAmount{sponsorBalanceAfterFee}.xrp(),
+                    sponsorBalanceAfterFee.xrp(),
                     *reserveSponsorAccSle,
-                    0,
-                    0,
+                    {},
                     ctx_.journal);
                 !isTesSuccess(ret))
                 return tecUNFUNDED;

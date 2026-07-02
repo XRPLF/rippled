@@ -5,8 +5,12 @@
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/basics/chrono.h>
-#include <xrpl/ledger/Ledger.h>
-#include <xrpl/protocol/serialize.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+
+#include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

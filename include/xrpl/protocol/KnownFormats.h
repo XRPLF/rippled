@@ -7,7 +7,11 @@
 #include <boost/container/flat_map.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <forward_list>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

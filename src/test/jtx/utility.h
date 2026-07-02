@@ -2,11 +2,13 @@
 
 #include <test/jtx/Account.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STObject.h>
 
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace xrpl::test::jtx {

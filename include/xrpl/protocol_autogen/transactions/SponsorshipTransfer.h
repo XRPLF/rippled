@@ -19,7 +19,7 @@ class SponsorshipTransferBuilder;
  * @brief Transaction: SponsorshipTransfer
  *
  * Type: ttSPONSORSHIP_TRANSFER (90)
- * Delegable: Delegation::Delegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureSponsor
  * Privileges: MayModifyVault
  *

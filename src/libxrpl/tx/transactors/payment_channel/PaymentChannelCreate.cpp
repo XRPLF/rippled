@@ -135,7 +135,7 @@ PaymentChannelCreate::doApply()
             return tecEXPIRED;
     }
 
-    auto const sponsorSle = getTxReserveSponsor(view(), ctx_.tx);
+    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
 
@@ -147,7 +147,12 @@ PaymentChannelCreate::doApply()
         // unsponsored this hits the source branch and validates the
         // source's pre-lock balance against base + (currentOC+1)*increment.
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 1, 0, j_);
+                ctx_.getApplyViewContext(),
+                sle,
+                preFeeBalance_,
+                *sponsorSle,
+                {.ownerCountDelta = 1},
+                j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -161,13 +166,11 @@ PaymentChannelCreate::doApply()
         // - unsponsored: adj=1  — source owes base + the new increment.
         std::int32_t const ownerCountAdj = *sponsorSle ? 0 : 1;
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
+                ctx_.getApplyViewContext(),
                 sle,
                 preFeeBalance_ - ctx_.tx[sfAmount].xrp(),
                 {},
-                ownerCountAdj,
-                0,
+                {.ownerCountDelta = ownerCountAdj},
                 j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;

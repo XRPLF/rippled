@@ -1,10 +1,14 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypeInfo.h>
 
+#include <limits>
 #include <map>
 #include <string>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 

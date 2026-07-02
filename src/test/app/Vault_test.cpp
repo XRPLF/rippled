@@ -5930,7 +5930,7 @@ class Vault_test : public beast::unit_test::Suite
 
                 auto const dummyTx = *env.jt(noop(holder)).stx;
                 BEAST_EXPECT(
-                    removeEmptyHolding(sb, dummyTx, holder.id(), MPTIssue(mpt.issuanceID()), j) ==
+                    removeEmptyHolding({sb, dummyTx}, holder.id(), MPTIssue(mpt.issuanceID()), j) ==
                     tecHAS_OBLIGATIONS);
                 BEAST_EXPECT(sb.peek(tokenKeylet) != nullptr);
             }
@@ -7544,7 +7544,7 @@ class Vault_test : public beast::unit_test::Suite
         // Transaction fails if the data field is set, but is empty
         {
             testcase("VaultDelete memo data featureLendingProtocolV1_1 enabled data empty");
-            delTx[sfMemoData] = strHex(std::string(0, 'A'));
+            delTx[sfMemoData] = std::string();
             env(delTx, Ter(temMALFORMED));
             env.close();
         }

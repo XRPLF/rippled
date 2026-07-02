@@ -1,7 +1,8 @@
 #pragma once
 
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/jss.h>
+
+#include <string>
 
 namespace xrpl {
 

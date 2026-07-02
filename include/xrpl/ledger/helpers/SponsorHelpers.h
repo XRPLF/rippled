@@ -1,15 +1,21 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <cstdint>
 #include <expected>
+#include <optional>
 
 namespace xrpl {
 
@@ -36,12 +42,12 @@ getTxReserveSponsorAccountID(STTx const& tx)
 }
 
 inline std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyView& view, STTx const& tx)
+getTxReserveSponsor(ApplyViewContext ctx)
 {
-    auto const sponsorID = getTxReserveSponsorAccountID(tx);
+    auto const sponsorID = getTxReserveSponsorAccountID(ctx.tx);
     if (sponsorID)
     {
-        auto sle = view.peek(keylet::account(*sponsorID));
+        auto sle = ctx.view.peek(keylet::account(*sponsorID));
 
         // already checked in Transactor::checkSponsor
         if (!sle)

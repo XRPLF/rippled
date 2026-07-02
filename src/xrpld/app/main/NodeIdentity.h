@@ -7,6 +7,8 @@
 
 #include <boost/program_options.hpp>
 
+#include <utility>
+
 namespace xrpl {
 
 /** The cryptographic credentials identifying this server instance.

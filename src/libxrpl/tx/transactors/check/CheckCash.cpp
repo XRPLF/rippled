@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -388,7 +389,8 @@ CheckCash::doApply()
             STAmount const flowDeliver{
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
-            auto const sponsorSle = getTxReserveSponsor(psb, ctx_.tx);
+            auto applyViewContext = ApplyViewContext({.view = psb, .tx = ctx_.tx});
+            auto const sponsorSle = getTxReserveSponsor(applyViewContext);
             if (!sponsorSle)
                 return sponsorSle.error();  // LCOV_EXCL_LINE
 
@@ -399,7 +401,12 @@ CheckCash::doApply()
 
                 // Can the account cover the trust line's or MPT reserve?
                 if (auto const ret = checkInsufficientReserve(
-                        psb, ctx_.tx, sleDst, preFeeBalance_, *sponsorSle, 1, 0, j_);
+                        applyViewContext,
+                        sleDst,
+                        preFeeBalance_,
+                        *sponsorSle,
+                        {.ownerCountDelta = 1},
+                        j_);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
