@@ -3409,6 +3409,77 @@ public:
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
     }
 
+    // Legacy (pre-MultiSignReserve) SignerLists lack lsfOneOwnerCount and cost
+    // 2 + signer_count owner units, whereas modern lists cost 1.
+    void
+    testLegacySignerListReserve()
+    {
+        testcase("Legacy SignerList sponsorship reserve");
+        using namespace test::jtx;
+
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+        Account const sponsor("sponsor");
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(1000000), alice, bob, carol, dave, sponsor);
+        env.close();
+
+        // Modern 3-signer list: weight 1, lsfOneOwnerCount set.
+        env(signers(alice, 1, {{bob, 1}, {carol, 1}, {dave, 1}}));
+        env.close();
+
+        auto const signerListKeylet = keylet::signerList(alice.id());
+        auto const sponsorKeylet = keylet::sponsorship(sponsor.id(), alice.id());
+        std::uint32_t const legacyWeight = 5;  // 2 + 3 signers
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+        // Pre-fund exactly the legacy weight
+        env(sponsor::set_reserve(sponsor, 0, legacyWeight), sponsor::SponseeAcc(alice));
+        env.close();
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(sle->getFieldU32(sfRemainingOwnerCount) == legacyWeight);
+
+        // Synthesize a pre-MultiSignReserve list: clear lsfOneOwnerCount and
+        // restore the owner's OwnerCount to the legacy weight.
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            auto signerList = std::make_shared<SLE>(*view.read(signerListKeylet));
+            auto account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+            signerList->clearFlag(lsfOneOwnerCount);
+            account->setFieldU32(sfOwnerCount, legacyWeight);
+            view.rawReplace(signerList);
+            view.rawReplace(account);
+            return true;
+        });
+        if (auto const sle = env.le(signerListKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT((sle->getFlags() & lsfOneOwnerCount) == 0);
+        BEAST_EXPECT(ownerCount(env, alice) == legacyWeight);
+
+        // Create must charge the full legacy weight (5), not 1: the bug bumped
+        // the counters by 1 and left 4 pre-funded units unspent.
+        env(sponsor::transfer(alice, tfSponsorshipCreate, signerListKeylet.key),
+            sponsor::As(sponsor, spfSponsorReserve));
+
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == legacyWeight);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == legacyWeight);
+        // All pre-funded units consumed (drained to absent).
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+
+        // Delete unwinds the legacy weight; create bumped by the same amount, so
+        // the counters return to 0 (the bug bumped by 1 -> underflow on delete).
+        env(signers(alice, NoneT()));
+
+        BEAST_EXPECT(!env.le(signerListKeylet));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+    }
+
     void
     testSponsoredTrustLineNoFreeReserve()
     {
@@ -4306,6 +4377,7 @@ protected:
         testSponsoredFreeTierReserve();
 
         testTransferSponsor();
+        testLegacySignerListReserve();
         testSponsorFee();
         testSponsorAccount();
 
