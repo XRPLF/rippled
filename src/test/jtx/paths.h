@@ -1,8 +1,13 @@
 #pragma once
 
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
 
-#include <xrpl/protocol/Issue.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 
 #include <type_traits>
 

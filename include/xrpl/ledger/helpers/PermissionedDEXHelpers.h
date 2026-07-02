@@ -1,6 +1,10 @@
 #pragma once
 
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace xrpl::permissioned_dex {
 

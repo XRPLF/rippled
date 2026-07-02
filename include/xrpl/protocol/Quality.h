@@ -1,11 +1,13 @@
 #pragma once
 
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AmountConversions.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
+#include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <ostream>
 #include <utility>

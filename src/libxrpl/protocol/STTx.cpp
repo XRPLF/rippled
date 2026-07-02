@@ -1,7 +1,6 @@
 #include <xrpl/protocol/STTx.h>
 
 #include <xrpl/basics/Blob.h>
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -72,6 +71,7 @@ STTx::STTx(STObject&& object) : STObject(std::move(object))
     txType_ = safeCast<TxType>(getFieldU16(sfTransactionType));
     applyTemplate(getTxFormat(txType_)->getSOTemplate());  //  may throw
     tid_ = getHash(HashPrefix::TransactionId);
+    buildBatchTxnIds();
 }
 
 STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
@@ -88,6 +88,7 @@ STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 
     applyTemplate(getTxFormat(txType_)->getSOTemplate());  // May throw
     tid_ = getHash(HashPrefix::TransactionId);
+    buildBatchTxnIds();
 }
 
 STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfTransaction)
@@ -105,6 +106,7 @@ STTx::STTx(TxType type, std::function<void(STObject&)> assembler) : STObject(sfT
         logicError("Transaction type was mutated during assembly");
 
     tid_ = getHash(HashPrefix::TransactionId);
+    buildBatchTxnIds();
 }
 
 STBase*
@@ -212,20 +214,6 @@ STTx::getSeqValue() const
     return getSeqProxy().value();
 }
 
-AccountID
-STTx::getFeePayer() const
-{
-    // If sfDelegate is present, the delegate account is the payer
-    // note: if a delegate is specified, its authorization to act on behalf of the account is
-    // enforced in `Transactor::invokeCheckPermission`
-    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
-    if (isFieldPresent(sfDelegate))
-        return getAccountID(sfDelegate);
-
-    // Default payer
-    return getAccountID(sfAccount);
-}
-
 void
 STTx::sign(
     PublicKey const& publicKey,
@@ -279,6 +267,17 @@ STTx::checkSign(Rules const& rules) const
         if (auto const ret = checkSign(rules, counterSig); !ret)
             return std::unexpected("Counterparty: " + ret.error());
     }
+
+    // Verify the batch signer signatures here too, so they are cached with the
+    // rest of signature checking (checkValidity / SF_SIGGOOD) and stay out of
+    // the transaction engine. Gated on a batch (batchTxnIds_ seated) that
+    // actually carries signers; a batch whose inners are all from the outer
+    // account has no sfBatchSigners and needs no signer crypto.
+    if (batchTxnIds_ && isFieldPresent(sfBatchSigners))
+    {
+        if (auto const ret = checkBatchSign(rules); !ret)
+            return ret;
+    }
     return {};
 }
 
@@ -287,12 +286,15 @@ STTx::checkBatchSign(Rules const& rules) const
 {
     try
     {
-        XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSign : not a batch transaction");
         if (getTxnType() != ttBATCH)
         {
-            JLOG(debugLog().fatal()) << "not a batch transaction";
+            // LCOV_EXCL_START
+            UNREACHABLE("STTx::checkBatchSign : not a batch transaction");
             return std::unexpected("Not a batch transaction.");
+            // LCOV_EXCL_STOP
         }
+        if (!isFieldPresent(sfBatchSigners))
+            return std::unexpected("Missing BatchSigners field.");  // LCOV_EXCL_LINE
         STArray const& signers{getFieldArray(sfBatchSigners)};
         for (auto const& signer : signers)
         {
@@ -307,9 +309,10 @@ STTx::checkBatchSign(Rules const& rules) const
     }
     catch (std::exception const& e)
     {
-        JLOG(debugLog().error()) << "Batch signature check failed: " << e.what();
+        // LCOV_EXCL_START
+        return std::unexpected(std::string("Internal batch signature check failure: ") + e.what());
+        // LCOV_EXCL_STOP
     }
-    return std::unexpected("Internal batch signature check failure.");
 }
 
 json::Value
@@ -429,8 +432,11 @@ STTx::checkSingleSign(STObject const& sigObject) const
 std::expected<void, std::string>
 STTx::checkBatchSingleSign(STObject const& batchSigner) const
 {
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
-    serializeBatch(msg, getFlags(), getBatchTransactionIDs());
+    serializeBatch(
+        msg, getAccountID(sfAccount), getSeqValue(), getFlags(), getBatchTransactionIDs());
+    finishMultiSigningData(batchSigner.getAccountID(sfAccount), msg);
     return singleSignHelper(batchSigner, msg.slice());
 }
 
@@ -504,7 +510,7 @@ multiSignHelper(
         {
             return std::unexpected(
                 std::string("Invalid signature on account ") + toBase58(accountID) +
-                errorWhat.value_or("") + ".");
+                (errorWhat ? ": " + *errorWhat : "") + ".");
         }
     }
     // All signatures verified.
@@ -514,14 +520,18 @@ multiSignHelper(
 std::expected<void, std::string>
 STTx::checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const
 {
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchMultiSign : batch transaction");
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
+    auto const batchSignerAccount = batchSigner.getAccountID(sfAccount);
     Serializer dataStart;
-    serializeBatch(dataStart, getFlags(), getBatchTransactionIDs());
+    serializeBatch(
+        dataStart, getAccountID(sfAccount), getSeqValue(), getFlags(), getBatchTransactionIDs());
+    dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
         batchSigner,
-        std::nullopt,
+        batchSignerAccount,
         [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
@@ -555,42 +565,38 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject) const
         rules);
 }
 
-/**
- * @brief Retrieves a batch of transaction IDs from the STTx.
- *
- * This function returns a vector of transaction IDs by extracting them from
- * the field array `sfRawTransactions` within the STTx. If the batch
- * transaction IDs have already been computed and cached in `batchTxnIds_`,
- * it returns the cached vector. Otherwise, it computes the transaction IDs,
- * caches them, and then returns the vector.
- *
- * @return A vector of `uint256` containing the batch transaction IDs.
- *
- * @note The function asserts that the `sfRawTransactions` field array is not
- * empty and that the size of the computed batch transaction IDs matches the
- * size of the `sfRawTransactions` field array.
- */
+void
+STTx::buildBatchTxnIds()
+{
+    // Precondition: the template must have been applied first, so the fields
+    // (including sfRawTransactions) are canonical before the inner txns are
+    // hashed. The constructors call this immediately after applying the
+    // template; isFree() being false confirms a template is set.
+    XRPL_ASSERT(!isFree(), "STTx::buildBatchTxnIds : template applied");
+    if (getTxnType() != ttBATCH || !isFieldPresent(sfRawTransactions))
+        return;
+
+    auto const& raw = getFieldArray(sfRawTransactions);
+
+    // Seated for any batch with raw transactions. The count is validated in
+    // preflight and at the relay boundary, so build every id here; this keeps
+    // the invariant batchTxnIds_->size() == rawTransactions.size().
+    auto& ids = batchTxnIds_.emplace();
+    ids.reserve(raw.size());
+    for (STObject const& rb : raw)
+        ids.push_back(rb.getHash(HashPrefix::TransactionId));
+}
+
 std::vector<uint256> const&
 STTx::getBatchTransactionIDs() const
 {
-    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : not a batch transaction");
+    XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : batch transaction");
     XRPL_ASSERT(
-        !getFieldArray(sfRawTransactions).empty(),
-        "STTx::getBatchTransactionIDs : empty raw transactions");
-
-    // The list of inner ids is built once, then reused on subsequent calls.
-    // After the list is built, it must always have the same size as the array
-    // `sfRawTransactions`. The assert below verifies that.
-    if (batchTxnIds_.empty())
-    {
-        for (STObject const& rb : getFieldArray(sfRawTransactions))
-            batchTxnIds_.push_back(rb.getHash(HashPrefix::TransactionId));
-    }
-
+        batchTxnIds_.has_value(), "STTx::getBatchTransactionIDs : batch transaction IDs built");
     XRPL_ASSERT(
-        batchTxnIds_.size() == getFieldArray(sfRawTransactions).size(),
+        batchTxnIds_->size() == getFieldArray(sfRawTransactions).size(),
         "STTx::getBatchTransactionIDs : batch transaction IDs size mismatch");
-    return batchTxnIds_;
+    return *batchTxnIds_;
 }
 
 //------------------------------------------------------------------------------
@@ -727,13 +733,22 @@ invalidMPTAmountInTx(STObject const& tx)
 }
 
 static bool
-isRawTransactionOkay(STObject const& st, std::string& reason)
+isBatchRawTransactionOkay(STObject const& st, std::string& reason)
 {
     if (!st.isFieldPresent(sfRawTransactions))
         return true;
 
+    // sfRawTransactions only appears on a Batch. passesLocalChecks runs on
+    // unverified user and peer input, so reject (rather than assert) a non-batch
+    // transaction that carries it.
+    if (st.getFieldU16(sfTransactionType) != ttBATCH)
+    {
+        reason = "Only Batch transactions may contain raw transactions.";
+        return false;
+    }
+
     if (st.isFieldPresent(sfBatchSigners) &&
-        st.getFieldArray(sfBatchSigners).size() > kMaxBatchTxCount)
+        st.getFieldArray(sfBatchSigners).size() > kMaxBatchSigners)
     {
         reason = "Batch Signers array exceeds max entries.";
         return false;
@@ -757,6 +772,12 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
             }
 
             raw.applyTemplate(getTxFormat(tt)->getSOTemplate());
+
+            // passesLocalChecks recurses back into isBatchRawTransactionOkay,
+            // but an inner can never be a batch (rejected above), so the
+            // recursion terminates at depth 1.
+            if (!passesLocalChecks(raw, reason))
+                return false;
         }
         catch (std::exception const& e)
         {
@@ -791,7 +812,7 @@ passesLocalChecks(STObject const& st, std::string& reason)
         return false;
     }
 
-    if (!isRawTransactionOkay(st, reason))
+    if (!isBatchRawTransactionOkay(st, reason))
         return false;
 
     return true;

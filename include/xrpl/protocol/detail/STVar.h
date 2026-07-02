@@ -5,6 +5,7 @@
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
+#include <tuple>
 #include <type_traits>
 
 namespace xrpl::detail {

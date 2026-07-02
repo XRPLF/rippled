@@ -4,6 +4,7 @@
 #include <xrpld/peerfinder/detail/Store.h>
 
 #include <xrpl/basics/comparators.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 

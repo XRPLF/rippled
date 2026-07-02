@@ -3,7 +3,10 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
+#include <cstddef>
 #include <ostream>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace json {

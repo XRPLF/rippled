@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/basics/Log.h>  // IWYU pragma: keep
 #include <xrpl/basics/TaggedCache.h>
 
 namespace xrpl {

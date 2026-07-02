@@ -3,6 +3,11 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
+#include <xrpl/basics/base_uint.h>
+
+#include <string>
+#include <vector>
+
 namespace xrpl::test::jtx {
 
 uint256

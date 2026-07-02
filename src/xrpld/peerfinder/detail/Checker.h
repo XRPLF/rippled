@@ -1,12 +1,14 @@
 #pragma once
 
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/intrusive/list.hpp>
 
 #include <condition_variable>
+#include <functional>
 #include <memory>
 #include <mutex>
 

@@ -1,11 +1,14 @@
 #pragma once
 
-#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
-#include <array>
+#include <bit>
 #include <cstdint>
 #include <optional>
+#include <tuple>
+#include <utility>
+#include <version>  // IWYU pragma: keep
 
 namespace xrpl {
 

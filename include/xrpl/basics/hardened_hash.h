@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/xxhasher.h>
 
 #include <cstdint>

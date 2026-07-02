@@ -1,6 +1,10 @@
 #pragma once
 
 // Disable lz4 deprecation warning due to incompatibility with clang attributes
+#include <array>
+#include <cstdint>
+#include <stdexcept>
+#include <utility>
 #define LZ4_DISABLE_DEPRECATE_WARNINGS
 
 #include <xrpl/basics/contract.h>
