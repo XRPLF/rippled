@@ -15,6 +15,7 @@
 #include <iterator>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace xrpl {
