@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <optional>
+#include <type_traits>
 
 namespace xrpl {
 

@@ -1,8 +1,11 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
+
+#include <string>
 
 namespace xrpl {
 
