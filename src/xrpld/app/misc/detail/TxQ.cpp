@@ -788,7 +788,7 @@ TxQ::apply(
     std::scoped_lock const lock(mutex_);
 
     // accountIter is not const because it may be updated further down.
-    AccountMap::iterator accountIter = byAccount_.find(account);
+    auto accountIter = byAccount_.find(account);
     bool const accountIsInQueue = accountIter != byAccount_.end();
 
     // _If_ the account is in the queue, then ignore any sequence-based
@@ -817,7 +817,7 @@ TxQ::apply(
 
         // Find the first transaction in the queue that we might apply.
         TxQAccount::TxMap& acctTxs = accountIter->second.transactions;
-        TxQAccount::TxMap::iterator const firstIter = acctTxs.lower_bound(acctSeqProx);
+        auto const firstIter = acctTxs.lower_bound(acctSeqProx);
 
         if (firstIter == acctTxs.end())
         {
@@ -996,7 +996,7 @@ TxQ::apply(
 
             // Find the entry in the queue that precedes the new
             // transaction, if one does.
-            TxQAccount::TxMap::const_iterator const prevIter = txQAcct.getPrevTx(txSeqProx);
+            auto const prevIter = txQAcct.getPrevTx(txSeqProx);
 
             // Does the new transaction go to the front of the queue?
             // This can happen if:
@@ -1615,7 +1615,7 @@ TxQ::nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex>
     // Ignore any sequence-based queued transactions that slipped into the
     // ledger while we were not watching.  This does actually happen in the
     // wild, but it's uncommon.
-    TxQAccount::TxMap::const_iterator txIter = acctTxs.lower_bound(acctSeqProx);
+    auto txIter = acctTxs.lower_bound(acctSeqProx);
 
     if (txIter == acctTxs.end() || !txIter->first.isSeq() || txIter->first != acctSeqProx)
     {
@@ -1700,7 +1700,7 @@ TxQ::tryDirectApply(
             // queue then remove the replaced transaction.
             std::scoped_lock const lock(mutex_);
 
-            AccountMap::iterator const accountIter = byAccount_.find(account);
+            auto const accountIter = byAccount_.find(account);
             if (accountIter != byAccount_.end())
             {
                 TxQAccount& txQAcct = accountIter->second;

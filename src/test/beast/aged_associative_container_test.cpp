@@ -1391,7 +1391,7 @@ AgedAssociativeContainerTestBase::reverseFillAgedContainer(Container& c, Values 
     // c.clock() returns an abstract_clock, so dynamic_cast to ManualClock.
     // VFALCO NOTE This is sketchy
     using ManualClock = TestTraitsBase::ManualClock;
-    ManualClock& clk(dynamic_cast<ManualClock&>(c.clock()));
+    auto& clk(dynamic_cast<ManualClock&>(c.clock()));
     clk.set(0);
 
     Values rev(values);

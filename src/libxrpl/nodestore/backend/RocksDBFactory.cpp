@@ -80,7 +80,7 @@ public:
     void
     StartThread(void (*f)(void*), void* a) override
     {
-        ThreadParams* const p(new ThreadParams(f, a));
+        auto* const p(new ThreadParams(f, a));
         EnvWrapper::StartThread(&RocksDBEnv::threadEntry, p);
     }
 };
