@@ -1745,7 +1745,9 @@ rpcClient(
                     static_cast<int>(setup.client.secure) != 0,  // Use SSL
                     config.quiet(),
                     logs,
-                    std::bind(RPCCallImp::callRPCHandler, &jvOutput, std::placeholders::_1),
+                    [capture0 = &jvOutput](auto&& PH1) {
+                        RPCCallImp::callRPCHandler(capture0, std::forward<decltype(PH1)>(PH1));
+                    },
                     headers);
                 isService.run();  // This blocks until there are no more
                                   // outstanding async calls.
@@ -1870,24 +1872,26 @@ fromNetwork(
         ioContext,
         strIp,
         iPort,
-        std::bind(
-            &RPCCallImp::onRequest,
-            strMethod,
-            jvParams,
-            headers,
-            strPath,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            j),
+        [strMethod, jvParams, headers, strPath, j](auto&& PH1, auto&& PH2) {
+            RPCCallImp::onRequest(
+                strMethod,
+                jvParams,
+                headers,
+                strPath,
+                std::forward<decltype(PH1)>(PH1),
+                std::forward<decltype(PH2)>(PH2),
+                j);
+        },
         kRpcReplyMaxBytes,
         kRpcWebhookTimeout,
-        std::bind(
-            &RPCCallImp::onResponse,
-            callbackFuncP,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            std::placeholders::_3,
-            j),
+        [callbackFuncP, j](auto&& PH1, auto&& PH2, auto&& PH3) {
+            return RPCCallImp::onResponse(
+                callbackFuncP,
+                std::forward<decltype(PH1)>(PH1),
+                std::forward<decltype(PH2)>(PH2),
+                std::forward<decltype(PH3)>(PH3),
+                j);
+        },
         j);
 }
 

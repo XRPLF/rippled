@@ -90,8 +90,8 @@ public:
         beast::IP::Endpoint const addr(beast::IP::Endpoint::fromString("192.0.2.2"));
 
         std::function<Consumer(beast::IP::Endpoint)> const ep = limited
-            ? std::bind(&TestLogic::newInboundEndpoint, &logic, std::placeholders::_1)
-            : std::bind(&TestLogic::newUnlimitedEndpoint, &logic, std::placeholders::_1);
+            ? [ObjectPtr = &logic](auto && PH1) { return ObjectPtr->newInboundEndpoint(std::forward<decltype(PH1)>(PH1)); }
+            : [ObjectPtr = &logic](auto && PH1) { return ObjectPtr->newUnlimitedEndpoint(std::forward<decltype(PH1)>(PH1)); };
 
         {
             Consumer c(ep(addr));

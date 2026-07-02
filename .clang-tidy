@@ -64,7 +64,6 @@ Checks: "-*,
   -misc-use-internal-linkage,
 
   modernize-*,
-  -modernize-avoid-bind,
   -modernize-avoid-c-arrays,
   -modernize-avoid-c-style-cast,
   -modernize-avoid-setjmp-longjmp,

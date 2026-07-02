@@ -1157,12 +1157,12 @@ Pathfinder::addLink(
                 if (!candidates.empty())
                 {
                     std::ranges::sort(
-                        candidates,
-                        std::bind(
-                            compareAccountCandidate,
-                            ledger_->seq(),
-                            std::placeholders::_1,
-                            std::placeholders::_2));
+                        candidates, [capture0 = ledger_->seq()](auto&& PH1, auto&& PH2) {
+                            return compareAccountCandidate(
+                                capture0,
+                                std::forward<decltype(PH1)>(PH1),
+                                std::forward<decltype(PH2)>(PH2));
+                        });
 
                     int count = candidates.size();
                     // allow more paths from source

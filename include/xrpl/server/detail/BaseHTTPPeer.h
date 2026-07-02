@@ -320,24 +320,18 @@ BaseHTTPPeer<Handler, Impl>::onWrite(error_code const& ec, std::size_t bytesTran
         return boost::asio::async_write(
             impl().stream_,
             v,
-            bind_executor(
-                strand_,
-                std::bind(
-                    &BaseHTTPPeer::onWrite,
-                    impl().shared_from_this(),
-                    std::placeholders::_1,
-                    std::placeholders::_2)));
+            bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1, auto&& PH2) {
+                capture0->onWrite(
+                    std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+            }));
     }
     if (!complete_)
         return;
     if (graceful_)
         return doClose();
-    util::spawn(
-        strand_,
-        std::bind(
-            &BaseHTTPPeer<Handler, Impl>::doRead,
-            impl().shared_from_this(),
-            std::placeholders::_1));
+    util::spawn(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
+        capture0->doRead(std::forward<decltype(PH1)>(PH1));
+    });
 }
 
 template <class Handler, class Impl>
@@ -351,14 +345,9 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     {
         auto const p = impl().shared_from_this();
         resume = std::function<void(void)>([this, p, writer, keepAlive]() {
-            util::spawn(
-                strand_,
-                std::bind(
-                    &BaseHTTPPeer<Handler, Impl>::doWriter,
-                    p,
-                    writer,
-                    keepAlive,
-                    std::placeholders::_1));
+            util::spawn(strand_, [p, writer, keepAlive](auto&& PH1) {
+                p->doWriter(writer, keepAlive, std::forward<decltype(PH1)>(PH1));
+            });
         });
     }
 
@@ -379,12 +368,9 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     if (!keepAlive)
         return doClose();
 
-    util::spawn(
-        strand_,
-        std::bind(
-            &BaseHTTPPeer<Handler, Impl>::doRead,
-            impl().shared_from_this(),
-            std::placeholders::_1));
+    util::spawn(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
+        capture0->doRead(std::forward<decltype(PH1)>(PH1));
+    });
 }
 
 //------------------------------------------------------------------------------
@@ -404,9 +390,9 @@ BaseHTTPPeer<Handler, Impl>::write(void const* buf, std::size_t bytes)
     {
         if (!strand_.running_in_this_thread())
         {
-            return post(
-                strand_,
-                std::bind(&BaseHTTPPeer::onWrite, impl().shared_from_this(), error_code{}, 0));
+            return post(strand_, [capture0 = impl().shared_from_this()] {
+                capture0->onWrite(error_code{}, 0);
+            });
         }
         return onWrite(error_code{}, 0);
     }
@@ -416,14 +402,9 @@ template <class Handler, class Impl>
 void
 BaseHTTPPeer<Handler, Impl>::write(std::shared_ptr<Writer> const& writer, bool keepAlive)
 {
-    util::spawn(
-        strand_,
-        std::bind(
-            &BaseHTTPPeer<Handler, Impl>::doWriter,
-            impl().shared_from_this(),
-            writer,
-            keepAlive,
-            std::placeholders::_1));
+    util::spawn(strand_, [capture0 = impl().shared_from_this(), writer, keepAlive](auto&& PH1) {
+        capture0->doWriter(writer, keepAlive, std::forward<decltype(PH1)>(PH1));
+    });
 }
 
 // DEPRECATED
@@ -443,8 +424,7 @@ BaseHTTPPeer<Handler, Impl>::complete()
 {
     if (!strand_.running_in_this_thread())
     {
-        return post(
-            strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::complete, impl().shared_from_this()));
+        return post(strand_, [capture0 = impl().shared_from_this()] { capture0->complete(); });
     }
 
     message_ = {};
@@ -457,12 +437,9 @@ BaseHTTPPeer<Handler, Impl>::complete()
     }
 
     // keep-alive
-    util::spawn(
-        strand_,
-        std::bind(
-            &BaseHTTPPeer<Handler, Impl>::doRead,
-            impl().shared_from_this(),
-            std::placeholders::_1));
+    util::spawn(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
+        capture0->doRead(std::forward<decltype(PH1)>(PH1));
+    });
 }
 
 // DEPRECATED

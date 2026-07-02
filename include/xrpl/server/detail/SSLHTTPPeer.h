@@ -99,14 +99,14 @@ SSLHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
-        util::spawn(this->strand_, std::bind(&SSLHTTPPeer::doClose, this->shared_from_this()));
+        util::spawn(this->strand_, [capture0 = this->shared_from_this()] { capture0->doClose(); });
         return;
     }
     if (!socket_.is_open())
         return;
-    util::spawn(
-        this->strand_,
-        std::bind(&SSLHTTPPeer::doHandshake, this->shared_from_this(), std::placeholders::_1));
+    util::spawn(this->strand_, [capture0 = this->shared_from_this()](auto&& PH1) {
+        capture0->doHandshake(std::forward<decltype(PH1)>(PH1));
+    });
 }
 
 template <class Handler>
@@ -142,9 +142,9 @@ SSLHTTPPeer<Handler>::doHandshake(yield_context doYield)
         this->port().protocol.count("https") > 0;
     if (http)
     {
-        util::spawn(
-            this->strand_,
-            std::bind(&SSLHTTPPeer::doRead, this->shared_from_this(), std::placeholders::_1));
+        util::spawn(this->strand_, [capture0 = this->shared_from_this()](auto&& PH1) {
+            capture0->doRead(std::forward<decltype(PH1)>(PH1));
+        });
         return;
     }
     // `this` will be destroyed
@@ -170,9 +170,10 @@ void
 SSLHTTPPeer<Handler>::doClose()
 {
     this->startTimer();
-    stream_.async_shutdown(bind_executor(
-        this->strand_,
-        std::bind(&SSLHTTPPeer::onShutdown, this->shared_from_this(), std::placeholders::_1)));
+    stream_.async_shutdown(
+        bind_executor(this->strand_, [capture0 = this->shared_from_this()](auto&& PH1) {
+            capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+        }));
 }
 
 template <class Handler>

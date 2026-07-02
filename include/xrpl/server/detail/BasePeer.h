@@ -84,7 +84,7 @@ void
 BasePeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind(&BasePeer::close, impl().shared_from_this()));
+        return post(strand_, [capture0 = impl().shared_from_this()] { capture0->close(); });
     error_code ec;
     xrpl::getLowestLayer(impl().ws_).socket().close(ec);
 }

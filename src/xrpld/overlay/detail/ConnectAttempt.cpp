@@ -86,7 +86,7 @@ ConnectAttempt::stop()
 {
     if (!strand_.running_in_this_thread())
     {
-        boost::asio::post(strand_, std::bind(&ConnectAttempt::stop, shared_from_this()));
+        boost::asio::post(strand_, [capture0 = shared_from_this()] { capture0->stop(); });
         return;
     }
     if (socket_.is_open())
@@ -103,9 +103,9 @@ ConnectAttempt::run()
 
     stream_.next_layer().async_connect(
         remoteEndpoint_,
-        boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onConnect, shared_from_this(), std::placeholders::_1)));
+        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1) {
+            capture0->onConnect(std::forward<decltype(PH1)>(PH1));
+        }));
 }
 
 //------------------------------------------------------------------------------
@@ -159,9 +159,9 @@ ConnectAttempt::setTimer()
     }
 
     timer_.async_wait(
-        boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));
+        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1) {
+            capture0->onTimer(std::forward<decltype(PH1)>(PH1));
+        }));
 }
 
 void
@@ -227,9 +227,9 @@ ConnectAttempt::onConnect(error_code ec)
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
-        boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onHandshake, shared_from_this(), std::placeholders::_1)));
+        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1) {
+            capture0->onHandshake(std::forward<decltype(PH1)>(PH1));
+        }));
 }
 
 void
@@ -288,9 +288,9 @@ ConnectAttempt::onHandshake(error_code ec)
     boost::beast::http::async_write(
         stream_,
         req_,
-        boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onWrite, shared_from_this(), std::placeholders::_1)));
+        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1) {
+            capture0->onWrite(std::forward<decltype(PH1)>(PH1));
+        }));
 }
 
 void
@@ -314,9 +314,9 @@ ConnectAttempt::onWrite(error_code ec)
         stream_,
         readBuf_,
         response_,
-        boost::asio::bind_executor(
-            strand_,
-            std::bind(&ConnectAttempt::onRead, shared_from_this(), std::placeholders::_1)));
+        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1) {
+            capture0->onRead(std::forward<decltype(PH1)>(PH1));
+        }));
 }
 
 void
@@ -337,10 +337,9 @@ ConnectAttempt::onRead(error_code ec)
             JLOG(journal_.debug()) << "EOF";
             setTimer();
             stream_.async_shutdown(
-                boost::asio::bind_executor(
-                    strand_,
-                    std::bind(
-                        &ConnectAttempt::onShutdown, shared_from_this(), std::placeholders::_1)));
+                boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1) {
+                    capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+                }));
             return;
         }
 

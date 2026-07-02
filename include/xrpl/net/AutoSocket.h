@@ -120,12 +120,10 @@ public:
             socket_->next_layer().async_receive(
                 boost::asio::buffer(buffer_),
                 boost::asio::socket_base::message_peek,
-                std::bind(
-                    &AutoSocket::handleAutodetect,
-                    this,
-                    cbFunc,
-                    std::placeholders::_1,
-                    std::placeholders::_2));
+                [this, cbFunc](auto&& PH1, auto&& PH2) {
+                    handleAutodetect(
+                        cbFunc, std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                });
         }
     }
 

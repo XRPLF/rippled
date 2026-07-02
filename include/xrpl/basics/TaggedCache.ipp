@@ -57,7 +57,10 @@ inline TaggedCache<
         beast::insight::Collector::ptr const& collector)
     : journal_(journal)
     , clock_(clock)
-    , stats_(name, std::bind(&TaggedCache::collectMetrics, this), collector)
+    , stats_(
+          name,
+          [this] { collectMetrics(); },
+          collector)
     , name_(name)
     , targetSize_(size)
     , targetAge_(expiration)

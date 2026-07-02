@@ -138,21 +138,19 @@ WorkBase<Impl>::run()
     if (!strand_.running_in_this_thread())
     {
         return boost::asio::post(
-            ios_,
-            boost::asio::bind_executor(
-                strand_, std::bind(&WorkBase::run, impl().shared_from_this())));
+            ios_, boost::asio::bind_executor(strand_, [capture0 = impl().shared_from_this()] {
+                capture0->run();
+            }));
     }
 
     resolver_.async_resolve(
         host_,
         port_,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(
-                &WorkBase::onResolve,
-                impl().shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+            strand_, [capture0 = impl().shared_from_this()](auto&& PH1, auto&& PH2) {
+                capture0->onResolve(
+                    std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+            }));
 }
 
 template <class Impl>
@@ -165,7 +163,7 @@ WorkBase<Impl>::cancel()
             ios_,
 
             boost::asio::bind_executor(
-                strand_, std::bind(&WorkBase::cancel, impl().shared_from_this())));
+                strand_, [capture0 = impl().shared_from_this()] { capture0->cancel(); }));
     }
 
     error_code ec;
@@ -195,12 +193,10 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
         socket_,
         results,
         boost::asio::bind_executor(
-            strand_,
-            std::bind(
-                &WorkBase::onConnect,
-                impl().shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+            strand_, [capture0 = impl().shared_from_this()](auto&& PH1, auto&& PH2) {
+                capture0->onConnect(
+                    std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+            }));
 }
 
 template <class Impl>
@@ -228,9 +224,9 @@ WorkBase<Impl>::onStart()
     boost::beast::http::async_write(
         impl().stream(),
         req_,
-        boost::asio::bind_executor(
-            strand_,
-            std::bind(&WorkBase::onRequest, impl().shared_from_this(), std::placeholders::_1)));
+        boost::asio::bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
+            capture0->onRequest(std::forward<decltype(PH1)>(PH1));
+        }));
 }
 
 template <class Impl>
@@ -244,9 +240,9 @@ WorkBase<Impl>::onRequest(error_code const& ec)
         impl().stream(),
         readBuf_,
         res_,
-        boost::asio::bind_executor(
-            strand_,
-            std::bind(&WorkBase::onResponse, impl().shared_from_this(), std::placeholders::_1)));
+        boost::asio::bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
+            capture0->onResponse(std::forward<decltype(PH1)>(PH1));
+        }));
 }
 
 template <class Impl>

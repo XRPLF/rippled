@@ -89,16 +89,16 @@ PlainHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
-        util::spawn(this->strand_, std::bind(&PlainHTTPPeer::doClose, this->shared_from_this()));
+        util::spawn(this->strand_, [capture0 = this->shared_from_this()] { capture0->doClose(); });
         return;
     }
 
     if (!socket_.is_open())
         return;
 
-    util::spawn(
-        this->strand_,
-        std::bind(&PlainHTTPPeer::doRead, this->shared_from_this(), std::placeholders::_1));
+    util::spawn(this->strand_, [capture0 = this->shared_from_this()](auto&& PH1) {
+        capture0->doRead(std::forward<decltype(PH1)>(PH1));
+    });
 }
 
 template <class Handler>

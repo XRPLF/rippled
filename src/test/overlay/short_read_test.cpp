@@ -199,7 +199,7 @@ private:
             {
                 if (!strand.running_in_this_thread())
                 {
-                    post(strand, std::bind(&Acceptor::close, shared_from_this()));
+                    post(strand, [capture0 = shared_from_this()] { capture0->close(); });
                     return;
                 }
                 acceptor.close();
@@ -209,10 +209,9 @@ private:
             run()
             {
                 acceptor.async_accept(
-                    socket,
-                    bind_executor(
-                        strand,
-                        std::bind(&Acceptor::onAccept, shared_from_this(), std::placeholders::_1)));
+                    socket, bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
+                        capture0->onAccept(std::forward<decltype(PH1)>(PH1));
+                    }));
             }
 
             void
@@ -238,10 +237,9 @@ private:
                 server.add(p);
                 p->run();
                 acceptor.async_accept(
-                    socket,
-                    bind_executor(
-                        strand,
-                        std::bind(&Acceptor::onAccept, shared_from_this(), std::placeholders::_1)));
+                    socket, bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
+                        capture0->onAccept(std::forward<decltype(PH1)>(PH1));
+                    }));
             }
         };
 
@@ -271,7 +269,7 @@ private:
             {
                 if (!strand.running_in_this_thread())
                 {
-                    post(strand, std::bind(&Connection::close, shared_from_this()));
+                    post(strand, [capture0 = shared_from_this()] { capture0->close(); });
                     return;
                 }
                 if (socket.is_open())
@@ -285,15 +283,14 @@ private:
             run()
             {
                 timer.expires_after(std::chrono::seconds(3));
-                timer.async_wait(bind_executor(
-                    strand,
-                    std::bind(&Connection::onTimer, shared_from_this(), std::placeholders::_1)));
+                timer.async_wait(bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
+                    capture0->onTimer(std::forward<decltype(PH1)>(PH1));
+                }));
                 stream.async_handshake(
                     stream_type::server,
-                    bind_executor(
-                        strand,
-                        std::bind(
-                            &Connection::onHandshake, shared_from_this(), std::placeholders::_1)));
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
+                        capture0->onHandshake(std::forward<decltype(PH1)>(PH1));
+                    }));
             }
 
             void
@@ -335,13 +332,10 @@ private:
                     stream,
                     buf,
                     "\n",
-                    bind_executor(
-                        strand,
-                        std::bind(
-                            &Connection::onRead,
-                            shared_from_this(),
-                            std::placeholders::_1,
-                            std::placeholders::_2)));
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                        capture0->onRead(
+                            std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    }));
 #else
                 close();
 #endif
@@ -353,10 +347,10 @@ private:
                 if (ec == boost::asio::error::eof)
                 {
                     server.test_.log << "[server] read: EOF" << std::endl;
-                    stream.async_shutdown(bind_executor(
-                        strand,
-                        std::bind(
-                            &Connection::onShutdown, shared_from_this(), std::placeholders::_1)));
+                    stream.async_shutdown(
+                        bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
+                            capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+                        }));
                     return;
                 }
                 if (ec)
@@ -371,13 +365,10 @@ private:
                 boost::asio::async_write(
                     stream,
                     buf.data(),
-                    bind_executor(
-                        strand,
-                        std::bind(
-                            &Connection::onWrite,
-                            shared_from_this(),
-                            std::placeholders::_1,
-                            std::placeholders::_2)));
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                        capture0->onWrite(
+                            std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    }));
             }
 
             void
@@ -389,9 +380,10 @@ private:
                     fail("write", ec);
                     return;
                 }
-                stream.async_shutdown(bind_executor(
-                    strand,
-                    std::bind(&Connection::onShutdown, shared_from_this(), std::placeholders::_1)));
+                stream.async_shutdown(
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
+                        capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+                    }));
             }
 
             void
@@ -463,7 +455,7 @@ private:
             {
                 if (!strand.running_in_this_thread())
                 {
-                    post(strand, std::bind(&Connection::close, shared_from_this()));
+                    post(strand, [capture0 = shared_from_this()] { capture0->close(); });
                     return;
                 }
                 if (socket.is_open())
@@ -477,15 +469,13 @@ private:
             run(endpoint_type const& ep)
             {
                 timer.expires_after(std::chrono::seconds(3));
-                timer.async_wait(bind_executor(
-                    strand,
-                    std::bind(&Connection::onTimer, shared_from_this(), std::placeholders::_1)));
+                timer.async_wait(bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
+                    capture0->onTimer(std::forward<decltype(PH1)>(PH1));
+                }));
                 socket.async_connect(
-                    ep,
-                    bind_executor(
-                        strand,
-                        std::bind(
-                            &Connection::onConnect, shared_from_this(), std::placeholders::_1)));
+                    ep, bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
+                        capture0->onConnect(std::forward<decltype(PH1)>(PH1));
+                    }));
             }
 
             void
@@ -524,10 +514,9 @@ private:
                 }
                 stream.async_handshake(
                     stream_type::client,
-                    bind_executor(
-                        strand,
-                        std::bind(
-                            &Connection::onHandshake, shared_from_this(), std::placeholders::_1)));
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
+                        capture0->onHandshake(std::forward<decltype(PH1)>(PH1));
+                    }));
             }
 
             void
@@ -544,13 +533,10 @@ private:
                 boost::asio::async_write(
                     stream,
                     buf.data(),
-                    bind_executor(
-                        strand,
-                        std::bind(
-                            &Connection::onWrite,
-                            shared_from_this(),
-                            std::placeholders::_1,
-                            std::placeholders::_2)));
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                        capture0->onWrite(
+                            std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    }));
 #else
                 stream_.async_shutdown(bind_executor(
                     strand_,
@@ -573,13 +559,10 @@ private:
                     stream,
                     buf,
                     "\n",
-                    bind_executor(
-                        strand,
-                        std::bind(
-                            &Connection::onRead,
-                            shared_from_this(),
-                            std::placeholders::_1,
-                            std::placeholders::_2)));
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                        capture0->onRead(
+                            std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    }));
 #else
                 stream_.async_shutdown(bind_executor(
                     strand_,
@@ -597,9 +580,10 @@ private:
                     return;
                 }
                 buf.commit(bytesTransferred);
-                stream.async_shutdown(bind_executor(
-                    strand,
-                    std::bind(&Connection::onShutdown, shared_from_this(), std::placeholders::_1)));
+                stream.async_shutdown(
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
+                        capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+                    }));
             }
 
             void

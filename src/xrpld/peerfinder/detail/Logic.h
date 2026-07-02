@@ -802,12 +802,10 @@ public:
                     //
                     checker.asyncConnect(
                         ep.address,
-                        std::bind(
-                            &Logic::checkComplete,
-                            this,
-                            slot->remoteEndpoint(),
-                            ep.address,
-                            std::placeholders::_1));
+                        [this, capture0 = slot->remoteEndpoint(), capture1 = ep.address](
+                            auto&& PH1) {
+                            checkComplete(capture0, capture1, std::forward<decltype(PH1)>(PH1));
+                        });
 
                     // Note that we simply discard the first Endpoint
                     // that the neighbor sends when we perform the

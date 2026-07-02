@@ -127,8 +127,13 @@ public:
             if (!ec)
             {
                 strm.set_verify_callback(
-                    std::bind(
-                        &rfc6125Verify, host, std::placeholders::_1, std::placeholders::_2, j_),
+                    [host, this](auto&& PH1, auto&& PH2) {
+                        return rfc6125Verify(
+                            host,
+                            std::forward<decltype(PH1)>(PH1),
+                            std::forward<decltype(PH2)>(PH2),
+                            j_);
+                    },
                     ec);
             }
         }
