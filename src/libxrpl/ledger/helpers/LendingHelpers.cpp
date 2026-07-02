@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -25,6 +26,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <limits>
 #include <string_view>
 #include <utility>
 
@@ -59,6 +61,32 @@ canApplyToBrokerCover(
     }
 
     return tesSUCCESS;
+}
+
+void
+adjustOwnerCount(ApplyView& view, SLE::ref brokerSle, std::int32_t amount, beast::Journal j)
+{
+    XRPL_ASSERT(
+        brokerSle && brokerSle->getType() == ltLOAN_BROKER,
+        "xrpl::adjustOwnerCount : valid LoanBroker sle");
+    if (!brokerSle)
+        return;  // LCOV_EXCL_LINE
+    XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
+
+    // A LoanBroker's OwnerCount counts its outstanding loans; it carries no
+    // reserve, so clamp against underflow/overflow (as an account owner count
+    // would) but skip all reserve/sponsor accounting.
+    std::uint32_t const current = brokerSle->at(sfOwnerCount);
+    std::uint32_t adjusted = current + amount;
+    if (amount > 0 && adjusted < current)
+        adjusted = std::numeric_limits<std::uint32_t>::max();  // LCOV_EXCL_LINE
+    else if (amount < 0 && adjusted > current)
+        adjusted = 0;  // LCOV_EXCL_LINE
+
+    AccountID const id = brokerSle->getAccountID(sfAccount);
+    view.adjustOwnerCountHook(id, current, adjusted);
+    brokerSle->at(sfOwnerCount) = adjusted;
+    view.update(brokerSle);
 }
 
 bool
