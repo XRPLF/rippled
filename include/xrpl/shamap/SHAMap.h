@@ -3,7 +3,6 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/SHAMapHash.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>

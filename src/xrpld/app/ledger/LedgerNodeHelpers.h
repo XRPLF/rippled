@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
