@@ -452,21 +452,20 @@ EscrowCreate::doApply()
     if (isXRP(amount))
     {
         // Second check (XRP escrow only): after locking the escrowed
-        // amount, the source must still meet its own reserve floor.
-        // Always passes `{}` so the source branch runs (the sponsor's
-        // reserve was already validated above; here we're verifying the
-        // source can fund the lock without dipping below its own
-        // reserve). ownerCountAdj differs by case:
-        // - sponsored:   adj=0  — sponsor covers the new owner increment,
-        //                so the source only owes its base reserve.
-        // - unsponsored: adj=1  — source owes base + the new increment.
-        if (auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(),
-                sle,
-                balance - STAmount(amount).xrp(),
-                {.ownerCountDelta = sponsorSle ? 0 : 1},
-                j_);
-            !isTesSuccess(ret))
+        // amount, the source must still meet its own reserve floor. This
+        // is always the source's own balance against the source's own
+        // reserve — the sponsor's reserve was already validated above, and
+        // a sponsor never covers the locked funds. We compare directly
+        // (rather than via checkInsufficientReserve) because that helper
+        // diverts to the sponsor's balance when a sponsor is present and
+        // would ignore the source's post-lock balance entirely.
+        // ownerCountDelta differs by case:
+        // - sponsored:   0  — sponsor covers the new owner increment, so
+        //                the source only owes reserve for its current owners.
+        // - unsponsored: 1  — source owes reserve including the new increment.
+        auto const sourceReserve =
+            accountReserve(ctx_.view(), sle, j_, {.ownerCountDelta = sponsorSle ? 0 : 1});
+        if (balance - STAmount(amount).xrp() < sourceReserve)
             return tecUNFUNDED;
     }
 
