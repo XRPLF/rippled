@@ -435,8 +435,12 @@ ReserveContext::makeFromTx(ApplyView& view, STTx const& tx)
 ReserveContext
 ReserveContext::makeFromAccount(ApplyView& view, SLE::pointer accountSle, SLE::pointer sponsorSle)
 {
-    if (!accountSle)
-        Throw<std::runtime_error>("ReserveContext::makeFromAccount : valid account sle");
+    XRPL_ASSERT(
+        accountSle != nullptr && accountSle->getType() == ltACCOUNT_ROOT,
+        "ReserveContext::makeFromAccount : valid account sle");
+    XRPL_ASSERT(
+        sponsorSle == nullptr || sponsorSle->getType() == ltACCOUNT_ROOT,
+        "ReserveContext::makeFromAccount : valid sponsor sle");
 
     auto const accountID = accountSle->getAccountID(sfAccount);
     std::optional<AccountID> const sponsorID =
@@ -452,6 +456,10 @@ ReserveContext::makeFromAccount(ApplyView& view, SLE::pointer accountSle, SLE::p
 ReserveContext
 ReserveContext::makeFromObject(ApplyView& view, SLE::ref objectSle, SLE::pointer ownerSle)
 {
+    XRPL_ASSERT(
+        ownerSle != nullptr && ownerSle->getType() == ltACCOUNT_ROOT,
+        "ReserveContext::makeFromObject : valid owner sle");
+    XRPL_ASSERT(objectSle != nullptr, "ReserveContext::makeFromObject : valid object sle");
     auto const accountID = ownerSle->getAccountID(sfAccount);
     SLE::ref sponsorSle = getLedgerEntryReserveSponsor(view, objectSle);
     std::optional<AccountID> const sponsorID =
