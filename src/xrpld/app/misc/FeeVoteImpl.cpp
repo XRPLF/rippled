@@ -179,7 +179,7 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
             vote(
                 lastFees.extensionComputeLimit,
                 target_.extension_compute_limit,
-                "extension compute limit",
+                "gas limit",
                 sfGasLimit);
         }
         if (target_.extension_size_limit <= kMaxExtensionSizeLimit)
@@ -187,7 +187,7 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
             vote(
                 lastFees.extensionSizeLimit,
                 target_.extension_size_limit,
-                "extension size limit",
+                "bytecode size limit",
                 sfBytecodeSizeLimit);
         }
         vote(lastFees.gasPrice, target_.gas_price, "gas price", sfGasPrice);
