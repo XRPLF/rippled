@@ -4452,6 +4452,110 @@ public:
         BEAST_EXPECT(env.balance(sponsor) == preSponsor - baseFee);
     }
 
+    void
+    testTrustSetCounterpartySponsorMisroute()
+    {
+        // TrustSet's modify path applies the tx-level reserve sponsor to whichever
+        // side has its reserve gate trip on this update, regardless of whether that
+        // side belongs to the tx submitter. trustCreate only sets the submitter's
+        // reserve flag and snapshots the counterparty's asfDefaultRipple state into
+        // the line's NoRipple bit; if the counterparty later toggles asfDefaultRipple
+        // (the canonical issuer flow), the line and account flags disagree and on
+        // the submitter's next TrustSet the counterparty-side gate fires without
+        // the canonical tx[sfAccount] == account guard.
+        //
+        // With the fix: getTxReserveSponsor() checks if the account parameter
+        // matches tx[sfAccount], preventing sponsor misroute to counterparty.
+
+        testcase("TrustSet modify with sponsor does not misroute onto counterparty side");
+
+        using namespace test::jtx;
+
+        Env env(*this);
+        Account const alice{"alice_t2178"};
+        Account const bob{"bob_t2178"};
+        Account const carol{"carol_t2178"};
+
+        // Fund without auto-setting asfDefaultRipple
+        env.fund(XRP(100'000), alice, bob, carol);
+        env.close();
+
+        // Determine account ordering
+        bool const aliceIsHigh = alice.id() > bob.id();
+
+        // To trigger the bug, we need the COUNTERPARTY's reserve gate to trip
+        // We use issuer/holder terminology where:
+        // - holder creates the trust line (their reserve is set first)
+        // - issuer enables DefaultRipple after (creates flag mismatch)
+        // - holder's second TrustSet triggers issuer's reserve gate
+
+        auto const issuer = aliceIsHigh ? bob : alice;
+        auto const holder = aliceIsHigh ? alice : bob;
+        auto const usd = issuer["USD"];
+
+        // Issuer must NOT have DefaultRipple set initially
+        // Clear it explicitly (env.fund may have set it)
+        env(fclear(issuer, asfDefaultRipple));
+        env.close();
+
+        // Holder creates the trust line first (holder's reserve flag is set)
+        // At this point, issuer does NOT have DefaultRipple set, so
+        // the NoRipple bit on issuer's side is set according to issuer's current flag
+        env(trust(holder, usd(1'000)));
+        env.close();
+
+        // Issuer now enables asfDefaultRipple (canonical issuer flow)
+        // This creates a mismatch: issuer's account flag says DefaultRipple=true
+        // but the trust line's NoRipple bit on issuer's side is still set
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        SF_ACCOUNT const& issuerSponsorField = aliceIsHigh ? sfLowSponsor : sfHighSponsor;
+        SF_ACCOUNT const& holderSponsorField = aliceIsHigh ? sfHighSponsor : sfLowSponsor;
+
+        auto const lineKey = keylet::trustLine(alice, bob, usd.currency);
+        auto const sleLineBefore = env.le(lineKey);
+        if (!BEAST_EXPECT(sleLineBefore))
+            return;
+        BEAST_EXPECT(!sleLineBefore->isFieldPresent(sfLowSponsor));
+        BEAST_EXPECT(!sleLineBefore->isFieldPresent(sfHighSponsor));
+
+        auto const carolBefore = sponsoringOwnerCount(env, carol);
+        BEAST_EXPECT(carolBefore == 0);
+        auto const issuerSponsoredBefore = sponsoredOwnerCount(env, issuer);
+        BEAST_EXPECT(issuerSponsoredBefore == 0);
+
+        // Holder modifies the trust line with Carol as sponsor
+        // This should trigger the issuer's reserve gate because of the DefaultRipple mismatch
+        // WITHOUT the fix: Carol would be incorrectly applied to issuer's side
+        // WITH the fix: Carol should NOT be applied to issuer's side (issuer != tx submitter)
+        env(trust(holder, usd(2'000)),
+            sponsor::As(carol, spfSponsorReserve),
+            Sig(sfSponsorSignature, carol),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const sleLineAfter = env.le(lineKey);
+        if (!BEAST_EXPECT(sleLineAfter))
+            return;
+
+        // With the fix: Issuer's side should NOT have Carol as sponsor
+        // Carol only agreed to back the holder, not the issuer
+        BEAST_EXPECT(!sleLineAfter->isFieldPresent(issuerSponsorField));
+
+        // Holder's side also has no sponsor because holder's reserve flag was
+        // already set on the FIRST TrustSet (no sponsor in scope then)
+        BEAST_EXPECT(!sleLineAfter->isFieldPresent(holderSponsorField));
+
+        // Carol's sponsoring count should remain unchanged (no misroute)
+        auto const carolAfter = sponsoringOwnerCount(env, carol);
+        BEAST_EXPECT(carolAfter == carolBefore);
+
+        // Issuer's sponsored count should remain unchanged (no misroute)
+        auto const issuerSponsoredAfter = sponsoredOwnerCount(env, issuer);
+        BEAST_EXPECT(issuerSponsoredAfter == issuerSponsoredBefore);
+    }
+
 protected:
     void
     testSponsor()
@@ -4488,6 +4592,7 @@ protected:
         testReserveSponsorGate();
 
         testZeroBalanceSponsoredPaymentFeePayerCheck();
+        testTrustSetCounterpartySponsorMisroute();
     }
 
     void
