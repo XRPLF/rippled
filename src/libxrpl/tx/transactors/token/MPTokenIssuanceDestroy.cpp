@@ -49,7 +49,7 @@ MPTokenIssuanceDestroy::doApply()
     if (!view().dirRemove(keylet::ownerDir(accountID_), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    decreaseOwnerCountForObject(view(), view().peek(keylet::account(accountID_)), mpt, -1, j_);
+    decreaseOwnerCountForObject(view(), view().peek(keylet::account(accountID_)), mpt, 1, j_);
     view().erase(mpt);
 
     return tesSUCCESS;

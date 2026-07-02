@@ -392,7 +392,7 @@ EscrowFinish::doApply()
 
     // Adjust source owner count
     decreaseOwnerCountForObject(
-        ctx_.view(), ctx_.view().peek(keylet::account(account)), slep, -1, ctx_.journal);
+        ctx_.view(), ctx_.view().peek(keylet::account(account)), slep, 1, ctx_.journal);
 
     // Remove escrow from ledger
     ctx_.view().erase(slep);

@@ -56,7 +56,7 @@ offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
     }
 
     auto const ownerSle = view.peek(keylet::account(owner));
-    decreaseOwnerCountForObject(view, ownerSle, sle, -1, j);
+    decreaseOwnerCountForObject(view, ownerSle, sle, 1, j);
 
     view.erase(sle);
 

@@ -185,7 +185,7 @@ authorizeMPToken(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            decreaseOwnerCountForObject(ctx.view, reserveCtx.accountSle, sleMpt, -1, journal);
+            decreaseOwnerCountForObject(ctx.view, reserveCtx.accountSle, sleMpt, 1, journal);
 
             ctx.view.erase(sleMpt);
             return tesSUCCESS;

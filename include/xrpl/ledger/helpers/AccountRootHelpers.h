@@ -134,16 +134,36 @@ void
 increaseOwnerCount(
     ApplyView& view,
     ReserveContext const& reserveCtx,
-    std::int32_t ownerCountAdj,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+    std::uint32_t count,
+    beast::Journal j);
 
-/** Adjust the owner counters of the account up or down. If object has sponsor adjust its counters
- *  too. Used primarily just before deleting the object.
+/** Decrease owner-count fields when the caller supplies the sponsor.
+ *
+ *  This helper does not delete a ledger object. It updates reserve accounting
+ *  after the caller has removed an owner-counted reserve, or for special
+ *  owner-count changes whose sponsor cannot be derived from an object's
+ *  sfSponsor field.
  *
  *  @param view The apply view for making changes
  *  @param accountSle The account's ledger entry
+ *  @param sponsorSle The sponsor's ledger entry (if applicable)
+ *  @param count Amount to remove from the owner count
+ *  @param j Journal for logging
+ */
+void
+decreaseOwnerCount(
+    ApplyView& view,
+    ReserveContext const& reserveCtx,
+    std::uint32_t count,
+    beast::Journal j);
+
+/** Decrease the owner counters of the account. If the object has a sponsor,
+ *  adjust its counters too. Used primarily just before deleting the object.
+ *
+ *  @param view The apply view for making changes
+ *  @param ownerSle The account's ledger entry
  *  @param objectSle The object's ledger entry
- *  @param ownerCountAdj Adjustment amount for the account count
+ *  @param count Positive amount to remove from the owner count
  *  @param j Journal for logging (default: null sink)
  */
 void
@@ -151,8 +171,28 @@ decreaseOwnerCountForObject(
     ApplyView& view,
     SLE::pointer ownerSle,
     SLE::ref objectSle,
-    std::int32_t ownerCountAdj,
-    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+    std::uint32_t count,
+    beast::Journal j);
+
+/** Convenience overload that accepts AccountID instead of account SLE reference.
+ *
+ *  @param view The apply view for making changes
+ *  @param account The account ID
+ *  @param objectSle The object's ledger entry
+ *  @param count Amount to remove from the owner count
+ *  @param j Journal for logging
+ */
+inline void
+decreaseOwnerCountForObject(
+    ApplyView& view,
+    AccountID const& account,
+    SLE::ref objectSle,
+    std::uint32_t count,
+    beast::Journal j)
+{
+    SLE::ref accountSle = view.peek(keylet::account(account));
+    decreaseOwnerCountForObject(view, accountSle, objectSle, count, j);
+}
 
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
  * the fee as fractions of 1 billion. For example, 1% transfer rate

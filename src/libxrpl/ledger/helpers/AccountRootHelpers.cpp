@@ -194,7 +194,7 @@ transferRate(ReadView const& view, AccountID const& issuer)
 }
 
 static void
-adjustOwnerCountValue(
+adjustOwnerCountImpl(
     ApplyView& view,
     SLE::ref sle,
     SF_UINT32 const& sfield,
@@ -212,63 +212,85 @@ adjustOwnerCountValue(
     view.update(sle);
 }
 
+static void
+adjustOwnerCountSigned(
+    ApplyView& view,
+    SLE::ref accountSle,
+    SLE::ref sponsorSle,
+    std::int32_t adjustment,
+    beast::Journal j)
+{
+    XRPL_ASSERT(accountSle, "xrpl::adjustOwnerCountSigned : valid account sle");
+    if (!accountSle)
+        return;  // LCOV_EXCL_LINE
+
+    auto const sleType = accountSle->getType();
+    bool const validType = sponsorSle ? sleType == ltACCOUNT_ROOT
+                                      : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
+    XRPL_ASSERT(validType, "xrpl::adjustOwnerCountSigned : valid account sle type");
+    if (!validType)
+        return;  // LCOV_EXCL_LINE
+
+    XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
+
+    auto const accountID = accountSle->getAccountID(sfAccount);
+    if (sponsorSle)
+    {
+        bool const validSponsorType = sponsorSle->getType() == ltACCOUNT_ROOT;
+        XRPL_ASSERT(validSponsorType, "xrpl::adjustOwnerCountSigned : valid sponsor sle type");
+        if (!validSponsorType)
+            return;  // LCOV_EXCL_LINE
+        auto const sponsorID = sponsorSle->getAccountID(sfAccount);
+
+        adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
+        adjustOwnerCountImpl(view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
+
+        auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
+        if (sponsorshipSle && adjustment > 0)
+        {
+            // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new objects.
+            // Removing/reassigning ownership of the object doesn't increase RemainingOwnerCount
+            // back. Don't call hook because this counter is not something that requires reserve
+            // (like other sf...OwnerCounts do).
+            adjustOwnerCountImpl(
+                view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j, false);
+        }
+    }
+    adjustOwnerCountImpl(view, accountSle, sfOwnerCount, accountID, adjustment, j);
+}
+
 void
 increaseOwnerCount(
     ApplyView& view,
     ReserveContext const& reserveCtx,
-    std::int32_t ownerCountAdj,
+    std::uint32_t count,
     beast::Journal j)
 {
-    auto& accountSle = reserveCtx.accountSle;
-    if (!accountSle)
+    XRPL_ASSERT(
+        count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
+        "xrpl::increaseOwnerCount : count in signed delta range");
+    if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
         return;  // LCOV_EXCL_LINE
 
-    auto const sleType = reserveCtx.accountSle->getType();
-    bool const validType = reserveCtx.sponsorSle
-        ? sleType == ltACCOUNT_ROOT
-        : sleType == ltLOAN_BROKER || sleType == ltACCOUNT_ROOT;
-    if (!validType)
+    adjustOwnerCountSigned(
+        view, reserveCtx.accountSle, reserveCtx.sponsorSle, static_cast<std::int32_t>(count), j);
+}
+
+void
+decreaseOwnerCount(
+    ApplyView& view,
+    ReserveContext const& reserveCtx,
+    std::uint32_t count,
+    beast::Journal j)
+{
+    XRPL_ASSERT(
+        count != 0 && count <= std::numeric_limits<std::int32_t>::max(),
+        "xrpl::decreaseOwnerCount : count in signed delta range");
+    if (count == 0 || count > std::numeric_limits<std::int32_t>::max())
         return;  // LCOV_EXCL_LINE
 
-    XRPL_ASSERT(ownerCountAdj, "xrpl::adjustOwnerCountSigned : nonzero adjustment input");
-
-    if (reserveCtx.isSponsored())
-    {
-        if (reserveCtx.sponsorSle->getType() != ltACCOUNT_ROOT)
-            Throw<std::logic_error>("xrpl::adjustOwnerCount : valid sponsor sle type");
-
-        adjustOwnerCountValue(
-            view,
-            reserveCtx.accountSle,
-            sfSponsoredOwnerCount,
-            reserveCtx.accountID(),
-            ownerCountAdj,
-            j);
-        adjustOwnerCountValue(
-            view,
-            reserveCtx.sponsorSle,
-            sfSponsoringOwnerCount,
-            reserveCtx.sponsorID().value(),
-            ownerCountAdj,
-            j);
-
-        if (reserveCtx.sponsorshipSle && ownerCountAdj > 0)
-        {
-            // update the pre-funded RemainingOwnerCount on Sponsorship ledger object
-            // Remaining owner count moves opposite to ownerCountAdj:
-            // +ownerCountAdj => consume reserve (-),
-            adjustOwnerCountValue(
-                view,
-                reserveCtx.sponsorshipSle,
-                sfRemainingOwnerCount,
-                reserveCtx.sponsorID().value(),
-                -ownerCountAdj,
-                j,
-                false);
-        }
-    }
-    adjustOwnerCountValue(
-        view, reserveCtx.accountSle, sfOwnerCount, reserveCtx.accountID(), ownerCountAdj, j);
+    adjustOwnerCountSigned(
+        view, reserveCtx.accountSle, reserveCtx.sponsorSle, -static_cast<std::int32_t>(count), j);
 }
 
 void
@@ -276,7 +298,7 @@ decreaseOwnerCountForObject(
     ApplyView& view,
     SLE::pointer ownerSle,
     SLE::ref objectSle,
-    std::int32_t ownerCountAdj,
+    std::int32_t count,
     beast::Journal j)
 {
     XRPL_ASSERT(objectSle, "xrpl::decreaseOwnerCountForObject : valid object sle");
@@ -288,8 +310,7 @@ decreaseOwnerCountForObject(
     if (!validObjectType)
         return;  // LCOV_EXCL_LINE
 
-    increaseOwnerCount(
-        view, ReserveContext::makeFromObject(view, objectSle, ownerSle), ownerCountAdj, j);
+    increaseOwnerCount(view, ReserveContext::makeFromObject(view, objectSle, ownerSle), -count, j);
 }
 XRPAmount
 accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)
