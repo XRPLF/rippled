@@ -12,6 +12,7 @@
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
 
+#include <cstddef>
 #include <functional>
 #include <string>
 #include <utility>
