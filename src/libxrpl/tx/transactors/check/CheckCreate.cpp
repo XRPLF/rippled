@@ -128,7 +128,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     {
                         // Check if the issuer froze the line
                         auto const sleTrust =
-                            ctx.view.read(keylet::line(srcId, issuerId, issue.currency));
+                            ctx.view.read(keylet::trustLine(srcId, issuerId, issue.currency));
                         if (sleTrust &&
                             sleTrust->isFlag((issuerId > srcId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -140,7 +140,7 @@ CheckCreate::preclaim(PreclaimContext const& ctx)
                     {
                         // Check if dst froze the line.
                         auto const sleTrust =
-                            ctx.view.read(keylet::line(issuerId, dstId, issue.currency));
+                            ctx.view.read(keylet::trustLine(issuerId, dstId, issue.currency));
                         if (sleTrust &&
                             sleTrust->isFlag((dstId > issuerId) ? lsfHighFreeze : lsfLowFreeze))
                         {
@@ -199,7 +199,13 @@ CheckCreate::doApply()
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
     if (auto const ret = checkInsufficientReserve(
-            view(), ctx_.tx, sle, preFeeBalance_, *sponsorSle, 1, 0, ctx_.journal);
+            view(),
+            ctx_.tx,
+            sle,
+            preFeeBalance_,
+            *sponsorSle,
+            {.ownerCountDelta = 1},
+            ctx_.journal);
         !isTesSuccess(ret))
         return ret;
     // Note that we use the value from the sequence or ticket as the
@@ -255,7 +261,7 @@ CheckCreate::doApply()
     }
     // If we succeeded, the new entry counts against the creator's reserve.
 
-    adjustOwnerCount(view(), sle, *sponsorSle, 1, viewJ);
+    increaseOwnerCount(view(), sle, *sponsorSle, 1, viewJ);
     addSponsorToLedgerEntry(sleCheck, *sponsorSle);
     return tesSUCCESS;
 }

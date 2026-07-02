@@ -72,7 +72,7 @@ getAccountObjects(
         (!typeFilter.has_value() || typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
         dirIndex.isZero();
 
-    Keylet const firstNFTPage = keylet::nftpageMin(account);
+    Keylet const firstNFTPage = keylet::nftokenPageMin(account);
 
     // we need to check the marker to see if it is an NFTTokenPage index.
     if (iterateNFTPages && entryIndex.isNonZero())
@@ -96,7 +96,7 @@ getAccountObjects(
         Keylet const first =
             entryIndex.isZero() ? firstNFTPage : Keylet{ltNFTOKEN_PAGE, entryIndex};
 
-        Keylet const last = keylet::nftpageMax(account);
+        Keylet const last = keylet::nftokenPageMax(account);
 
         auto currentKey = ledger.succ(first.key, last.key.next()).value_or(last.key);
 

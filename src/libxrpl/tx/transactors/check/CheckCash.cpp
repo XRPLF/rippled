@@ -193,7 +193,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 [&](Issue const& issue) -> TER {
                     Currency const currency{issue.currency};
                     auto const sleTrustLine =
-                        ctx.view.read(keylet::line(dstId, issuerId, currency));
+                        ctx.view.read(keylet::trustLine(dstId, issuerId, currency));
 
                     auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
                     if (!sleIssuer)
@@ -399,7 +399,13 @@ CheckCash::doApply()
 
                 // Can the account cover the trust line's or MPT reserve?
                 if (auto const ret = checkInsufficientReserve(
-                        psb, ctx_.tx, sleDst, preFeeBalance_, *sponsorSle, 1, 0, j_);
+                        psb,
+                        ctx_.tx,
+                        sleDst,
+                        preFeeBalance_,
+                        *sponsorSle,
+                        {.ownerCountDelta = 1},
+                        j_);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
@@ -419,7 +425,7 @@ CheckCash::doApply()
                     // If a trust line does not exist yet create one.
                     Issue const& trustLineIssue = issue;
                     AccountID const truster = deliverIssuer == accountID_ ? srcId : accountID_;
-                    trustLineKey = keylet::line(truster, trustLineIssue);
+                    trustLineKey = keylet::trustLine(truster, trustLineIssue);
                     destLow = deliverIssuer > accountID_;
 
                     if (!psb.exists(*trustLineKey))
@@ -591,8 +597,7 @@ CheckCash::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-
-    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), sponsorCheckSle, -1, viewJ);
+    decreaseOwnerCountForObject(psb, srcId, sleCheck, 1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

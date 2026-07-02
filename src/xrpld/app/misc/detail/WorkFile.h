@@ -10,6 +10,9 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
+#include <functional>
+#include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl::detail {

@@ -39,7 +39,15 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfMutableFlags) && !ctx.rules.enabled(featureDynamicMPT))
         return false;
 
-    return true;
+    if (ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance) &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
+        return false;
+
+    // can not set tmfMPTCannotEnableCanHoldConfidentialBalance without featureConfidentialTransfer
+    auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    return !mutableFlags ||
+        ((*mutableFlags & tmfMPTCannotEnableCanHoldConfidentialBalance) == 0u) ||
+        ctx.rules.enabled(featureConfidentialTransfer);
 }
 
 std::uint32_t
@@ -72,6 +80,10 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         // must also be set.
         if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
             return temMALFORMED;
+
+        // Confidential amounts are encrypted so transfer rate is disallowed.
+        if (fee > 0u && ctx.tx.isFlag(tfMPTCanHoldConfidentialBalance))
+            return temBAD_TRANSFER_FEE;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])
@@ -125,13 +137,13 @@ MPTokenIssuanceCreate::create(
     if (args.priorBalance)
     {
         if (auto const ret = checkInsufficientReserve(
-                view, tx, acct, *(args.priorBalance), sponsorSle, 1, 0, journal);
+                view, tx, acct, *(args.priorBalance), sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return std::unexpected(ret);  // tecINSUFFICIENT_RESERVE
     }
 
     auto const mptId = makeMptID(args.sequence, args.account);
-    auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
+    auto const mptIssuanceKeylet = keylet::mptokenIssuance(mptId);
 
     // create the MPTokenIssuance
     {
@@ -188,7 +200,7 @@ MPTokenIssuanceCreate::create(
     }
 
     // Update owner count.
-    adjustOwnerCount(view, acct, sponsorSle, 1, journal);
+    increaseOwnerCount(view, acct, sponsorSle, 1, journal);
 
     return mptId;
 }

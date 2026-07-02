@@ -131,7 +131,7 @@ CredentialCreate::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     {
-        STAmount const reserve{accountReserve(view(), sleIssuer, j_, 1)};
+        STAmount const reserve{accountReserve(view(), sleIssuer, j_, {.ownerCountDelta = 1})};
         if (preFeeBalance_ < reserve)
             return tecINSUFFICIENT_RESERVE;
     }
@@ -152,7 +152,7 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        adjustOwnerCount(view(), sleIssuer, {}, 1, j_);
+        increaseOwnerCount(view(), sleIssuer, {}, 1, j_);
     }
 
     if (subject == accountID_)

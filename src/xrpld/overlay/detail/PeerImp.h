@@ -2,28 +2,59 @@
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Compression.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/core/LoadEvent.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/Handoff.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
 #include <atomic>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <iterator>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <queue>
+#include <shared_mutex>
+#include <string>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -293,7 +324,7 @@ public:
     /** Send a set of PeerFinder endpoints as a protocol message. */
     template <
         class FwdIt,
-        class = typename std::enable_if_t<
+        class = std::enable_if_t<
             std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>>>
     void
     sendEndpoints(FwdIt first, FwdIt last);
