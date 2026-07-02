@@ -1,10 +1,11 @@
 #pragma once
 
-#include <test/csf/Peer.h>
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
 #include <test/csf/Tx.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <type_traits>
 
 namespace xrpl::test::csf {

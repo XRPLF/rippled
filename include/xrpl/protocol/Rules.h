@@ -4,7 +4,10 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/protocol/STVector256.h>
 
+#include <memory>
+#include <optional>
 #include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 

@@ -1,11 +1,17 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>
+
+#include <cstdint>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 

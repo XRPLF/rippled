@@ -3,6 +3,8 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STBase.h>
 
+#include <optional>
+
 namespace xrpl {
 
 /** Intermediate class for any STBase-derived class to store an Asset.

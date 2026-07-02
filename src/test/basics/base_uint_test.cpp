@@ -118,9 +118,27 @@ struct base_uint_test : beast::unit_test::Suite
     }
 
     void
+    testFromRawSizeMismatch()
+    {
+        testcase("base_uint: fromRaw size mismatch");
+
+        // Container larger than the base_uint (16 bytes vs 12 bytes for test96).
+        // Only the first 12 bytes are copied; the extra bytes are ignored.
+        {
+            Blob const tooBig{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+            test96 const result = test96::fromRaw(tooBig);
+            BEAST_EXPECT(to_string(result) == "0102030405060708090A0B0C");
+        }
+    }
+
+    void
     run() override
     {
         testcase("base_uint: general purpose tests");
+
+#ifdef NDEBUG
+        testFromRawSizeMismatch();
+#endif
 
         static_assert(!std::is_constructible_v<test96, std::complex<double>>);
         static_assert(!std::is_assignable_v<test96&, std::complex<double>>);
