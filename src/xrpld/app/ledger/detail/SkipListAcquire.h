@@ -1,10 +1,10 @@
 #pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/shamap/SHAMap.h>
 
 namespace xrpl {
@@ -35,8 +35,8 @@ public:
         std::uint32_t const ledgerSeq;
         std::vector<xrpl::uint256> const skipList;
 
-        SkipListData(std::uint32_t const ledgerSeq, std::vector<xrpl::uint256> const& skipList)
-            : ledgerSeq(ledgerSeq), skipList(skipList)
+        SkipListData(std::uint32_t const ledgerSeq, std::vector<xrpl::uint256> skipList)
+            : ledgerSeq(ledgerSeq), skipList(std::move(skipList))
         {
         }
     };

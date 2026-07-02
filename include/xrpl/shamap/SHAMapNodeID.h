@@ -5,6 +5,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 
 namespace xrpl {
@@ -24,29 +25,29 @@ public:
     SHAMapNodeID&
     operator=(SHAMapNodeID const& other) = default;
 
-    bool
+    [[nodiscard]] bool
     isRoot() const
     {
         return depth_ == 0;
     }
 
     // Get the wire format (256-bit nodeID, 1-byte depth)
-    std::string
+    [[nodiscard]] std::string
     getRawString() const;
 
-    unsigned int
+    [[nodiscard]] unsigned int
     getDepth() const
     {
         return depth_;
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getNodeID() const
     {
         return id_;
     }
 
-    SHAMapNodeID
+    [[nodiscard]] SHAMapNodeID
     getChildNodeID(unsigned int m) const;
 
     /**
@@ -127,7 +128,7 @@ operator<<(std::ostream& out, SHAMapNodeID const& node)
 deserializeSHAMapNodeID(void const* data, std::size_t size);
 
 [[nodiscard]] inline std::optional<SHAMapNodeID>
-deserializeSHAMapNodeID(std::string const& s)
+deserializeSHAMapNodeID(std::string_view s)
 {
     return deserializeSHAMapNodeID(s.data(), s.size());
 }

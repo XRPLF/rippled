@@ -1,20 +1,29 @@
 #include <test/jtx/balance.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <test/jtx/Env.h>
+
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+
+#include <variant>
+
+namespace xrpl::test::jtx {
 
 #define TEST_EXPECT(cond) env.test.expect(cond, __FILE__, __LINE__)
 #define TEST_EXPECTS(cond, reason) \
     ((cond) ? (env.test.pass(), true) : (env.test.fail((reason), __FILE__, __LINE__), false))
 
 void
-doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, Issue const& issue)
+doBalance(Env& env, AccountID const& account, bool kNone, STAmount const& value, Issue const& issue)
 {
     if (isXRP(issue))
     {
         auto const sle = env.le(keylet::account(account));
-        if (none)
+        if (kNone)
         {
             TEST_EXPECT(!sle);
         }
@@ -27,16 +36,16 @@ doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, 
     }
     else
     {
-        auto const sle = env.le(keylet::line(account, issue));
-        if (none)
+        auto const sle = env.le(keylet::trustLine(account, issue));
+        if (kNone)
         {
             TEST_EXPECT(!sle);
         }
         else if (TEST_EXPECT(sle))
         {
             auto amount = sle->getFieldAmount(sfBalance);
-            amount.setIssuer(issue.account);
-            if (account > issue.account)
+            amount.get<Issue>().account = value.getIssuer();
+            if (account > value.getIssuer())
                 amount.negate();
             TEST_EXPECTS(amount == value, amount.getText());
         }
@@ -47,12 +56,12 @@ void
 doBalance(
     Env& env,
     AccountID const& account,
-    bool none,
+    bool kNone,
     STAmount const& value,
     MPTIssue const& mptIssue)
 {
     auto const sle = env.le(keylet::mptoken(mptIssue.getMptID(), account));
-    if (none)
+    if (kNone)
     {
         TEST_EXPECT(!sle);
     }
@@ -64,13 +73,11 @@ doBalance(
 }
 
 void
-balance::operator()(Env& env) const
+Balance::operator()(Env& env) const
 {
     std::visit(
         [&](auto const& issue) { doBalance(env, account_.id(), none_, value_, issue); },
         value_.asset().value());
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

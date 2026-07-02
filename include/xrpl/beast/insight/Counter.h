@@ -3,9 +3,9 @@
 #include <xrpl/beast/insight/CounterImpl.h>
 
 #include <memory>
+#include <utility>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 /** A metric for measuring an integral value.
 
@@ -23,16 +23,14 @@ public:
     /** Create a null metric.
         A null metric reports no information.
     */
-    Counter()
-    {
-    }
+    Counter() = default;
 
     /** Create the metric reference the specified implementation.
         Normally this won't be called directly. Instead, call the appropriate
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Counter(std::shared_ptr<CounterImpl> const& impl) : m_impl(impl)
+    explicit Counter(std::shared_ptr<CounterImpl> impl) : impl_(std::move(impl))
     {
     }
 
@@ -41,8 +39,8 @@ public:
     void
     increment(value_type amount) const
     {
-        if (m_impl)
-            m_impl->increment(amount);
+        if (impl_)
+            impl_->increment(amount);
     }
 
     Counter const&
@@ -88,8 +86,7 @@ public:
     }
 
 private:
-    std::shared_ptr<CounterImpl> m_impl;
+    std::shared_ptr<CounterImpl> impl_;
 };
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

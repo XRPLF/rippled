@@ -17,7 +17,7 @@ template <class Buffers>
 class ZeroCopyInputStream : public ::google::protobuf::io::ZeroCopyInputStream
 {
 private:
-    using iterator = typename Buffers::const_iterator;
+    using iterator = Buffers::const_iterator;
     using const_buffer = boost::asio::const_buffer;
 
     google::protobuf::int64 count_ = 0;
@@ -37,7 +37,7 @@ public:
     bool
     Skip(int count) override;
 
-    google::protobuf::int64
+    [[nodiscard]] google::protobuf::int64
     ByteCount() const override
     {
         return count_;
@@ -110,8 +110,8 @@ template <class Streambuf>
 class ZeroCopyOutputStream : public ::google::protobuf::io::ZeroCopyOutputStream
 {
 private:
-    using buffers_type = typename Streambuf::mutable_buffers_type;
-    using iterator = typename buffers_type::const_iterator;
+    using buffers_type = Streambuf::mutable_buffers_type;
+    using iterator = buffers_type::const_iterator;
     using mutable_buffer = boost::asio::mutable_buffer;
 
     Streambuf& streambuf_;
@@ -124,7 +124,7 @@ private:
 public:
     explicit ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize);
 
-    ~ZeroCopyOutputStream();
+    ~ZeroCopyOutputStream() override;
 
     bool
     Next(void** data, int* size) override;
@@ -132,7 +132,7 @@ public:
     void
     BackUp(int count) override;
 
-    google::protobuf::int64
+    [[nodiscard]] google::protobuf::int64
     ByteCount() const override
     {
         return count_;

@@ -1,30 +1,53 @@
+#include <xrpl/tx/transactors/bridge/XChainBridge.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
-#include <xrpl/tx/transactors/bridge/XChainBridge.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <expected>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <tuple>
 #include <unordered_map>
-#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -108,7 +131,7 @@ checkAttestationPublicKey(
         if (accountFromPK == attestationSignerAccount)
         {
             // master key
-            if (sleAttestationSigningAccount->getFieldU32(sfFlags) & lsfDisableMaster)
+            if (sleAttestationSigningAccount->isFlag(lsfDisableMaster))
             {
                 JLOG(j.trace()) << "Attempt to add an attestation with "
                                    "disabled master key.";
@@ -118,7 +141,7 @@ checkAttestationPublicKey(
         else
         {
             // regular key
-            if (std::optional<AccountID> regularKey =
+            if (std::optional<AccountID> const regularKey =
                     (*sleAttestationSigningAccount)[~sfRegularKey];
                 regularKey != accountFromPK)
             {
@@ -162,9 +185,9 @@ checkAttestationPublicKey(
 // must attest to this destination, if it is `ignore` then the `dst` of the
 // attestations are not checked (as for a `claim` transaction)
 
-enum class CheckDst { check, ignore };
+enum class CheckDst { Check, Ignore };
 template <class TAttestation>
-Expected<std::vector<AccountID>, TER>
+std::expected<std::vector<AccountID>, TER>
 claimHelper(
     XChainAttestationsBase<TAttestation>& attestations,
     ReadView const& view,
@@ -177,7 +200,7 @@ claimHelper(
     // Remove attestations that are not valid signers. They may be no longer
     // part of the signers list, or their master key may have been disabled,
     // or their regular key may have changed
-    attestations.erase_if([&](auto const& a) {
+    attestations.eraseIf([&](auto const& a) {
         return checkAttestationPublicKey(view, signersList, a.keyAccount, a.publicKey, j) !=
             tesSUCCESS;
     });
@@ -193,7 +216,7 @@ claimHelper(
         // attestation transaction. The dst does not need to match if the
         // claimHelper is being run using an explicit claim transaction.
         using enum AttestationMatch;
-        if (matchR == nonDstMismatch || (checkDst == CheckDst::check && matchR != match))
+        if (matchR == NonDstMismatch || (checkDst == CheckDst::Check && matchR != Match))
             continue;
         auto i = signersList.find(a.keyAccount);
         if (i == signersList.end())
@@ -211,7 +234,7 @@ claimHelper(
     if (weight >= quorum)
         return rewardAccounts;
 
-    return Unexpected(tecXCHAIN_CLAIM_NO_QUORUM);
+    return std::unexpected(tecXCHAIN_CLAIM_NO_QUORUM);
 }
 
 /**
@@ -279,10 +302,8 @@ onNewAttestations(
         }
 
         auto const& claimSigningAccount = att->attestationSignerAccount;
-        if (auto i = std::find_if(
-                attestations.begin(),
-                attestations.end(),
-                [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
+        if (auto i = std::ranges::find_if(
+                attestations, [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
             i != attestations.end())
         {
             // existing attestation
@@ -292,7 +313,7 @@ onNewAttestations(
         }
         else
         {
-            attestations.emplace_back(*att);
+            attestations.emplaceBack(*att);
             changed = true;
         }
     }
@@ -301,13 +322,13 @@ onNewAttestations(
         attestations,
         view,
         typename TAttestation::MatchFields{*attBegin},
-        CheckDst::check,
+        CheckDst::Check,
         quorum,
         signersList,
         j);
 
     if (!r.has_value())
-        return {std::nullopt, changed};
+        return {.rewardAccounts = std::nullopt, .changed = changed};
 
     return {std::move(r.value()), changed};
 };
@@ -315,7 +336,7 @@ onNewAttestations(
 // Check if there is a quorum of attestations for the given amount and
 // chain. If so return the reward accounts, if not return the tec code (most
 // likely tecXCHAIN_CLAIM_NO_QUORUM)
-Expected<std::vector<AccountID>, TER>
+std::expected<std::vector<AccountID>, TER>
 onClaim(
     XChainClaimAttestations& attestations,
     ReadView const& view,
@@ -325,20 +346,21 @@ onClaim(
     std::unordered_map<AccountID, std::uint32_t> const& signersList,
     beast::Journal j)
 {
-    XChainClaimAttestation::MatchFields toMatch{sendingAmount, wasLockingChainSend, std::nullopt};
-    return claimHelper(attestations, view, toMatch, CheckDst::ignore, quorum, signersList, j);
+    XChainClaimAttestation::MatchFields const toMatch{
+        sendingAmount, wasLockingChainSend, std::nullopt};
+    return claimHelper(attestations, view, toMatch, CheckDst::Ignore, quorum, signersList, j);
 }
 
-enum class CanCreateDstPolicy { no, yes };
+enum class CanCreateDstPolicy { No, Yes };
 
-enum class DepositAuthPolicy { normal, dstCanBypass };
+enum class DepositAuthPolicy { Normal, DstCanBypass };
 
 // Allow the fee to dip into the reserve. To support this, information about the
 // submitting account needs to be fed to the transfer helper.
 struct TransferHelperSubmittingAccountInfo
 {
     AccountID account;
-    STAmount preFeeBalance_;
+    STAmount preFeeBalance;
     STAmount postFeeBalance;
 };
 
@@ -385,22 +407,22 @@ transferHelper(
     {
         // Check dst tag and deposit auth
 
-        if ((sleDst->getFlags() & lsfRequireDestTag) && !dstTag)
+        if (sleDst->isFlag(lsfRequireDestTag) && !dstTag)
             return tecDST_TAG_NEEDED;
 
         // If the destination is the claim owner, and this is a claim
         // transaction, that's the dst account sending funds to itself. It
         // can bypass deposit auth.
         bool const canBypassDepositAuth =
-            dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::dstCanBypass;
+            dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::DstCanBypass;
 
-        if (!canBypassDepositAuth && (sleDst->getFlags() & lsfDepositAuth) &&
+        if (!canBypassDepositAuth && sleDst->isFlag(lsfDepositAuth) &&
             !psb.exists(keylet::depositPreauth(dst, src)))
         {
             return tecNO_PERMISSION;
         }
     }
-    else if (!amt.native() || canCreate == CanCreateDstPolicy::no)
+    else if (!amt.native() || canCreate == CanCreateDstPolicy::No)
     {
         return tecNO_DST;
     }
@@ -417,14 +439,14 @@ transferHelper(
             auto const reserve = psb.fees().accountReserve(ownerCount);
 
             auto const availableBalance = [&]() -> STAmount {
-                STAmount const curBal = (*sleSrc)[sfBalance];
+                STAmount curBal = (*sleSrc)[sfBalance];
                 // Checking that account == src and postFeeBalance == curBal is
                 // not strictly necessary, but helps protect against future
                 // changes
                 if (!submittingAccountInfo || submittingAccountInfo->account != src ||
                     submittingAccountInfo->postFeeBalance != curBal)
                     return curBal;
-                return submittingAccountInfo->preFeeBalance_;
+                return submittingAccountInfo->preFeeBalance;
             }();
 
             if (availableBalance < amt + reserve)
@@ -436,7 +458,7 @@ transferHelper(
         auto sleDst = psb.peek(dstK);
         if (!sleDst)
         {
-            if (canCreate == CanCreateDstPolicy::no)
+            if (canCreate == CanCreateDstPolicy::No)
             {
                 // Already checked, but OK to check again
                 return tecNO_DST;
@@ -472,7 +494,7 @@ transferHelper(
         /*default path*/ true,
         /*partial payment*/ false,
         /*owner pays transfer fee*/ true,
-        /*offer crossing*/ OfferCrossing::no,
+        /*offer crossing*/ OfferCrossing::No,
         /*limit quality*/ std::nullopt,
         /*sendmax*/ std::nullopt,
         /*domain id*/ std::nullopt,
@@ -490,9 +512,9 @@ transferHelper(
 */
 enum class OnTransferFail {
     /** Remove the claim even if the transfer fails */
-    removeClaim,
+    RemoveClaim,
     /**  Keep the claim if the transfer fails */
-    keepClaim
+    KeepClaim
 };
 
 struct FinalizeClaimHelperResult
@@ -506,7 +528,7 @@ struct FinalizeClaimHelperResult
 
     // Helper to check for overall success. If there wasn't overall success the
     // individual ters can be used to decide what needs to be done.
-    bool
+    [[nodiscard]] bool
     isTesSuccess() const
     {
         return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
@@ -514,7 +536,7 @@ struct FinalizeClaimHelperResult
             (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
-    TER
+    [[nodiscard]] TER
     ter() const
     {
         if (isTesSuccess())
@@ -615,12 +637,12 @@ finalizeClaimHelper(
             dstTag,
             claimOwner,
             thisChainAmount,
-            CanCreateDstPolicy::yes,
+            CanCreateDstPolicy::Yes,
             depositAuthPolicy,
             std::nullopt,
             j);
 
-        if (!isTesSuccess(*result.mainFundsTer) && onTransferFail == OnTransferFail::keepClaim)
+        if (!isTesSuccess(*result.mainFundsTer) && onTransferFail == OnTransferFail::KeepClaim)
         {
             return result;
         }
@@ -634,13 +656,13 @@ finalizeClaimHelper(
             // if the transfer failed, distribute the pool for "OnTransferFail"
             // cases (the attesters did their job)
             STAmount const share = [&] {
-                auto const round_mode = innerSb.rules().enabled(fixXChainRewardRounding)
-                    ? Number::rounding_mode::downward
+                auto const roundMode = innerSb.rules().enabled(fixXChainRewardRounding)
+                    ? Number::RoundingMode::Downward
                     : Number::getround();
-                saveNumberRoundMode _{Number::setround(round_mode)};
+                SaveNumberRoundMode const _{Number::setround(roundMode)};
 
                 STAmount const den{rewardAccounts.size()};
-                return divide(rewardPool, den, rewardPool.issue());
+                return divide(rewardPool, den, rewardPool.asset());
             }();
             STAmount distributed = rewardPool.zeroed();
             for (auto const& rewardAccount : rewardAccounts)
@@ -653,8 +675,8 @@ finalizeClaimHelper(
                     // claim owner is not relevant to distributing rewards
                     /*claimOwner*/ std::nullopt,
                     share,
-                    CanCreateDstPolicy::no,
-                    DepositAuthPolicy::normal,
+                    CanCreateDstPolicy::No,
+                    DepositAuthPolicy::Normal,
                     std::nullopt,
                     j);
 
@@ -675,7 +697,7 @@ finalizeClaimHelper(
         }();
 
         if (!isTesSuccess(*result.rewardTer) &&
-            (onTransferFail == OnTransferFail::keepClaim || *result.rewardTer == tecINTERNAL))
+            (onTransferFail == OnTransferFail::KeepClaim || *result.rewardTer == tecINTERNAL))
         {
             return result;
         }
@@ -736,7 +758,7 @@ getSignersListAndQuorum(ReadView const& view, SLE const& sleBridge, beast::Journ
         return {r, q, tecINTERNAL};
     }
 
-    auto const sleS = view.read(keylet::signers(sleBridge[sfAccount]));
+    auto const sleS = view.read(keylet::signerList(sleBridge[sfAccount]));
     if (!sleS)
     {
         return {r, q, tecXCHAIN_NO_SIGNERS_LIST};
@@ -770,26 +792,26 @@ readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
         }
         return nullptr;
     };
-    if (auto r = tryGet(STXChainBridge::ChainType::locking))
+    if (auto r = tryGet(STXChainBridge::ChainType::Locking))
         return r;
-    return tryGet(STXChainBridge::ChainType::issuing);
+    return tryGet(STXChainBridge::ChainType::Issuing);
 }
 
-std::shared_ptr<SLE>
+SLE::pointer
 peekBridge(ApplyView& v, STXChainBridge const& bridgeSpec)
 {
     return readOrpeekBridge<SLE>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE> {
+        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::pointer {
             return v.peek(keylet::bridge(b, ct));
         },
         bridgeSpec);
 }
 
-std::shared_ptr<SLE const>
+SLE::const_pointer
 readBridge(ReadView const& v, STXChainBridge const& bridgeSpec)
 {
     return readOrpeekBridge<SLE const>(
-        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> std::shared_ptr<SLE const> {
+        [&v](STXChainBridge const& b, STXChainBridge::ChainType ct) -> SLE::const_pointer {
             return v.read(keylet::bridge(b, ct));
         },
         bridgeSpec);
@@ -824,14 +846,14 @@ applyClaimAttestations(
         AccountID cidOwner;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
         // views, it's important that the sle's lifetime doesn't overlap.
         auto const sleClaimID = psb.peek(claimIDKeylet);
         if (!sleClaimID)
-            return Unexpected(tecXCHAIN_NO_CLAIM_ID);
+            return std::unexpected(tecXCHAIN_NO_CLAIM_ID);
 
         // Add claims that are part of the signer's list to the "claims" vector
         std::vector<Attestations::AttestationClaim> atts;
@@ -845,13 +867,13 @@ applyClaimAttestations(
 
         if (atts.empty())
         {
-            return Unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
+            return std::unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
         }
 
         AccountID const otherChainSource = (*sleClaimID)[sfOtherChainSource];
         if (attBegin->sendingAccount != otherChainSource)
         {
-            return Unexpected(tecXCHAIN_SENDING_ACCOUNT_MISMATCH);
+            return std::unexpected(tecXCHAIN_SENDING_ACCOUNT_MISMATCH);
         }
 
         {
@@ -862,7 +884,7 @@ applyClaimAttestations(
 
             if (attDstChain != dstChain)
             {
-                return Unexpected(tecXCHAIN_WRONG_CHAIN);
+                return std::unexpected(tecXCHAIN_WRONG_CHAIN);
             }
         }
 
@@ -904,8 +926,8 @@ applyClaimAttestations(
             *rewardAccounts,
             srcChain,
             claimIDKeylet,
-            OnTransferFail::keepClaim,
-            DepositAuthPolicy::normal,
+            OnTransferFail::KeepClaim,
+            DepositAuthPolicy::Normal,
             j);
 
         auto const rTer = r.ter();
@@ -941,10 +963,10 @@ applyCreateAccountAttestations(
 
     PaymentSandbox psb(&view);
 
-    auto const claimCountResult = [&]() -> Expected<std::uint64_t, TER> {
+    auto const claimCountResult = [&]() -> std::expected<std::uint64_t, TER> {
         auto const sleBridge = psb.peek(bridgeK);
         if (!sleBridge)
-            return Unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);
 
         return (*sleBridge)[sfXChainAccountClaimCount];
     }();
@@ -958,7 +980,7 @@ applyCreateAccountAttestations(
     {
         return tecXCHAIN_ACCOUNT_CREATE_PAST;
     }
-    if (attBegin->createCount >= claimCount + xbridgeMaxAccountCreateClaims)
+    if (attBegin->createCount >= claimCount + kXbridgeMaxAccountCreateClaims)
     {
         // Limit the number of claims on the account
         return tecXCHAIN_ACCOUNT_CREATE_TOO_MANY;
@@ -986,7 +1008,7 @@ applyCreateAccountAttestations(
         XChainCreateAccountAttestations curAtts;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1002,14 +1024,14 @@ applyCreateAccountAttestations(
 
             auto const sleDoor = psb.peek(doorK);
             if (!sleDoor)
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
             auto const reserve = psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
 
             if (balance < reserve)
-                return Unexpected(tecINSUFFICIENT_RESERVE);
+                return std::unexpected(tecINSUFFICIENT_RESERVE);
         }
 
         std::vector<Attestations::AttestationCreateAccount> atts;
@@ -1022,7 +1044,7 @@ applyCreateAccountAttestations(
         }
         if (atts.empty())
         {
-            return Unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
+            return std::unexpected(tecXCHAIN_PROOF_UNKNOWN_KEY);
         }
 
         XChainCreateAccountAttestations curAtts = [&] {
@@ -1048,7 +1070,7 @@ applyCreateAccountAttestations(
             // Modify the object before it's potentially deleted, so the meta
             // data will include the new attestations
             if (!sleClaimID)
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
             sleClaimID->setFieldArray(sfXChainCreateAccountAttestations, curAtts.toSTArray());
             psb.update(sleClaimID);
         }
@@ -1076,8 +1098,8 @@ applyCreateAccountAttestations(
             *rewardAccounts,
             srcChain,
             claimIDKeylet,
-            OnTransferFail::removeClaim,
-            DepositAuthPolicy::normal,
+            OnTransferFail::RemoveClaim,
+            DepositAuthPolicy::Normal,
             j);
 
         auto const rTer = r.ter();
@@ -1165,7 +1187,7 @@ attestationPreflight(PreflightContext const& ctx)
     if (att->sendingAmount.signum() <= 0)
         return temXCHAIN_BAD_PROOF;
     auto const expectedIssue = bridgeSpec.issue(STXChainBridge::srcChain(att->wasLockingChainSend));
-    if (att->sendingAmount.issue() != expectedIssue)
+    if (att->sendingAmount.asset() != expectedIssue)
         return temXCHAIN_BAD_PROOF;
 
     return tesSUCCESS;
@@ -1214,14 +1236,14 @@ attestationDoApply(ApplyContext& ctx)
 
     struct ScopeResult
     {
-        STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
+        STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::Locking;
         std::unordered_map<AccountID, std::uint32_t> signersList;
         std::uint32_t quorum{};
         AccountID thisDoor;
         Keylet bridgeK;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1229,24 +1251,24 @@ attestationDoApply(ApplyContext& ctx)
         auto sleBridge = readBridge(ctx.view(), bridgeSpec);
         if (!sleBridge)
         {
-            return Unexpected(tecNO_ENTRY);
+            return std::unexpected(tecNO_ENTRY);
         }
         Keylet const bridgeK{ltBRIDGE, sleBridge->key()};
         AccountID const thisDoor = (*sleBridge)[sfAccount];
 
-        STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
+        STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::Locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
             {
-                dstChain = STXChainBridge::ChainType::locking;
+                dstChain = STXChainBridge::ChainType::Locking;
             }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
             {
-                dstChain = STXChainBridge::ChainType::issuing;
+                dstChain = STXChainBridge::ChainType::Issuing;
             }
             else
             {
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
             }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
@@ -1256,7 +1278,7 @@ attestationDoApply(ApplyContext& ctx)
             getSignersListAndQuorum(ctx.view(), *sleBridge, ctx.journal);
 
         if (!isTesSuccess(slTer))
-            return Unexpected(slTer);
+            return std::unexpected(slTer);
 
         return ScopeResult{srcChain, std::move(signersList), quorum, thisDoor, bridgeK};
     }();
@@ -1346,9 +1368,9 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
         // Issuing account must be the root account for XRP (which presumably
         // owns all the XRP). This is done so the issuing account can't "run
         // out" of wrapped tokens.
-        static auto const rootAccount = calcAccountID(
-            generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")).first);
-        if (bridgeSpec.issuingChainDoor() != rootAccount)
+        static auto const kRootAccount = calcAccountID(
+            generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
+        if (bridgeSpec.issuingChainDoor() != kRootAccount)
         {
             return temXCHAIN_BRIDGE_BAD_ISSUES;
         }
@@ -1386,8 +1408,8 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
             return ctx.view.exists(keylet::bridge(bridgeSpec, ct));
         };
 
-        if (hasBridge(STXChainBridge::ChainType::issuing) ||
-            hasBridge(STXChainBridge::ChainType::locking))
+        if (hasBridge(STXChainBridge::ChainType::Issuing) ||
+            hasBridge(STXChainBridge::ChainType::Locking))
         {
             return tecDUPLICATE;
         }
@@ -1402,7 +1424,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
 
         // Allowing clawing back funds would break the bridge's invariant that
         // wrapped funds are always backed by locked funds
-        if (sleIssuer->getFlags() & lsfAllowTrustLineClawback)
+        if (sleIssuer->isFlag(lsfAllowTrustLineClawback))
             return tecNO_PERMISSION;
     }
 
@@ -1481,7 +1503,7 @@ BridgeModify::preflight(PreflightContext const& ctx)
     auto const reward = ctx.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx.tx[~sfMinAccountCreateAmount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
-    bool const clearAccountCreate = ctx.tx.getFlags() & tfClearAccountCreateAmount;
+    bool const clearAccountCreate = ctx.tx.isFlag(tfClearAccountCreateAmount);
 
     if (!reward && !minAccountCreate && !clearAccountCreate)
     {
@@ -1539,7 +1561,7 @@ BridgeModify::doApply()
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
     auto const reward = ctx_.tx[~sfSignatureReward];
     auto const minAccountCreate = ctx_.tx[~sfMinAccountCreateAmount];
-    bool const clearAccountCreate = ctx_.tx.getFlags() & tfClearAccountCreateAmount;
+    bool const clearAccountCreate = ctx_.tx.isFlag(tfClearAccountCreateAmount);
 
     auto const sleAcct = ctx_.view().peek(keylet::account(account));
     if (!sleAcct)
@@ -1576,8 +1598,8 @@ XChainClaim::preflight(PreflightContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
 
     if (amount.signum() <= 0 ||
-        (amount.issue() != bridgeSpec.lockingChainIssue() &&
-         amount.issue() != bridgeSpec.issuingChainIssue()))
+        (amount.asset() != bridgeSpec.lockingChainIssue() &&
+         amount.asset() != bridgeSpec.issuingChainIssue()))
     {
         return temBAD_AMOUNT;
     }
@@ -1626,12 +1648,12 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
 
         if (isLockingChain)
         {
-            if (bridgeSpec.lockingChainIssue() != thisChainAmount.issue())
+            if (bridgeSpec.lockingChainIssue() != thisChainAmount.asset())
                 return tecXCHAIN_BAD_TRANSFER_ISSUE;
         }
         else
         {
-            if (bridgeSpec.issuingChainIssue() != thisChainAmount.issue())
+            if (bridgeSpec.issuingChainIssue() != thisChainAmount.asset())
                 return tecXCHAIN_BAD_TRANSFER_ISSUE;
         }
     }
@@ -1698,7 +1720,7 @@ XChainClaim::doApply()
         STAmount signatureReward;
     };
 
-    auto const scopeResult = [&]() -> Expected<ScopeResult, TER> {
+    auto const scopeResult = [&]() -> std::expected<ScopeResult, TER> {
         // This lambda is ugly - admittedly. The purpose of this lambda is to
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
@@ -1709,23 +1731,23 @@ XChainClaim::doApply()
         auto const sleClaimID = psb.peek(claimIDKeylet);
 
         if (!(sleBridge && sleClaimID && sleAcct))
-            return Unexpected(tecINTERNAL);
+            return std::unexpected(tecINTERNAL);
 
         AccountID const thisDoor = (*sleBridge)[sfAccount];
 
-        STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::locking;
+        STXChainBridge::ChainType dstChain = STXChainBridge::ChainType::Locking;
         {
             if (thisDoor == bridgeSpec.lockingChainDoor())
             {
-                dstChain = STXChainBridge::ChainType::locking;
+                dstChain = STXChainBridge::ChainType::Locking;
             }
             else if (thisDoor == bridgeSpec.issuingChainDoor())
             {
-                dstChain = STXChainBridge::ChainType::issuing;
+                dstChain = STXChainBridge::ChainType::Issuing;
             }
             else
             {
-                return Unexpected(tecINTERNAL);
+                return std::unexpected(tecINTERNAL);
             }
         }
         STXChainBridge::ChainType const srcChain = STXChainBridge::otherChain(dstChain);
@@ -1740,7 +1762,7 @@ XChainClaim::doApply()
             getSignersListAndQuorum(ctx_.view(), *sleBridge, ctx_.journal);
 
         if (!isTesSuccess(slTer))
-            return Unexpected(slTer);
+            return std::unexpected(slTer);
 
         XChainClaimAttestations curAtts{sleClaimID->getFieldArray(sfXChainClaimAttestations)};
 
@@ -1748,19 +1770,19 @@ XChainClaim::doApply()
             curAtts,
             psb,
             sendingAmount,
-            /*wasLockingChainSend*/ srcChain == STXChainBridge::ChainType::locking,
+            /*wasLockingChainSend*/ srcChain == STXChainBridge::ChainType::Locking,
             quorum,
             signersList,
             ctx_.journal);
         if (!claimR.has_value())
-            return Unexpected(claimR.error());
+            return std::unexpected(claimR.error());
 
         return ScopeResult{
-            claimR.value(),
-            (*sleClaimID)[sfAccount],
-            sendingAmount,
-            srcChain,
-            (*sleClaimID)[sfSignatureReward],
+            .rewardAccounts = claimR.value(),
+            .rewardPoolSrc = (*sleClaimID)[sfAccount],
+            .sendingAmount = sendingAmount,
+            .srcChain = srcChain,
+            .signatureReward = (*sleClaimID)[sfSignatureReward],
         };
     }();
 
@@ -1783,8 +1805,8 @@ XChainClaim::doApply()
         rewardAccounts,
         srcChain,
         claimIDKeylet,
-        OnTransferFail::keepClaim,
-        DepositAuthPolicy::dstCanBypass,
+        OnTransferFail::KeepClaim,
+        DepositAuthPolicy::DstCanBypass,
         ctx_.journal);
     if (!r.isTesSuccess())
         return r.ter();
@@ -1803,7 +1825,7 @@ XChainCommit::makeTxConsequences(PreflightContext const& ctx)
         auto const amount = ctx.tx[sfAmount];
         if (amount.native() && amount.signum() > 0)
             return amount.xrp();
-        return XRPAmount{beast::zero};
+        return XRPAmount{beast::kZero};
     }();
 
     return TxConsequences{ctx.tx, maxSpend};
@@ -1818,8 +1840,8 @@ XChainCommit::preflight(PreflightContext const& ctx)
     if (amount.signum() <= 0 || !isLegalNet(amount))
         return temBAD_AMOUNT;
 
-    if (amount.issue() != bridgeSpec.lockingChainIssue() &&
-        amount.issue() != bridgeSpec.issuingChainIssue())
+    if (amount.asset() != bridgeSpec.lockingChainIssue() &&
+        amount.asset() != bridgeSpec.issuingChainIssue())
         return temBAD_ISSUER;
 
     return tesSUCCESS;
@@ -1864,12 +1886,12 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
 
     if (isLockingChain)
     {
-        if (bridgeSpec.lockingChainIssue() != ctx.tx[sfAmount].issue())
+        if (bridgeSpec.lockingChainIssue() != ctx.tx[sfAmount].asset())
             return tecXCHAIN_BAD_TRANSFER_ISSUE;
     }
     else
     {
-        if (bridgeSpec.issuingChainIssue() != ctx.tx[sfAmount].issue())
+        if (bridgeSpec.issuingChainIssue() != ctx.tx[sfAmount].asset())
             return tecXCHAIN_BAD_TRANSFER_ISSUE;
     }
 
@@ -1897,7 +1919,9 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance_, (*sleAccount)[sfBalance]};
+        .account = accountID_,
+        .preFeeBalance = preFeeBalance_,
+        .postFeeBalance = (*sleAccount)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
@@ -1906,8 +1930,8 @@ XChainCommit::doApply()
         /*dstTag*/ std::nullopt,
         /*claimOwner*/ std::nullopt,
         amount,
-        CanCreateDstPolicy::no,
-        DepositAuthPolicy::normal,
+        CanCreateDstPolicy::No,
+        DepositAuthPolicy::Normal,
         submittingAccountInfo,
         ctx_.journal);
 
@@ -2081,7 +2105,7 @@ XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
     if (reward.signum() < 0 || !reward.native())
         return temBAD_AMOUNT;
 
-    if (reward.issue() != amount.issue())
+    if (reward.asset() != amount.asset())
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -2113,7 +2137,7 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     if (amount < *minCreateAmount)
         return tecXCHAIN_INSUFF_CREATE_AMOUNT;
 
-    if (minCreateAmount->issue() != amount.issue())
+    if (minCreateAmount->asset() != amount.asset())
         return tecXCHAIN_BAD_TRANSFER_ISSUE;
 
     AccountID const thisDoor = (*sleBridge)[sfAccount];
@@ -2124,15 +2148,15 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
         return tecXCHAIN_SELF_COMMIT;
     }
 
-    STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::locking;
+    STXChainBridge::ChainType srcChain = STXChainBridge::ChainType::Locking;
     {
         if (thisDoor == bridgeSpec.lockingChainDoor())
         {
-            srcChain = STXChainBridge::ChainType::locking;
+            srcChain = STXChainBridge::ChainType::Locking;
         }
         else if (thisDoor == bridgeSpec.issuingChainDoor())
         {
-            srcChain = STXChainBridge::ChainType::issuing;
+            srcChain = STXChainBridge::ChainType::Issuing;
         }
         else
         {
@@ -2141,7 +2165,7 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     }
     STXChainBridge::ChainType const dstChain = STXChainBridge::otherChain(srcChain);
 
-    if (bridgeSpec.issue(srcChain) != ctx.tx[sfAmount].issue())
+    if (bridgeSpec.issue(srcChain) != ctx.tx[sfAmount].asset())
         return tecXCHAIN_BAD_TRANSFER_ISSUE;
 
     if (!isXRP(bridgeSpec.issue(dstChain)))
@@ -2172,7 +2196,9 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance_, (*sle)[sfBalance]};
+        .account = accountID_,
+        .preFeeBalance = preFeeBalance_,
+        .postFeeBalance = (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,
@@ -2181,8 +2207,8 @@ XChainCreateAccountCommit::doApply()
         /*dstTag*/ std::nullopt,
         /*claimOwner*/ std::nullopt,
         toTransfer,
-        CanCreateDstPolicy::yes,
-        DepositAuthPolicy::normal,
+        CanCreateDstPolicy::Yes,
+        DepositAuthPolicy::Normal,
         submittingAccountInfo,
         ctx_.journal);
 
@@ -2195,6 +2221,145 @@ XChainCreateAccountCommit::doApply()
     psb.apply(ctx_.rawView());
 
     return tesSUCCESS;
+}
+
+void
+XChainCreateBridge::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+XChainCreateBridge::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+void
+BridgeModify::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+BridgeModify::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+void
+XChainClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+void
+XChainCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+XChainCommit::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+void
+XChainCreateClaimID::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+XChainCreateClaimID::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+void
+XChainAddClaimAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+XChainAddClaimAttestation::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+void
+XChainAddAccountCreateAttestation::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+XChainAddAccountCreateAttestation::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
+
+void
+XChainCreateAccountCommit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+XChainCreateAccountCommit::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

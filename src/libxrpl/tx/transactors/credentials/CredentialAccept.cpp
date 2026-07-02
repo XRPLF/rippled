@@ -1,14 +1,25 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/CredentialHelpers.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/credentials/CredentialAccept.h>
 
-#include <chrono>
+#include <xrpl/basics/Log.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
 namespace xrpl {
 
 using namespace credentials;
@@ -30,7 +41,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     }
 
     auto const credType = ctx.tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > maxCredentialTypeLength))
+    if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
@@ -60,7 +71,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if (sleCred->getFieldU32(sfFlags) & lsfAccepted)
+    if (sleCred->isFlag(lsfAccepted))
     {
         JLOG(ctx.j.warn()) << "Credential already accepted: " << to_string(subject) << ", "
                            << to_string(issuer) << ", " << credType;
@@ -76,7 +87,7 @@ CredentialAccept::doApply()
     AccountID const issuer{ctx_.tx[sfIssuer]};
 
     // Both exist as credential object exist itself (checked in preclaim)
-    auto const sleSubject = view().peek(keylet::account(account_));
+    auto const sleSubject = view().peek(keylet::account(accountID_));
     auto const sleIssuer = view().peek(keylet::account(issuer));
 
     if (!sleSubject || !sleIssuer)
@@ -90,10 +101,12 @@ CredentialAccept::doApply()
     }
 
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey = keylet::credential(account_, issuer, credType);
+    Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
+    if (!sleCred)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (checkExpired(sleCred, view().header().parentCloseTime))
+    if (checkExpired(*sleCred, view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
@@ -110,4 +123,21 @@ CredentialAccept::doApply()
     return tesSUCCESS;
 }
 
+void
+CredentialAccept::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+CredentialAccept::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
 }  // namespace xrpl

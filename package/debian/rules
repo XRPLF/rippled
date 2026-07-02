@@ -1,0 +1,25 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+
+%:
+	dh $@
+
+override_dh_auto_configure override_dh_auto_build override_dh_auto_test:
+	@:
+
+override_dh_installsystemd:
+	dh_installsystemd --no-stop-on-upgrade xrpld.service
+
+execute_before_dh_installtmpfiles:
+	dh_installsysusers
+
+override_dh_installsysusers:
+
+override_dh_install:
+	install -D -m 0755 xrpld            debian/xrpld/usr/bin/xrpld
+	install -D -m 0644 xrpld.cfg        debian/xrpld/etc/xrpld/xrpld.cfg
+	install -D -m 0644 validators.txt   debian/xrpld/etc/xrpld/validators.txt
+
+override_dh_dwz:
+	@:

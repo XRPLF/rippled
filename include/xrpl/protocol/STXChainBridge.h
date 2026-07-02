@@ -20,7 +20,7 @@ class STXChainBridge final : public STBase, public CountedObject<STXChainBridge>
 public:
     using value_type = STXChainBridge;
 
-    enum class ChainType { locking, issuing };
+    enum class ChainType { Locking, Issuing };
 
     static ChainType
     otherChain(ChainType ct);
@@ -45,54 +45,54 @@ public:
         AccountID const& dstChainDoor,
         Issue const& dstChainIssue);
 
-    explicit STXChainBridge(Json::Value const& v);
+    explicit STXChainBridge(json::Value const& v);
 
-    explicit STXChainBridge(SField const& name, Json::Value const& v);
+    explicit STXChainBridge(SField const& name, json::Value const& v);
 
     explicit STXChainBridge(SerialIter& sit, SField const& name);
 
     STXChainBridge&
     operator=(STXChainBridge const& rhs) = default;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    STObject
+    [[nodiscard]] STObject
     toSTObject() const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     lockingChainDoor() const;
 
-    Issue const&
+    [[nodiscard]] Issue const&
     lockingChainIssue() const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     issuingChainDoor() const;
 
-    Issue const&
+    [[nodiscard]] Issue const&
     issuingChainIssue() const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     door(ChainType ct) const;
 
-    Issue const&
+    [[nodiscard]] Issue const&
     issue(ChainType ct) const;
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
-    value_type const&
+    [[nodiscard]] value_type const&
     value() const noexcept;
 
 private:
@@ -174,7 +174,7 @@ STXChainBridge::value() const noexcept
 inline AccountID const&
 STXChainBridge::door(ChainType ct) const
 {
-    if (ct == ChainType::locking)
+    if (ct == ChainType::Locking)
         return lockingChainDoor();
     return issuingChainDoor();
 }
@@ -182,7 +182,7 @@ STXChainBridge::door(ChainType ct) const
 inline Issue const&
 STXChainBridge::issue(ChainType ct) const
 {
-    if (ct == ChainType::locking)
+    if (ct == ChainType::Locking)
         return lockingChainIssue();
     return issuingChainIssue();
 }
@@ -190,25 +190,25 @@ STXChainBridge::issue(ChainType ct) const
 inline STXChainBridge::ChainType
 STXChainBridge::otherChain(ChainType ct)
 {
-    if (ct == ChainType::locking)
-        return ChainType::issuing;
-    return ChainType::locking;
+    if (ct == ChainType::Locking)
+        return ChainType::Issuing;
+    return ChainType::Locking;
 }
 
 inline STXChainBridge::ChainType
 STXChainBridge::srcChain(bool wasLockingChainSend)
 {
     if (wasLockingChainSend)
-        return ChainType::locking;
-    return ChainType::issuing;
+        return ChainType::Locking;
+    return ChainType::Issuing;
 }
 
 inline STXChainBridge::ChainType
 STXChainBridge::dstChain(bool wasLockingChainSend)
 {
     if (wasLockingChainSend)
-        return ChainType::issuing;
-    return ChainType::locking;
+        return ChainType::Issuing;
+    return ChainType::Locking;
 }
 
 }  // namespace xrpl

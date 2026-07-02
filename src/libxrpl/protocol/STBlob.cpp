@@ -1,8 +1,9 @@
+#include <xrpl/protocol/STBlob.h>
+
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
@@ -53,7 +54,7 @@ bool
 STBlob::isEquivalent(STBase const& t) const
 {
     STBlob const* v = dynamic_cast<STBlob const*>(&t);
-    return v && (value_ == v->value_);
+    return (v != nullptr) && (value_ == v->value_);
 }
 
 bool

@@ -3,9 +3,7 @@
 #include <random>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Return a randomly shuffled copy of vector based on weights w.
 
@@ -14,18 +12,18 @@ namespace csf {
     @param g  A pseudo-random number generator
     @return A vector with entries randomly sampled without replacement
             from the original vector based on the provided weights.
-            I.e.  res[0] comes from sample v[i] with weight w[i]/sum_k w[k]
+            I.e.  res[0] comes from sample v[i] with weight w[i]/suk_ w[k]
 */
 template <class T, class G>
 std::vector<T>
-random_weighted_shuffle(std::vector<T> v, std::vector<double> w, G& g)
+randomWeightedShuffle(std::vector<T> v, std::vector<double> w, G& g)
 {
     using std::swap;
 
     for (int i = 0; i < v.size() - 1; ++i)
     {
         // pick a random item weighted by w
-        std::discrete_distribution<> dd(w.begin() + i, w.end());
+        std::discrete_distribution<> dd(w.begin() + i, w.end());  // NOLINT(misc-const-correctness)
         auto idx = dd(g);
         std::swap(v[i], v[idx]);
         std::swap(w[i], w[idx]);
@@ -46,7 +44,7 @@ std::vector<typename RandomNumberDistribution::result_type>
 sample(std::size_t size, RandomNumberDistribution dist, Generator& g)
 {
     std::vector<typename RandomNumberDistribution::result_type> res(size);
-    std::generate(res.begin(), res.end(), [&dist, &g]() { return dist(g); });
+    std::ranges::generate(res, [&dist, &g]() { return dist(g); });
     return res;
 }
 
@@ -74,14 +72,14 @@ public:
     Selector(RAIter first, RAIter last, std::vector<double> const& w, Generator& g)
         : first_{first}, last_{last}, dd_{w.begin(), w.end()}, g_{g}
     {
-        using tag = typename std::iterator_traits<RAIter>::iterator_category;
+        using tag = std::iterator_traits<RAIter>::iterator_category;
         static_assert(
-            std::is_same<tag, std::random_access_iterator_tag>::value,
+            std::is_same_v<tag, std::random_access_iterator_tag>,
             "Selector only supports random access iterators.");
         // TODO: Allow for forward iterators
     }
 
-    typename std::iterator_traits<RAIter>::value_type
+    std::iterator_traits<RAIter>::value_type
     operator()()
     {
         auto idx = dd_(g_);
@@ -111,7 +109,7 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator&)
     {
         return t_;
@@ -140,7 +138,7 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator& g)
     {
         // use inverse transform of CDF to sample
@@ -149,6 +147,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

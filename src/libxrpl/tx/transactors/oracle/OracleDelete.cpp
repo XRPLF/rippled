@@ -1,8 +1,17 @@
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Rules.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
@@ -40,7 +49,7 @@ OracleDelete::preclaim(PreclaimContext const& ctx)
 TER
 OracleDelete::deleteOracle(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
+    SLE::ref sle,
     AccountID const& account,
     beast::Journal j)
 {
@@ -71,10 +80,28 @@ OracleDelete::deleteOracle(
 TER
 OracleDelete::doApply()
 {
-    if (auto sle = ctx_.view().peek(keylet::oracle(account_, ctx_.tx[sfOracleDocumentID])))
-        return deleteOracle(ctx_.view(), sle, account_, j_);
+    if (auto sle = ctx_.view().peek(keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID])))
+        return deleteOracle(ctx_.view(), sle, accountID_, j_);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE
+}
+
+void
+OracleDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+OracleDelete::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

@@ -1,7 +1,20 @@
 #include <xrpld/overlay/Message.h>
+
+#include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
 #include <cstdint>
+#include <mutex>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -9,7 +22,8 @@ Message::Message(
     ::google::protobuf::Message const& message,
     protocol::MessageType type,
     std::optional<PublicKey> const& validator)
-    : category_(TrafficCount::categorize(message, type, false)), validatorKey_(validator)
+    : category_(static_cast<std::size_t>(TrafficCount::categorize(message, type, false)))
+    , validatorKey_(validator)
 {
     using namespace xrpl::compression;
 
@@ -17,12 +31,12 @@ Message::Message(
 
     XRPL_ASSERT(messageBytes, "xrpl::Message::Message : non-empty message input");
 
-    buffer_.resize(headerBytes + messageBytes);
+    buffer_.resize(kHeaderBytes + messageBytes);
 
     setHeader(buffer_.data(), messageBytes, type, Algorithm::None, 0);
 
     if (messageBytes != 0)
-        message.SerializeToArray(buffer_.data() + headerBytes, messageBytes);
+        message.SerializeToArray(buffer_.data() + kHeaderBytes, messageBytes);
 
     XRPL_ASSERT(
         getBufferSize() == totalSize(message),
@@ -44,14 +58,14 @@ Message::messageSize(::google::protobuf::Message const& message)
 std::size_t
 Message::totalSize(::google::protobuf::Message const& message)
 {
-    return messageSize(message) + compression::headerBytes;
+    return messageSize(message) + compression::kHeaderBytes;
 }
 
 void
 Message::compress()
 {
     using namespace xrpl::compression;
-    auto const messageBytes = buffer_.size() - headerBytes;
+    auto const messageBytes = buffer_.size() - kHeaderBytes;
 
     auto type = getType(buffer_.data());
 
@@ -90,19 +104,20 @@ Message::compress()
 
     if (compressible)
     {
-        auto payload = static_cast<void const*>(buffer_.data() + headerBytes);
+        auto payload = static_cast<void const*>(buffer_.data() + kHeaderBytes);
 
         auto compressedSize = xrpl::compression::compress(
             payload,
             messageBytes,
             [&](std::size_t inSize) {  // size of required compressed buffer
-                bufferCompressed_.resize(inSize + headerBytesCompressed);
-                return (bufferCompressed_.data() + headerBytesCompressed);
+                bufferCompressed_.resize(inSize + kHeaderBytesCompressed);
+                return (bufferCompressed_.data() + kHeaderBytesCompressed);
             });
 
-        if (compressedSize < (messageBytes - (headerBytesCompressed - headerBytes)))
+        if (compressedSize < (messageBytes - (kHeaderBytesCompressed - kHeaderBytes)))
         {
-            bufferCompressed_.resize(headerBytesCompressed + compressedSize);
+            bufferCompressed_.resize(kHeaderBytesCompressed + compressedSize);
+            // NOLINTNEXTLINE(readability-suspicious-call-argument)
             setHeader(bufferCompressed_.data(), compressedSize, type, Algorithm::LZ4, messageBytes);
         }
         else
@@ -188,7 +203,7 @@ Message::getBuffer(Compressed tryCompressed)
     if (tryCompressed == Compressed::Off)
         return buffer_;
 
-    std::call_once(once_flag_, &Message::compress, this);
+    std::call_once(onceFlag_, &Message::compress, this);
 
     if (!bufferCompressed_.empty())
     {
@@ -199,9 +214,9 @@ Message::getBuffer(Compressed tryCompressed)
 }
 
 int
-Message::getType(std::uint8_t const* in) const
+Message::getType(std::uint8_t const* in)
 {
-    int type = (static_cast<int>(*(in + 4)) << 8) + *(in + 5);
+    int const type = (static_cast<int>(*(in + 4)) << 8) + *(in + 5);
     return type;
 }
 

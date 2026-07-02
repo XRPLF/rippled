@@ -4,19 +4,18 @@
 
 #include <chrono>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
-enum class FetchType { synchronous, async };
+enum class FetchType { Synchronous, Async };
 
 /** Contains information about a fetch operation. */
 struct FetchReport
 {
-    explicit FetchReport(FetchType fetchType_) : fetchType(fetchType_)
+    explicit FetchReport(FetchType fetchType) : fetchType(fetchType)
     {
     }
 
-    std::chrono::milliseconds elapsed;
+    std::chrono::milliseconds elapsed{};
     FetchType const fetchType;
     bool wasFound = false;
 };
@@ -64,5 +63,4 @@ public:
     onBatchWrite(BatchWriteReport const& report) = 0;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

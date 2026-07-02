@@ -22,7 +22,7 @@ transResults()
     static
     std::unordered_map<
             TERUnderlyingType,
-            std::pair<char const* const, char const* const>> const results
+            std::pair<char const* const, char const* const>> const kResults
     {
         MAKE_ERROR(tecAMM_BALANCE,                   "AMM has invalid balance."),
         MAKE_ERROR(tecAMM_INVALID_TOKENS,            "AMM invalid LP tokens."),
@@ -106,6 +106,7 @@ transResults()
         MAKE_ERROR(tecLIMIT_EXCEEDED,                "Limit exceeded."),
         MAKE_ERROR(tecPSEUDO_ACCOUNT,                "This operation is not allowed against a pseudo-account."),
         MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
+        MAKE_ERROR(tecBAD_PROOF,                     "Proof cannot be verified"),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -156,6 +157,7 @@ transResults()
         MAKE_ERROR(temBAD_FEE,                   "Invalid fee, negative or not XRP."),
         MAKE_ERROR(temBAD_ISSUER,                "Malformed: Bad issuer."),
         MAKE_ERROR(temBAD_LIMIT,                 "Limits must be non-negative."),
+        MAKE_ERROR(temBAD_MPT,                   "Malformed: Bad MPT."),
         MAKE_ERROR(temBAD_OFFER,                 "Malformed: Bad offer."),
         MAKE_ERROR(temBAD_PATH,                  "Malformed: Bad path."),
         MAKE_ERROR(temBAD_PATH_LOOP,             "Malformed: Loop in path."),
@@ -198,6 +200,7 @@ transResults()
         MAKE_ERROR(temARRAY_TOO_LARGE,           "Malformed: Array is too large."),
         MAKE_ERROR(temBAD_TRANSFER_FEE,          "Malformed: Transfer fee is outside valid range."),
         MAKE_ERROR(temINVALID_INNER_BATCH,       "Malformed: Invalid inner batch transaction."),
+        MAKE_ERROR(temBAD_CIPHERTEXT,            "Malformed: Invalid ciphertext."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),
@@ -214,6 +217,7 @@ transResults()
         MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
         MAKE_ERROR(terADDRESS_COLLISION,      "Failed to allocate an unique account address."),
         MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
+        MAKE_ERROR(terLOCKED,                 "Fund is locked."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };
@@ -221,7 +225,7 @@ transResults()
 
 #undef MAKE_ERROR
 
-    return results;
+    return kResults;
 }
 
 bool
@@ -260,7 +264,7 @@ transHuman(TER code)
 std::optional<TER>
 transCode(std::string const& token)
 {
-    static auto const results = [] {
+    static auto const kResults = [] {
         auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
         auto tRange = boost::adaptors::transform(
@@ -270,9 +274,9 @@ transCode(std::string const& token)
         return byToken;
     }();
 
-    auto const r = results.find(token);
+    auto const r = kResults.find(token);
 
-    if (r == results.end())
+    if (r == kResults.end())
         return std::nullopt;
 
     return TER::fromInt(r->second);

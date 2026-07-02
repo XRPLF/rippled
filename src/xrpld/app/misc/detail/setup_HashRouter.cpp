@@ -1,21 +1,29 @@
 #include <xrpld/app/misc/setup_HashRouter.h>
+
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/core/HashRouter.h>
+
+#include <chrono>
+#include <cstdint>
+#include <stdexcept>
 
 namespace xrpl {
 
 HashRouter::Setup
-setup_HashRouter(Config const& config)
+setupHashRouter(Config const& config)
 {
     using namespace std::chrono;
 
     HashRouter::Setup setup;
-    auto const& section = config.section("hashrouter");
+    auto const& section = config.section(Sections::kHashrouter);
 
     std::int32_t tmp{};
 
-    if (set(tmp, "hold_time", section))
+    if (set(tmp, Keys::kHoldTime, section))
     {
         if (tmp < 12)
         {
@@ -25,7 +33,7 @@ setup_HashRouter(Config const& config)
         }
         setup.holdTime = seconds(tmp);
     }
-    if (set(tmp, "relay_time", section))
+    if (set(tmp, Keys::kRelayTime, section))
     {
         if (tmp < 8)
         {

@@ -1,13 +1,29 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/CredentialHelpers.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/credentials/CredentialCreate.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>  // IWYU pragma: keep
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
 #include <chrono>
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -46,14 +62,14 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     }
 
     auto const uri = tx[~sfURI];
-    if (uri && (uri->empty() || (uri->size() > maxCredentialURILength)))
+    if (uri && (uri->empty() || (uri->size() > kMaxCredentialUriLength)))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of URI.";
         return temMALFORMED;
     }
 
     auto const credType = tx[sfCredentialType];
-    if (credType.empty() || (credType.size() > maxCredentialTypeLength))
+    if (credType.empty() || (credType.size() > kMaxCredentialTypeLength))
     {
         JLOG(j.trace()) << "Malformed transaction: invalid size of CredentialType.";
         return temMALFORMED;
@@ -88,7 +104,7 @@ CredentialCreate::doApply()
 {
     auto const subject = ctx_.tx[sfSubject];
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey = keylet::credential(subject, account_, credType);
+    Keylet const credentialKey = keylet::credential(subject, accountID_, credType);
 
     auto const sleCred = std::make_shared<SLE>(credentialKey);
     if (!sleCred)
@@ -110,7 +126,7 @@ CredentialCreate::doApply()
         sleCred->setFieldU32(sfExpiration, *optExp);
     }
 
-    auto const sleIssuer = view().peek(keylet::account(account_));
+    auto const sleIssuer = view().peek(keylet::account(accountID_));
     if (!sleIssuer)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -122,15 +138,15 @@ CredentialCreate::doApply()
     }
 
     sleCred->setAccountID(sfSubject, subject);
-    sleCred->setAccountID(sfIssuer, account_);
+    sleCred->setAccountID(sfIssuer, accountID_);
     sleCred->setFieldVL(sfCredentialType, credType);
 
     if (ctx_.tx.isFieldPresent(sfURI))
         sleCred->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));
 
     {
-        auto const page =
-            view().dirInsert(keylet::ownerDir(account_), credentialKey, describeOwnerDir(account_));
+        auto const page = view().dirInsert(
+            keylet::ownerDir(accountID_), credentialKey, describeOwnerDir(accountID_));
         JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
                          << ": " << (page ? "success" : "failure");
         if (!page)
@@ -140,20 +156,21 @@ CredentialCreate::doApply()
         adjustOwnerCount(view(), sleIssuer, 1, j_);
     }
 
-    if (subject == account_)
+    if (subject == accountID_)
     {
         sleCred->setFieldU32(sfFlags, lsfAccepted);
     }
     else
     {
+        // Added to both dirs, owned only by issuer. CredentialAccept will transfer ownership to
+        // subject. CredentialDelete will remove from both dirs and decrement 1 ownerCount.
         auto const page =
             view().dirInsert(keylet::ownerDir(subject), credentialKey, describeOwnerDir(subject));
-        JLOG(j_.trace()) << "Adding Credential to owner directory " << to_string(credentialKey.key)
-                         << ": " << (page ? "success" : "failure");
+        JLOG(j_.trace()) << "Adding Credential to subject directory "
+                         << to_string(credentialKey.key) << ": " << (page ? "success" : "failure");
         if (!page)
             return tecDIR_FULL;
         sleCred->setFieldU64(sfSubjectNode, *page);
-        view().update(view().peek(keylet::account(subject)));
     }
 
     view().insert(sleCred);
@@ -161,4 +178,21 @@ CredentialCreate::doApply()
     return tesSUCCESS;
 }
 
+void
+CredentialCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+CredentialCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
+}
 }  // namespace xrpl

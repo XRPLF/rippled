@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -49,7 +50,7 @@ enum class WithdrawAll : bool { No = false, Yes };
 class AMMWithdraw : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
 
     explicit AMMWithdraw(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -69,6 +70,17 @@ public:
 
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 
     /** Equal-asset withdrawal (LPTokens) of some AMM instance pools
      * shares represented by the number of LPTokens .
@@ -97,7 +109,8 @@ public:
         STAmount const& lpTokens,
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee,
-        FreezeHandling freezeHanding,
+        FreezeHandling freezeHandling,
+        AuthHandling authHandling,
         WithdrawAll withdrawAll,
         XRPAmount const& priorBalance,
         beast::Journal const& journal);
@@ -131,6 +144,7 @@ public:
         STAmount const& lpTokensWithdraw,
         std::uint16_t tfee,
         FreezeHandling freezeHandling,
+        AuthHandling authHandling,
         WithdrawAll withdrawAll,
         XRPAmount const& priorBalance,
         beast::Journal const& journal);
@@ -138,13 +152,18 @@ public:
     static std::pair<TER, bool>
     deleteAMMAccountIfEmpty(
         Sandbox& sb,
-        std::shared_ptr<SLE> const ammSle,
+        SLE::pointer const ammSle,
         STAmount const& lpTokenBalance,
-        Issue const& issue1,
-        Issue const& issue2,
+        Asset const& asset1,
+        Asset const& asset2,
         beast::Journal const& journal);
 
 private:
+    /** Returns IgnoreFreeze when the withdrawer is the issuer of a pool
+     *  asset (post-fixCleanup3_3_0), ZeroIfFrozen otherwise. */
+    [[nodiscard]] FreezeHandling
+    issuerFreezeHandling() const;
+
     std::pair<TER, bool>
     applyGuts(Sandbox& view);
 

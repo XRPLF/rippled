@@ -8,7 +8,7 @@ namespace xrpl {
 class AccountSet : public Transactor
 {
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
     explicit AccountSet(ApplyContext& ctx) : Transactor(ctx)
     {
@@ -23,14 +23,22 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx);
-
     static TER
     preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 };
 
 }  // namespace xrpl

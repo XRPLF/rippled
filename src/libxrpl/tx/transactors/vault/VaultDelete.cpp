@@ -1,18 +1,28 @@
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/STNumber.h>
-#include <xrpl/protocol/STTakesAsset.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/vault/VaultDelete.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
 NotTEC
 VaultDelete::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::zero)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: zero/empty vault ID.";
         return temMALFORMED;
@@ -47,12 +57,12 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     }
 
     // Verify we can destroy MPTokenIssuance
-    auto const sleMPT = ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
 
     if (!sleMPT)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: missing issuance of vault shares.";
+        JLOG(ctx.j.error()) << "VaultDelete: missing issuance of vault shares.";
         return tecOBJECT_NOT_FOUND;
         // LCOV_EXCL_STOP
     }
@@ -60,7 +70,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     if (sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount))
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.error()) << "VaultDeposit: invalid owner of vault shares.";
+        JLOG(ctx.j.error()) << "VaultDelete: invalid owner of vault shares.";
         return tecNO_PERMISSION;
         // LCOV_EXCL_STOP
     }
@@ -100,7 +110,7 @@ VaultDelete::doApply()
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const shareMPTID = *vault->at(sfShareMPTID);
-    auto const mpt = view().peek(keylet::mptIssuance(shareMPTID));
+    auto const mpt = view().peek(keylet::mptokenIssuance(shareMPTID));
     if (!mpt)
     {
         // LCOV_EXCL_START
@@ -110,16 +120,16 @@ VaultDelete::doApply()
     }
 
     // Try to remove MPToken for vault shares for the vault owner if it exists.
-    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, account_)))
+    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, accountID_)))
     {
-        if (auto const ter = removeEmptyHolding(view(), account_, MPTIssue(shareMPTID), j_);
+        if (auto const ter = removeEmptyHolding(view(), accountID_, MPTIssue(shareMPTID), j_);
             !isTesSuccess(ter))
         {
             // LCOV_EXCL_START
             JLOG(j_.error())  //
                 << "VaultDelete: failed to remove vault owner's MPToken"
-                << " MPTID=" << to_string(shareMPTID)  //
-                << " account=" << toBase58(account_)   //
+                << " MPTID=" << to_string(shareMPTID)   //
+                << " account=" << toBase58(accountID_)  //
                 << " with result: " << transToken(ter);
             return ter;
             // LCOV_EXCL_STOP
@@ -197,9 +207,20 @@ VaultDelete::doApply()
     // Destroy the vault.
     view().erase(vault);
 
-    associateAsset(*vault, asset);
-
     return tesSUCCESS;
+}
+
+void
+VaultDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+VaultDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

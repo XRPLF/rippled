@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/misc/CanonicalTXSet.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
@@ -9,9 +7,12 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/CachedSLEs.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 
 #include <mutex>
+#include <string_view>
 
 namespace xrpl {
 
@@ -33,8 +34,8 @@ class OpenLedger
 private:
     beast::Journal const j_;
     CachedSLEs& cache_;
-    std::mutex mutable modify_mutex_;
-    std::mutex mutable current_mutex_;
+    std::mutex mutable modifyMutex_;
+    std::mutex mutable currentMutex_;
     std::shared_ptr<OpenView const> current_;
 
 public:
@@ -149,7 +150,7 @@ public:
         bool retriesFirst,
         OrderedTxs& retries,
         ApplyFlags flags,
-        std::string const& suffix = "",
+        std::string_view suffix = "",
         modify_type const& f = {});
 
 private:
@@ -169,13 +170,13 @@ private:
         ApplyFlags flags,
         beast::Journal j);
 
-    enum Result { success, failure, retry };
+    enum class Result { Success, Failure, Retry };
 
     std::shared_ptr<OpenView>
     create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger);
 
     static Result
-    apply_one(
+    applyOne(
         Application& app,
         OpenView& view,
         std::shared_ptr<STTx const> const& tx,
@@ -206,8 +207,8 @@ OpenLedger::apply(
             auto const txId = tx->getTransactionID();
             if (check.txExists(txId))
                 continue;
-            auto const result = apply_one(app, view, tx, true, flags, j);
-            if (result == Result::retry)
+            auto const result = applyOne(app, view, tx, true, flags, j);
+            if (result == Result::Retry)
                 retries.insert(tx);
         }
         catch (std::exception const& e)
@@ -222,15 +223,15 @@ OpenLedger::apply(
         auto iter = retries.begin();
         while (iter != retries.end())
         {
-            switch (apply_one(app, view, iter->second, retry, flags, j))
+            switch (applyOne(app, view, iter->second, retry, flags, j))
             {
-                case Result::success:
+                case Result::Success:
                     ++changes;
                     [[fallthrough]];
-                case Result::failure:
+                case Result::Failure:
                     iter = retries.erase(iter);
                     break;
-                case Result::retry:
+                case Result::Retry:
                     ++iter;
             }
         }

@@ -44,8 +44,13 @@ suggestWords:
 words:
   - abempty
   - AMMID
+  - AMMMPT
+  - AMMMPToken
+  - AMMMPTokens
+  - AMMXRP
   - amt
   - amts
+  - archs
   - asnode
   - asynchrony
   - attestation
@@ -55,10 +60,12 @@ words:
   - autobridging
   - bimap
   - bindir
+  - blindings
   - bookdir
   - Bougalis
   - Britto
   - Btrfs
+  - Buildx
   - canonicality
   - changespq
   - checkme
@@ -67,6 +74,7 @@ words:
   - citardauq
   - clawback
   - clawbacks
+  - cmaketoolchain
   - coeffs
   - coldwallet
   - compr
@@ -77,6 +85,7 @@ words:
   - coro
   - coros
   - cowid
+  - cpack
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
@@ -87,17 +96,25 @@ words:
   - daria
   - dcmake
   - dearmor
+  - decryptor
+  - dedented
   - deleteme
   - demultiplexer
   - deserializaton
   - desync
   - desynced
   - determ
+  - disablerepo
   - distro
   - doxyfile
   - dxrpl
+  - elgamal
+  - enabled
+  - enablerepo
   - endmacro
+  - envrc
   - exceptioned
+  - EXPECT_STREQ
   - Falco
   - fcontext
   - finalizers
@@ -105,10 +122,12 @@ words:
   - fmtdur
   - fsanitize
   - funclets
+  - Gamal
   - gcov
   - gcovr
   - ghead
   - Gnutella
+  - godexsoft
   - gpgcheck
   - gpgkey
   - hotwallet
@@ -122,6 +141,7 @@ words:
   - iou
   - ious
   - isrdc
+  - isystem
   - itype
   - jemalloc
   - jlog
@@ -146,17 +166,22 @@ words:
   - lseq
   - lsmf
   - ltype
+  - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
+  - MPTAMM
+  - MPTDEX
   - Merkle
   - Metafuncton
   - misprediction
+  - missingok
   - mptbalance
   - MPTDEX
   - mptflags
   - mptid
   - mptissuance
   - mptissuanceid
+  - mptissue
   - mptoken
   - mptokenid
   - mptokenissuance
@@ -181,16 +206,21 @@ words:
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
+  - noreplace
   - noripple
+  - nostdinc
+  - notifempty
   - nudb
   - nullptr
   - nunl
   - Nyffenegger
+  - onlatest
   - ostr
   - pargs
   - partitioner
   - paychan
   - paychans
+  - Pedersen
   - permdex
   - perminute
   - permissioned
@@ -201,6 +231,7 @@ words:
   - preauthorize
   - preauthorizes
   - preclaim
+  - preun
   - protobuf
   - protos
   - ptrs
@@ -208,9 +239,15 @@ words:
   - pyenv
   - pyparsing
   - qalloc
+  - qbsprofile
   - queuable
   - Raphson
+  - rcflags
   - replayer
+  - rerandomize
+  - rerandomization
+  - rerandomized
+  - rerandomizes
   - rerere
   - retriable
   - RIPD
@@ -227,6 +264,7 @@ words:
   - sahyadri
   - Satoshi
   - scons
+  - Schnorr
   - secp
   - sendq
   - seqit
@@ -235,12 +273,15 @@ words:
   - sfields
   - shamap
   - shamapitem
+  - shfmt
+  - shlibs
   - sidechain
   - SIGGOOD
   - sle
   - sles
   - soci
   - socidb
+  - SRPMS
   - sslws
   - statsd
   - STATSDCOLLECTOR
@@ -254,6 +295,7 @@ words:
   - stvar
   - stvector
   - stxchainattestations
+  - summands
   - superpeer
   - superpeers
   - takergets
@@ -268,8 +310,9 @@ words:
   - txn
   - txns
   - txs
-  - UBSAN
   - ubsan
+  - UBSAN
+  - ufdio
   - umant
   - unacquired
   - unambiguity
@@ -277,6 +320,7 @@ words:
   - unauthorizing
   - unergonomic
   - unfetched
+  - unfindable
   - unflatten
   - unfund
   - unimpair
@@ -297,6 +341,7 @@ words:
   - venv
   - vfalco
   - vinnie
+  - wasmi
   - wextra
   - wptr
   - writeme
@@ -305,7 +350,6 @@ words:
   - xbridge
   - xchain
   - ximinez
-  - EXPECT_STREQ
   - XMACRO
   - xrpkuwait
   - xrpl
@@ -313,3 +357,4 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - CGNAT

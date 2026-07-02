@@ -1,5 +1,7 @@
 #pragma once
 
+// NOLINTBEGIN(readability-identifier-naming)
+
 #include <xrpl/protocol/KnownFormats.h>
 
 #include <map>
@@ -29,6 +31,8 @@ namespace xrpl {
 
     @ingroup protocol
 */
+// Protocol-critical, hundreds of usages
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LedgerEntryType : std::uint16_t {
 
 #pragma push_macro("LEDGER_ENTRY")
@@ -173,21 +177,24 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfMPTCanEscrow, 0x00000008)                                                                                      \
         LSF_FLAG(lsfMPTCanTrade, 0x00000010)                                                                                       \
         LSF_FLAG(lsfMPTCanTransfer, 0x00000020)                                                                                    \
-        LSF_FLAG(lsfMPTCanClawback, 0x00000040))                                                                                   \
+        LSF_FLAG(lsfMPTCanClawback, 0x00000040)                                                                                    \
+        LSF_FLAG(lsfMPTCanHoldConfidentialBalance, 0x00000080))                                                                         \
                                                                                                                                    \
     LEDGER_OBJECT(MPTokenIssuanceMutable,                                                                                          \
-        LSF_FLAG(lsmfMPTCanMutateCanLock, 0x00000002)                                                                              \
-        LSF_FLAG(lsmfMPTCanMutateRequireAuth, 0x00000004)                                                                          \
-        LSF_FLAG(lsmfMPTCanMutateCanEscrow, 0x00000008)                                                                            \
-        LSF_FLAG(lsmfMPTCanMutateCanTrade, 0x00000010)                                                                             \
-        LSF_FLAG(lsmfMPTCanMutateCanTransfer, 0x00000020)                                                                          \
-        LSF_FLAG(lsmfMPTCanMutateCanClawback, 0x00000040)                                                                          \
+        LSF_FLAG(lsmfMPTCanEnableCanLock, 0x00000002)                                                                              \
+        LSF_FLAG(lsmfMPTCanEnableRequireAuth, 0x00000004)                                                                          \
+        LSF_FLAG(lsmfMPTCanEnableCanEscrow, 0x00000008)                                                                            \
+        LSF_FLAG(lsmfMPTCanEnableCanTrade, 0x00000010)                                                                             \
+        LSF_FLAG(lsmfMPTCanEnableCanTransfer, 0x00000020)                                                                          \
+        LSF_FLAG(lsmfMPTCanEnableCanClawback, 0x00000040)                                                                          \
+        LSF_FLAG(lsmfMPTCannotEnableCanHoldConfidentialBalance, 0x00000080)                                                                          \
         LSF_FLAG(lsmfMPTCanMutateMetadata, 0x00010000)                                                                             \
-        LSF_FLAG(lsmfMPTCanMutateTransferFee, 0x00020000))                                                                         \
+        LSF_FLAG(lsmfMPTCanMutateTransferFee, 0x00020000))                                                            \
                                                                                                                                    \
     LEDGER_OBJECT(MPToken,                                                                                                         \
         LSF_FLAG2(lsfMPTLocked, 0x00000001)                                                                                        \
-        LSF_FLAG(lsfMPTAuthorized, 0x00000002))                                                                                    \
+        LSF_FLAG(lsfMPTAuthorized, 0x00000002)                                                                                     \
+        LSF_FLAG(lsfMPTAMM, 0x00000004))                                                                                           \
                                                                                                                                    \
     LEDGER_OBJECT(Credential,                                                                                                      \
         LSF_FLAG(lsfAccepted, 0x00010000))                                                                                         \
@@ -210,9 +217,11 @@ enum LedgerEntryType : std::uint16_t {
 //     lsfRequireDestTag = 0x00020000,
 //     ...
 // };
-#define TO_VALUE(name, value) name = value,
+#define TO_VALUE(name, value) name = (value),
 #define NULL_NAME(name, values) values
 #define NULL_OUTPUT(name, value)
+// Bitwise flag enum
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LedgerSpecificFlags : std::uint32_t { XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT) };
 
 // Create getter functions for each set of flags using Meyer's singleton pattern.
@@ -293,3 +302,5 @@ public:
 };
 
 }  // namespace xrpl
+
+// NOLINTEND(readability-identifier-naming)

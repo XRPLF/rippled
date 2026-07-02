@@ -1,20 +1,33 @@
 #include <xrpl/tx/transactors/lending/LoanDelete.h>
-//
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>  // IWYU pragma: keep
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
 bool
 LoanDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
 LoanDelete::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::zero)
+    if (ctx.tx[sfLoanID] == beast::kZero)
         return temINVALID;
 
     return tesSUCCESS;
@@ -41,7 +54,7 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
-    auto const loanBrokerSle = ctx.view.read(keylet::loanbroker(loanBrokerID));
+    auto const loanBrokerSle = ctx.view.read(keylet::loanBroker(loanBrokerID));
     if (!loanBrokerSle)
     {
         // should be impossible
@@ -72,7 +85,7 @@ LoanDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
-    auto const brokerSle = view.peek(keylet::loanbroker(brokerID));
+    auto const brokerSle = view.peek(keylet::loanBroker(brokerID));
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
@@ -102,14 +115,14 @@ LoanDelete::doApply()
     if (brokerSle->at(sfOwnerCount) == 0)
     {
         auto debtTotalProxy = brokerSle->at(sfDebtTotal);
-        if (*debtTotalProxy != beast::zero)
+        if (*debtTotalProxy != beast::kZero)
         {
             XRPL_ASSERT_PARTS(
                 roundToAsset(
                     vaultSle->at(sfAsset),
                     debtTotalProxy,
                     getAssetsTotalScale(vaultSle),
-                    Number::towards_zero) == beast::zero,
+                    Number::RoundingMode::TowardsZero) == beast::kZero,
                 "xrpl::LoanDelete::doApply",
                 "last loan, remaining debt rounds to zero");
             debtTotalProxy = 0;
@@ -124,6 +137,19 @@ LoanDelete::doApply()
     associateAsset(*vaultSle, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+LoanDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+LoanDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 //------------------------------------------------------------------------------

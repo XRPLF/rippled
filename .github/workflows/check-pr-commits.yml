@@ -1,0 +1,13 @@
+name: Check PR commits
+
+on:
+  pull_request_target:
+
+# The action needs to have write permissions to post comments on the PR.
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check_commits:
+    uses: XRPLF/actions/.github/workflows/check-pr-commits.yml@e2c7f400d1e85ae65dad552fd425169fbacca4a3

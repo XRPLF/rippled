@@ -4,9 +4,9 @@
 
 #include <chrono>
 #include <memory>
+#include <utility>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 /** A metric for reporting event timing.
 
@@ -25,16 +25,14 @@ public:
     /** Create a null metric.
         A null metric reports no information.
     */
-    Event()
-    {
-    }
+    Event() = default;
 
     /** Create the metric reference the specified implementation.
         Normally this won't be called directly. Instead, call the appropriate
         factory function in the Collector interface.
         @see Collector.
     */
-    explicit Event(std::shared_ptr<EventImpl> const& impl) : m_impl(impl)
+    explicit Event(std::shared_ptr<EventImpl> impl) : impl_(std::move(impl))
     {
     }
 
@@ -44,19 +42,18 @@ public:
     notify(std::chrono::duration<Rep, Period> const& value) const
     {
         using namespace std::chrono;
-        if (m_impl)
-            m_impl->notify(ceil<value_type>(value));
+        if (impl_)
+            impl_->notify(ceil<value_type>(value));
     }
 
-    std::shared_ptr<EventImpl> const&
+    [[nodiscard]] std::shared_ptr<EventImpl> const&
     impl() const
     {
-        return m_impl;
+        return impl_;
     }
 
 private:
-    std::shared_ptr<EventImpl> m_impl;
+    std::shared_ptr<EventImpl> impl_;
 };
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

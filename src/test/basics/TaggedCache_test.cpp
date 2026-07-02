@@ -1,9 +1,16 @@
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
+
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -17,7 +24,7 @@ then canonicalize a new object with the same key, make sure you get the
 original object.
 */
 
-class TaggedCache_test : public beast::unit_test::suite
+class TaggedCache_test : public beast::unit_test::Suite
 {
 public:
     // Mutable value type for testing fetch_and_modify
@@ -31,7 +38,7 @@ public:
     run() override
     {
         using namespace std::chrono_literals;
-        using namespace beast::severities;
+        using beast::Severity;
         test::SuiteJournal journal("TaggedCache_test", *this);
 
         TestStopwatch clock;
@@ -93,7 +100,7 @@ public:
             {
                 auto const p1 = c.fetch(3);
                 auto p2 = std::make_shared<Value>("three");
-                c.canonicalize_replace_client(3, p2);
+                c.canonicalizeReplaceClient(3, p2);
                 BEAST_EXPECT(p1.get() == p2.get());
             }
             ++clock;
@@ -124,7 +131,7 @@ public:
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Canonicalize a new object with the same key
                 auto p2 = std::make_shared<std::string>("four");
-                BEAST_EXPECT(c.canonicalize_replace_client(4, p2));
+                BEAST_EXPECT(c.canonicalizeReplaceClient(4, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
                 BEAST_EXPECT(c.getTrackSize() == 1);
                 // Make sure we get the original object
@@ -183,6 +190,114 @@ public:
             BEAST_EXPECT(p3 != nullptr);
             BEAST_EXPECT(p3.get() == p1.get());  // Same object identity
             BEAST_EXPECT(p3->counter == 52);
+        }
+
+        {
+            BEAST_EXPECT(!c.insert(5, "five"));
+            BEAST_EXPECT(c.getCacheSize() == 1);
+            BEAST_EXPECT(c.size() == 1);
+
+            {
+                auto const p1 = c.fetch(5);
+                BEAST_EXPECT(p1 != nullptr);
+                BEAST_EXPECT(c.getCacheSize() == 1);
+                BEAST_EXPECT(c.size() == 1);
+
+                // Advance the clock a lot
+                ++clock;
+                c.sweep();
+                BEAST_EXPECT(c.getCacheSize() == 0);
+                BEAST_EXPECT(c.size() == 1);
+
+                auto p2 = std::make_shared<std::string>("five_2");
+                BEAST_EXPECT(c.canonicalizeReplaceCache(5, p2));
+                BEAST_EXPECT(c.getCacheSize() == 1);
+                BEAST_EXPECT(c.size() == 1);
+                // Make sure the caller's original pointer is unchanged
+                BEAST_EXPECT(p1.get() != p2.get());
+                BEAST_EXPECT(*p2 == "five_2");
+
+                auto const p3 = c.fetch(5);
+                BEAST_EXPECT(p3 != nullptr);
+                BEAST_EXPECT(p3.get() == p2.get());
+                BEAST_EXPECT(p3.get() != p1.get());
+            }
+
+            ++clock;
+            c.sweep();
+            BEAST_EXPECT(c.getCacheSize() == 0);
+            BEAST_EXPECT(c.size() == 0);
+        }
+
+        {
+            testcase("intrptr");
+
+            struct MyRefCountObject : IntrusiveRefCounts
+            {
+                std::string data;
+
+                // Needed to support weak intrusive pointers
+                virtual void
+                partialDestructor() {};
+
+                MyRefCountObject() = default;
+                explicit MyRefCountObject(std::string data) : data(std::move(data))
+                {
+                }
+
+                bool
+                operator==(std::string const& other) const
+                {
+                    return data == other;
+                }
+            };
+
+            using IntrPtrCache = TaggedCache<
+                Key,
+                MyRefCountObject,
+                /*IsKeyCache*/ false,
+                intr_ptr::SharedWeakUnionPtr<MyRefCountObject>,
+                intr_ptr::SharedPtr<MyRefCountObject>>;
+
+            IntrPtrCache intrPtrCache("IntrPtrTest", 1, 1s, clock, journal);
+
+            intrPtrCache.canonicalizeReplaceCache(1, intr_ptr::makeShared<MyRefCountObject>("one"));
+            BEAST_EXPECT(intrPtrCache.getCacheSize() == 1);
+            BEAST_EXPECT(intrPtrCache.size() == 1);
+
+            {
+                {
+                    intrPtrCache.canonicalizeReplaceCache(
+                        1, intr_ptr::makeShared<MyRefCountObject>("one_replaced"));
+
+                    auto p = intrPtrCache.fetch(1);
+                    BEAST_EXPECT(*p == "one_replaced");
+
+                    // Advance the clock a lot
+                    ++clock;
+                    intrPtrCache.sweep();
+                    BEAST_EXPECT(intrPtrCache.getCacheSize() == 0);
+                    BEAST_EXPECT(intrPtrCache.size() == 1);
+
+                    intrPtrCache.canonicalizeReplaceCache(
+                        1, intr_ptr::makeShared<MyRefCountObject>("one_replaced_2"));
+
+                    auto p2 = intrPtrCache.fetch(1);
+                    BEAST_EXPECT(*p2 == "one_replaced_2");
+
+                    intrPtrCache.del(1, true);
+                }
+
+                intrPtrCache.canonicalizeReplaceCache(
+                    1, intr_ptr::makeShared<MyRefCountObject>("one_replaced_3"));
+                auto p3 = intrPtrCache.fetch(1);
+                BEAST_EXPECT(*p3 == "one_replaced_3");
+            }
+
+            ++clock;
+            intrPtrCache.sweep();
+            BEAST_EXPECT(intrPtrCache.getCacheSize() == 0);
+            BEAST_EXPECT(intrPtrCache.size() == 0);
         }
     }
 };
