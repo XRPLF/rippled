@@ -5930,8 +5930,11 @@ class Vault_test : public beast::unit_test::Suite
 
                 auto const dummyTx = *env.jt(noop(holder)).stx;
                 BEAST_EXPECT(
-                    removeEmptyHolding({sb, dummyTx}, holder.id(), MPTIssue(mpt.issuanceID()), j) ==
-                    tecHAS_OBLIGATIONS);
+                    removeEmptyHolding(
+                        ApplyViewContext::makeFromTx(sb, dummyTx),
+                        holder.id(),
+                        MPTIssue(mpt.issuanceID()),
+                        j) == tecHAS_OBLIGATIONS);
                 BEAST_EXPECT(sb.peek(tokenKeylet) != nullptr);
             }
             return true;

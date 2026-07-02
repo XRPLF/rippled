@@ -661,11 +661,6 @@ addEmptyHolding(
     if (ctx.view.read(index))
         return tecDUPLICATE;
 
-    auto const reserveCtx = accountID == ctx.txReserveContext.accountID()
-        ? ctx.txReserveContext
-        : ReserveContext::makeFromAccount(ctx.view, sleDst, nullptr);
-    SLE::pointer const sponsorSle = isPseudoAccount(sleDst) ? nullptr : reserveCtx.sponsorSle;
-
     // Can the account cover the trust line reserve ?
     if (auto const ret =
             checkInsufficientReserve(ctx, sleDst, priorBalance, {.ownerCountDelta = 1}, journal);
@@ -673,7 +668,7 @@ addEmptyHolding(
         return tecNO_LINE_INSUF_RESERVE;
 
     return trustCreate(
-        ctx.view,
+        ctx,
         high,
         srcId,
         dstId,
@@ -687,7 +682,6 @@ addEmptyHolding(
         /*saLimit=*/STAmount{Issue{currency, dstId}},
         /*uQualityIn=*/0,
         /*uQualityOut=*/0,
-        sponsorSle,
         journal);
 }
 

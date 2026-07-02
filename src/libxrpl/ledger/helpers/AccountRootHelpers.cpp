@@ -315,10 +315,13 @@ checkInsufficientReserve(
     Adjustment adj,
     beast::Journal j)
 {
-    auto const sponsorSle = ctx.txReserveContext.sponsorSle;  // should not be modified here
-    XRPL_ASSERT(
-        ctx.txReserveContext.accountID() == accSle->getAccountID(sfAccount),
-        "xrpl::checkInsufficientReserve : account sle matches context");
+    // XLS-68: the transaction-level reserve sponsor covers only the objects
+    // owned by the tx.Account. For any other account (e.g. a pseudo-account or
+    // a counterparty), the sponsor does not apply and the account must cover
+    // its own reserve.
+    auto const sponsorSle = accSle->getAccountID(sfAccount) == ctx.txReserveContext.accountID()
+        ? ctx.txReserveContext.sponsorSle
+        : nullptr;
     if (sponsorSle)
     {
         auto const sle = ctx.view.read(

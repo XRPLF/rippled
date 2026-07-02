@@ -679,9 +679,10 @@ TrustSet::doApply()
 
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 
-        // Create a new ripple line.
+        // Create a new ripple line. The ApplyViewContext overload derives the
+        // sponsor (XLS-68: only when the reserved account is the tx.Account).
         terResult = trustCreate(
-            view(),
+            applyViewContext,
             bHigh,
             accountID_,
             uDstAccountID,
@@ -695,7 +696,6 @@ TrustSet::doApply()
             saLimitAllow,  // Limit for who is being charged.
             uQualityIn,
             uQualityOut,
-            sponsorSle,
             viewJ);
     }
 

@@ -152,6 +152,60 @@ trustCreate(
     SLE::ref sponsorSle,
     beast::Journal j);
 
+/** Create a trust line, deriving the reserve sponsor from the apply-view context.
+
+    Convenience overload for transactor-level callers that hold an
+    ApplyViewContext. Per XLS-68, the transaction-level sponsor is applied only
+    when `sleAccount` is the tx.Account; otherwise no sponsor is recorded. The
+    bare ApplyView overload above remains for the payment engine, which has no
+    reserve context (and always creates unsponsored trust lines).
+*/
+[[nodiscard]] inline TER
+trustCreate(
+    ApplyViewContext ctx,
+    bool const bSrcHigh,
+    AccountID const& uSrcAccountID,
+    AccountID const& uDstAccountID,
+    uint256 const& uIndex,      // --> ripple state entry
+    SLE::ref sleAccount,        // --> the account being set.
+    bool const bAuth,           // --> authorize account.
+    bool const bNoRipple,       // --> others cannot ripple through
+    bool const bFreeze,         // --> funds cannot leave
+    bool bDeepFreeze,           // --> can neither receive nor send funds
+    STAmount const& saBalance,  // --> balance of account being set.
+                                // Issuer should be noAccount()
+    STAmount const& saLimit,    // --> limit for account being set.
+                                // Issuer should be the account being set.
+    std::uint32_t uQualityIn,
+    std::uint32_t uQualityOut,
+    beast::Journal j)
+{
+    // XLS-68: the transaction-level reserve sponsor covers only the tx.Account's
+    // own objects. sleAccount is the account taking on the trust line reserve,
+    // so the sponsor applies only when it is the tx.Account.
+    SLE::pointer const sponsorSle =
+        sleAccount->getAccountID(sfAccount) == ctx.txReserveContext.accountID()
+        ? ctx.txReserveContext.sponsorSle
+        : nullptr;
+    return trustCreate(
+        ctx.view,
+        bSrcHigh,
+        uSrcAccountID,
+        uDstAccountID,
+        uIndex,
+        sleAccount,
+        bAuth,
+        bNoRipple,
+        bFreeze,
+        bDeepFreeze,
+        saBalance,
+        saLimit,
+        uQualityIn,
+        uQualityOut,
+        sponsorSle,
+        j);
+}
+
 [[nodiscard]] TER
 trustDelete(
     ApplyView& view,

@@ -59,8 +59,6 @@ escrowUnlockApplyHelper<Issue>(
     if (!ctx.view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsorSle = ctx.txReserveContext.sponsorSle;
-
         if (auto const ret =
                 checkInsufficientReserve(ctx, sleDest, xrpBalance, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
@@ -75,8 +73,10 @@ escrowUnlockApplyHelper<Issue>(
         STAmount initialBalance(issue);
         initialBalance.get<Issue>().account = noAccount();
 
+        // The ApplyViewContext overload derives the sponsor (XLS-68: only when
+        // sleDest is the tx.Account, which createAsset already guarantees).
         if (TER const ter = trustCreate(
-                ctx.view,                            // payment sandbox
+                ctx,                                 // apply-view context
                 recvLow,                             // is dest low?
                 issuer,                              // source
                 receiver,                            // destination
@@ -90,7 +90,6 @@ escrowUnlockApplyHelper<Issue>(
                 Issue(currency, receiver),           // limit of zero
                 0,                                   // quality in
                 0,                                   // quality out
-                sponsorSle,                          // sponsor
                 journal);                            // journal
             !isTesSuccess(ter))
         {

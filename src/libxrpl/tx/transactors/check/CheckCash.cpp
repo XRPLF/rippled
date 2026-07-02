@@ -390,7 +390,6 @@ CheckCash::doApply()
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
             auto applyViewContext = ApplyViewContext::makeFromTx(psb, ctx_.tx);
-            auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
@@ -442,8 +441,10 @@ CheckCash::doApply()
                         STAmount initialBalance(flowDeliver.asset());
                         initialBalance.get<Issue>().account = noAccount();
 
+                        // The ApplyViewContext overload derives the sponsor
+                        // (XLS-68: only when sleDst is the tx.Account).
                         if (TER const ter = trustCreate(
-                                psb,                                // payment sandbox
+                                applyViewContext,                   // apply-view context
                                 destLow,                            // is dest low?
                                 deliverIssuer,                      // source
                                 accountID_,                         // destination
@@ -457,7 +458,6 @@ CheckCash::doApply()
                                 Issue(currency, accountID_),        // limit of zero
                                 0,                                  // quality in
                                 0,                                  // quality out
-                                sponsorSle,                         // sponsor
                                 viewJ);                             // journal
                             !isTesSuccess(ter))
                         {

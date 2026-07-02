@@ -80,13 +80,15 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
 
 /** Check if an account has insufficient reserve.
  *
- *  @param view The ledger view to read from
- *  @param tx The transaction being processed
+ *  The transaction-level reserve sponsor (if any) is taken from
+ *  `ctx.txReserveContext` and, per XLS-68, is only applied when `accSle` is the
+ *  tx.Account. For any other account the sponsor is ignored and the account
+ *  must cover its own reserve.
+ *
+ *  @param ctx The apply-view context (provides the view, tx and reserve context)
  *  @param accSle The account's ledger entry
  *  @param accBalance The account's balance
- *  @param sponsorSle The sponsor's ledger entry (if applicable)
- *  @param ownerCountAdj Adjustment to the owner count
- *  @param accountCountAdj Adjustment to the account count (default: 0)
+ *  @param adj Adjustment to the owner/account counts
  *  @param j Journal for logging (default: null sink)
  *  @return Transaction result code
  */
