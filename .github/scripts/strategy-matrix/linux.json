@@ -43,6 +43,13 @@
         "suffix": "unity",
         "extra_cmake_args": "-Dunity=ON",
         "exclude_event_types": ["pull_request"]
+      },
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "suffix": "supported",
+        "force_supported": true
       }
     ],
 
@@ -63,6 +70,16 @@
     ]
   },
   "package_configs": {
+    "ubuntu": [
+      {
+        "compiler": ["gcc"],
+        "build_type": ["Release"],
+        "arch": ["amd64"],
+        "suffix": "supported",
+        "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-577d745"
+      }
+    ],
+
     "debian": [
       {
         "compiler": ["gcc"],
