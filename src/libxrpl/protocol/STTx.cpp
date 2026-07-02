@@ -596,6 +596,7 @@ STTx::getBatchTransactionIDs() const
     XRPL_ASSERT(
         batchTxnIds_->size() == getFieldArray(sfRawTransactions).size(),
         "STTx::getBatchTransactionIDs : batch transaction IDs size mismatch");
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access): guarded by assert above
     return *batchTxnIds_;
 }
 
