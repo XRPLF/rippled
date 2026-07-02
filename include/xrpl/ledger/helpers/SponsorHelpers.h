@@ -42,12 +42,12 @@ getTxReserveSponsorAccountID(STTx const& tx)
 }
 
 inline std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyView& view, STTx const& tx)
+getTxReserveSponsor(ApplyViewContext ctx)
 {
-    auto const sponsorID = getTxReserveSponsorAccountID(tx);
+    auto const sponsorID = getTxReserveSponsorAccountID(ctx.tx);
     if (sponsorID)
     {
-        auto sle = view.peek(keylet::account(*sponsorID));
+        auto sle = ctx.view.peek(keylet::account(*sponsorID));
 
         // already checked in Transactor::checkSponsor
         if (!sle)
@@ -213,6 +213,15 @@ getLedgerEntryOwnerCount(T const& sle)
         // Vaults require 2 owner counts (the vault and a pseudo-account)
         case ltVAULT:
             return 2;
+        case ltSIGNER_LIST: {
+            // Mirror SignerListSet's owner-count accounting so that create and
+            // delete agree. Modern lists (post-MultiSignReserve) carry the
+            // lsfOneOwnerCount flag and cost a single owner count. Legacy
+            // pre-MultiSignReserve lists cost 2 + signer_count owner counts
+            if (sle->isFlag(lsfOneOwnerCount))
+                return 1;
+            return 2 + static_cast<std::uint32_t>(sle->getFieldArray(sfSignerEntries).size());
+        }
         default:
             return 1;
     }

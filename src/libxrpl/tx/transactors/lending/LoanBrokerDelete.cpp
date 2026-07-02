@@ -159,7 +159,7 @@ LoanBrokerDelete::doApply()
             return ter;
     }
 
-    if (auto ter = removeEmptyHolding(view(), tx, brokerPseudoID, vaultAsset, j_))
+    if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
     auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));

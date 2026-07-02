@@ -2613,7 +2613,6 @@ class Delegate_test : public beast::unit_test::Suite
             {"NFTokenModify", featureDynamicNFT},
             {"PermissionedDomainSet", featurePermissionedDomains},
             {"PermissionedDomainDelete", featurePermissionedDomains},
-            {"SponsorshipTransfer", featureSponsor},
             {"SponsorshipSet", featureSponsor},
         };
 
@@ -2750,9 +2749,7 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        // Includes the five confidential MPT transaction types, which are
-        // explicitly marked Delegable in transactions.macro.
-        std::size_t const expectedDelegableCount = 58;
+        std::size_t const expectedDelegableCount = 57;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,

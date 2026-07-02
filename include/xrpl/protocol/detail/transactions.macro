@@ -1168,7 +1168,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
 #   include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
 #endif
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
-    Delegation::Delegable,
+    Delegation::NotDelegable,
     featureSponsor,
     MayModifyVault,
     ({

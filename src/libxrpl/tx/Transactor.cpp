@@ -444,6 +444,10 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     if (!tx.isFieldPresent(sfSponsor))
         return tesSUCCESS;
 
+    // Reserve sponsorship with permissioned delegation is disallowed.
+    if (tx.isFieldPresent(sfDelegate) && isReserveSponsored(tx))
+        return terNO_SPONSORSHIP;
+
     if (auto const sponsorSle = getTxReserveSponsor(view, tx); !sponsorSle)
         return terNO_ACCOUNT;
 
@@ -452,8 +456,10 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     if (hasSponsorSignature)
         return tesSUCCESS;
 
+    // If the transaction contains sfDelegate, the Sponsorship object should be
+    // between the sponsor and the delegate.
     auto const sponsorshipSle =
-        view.read(keylet::sponsorship(tx.getAccountID(sfSponsor), tx.getAccountID(sfAccount)));
+        view.read(keylet::sponsorship(tx.getAccountID(sfSponsor), tx.getInitiator()));
 
     // sponsorship object missing for pre-funded tx
     if (!sponsorshipSle)
@@ -1368,7 +1374,7 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
     if (tx.isFieldPresent(sfSponsor) && isFeeSponsored(tx))
     {
         auto const sponsorID = tx.getAccountID(sfSponsor);
-        auto const sponseeID = tx.getAccountID(sfAccount);
+        auto const sponseeID = tx.getInitiator();
         auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeID);
 
         // if pre-funded sponsorship exists, prefer it

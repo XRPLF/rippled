@@ -207,7 +207,7 @@ SponsorshipSet::doApply()
 
     bool const hasPositiveFeeAmount = feeAmount.has_value() && *feeAmount > beast::kZero;
 
-    auto reserveSponsorAccSle = getTxReserveSponsor(view(), ctx_.tx);
+    auto reserveSponsorAccSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!reserveSponsorAccSle)
         return reserveSponsorAccSle.error();  // LCOV_EXCL_LINE
 
@@ -226,8 +226,7 @@ SponsorshipSet::doApply()
             sponsorBalanceAfterFee -= *feeAmount;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(),
-                ctx_.tx,
+                ctx_.getApplyViewContext(),
                 sponsorAccSle,
                 sponsorBalanceAfterFee.xrp(),
                 *reserveSponsorAccSle,
@@ -294,8 +293,7 @@ SponsorshipSet::doApply()
             sponsorBalanceAfterFee -= feeAmountDelta;
 
             if (auto const ret = checkInsufficientReserve(
-                    ctx_.view(),
-                    ctx_.tx,
+                    ctx_.getApplyViewContext(),
                     sponsorAccSle,
                     sponsorBalanceAfterFee.xrp(),
                     *reserveSponsorAccSle,

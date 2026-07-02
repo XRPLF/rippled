@@ -127,6 +127,15 @@ public:
     TER
     checkInvariants(TER const result, XRPAmount const fee);
 
+    ApplyViewContext
+    getApplyViewContext()
+    {
+        XRPL_ASSERT(
+            view_.has_value(),
+            "xrpl::ApplyContext::getApplyViewContext : view_ emplaced in constructor");
+        return {.view = *view_, .tx = tx};
+    }
+
 private:
     static TER
     failInvariantCheck(TER const result);

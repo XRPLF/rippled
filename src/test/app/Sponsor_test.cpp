@@ -802,55 +802,88 @@ public:
         testcase("Transfer Sponsor");
         using namespace test::jtx;
 
+        // Verify preflight checks
         {
-            // invalid fields
             Env env{*this, testableAmendments()};
             Account const alice("alice");
             Account const bob("bob");
-            Account const sponsor1("sponsor1");
-            env.fund(XRP(10000), alice, bob, sponsor1);
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
-            env(sponsor::transfer(
-                    alice, (tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd) + 1),
-                Ter(temINVALID_FLAG));
+            // Test invalid flags for SponsorshipTransfer
+            {
+                // Invalid flag is provided
+                env(sponsor::transfer(
+                        alice,
+                        (tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd) + 1),
+                    Ter(temINVALID_FLAG));
 
-            // invalid combination of flags
-            for (auto flag : {
-                     tfSponsorshipCreate | tfSponsorshipReassign,
-                     tfSponsorshipCreate | tfSponsorshipEnd,
-                     tfSponsorshipReassign | tfSponsorshipEnd,
-                     tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd,
-                 })
-                env(sponsor::transfer(alice, flag), Ter(temINVALID_FLAG));
+                // No SponsorshipTransfer flag is provided
+                env(sponsor::transfer(alice, 0), Ter(temINVALID_FLAG));
 
-            // invalid tfSponsorshipCreate
-            // no sponsor field present
-            env(sponsor::transfer(alice, tfSponsorshipCreate), Ter(temINVALID_FLAG));
-            // sponsee field present
-            env(sponsor::transfer(alice, tfSponsorshipCreate),
-                sponsor::SponseeAcc(bob),
-                sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(temMALFORMED));
+                // Only one of the three valid flags can be set.
+                // Setting more than one flag is invalid
+                for (auto flag : {
+                         tfSponsorshipCreate | tfSponsorshipReassign,
+                         tfSponsorshipCreate | tfSponsorshipEnd,
+                         tfSponsorshipReassign | tfSponsorshipEnd,
+                         tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd,
+                     })
+                    env(sponsor::transfer(alice, flag), Ter(temINVALID_FLAG));
+            }
 
-            // invalid tfSponsorshipReassign
-            // no sponsor field present
-            env(sponsor::transfer(alice, tfSponsorshipReassign), Ter(temINVALID_FLAG));
-            // sponsee field present
-            env(sponsor::transfer(alice, tfSponsorshipReassign),
-                sponsor::SponseeAcc(bob),
-                sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(temMALFORMED));
+            // Malformed tests for tfSponsorshipCreate
+            {
+                // No sponsor field present
+                env(sponsor::transfer(alice, tfSponsorshipCreate), Ter(temMALFORMED));
 
-            // invalid tfSponsorshipEnd
-            // sponsor field present
-            env(sponsor::transfer(alice, tfSponsorshipEnd),
-                sponsor::As(sponsor1, spfSponsorReserve),
-                Ter(temINVALID_FLAG));
-            // account = sponsee
-            env(sponsor::transfer(alice, tfSponsorshipEnd),
-                sponsor::SponseeAcc(alice),
-                Ter(temMALFORMED));
+                // Sponsor field present without spfSponsorReserve
+                env(sponsor::transfer(alice, tfSponsorshipCreate),
+                    sponsor::As(sponsor, spfSponsorFee),
+                    Ter(temINVALID_FLAG));
+
+                // Sponsee field present
+                env(sponsor::transfer(alice, tfSponsorshipCreate),
+                    sponsor::SponseeAcc(bob),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(temMALFORMED));
+            }
+
+            // Malformed tests for tfSponsorshipReassign
+            {
+                // No sponsor field present
+                env(sponsor::transfer(alice, tfSponsorshipReassign), Ter(temMALFORMED));
+
+                // Sponsor field present without spfSponsorReserve
+                env(sponsor::transfer(alice, tfSponsorshipReassign),
+                    sponsor::As(sponsor, spfSponsorFee),
+                    Ter(temINVALID_FLAG));
+
+                // Sponsee field present
+                env(sponsor::transfer(alice, tfSponsorshipReassign),
+                    sponsor::SponseeAcc(bob),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(temMALFORMED));
+            }
+
+            // Malformed tests for tfSponsorshipEnd
+            {
+                // Sponsor field present
+                env(sponsor::transfer(alice, tfSponsorshipEnd),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Ter(temMALFORMED));
+
+                // SponsorFlags field present
+                auto tx = sponsor::transfer(alice, tfSponsorshipEnd);
+                tx[sfSponsorFlags.jsonName] = spfSponsorFee;
+                env(tx, Ter(temINVALID_FLAG));
+
+                // Account = Sponsee
+                env(sponsor::transfer(alice, tfSponsorshipEnd),
+                    sponsor::SponseeAcc(alice),
+                    Ter(temMALFORMED));
+            }
         }
 
         {
@@ -1654,12 +1687,6 @@ public:
             env.fund(XRP(10000), alice, bob, sponsor);
             env.close();
 
-            auto const sponsorFeeBalance = [&](Account const& sponsor, Account const& sponsee) {
-                return env.le(keylet::sponsorship(sponsor, sponsee))
-                    ->getFieldAmount(sfFeeAmount)
-                    .xrp();
-            };
-
             {
                 // Fee should be checked before sponsor permission, otherwise a tec
                 // result from a later check could cause context reset to pay Fee.
@@ -1685,7 +1712,7 @@ public:
                 auto aliceBalance = env.balance(alice);
                 auto bobBalance = env.balance(bob);
                 auto sponsorBalance = env.balance(sponsor);
-                auto sponsorFee = sponsorFeeBalance(sponsor, alice);
+                auto sponsorFee = sponsor::sponsorFeeBalance(env, sponsor, alice);
 
                 auto const sendAmt = XRP(100);
                 auto const feeAmt = XRP(10);
@@ -1695,7 +1722,8 @@ public:
                 BEAST_EXPECT(env.balance(alice) == aliceBalance - sendAmt);
                 BEAST_EXPECT(env.balance(bob) == bobBalance + sendAmt);
                 BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
-                BEAST_EXPECT(sponsorFeeBalance(sponsor, alice) == sponsorFee - feeAmt);
+                BEAST_EXPECT(
+                    sponsor::sponsorFeeBalance(env, sponsor, alice) == sponsorFee - feeAmt);
             }
 
             {
@@ -1705,7 +1733,7 @@ public:
                     auto aliceBalance = env.balance(alice);
                     auto bobBalance = env.balance(bob);
                     auto sponsorBalance = env.balance(sponsor);
-                    auto sponsorFee = sponsorFeeBalance(sponsor, alice);
+                    auto sponsorFee = sponsor::sponsorFeeBalance(env, sponsor, alice);
 
                     env(pay(alice, bob, XRP(100)),
                         Fee(XRP(90) + drops(1)),
@@ -1716,7 +1744,7 @@ public:
                     BEAST_EXPECT(env.balance(alice) == aliceBalance);
                     BEAST_EXPECT(env.balance(bob) == bobBalance);
                     BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
-                    BEAST_EXPECT(sponsorFeeBalance(sponsor, alice) == sponsorFee);
+                    BEAST_EXPECT(sponsor::sponsorFeeBalance(env, sponsor, alice) == sponsorFee);
                 }
                 // use all FeeAmount
                 {
@@ -1749,7 +1777,7 @@ public:
                     auto aliceBalance = env.balance(alice);
                     auto bobBalance = env.balance(bob);
                     auto sponsorBalance = env.balance(sponsor);
-                    auto sponsorFee = sponsorFeeBalance(sponsor, alice);
+                    auto sponsorFee = sponsor::sponsorFeeBalance(env, sponsor, alice);
 
                     env(pay(alice, bob, XRP(100)),
                         Fee(XRP(1) + drops(1)),
@@ -1760,7 +1788,7 @@ public:
                     BEAST_EXPECT(env.balance(alice) == aliceBalance);
                     BEAST_EXPECT(env.balance(bob) == bobBalance);
                     BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
-                    BEAST_EXPECT(sponsorFeeBalance(sponsor, alice) == sponsorFee);
+                    BEAST_EXPECT(sponsor::sponsorFeeBalance(env, sponsor, alice) == sponsorFee);
                 }
             }
 
@@ -1770,7 +1798,7 @@ public:
                 auto aliceBalance = env.balance(alice);
                 auto bobBalance = env.balance(bob);
                 auto sponsorBalance = env.balance(sponsor);
-                auto sponsorFee = sponsorFeeBalance(sponsor, alice);
+                auto sponsorFee = sponsor::sponsorFeeBalance(env, sponsor, alice);
                 auto const feeAmt = XRP(1);
 
                 env(pay(alice, bob, XRP(20000)),
@@ -1782,7 +1810,8 @@ public:
                 BEAST_EXPECT(env.balance(alice) == aliceBalance);
                 BEAST_EXPECT(env.balance(bob) == bobBalance);
                 BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
-                BEAST_EXPECT(sponsorFeeBalance(sponsor, alice) == sponsorFee - feeAmt);
+                BEAST_EXPECT(
+                    sponsor::sponsorFeeBalance(env, sponsor, alice) == sponsorFee - feeAmt);
             }
 
             // make sfFeeAmount absent if tec error and all Fee is paid
@@ -1794,7 +1823,7 @@ public:
 
                 BEAST_EXPECT(
                     env.le(keylet::sponsorship(sponsor, alice))->isFieldPresent(sfFeeAmount));
-                auto sponsorAvailableFee = sponsorFeeBalance(sponsor, alice);
+                auto sponsorAvailableFee = sponsor::sponsorFeeBalance(env, sponsor, alice);
                 env(check::cancel(alice, uint256(1)),
                     Fee(sponsorAvailableFee),
                     sponsor::As(sponsor, spfSponsorFee),
@@ -3409,6 +3438,77 @@ public:
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
     }
 
+    // Legacy (pre-MultiSignReserve) SignerLists lack lsfOneOwnerCount and cost
+    // 2 + signer_count owner units, whereas modern lists cost 1.
+    void
+    testLegacySignerListReserve()
+    {
+        testcase("Legacy SignerList sponsorship reserve");
+        using namespace test::jtx;
+
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+        Account const sponsor("sponsor");
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(1000000), alice, bob, carol, dave, sponsor);
+        env.close();
+
+        // Modern 3-signer list: weight 1, lsfOneOwnerCount set.
+        env(signers(alice, 1, {{bob, 1}, {carol, 1}, {dave, 1}}));
+        env.close();
+
+        auto const signerListKeylet = keylet::signerList(alice.id());
+        auto const sponsorKeylet = keylet::sponsorship(sponsor.id(), alice.id());
+        std::uint32_t const legacyWeight = 5;  // 2 + 3 signers
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+        // Pre-fund exactly the legacy weight
+        env(sponsor::set_reserve(sponsor, 0, legacyWeight), sponsor::SponseeAcc(alice));
+        env.close();
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(sle->getFieldU32(sfRemainingOwnerCount) == legacyWeight);
+
+        // Synthesize a pre-MultiSignReserve list: clear lsfOneOwnerCount and
+        // restore the owner's OwnerCount to the legacy weight.
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            auto signerList = std::make_shared<SLE>(*view.read(signerListKeylet));
+            auto account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+            signerList->clearFlag(lsfOneOwnerCount);
+            account->setFieldU32(sfOwnerCount, legacyWeight);
+            view.rawReplace(signerList);
+            view.rawReplace(account);
+            return true;
+        });
+        if (auto const sle = env.le(signerListKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT((sle->getFlags() & lsfOneOwnerCount) == 0);
+        BEAST_EXPECT(ownerCount(env, alice) == legacyWeight);
+
+        // Create must charge the full legacy weight (5), not 1: the bug bumped
+        // the counters by 1 and left 4 pre-funded units unspent.
+        env(sponsor::transfer(alice, tfSponsorshipCreate, signerListKeylet.key),
+            sponsor::As(sponsor, spfSponsorReserve));
+
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == legacyWeight);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == legacyWeight);
+        // All pre-funded units consumed (drained to absent).
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+
+        // Delete unwinds the legacy weight; create bumped by the same amount, so
+        // the counters return to 0 (the bug bumped by 1 -> underflow on delete).
+        env(signers(alice, NoneT()));
+
+        BEAST_EXPECT(!env.le(signerListKeylet));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        if (auto const sle = env.le(sponsorKeylet); BEAST_EXPECT(sle))
+            BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
+    }
+
     void
     testSponsoredTrustLineNoFreeReserve()
     {
@@ -3852,7 +3952,7 @@ public:
         Account const carol("carol");
 
         //
-        // SponsorshipTransfer
+        // SponsorshipTransfer is not delegable.
         //
         {
             Env env{*this, testableAmendments()};
@@ -3869,20 +3969,12 @@ public:
                 sponsor::As(bob, spfSponsorReserve),
                 Sig(sfSponsorSignature, bob),
                 delegate::As(carol),
-                Ter(terNO_DELEGATE_PERMISSION));
+                Ter(temINVALID));
 
-            env(delegate::set(alice, carol, {"SponsorshipTransfer"}));
-            env.close();
-
-            env(sponsor::transfer(alice, tfSponsorshipCreate, keylet.key),
-                sponsor::As(bob, spfSponsorReserve),
-                Sig(sfSponsorSignature, bob),
-                delegate::As(carol),
-                Ter(tesSUCCESS));
-            env.close();
+            env(delegate::set(alice, carol, {"SponsorshipTransfer"}), Ter(temMALFORMED));
         }
         //
-        // SponsorshipSet
+        // test send SponsorshipSet on other's behalf
         //
         {
             Env env{*this, testableAmendments()};
@@ -3903,107 +3995,126 @@ public:
                 Ter(tesSUCCESS));
             env.close();
         }
+    }
 
-        //
-        // Permission SponsorFee
-        //
+    void
+    testDelegateBlockReserveSponsor()
+    {
+        testcase("Delegate Block Reserve Sponsor");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const sponsor("sponsor");
+
+        // Co-signed reserve sponsorship is blocked for delegated transactions.
         {
             Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), alice, bob, carol);
-            env.close();
-            auto const testFeePermission = [&](TER result) {
-                // FeeAmount
-                env(sponsor::set(alice, 0, std::nullopt, XRP(100)),
-                    sponsor::SponseeAcc(bob),
-                    delegate::As(carol),
-                    Ter(result));
-                // MaxFee
-                env(sponsor::set(alice, 0, std::nullopt, std::nullopt, XRP(100)),
-                    sponsor::SponseeAcc(bob),
-                    delegate::As(carol),
-                    Ter(result));
-                // SetRequireSignForFee flag
-                env(sponsor::set(alice, tfSponsorshipSetRequireSignForFee),
-                    sponsor::SponseeAcc(bob),
-                    delegate::As(carol),
-                    Ter(result));
-                // ClearRequireSignForFee flag
-                env(sponsor::set(alice, tfSponsorshipClearRequireSignForFee),
-                    sponsor::SponseeAcc(bob),
-                    delegate::As(carol),
-                    Ter(result));
-                env.close();
-            };
-
-            // no delegated
-            testFeePermission(terNO_DELEGATE_PERMISSION);
-
-            // set non-SponsorFee Permission
-            env(delegate::set(alice, carol, {"SponsorReserve"}));
+            env.fund(XRP(1000000), alice, bob, carol, sponsor);
             env.close();
 
-            testFeePermission(terNO_DELEGATE_PERMISSION);
-
-            // set SponsorFee Permission
-            env(delegate::set(alice, carol, {"SponsorFee"}));
+            env(delegate::set(alice, bob, {"CheckCreate"}));
             env.close();
 
-            testFeePermission(tesSUCCESS);
-
-            // test with SponsorReserve (should failed)
-            env(sponsor::set(alice, 0, 100, XRP(100)),
-                sponsor::SponseeAcc(bob),
-                delegate::As(carol),
-                Ter(terNO_DELEGATE_PERMISSION));
+            env(check::create(alice, carol, XRP(1)),
+                delegate::As(bob),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(terNO_SPONSORSHIP));
         }
 
-        //
-        // Permission SponsorReserve
-        //
+        // Pre-funded reserve sponsorship is blocked for delegated transactions.
         {
             Env env{*this, testableAmendments()};
-            env.fund(XRP(1000000), alice, bob, carol);
+            env.fund(XRP(1000000), alice, bob, carol, sponsor);
             env.close();
 
-            auto const testReservePermission = [&](TER result) {
-                // ReserveCount
-                env(sponsor::set(alice, 0, 100),
-                    sponsor::SponseeAcc(bob),
-                    delegate::As(carol),
-                    Ter(result));
-                // SetRequireSignForReserve flag
-                env(sponsor::set(alice, tfSponsorshipSetRequireSignForReserve),
-                    sponsor::SponseeAcc(bob),
-                    delegate::As(carol),
-                    Ter(result));
-                // ClearRequireSignForReserve flag
-                env(sponsor::set(alice, tfSponsorshipClearRequireSignForReserve),
-                    sponsor::SponseeAcc(bob),
-                    delegate::As(carol),
-                    Ter(result));
-                env.close();
-            };
-
-            // no delegated
-            testReservePermission(terNO_DELEGATE_PERMISSION);
-
-            // set non-SponsorReserve Permission
-            env(delegate::set(alice, carol, {"SponsorFee"}));
+            env(delegate::set(alice, bob, {"CheckCreate"}));
+            env(sponsor::set_reserve(sponsor, 0, 1), sponsor::SponseeAcc(bob));
             env.close();
 
-            testReservePermission(terNO_DELEGATE_PERMISSION);
+            env(check::create(alice, carol, XRP(1)),
+                delegate::As(bob),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Ter(terNO_SPONSORSHIP));
+        }
+    }
 
-            // set SponsorReserve Permission
-            env(delegate::set(alice, carol, {"SponsorReserve"}));
+    void
+    testDelegateSponsorFeePayer()
+    {
+        testcase("Delegate Sponsor Fee Payer");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const sponsor("sponsor");
+
+        // Co-signing: the sponsor account pays the delegated transaction fee.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10000), alice, bob, carol, sponsor);
             env.close();
 
-            testReservePermission(tesSUCCESS);
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
 
-            // test with SponsorFee (should failed)
-            env(sponsor::set(alice, 0, 100, XRP(100)),
-                sponsor::SponseeAcc(bob),
-                delegate::As(carol),
-                Ter(terNO_DELEGATE_PERMISSION));
+            auto const aliceBalance = env.balance(alice);
+            auto const bobBalance = env.balance(bob);
+            auto const carolBalance = env.balance(carol);
+            auto const sponsorBalance = env.balance(sponsor);
+            auto const sendAmt = XRP(100);
+            auto const feeAmt = XRP(10);
+
+            env(pay(alice, carol, sendAmt),
+                delegate::As(bob),
+                Fee(feeAmt),
+                sponsor::As(sponsor, spfSponsorFee),
+                Sig(sfSponsorSignature, sponsor));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice) == aliceBalance - sendAmt);
+            BEAST_EXPECT(env.balance(bob) == bobBalance);
+            BEAST_EXPECT(env.balance(carol) == carolBalance + sendAmt);
+            // sponsor pays the fee
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalance - feeAmt);
+        }
+
+        // Pre-funded: the Sponsorship object for sponsorship(sponsor, delegate)
+        // pays the fee.
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10000), alice, bob, carol, sponsor);
+            env.close();
+
+            env(delegate::set(alice, bob, {"Payment"}));
+            env(sponsor::set_fee(sponsor, 0, XRP(100)), sponsor::SponseeAcc(bob));
+            env.close();
+
+            auto const aliceBalance = env.balance(alice);
+            auto const bobBalance = env.balance(bob);
+            auto const carolBalance = env.balance(carol);
+            auto const sponsorBalance = env.balance(sponsor);
+            auto const sponsorFee = sponsor::sponsorFeeBalance(env, sponsor, bob);
+            auto const sendAmt = XRP(100);
+            auto const feeAmt = XRP(10);
+
+            // verify sponsorship(sponsor, alice) is not present, because we are testing
+            // sponsorship(sponsor, bob) will pay the fee. bob is sfDelegate.
+            BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, alice)));
+
+            env(pay(alice, carol, sendAmt),
+                delegate::As(bob),
+                Fee(feeAmt),
+                sponsor::As(sponsor, spfSponsorFee));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice) == aliceBalance - sendAmt);
+            BEAST_EXPECT(env.balance(bob) == bobBalance);
+            BEAST_EXPECT(env.balance(carol) == carolBalance + sendAmt);
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
+            // sponsorship(sponsor, bob) pays the fee, bob is sfDelegate
+            BEAST_EXPECT(sponsor::sponsorFeeBalance(env, sponsor, bob) == sponsorFee - feeAmt);
         }
     }
 
@@ -4361,12 +4472,16 @@ protected:
         testSponsoredFreeTierReserve();
 
         testTransferSponsor();
+        testLegacySignerListReserve();
         testSponsorFee();
         testSponsorAccount();
 
         testAccountDelete();
 
         testDelegatePermission();
+        testDelegateBlockReserveSponsor();
+        testDelegateSponsorFeePayer();
+
         testBatch();
 
         testSponsoredTrustLineNoFreeReserve();
