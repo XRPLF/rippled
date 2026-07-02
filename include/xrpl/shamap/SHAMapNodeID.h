@@ -3,7 +3,9 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 
+#include <cstddef>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <string_view>
 #include <tuple>

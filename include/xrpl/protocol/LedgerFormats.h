@@ -3,9 +3,12 @@
 // NOLINTBEGIN(readability-identifier-naming)
 
 #include <xrpl/protocol/KnownFormats.h>
+#include <xrpl/protocol/SOTemplate.h>
 
+#include <cstdint>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {

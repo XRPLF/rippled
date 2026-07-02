@@ -3,8 +3,13 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
