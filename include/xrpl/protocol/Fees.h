@@ -2,7 +2,6 @@
 
 #include <xrpl/protocol/XRPAmount.h>
 
-#include <cstddef>
 #include <cstdint>
 
 namespace xrpl {
