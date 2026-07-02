@@ -4,6 +4,9 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -23,13 +26,9 @@ checkTxPermission(SLE::const_ref delegate, STTx const& tx);
  * @param delegate The delegate account.
  * @param type Used to determine which granted granular permissions to load,
  * based on the transaction type.
- * @param granularPermissions Granted granular permissions tied to the
- * transaction type.
+ * @return the granted granular permissions tied to the transaction type.
  */
-void
-loadGranularPermission(
-    SLE::const_ref delegate,
-    TxType const& type,
-    std::unordered_set<GranularPermissionType>& granularPermissions);
+std::unordered_set<GranularPermissionType>
+getGranularPermission(SLE::const_ref delegate, TxType const& type);
 
 }  // namespace xrpl

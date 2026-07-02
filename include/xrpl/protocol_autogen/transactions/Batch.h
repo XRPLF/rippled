@@ -20,7 +20,7 @@ class BatchBuilder;
  *
  * Type: ttBATCH (71)
  * Delegable: Delegation::NotDelegable
- * Amendment: featureBatch
+ * Amendment: featureBatchV1_1
  * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.

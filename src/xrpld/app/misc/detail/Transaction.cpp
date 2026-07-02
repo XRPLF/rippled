@@ -73,7 +73,7 @@ Transaction::setStatus(
 TransStatus
 Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 {
-    auto const c = (status) ? safeCast<TxnSql>((*status)[0]) : TxnSql::Unknown;
+    auto const c = status ? safeCast<TxnSql>((*status)[0]) : TxnSql::Unknown;
 
     switch (static_cast<TxnSql>(c))
     {

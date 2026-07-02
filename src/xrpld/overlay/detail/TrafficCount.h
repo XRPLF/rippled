@@ -1,10 +1,16 @@
 #pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/messages.h>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 
 namespace xrpl {
 

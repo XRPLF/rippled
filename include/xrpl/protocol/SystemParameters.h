@@ -1,9 +1,12 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <chrono>
 #include <cstdint>
+#include <ratio>
 #include <string>
 
 namespace xrpl {

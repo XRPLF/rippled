@@ -2,22 +2,36 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
+#include <cstdint>
 #include <expected>
+#include <functional>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -36,6 +50,8 @@ reduceOffer(auto const& amount)
 }  // namespace detail
 
 enum class IsDeposit : bool { No = false, Yes = true };
+
+inline Number const kAMMInvariantRelativeTolerance{1, -11};
 
 /** Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
@@ -736,6 +752,30 @@ ammPoolHolds(
     Asset const& asset2,
     FreezeHandling freezeHandling,
     AuthHandling authHandling,
+    beast::Journal const j);
+
+/** Check AMM pool product invariant after an AMM operation that changes LP tokens
+ * (deposit/withdraw/clawback) from an already calculated pool product mean.
+ * Returns tecPRECISION_LOSS if poolProductMean < newLPTokenBalance beyond the
+ * invariant tolerance,
+ * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
+ */
+TER
+checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance);
+
+/** Check AMM pool product invariant after an AMM operation that changes LP tokens
+ * (deposit/withdraw/clawback).
+ * Returns tecPRECISION_LOSS if sqrt(asset1 * asset2) < newLPTokenBalance beyond
+ * the invariant tolerance,
+ * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
+ */
+TER
+checkAMMPrecisionLoss(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    Asset const& asset1,
+    Asset const& asset2,
+    STAmount const& newLPTokenBalance,
     beast::Journal const j);
 
 /** Get AMM pool and LP token balances. If both optIssue are

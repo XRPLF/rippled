@@ -2,8 +2,10 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <algorithm>
 #include <array>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -12,7 +14,9 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 #ifdef _MSC_VER
 #include <boost/multiprecision/cpp_int.hpp>

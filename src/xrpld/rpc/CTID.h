@@ -2,9 +2,14 @@
 
 #include <boost/regex.hpp>
 
+#include <cstdint>
+#include <iomanip>
+#include <ios>
 #include <optional>
-#include <regex>
 #include <sstream>
+#include <string>
+#include <string_view>
+#include <tuple>
 
 namespace xrpl::RPC {
 
