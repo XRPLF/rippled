@@ -2,10 +2,19 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <compare>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <variant>
 
 namespace xrpl {
 

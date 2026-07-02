@@ -307,7 +307,7 @@ accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjus
 
 TER
 checkInsufficientReserve(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     // NOTE: we still need the accSle to be passed in as the ctx.txReserveContext.accountSle may be
     // outdated
     SLE::const_ref accSle,

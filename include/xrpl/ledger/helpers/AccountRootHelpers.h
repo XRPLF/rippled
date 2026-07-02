@@ -1,14 +1,20 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
 #include <expected>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -94,7 +100,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
  */
 [[nodiscard]] TER
 checkInsufficientReserve(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
     Adjustment adj,

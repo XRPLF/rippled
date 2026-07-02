@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpl/beast/utility/instrumentation.h>
-
 #include <array>
 #include <cstdint>
 #include <cstring>

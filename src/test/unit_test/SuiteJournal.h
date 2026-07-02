@@ -1,7 +1,12 @@
 #pragma once
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+
+#include <mutex>
+#include <ostream>
+#include <sstream>
+#include <string>
 
 namespace xrpl::test {
 
