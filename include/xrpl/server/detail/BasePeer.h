@@ -1,7 +1,7 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/server/Port.h>
 #include <xrpl/server/detail/LowestLayer.h>
 #include <xrpl/server/detail/io_list.h>
@@ -9,6 +9,7 @@
 #include <boost/asio.hpp>
 
 #include <atomic>
+#include <chrono>
 #include <functional>
 #include <string>
 #include <utility>

@@ -5,7 +5,10 @@
 
 #include <boost/asio/buffer.hpp>
 
+#include <deque>
+#include <istream>
 #include <stack>
+#include <string>
 
 namespace json {
 

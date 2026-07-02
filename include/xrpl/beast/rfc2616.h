@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <iterator>
 #include <string>
 #include <vector>

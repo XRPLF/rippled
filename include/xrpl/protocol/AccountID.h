@@ -3,13 +3,17 @@
 #include <xrpl/protocol/tokens.h>
 // VFALCO Uncomment when the header issues are resolved
 // #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 
 #include <cstddef>
+#include <functional>
 #include <optional>
+#include <ostream>
 #include <string>
 
 namespace xrpl {
