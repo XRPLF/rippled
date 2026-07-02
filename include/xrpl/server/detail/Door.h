@@ -33,7 +33,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <sstream>
@@ -181,8 +180,8 @@ template <class Handler>
 void
 Door<Handler>::Detector::run()
 {
-    util::spawn(strand_, [capture0 = this->shared_from_this()](auto&& PH1) {
-        capture0->doDetect(std::forward<decltype(PH1)>(PH1));
+    util::spawn(strand_, [capture0 = this->shared_from_this()](auto&& pH1) {
+        capture0->doDetect(std::forward<decltype(pH1)>(pH1));
     });
 }
 
@@ -297,8 +296,8 @@ template <class Handler>
 void
 Door<Handler>::run()
 {
-    util::spawn(strand_, [capture0 = this->shared_from_this()](auto&& PH1) {
-        capture0->doAccept(std::forward<decltype(PH1)>(PH1));
+    util::spawn(strand_, [capture0 = this->shared_from_this()](auto&& pH1) {
+        capture0->doAccept(std::forward<decltype(pH1)>(pH1));
     });
 }
 

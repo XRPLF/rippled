@@ -13,7 +13,6 @@
 #include <openssl/err.h>
 #include <openssl/tls1.h>
 
-#include <functional>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -127,11 +126,11 @@ public:
             if (!ec)
             {
                 strm.set_verify_callback(
-                    [host, this](auto&& PH1, auto&& PH2) {
+                    [host, this](auto&& pH1, auto&& pH2) {
                         return rfc6125Verify(
                             host,
-                            std::forward<decltype(PH1)>(PH1),
-                            std::forward<decltype(PH2)>(PH2),
+                            std::forward<decltype(pH1)>(pH1),
+                            std::forward<decltype(pH2)>(pH2),
                             j_);
                     },
                     ec);

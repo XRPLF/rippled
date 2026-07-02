@@ -320,9 +320,9 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         boost::asio::async_write(
             self->stream_,
             boost::asio::buffer(self->sendQueue_.front()->getBuffer(self->compressionEnabled_)),
-            bind_executor(self->strand_, [self](auto&& PH1, auto&& PH2) {
+            bind_executor(self->strand_, [self](auto&& pH1, auto&& pH2) {
                 self->onWriteMessage(
-                    std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
             }));
     });
 }
@@ -649,8 +649,8 @@ PeerImp::gracefulClose()
     if (!sendQueue_.empty())
         return;
     setTimer();
-    stream_.async_shutdown(bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1) {
-        capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+    stream_.async_shutdown(bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1) {
+        capture0->onShutdown(std::forward<decltype(pH1)>(pH1));
     }));
 }
 
@@ -666,8 +666,8 @@ PeerImp::setTimer()
         JLOG(journal_.error()) << "setTimer: " << e.code();
         return;
     }
-    timer_.async_wait(bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1) {
-        capture0->onTimer(std::forward<decltype(PH1)>(PH1));
+    timer_.async_wait(bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1) {
+        capture0->onTimer(std::forward<decltype(pH1)>(pH1));
     }));
 }
 
@@ -975,9 +975,9 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytesTransferred)
     // Timeout on writes only
     stream_.async_read_some(
         readBuffer_.prepare(std::max(Tuning::kReadBufferBytes, hint)),
-        bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+        bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
             capture0->onReadMessage(
-                std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
         }));
 }
 
@@ -1011,17 +1011,17 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytesTransferred)
         boost::asio::async_write(
             stream_,
             boost::asio::buffer(sendQueue_.front()->getBuffer(compressionEnabled_)),
-            bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+            bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
                 capture0->onWriteMessage(
-                    std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
             }));
         return;
     }
 
     if (gracefulClose_)
     {
-        stream_.async_shutdown(bind_executor(strand_, [capture0 = shared_from_this()](auto&& PH1) {
-            capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+        stream_.async_shutdown(bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1) {
+            capture0->onShutdown(std::forward<decltype(pH1)>(pH1));
         }));
         return;
     }

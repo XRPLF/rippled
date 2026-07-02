@@ -291,9 +291,9 @@ public:
         // a port separator
 
         // Attempt to find the first and last non-whitespace
-        auto const findWhitespace = [](auto&& PH1) {
+        auto const findWhitespace = [](auto&& pH1) {
             return std::isspace<std::string::value_type>(
-                std::forward<decltype(PH1)>(PH1), std::locale());
+                std::forward<decltype(pH1)>(pH1), std::locale());
         };
 
         auto hostFirst = std::ranges::find_if_not(str, findWhitespace);
@@ -358,12 +358,12 @@ public:
         resolver.async_resolve(
             host,
             port,
-            [this, name, handler, capture0 = CompletionCounter(this)](auto&& PH1, auto&& PH2) {
+            [this, name, handler, capture0 = CompletionCounter(this)](auto&& pH1, auto&& pH2) {
                 doFinish(
                     name,
-                    std::forward<decltype(PH1)>(PH1),
+                    std::forward<decltype(pH1)>(pH1),
                     handler,
-                    std::forward<decltype(PH2)>(PH2),
+                    std::forward<decltype(pH2)>(pH2),
                     capture0);
             });
     }

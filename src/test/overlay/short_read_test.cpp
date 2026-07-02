@@ -26,7 +26,6 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
-#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -209,8 +208,8 @@ private:
             run()
             {
                 acceptor.async_accept(
-                    socket, bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
-                        capture0->onAccept(std::forward<decltype(PH1)>(PH1));
+                    socket, bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
+                        capture0->onAccept(std::forward<decltype(pH1)>(pH1));
                     }));
             }
 
@@ -237,8 +236,8 @@ private:
                 server.add(p);
                 p->run();
                 acceptor.async_accept(
-                    socket, bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
-                        capture0->onAccept(std::forward<decltype(PH1)>(PH1));
+                    socket, bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
+                        capture0->onAccept(std::forward<decltype(pH1)>(pH1));
                     }));
             }
         };
@@ -283,13 +282,13 @@ private:
             run()
             {
                 timer.expires_after(std::chrono::seconds(3));
-                timer.async_wait(bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
-                    capture0->onTimer(std::forward<decltype(PH1)>(PH1));
+                timer.async_wait(bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
+                    capture0->onTimer(std::forward<decltype(pH1)>(pH1));
                 }));
                 stream.async_handshake(
                     stream_type::server,
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
-                        capture0->onHandshake(std::forward<decltype(PH1)>(PH1));
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
+                        capture0->onHandshake(std::forward<decltype(pH1)>(pH1));
                     }));
             }
 
@@ -332,9 +331,9 @@ private:
                     stream,
                     buf,
                     "\n",
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
                         capture0->onRead(
-                            std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                            std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
                     }));
 #else
                 close();
@@ -348,8 +347,8 @@ private:
                 {
                     server.test_.log << "[server] read: EOF" << std::endl;
                     stream.async_shutdown(
-                        bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
-                            capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+                        bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
+                            capture0->onShutdown(std::forward<decltype(pH1)>(pH1));
                         }));
                     return;
                 }
@@ -365,9 +364,9 @@ private:
                 boost::asio::async_write(
                     stream,
                     buf.data(),
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
                         capture0->onWrite(
-                            std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                            std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
                     }));
             }
 
@@ -381,8 +380,8 @@ private:
                     return;
                 }
                 stream.async_shutdown(
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
-                        capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
+                        capture0->onShutdown(std::forward<decltype(pH1)>(pH1));
                     }));
             }
 
@@ -469,12 +468,12 @@ private:
             run(endpoint_type const& ep)
             {
                 timer.expires_after(std::chrono::seconds(3));
-                timer.async_wait(bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
-                    capture0->onTimer(std::forward<decltype(PH1)>(PH1));
+                timer.async_wait(bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
+                    capture0->onTimer(std::forward<decltype(pH1)>(pH1));
                 }));
                 socket.async_connect(
-                    ep, bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
-                        capture0->onConnect(std::forward<decltype(PH1)>(PH1));
+                    ep, bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
+                        capture0->onConnect(std::forward<decltype(pH1)>(pH1));
                     }));
             }
 
@@ -514,8 +513,8 @@ private:
                 }
                 stream.async_handshake(
                     stream_type::client,
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
-                        capture0->onHandshake(std::forward<decltype(PH1)>(PH1));
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
+                        capture0->onHandshake(std::forward<decltype(pH1)>(pH1));
                     }));
             }
 
@@ -533,9 +532,9 @@ private:
                 boost::asio::async_write(
                     stream,
                     buf.data(),
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
                         capture0->onWrite(
-                            std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                            std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
                     }));
 #else
                 stream_.async_shutdown(bind_executor(
@@ -559,9 +558,9 @@ private:
                     stream,
                     buf,
                     "\n",
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
                         capture0->onRead(
-                            std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                            std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
                     }));
 #else
                 stream_.async_shutdown(bind_executor(
@@ -581,8 +580,8 @@ private:
                 }
                 buf.commit(bytesTransferred);
                 stream.async_shutdown(
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& PH1) {
-                        capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
+                        capture0->onShutdown(std::forward<decltype(pH1)>(pH1));
                     }));
             }
 

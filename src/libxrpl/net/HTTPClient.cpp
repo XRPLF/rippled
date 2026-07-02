@@ -134,9 +134,9 @@ public:
         request(
             bSSL,
             deqSites,
-            [capture0 = shared_from_this(), strPath](auto&& PH1, auto&& PH2) {
+            [capture0 = shared_from_this(), strPath](auto&& pH1, auto&& pH2) {
                 capture0->makeGet(
-                    strPath, std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    strPath, std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
             },
             timeout,
             complete);
@@ -164,8 +164,8 @@ public:
             shutdown_ = e.code();
 
             JLOG(j_.trace()) << "expires_after: " << shutdown_.message();
-            deadline_.async_wait([capture0 = shared_from_this()](auto&& PH1) {
-                capture0->handleDeadline(std::forward<decltype(PH1)>(PH1));
+            deadline_.async_wait([capture0 = shared_from_this()](auto&& pH1) {
+                capture0->handleDeadline(std::forward<decltype(pH1)>(pH1));
             });
         }
 
@@ -177,9 +177,9 @@ public:
                 query_->host,
                 query_->port,
                 query_->flags,
-                [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
                     capture0->handleResolve(
-                        std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                        std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
                 });
         }
 
@@ -217,8 +217,8 @@ public:
             resolver_.cancel();
 
             // Stop the transaction.
-            socket_.asyncShutdown([capture0 = shared_from_this()](auto&& PH1) {
-                capture0->handleShutdown(std::forward<decltype(PH1)>(PH1));
+            socket_.asyncShutdown([capture0 = shared_from_this()](auto&& pH1) {
+                capture0->handleShutdown(std::forward<decltype(pH1)>(pH1));
             });
         }
     }
@@ -257,8 +257,8 @@ public:
             JLOG(j_.trace()) << "Resolve complete.";
 
             boost::asio::async_connect(
-                socket_.lowestLayer(), result, [capture0 = shared_from_this()](auto&& PH1) {
-                    capture0->handleConnect(std::forward<decltype(PH1)>(PH1));
+                socket_.lowestLayer(), result, [capture0 = shared_from_this()](auto&& pH1) {
+                    capture0->handleConnect(std::forward<decltype(pH1)>(pH1));
                 });
         }
     }
@@ -296,8 +296,8 @@ public:
         else if (ssl_)
         {
             socket_.asyncHandshake(
-                AutoSocket::ssl_socket::client, [capture0 = shared_from_this()](auto&& PH1) {
-                    capture0->handleRequest(std::forward<decltype(PH1)>(PH1));
+                AutoSocket::ssl_socket::client, [capture0 = shared_from_this()](auto&& pH1) {
+                    capture0->handleRequest(std::forward<decltype(pH1)>(pH1));
                 });
         }
         else
@@ -324,9 +324,9 @@ public:
 
             build_(request_, deqSites_[0]);
 
-            socket_.asyncWrite(request_, [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+            socket_.asyncWrite(request_, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
                 capture0->handleWrite(
-                    std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
             });
         }
     }
@@ -348,9 +348,9 @@ public:
             JLOG(j_.trace()) << "Wrote.";
 
             socket_.asyncReadUntil(
-                header_, "\r\n\r\n", [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                header_, "\r\n\r\n", [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
                     capture0->handleHeader(
-                        std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                        std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
                 });
         }
     }
@@ -414,9 +414,9 @@ public:
             socket_.asyncRead(
                 response_.prepare(responseSize - body_.size()),
                 boost::asio::transfer_all(),
-                [capture0 = shared_from_this()](auto&& PH1, auto&& PH2) {
+                [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
                     capture0->handleData(
-                        std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                        std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
                 });
         }
     }

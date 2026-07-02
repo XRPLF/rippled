@@ -803,8 +803,8 @@ public:
                     checker.asyncConnect(
                         ep.address,
                         [this, capture0 = slot->remoteEndpoint(), capture1 = ep.address](
-                            auto&& PH1) {
-                            checkComplete(capture0, capture1, std::forward<decltype(PH1)>(PH1));
+                            auto&& pH1) {
+                            checkComplete(capture0, capture1, std::forward<decltype(pH1)>(pH1));
                         });
 
                     // Note that we simply discard the first Endpoint

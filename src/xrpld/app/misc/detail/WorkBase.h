@@ -147,9 +147,9 @@ WorkBase<Impl>::run()
         host_,
         port_,
         boost::asio::bind_executor(
-            strand_, [capture0 = impl().shared_from_this()](auto&& PH1, auto&& PH2) {
+            strand_, [capture0 = impl().shared_from_this()](auto&& pH1, auto&& pH2) {
                 capture0->onResolve(
-                    std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
             }));
 }
 
@@ -193,9 +193,9 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
         socket_,
         results,
         boost::asio::bind_executor(
-            strand_, [capture0 = impl().shared_from_this()](auto&& PH1, auto&& PH2) {
+            strand_, [capture0 = impl().shared_from_this()](auto&& pH1, auto&& pH2) {
                 capture0->onConnect(
-                    std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
             }));
 }
 
@@ -224,8 +224,8 @@ WorkBase<Impl>::onStart()
     boost::beast::http::async_write(
         impl().stream(),
         req_,
-        boost::asio::bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-            capture0->onRequest(std::forward<decltype(PH1)>(PH1));
+        boost::asio::bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+            capture0->onRequest(std::forward<decltype(pH1)>(pH1));
         }));
 }
 
@@ -240,8 +240,8 @@ WorkBase<Impl>::onRequest(error_code const& ec)
         impl().stream(),
         readBuf_,
         res_,
-        boost::asio::bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-            capture0->onResponse(std::forward<decltype(PH1)>(PH1));
+        boost::asio::bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+            capture0->onResponse(std::forward<decltype(pH1)>(pH1));
         }));
 }
 

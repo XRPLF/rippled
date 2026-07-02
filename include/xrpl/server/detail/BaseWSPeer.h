@@ -184,8 +184,8 @@ BaseWSPeer<Handler, Impl>::run()
     impl().ws_.set_option(port().pmdOptions);
     // Must manage the control callback memory outside of the `control_callback`
     // function
-    controlCallback_ = [this](auto&& PH1, auto&& PH2) {
-        onPingPong(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+    controlCallback_ = [this](auto&& pH1, auto&& pH2) {
+        onPingPong(std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
     };
     impl().ws_.control_callback(controlCallback_);
     startTimer();
@@ -194,8 +194,8 @@ BaseWSPeer<Handler, Impl>::run()
         res.set(boost::beast::http::field::server, BuildInfo::getFullVersionString());
     }));
     impl().ws_.async_accept(
-        request_, bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-            capture0->onWsHandshake(std::forward<decltype(PH1)>(PH1));
+        request_, bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+            capture0->onWsHandshake(std::forward<decltype(pH1)>(pH1));
         }));
 }
 
@@ -204,9 +204,13 @@ void
 BaseWSPeer<Handler, Impl>::send(std::shared_ptr<WSMsg> w)
 {
     if (!strand_.running_in_this_thread())
-        return post(strand_, [capture0 = impl().shared_from_this(), capture1 = std::move(w)] {
-            capture0->send(capture1);
-        });
+    {
+        {
+            return post(strand_, [capture0 = impl().shared_from_this(), capture1 = std::move(w)] {
+                capture0->send(capture1);
+            });
+        }
+    }
     if (doClose_)
         return;
     if (wq_.size() > port().wsQueueLimit)
@@ -299,8 +303,8 @@ BaseWSPeer<Handler, Impl>::onWrite(error_code const& ec)
         impl().ws_.async_write_some(
             static_cast<bool>(result.first),
             result.second,
-            bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-                capture0->onWrite(std::forward<decltype(PH1)>(PH1));
+            bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+                capture0->onWrite(std::forward<decltype(pH1)>(pH1));
             }));
     }
     else
@@ -308,8 +312,8 @@ BaseWSPeer<Handler, Impl>::onWrite(error_code const& ec)
         impl().ws_.async_write_some(
             static_cast<bool>(result.first),
             result.second,
-            bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-                capture0->onWriteFin(std::forward<decltype(PH1)>(PH1));
+            bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+                capture0->onWriteFin(std::forward<decltype(pH1)>(pH1));
             }));
     }
 }
@@ -324,8 +328,8 @@ BaseWSPeer<Handler, Impl>::onWriteFin(error_code const& ec)
     if (doClose_)
     {
         impl().ws_.async_close(
-            cr_, bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-                capture0->onClose(std::forward<decltype(PH1)>(PH1));
+            cr_, bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+                capture0->onClose(std::forward<decltype(pH1)>(pH1));
             }));
     }
     else if (!wq_.empty())
@@ -341,8 +345,8 @@ BaseWSPeer<Handler, Impl>::doRead()
     if (!strand_.running_in_this_thread())
         return post(strand_, [capture0 = impl().shared_from_this()] { capture0->doRead(); });
     impl().ws_.async_read(
-        rb_, bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-            capture0->onRead(std::forward<decltype(PH1)>(PH1));
+        rb_, bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+            capture0->onRead(std::forward<decltype(pH1)>(pH1));
         }));
 }
 
@@ -386,8 +390,8 @@ BaseWSPeer<Handler, Impl>::startTimer()
         return fail(e.code(), "start_timer");
     }
 
-    timer_.async_wait(bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-        capture0->onTimer(std::forward<decltype(PH1)>(PH1));
+    timer_.async_wait(bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+        capture0->onTimer(std::forward<decltype(pH1)>(pH1));
     }));
 }
 
@@ -456,8 +460,8 @@ BaseWSPeer<Handler, Impl>::onTimer(error_code ec)
             beast::rngfill(payload_.begin(), payload_.size(), cryptoPrng());
             impl().ws_.async_ping(
                 payload_,
-                bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-                    capture0->onPing(std::forward<decltype(PH1)>(PH1));
+                bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+                    capture0->onPing(std::forward<decltype(pH1)>(pH1));
                 }));
             JLOG(this->j_.trace()) << "sent ping";
             return;

@@ -9,7 +9,6 @@
 
 #include <boost/beast/core/tcp_stream.hpp>
 
-#include <functional>
 #include <memory>
 #include <utility>
 
@@ -96,8 +95,8 @@ PlainHTTPPeer<Handler>::run()
     if (!socket_.is_open())
         return;
 
-    util::spawn(this->strand_, [capture0 = this->shared_from_this()](auto&& PH1) {
-        capture0->doRead(std::forward<decltype(PH1)>(PH1));
+    util::spawn(this->strand_, [capture0 = this->shared_from_this()](auto&& pH1) {
+        capture0->doRead(std::forward<decltype(pH1)>(pH1));
     });
 }
 

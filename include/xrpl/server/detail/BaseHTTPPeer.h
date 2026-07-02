@@ -320,17 +320,17 @@ BaseHTTPPeer<Handler, Impl>::onWrite(error_code const& ec, std::size_t bytesTran
         return boost::asio::async_write(
             impl().stream_,
             v,
-            bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& PH1, auto&& PH2) {
+            bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1, auto&& pH2) {
                 capture0->onWrite(
-                    std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
             }));
     }
     if (!complete_)
         return;
     if (graceful_)
         return doClose();
-    util::spawn(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-        capture0->doRead(std::forward<decltype(PH1)>(PH1));
+    util::spawn(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+        capture0->doRead(std::forward<decltype(pH1)>(pH1));
     });
 }
 
@@ -345,8 +345,8 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     {
         auto const p = impl().shared_from_this();
         resume = std::function<void(void)>([this, p, writer, keepAlive]() {
-            util::spawn(strand_, [p, writer, keepAlive](auto&& PH1) {
-                p->doWriter(writer, keepAlive, std::forward<decltype(PH1)>(PH1));
+            util::spawn(strand_, [p, writer, keepAlive](auto&& pH1) {
+                p->doWriter(writer, keepAlive, std::forward<decltype(pH1)>(pH1));
             });
         });
     }
@@ -368,8 +368,8 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     if (!keepAlive)
         return doClose();
 
-    util::spawn(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-        capture0->doRead(std::forward<decltype(PH1)>(PH1));
+    util::spawn(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+        capture0->doRead(std::forward<decltype(pH1)>(pH1));
     });
 }
 
@@ -402,8 +402,8 @@ template <class Handler, class Impl>
 void
 BaseHTTPPeer<Handler, Impl>::write(std::shared_ptr<Writer> const& writer, bool keepAlive)
 {
-    util::spawn(strand_, [capture0 = impl().shared_from_this(), writer, keepAlive](auto&& PH1) {
-        capture0->doWriter(writer, keepAlive, std::forward<decltype(PH1)>(PH1));
+    util::spawn(strand_, [capture0 = impl().shared_from_this(), writer, keepAlive](auto&& pH1) {
+        capture0->doWriter(writer, keepAlive, std::forward<decltype(pH1)>(pH1));
     });
 }
 
@@ -437,8 +437,8 @@ BaseHTTPPeer<Handler, Impl>::complete()
     }
 
     // keep-alive
-    util::spawn(strand_, [capture0 = impl().shared_from_this()](auto&& PH1) {
-        capture0->doRead(std::forward<decltype(PH1)>(PH1));
+    util::spawn(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
+        capture0->doRead(std::forward<decltype(pH1)>(pH1));
     });
 }
 

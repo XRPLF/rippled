@@ -13,7 +13,6 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
-#include <functional>
 #include <memory>
 #include <utility>
 
@@ -104,8 +103,8 @@ SSLHTTPPeer<Handler>::run()
     }
     if (!socket_.is_open())
         return;
-    util::spawn(this->strand_, [capture0 = this->shared_from_this()](auto&& PH1) {
-        capture0->doHandshake(std::forward<decltype(PH1)>(PH1));
+    util::spawn(this->strand_, [capture0 = this->shared_from_this()](auto&& pH1) {
+        capture0->doHandshake(std::forward<decltype(pH1)>(pH1));
     });
 }
 
@@ -142,8 +141,8 @@ SSLHTTPPeer<Handler>::doHandshake(yield_context doYield)
         this->port().protocol.count("https") > 0;
     if (http)
     {
-        util::spawn(this->strand_, [capture0 = this->shared_from_this()](auto&& PH1) {
-            capture0->doRead(std::forward<decltype(PH1)>(PH1));
+        util::spawn(this->strand_, [capture0 = this->shared_from_this()](auto&& pH1) {
+            capture0->doRead(std::forward<decltype(pH1)>(pH1));
         });
         return;
     }
@@ -171,8 +170,8 @@ SSLHTTPPeer<Handler>::doClose()
 {
     this->startTimer();
     stream_.async_shutdown(
-        bind_executor(this->strand_, [capture0 = this->shared_from_this()](auto&& PH1) {
-            capture0->onShutdown(std::forward<decltype(PH1)>(PH1));
+        bind_executor(this->strand_, [capture0 = this->shared_from_this()](auto&& pH1) {
+            capture0->onShutdown(std::forward<decltype(pH1)>(pH1));
         }));
 }
 

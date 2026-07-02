@@ -390,11 +390,11 @@ public:
             if (!buffers.empty() && (size + length) > kMaxPacketSize)
             {
                 log(buffers);
-                socket_.async_send(buffers, [this, keepAlive](auto&& PH1, auto&& PH2) {
+                socket_.async_send(buffers, [this, keepAlive](auto&& pH1, auto&& pH2) {
                     onSend(
                         keepAlive,
-                        std::forward<decltype(PH1)>(PH1),
-                        std::forward<decltype(PH2)>(PH2));
+                        std::forward<decltype(pH1)>(pH1),
+                        std::forward<decltype(pH2)>(pH2));
                 });
                 buffers.clear();
                 size = 0;
@@ -407,9 +407,9 @@ public:
         if (!buffers.empty())
         {
             log(buffers);
-            socket_.async_send(buffers, [this, keepAlive](auto&& PH1, auto&& PH2) {
+            socket_.async_send(buffers, [this, keepAlive](auto&& pH1, auto&& pH2) {
                 onSend(
-                    keepAlive, std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2));
+                    keepAlive, std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
             });
         }
     }
@@ -419,7 +419,7 @@ public:
     {
         using namespace std::chrono_literals;
         timer_.expires_after(1s);
-        timer_.async_wait([this](auto&& PH1) { onTimer(std::forward<decltype(PH1)>(PH1)); });
+        timer_.async_wait([this](auto&& pH1) { onTimer(std::forward<decltype(pH1)>(pH1)); });
     }
 
     void

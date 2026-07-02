@@ -47,7 +47,7 @@ public:
     {
         std::function<void(void)> b = [Func = std::forward<F>(f),
                                        capture0 = std::forward<Args>(args)] {
-            Func(capture0, capture1);
+            Func(capture0, capture0);
         };
         t_ = std::thread(&Thread::run, this, std::move(b));
     }

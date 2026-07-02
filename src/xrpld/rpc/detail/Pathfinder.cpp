@@ -1157,11 +1157,11 @@ Pathfinder::addLink(
                 if (!candidates.empty())
                 {
                     std::ranges::sort(
-                        candidates, [capture0 = ledger_->seq()](auto&& PH1, auto&& PH2) {
+                        candidates, [capture0 = ledger_->seq()](auto&& pH1, auto&& pH2) {
                             return compareAccountCandidate(
                                 capture0,
-                                std::forward<decltype(PH1)>(PH1),
-                                std::forward<decltype(PH2)>(PH2));
+                                std::forward<decltype(pH1)>(pH1),
+                                std::forward<decltype(pH2)>(pH2));
                         });
 
                     int count = candidates.size();

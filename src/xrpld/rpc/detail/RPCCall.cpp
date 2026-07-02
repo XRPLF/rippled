@@ -1745,8 +1745,8 @@ rpcClient(
                     static_cast<int>(setup.client.secure) != 0,  // Use SSL
                     config.quiet(),
                     logs,
-                    [capture0 = &jvOutput](auto&& PH1) {
-                        RPCCallImp::callRPCHandler(capture0, std::forward<decltype(PH1)>(PH1));
+                    [capture0 = &jvOutput](auto&& pH1) {
+                        RPCCallImp::callRPCHandler(capture0, std::forward<decltype(pH1)>(pH1));
                     },
                     headers);
                 isService.run();  // This blocks until there are no more
@@ -1872,24 +1872,24 @@ fromNetwork(
         ioContext,
         strIp,
         iPort,
-        [strMethod, jvParams, headers, strPath, j](auto&& PH1, auto&& PH2) {
+        [strMethod, jvParams, headers, strPath, j](auto&& pH1, auto&& pH2) {
             RPCCallImp::onRequest(
                 strMethod,
                 jvParams,
                 headers,
                 strPath,
-                std::forward<decltype(PH1)>(PH1),
-                std::forward<decltype(PH2)>(PH2),
+                std::forward<decltype(pH1)>(pH1),
+                std::forward<decltype(pH2)>(pH2),
                 j);
         },
         kRpcReplyMaxBytes,
         kRpcWebhookTimeout,
-        [callbackFuncP, j](auto&& PH1, auto&& PH2, auto&& PH3) {
+        [callbackFuncP, j](auto&& pH1, auto&& pH2, auto&& pH3) {
             return RPCCallImp::onResponse(
                 callbackFuncP,
-                std::forward<decltype(PH1)>(PH1),
-                std::forward<decltype(PH2)>(PH2),
-                std::forward<decltype(PH3)>(PH3),
+                std::forward<decltype(pH1)>(pH1),
+                std::forward<decltype(pH2)>(pH2),
+                std::forward<decltype(pH3)>(pH3),
                 j);
         },
         j);
