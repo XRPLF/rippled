@@ -221,7 +221,7 @@ SponsorshipSet::doApply()
         if (feeAmount && (*feeAmount).xrp() > (*sponsorAccSle)[sfBalance])
             return tecUNFUNDED;
 
-        auto sponsorBalanceAfterFee = STAmount{(*sponsorAccSle)[sfBalance]};
+        STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
         if (hasPositiveFeeAmount)
             sponsorBalanceAfterFee -= *feeAmount;
 
@@ -229,7 +229,7 @@ SponsorshipSet::doApply()
                 ctx_.view(),
                 ctx_.tx,
                 sponsorAccSle,
-                STAmount{sponsorBalanceAfterFee}.xrp(),
+                sponsorBalanceAfterFee.xrp(),
                 *reserveSponsorAccSle,
                 {.ownerCountDelta = 1},
                 ctx_.journal);
@@ -238,6 +238,7 @@ SponsorshipSet::doApply()
 
         if (hasPositiveFeeAmount)
         {
+            // New object: FeeAmount starts absent, so deduct and record the full amount
             (*newSle)[sfFeeAmount] = *feeAmount;
             (*sponsorAccSle)[sfBalance] -= *feeAmount;
         }
@@ -289,14 +290,14 @@ SponsorshipSet::doApply()
         // object.
         if (feeAmountDelta != beast::kZero)
         {
-            auto sponsorBalanceAfterFee = STAmount{(*sponsorAccSle)[sfBalance]};
-            sponsorBalanceAfterFee -= STAmount{feeAmountDelta};
+            STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
+            sponsorBalanceAfterFee -= feeAmountDelta;
 
             if (auto const ret = checkInsufficientReserve(
                     ctx_.view(),
                     ctx_.tx,
                     sponsorAccSle,
-                    STAmount{sponsorBalanceAfterFee}.xrp(),
+                    sponsorBalanceAfterFee.xrp(),
                     *reserveSponsorAccSle,
                     {},
                     ctx_.journal);
