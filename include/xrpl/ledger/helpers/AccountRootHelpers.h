@@ -84,7 +84,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
     return accountReserve(view, view.read(keylet::account(id)), j, adj);
 }
 
-/** Check if an account has insufficient reserve.
+/** Check if an account has sufficient reserve.
  *
  *  @param view The ledger view to read from
  *  @param tx The transaction being processed
@@ -97,7 +97,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
  *  @return Transaction result code
  */
 [[nodiscard]] TER
-checkInsufficientReserve(
+checkReserve(
     ApplyViewContext ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,

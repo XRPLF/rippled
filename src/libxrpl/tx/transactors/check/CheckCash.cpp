@@ -400,7 +400,7 @@ CheckCash::doApply()
                 auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?
-                if (auto const ret = checkInsufficientReserve(
+                if (auto const ret = checkReserve(
                         applyViewContext,
                         sleDst,
                         preFeeBalance_,

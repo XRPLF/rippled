@@ -102,7 +102,7 @@ DelegateSet::doApply()
     auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
     if (!sponsorSle)
         return sponsorSle.error();  // LCOV_EXCL_LINE
-    if (auto const ret = checkInsufficientReserve(
+    if (auto const ret = checkReserve(
             ctx_.getApplyViewContext(),
             sleOwner,
             preFeeBalance_,

@@ -135,7 +135,7 @@ MPTokenIssuanceCreate::create(
 
     if (args.priorBalance)
     {
-        if (auto const ret = checkInsufficientReserve(
+        if (auto const ret = checkReserve(
                 ctx, acct, *(args.priorBalance), sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return std::unexpected(ret);  // tecINSUFFICIENT_RESERVE
