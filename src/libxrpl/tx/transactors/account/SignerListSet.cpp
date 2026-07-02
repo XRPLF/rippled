@@ -325,7 +325,6 @@ SignerListSet::replaceSignerList()
             ctx_.getApplyViewContext(),
             sle,
             preFeeBalance_,
-            sponsorSle,
             {.ownerCountDelta = kAddedOwnerCount},
             ctx_.journal);
         !isTesSuccess(ret))

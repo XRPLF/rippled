@@ -325,7 +325,6 @@ SponsorshipTransfer::doApply()
                     ctx_.getApplyViewContext(),
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
-                    newSponsorSle,
                     {.ownerCountDelta = ownerCountDelta},
                     ctx_.journal);
                 !isTesSuccess(ter))
@@ -378,7 +377,6 @@ SponsorshipTransfer::doApply()
                     ctx_.getApplyViewContext(),
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
-                    newSponsorSle,
                     {.ownerCountDelta = ownerCountDelta},
                     ctx_.journal);
                 !isTesSuccess(ter))
@@ -426,7 +424,6 @@ SponsorshipTransfer::doApply()
                     ctx_.getApplyViewContext(),
                     ownerSle,
                     balanceBeforeFee(ownerSle),
-                    SLE::pointer(),
                     {.ownerCountDelta = ownerCountDelta},
                     ctx_.journal);
                 !isTesSuccess(ter))
@@ -466,7 +463,6 @@ SponsorshipTransfer::doApply()
                     ctx_.getApplyViewContext(),
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
-                    newSponsorSle,
                     {.accountCountDelta = 1},
                     ctx_.journal);
                 !isTesSuccess(ter))
@@ -494,7 +490,6 @@ SponsorshipTransfer::doApply()
                     ctx_.getApplyViewContext(),
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
-                    newSponsorSle,
                     {.accountCountDelta = 1},
                     ctx_.journal);
                 !isTesSuccess(ter))
@@ -530,7 +525,6 @@ SponsorshipTransfer::doApply()
                     ctx_.getApplyViewContext(),
                     sponseeSle,
                     balanceBeforeFee(sponseeSle),
-                    SLE::pointer(),
                     {.accountCountDelta = 1},
                     ctx_.journal);
                 !isTesSuccess(ter))

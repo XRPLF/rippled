@@ -165,7 +165,7 @@ DepositPreauth::doApply()
         auto const applyViewContext = ctx_.getApplyViewContext();
         auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
         if (auto const ret = checkInsufficientReserve(
-                applyViewContext, sleOwner, preFeeBalance_, sponsorSle, {.ownerCountDelta = 1}, j_);
+                applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -213,7 +213,7 @@ DepositPreauth::doApply()
         auto const applyViewContext = ctx_.getApplyViewContext();
         auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
         if (auto const ret = checkInsufficientReserve(
-                applyViewContext, sleOwner, preFeeBalance_, sponsorSle, {.ownerCountDelta = 1}, j_);
+                applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
             return ret;
 

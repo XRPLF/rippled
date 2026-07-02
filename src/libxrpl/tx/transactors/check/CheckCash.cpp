@@ -399,12 +399,7 @@ CheckCash::doApply()
 
                 // Can the account cover the trust line's or MPT reserve?
                 if (auto const ret = checkInsufficientReserve(
-                        applyViewContext,
-                        sleDst,
-                        preFeeBalance_,
-                        sponsorSle,
-                        {.ownerCountDelta = 1},
-                        j_);
+                        applyViewContext, sleDst, preFeeBalance_, {.ownerCountDelta = 1}, j_);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "

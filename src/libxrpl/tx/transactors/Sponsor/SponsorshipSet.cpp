@@ -227,7 +227,6 @@ SponsorshipSet::doApply()
                 ctx_.getApplyViewContext(),
                 sponsorAccSle,
                 sponsorBalanceAfterFee.xrp(),
-                reserveSponsorAccSle,
                 {.ownerCountDelta = 1},
                 ctx_.journal);
             !isTesSuccess(ret))
@@ -297,7 +296,6 @@ SponsorshipSet::doApply()
                     ctx_.getApplyViewContext(),
                     sponsorAccSle,
                     sponsorBalanceAfterFee.xrp(),
-                    reserveSponsorAccSle,
                     {},
                     ctx_.journal);
                 !isTesSuccess(ret))

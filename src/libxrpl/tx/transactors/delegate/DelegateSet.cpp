@@ -104,7 +104,6 @@ DelegateSet::doApply()
             ctx_.getApplyViewContext(),
             sleOwner,
             preFeeBalance_,
-            sponsorSle,
             {.ownerCountDelta = 1},
             ctx_.journal);
         !isTesSuccess(ret))

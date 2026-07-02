@@ -61,8 +61,8 @@ escrowUnlockApplyHelper<Issue>(
         // Can the account cover the trust line's reserve?
         auto const sponsorSle = ctx.reserveContext.sponsorSle;
 
-        if (auto const ret = checkInsufficientReserve(
-                ctx, sleDest, xrpBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
+        if (auto const ret =
+                checkInsufficientReserve(ctx, sleDest, xrpBalance, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -188,8 +188,8 @@ escrowUnlockApplyHelper<MPTIssue>(
     {
         auto const sponsorSle = ctx.reserveContext.sponsorSle;
 
-        if (auto const ret = checkInsufficientReserve(
-                ctx, sleDest, xrpBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
+        if (auto const ret =
+                checkInsufficientReserve(ctx, sleDest, xrpBalance, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return ret;
 

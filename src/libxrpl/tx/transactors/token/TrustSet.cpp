@@ -540,7 +540,6 @@ TrustSet::doApply()
                     ctx_.getApplyViewContext(),
                     sleLowAccount,
                     preFeeBalance_,
-                    sponsorSle,
                     {.ownerCountDelta = 1},
                     j_);
                 sponsorSle && !isTesSuccess(ret))
@@ -582,7 +581,6 @@ TrustSet::doApply()
                     ctx_.getApplyViewContext(),
                     sleHighAccount,
                     preFeeBalance_,
-                    sponsorSle,
                     {.ownerCountDelta = 1},
                     j_);
                 sponsorSle && !isTesSuccess(ret))
@@ -626,8 +624,8 @@ TrustSet::doApply()
         }
         // Reserve is not scaled by load.
         else if (
-            auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(), sle, preFeeBalance_, sponsorSle, {}, j_);
+            auto const ret =
+                checkInsufficientReserve(ctx_.getApplyViewContext(), sle, preFeeBalance_, {}, j_);
             !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
@@ -661,7 +659,6 @@ TrustSet::doApply()
             ctx_.getApplyViewContext(),
             sle,
             preFeeBalance_,
-            sponsorSle,
             {.ownerCountDelta = 1},
             j_);
         !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.

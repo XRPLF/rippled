@@ -95,7 +95,6 @@ checkInsufficientReserve(
     ApplyViewContext const& ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
-    SLE::const_ref sponsorSle,
     Adjustment adj,
     beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
