@@ -595,14 +595,7 @@ removeEmptyHolding(
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            if constexpr (std::is_same_v<TIss, Issue>)
-            {
-                return removeEmptyHolding(std::move(ctx), accountID, issue, journal);
-            }
-            else
-            {
-                return removeEmptyHolding(std::move(ctx), accountID, issue, journal);
-            }
+            return removeEmptyHolding(std::move(ctx), accountID, issue, journal);
         },
         asset.value());
 }
