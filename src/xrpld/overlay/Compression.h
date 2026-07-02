@@ -2,6 +2,10 @@
 
 #include <xrpl/basics/CompressionAlgorithms.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/instrumentation.h>
+
+#include <cstddef>
+#include <cstdint>
 
 namespace xrpl::compression {
 

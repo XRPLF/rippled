@@ -10,6 +10,7 @@
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -18,8 +19,17 @@
 
 #include <algorithm>
 #include <array>
+#include <compare>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <expected>
+#include <iterator>
+#include <optional>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 #include <type_traits>
 
 namespace xrpl {

@@ -3,8 +3,9 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/BuildInfo.h>
 
 #include <boost/asio/ssl.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
@@ -13,8 +14,9 @@
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
+#include <cstdint>
 #include <optional>
-#include <utility>
+#include <string>
 
 namespace xrpl {
 
