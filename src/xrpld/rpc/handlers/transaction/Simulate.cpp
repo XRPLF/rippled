@@ -26,6 +26,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
@@ -353,6 +354,13 @@ doSimulate(RPC::JsonContext& context)
     if (stTx->getTxnType() == ttBATCH)
     {
         return RPC::makeError(RpcNotImpl);
+    }
+
+    // Reject transactions with the tfInnerBatchTxn flag.
+    if (stTx->isFlag(tfInnerBatchTxn))
+    {
+        return RPC::makeError(
+            RpcInvalidParams, "tfInnerBatchTxn flag is not allowed on top-level transactions.");
     }
 
     std::string reason;

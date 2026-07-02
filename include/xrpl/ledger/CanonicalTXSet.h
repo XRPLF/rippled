@@ -1,9 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
+
+#include <cstddef>
+#include <map>
+#include <memory>
 
 namespace xrpl {
 

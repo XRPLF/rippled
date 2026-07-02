@@ -7,6 +7,7 @@
 #include <boost/iterator/function_output_iterator.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <ostream>
 #include <sstream>
