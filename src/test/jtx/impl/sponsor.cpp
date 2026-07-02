@@ -7,6 +7,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -125,6 +126,12 @@ ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& spon
     jvParams[jss::sponsorship][jss::sponsor] = sponsor.human();
     jvParams[jss::sponsorship][jss::sponsee] = sponsee.human();
     return env.rpc("json", "ledger_entry", to_string(jvParams));
+}
+
+STAmount
+sponsorFeeBalance(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee)
+{
+    return env.le(keylet::sponsorship(sponsor, sponsee))->getFieldAmount(sfFeeAmount).xrp();
 }
 
 }  // namespace xrpl::test::jtx::sponsor

@@ -72,16 +72,3 @@ GRANULAR_PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547, tfUniver
 GRANULAR_PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548, tfUniversal | tfMPTUnlock,
     ({{sfMPTokenIssuanceID, SoeRequired},
       {sfHolder, SoeOptional}}))
-
-/** This permission grants the delegated account the ability to set SponsorFee. */
-GRANULAR_PERMISSION(SponsorFee, ttSPONSORSHIP_SET, 65549,
-    tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee,
-    ({{sfSponsee, SoeOptional},
-      {sfFeeAmount, SoeOptional},
-      {sfMaxFee, SoeOptional}}))
-
-/** This permission grants the delegated account the ability to set SponsorReserve. */
-GRANULAR_PERMISSION(SponsorReserve, ttSPONSORSHIP_SET, 65550,
-    tfUniversal | tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve,
-    ({{sfSponsee, SoeOptional},
-      {sfRemainingOwnerCount, SoeOptional}}))
