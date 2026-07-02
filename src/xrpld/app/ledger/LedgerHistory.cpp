@@ -1,4 +1,5 @@
 #include <xrpld/app/ledger/LedgerHistory.h>
+
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 
@@ -40,8 +41,7 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
         ledger->stateMap().getHash().isNonZero(), "xrpl::LedgerHistory::insert : nonzero hash");
 
     auto lock = ledger_maps_.lock();
-    bool const alreadyHad =
-        lock->by_hash->canonicalizeReplaceCache(ledger->header().hash, ledger);
+    bool const alreadyHad = lock->by_hash->canonicalizeReplaceCache(ledger->header().hash, ledger);
     if (validated)
         lock->by_index[ledger->header().seq] = ledger->header().hash;
 

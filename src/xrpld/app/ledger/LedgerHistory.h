@@ -1,10 +1,8 @@
 #pragma once
 
-#include <xrpl/ledger/Ledger.h>
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Mutex.hpp>
-#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Counter.h>
