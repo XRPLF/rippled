@@ -693,7 +693,9 @@ AMMWithdraw::withdraw(
                     account,
                     journal);
                 !isTesSuccess(err))
+            {
                 return err;
+            }
         }
         return tesSUCCESS;
     };
