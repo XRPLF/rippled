@@ -1,7 +1,15 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <string>
 
 namespace xrpl {
 
@@ -120,7 +128,7 @@ STInteger<Integer>::operator=(value_type const& v)
 }
 
 template <typename Integer>
-inline typename STInteger<Integer>::value_type
+inline STInteger<Integer>::value_type
 STInteger<Integer>::value() const noexcept
 {
     return value_;

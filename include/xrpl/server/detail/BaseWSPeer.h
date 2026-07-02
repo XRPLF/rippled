@@ -1,10 +1,13 @@
 #pragma once
 
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/BasePeer.h>
 #include <xrpl/server/detail/LowestLayer.h>
@@ -16,9 +19,14 @@
 #include <boost/logic/tribool.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <functional>
+#include <iterator>
 #include <list>
+#include <memory>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

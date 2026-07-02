@@ -65,6 +65,10 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
 TER
 VaultWithdraw::preclaim(PreclaimContext const& ctx)
 {
+    auto const fix313Enabled = ctx.view.rules().enabled(fixCleanup3_1_3);
+    auto const fix320Enabled = ctx.view.rules().enabled(fixCleanup3_2_0);
+    auto const fix330Enabled = ctx.view.rules().enabled(fixCleanup3_3_0);
+
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
@@ -82,8 +86,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     // lsfMPTCanTransfer flag check, so an issuer cannot trap depositor funds.
     // Other transferability checks (IOU NoRipple, freeze, requireAuth) still
     // apply.
-    auto const waive = ctx.view.rules().enabled(fixCleanup3_2_0) ? WaiveMPTCanTransfer::Yes
-                                                                 : WaiveMPTCanTransfer::No;
+    auto const waive = fix320Enabled ? WaiveMPTCanTransfer::Yes : WaiveMPTCanTransfer::No;
     if (auto ter = canTransfer(ctx.view, vaultAsset, vaultAccount, dstAcct, waive);
         !isTesSuccess(ter))
     {
@@ -100,13 +103,13 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixCleanup3_1_3) && amount.asset() == vaultShare)
+    if (fix313Enabled && amount.asset() == vaultShare)
     {
         // Post-fixCleanup3_1_3: if the user specified shares, convert
         // to the equivalent asset amount before checking withdrawal
         // limits. Pre-amendment the limit check was skipped for
         // share-denominated withdrawals.
-        auto const sleIssuance = ctx.view.read(keylet::mptIssuance(vaultShare));
+        auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(vaultShare));
         if (!sleIssuance)
         {
             // LCOV_EXCL_START
@@ -160,15 +163,30 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType); !isTesSuccess(ter))
         return ter;
 
-    // Cannot withdraw from a Vault an Asset frozen for the destination account
-    if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
-        return ret;
+    if (fix330Enabled)
+    {
+        // checkWithdrawFreeze checks the underlying asset on the source
+        // (vault pseudo-account), the submitter, and the destination.
+        // A separate share-level freeze check is unnecessary: vault shares
+        // are issued by the vault pseudo-account, which cannot submit
+        // MPTokenIssuanceSet to individually lock a holder's MPToken.
+        // The only way shares become locked is transitively via the
+        // underlying asset, which checkWithdrawFreeze covers.
+        if (auto const ret =
+                checkWithdrawFreeze(ctx.view, vaultAccount, account, dstAcct, vaultAsset))
+            return ret;
+    }
+    else
+    {
+        // Cannot withdraw from a Vault an Asset frozen for the destination account
+        if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
+            return ret;
 
-    // Cannot return shares to the vault, if the underlying asset was frozen for
-    // the submitter
-    if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
-        return ret;
-
+        // Cannot return shares to the vault, if the underlying asset was frozen for
+        // the submitter
+        if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
+            return ret;
+    }
     return tesSUCCESS;
 }
 
@@ -180,7 +198,7 @@ VaultWithdraw::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -254,8 +272,14 @@ VaultWithdraw::doApply()
         return tecPATH_DRY;
     }
 
-    if (accountHolds(
-            view(), accountID_, share, FreezeHandling::ZeroIfFrozen, AuthHandling::IgnoreAuth, j_) <
+    // Post-fixCleanup3_3_0: preclaim already validated all freeze conditions
+    // (checkWithdrawFreeze), so IgnoreFreeze avoids a redundant check that
+    // would incorrectly return zero for vault pseudo-accounts whose shares
+    // are frozen via a transitively frozen underlying asset.
+    auto const freezeHandling = view().rules().enabled(fixCleanup3_3_0)
+        ? FreezeHandling::IgnoreFreeze
+        : FreezeHandling::ZeroIfFrozen;
+    if (accountHolds(view(), accountID_, share, freezeHandling, AuthHandling::IgnoreAuth, j_) <
         sharesRedeemed)
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
@@ -358,10 +382,9 @@ VaultWithdraw::doApply()
         // else quietly ignore, account balance is not zero
     }
 
-    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
-
     associateAsset(*vault, vaultAsset);
 
+    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
     return doWithdraw(
         view(), ctx_.tx, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
 }

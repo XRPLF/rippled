@@ -2,9 +2,14 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/core/ClosureCounter.h>
+#include <xrpl/core/LoadEvent.h>
 #include <xrpl/core/LoadMonitor.h>
 
+#include <chrono>
+#include <cstdint>
 #include <functional>
+#include <memory>
+#include <string>
 
 namespace xrpl {
 

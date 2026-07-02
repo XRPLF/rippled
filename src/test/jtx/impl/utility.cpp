@@ -13,6 +13,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -57,7 +58,22 @@ fillFee(json::Value& jv, ReadView const& view)
 {
     if (jv.isMember(jss::Fee))
         return;
-    jv[jss::Fee] = to_string(view.fees().base);
+
+    auto const base = view.fees().base;
+
+    // For confidential transactions, the fee is higher because confidential
+    // transaction processing is more expensive.
+    auto const txType = jv[jss::TransactionType].asString();
+    if (txType == jss::ConfidentialMPTConvert || txType == jss::ConfidentialMPTConvertBack ||
+        txType == jss::ConfidentialMPTSend || txType == jss::ConfidentialMPTMergeInbox ||
+        txType == jss::ConfidentialMPTClawback)
+    {
+        jv[jss::Fee] = to_string(base * (kConfidentialFeeMultiplier + 1));
+    }
+    else
+    {
+        jv[jss::Fee] = to_string(base);
+    }
 }
 
 void
@@ -100,5 +116,4 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
         jv[jss::id] = paramsObj[jss::id];
     return jv;
 }
-
 }  // namespace xrpl::test::jtx
