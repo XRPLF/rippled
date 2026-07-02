@@ -330,7 +330,7 @@ accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjus
 
 TER
 checkInsufficientReserve(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,

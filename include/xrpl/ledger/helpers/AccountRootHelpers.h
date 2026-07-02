@@ -92,7 +92,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
  */
 [[nodiscard]] TER
 checkInsufficientReserve(
-    ApplyViewContext const& ctx,
+    ApplyViewContext ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
