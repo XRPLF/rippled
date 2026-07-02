@@ -43,9 +43,8 @@ SponsorshipTransfer::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 SponsorshipTransfer::preflight(PreflightContext const& ctx)
 {
-    auto const flags = ctx.tx.getFlags();
-    auto constexpr transferFlags = tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd;
-    if (std::popcount(flags & transferFlags) != 1)
+    auto const transferFlags = tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd;
+    if (std::popcount(ctx.tx.getFlags() & transferFlags) != 1)
     {
         JLOG(ctx.j.debug()) << "preflight: Only one SponsorshipTransfer flag can be set per tx.";
         return temINVALID_FLAG;
