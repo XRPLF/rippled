@@ -4,6 +4,11 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/conditions/Condition.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <system_error>
+
 namespace xrpl::cryptoconditions {
 
 struct Fulfillment

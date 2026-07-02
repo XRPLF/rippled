@@ -3,6 +3,10 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/Protocol.h>
+
+#include <memory>
+#include <set>
 
 namespace xrpl {
 

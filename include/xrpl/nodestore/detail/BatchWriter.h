@@ -1,10 +1,12 @@
 #pragma once
 
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Task.h>
 #include <xrpl/nodestore/Types.h>
 
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 
 namespace xrpl::NodeStore {

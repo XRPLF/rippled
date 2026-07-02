@@ -7,6 +7,7 @@
 #include <boost/asio/streambuf.hpp>
 
 #include <chrono>
+#include <cstddef>
 #include <deque>
 #include <functional>
 #include <string>

@@ -3,6 +3,9 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
 
 namespace xrpl {
 

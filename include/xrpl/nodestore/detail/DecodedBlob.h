@@ -2,6 +2,8 @@
 
 #include <xrpl/nodestore/NodeObject.h>
 
+#include <memory>
+
 namespace xrpl::NodeStore {
 
 /** Parsed key/value blob into NodeObject components.
