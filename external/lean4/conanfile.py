@@ -37,6 +37,7 @@ class Lean(ConanFile):
             self.version = toolchain.read_text(encoding="utf-8").strip().split(":v")[1]
 
     def build(self):
+        # Downloads and unpacks the pinned release
         os_name, arch = str(self.settings.os), str(self.settings.arch)
         sha256 = _SHA256.get((os_name, arch))
         if sha256 is None:
@@ -64,6 +65,7 @@ class Lean(ConanFile):
         )
 
     def package_info(self):
+        # Standard layout for find_package(lean4) where bin (lean, lake) goes on PATH.
         self.cpp_info.includedirs = ["include"]
         self.cpp_info.libdirs = [str(Path("lib") / "lean")]
         self.cpp_info.libs = ["Lake", "leanshared"]  # order matters: Lake before the runtime

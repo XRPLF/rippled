@@ -4,22 +4,24 @@ import XRPL.Properties.Protocol.Number.Signum.Common.Proofs
 
 namespace XRPL.Model.Protocol
 
-/-- Strictly positive value: non-negative flag and nonzero mantissa. -/
+/-- A non-negative number with a nonzero mantissa has a strictly positive value. -/
 lemma Number.toRat_pos_of_not_negative (n : Number) (hneg : n.negative_ = false)
     (hm : n.mantissa_ ≠ 0) : 0 < n.toRat := by
   have h1 := Number.toRat_nonneg_of_nonnegative n hneg
   have h2 : n.toRat ≠ 0 := fun h => hm (Number.toRat_eq_zero_iff.mp h)
   exact lt_of_le_of_ne h1 (Ne.symm h2)
 
-/-- Strictly negative value: negative flag and nonzero mantissa. -/
+/-- A negative number with a nonzero mantissa has a strictly negative value. -/
 lemma Number.toRat_neg_of_negative' (n : Number) (hneg : n.negative_ = true)
     (hm : n.mantissa_ ≠ 0) : n.toRat < 0 := by
   have h1 := Number.toRat_nonpos_of_negative n hneg
   have h2 : n.toRat ≠ 0 := fun h => hm (Number.toRat_eq_zero_iff.mp h)
   exact lt_of_le_of_ne h1 h2
 
-/-- Exponent dominance: for normalized nonzero values, a strictly smaller
-exponent means a strictly smaller magnitude (`m ∈ [10^18, 10^19)` forces it). -/
+/-- Exponent dominance: between normalized nonzero values, the smaller exponent always means
+the smaller magnitude. Normalization pins the mantissa inside one decade `[10^18, 10^19)`,
+so no mantissa can make up for a smaller exponent. This is what lets `operator_lt` compare
+exponents before mantissas. -/
 lemma abs_toRat_lt_of_exp_lt (x y : Number)
     (hx : x.isNormalized) (hy : y.isNormalized)
     (hxm : x.mantissa_ ≠ 0) (hym : y.mantissa_ ≠ 0)
@@ -52,7 +54,7 @@ lemma abs_toRat_lt_of_exp_lt (x y : Number)
     _ ≤ (y.mantissa_.toNat : ℚ) * 10 ^ y.exponent_ :=
         mul_le_mul_of_nonneg_right hym_ge (le_of_lt hpow_y)
 
-/-- Same exponent: magnitude order is mantissa order. -/
+/-- With equal exponents, comparing magnitudes is exactly comparing mantissas. -/
 lemma abs_toRat_lt_iff_of_exp_eq (x y : Number)
     (hexp : x.exponent_ = y.exponent_) :
     |x.toRat| < |y.toRat| ↔ x.mantissa_ < y.mantissa_ := by
@@ -79,8 +81,9 @@ private lemma toRat_eq_abs (n : Number) (hneg : n.negative_ = false) :
     n.toRat = |n.toRat| := by
   rw [abs_of_nonneg (Number.toRat_nonneg_of_nonnegative n hneg)]
 
-/-- **Correctness of `operator_lt`**: on normalized values the comparison agrees
-with the rational order. -/
+/-- **Correctness of `operator_lt`**: on normalized values the comparison agrees with the
+order of the exact rational values. The case split retraces the C++ branches: signs differ,
+one side is zero, exponents differ, exponents equal. -/
 theorem operator_lt_iff_proof (x y : Number)
     (hx : x.isNormalized) (hy : y.isNormalized) :
     x.operator_lt y = true ↔ x.toRat < y.toRat := by

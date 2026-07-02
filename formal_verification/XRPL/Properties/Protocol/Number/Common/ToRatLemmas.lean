@@ -5,7 +5,9 @@ import XRPL.Properties.Protocol.Number.Common.Constants
 
 
 namespace XRPL.Model.Protocol
-/-- Extract mantissa bounds from `isNormalized` when mantissa is nonzero. -/
+
+/-- A normalized number with a nonzero mantissa has its mantissa inside `largeRange`. Only
+the canonical zero is exempt from the bounds. -/
 lemma Number.isNormalized.mantissaBounds {n : Number}
     (h : n.isNormalized) (hne : n.mantissa_ ≠ 0) :
     largeRange.min ≤ n.mantissa_ ∧ n.mantissa_ ≤ largeRange.max := by
@@ -13,7 +15,8 @@ lemma Number.isNormalized.mantissaBounds {n : Number}
   · exfalso; apply hne; rw [h_zero]; rfl
   · exact ⟨hmin, hmax⟩
 
-/-- `|n.toRat| = n.mantissa_.toNat * 10^n.exponent_`. -/
+/-- The magnitude of the value is `mantissa * 10^exponent`, whatever the sign flag says.
+Later proofs reason about magnitudes and reattach the sign at the end. -/
 lemma abs_toRat_eq (n : Number) :
     |n.toRat| = (n.mantissa_.toNat : ℚ) * 10 ^ n.exponent_ := by
   unfold Number.toRat
@@ -57,7 +60,8 @@ lemma abs_toRat_eq (n : Number) :
       field_simp
     rw [h_val, abs_of_nonneg (by positivity)]
 
-/-- `n.toRat ≤ 0` when `negative_ = true`. -/
+/-- With the negative flag set the value is at most 0. Only `≤`, since a zero mantissa
+still gives value 0. -/
 lemma Number.toRat_nonpos_of_negative (n : Number) (hneg : n.negative_ = true) :
     n.toRat ≤ 0 := by
   unfold Number.toRat
@@ -76,7 +80,7 @@ lemma Number.toRat_nonpos_of_negative (n : Number) (hneg : n.negative_ = true) :
       field_simp
     rw [this]; linarith
 
-/-- `0 ≤ n.toRat` when `negative_ = false`. -/
+/-- With the negative flag clear the value is at least 0. -/
 lemma Number.toRat_nonneg_of_nonnegative (n : Number) (hneg : n.negative_ = false) :
     0 ≤ n.toRat := by
   unfold Number.toRat
@@ -85,7 +89,7 @@ lemma Number.toRat_nonneg_of_nonnegative (n : Number) (hneg : n.negative_ = fals
   · rw [Rat.mkRat_one]; push_cast; positivity
   · rw [Rat.mkRat_eq_div]; push_cast; positivity
 
-/-- `n.toRat = 0` iff `n.mantissa_ = 0`. -/
+/-- The value is 0 exactly when the mantissa is 0. -/
 lemma Number.toRat_eq_zero_iff {n : Number} :
     n.toRat = 0 ↔ n.mantissa_ = 0 := by
   constructor

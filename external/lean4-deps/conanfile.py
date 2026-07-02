@@ -37,6 +37,7 @@ class Lean4Deps(ConanFile):
     settings = "os", "arch"
 
     def set_version(self):
+        # version follows the Lean toolchain pin
         if self.version is None:
             toolchain = Path(
                 self.recipe_folder, "..", "..", "formal_verification", "lean-toolchain"
@@ -44,6 +45,7 @@ class Lean4Deps(ConanFile):
             self.version = toolchain.read_text(encoding="utf-8").strip().split(":v")[1]
 
     def export_sources(self):
+        # The pin files are the only recipe inputs, so changing a pin makes a new package.
         source_dir = Path(self.recipe_folder, "..", "..", "formal_verification")
         for filename in ("lakefile.toml", "lake-manifest.json", "lean-toolchain"):
             copy(self, filename, src=source_dir, dst=self.export_sources_folder)
@@ -123,6 +125,7 @@ class Lean4Deps(ConanFile):
         copy(self, ARCHIVE_NAME, src=build_dir, dst=package_dir / LIB_DIR)
 
     def package_info(self):
+        # Custom properties the root conanfile forwards to CMake as LEAN4_DEPS_*.
         package_dir = Path(self.package_folder)
         self.cpp_info.set_property("packages", str(package_dir / PACKAGES_DIR))
         self.cpp_info.set_property("archive", str(package_dir / LIB_DIR / ARCHIVE_NAME))

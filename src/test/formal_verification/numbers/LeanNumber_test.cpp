@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+// Exported by the Lean model. See formal_verification/XRPL/FFI/Protocol/NumberFFI.lean.
 extern "C" {
 uint8_t
 lean_number_lt(uint8_t, uint64_t, uint64_t, uint8_t, uint64_t, uint64_t);
@@ -22,6 +23,7 @@ using namespace formal_verification;
 
 class LeanNumber_test : public LeanSuite
 {
+    // Formats a value like "-123e-5" for failure messages.
     static std::string
     fmtNum(bool neg, uint64_t m, int e)
     {
@@ -190,6 +192,9 @@ public:
     runTests() override
     {
         testCompare();
+
+        // Issues identified during formal verification.
+        // Kept here to ensure there are no regression bugs.
         testNegativeComparison();
     }
 };

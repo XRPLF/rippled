@@ -4,7 +4,7 @@
 
 namespace xrpl::test::formal_verification {
 
-// Mirrors FFINumber in xrpl-lean4/XRPL/FFI.lean.
+// The Lean FFI Number with the raw fields
 struct LeanNumber
 {
     uint8_t negative;

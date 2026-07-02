@@ -132,6 +132,7 @@ words:
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hrange
   - hwaddress
   - hwrap
   - ifndef
@@ -244,6 +245,7 @@ words:
   - qbsprofile
   - queuable
   - Raphson
+  - rcases
   - rcflags
   - replayer
   - rerandomize
