@@ -650,8 +650,8 @@ SHAMapStoreImp::healthWait()
     // completeLock_.
     // Releasing the lock may mean that status will be slightly out of date when the lock is
     // reacquired, but it's close enough. In a normal rotation, healthWait() is called frequently,
-    // so a false positive will be detected on the next call, and a false negative wil be detected
-    // in the next loop interation. Database rotation is important, but not timely, so an extra
+    // so a false positive will be detected on the next call, and a false negative will be detected
+    // in the next loop iteration. Database rotation is important, but not timely, so an extra
     // delay is fine.
     auto readServerStatus = [this](
                                 LedgerIndex& index,
