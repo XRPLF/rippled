@@ -11,6 +11,7 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STVector256.h>
 
 #include <cstdint>
