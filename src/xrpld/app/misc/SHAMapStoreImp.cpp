@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <limits>
@@ -669,10 +670,10 @@ SHAMapStoreImp::healthWait()
     };
 
     // Tracked server status properties
-    LedgerIndex index;
+    LedgerIndex index = 0;
     std::chrono::seconds age;
-    OperatingMode mode;
-    std::size_t numMissing;
+    OperatingMode mode = OperatingMode::DISCONNECTED;
+    std::size_t numMissing = 0;
 
     std::unique_lock lock(mutex_);
 
