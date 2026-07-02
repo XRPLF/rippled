@@ -42,12 +42,12 @@ getTxReserveSponsorAccountID(STTx const& tx)
 }
 
 inline std::expected<SLE::pointer, TER>
-getTxReserveSponsor(ApplyView& view, STTx const& tx)
+getTxReserveSponsor(ApplyViewContext ctx)
 {
-    auto const sponsorID = getTxReserveSponsorAccountID(tx);
+    auto const sponsorID = getTxReserveSponsorAccountID(ctx.tx);
     if (sponsorID)
     {
-        auto sle = view.peek(keylet::account(*sponsorID));
+        auto sle = ctx.view.peek(keylet::account(*sponsorID));
 
         // already checked in Transactor::checkSponsor
         if (!sle)

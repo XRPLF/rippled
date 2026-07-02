@@ -10,7 +10,6 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -87,8 +86,7 @@ canAddHolding(ReadView const& view, MPTIssue const& mptIssue);
 
 [[nodiscard]] TER
 authorizeMPToken(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
@@ -119,8 +117,7 @@ requireAuth(
  */
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,
@@ -206,8 +203,7 @@ canMPTTradeAndTransfer(
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
@@ -215,8 +211,7 @@ addEmptyHolding(
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
     beast::Journal journal);
