@@ -26,7 +26,7 @@ template <class T>
 inline void
 reverseBytes(T& t)
 {
-    unsigned char* bytes =
+    auto* bytes =
         static_cast<unsigned char*>(std::memmove(std::addressof(t), std::addressof(t), sizeof(T)));
     for (unsigned i = 0; i < sizeof(T) / 2; ++i)
         std::swap(bytes[i], bytes[sizeof(T) - 1 - i]);

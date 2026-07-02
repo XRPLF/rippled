@@ -139,7 +139,7 @@ STNumber::isEquivalent(STBase const& t) const
 {
     XRPL_ASSERT(
         t.getSType() == this->getSType(), "xrpl::STNumber::isEquivalent : field type match");
-    STNumber const& v = dynamic_cast<STNumber const&>(t);
+    auto const& v = dynamic_cast<STNumber const&>(t);
     return value_ == v;
 }
 
