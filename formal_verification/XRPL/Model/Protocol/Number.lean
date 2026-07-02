@@ -35,30 +35,30 @@ def maxExponent : Int := 32768
 /-- Largest mantissa the C++ signed 64-bit rep can hold, `2^63 - 1` (C++ `kMaxRep`). -/
 def maxRep : UInt64 := 9223372036854775807
 
-/-- Mirror of the C++ `Number`. The value it represents is `(-1)^negative_ * mantissa_ * 10^exponent_`.
-Field names keep the C++ trailing underscore. -/
+/-- Mirror of the C++ `Number`. The value it represents is `(-1)^negative * mantissa * 10^exponent`.
+Field names match the C++ members, without the C++ trailing underscore. -/
 structure Number where
-  negative_ : Bool
-  mantissa_ : UInt64
-  exponent_ : Int
+  negative : Bool
+  mantissa : UInt64
+  exponent : Int
   deriving DecidableEq, Repr
 
 /-- The canonical zero, what C++ `Number{}` default-constructs: positive, mantissa 0, and
 the smallest `int` value as exponent. -/
 def Number.zero : Number :=
-  { negative_ := false, mantissa_ := 0, exponent_ := -2147483648 }
+  { negative := false, mantissa := 0, exponent := -2147483648 }
 
 /-- Constructs a `Number` from raw fields without normalizing, like the C++ `Unchecked`
 constructor tag. This is how the FFI and the tests construct arbitrary numbers. -/
 def Number.unchecked (negative : Bool) (mantissa : UInt64) (exponent : Int) : Number :=
-  { negative_ := negative, mantissa_ := mantissa, exponent_ := exponent }
+  { negative := negative, mantissa := mantissa, exponent := exponent }
 
 /-- The C++ `isnormal()` check -/
 def Number.isnormal (n : Number) : Prop :=
   n = Number.zero ∨
-  (largeRange.min ≤ n.mantissa_ ∧ n.mantissa_ ≤ largeRange.max ∧
-   (n.mantissa_ ≤ maxRep ∨ n.mantissa_.toNat % 10 = 0) ∧
-   minExponent ≤ n.exponent_ ∧ n.exponent_ ≤ maxExponent)
+  (largeRange.min ≤ n.mantissa ∧ n.mantissa ≤ largeRange.max ∧
+   (n.mantissa ≤ maxRep ∨ n.mantissa.toNat % 10 = 0) ∧
+   minExponent ≤ n.exponent ∧ n.exponent ≤ maxExponent)
 
 /-- Alias of `isnormal`, the spelling used in property statements. -/
 abbrev Number.isNormalized (n : Number) : Prop := n.isnormal
@@ -74,12 +74,12 @@ The sign flag negates the result.
 
 This is a proof-only specification. The C++ has no equivalent for this. -/
 def Number.toRat (n : Number) : ℚ :=
-  let sign : Int := if n.negative_ then -1 else 1
-  let m : Int := n.mantissa_.toNat
-  if n.exponent_ ≥ 0 then
-    mkRat (sign * m * (10 : Int) ^ n.exponent_.toNat) 1
+  let sign : Int := if n.negative then -1 else 1
+  let m : Int := n.mantissa.toNat
+  if n.exponent ≥ 0 then
+    mkRat (sign * m * (10 : Int) ^ n.exponent.toNat) 1
   else
-    mkRat (sign * m) ((10 : Nat) ^ (-n.exponent_).toNat)
+    mkRat (sign * m) ((10 : Nat) ^ (-n.exponent).toNat)
 
 /-- The C++ `operator<(Number, Number)`.
 
@@ -88,7 +88,7 @@ Lean can overload `<` just like C++ does:
 ```lean
 instance : LT Number where
   lt l r :=   -- `x < y` runs the body written here
-    if l.negative_ != r.negative_ then l.negative_
+    if l.negative != r.negative then l.negative
     else ...
 ```
 
@@ -97,15 +97,15 @@ arguments, and some C++ helpers we model need more, like an asset or a rounding 
 named functions keep all models uniform. And the C++ name tells a C++ developer exactly
 which function is being modeled. -/
 def Number.operator_lt (l r : Number) : Bool :=
-  let lneg := l.negative_
-  let rneg := r.negative_
+  let lneg := l.negative
+  let rneg := r.negative
   if lneg != rneg then lneg
-  else if l.mantissa_ == 0 then r.mantissa_ > 0
-  else if r.mantissa_ == 0 then false
-  else if l.exponent_ > r.exponent_ then lneg
-  else if l.exponent_ < r.exponent_ then !lneg
-  else if lneg then l.mantissa_ > r.mantissa_
-  else l.mantissa_ < r.mantissa_
+  else if l.mantissa == 0 then r.mantissa > 0
+  else if r.mantissa == 0 then false
+  else if l.exponent > r.exponent then lneg
+  else if l.exponent < r.exponent then !lneg
+  else if lneg then l.mantissa > r.mantissa
+  else l.mantissa < r.mantissa
 
 
 end XRPL.Model.Protocol

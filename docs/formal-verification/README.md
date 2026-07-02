@@ -122,9 +122,9 @@ inductive rounding_mode where
   ...
 
 structure Number where
-  negative_ : Bool
-  mantissa_ : UInt64
-  exponent_ : Int
+  negative : Bool
+  mantissa : UInt64
+  exponent : Int
   ...
 
 def Number.operator_mul (x y : Number) (mode : rounding_mode) : Except String Number := do
@@ -217,7 +217,7 @@ def lean_number_build (negative : UInt8) (mantissa : UInt64) (exponent : Int64) 
   Number.unchecked (negative != 0) mantissa exponent.toInt
 
 @[export lean_number_mantissa]
-def lean_number_mantissa (n : Number) : UInt64 := n.mantissa_
+def lean_number_mantissa (n : Number) : UInt64 := n.mantissa
 ```
 
 On the C++ side, `NumberFFI` wraps the handle and exposes it as a plain `Number`:

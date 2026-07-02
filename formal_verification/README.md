@@ -36,7 +36,8 @@ lake build
 ## Lean 4 introduction
 
 Lean 4 is a functional programming language and a theorem prover. The
-same compiler builds the code and checks the proofs.
+same compiler builds the code and checks the proofs. Each Lean snippet below is
+paired with the closest C++.
 
 ### Pure functions
 
@@ -48,8 +49,14 @@ with a value. `let` names an intermediate variable.
 def maxRep : UInt64 := 9223372036854775807
 
 def Number.toRat (n : Number) : ℚ :=
-  let sign : Int := if n.negative_ then -1 else 1  -- if returns a value
+  let sign : Int := if n.negative then -1 else 1  -- if returns a value
   ...
+```
+
+```cpp
+constexpr uint64_t maxRep = 9223372036854775807;
+
+int const sign = n.negative_ ? -1 : 1;  // like the ternary, but for any if
 ```
 
 `abbrev` is a transparent alias, like C++ `using`.
@@ -66,6 +73,16 @@ def sumOfSquares (xs : List Nat) : Nat := Id.run do  -- run the block as pure co
   for x in xs do
     total := total + x * x
   return total
+```
+
+```cpp
+uint64_t sumOfSquares(std::vector<uint64_t> const& xs)
+{
+    uint64_t total = 0;
+    for (auto x : xs)
+        total += x * x;
+    return total;
+}
 ```
 
 ### Numbers
@@ -85,10 +102,20 @@ auto-generates code, here equality (`DecidableEq`) and debug printing (`Repr`).
 
 ```lean
 structure Number where
-  negative_ : Bool
-  mantissa_ : UInt64
-  exponent_ : Int
+  negative : Bool
+  mantissa : UInt64
+  exponent : Int
   deriving DecidableEq, Repr
+```
+
+```cpp
+struct Number
+{
+    bool negative_;
+    std::uint64_t mantissa_;
+    int exponent_;
+    friend bool operator==(Number const&, Number const&) = default;  // ~ deriving
+};
 ```
 
 A field can also hold a proof. An instance cannot be built without supplying
@@ -115,6 +142,10 @@ inductive Sign where
   | positive
 ```
 
+```cpp
+enum class Sign { negative, zero, positive };
+```
+
 ### Type classes
 
 A type class is a compile-time interface, close to C++ concepts. An `instance`
@@ -128,6 +159,19 @@ class LE (α : Type) where  -- simplified from the library
   le : α → α → Prop
 ```
 
+The closest C++ shape is a template specialized per type:
+
+```cpp
+template <typename T>
+struct LE;         // class LE
+
+template <>
+struct LE<Number>  // instance : LE Number
+{
+    static bool le(Number const& a, Number const& b);
+};
+```
+
 ### Bool vs Prop
 
 `Bool` is a runtime value code can branch on. `Prop` is a mathematical
@@ -137,7 +181,11 @@ statement to be proven. It never executes. The symbols read: `∧` and, `∨` or
 ```lean
 def Number.isnormal (n : Number) : Prop :=
   n = Number.zero ∨
-  (largeRange.min ≤ n.mantissa_ ∧ n.mantissa_ ≤ largeRange.max ∧ ...)
+  (largeRange.min ≤ n.mantissa ∧ n.mantissa ≤ largeRange.max ∧ ...)
+```
+
+```cpp
+bool isnormal() const;  // C++ can only check at runtime, so it returns bool
 ```
 
 `isnormal` is a condition theorems assume, not code the model runs. That is why
@@ -186,4 +234,10 @@ enables the dot call `n.toRat`, like a member function.
 ```lean
 @[export lean_number_lt]  -- exported as the C symbol "lean_number_lt"
 def lean_number_lt (neg1 : UInt8) (mant1 : UInt64) (exp1 : Int64) ...
+```
+
+```cpp
+// the matching declaration on the C++ side
+extern "C" uint8_t
+lean_number_lt(uint8_t, uint64_t, uint64_t, uint8_t, uint64_t, uint64_t);
 ```

@@ -5,15 +5,15 @@ import XRPL.Properties.Protocol.Number.Signum.Common.Proofs
 namespace XRPL.Model.Protocol
 
 /-- A non-negative number with a nonzero mantissa has a strictly positive value. -/
-lemma Number.toRat_pos_of_not_negative (n : Number) (hneg : n.negative_ = false)
-    (hm : n.mantissa_ ≠ 0) : 0 < n.toRat := by
+lemma Number.toRat_pos_of_not_negative (n : Number) (hneg : n.negative = false)
+    (hm : n.mantissa ≠ 0) : 0 < n.toRat := by
   have h1 := Number.toRat_nonneg_of_nonnegative n hneg
   have h2 : n.toRat ≠ 0 := fun h => hm (Number.toRat_eq_zero_iff.mp h)
   exact lt_of_le_of_ne h1 (Ne.symm h2)
 
 /-- A negative number with a nonzero mantissa has a strictly negative value. -/
-lemma Number.toRat_neg_of_negative' (n : Number) (hneg : n.negative_ = true)
-    (hm : n.mantissa_ ≠ 0) : n.toRat < 0 := by
+lemma Number.toRat_neg_of_negative' (n : Number) (hneg : n.negative = true)
+    (hm : n.mantissa ≠ 0) : n.toRat < 0 := by
   have h1 := Number.toRat_nonpos_of_negative n hneg
   have h2 : n.toRat ≠ 0 := fun h => hm (Number.toRat_eq_zero_iff.mp h)
   exact lt_of_le_of_ne h1 h2
@@ -24,60 +24,60 @@ so no mantissa can make up for a smaller exponent. This is what lets `operator_l
 exponents before mantissas. -/
 lemma abs_toRat_lt_of_exp_lt (x y : Number)
     (hx : x.isNormalized) (hy : y.isNormalized)
-    (hxm : x.mantissa_ ≠ 0) (hym : y.mantissa_ ≠ 0)
-    (hexp : x.exponent_ < y.exponent_) :
+    (hxm : x.mantissa ≠ 0) (hym : y.mantissa ≠ 0)
+    (hexp : x.exponent < y.exponent) :
     |x.toRat| < |y.toRat| := by
   rw [abs_toRat_eq, abs_toRat_eq]
   obtain ⟨_, hxmax⟩ := hx.mantissaBounds hxm
   obtain ⟨hymin, _⟩ := hy.mantissaBounds hym
-  have hxm_le : (x.mantissa_.toNat : ℚ) ≤ 9999999999999999999 := by
+  have hxm_le : (x.mantissa.toNat : ℚ) ≤ 9999999999999999999 := by
     have := UInt64.le_iff_toNat_le.mp hxmax
     rw [largeRange_max_val] at this
     exact_mod_cast this
-  have hym_ge : (1000000000000000000 : ℚ) ≤ (y.mantissa_.toNat : ℚ) := by
+  have hym_ge : (1000000000000000000 : ℚ) ≤ (y.mantissa.toNat : ℚ) := by
     have := UInt64.le_iff_toNat_le.mp hymin
     rw [largeRange_min_val] at this
     exact_mod_cast this
-  have hpow_x : (0 : ℚ) < 10 ^ x.exponent_ := zpow_pos (by norm_num) _
-  have hpow_y : (0 : ℚ) < 10 ^ y.exponent_ := zpow_pos (by norm_num) _
-  calc (x.mantissa_.toNat : ℚ) * 10 ^ x.exponent_
-      ≤ 9999999999999999999 * 10 ^ x.exponent_ :=
+  have hpow_x : (0 : ℚ) < 10 ^ x.exponent := zpow_pos (by norm_num) _
+  have hpow_y : (0 : ℚ) < 10 ^ y.exponent := zpow_pos (by norm_num) _
+  calc (x.mantissa.toNat : ℚ) * 10 ^ x.exponent
+      ≤ 9999999999999999999 * 10 ^ x.exponent :=
         mul_le_mul_of_nonneg_right hxm_le (le_of_lt hpow_x)
-    _ < 1000000000000000000 * 10 ^ (x.exponent_ + 1) := by
+    _ < 1000000000000000000 * 10 ^ (x.exponent + 1) := by
         rw [zpow_add_one₀ (by norm_num : (10 : ℚ) ≠ 0),
-            show (1000000000000000000 : ℚ) * (10 ^ x.exponent_ * 10)
-              = 10000000000000000000 * 10 ^ x.exponent_ from by ring]
+            show (1000000000000000000 : ℚ) * (10 ^ x.exponent * 10)
+              = 10000000000000000000 * 10 ^ x.exponent from by ring]
         exact mul_lt_mul_of_pos_right (by norm_num) hpow_x
-    _ ≤ 1000000000000000000 * 10 ^ y.exponent_ := by
+    _ ≤ 1000000000000000000 * 10 ^ y.exponent := by
         apply mul_le_mul_of_nonneg_left _ (by norm_num)
         exact zpow_le_zpow_right₀ (by norm_num) (by omega)
-    _ ≤ (y.mantissa_.toNat : ℚ) * 10 ^ y.exponent_ :=
+    _ ≤ (y.mantissa.toNat : ℚ) * 10 ^ y.exponent :=
         mul_le_mul_of_nonneg_right hym_ge (le_of_lt hpow_y)
 
 /-- With equal exponents, comparing magnitudes is exactly comparing mantissas. -/
 lemma abs_toRat_lt_iff_of_exp_eq (x y : Number)
-    (hexp : x.exponent_ = y.exponent_) :
-    |x.toRat| < |y.toRat| ↔ x.mantissa_ < y.mantissa_ := by
+    (hexp : x.exponent = y.exponent) :
+    |x.toRat| < |y.toRat| ↔ x.mantissa < y.mantissa := by
   rw [abs_toRat_eq, abs_toRat_eq, hexp]
-  have hpow : (0 : ℚ) < 10 ^ y.exponent_ := zpow_pos (by norm_num) _
+  have hpow : (0 : ℚ) < 10 ^ y.exponent := zpow_pos (by norm_num) _
   constructor
   · intro h
     have := lt_of_mul_lt_mul_right h (le_of_lt hpow)
     rw [UInt64.lt_iff_toNat_lt]
     exact_mod_cast this
   · intro h
-    have h' : (x.mantissa_.toNat : ℚ) < y.mantissa_.toNat := by
+    have h' : (x.mantissa.toNat : ℚ) < y.mantissa.toNat := by
       exact_mod_cast UInt64.lt_iff_toNat_lt.mp h
     exact mul_lt_mul_of_pos_right h' hpow
 
 /-- The signed value of a negative `Number` is the negated magnitude. -/
-private lemma toRat_eq_neg_abs (n : Number) (hneg : n.negative_ = true) :
+private lemma toRat_eq_neg_abs (n : Number) (hneg : n.negative = true) :
     n.toRat = -|n.toRat| := by
   rw [abs_of_nonpos (Number.toRat_nonpos_of_negative n hneg)]
   ring
 
 /-- The signed value of a non-negative `Number` is its magnitude. -/
-private lemma toRat_eq_abs (n : Number) (hneg : n.negative_ = false) :
+private lemma toRat_eq_abs (n : Number) (hneg : n.negative = false) :
     n.toRat = |n.toRat| := by
   rw [abs_of_nonneg (Number.toRat_nonneg_of_nonnegative n hneg)]
 
@@ -87,30 +87,30 @@ one side is zero, exponents differ, exponents equal. -/
 theorem operator_lt_iff_proof (x y : Number)
     (hx : x.isNormalized) (hy : y.isNormalized) :
     x.operator_lt y = true ↔ x.toRat < y.toRat := by
-  by_cases hsx : x.negative_ = true
-  · by_cases hsy : y.negative_ = true
+  by_cases hsx : x.negative = true
+  · by_cases hsy : y.negative = true
     · -- both negative: nonzero mantissas, value = −magnitude.
-      have hxm : x.mantissa_ ≠ 0 := Number.mantissa_ne_zero_of_negative x hx hsx
-      have hym : y.mantissa_ ≠ 0 := Number.mantissa_ne_zero_of_negative y hy hsy
+      have hxm : x.mantissa ≠ 0 := Number.mantissa_ne_zero_of_negative x hx hsx
+      have hym : y.mantissa ≠ 0 := Number.mantissa_ne_zero_of_negative y hy hsy
       have hxs := toRat_eq_neg_abs x hsx
       have hys := toRat_eq_neg_abs y hsy
       unfold Number.operator_lt
       rw [hsx, hsy]
       simp only [bne_self_eq_false, Bool.false_eq_true, if_false]
-      rw [show (x.mantissa_ == 0) = false from beq_eq_false_iff_ne.mpr hxm,
-          show (y.mantissa_ == 0) = false from beq_eq_false_iff_ne.mpr hym]
+      rw [show (x.mantissa == 0) = false from beq_eq_false_iff_ne.mpr hxm,
+          show (y.mantissa == 0) = false from beq_eq_false_iff_ne.mpr hym]
       simp only [Bool.false_eq_true, if_false]
-      rcases lt_trichotomy x.exponent_ y.exponent_ with hexp | hexp | hexp
+      rcases lt_trichotomy x.exponent y.exponent with hexp | hexp | hexp
       · -- ex < ey: |x| < |y| so x > y; the operator returns !lneg = false.
-        rw [if_neg (by omega : ¬ x.exponent_ > y.exponent_), if_pos hexp,
+        rw [if_neg (by omega : ¬ x.exponent > y.exponent), if_pos hexp,
             show (!(true : Bool)) = false from rfl]
         simp only [Bool.false_eq_true, false_iff, not_lt]
         have habs := abs_toRat_lt_of_exp_lt x y hx hy hxm hym hexp
         rw [hxs, hys]
         linarith
       · -- ex = ey: sign-aware mantissa compare.
-        rw [if_neg (by omega : ¬ x.exponent_ > y.exponent_),
-            if_neg (by omega : ¬ x.exponent_ < y.exponent_), if_pos trivial,
+        rw [if_neg (by omega : ¬ x.exponent > y.exponent),
+            if_neg (by omega : ¬ x.exponent < y.exponent), if_pos trivial,
             decide_eq_true_iff]
         constructor
         · intro h
@@ -130,8 +130,8 @@ theorem operator_lt_iff_proof (x y : Number)
         · intro _
           rfl
     · -- x negative, y non-negative: x < y always.
-      have hsyf : y.negative_ = false := Bool.not_eq_true _ |>.mp hsy
-      have hxm : x.mantissa_ ≠ 0 := Number.mantissa_ne_zero_of_negative x hx hsx
+      have hsyf : y.negative = false := Bool.not_eq_true _ |>.mp hsy
+      have hxm : x.mantissa ≠ 0 := Number.mantissa_ne_zero_of_negative x hx hsx
       have heval : x.operator_lt y = true := by
         unfold Number.operator_lt
         rw [hsx, hsyf]
@@ -141,10 +141,10 @@ theorem operator_lt_iff_proof (x y : Number)
       have h1 := Number.toRat_neg_of_negative' x hsx hxm
       have h2 := Number.toRat_nonneg_of_nonnegative y hsyf
       linarith
-  · have hsxf : x.negative_ = false := Bool.not_eq_true _ |>.mp hsx
-    by_cases hsy : y.negative_ = true
+  · have hsxf : x.negative = false := Bool.not_eq_true _ |>.mp hsx
+    by_cases hsy : y.negative = true
     · -- x non-negative, y negative: never x < y.
-      have hym : y.mantissa_ ≠ 0 := Number.mantissa_ne_zero_of_negative y hy hsy
+      have hym : y.mantissa ≠ 0 := Number.mantissa_ne_zero_of_negative y hy hsy
       have heval : x.operator_lt y = false := by
         unfold Number.operator_lt
         rw [hsxf, hsy]
@@ -155,60 +155,60 @@ theorem operator_lt_iff_proof (x y : Number)
       have h2 := Number.toRat_neg_of_negative' y hsy hym
       linarith
     · -- both non-negative.
-      have hsyf : y.negative_ = false := Bool.not_eq_true _ |>.mp hsy
+      have hsyf : y.negative = false := Bool.not_eq_true _ |>.mp hsy
       have hxs := toRat_eq_abs x hsxf
       have hys := toRat_eq_abs y hsyf
       unfold Number.operator_lt
       rw [hsxf, hsyf]
       simp only [bne_self_eq_false, Bool.false_eq_true, if_false]
-      by_cases hxm : x.mantissa_ = 0
+      by_cases hxm : x.mantissa = 0
       · -- x = 0: x < y iff y is nonzero.
-        rw [show (x.mantissa_ == 0) = true from beq_iff_eq.mpr hxm]
+        rw [show (x.mantissa == 0) = true from beq_iff_eq.mpr hxm]
         simp only [if_true]
         rw [decide_eq_true_iff]
         have hx0 : x.toRat = 0 := Number.toRat_eq_zero_iff.mpr hxm
         rw [hx0]
         constructor
         · intro h
-          have hym : y.mantissa_ ≠ 0 := by
+          have hym : y.mantissa ≠ 0 := by
             intro hc
             rw [hc] at h
             exact absurd h (by decide)
           exact Number.toRat_pos_of_not_negative y hsyf hym
         · intro h
-          have hym : y.mantissa_ ≠ 0 :=
+          have hym : y.mantissa ≠ 0 :=
             fun hc => absurd (Number.toRat_eq_zero_iff.mpr hc) (ne_of_gt h)
-          change (0 : UInt64) < y.mantissa_
+          change (0 : UInt64) < y.mantissa
           rw [UInt64.lt_iff_toNat_lt, show (0 : UInt64).toNat = 0 from rfl]
-          have hne : y.mantissa_.toNat ≠ 0 := by
+          have hne : y.mantissa.toNat ≠ 0 := by
             intro hc
             apply hym
             rw [← UInt64.toNat_inj, hc]
             rfl
           omega
-      · rw [show (x.mantissa_ == 0) = false from beq_eq_false_iff_ne.mpr hxm]
+      · rw [show (x.mantissa == 0) = false from beq_eq_false_iff_ne.mpr hxm]
         simp only [Bool.false_eq_true, if_false]
-        by_cases hym : y.mantissa_ = 0
+        by_cases hym : y.mantissa = 0
         · -- y = 0: a positive x is never below it.
-          rw [show (y.mantissa_ == 0) = true from beq_iff_eq.mpr hym]
+          rw [show (y.mantissa == 0) = true from beq_iff_eq.mpr hym]
           simp only [if_true]
           have hy0 : y.toRat = 0 := Number.toRat_eq_zero_iff.mpr hym
           rw [hy0]
           simp only [Bool.false_eq_true, false_iff, not_lt]
           exact le_of_lt (Number.toRat_pos_of_not_negative x hsxf hxm)
-        · rw [show (y.mantissa_ == 0) = false from beq_eq_false_iff_ne.mpr hym]
+        · rw [show (y.mantissa == 0) = false from beq_eq_false_iff_ne.mpr hym]
           simp only [Bool.false_eq_true, if_false]
-          rcases lt_trichotomy x.exponent_ y.exponent_ with hexp | hexp | hexp
+          rcases lt_trichotomy x.exponent y.exponent with hexp | hexp | hexp
           · -- ex < ey: |x| < |y| so x < y; the operator returns !lneg = true.
-            rw [if_neg (by omega : ¬ x.exponent_ > y.exponent_), if_pos hexp,
+            rw [if_neg (by omega : ¬ x.exponent > y.exponent), if_pos hexp,
                 show (!(false : Bool)) = true from rfl]
             simp only [true_iff]
             have habs := abs_toRat_lt_of_exp_lt x y hx hy hxm hym hexp
             rw [hxs, hys]
             linarith
           · -- ex = ey: mantissa compare.
-            rw [if_neg (by omega : ¬ x.exponent_ > y.exponent_),
-                if_neg (by omega : ¬ x.exponent_ < y.exponent_),
+            rw [if_neg (by omega : ¬ x.exponent > y.exponent),
+                if_neg (by omega : ¬ x.exponent < y.exponent),
                 decide_eq_true_iff]
             constructor
             · intro h
