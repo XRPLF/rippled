@@ -2429,10 +2429,11 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
-        if (auto const extensionComputeLimit = ~val->at(~sfGasLimit); extensionComputeLimit)
+        if (auto const extensionComputeLimit = ~val->at(~sfExtensionComputeLimit);
+            extensionComputeLimit)
             jvObj[jss::extension_compute] = *extensionComputeLimit;
 
-        if (auto const extensionSizeLimit = ~val->at(~sfBytecodeSizeLimit); extensionSizeLimit)
+        if (auto const extensionSizeLimit = ~val->at(~sfExtensionSizeLimit); extensionSizeLimit)
             jvObj[jss::extension_size] = *extensionSizeLimit;
 
         if (auto const gasPrice = ~val->at(~sfGasPrice); gasPrice)
