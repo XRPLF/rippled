@@ -296,7 +296,7 @@ decreaseOwnerCount(
 void
 decreaseOwnerCountForObject(
     ApplyView& view,
-    SLE::ref ownerSle,
+    SLE::ref accountSle,
     SLE::ref objectSle,
     std::uint32_t count,
     beast::Journal j)
@@ -310,7 +310,7 @@ decreaseOwnerCountForObject(
     if (!validObjectType)
         return;  // LCOV_EXCL_LINE
 
-    decreaseOwnerCount(view, ReserveContext::makeFromObject(view, objectSle, ownerSle), count, j);
+    decreaseOwnerCount(view, ReserveContext::makeFromObject(view, objectSle, accountSle), count, j);
 }
 XRPAmount
 accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)

@@ -261,9 +261,8 @@ changeTokenURI(
 
 /** Insert the token in the owner's token directory. */
 TER
-insertToken(ApplyViewContext& ctx, AccountID owner, STObject&& nft)
+insertToken(ApplyViewContext ctx, AccountID owner, STObject&& nft)
 {
-    auto& view = ctx.view;
     XRPL_ASSERT(nft.isFieldPresent(sfNFTokenID), "xrpl::nft::insertToken : has NFT token");
 
     // First, we need to locate the page the NFT belongs to, creating it
@@ -293,7 +292,7 @@ insertToken(ApplyViewContext& ctx, AccountID owner, STObject&& nft)
         page->setFieldArray(sfNFTokens, arr);
     }
 
-    view.update(page);
+    ctx.view.update(page);
 
     return tesSUCCESS;
 }

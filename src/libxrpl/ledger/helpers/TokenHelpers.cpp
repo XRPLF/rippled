@@ -581,7 +581,7 @@ addEmptyHolding(
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return addEmptyHolding(std::move(ctx), accountID, priorBalance, issue, journal);
+            return addEmptyHolding(ctx, accountID, priorBalance, issue, journal);
         },
         asset.value());
 }
@@ -595,7 +595,7 @@ removeEmptyHolding(
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return removeEmptyHolding(std::move(ctx), accountID, issue, journal);
+            return removeEmptyHolding(ctx, accountID, issue, journal);
         },
         asset.value());
 }

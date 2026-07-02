@@ -51,7 +51,7 @@ findTokenAndPage(ApplyView& view, AccountID const& owner, uint256 const& nftoken
 
 /** Insert the token in the owner's token directory. */
 TER
-insertToken(ApplyViewContext& view, AccountID owner, STObject&& nft);
+insertToken(ApplyViewContext view, AccountID owner, STObject&& nft);
 
 /** Remove the token from the owner's token directory. */
 TER
