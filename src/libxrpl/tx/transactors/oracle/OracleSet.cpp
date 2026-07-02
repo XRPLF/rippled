@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
