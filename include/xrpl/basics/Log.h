@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <boost/beast/core/string.hpp>
@@ -11,7 +10,9 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 

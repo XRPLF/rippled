@@ -1,14 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 
+#include <atomic>
+#include <cstdint>
+#include <functional>
 #include <optional>
 #include <shared_mutex>
 #include <string>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 

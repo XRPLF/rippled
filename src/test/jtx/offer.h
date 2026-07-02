@@ -5,6 +5,8 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STAmount.h>
 
+#include <cstdint>
+
 namespace xrpl::test::jtx {
 
 /** Create an offer. */

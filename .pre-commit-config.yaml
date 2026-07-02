@@ -28,8 +28,10 @@ repos:
         entry: ./bin/pre-commit/clang_tidy_check.py
         language: python
         types_or: [c++, c]
-        exclude: ^include/xrpl/protocol_autogen
-        pass_filenames: false # script determines the staged files itself
+        # .ipp fragments are included by their owning header rather than compiled
+        # as standalone translation units, so they have no compile_commands.json
+        # entry to lint (verify_headers checks them transitively).
+        exclude: '^include/xrpl/protocol_autogen|\.ipp$'
       - id: fix-include-style
         name: fix include style
         entry: ./bin/pre-commit/fix_include_style.py

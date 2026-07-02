@@ -1,5 +1,6 @@
 #pragma once
 
+#include <test/jtx/JTx.h>
 #include <test/jtx/requires.h>
 
 #include <functional>

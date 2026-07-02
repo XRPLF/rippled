@@ -1,7 +1,9 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 
+#include <string>
 #include <utility>
 
 namespace xrpl::test::jtx {

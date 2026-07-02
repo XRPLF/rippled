@@ -3,6 +3,8 @@
 #include <test/csf/Digraph.h>
 #include <test/csf/Scheduler.h>
 
+#include <cassert>
+
 namespace xrpl::test::csf {
 /** Peer to peer network simulator.
 

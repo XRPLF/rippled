@@ -3,19 +3,28 @@
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpld/consensus/ConsensusTypes.h>
-#include <xrpld/consensus/DisputedTx.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/LedgerTiming.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <deque>
+#include <map>
+#include <memory>
 #include <optional>
 #include <sstream>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <xrpl/basics/algorithm.h>
-#include <xrpl/shamap/SHAMap.h>
 
 #include <algorithm>
+#include <functional>
 #include <utility>
 #include <vector>
 
