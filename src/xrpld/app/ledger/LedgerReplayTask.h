@@ -4,6 +4,11 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
+
+#include <cstdint>
+#include <memory>
 #include <vector>
 
 namespace xrpl {

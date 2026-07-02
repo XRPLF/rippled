@@ -43,7 +43,9 @@
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 #include <boost/system/detail/error_code.hpp>
 
+#include <soci/blob-exchange.h>  // IWYU pragma: keep
 #include <soci/blob.h>
+#include <soci/boost-optional.h>  // IWYU pragma: keep
 #include <soci/into.h>
 #include <soci/soci-backend.h>
 #include <soci/statement.h>

@@ -11,9 +11,14 @@
 #include <boost/version.hpp>
 
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <stdexcept>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -1247,12 +1252,7 @@ AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::AgedOrd
 template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::AgedOrderedContainer(
     AgedOrderedContainer const& other)
-    : config_(other.config_)
-#if BOOST_VERSION >= 108000
-    , cont_(other.cont_.get_comp())
-#else
-    , cont_(other.cont_.comp())
-#endif
+    : config_(other.config_), cont_(other.cont_.get_comp())
 {
     insert(other.cbegin(), other.cend());
 }
@@ -1261,12 +1261,7 @@ template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compa
 AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::AgedOrderedContainer(
     AgedOrderedContainer const& other,
     Allocator const& alloc)
-    : config_(other.config_, alloc)
-#if BOOST_VERSION >= 108000
-    , cont_(other.cont_.get_comp())
-#else
-    , cont_(other.cont_.comp())
-#endif
+    : config_(other.config_, alloc), cont_(other.cont_.get_comp())
 {
     insert(other.cbegin(), other.cend());
 }
@@ -1283,13 +1278,7 @@ template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compa
 AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::AgedOrderedContainer(
     AgedOrderedContainer&& other,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     Allocator const& alloc)
-    : config_(std::move(other.config_), alloc)
-#if BOOST_VERSION >= 108000
-    , cont_(std::move(other.cont_.get_comp()))
-#else
-    , cont_(std::move(other.cont_.comp()))
-#endif
-
+    : config_(std::move(other.config_), alloc), cont_(std::move(other.cont_.get_comp()))
 {
     insert(other.cbegin(), other.cend());
     other.clear();

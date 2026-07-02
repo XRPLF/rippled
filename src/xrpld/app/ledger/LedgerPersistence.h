@@ -1,7 +1,11 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Rules.h>
 
+#include <cstdint>
 #include <memory>
 #include <tuple>
 

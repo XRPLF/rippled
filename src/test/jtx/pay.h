@@ -4,6 +4,7 @@
 #include <test/jtx/amount.h>
 
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 
 namespace xrpl::test::jtx {
 

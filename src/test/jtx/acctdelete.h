@@ -3,7 +3,9 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+
+#include <cstdint>
 
 namespace xrpl::test::jtx {
 

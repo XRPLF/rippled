@@ -5,6 +5,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
 #include <type_traits>
 #include <utility>
 
