@@ -802,9 +802,9 @@ public:
                     //
                     checker.asyncConnect(
                         ep.address,
-                        [this, capture0 = slot->remoteEndpoint(), capture1 = ep.address](
-                            auto&& pH1) {
-                            checkComplete(capture0, capture1, std::forward<decltype(pH1)>(pH1));
+                        [this, remoteAddress = slot->remoteEndpoint(), checkedAddress = ep.address](
+                            boost::system::error_code const& ec) {
+                            checkComplete(remoteAddress, checkedAddress, ec);
                         });
 
                     // Note that we simply discard the first Endpoint

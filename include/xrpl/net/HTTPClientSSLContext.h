@@ -126,12 +126,8 @@ public:
             if (!ec)
             {
                 strm.set_verify_callback(
-                    [host, this](auto&& pH1, auto&& pH2) {
-                        return rfc6125Verify(
-                            host,
-                            std::forward<decltype(pH1)>(pH1),
-                            std::forward<decltype(pH2)>(pH2),
-                            j_);
+                    [host, this](bool preverified, boost::asio::ssl::verify_context& ctx) {
+                        return rfc6125Verify(host, preverified, ctx, j_);
                     },
                     ec);
             }

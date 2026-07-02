@@ -30,6 +30,7 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <exception>
 #include <functional>
 #include <iostream>
@@ -171,9 +172,10 @@ public:
                             req.set(h.first, h.second);
                     }));
             ws_.handshake(ep.address().to_string() + ":" + std::to_string(ep.port()), "/");
-            ws_.async_read(rb_, boost::asio::bind_executor(strand_, [this](auto&& pH1) {
-                               onReadMsg(std::forward<decltype(pH1)>(pH1));
-                           }));
+            ws_.async_read(
+                rb_, boost::asio::bind_executor(strand_, [this](error_code const& ec, std::size_t) {
+                    onReadMsg(ec);
+                }));
         }
         catch (std::exception&)
         {
@@ -308,9 +310,10 @@ private:
             msgs_.push_front(m);
             cv_.notify_all();
         }
-        ws_.async_read(rb_, boost::asio::bind_executor(strand_, [this](auto&& pH1) {
-                           onReadMsg(std::forward<decltype(pH1)>(pH1));
-                       }));
+        ws_.async_read(
+            rb_, boost::asio::bind_executor(strand_, [this](error_code const& ec, std::size_t) {
+                onReadMsg(ec);
+            }));
     }
 
     // Called when the read op terminates

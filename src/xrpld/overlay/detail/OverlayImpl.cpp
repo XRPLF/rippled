@@ -131,9 +131,9 @@ OverlayImpl::Timer::asyncWait()
 {
     timer.expires_after(std::chrono::seconds(1));
     timer.async_wait(
-        boost::asio::bind_executor(overlay_.strand_, [capture0 = shared_from_this()](auto&& pH1) {
-            capture0->onTimer(std::forward<decltype(pH1)>(pH1));
-        }));
+        boost::asio::bind_executor(
+            overlay_.strand_,
+            [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
 }
 
 void

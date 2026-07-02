@@ -88,16 +88,19 @@ PlainHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remoteAddress_))
     {
-        util::spawn(this->strand_, [capture0 = this->shared_from_this()] { capture0->doClose(); });
+        util::spawn(this->strand_, [self = this->shared_from_this()](boost::asio::yield_context) {
+            self->doClose();
+        });
         return;
     }
 
     if (!socket_.is_open())
         return;
 
-    util::spawn(this->strand_, [capture0 = this->shared_from_this()](auto&& pH1) {
-        capture0->doRead(std::forward<decltype(pH1)>(pH1));
-    });
+    util::spawn(
+        this->strand_, [self = this->shared_from_this()](boost::asio::yield_context doYield) {
+            self->doRead(doYield);
+        });
 }
 
 template <class Handler>

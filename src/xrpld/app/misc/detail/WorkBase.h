@@ -138,8 +138,8 @@ WorkBase<Impl>::run()
     if (!strand_.running_in_this_thread())
     {
         return boost::asio::post(
-            ios_, boost::asio::bind_executor(strand_, [capture0 = impl().shared_from_this()] {
-                capture0->run();
+            ios_, boost::asio::bind_executor(strand_, [self = impl().shared_from_this()] {
+                self->run();
             }));
     }
 
@@ -147,9 +147,9 @@ WorkBase<Impl>::run()
         host_,
         port_,
         boost::asio::bind_executor(
-            strand_, [capture0 = impl().shared_from_this()](auto&& pH1, auto&& pH2) {
-                capture0->onResolve(
-                    std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
+            strand_,
+            [self = impl().shared_from_this()](error_code const& ec, results_type results) {
+                self->onResolve(ec, results);
             }));
 }
 
@@ -163,7 +163,7 @@ WorkBase<Impl>::cancel()
             ios_,
 
             boost::asio::bind_executor(
-                strand_, [capture0 = impl().shared_from_this()] { capture0->cancel(); }));
+                strand_, [self = impl().shared_from_this()] { self->cancel(); }));
     }
 
     error_code ec;
@@ -193,9 +193,12 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
         socket_,
         results,
         boost::asio::bind_executor(
-            strand_, [capture0 = impl().shared_from_this()](auto&& pH1, auto&& pH2) {
-                capture0->onConnect(
-                    std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
+            strand_,
+            [self = impl().shared_from_this()](
+                error_code const& ec, endpoint_type const& endpoint) {
+                // Call the base-class overload explicitly: the derived Impl
+                // hides it with its own single-argument onConnect(ec).
+                self->WorkBase::onConnect(ec, endpoint);
             }));
 }
 
@@ -224,9 +227,10 @@ WorkBase<Impl>::onStart()
     boost::beast::http::async_write(
         impl().stream(),
         req_,
-        boost::asio::bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
-            capture0->onRequest(std::forward<decltype(pH1)>(pH1));
-        }));
+        boost::asio::bind_executor(
+            strand_, [self = impl().shared_from_this()](error_code const& ec, std::size_t) {
+                self->onRequest(ec);
+            }));
 }
 
 template <class Impl>
@@ -240,9 +244,10 @@ WorkBase<Impl>::onRequest(error_code const& ec)
         impl().stream(),
         readBuf_,
         res_,
-        boost::asio::bind_executor(strand_, [capture0 = impl().shared_from_this()](auto&& pH1) {
-            capture0->onResponse(std::forward<decltype(pH1)>(pH1));
-        }));
+        boost::asio::bind_executor(
+            strand_, [self = impl().shared_from_this()](error_code const& ec, std::size_t) {
+                self->onResponse(ec);
+            }));
 }
 
 template <class Impl>

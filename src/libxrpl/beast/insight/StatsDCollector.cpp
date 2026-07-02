@@ -325,8 +325,8 @@ public:
     postBuffer(std::string&& buffer)
     {
         boost::asio::dispatch(
-            ioContext_, boost::asio::bind_executor(strand_, [this, capture0 = std::move(buffer)] {
-                doPostBuffer(capture0);
+            ioContext_, boost::asio::bind_executor(strand_, [this, buffer = std::move(buffer)] {
+                doPostBuffer(buffer);
             }));
     }
 
@@ -390,12 +390,12 @@ public:
             if (!buffers.empty() && (size + length) > kMaxPacketSize)
             {
                 log(buffers);
-                socket_.async_send(buffers, [this, keepAlive](auto&& pH1, auto&& pH2) {
-                    onSend(
-                        keepAlive,
-                        std::forward<decltype(pH1)>(pH1),
-                        std::forward<decltype(pH2)>(pH2));
-                });
+                socket_.async_send(
+                    buffers,
+                    [this, keepAlive](
+                        boost::system::error_code const& ec, std::size_t bytesTransferred) {
+                        onSend(keepAlive, ec, bytesTransferred);
+                    });
                 buffers.clear();
                 size = 0;
             }
@@ -407,10 +407,12 @@ public:
         if (!buffers.empty())
         {
             log(buffers);
-            socket_.async_send(buffers, [this, keepAlive](auto&& pH1, auto&& pH2) {
-                onSend(
-                    keepAlive, std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
-            });
+            socket_.async_send(
+                buffers,
+                [this, keepAlive](
+                    boost::system::error_code const& ec, std::size_t bytesTransferred) {
+                    onSend(keepAlive, ec, bytesTransferred);
+                });
         }
     }
 
@@ -419,7 +421,7 @@ public:
     {
         using namespace std::chrono_literals;
         timer_.expires_after(1s);
-        timer_.async_wait([this](auto&& pH1) { onTimer(std::forward<decltype(pH1)>(pH1)); });
+        timer_.async_wait([this](boost::system::error_code const& ec) { onTimer(ec); });
     }
 
     void
@@ -507,8 +509,8 @@ StatsDCounterImpl::increment(CounterImpl::value_type amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        [capture0 = std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()), amount] {
-            capture0->doIncrement(amount);
+        [self = std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()), amount] {
+            self->doIncrement(amount);
         });
 }
 
@@ -551,8 +553,8 @@ StatsDEventImpl::notify(EventImpl::value_type const& value)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        [capture0 = std::static_pointer_cast<StatsDEventImpl>(shared_from_this()), value] {
-            capture0->doNotify(value);
+        [self = std::static_pointer_cast<StatsDEventImpl>(shared_from_this()), value] {
+            self->doNotify(value);
         });
 }
 
@@ -583,8 +585,8 @@ StatsDGaugeImpl::set(GaugeImpl::value_type value)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        [capture0 = std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()), value] {
-            capture0->doSet(value);
+        [self = std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()), value] {
+            self->doSet(value);
         });
 }
 
@@ -593,8 +595,8 @@ StatsDGaugeImpl::increment(GaugeImpl::difference_type amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        [capture0 = std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()), amount] {
-            capture0->doIncrement(amount);
+        [self = std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()), amount] {
+            self->doIncrement(amount);
         });
 }
 
@@ -668,8 +670,8 @@ StatsDMeterImpl::increment(MeterImpl::value_type amount)
 {
     boost::asio::dispatch(
         impl_->getIoContext(),
-        [capture0 = std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()), amount] {
-            capture0->doIncrement(amount);
+        [self = std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()), amount] {
+            self->doIncrement(amount);
         });
 }
 

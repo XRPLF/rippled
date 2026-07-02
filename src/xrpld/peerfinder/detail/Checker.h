@@ -182,7 +182,7 @@ Checker<Protocol>::asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& h
     }
     op->socket.async_connect(
         beast::IPAddressConversion::toAsioEndpoint(endpoint),
-        [op](auto&& pH1) { (*op)(std::forward<decltype(pH1)>(pH1)); });
+        [op](error_code const& ec) { (*op)(ec); });
 }
 
 template <class Protocol>

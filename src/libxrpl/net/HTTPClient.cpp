@@ -134,9 +134,9 @@ public:
         request(
             bSSL,
             deqSites,
-            [capture0 = shared_from_this(), strPath](auto&& pH1, auto&& pH2) {
-                capture0->makeGet(
-                    strPath, std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
+            [self = shared_from_this(), strPath](
+                boost::asio::streambuf& sb, std::string const& strHost) {
+                self->makeGet(strPath, sb, strHost);
             },
             timeout,
             complete);
@@ -164,8 +164,8 @@ public:
             shutdown_ = e.code();
 
             JLOG(j_.trace()) << "expires_after: " << shutdown_.message();
-            deadline_.async_wait([capture0 = shared_from_this()](auto&& pH1) {
-                capture0->handleDeadline(std::forward<decltype(pH1)>(pH1));
+            deadline_.async_wait([self = shared_from_this()](boost::system::error_code const& ec) {
+                self->handleDeadline(ec);
             });
         }
 
@@ -177,9 +177,10 @@ public:
                 query_->host,
                 query_->port,
                 query_->flags,
-                [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
-                    capture0->handleResolve(
-                        std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
+                [self = shared_from_this()](
+                    boost::system::error_code const& ecResult,
+                    boost::asio::ip::tcp::resolver::results_type results) {
+                    self->handleResolve(ecResult, results);
                 });
         }
 
@@ -217,8 +218,8 @@ public:
             resolver_.cancel();
 
             // Stop the transaction.
-            socket_.asyncShutdown([capture0 = shared_from_this()](auto&& pH1) {
-                capture0->handleShutdown(std::forward<decltype(pH1)>(pH1));
+            socket_.asyncShutdown([self = shared_from_this()](boost::system::error_code const& ec) {
+                self->handleShutdown(ec);
             });
         }
     }
@@ -257,9 +258,11 @@ public:
             JLOG(j_.trace()) << "Resolve complete.";
 
             boost::asio::async_connect(
-                socket_.lowestLayer(), result, [capture0 = shared_from_this()](auto&& pH1) {
-                    capture0->handleConnect(std::forward<decltype(pH1)>(pH1));
-                });
+                socket_.lowestLayer(),
+                result,
+                [self = shared_from_this()](
+                    boost::system::error_code const& ecResult,
+                    boost::asio::ip::tcp::endpoint const&) { self->handleConnect(ecResult); });
         }
     }
 
@@ -296,8 +299,9 @@ public:
         else if (ssl_)
         {
             socket_.asyncHandshake(
-                AutoSocket::ssl_socket::client, [capture0 = shared_from_this()](auto&& pH1) {
-                    capture0->handleRequest(std::forward<decltype(pH1)>(pH1));
+                AutoSocket::ssl_socket::client,
+                [self = shared_from_this()](boost::system::error_code const& ec) {
+                    self->handleRequest(ec);
                 });
         }
         else
@@ -324,10 +328,12 @@ public:
 
             build_(request_, deqSites_[0]);
 
-            socket_.asyncWrite(request_, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
-                capture0->handleWrite(
-                    std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
-            });
+            socket_.asyncWrite(
+                request_,
+                [self = shared_from_this()](
+                    boost::system::error_code const& ecResult, std::size_t bytesTransferred) {
+                    self->handleWrite(ecResult, bytesTransferred);
+                });
         }
     }
 
@@ -348,9 +354,11 @@ public:
             JLOG(j_.trace()) << "Wrote.";
 
             socket_.asyncReadUntil(
-                header_, "\r\n\r\n", [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
-                    capture0->handleHeader(
-                        std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
+                header_,
+                "\r\n\r\n",
+                [self = shared_from_this()](
+                    boost::system::error_code const& ecResult, std::size_t bytesTransferred) {
+                    self->handleHeader(ecResult, bytesTransferred);
                 });
         }
     }
@@ -414,9 +422,9 @@ public:
             socket_.asyncRead(
                 response_.prepare(responseSize - body_.size()),
                 boost::asio::transfer_all(),
-                [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
-                    capture0->handleData(
-                        std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
+                [self = shared_from_this()](
+                    boost::system::error_code const& ecResult, std::size_t bytesTransferred) {
+                    self->handleData(ecResult, bytesTransferred);
                 });
         }
     }

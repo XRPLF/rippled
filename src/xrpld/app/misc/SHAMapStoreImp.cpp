@@ -331,8 +331,8 @@ SHAMapStoreImp::run()
             try
             {
                 validatedLedger->stateMap().snapShot(false)->visitNodes(
-                    [this, &nodeCount](auto&& pH1) {
-                        return copyNode(nodeCount, std::forward<decltype(pH1)>(pH1));
+                    [this, &nodeCount](SHAMapTreeNode const& node) {
+                        return copyNode(nodeCount, node);
                     });
             }
             catch (SHAMapMissingNode const& e)

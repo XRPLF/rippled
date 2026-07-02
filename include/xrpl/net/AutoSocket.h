@@ -120,9 +120,8 @@ public:
             socket_->next_layer().async_receive(
                 boost::asio::buffer(buffer_),
                 boost::asio::socket_base::message_peek,
-                [this, cbFunc](auto&& pH1, auto&& pH2) {
-                    handleAutodetect(
-                        cbFunc, std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
+                [this, cbFunc](error_code const& ec, size_t bytesTransferred) {
+                    handleAutodetect(cbFunc, ec, bytesTransferred);
                 });
         }
     }

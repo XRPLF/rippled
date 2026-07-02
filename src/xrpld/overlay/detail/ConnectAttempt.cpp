@@ -35,6 +35,7 @@
 #include <boost/system/system_error.hpp>
 
 #include <chrono>
+#include <cstddef>
 #include <exception>
 #include <memory>
 #include <optional>
@@ -85,7 +86,7 @@ ConnectAttempt::stop()
 {
     if (!strand_.running_in_this_thread())
     {
-        boost::asio::post(strand_, [capture0 = shared_from_this()] { capture0->stop(); });
+        boost::asio::post(strand_, [self = shared_from_this()] { self->stop(); });
         return;
     }
     if (socket_.is_open())
@@ -102,9 +103,8 @@ ConnectAttempt::run()
 
     stream_.next_layer().async_connect(
         remoteEndpoint_,
-        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1) {
-            capture0->onConnect(std::forward<decltype(pH1)>(pH1));
-        }));
+        boost::asio::bind_executor(
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onConnect(ec); }));
 }
 
 //------------------------------------------------------------------------------
@@ -158,9 +158,8 @@ ConnectAttempt::setTimer()
     }
 
     timer_.async_wait(
-        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1) {
-            capture0->onTimer(std::forward<decltype(pH1)>(pH1));
-        }));
+        boost::asio::bind_executor(
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
 }
 
 void
@@ -226,9 +225,8 @@ ConnectAttempt::onConnect(error_code ec)
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
-        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1) {
-            capture0->onHandshake(std::forward<decltype(pH1)>(pH1));
-        }));
+        boost::asio::bind_executor(
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onHandshake(ec); }));
 }
 
 void
@@ -287,9 +285,9 @@ ConnectAttempt::onHandshake(error_code ec)
     boost::beast::http::async_write(
         stream_,
         req_,
-        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1) {
-            capture0->onWrite(std::forward<decltype(pH1)>(pH1));
-        }));
+        boost::asio::bind_executor(
+            strand_,
+            [self = shared_from_this()](error_code const& ec, std::size_t) { self->onWrite(ec); }));
 }
 
 void
@@ -313,9 +311,9 @@ ConnectAttempt::onWrite(error_code ec)
         stream_,
         readBuf_,
         response_,
-        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1) {
-            capture0->onRead(std::forward<decltype(pH1)>(pH1));
-        }));
+        boost::asio::bind_executor(
+            strand_,
+            [self = shared_from_this()](error_code const& ec, std::size_t) { self->onRead(ec); }));
 }
 
 void
@@ -336,9 +334,9 @@ ConnectAttempt::onRead(error_code ec)
             JLOG(journal_.debug()) << "EOF";
             setTimer();
             stream_.async_shutdown(
-                boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1) {
-                    capture0->onShutdown(std::forward<decltype(pH1)>(pH1));
-                }));
+                boost::asio::bind_executor(
+                    strand_,
+                    [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
             return;
         }
 

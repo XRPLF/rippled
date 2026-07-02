@@ -180,9 +180,8 @@ template <class Handler>
 void
 Door<Handler>::Detector::run()
 {
-    util::spawn(strand_, [capture0 = this->shared_from_this()](auto&& pH1) {
-        capture0->doDetect(std::forward<decltype(pH1)>(pH1));
-    });
+    util::spawn(
+        strand_, [self = this->shared_from_this()](yield_context yield) { self->doDetect(yield); });
 }
 
 template <class Handler>
@@ -296,9 +295,8 @@ template <class Handler>
 void
 Door<Handler>::run()
 {
-    util::spawn(strand_, [capture0 = this->shared_from_this()](auto&& pH1) {
-        capture0->doAccept(std::forward<decltype(pH1)>(pH1));
-    });
+    util::spawn(
+        strand_, [self = this->shared_from_this()](yield_context yield) { self->doAccept(yield); });
 }
 
 template <class Handler>
@@ -307,8 +305,7 @@ Door<Handler>::close()
 {
     if (!strand_.running_in_this_thread())
     {
-        return boost::asio::post(
-            strand_, [capture0 = this->shared_from_this()] { capture0->close(); });
+        return boost::asio::post(strand_, [self = this->shared_from_this()] { self->close(); });
     }
     backoffTimer_.cancel();
     error_code ec;

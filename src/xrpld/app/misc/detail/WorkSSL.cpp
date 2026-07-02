@@ -53,9 +53,8 @@ WorkSSL::onConnect(error_code const& ec)
 
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
-        boost::asio::bind_executor(strand_, [capture0 = shared_from_this()](auto&& pH1) {
-            capture0->onHandshake(std::forward<decltype(pH1)>(pH1));
-        }));
+        boost::asio::bind_executor(
+            strand_, [self = shared_from_this()](error_code const& ec) { self->onHandshake(ec); }));
 }
 
 void

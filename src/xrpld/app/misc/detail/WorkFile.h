@@ -63,10 +63,9 @@ WorkFile::run()
 {
     if (!strand_.running_in_this_thread())
     {
-        boost::asio::post(
-            ios_, boost::asio::bind_executor(strand_, [capture0 = shared_from_this()] {
-                capture0->run();
-            }));
+        boost::asio::post(ios_, boost::asio::bind_executor(strand_, [self = shared_from_this()] {
+                              self->run();
+                          }));
         return;
     }
 

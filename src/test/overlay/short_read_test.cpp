@@ -198,7 +198,7 @@ private:
             {
                 if (!strand.running_in_this_thread())
                 {
-                    post(strand, [capture0 = shared_from_this()] { capture0->close(); });
+                    post(strand, [self = shared_from_this()] { self->close(); });
                     return;
                 }
                 acceptor.close();
@@ -208,8 +208,9 @@ private:
             run()
             {
                 acceptor.async_accept(
-                    socket, bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
-                        capture0->onAccept(std::forward<decltype(pH1)>(pH1));
+                    socket,
+                    bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
+                        self->onAccept(ec);
                     }));
             }
 
@@ -236,8 +237,9 @@ private:
                 server.add(p);
                 p->run();
                 acceptor.async_accept(
-                    socket, bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
-                        capture0->onAccept(std::forward<decltype(pH1)>(pH1));
+                    socket,
+                    bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
+                        self->onAccept(ec);
                     }));
             }
         };
@@ -268,7 +270,7 @@ private:
             {
                 if (!strand.running_in_this_thread())
                 {
-                    post(strand, [capture0 = shared_from_this()] { capture0->close(); });
+                    post(strand, [self = shared_from_this()] { self->close(); });
                     return;
                 }
                 if (socket.is_open())
@@ -282,13 +284,13 @@ private:
             run()
             {
                 timer.expires_after(std::chrono::seconds(3));
-                timer.async_wait(bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
-                    capture0->onTimer(std::forward<decltype(pH1)>(pH1));
-                }));
+                timer.async_wait(bind_executor(
+                    strand,
+                    [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
                 stream.async_handshake(
                     stream_type::server,
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
-                        capture0->onHandshake(std::forward<decltype(pH1)>(pH1));
+                    bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
+                        self->onHandshake(ec);
                     }));
             }
 
@@ -331,10 +333,12 @@ private:
                     stream,
                     buf,
                     "\n",
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
-                        capture0->onRead(
-                            std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
-                    }));
+                    bind_executor(
+                        strand,
+                        [self = shared_from_this()](
+                            error_code const& ec, std::size_t bytesTransferred) {
+                            self->onRead(ec, bytesTransferred);
+                        }));
 #else
                 close();
 #endif
@@ -347,8 +351,8 @@ private:
                 {
                     server.test_.log << "[server] read: EOF" << std::endl;
                     stream.async_shutdown(
-                        bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
-                            capture0->onShutdown(std::forward<decltype(pH1)>(pH1));
+                        bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
+                            self->onShutdown(ec);
                         }));
                     return;
                 }
@@ -364,10 +368,12 @@ private:
                 boost::asio::async_write(
                     stream,
                     buf.data(),
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
-                        capture0->onWrite(
-                            std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
-                    }));
+                    bind_executor(
+                        strand,
+                        [self = shared_from_this()](
+                            error_code const& ec, std::size_t bytesTransferred) {
+                            self->onWrite(ec, bytesTransferred);
+                        }));
             }
 
             void
@@ -379,10 +385,9 @@ private:
                     fail("write", ec);
                     return;
                 }
-                stream.async_shutdown(
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
-                        capture0->onShutdown(std::forward<decltype(pH1)>(pH1));
-                    }));
+                stream.async_shutdown(bind_executor(
+                    strand,
+                    [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
             }
 
             void
@@ -454,7 +459,7 @@ private:
             {
                 if (!strand.running_in_this_thread())
                 {
-                    post(strand, [capture0 = shared_from_this()] { capture0->close(); });
+                    post(strand, [self = shared_from_this()] { self->close(); });
                     return;
                 }
                 if (socket.is_open())
@@ -468,12 +473,12 @@ private:
             run(endpoint_type const& ep)
             {
                 timer.expires_after(std::chrono::seconds(3));
-                timer.async_wait(bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
-                    capture0->onTimer(std::forward<decltype(pH1)>(pH1));
-                }));
+                timer.async_wait(bind_executor(
+                    strand,
+                    [self = shared_from_this()](error_code const& ec) { self->onTimer(ec); }));
                 socket.async_connect(
-                    ep, bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
-                        capture0->onConnect(std::forward<decltype(pH1)>(pH1));
+                    ep, bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
+                        self->onConnect(ec);
                     }));
             }
 
@@ -513,8 +518,8 @@ private:
                 }
                 stream.async_handshake(
                     stream_type::client,
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
-                        capture0->onHandshake(std::forward<decltype(pH1)>(pH1));
+                    bind_executor(strand, [self = shared_from_this()](error_code const& ec) {
+                        self->onHandshake(ec);
                     }));
             }
 
@@ -532,10 +537,12 @@ private:
                 boost::asio::async_write(
                     stream,
                     buf.data(),
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
-                        capture0->onWrite(
-                            std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
-                    }));
+                    bind_executor(
+                        strand,
+                        [self = shared_from_this()](
+                            error_code const& ec, std::size_t bytesTransferred) {
+                            self->onWrite(ec, bytesTransferred);
+                        }));
 #else
                 stream_.async_shutdown(bind_executor(
                     strand_,
@@ -558,10 +565,12 @@ private:
                     stream,
                     buf,
                     "\n",
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1, auto&& pH2) {
-                        capture0->onRead(
-                            std::forward<decltype(pH1)>(pH1), std::forward<decltype(pH2)>(pH2));
-                    }));
+                    bind_executor(
+                        strand,
+                        [self = shared_from_this()](
+                            error_code const& ec, std::size_t bytesTransferred) {
+                            self->onRead(ec, bytesTransferred);
+                        }));
 #else
                 stream_.async_shutdown(bind_executor(
                     strand_,
@@ -579,10 +588,9 @@ private:
                     return;
                 }
                 buf.commit(bytesTransferred);
-                stream.async_shutdown(
-                    bind_executor(strand, [capture0 = shared_from_this()](auto&& pH1) {
-                        capture0->onShutdown(std::forward<decltype(pH1)>(pH1));
-                    }));
+                stream.async_shutdown(bind_executor(
+                    strand,
+                    [self = shared_from_this()](error_code const& ec) { self->onShutdown(ec); }));
             }
 
             void

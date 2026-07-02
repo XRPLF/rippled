@@ -192,7 +192,7 @@ public:
             boost::asio::dispatch(
                 ioContext,
                 boost::asio::bind_executor(
-                    strand, [this, capture0 = CompletionCounter(this)] { doStop(capture0); }));
+                    strand, [this, counter = CompletionCounter(this)] { doStop(counter); }));
 
             JLOG(journal.debug()) << "Queued a stop request";
         }
@@ -221,8 +221,8 @@ public:
         boost::asio::dispatch(
             ioContext,
             boost::asio::bind_executor(
-                strand, [this, names, handler, capture0 = CompletionCounter(this)] {
-                    doResolve(names, handler, capture0);
+                strand, [this, names, handler, counter = CompletionCounter(this)] {
+                    doResolve(names, handler, counter);
                 }));
     }
 
@@ -272,7 +272,7 @@ public:
         boost::asio::post(
             ioContext,
             boost::asio::bind_executor(
-                strand, [this, capture0 = CompletionCounter(this)] { doWork(capture0); }));
+                strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
     }
 
     static HostAndPort
@@ -291,9 +291,8 @@ public:
         // a port separator
 
         // Attempt to find the first and last non-whitespace
-        auto const findWhitespace = [](auto&& pH1) {
-            return std::isspace<std::string::value_type>(
-                std::forward<decltype(pH1)>(pH1), std::locale());
+        auto const findWhitespace = [](std::string::value_type c) {
+            return std::isspace<std::string::value_type>(c, std::locale());
         };
 
         auto hostFirst = std::ranges::find_if_not(str, findWhitespace);
@@ -350,7 +349,7 @@ public:
             boost::asio::post(
                 ioContext,
                 boost::asio::bind_executor(
-                    strand, [this, capture0 = CompletionCounter(this)] { doWork(capture0); }));
+                    strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
 
             return;
         }
@@ -358,13 +357,10 @@ public:
         resolver.async_resolve(
             host,
             port,
-            [this, name, handler, capture0 = CompletionCounter(this)](auto&& pH1, auto&& pH2) {
-                doFinish(
-                    name,
-                    std::forward<decltype(pH1)>(pH1),
-                    handler,
-                    std::forward<decltype(pH2)>(pH2),
-                    capture0);
+            [this, name, handler, counter = CompletionCounter(this)](
+                boost::system::error_code const& ec,
+                boost::asio::ip::tcp::resolver::results_type results) {
+                doFinish(name, ec, handler, results, counter);
             });
     }
 
@@ -385,7 +381,7 @@ public:
                 boost::asio::post(
                     ioContext,
                     boost::asio::bind_executor(
-                        strand, [this, capture0 = CompletionCounter(this)] { doWork(capture0); }));
+                        strand, [this, counter = CompletionCounter(this)] { doWork(counter); }));
             }
         }
     }
