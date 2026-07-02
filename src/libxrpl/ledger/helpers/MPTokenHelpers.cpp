@@ -23,7 +23,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -127,31 +126,29 @@ canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 
 [[nodiscard]] TER
 addEmptyHolding(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
     beast::Journal journal)
 {
     auto const& mptID = mptIssue.getMptID();
-    auto const mpt = view.peek(keylet::mptokenIssuance(mptID));
+    auto const mpt = ctx.view.peek(keylet::mptokenIssuance(mptID));
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (mpt->isFlag(lsfMPTLocked))
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    if (view.peek(keylet::mptoken(mptID, accountID)))
+    if (ctx.view.peek(keylet::mptoken(mptID, accountID)))
         return tecDUPLICATE;
     if (accountID == mptIssue.getIssuer())
         return tesSUCCESS;
 
-    return authorizeMPToken(view, tx, priorBalance, mptID, accountID, journal, 0, std::nullopt);
+    return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal, 0, std::nullopt);
 }
 
 [[nodiscard]] TER
 authorizeMPToken(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
@@ -159,7 +156,7 @@ authorizeMPToken(
     std::uint32_t flags,
     std::optional<AccountID> holderID)
 {
-    auto const sleAcct = view.peek(keylet::account(account));
+    auto const sleAcct = ctx.view.peek(keylet::account(account));
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -174,19 +171,19 @@ authorizeMPToken(
         if ((flags & tfMPTUnauthorize) != 0u)
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
-            auto const sleMpt = view.peek(mptokenKey);
+            auto const sleMpt = ctx.view.peek(mptokenKey);
             if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0 ||
-                (view.rules().enabled(fixCleanup3_1_3) &&
+                (ctx.view.rules().enabled(fixCleanup3_1_3) &&
                  (*sleMpt)[~sfLockedAmount].valueOr(0) != 0))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            if (!view.dirRemove(
+            if (!ctx.view.dirRemove(
                     keylet::ownerDir(account), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            decreaseOwnerCountForObject(view, sleAcct, sleMpt, 1, journal);
+            decreaseOwnerCountForObject(ctx.view, sleAcct, sleMpt, 1, journal);
 
-            view.erase(sleMpt);
+            ctx.view.erase(sleMpt);
             return tesSUCCESS;
         }
 
@@ -195,9 +192,9 @@ authorizeMPToken(
         //      - create the MPToken object for the holder
 
         SLE::pointer sponsorSle;
-        if (account == tx[sfAccount])
+        if (account == ctx.tx[sfAccount])
         {
-            auto sle = getTxReserveSponsor(view, tx);
+            auto sle = getTxReserveSponsor(ctx);
             if (!sle)
                 return sle.error();  // LCOV_EXCL_LINE
             sponsorSle = std::move(*sle);
@@ -214,40 +211,40 @@ authorizeMPToken(
         if (sponsorSle || ownerCount(sleAcct, journal) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
-                    view, tx, sleAcct, priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
+                    ctx, sleAcct, priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
                 !isTesSuccess(ret))
                 return ret;
         }
 
         // Defensive check before we attempt to create MPToken for the issuer
-        auto const mpt = view.read(keylet::mptokenIssuance(mptIssuanceID));
+        auto const mpt = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
         if (!mpt || mpt->getAccountID(sfIssuer) == account)
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::authorizeMPToken : invalid issuance or issuers token");
-            if (view.rules().enabled(featureLendingProtocol))
+            if (ctx.view.rules().enabled(featureLendingProtocol))
                 return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
 
         auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
         auto mptoken = std::make_shared<SLE>(mptokenKey);
-        if (auto ter = dirLink(view, account, mptoken))
+        if (auto ter = dirLink(ctx.view, account, mptoken))
             return ter;  // LCOV_EXCL_LINE
 
         (*mptoken)[sfAccount] = account;
         (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
         (*mptoken)[sfFlags] = 0;
-        view.insert(mptoken);
+        ctx.view.insert(mptoken);
 
         // Update owner count.
-        increaseOwnerCount(view, sleAcct, sponsorSle, 1, journal);
+        increaseOwnerCount(ctx.view, sleAcct, sponsorSle, 1, journal);
         addSponsorToLedgerEntry(mptoken, sponsorSle);
 
         return tesSUCCESS;
     }
 
-    auto const sleMptIssuance = view.read(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleMptIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleMptIssuance)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -257,7 +254,7 @@ authorizeMPToken(
     if (account != (*sleMptIssuance)[sfIssuer])
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const sleMpt = view.peek(keylet::mptoken(mptIssuanceID, *holderID));
+    auto const sleMpt = ctx.view.peek(keylet::mptoken(mptIssuanceID, *holderID));
     if (!sleMpt)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -280,14 +277,13 @@ authorizeMPToken(
     if (flagsIn != flagsOut)
         sleMpt->setFieldU32(sfFlags, flagsOut);
 
-    view.update(sleMpt);
+    ctx.view.update(sleMpt);
     return tesSUCCESS;
 }
 
 [[nodiscard]] TER
 removeEmptyHolding(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
     beast::Journal journal)
@@ -297,7 +293,7 @@ removeEmptyHolding(
     // a token does exist, it will get deleted. If not, return success.
     bool const accountIsIssuer = accountID == mptIssue.getIssuer();
     auto const& mptID = mptIssue.getMptID();
-    auto const mptoken = view.peek(keylet::mptoken(mptID, accountID));
+    auto const mptoken = ctx.view.peek(keylet::mptoken(mptID, accountID));
     if (!mptoken)
         return accountIsIssuer ? (TER)tesSUCCESS : (TER)tecOBJECT_NOT_FOUND;
     // Unlike a trust line, if the account is the issuer, and the token has a
@@ -305,7 +301,7 @@ removeEmptyHolding(
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
     if (mptoken->at(sfMPTAmount) != 0 ||
-        (view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
+        (ctx.view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
         return tecHAS_OBLIGATIONS;
 
     // Don't delete if the token still has confidential balances
@@ -318,8 +314,7 @@ removeEmptyHolding(
     }
 
     return authorizeMPToken(
-        view,
-        tx,
+        ctx,
         {},  // priorBalance
         mptID,
         accountID,
@@ -438,14 +433,13 @@ requireAuth(
 
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
-    ApplyView& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization
     beast::Journal j)
 {
-    auto const sleIssuance = view.read(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -457,7 +451,7 @@ enforceMPTokenAuthorization(
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const keylet = keylet::mptoken(mptIssuanceID, account);
-    auto const sleToken = view.read(keylet);  //  NOTE: might be null
+    auto const sleToken = ctx.view.read(keylet);  //  NOTE: might be null
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     bool expired = false;
     bool const authorizedByDomain = [&]() -> bool {
@@ -465,7 +459,7 @@ enforceMPTokenAuthorization(
         if (!maybeDomainID.has_value())
             return false;  // LCOV_EXCL_LINE
 
-        auto const ter = verifyValidDomain(view, account, *maybeDomainID, j);
+        auto const ter = verifyValidDomain(ctx.view, account, *maybeDomainID, j);
         if (isTesSuccess(ter))
             return true;
         if (ter == tecEXPIRED)
@@ -520,8 +514,7 @@ enforceMPTokenAuthorization(
             maybeDomainID.has_value() && sleToken == nullptr,
             "xrpl::enforceMPTokenAuthorization : new MPToken for domain");
         if (auto const err = authorizeMPToken(
-                view,
-                tx,
+                ctx,
                 priorBalance,   // priorBalance
                 mptIssuanceID,  // mptIssuanceID
                 account,        // account

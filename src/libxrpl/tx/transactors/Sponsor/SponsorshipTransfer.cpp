@@ -42,9 +42,9 @@ SponsorshipTransfer::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 SponsorshipTransfer::preflight(PreflightContext const& ctx)
 {
-    auto const flags = ctx.tx.getFlags();
-    auto const flagsSet = flags & ~(tfSponsorshipTransferMask | tfUniversal);
-    if (std::popcount(flagsSet) != 1)
+    static constexpr auto transferFlags =
+        tfSponsorshipCreate | tfSponsorshipReassign | tfSponsorshipEnd;
+    if (std::popcount(ctx.tx.getFlags() & transferFlags) != 1)
     {
         JLOG(ctx.j.debug()) << "preflight: Only one SponsorshipTransfer flag can be set per tx.";
         return temINVALID_FLAG;
@@ -52,71 +52,94 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFlag(tfSponsorshipCreate))
     {
-        // Sponsor must be included
-        // SponsorFlags.spfSponsorReserve must be included
-        // Sponsee must be excluded
+        // Creating sponsorship transfers an unsponsored target from the sponsee
+        // to a reserve sponsor identified by sfSponsor + spfSponsorReserve.
+        if (!ctx.tx.isFieldPresent(sfSponsor))
+        {
+            JLOG(ctx.j.debug()) << "preflight: sfSponsor must be present when creating sponsorship";
+            return temMALFORMED;
+        }
+
         if (!isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug())
-                << "preflight: spfSponsorReserve should be set when creating sponsorship";
+                << "preflight: spfSponsorReserve must be set when creating sponsorship";
             return temINVALID_FLAG;
         }
+
         if (ctx.tx.isFieldPresent(sfSponsee))
         {
             JLOG(ctx.j.debug())
-                << "preflight: sfSponsee should be available only when ending sponsorship";
+                << "preflight: sfSponsee must not be present when creating sponsorship";
             return temMALFORMED;
         }
     }
+
     if (ctx.tx.isFlag(tfSponsorshipReassign))
     {
-        // Sponsor must be included
-        // SponsorFlags.spfSponsorReserve must be included
-        // Sponsee must be excluded
+        // Reassigning sponsorship transfers an already sponsored target from its
+        // current reserve sponsor to the new sponsor identified by sfSponsor +
+        // spfSponsorReserve.
+        if (!ctx.tx.isFieldPresent(sfSponsor))
+        {
+            JLOG(ctx.j.debug())
+                << "preflight: sfSponsor must be present when reassigning sponsorship";
+            return temMALFORMED;
+        }
+
         if (!isReserveSponsored(ctx.tx))
         {
             JLOG(ctx.j.debug())
-                << "preflight: spfSponsorReserve should be set when reassigning sponsorship";
+                << "preflight: spfSponsorReserve must be set when reassigning sponsorship";
             return temINVALID_FLAG;
         }
         if (ctx.tx.isFieldPresent(sfSponsee))
         {
             JLOG(ctx.j.debug())
-                << "preflight: sfSponsee should not be set when reassigning sponsorship";
+                << "preflight: sfSponsee must not be present when reassigning sponsorship";
             return temMALFORMED;
         }
     }
+
     if (ctx.tx.isFlag(tfSponsorshipEnd))
     {
-        // Sponsor must be excluded
-        // SponsorFlags.spfSponsorReserve must be excluded
-        if (isReserveSponsored(ctx.tx))
+        // Ending sponsorship removes reserve sponsorship from a sponsored target.
+        // The target is sfSponsee when provided; otherwise it is sfAccount.
+        if (ctx.tx.isFieldPresent(sfSponsor))
         {
             JLOG(ctx.j.debug())
-                << "preflight: spfSponsorReserve should not be set when ending sponsorship";
+                << "preflight: sfSponsor must not be present when ending sponsorship";
+            return temMALFORMED;
+        }
+
+        // sfSponsorFlags should not be present if it is ending sponsorship
+        if (ctx.tx.isFieldPresent(sfSponsorFlags))
+        {
+            JLOG(ctx.j.debug())
+                << "preflight: sfSponsorFlags should not be present when ending sponsorship";
             return temINVALID_FLAG;
         }
 
-        if (ctx.tx.isFieldPresent(sfSponsee))
+        if (ctx.tx.isFieldPresent(sfSponsee) &&
+            ctx.tx.getAccountID(sfSponsee) == ctx.tx.getAccountID(sfAccount))
         {
-            if (ctx.tx.getAccountID(sfSponsee) == ctx.tx.getAccountID(sfAccount))
-            {
-                JLOG(ctx.j.debug()) << "preflight: sfSponsee should not be the same as the account";
-                return temMALFORMED;
-            }
+            JLOG(ctx.j.debug()) << "preflight: sfSponsee should not be the same as the account";
+            return temMALFORMED;
         }
     }
 
-    // When an account sponsoring, sfSponsorSignature must be provided
-    auto const newSponsor = getTxReserveSponsorAccountID(ctx.tx);
-    bool const isObjectSponsor = ctx.tx.isFieldPresent(sfObjectID);
+    // Account-level reserve sponsorship changes the reserve responsibility for
+    // the account itself, so the new sponsor must explicitly co-sign. Object-level
+    // sponsorship may use pre-funded reserve sponsorship instead.
+    bool const isCreateOrReassign =
+        ctx.tx.isFlag(tfSponsorshipCreate) || ctx.tx.isFlag(tfSponsorshipReassign);
+    auto const reserveSponsor = getTxReserveSponsorAccountID(ctx.tx);
+    bool const isAccountReserveSponsorship =
+        isCreateOrReassign && reserveSponsor && !ctx.tx.isFieldPresent(sfObjectID);
 
-    // both sfSponsor and sfObjectID are provided
-    bool const isNewAccountSponsor = newSponsor && !isObjectSponsor;
-
-    if (isNewAccountSponsor && !ctx.tx.isFieldPresent(sfSponsorSignature))
+    if (isAccountReserveSponsorship && !ctx.tx.isFieldPresent(sfSponsorSignature))
     {
-        JLOG(ctx.j.debug()) << "preflight: sponsoring an account needs co-signing sponsor";
+        JLOG(ctx.j.debug()) << "preflight: account sponsorship requires sfSponsorSignature";
         return temMALFORMED;
     }
 
@@ -307,7 +330,7 @@ SponsorshipTransfer::doApply()
         if (!ownerSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        std::int64_t const ownerCountDelta = 1;
+        auto const ownerCountDelta = static_cast<std::int32_t>(getLedgerEntryOwnerCount(objSle));
 
         auto const& sponsorField = getLedgerEntrySponsorField(objSle, *ownerID);
 
@@ -322,8 +345,7 @@ SponsorshipTransfer::doApply()
             // check new sponsor have sufficient balance
             // NOLINTNEXTLINE(readability-suspicious-call-argument)
             if (auto const ter = checkInsufficientReserve(
-                    ctx_.view(),
-                    ctx_.tx,
+                    ctx_.getApplyViewContext(),
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
                     newSponsorSle,
@@ -376,8 +398,7 @@ SponsorshipTransfer::doApply()
             // check new sponsor have sufficient balance
             // NOLINTNEXTLINE(readability-suspicious-call-argument)
             if (auto const ter = checkInsufficientReserve(
-                    ctx_.view(),
-                    ctx_.tx,
+                    ctx_.getApplyViewContext(),
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
                     newSponsorSle,
@@ -425,8 +446,7 @@ SponsorshipTransfer::doApply()
             // The owner takes the reserve burden back when the object is
             // no longer sponsored.
             if (auto const ter = checkInsufficientReserve(
-                    ctx_.view(),
-                    ctx_.tx,
+                    ctx_.getApplyViewContext(),
                     ownerSle,
                     balanceBeforeFee(ownerSle),
                     SLE::pointer(),
@@ -466,8 +486,7 @@ SponsorshipTransfer::doApply()
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             if (auto const ter = checkInsufficientReserve(
-                    ctx_.view(),
-                    ctx_.tx,
+                    ctx_.getApplyViewContext(),
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
                     newSponsorSle,
@@ -495,8 +514,7 @@ SponsorshipTransfer::doApply()
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             if (auto const ter = checkInsufficientReserve(
-                    ctx_.view(),
-                    ctx_.tx,
+                    ctx_.getApplyViewContext(),
                     sponseeSle,
                     sponseeSle->getFieldAmount(sfBalance),
                     newSponsorSle,
@@ -532,8 +550,7 @@ SponsorshipTransfer::doApply()
             // The sponsee must be able to hold its own account reserve after
             // the sponsorship is removed.
             if (auto const ter = checkInsufficientReserve(
-                    ctx_.view(),
-                    ctx_.tx,
+                    ctx_.getApplyViewContext(),
                     sponseeSle,
                     balanceBeforeFee(sponseeSle),
                     SLE::pointer(),

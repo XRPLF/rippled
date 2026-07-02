@@ -9,7 +9,6 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -99,8 +98,7 @@ accountReserve(ReadView const& view, AccountID const& id, beast::Journal j, Adju
  */
 [[nodiscard]] TER
 checkInsufficientReserve(
-    ApplyView const& view,
-    STTx const& tx,
+    ApplyViewContext ctx,
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,

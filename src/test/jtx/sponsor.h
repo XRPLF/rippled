@@ -89,4 +89,7 @@ public:
 json::Value
 ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
 
+STAmount
+sponsorFeeBalance(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
+
 }  // namespace xrpl::test::jtx::sponsor
