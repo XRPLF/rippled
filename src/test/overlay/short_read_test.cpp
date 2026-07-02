@@ -546,8 +546,7 @@ private:
 #else
                 stream_.async_shutdown(bind_executor(
                     strand_,
-                    std::bind(
-                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    [self = shared_from_this()](error_code const& ec) { self->on_shutdown(ec); }));
 #endif
             }
 
@@ -574,8 +573,7 @@ private:
 #else
                 stream_.async_shutdown(bind_executor(
                     strand_,
-                    std::bind(
-                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    [self = shared_from_this()](error_code const& ec) { self->on_shutdown(ec); }));
 #endif
             }
 
