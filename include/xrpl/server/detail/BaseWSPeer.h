@@ -58,8 +58,7 @@ private:
     bool pingActive_ = false;
     boost::beast::websocket::ping_data payload_;
     error_code ec_;
-    std::function<void(boost::beast::websocket::frame_type, std::string_view)>
-        controlCallback_;
+    std::function<void(boost::beast::websocket::frame_type, std::string_view)> controlCallback_;
 
 public:
     template <class Body, class Headers>
