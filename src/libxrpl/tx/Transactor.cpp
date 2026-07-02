@@ -1390,7 +1390,8 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 
         // Checked in Transactor::checkSponsor
         XRPL_ASSERT(
-            tx.isFieldPresent(sfSponsorSignature), "xrpl::getFeePayer valid sponsor signature");
+            tx.isFieldPresent(sfSponsorSignature),
+            "xrpl::getFeePayer has sponsor signature without a sponsorship object");
 
         // co-signed
         return FeePayer{

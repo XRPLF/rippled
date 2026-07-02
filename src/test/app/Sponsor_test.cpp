@@ -4399,9 +4399,8 @@ public:
     }
 
     void
-    test2721ZeroBalanceSponsoredPaymentFeePayerCheck()
+    testZeroBalanceSponsoredPaymentFeePayerCheck()
     {
-        // https://github.com/sherlock-audit/2026-04-xrp-ledger-april-2026-judging/issues/2721
         // Zero-balance sponsored Payment: getFeePayer() consistency check
         testcase("Sponsored Payment: minimal-balance account with sponsor-pays-fee");
 
@@ -4487,6 +4486,8 @@ protected:
         testSponsoredTrustLineNoFreeReserve();
         testCoSignReserveBoundedBySponsorshipBudget();
         testReserveSponsorGate();
+
+        testZeroBalanceSponsoredPaymentFeePayerCheck();
     }
 
     void
@@ -4500,7 +4501,6 @@ public:
     run() override
     {
         testSponsor();
-        test2721ZeroBalanceSponsoredPaymentFeePayerCheck();
     }
 };
 
