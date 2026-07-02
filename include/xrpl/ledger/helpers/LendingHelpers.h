@@ -58,21 +58,6 @@ canApplyToBrokerCover(
 bool
 checkLendingProtocolDependencies(Rules const& rules, STTx const& tx);
 
-/** Adjust a LoanBroker's own sfOwnerCount.
- *
- *  A LoanBroker's OwnerCount tracks the number of outstanding loans it holds,
- *  and is distinct from the broker's pseudo-account's owner count. Unlike an
- *  account's OwnerCount it carries no reserve and cannot be sponsored, so it is
- *  adjusted directly here rather than through ReserveContext / increaseOwnerCount.
- *
- *  @param view      The apply view for making changes
- *  @param brokerSle The LoanBroker ledger entry
- *  @param amount    Signed amount to add to the loan count (nonzero)
- *  @param j         Journal for logging
- */
-void
-adjustOwnerCount(ApplyView& view, SLE::ref brokerSle, std::int32_t amount, beast::Journal j);
-
 static constexpr std::uint32_t kSecondsInYear = 365 * 24 * 60 * 60;
 
 Number

@@ -196,6 +196,30 @@ decreaseOwnerCountForObject(
     decreaseOwnerCountForObject(view, accountSle, objectSle, count, j);
 }
 
+/** Owner-count helpers scoped to the lending protocol. Kept in a nested
+ *  namespace so this broker-specific handling can't be reached accidentally by
+ *  the generic account-reserve code paths (which only ever operate on an
+ *  ACCOUNT_ROOT).
+ */
+namespace lending {
+
+/** Adjust a LoanBroker's own sfOwnerCount.
+ *
+ *  A LoanBroker's OwnerCount tracks the number of outstanding loans it holds,
+ *  and is distinct from the broker's pseudo-account's owner count. Unlike an
+ *  account's OwnerCount it carries no reserve and cannot be sponsored, so it is
+ *  adjusted directly rather than through ReserveContext / increaseOwnerCount.
+ *
+ *  @param view      The apply view for making changes
+ *  @param brokerSle The LoanBroker ledger entry
+ *  @param amount    Signed amount to add to the loan count (nonzero)
+ *  @param j         Journal for logging
+ */
+void
+adjustOwnerCount(ApplyView& view, SLE::ref brokerSle, std::int32_t amount, beast::Journal j);
+
+}  // namespace lending
+
 /** Returns IOU issuer transfer fee as Rate. Rate specifies
  * the fee as fractions of 1 billion. For example, 1% transfer rate
  * is represented as 1,010,000,000.

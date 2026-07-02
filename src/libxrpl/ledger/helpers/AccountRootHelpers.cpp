@@ -310,6 +310,28 @@ decreaseOwnerCountForObject(
 
     decreaseOwnerCount(view, ReserveContext::makeFromObject(view, objectSle, accountSle), count, j);
 }
+
+namespace lending {
+
+void
+adjustOwnerCount(ApplyView& view, SLE::ref brokerSle, std::int32_t amount, beast::Journal j)
+{
+    XRPL_ASSERT(
+        brokerSle && brokerSle->getType() == ltLOAN_BROKER,
+        "xrpl::lending::adjustOwnerCount : valid LoanBroker sle");
+    if (!brokerSle || brokerSle->getType() != ltLOAN_BROKER)
+        return;  // LCOV_EXCL_LINE
+    XRPL_ASSERT(amount, "xrpl::lending::adjustOwnerCount : nonzero amount input");
+
+    // A LoanBroker's OwnerCount tracks its outstanding loans; it carries no
+    // reserve or sponsor, so adjust the counter directly (reusing the shared
+    // confine/hook/update logic) without any reserve accounting.
+    adjustOwnerCountImpl(
+        view, brokerSle, sfOwnerCount, brokerSle->getAccountID(sfAccount), amount, j);
+}
+
+}  // namespace lending
+
 XRPAmount
 accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)
 {
