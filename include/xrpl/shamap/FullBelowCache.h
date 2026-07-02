@@ -4,9 +4,13 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 namespace xrpl {

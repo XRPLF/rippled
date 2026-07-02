@@ -4,10 +4,16 @@
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/container/aged_unordered_map.h>
 
+#include <chrono>
+#include <cstdint>
+#include <mutex>
 #include <optional>
 #include <set>
+#include <type_traits>
+#include <utility>
 
 namespace xrpl {
 

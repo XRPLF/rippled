@@ -3,7 +3,6 @@
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/JobTypeData.h>
-#include <xrpl/core/JobTypes.h>
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
@@ -12,10 +11,27 @@
 // `boost/context/pooled_fixedsize_stack.hpp`, whose `.malloc()` / `.free()`
 // member calls on `boost::pool` collide with MSVC's `_CRTDBG_MAP_ALLOC` macros
 // in Debug builds (see cmake/XrplCompiler.cmake).
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/LoadEvent.h>
+
 #include <boost/context/protected_fixedsize_stack.hpp>
 #include <boost/coroutine2/coroutine.hpp>
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <set>
+#include <string>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -112,7 +128,7 @@ public:
         resume();
 
         /** Returns true if the Coro is still runnable (has not returned). */
-        bool
+        [[nodiscard]] bool
         runnable() const;
 
         /** Once called, the Coro allows early exit without an assert. */
@@ -384,7 +400,7 @@ private:
 
 }  // namespace xrpl
 
-#include <xrpl/core/Coro.ipp>
+#include <xrpl/core/Coro.ipp>  // IWYU pragma: keep
 
 namespace xrpl {
 

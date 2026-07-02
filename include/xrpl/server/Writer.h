@@ -2,6 +2,7 @@
 
 #include <boost/asio/buffer.hpp>
 
+#include <cstddef>
 #include <functional>
 #include <vector>
 

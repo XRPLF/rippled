@@ -7,6 +7,12 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
+
 namespace xrpl {
 
 namespace Resource {
