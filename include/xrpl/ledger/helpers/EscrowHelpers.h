@@ -84,8 +84,6 @@ escrowUnlockApplyHelper<Issue>(
         STAmount initialBalance(issue);
         initialBalance.get<Issue>().account = noAccount();
 
-        // The ApplyViewContext overload derives the sponsor (XLS-68: only when
-        // sleDest is the tx.Account, which createAsset already guarantees).
         if (TER const ter = trustCreate(
                 ctx,                                 // apply-view context
                 recvLow,                             // is dest low?
@@ -201,6 +199,10 @@ escrowUnlockApplyHelper<MPTIssue>(
             !isTesSuccess(ret))
             return ret;
 
+        // checked on `createAsset` instantiation
+        XRPL_ASSERT(
+            sleDest->getAccountID(sfAccount) == ctx.tx[sfAccount],
+            "EscrowHelpers::escrowUnlockApplyHelper : sleDest.Account == tx.Account");
         auto const reserveCtx =
             ReserveContext::makeFromAccount(ctx.view, sleDest, ctx.txReserveContext.sponsorSle);
 
@@ -211,6 +213,8 @@ escrowUnlockApplyHelper<MPTIssue>(
 
         // update owner count.
         increaseOwnerCount(ctx.view, reserveCtx, 1, journal);
+        auto mptSle = ctx.view.peek(mptKeylet);
+        addSponsorToLedgerEntry(mptSle, reserveCtx.sponsorSle);
     }
 
     if (!ctx.view.exists(mptKeylet) && !receiverIssuer)

@@ -699,6 +699,7 @@ directSendNoFeeIOU(
         auto const senderNoRippleFlag = bSenderHigh ? lsfHighNoRipple : lsfLowNoRipple;
         auto const senderFreezeFlag = bSenderHigh ? lsfHighFreeze : lsfLowFreeze;
         auto const receiverReserveFlag = bSenderHigh ? lsfLowReserve : lsfHighReserve;
+        auto const senderSle = view.peek(keylet::account(uSenderID));
 
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
         //       for anyone to understand.
@@ -708,8 +709,7 @@ directSendNoFeeIOU(
             // Sender is zero or negative.
             && sleRippleState->isFlag(senderReserveFlag)
             // Sender reserve is set.
-            && sleRippleState->isFlag(senderNoRippleFlag) !=
-                view.read(keylet::account(uSenderID))->isFlag(lsfDefaultRipple) &&
+            && sleRippleState->isFlag(senderNoRippleFlag) != senderSle->isFlag(lsfDefaultRipple) &&
             !sleRippleState->isFlag(senderFreezeFlag) &&
             !sleRippleState->getFieldAmount(bSenderHigh ? sfHighLimit : sfLowLimit)
             // Sender trust limit is 0.
@@ -722,7 +722,6 @@ directSendNoFeeIOU(
             // Clear the reserve of the sender, possibly delete the line!
             auto const currentSponsor = getLedgerEntryReserveSponsor(
                 view, sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
-            auto const senderSle = view.peek(keylet::account(uSenderID));
             if (!senderSle)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             decreaseOwnerCount(
