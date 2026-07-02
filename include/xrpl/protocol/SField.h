@@ -2,10 +2,11 @@
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 #include <map>
+#include <string>
+#include <unordered_map>
 
 namespace xrpl {
 

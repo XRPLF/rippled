@@ -1,7 +1,9 @@
 #pragma once
 
 #include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 
 /** LedgerStateFix operations. */
 namespace xrpl::test::jtx::ledgerStateFix {

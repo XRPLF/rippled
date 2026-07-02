@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/STTx.h>
 
 #include <type_traits>

@@ -2,6 +2,7 @@
 
 #include <nudb/detail/stream.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
 

@@ -1,12 +1,12 @@
 #include <xrpl/beast/clock/manual_clock.h>
-#include <xrpl/beast/container/aged_map.h>
-#include <xrpl/beast/container/aged_multimap.h>
-#include <xrpl/beast/container/aged_multiset.h>
-#include <xrpl/beast/container/aged_set.h>
-#include <xrpl/beast/container/aged_unordered_map.h>
-#include <xrpl/beast/container/aged_unordered_multimap.h>
-#include <xrpl/beast/container/aged_unordered_multiset.h>
-#include <xrpl/beast/container/aged_unordered_set.h>
+#include <xrpl/beast/container/aged_map.h>                 // IWYU pragma: keep
+#include <xrpl/beast/container/aged_multimap.h>            // IWYU pragma: keep
+#include <xrpl/beast/container/aged_multiset.h>            // IWYU pragma: keep
+#include <xrpl/beast/container/aged_set.h>                 // IWYU pragma: keep
+#include <xrpl/beast/container/aged_unordered_map.h>       // IWYU pragma: keep
+#include <xrpl/beast/container/aged_unordered_multimap.h>  // IWYU pragma: keep
+#include <xrpl/beast/container/aged_unordered_multiset.h>  // IWYU pragma: keep
+#include <xrpl/beast/container/aged_unordered_set.h>       // IWYU pragma: keep
 #include <xrpl/beast/container/detail/aged_ordered_container.h>
 #include <xrpl/beast/container/detail/aged_unordered_container.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -18,9 +18,9 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
+#include <type_traits>  // IWYU pragma: keep
 #include <utility>
-#include <vector>
+#include <vector>  // IWYU pragma: keep
 
 #ifndef BEAST_AGED_UNORDERED_NO_ALLOC_DEFAULTCTOR
 #ifdef _MSC_VER
