@@ -24,7 +24,7 @@ public:
     static STAmount
     amount(Integer integer, std::enable_if_t<std::is_signed_v<Integer>>* = 0)
     {
-        static_assert(std::is_integral_v<Integer>, "");
+        static_assert(std::is_integral_v<Integer>);
         return STAmount(integer, false);
     }
 
@@ -32,7 +32,7 @@ public:
     static STAmount
     amount(Integer integer, std::enable_if_t<!std::is_signed_v<Integer>>* = 0)
     {
-        static_assert(std::is_integral_v<Integer>, "");
+        static_assert(std::is_integral_v<Integer>);
         if (integer < 0)
             return STAmount(-integer, true);
         return STAmount(integer, false);

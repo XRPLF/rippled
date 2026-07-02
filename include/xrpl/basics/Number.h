@@ -14,7 +14,6 @@
 #include <stdexcept>
 #include <string>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 
 namespace xrpl {
@@ -187,7 +186,7 @@ struct MantissaRange final
 
     class Access
     {
-        static constexpr MantissaRange const&
+        static MantissaRange const&
         mantissaRange(MantissaScale scale);
 
         friend Number;

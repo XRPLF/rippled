@@ -7614,7 +7614,7 @@ class Vault_test : public beast::unit_test::Suite
         // Transaction fails if the data field is set, but is empty
         {
             testcase("VaultDelete memo data featureLendingProtocolV1_1 enabled data empty");
-            delTx[sfMemoData] = strHex(std::string(0, 'A'));
+            delTx[sfMemoData] = strHex(std::string());
             env(delTx, Ter(temMALFORMED));
             env.close();
         }

@@ -39,7 +39,7 @@ readVarint(void const* buf, std::size_t buflen, std::size_t& t)
     if (buflen == 0)
         return 0;
     t = 0;
-    std::uint8_t const* p = reinterpret_cast<std::uint8_t const*>(buf);
+    auto const* p = reinterpret_cast<std::uint8_t const*>(buf);
     std::size_t n = 0;
     while (p[n] & 0x80)
     {
@@ -86,7 +86,7 @@ std::size_t
 writeVarint(void* p0, std::size_t v)
 {
     // NOLINTNEXTLINE(misc-const-correctness)
-    std::uint8_t* p = reinterpret_cast<std::uint8_t*>(p0);
+    auto* p = reinterpret_cast<std::uint8_t*>(p0);
     do
     {
         std::uint8_t d = v % 127;
