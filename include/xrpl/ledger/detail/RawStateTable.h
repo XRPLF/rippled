@@ -1,12 +1,20 @@
 #pragma once
 
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/container/pmr/polymorphic_allocator.hpp>
 
+#include <cstddef>
+#include <functional>
 #include <map>
+#include <memory>
+#include <optional>
 #include <utility>
 
 namespace xrpl::detail {

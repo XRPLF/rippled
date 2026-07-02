@@ -1,7 +1,9 @@
 #pragma once
 
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Units.h>
 
 #include <mpt_protocol.h>
