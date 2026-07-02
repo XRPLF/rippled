@@ -7,6 +7,7 @@
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
@@ -494,7 +495,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         using namespace jtx;
 
         auto reserve = [](jtx::Env& env, std::uint32_t count) -> XRPAmount {
-            return baseAccountReserve(*env.current(), count);
+            return env.current()->fees().accountReserve(count, 1);
         };
 
         Env env(*this, features);
@@ -536,7 +537,7 @@ class PaymentSandbox_test : public beast::unit_test::Suite
         // If sponsor feature is enabled, test sponsorship transfer
         if (features[featureSponsor])
         {
-            auto const trustId = keylet::line(alice, gw, usd.currency);
+            auto const trustId = keylet::trustLine(alice, gw, usd.currency);
             BEAST_EXPECT(env.le(trustId));
 
             // Transfer sponsorship - sponsor now sponsors alice's trust line

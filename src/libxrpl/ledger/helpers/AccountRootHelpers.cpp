@@ -244,8 +244,8 @@ adjustOwnerCountSigned(
             return;  // LCOV_EXCL_LINE
         auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
-        totalOwnerCount.sponsored = adjustOwnerCountImpl(
-            view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
+        totalOwnerCount.sponsored =
+            adjustOwnerCountImpl(view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
 
         {
             OwnerCounts const sponsorCurrent(*sponsorSle);

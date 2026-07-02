@@ -9,16 +9,19 @@
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <unordered_set>
@@ -42,14 +45,21 @@ struct OwnerCounts
             owner >= sponsored,
             "xrpl::OwnerCounts : OwnerCount must be greater than or equal to "
             "SponsoredOwnerCount");
+        XRPL_ASSERT(sle.getType() == ltACCOUNT_ROOT, "xrpl::OwnerCounts : sle is AccountRoot");
     }
 
     [[nodiscard]] std::uint32_t
     count() const
     {
-        std::int64_t const x = static_cast<int64_t>(owner) - sponsored + sponsoring;
+        std::int64_t const x = static_cast<std::int64_t>(owner) - sponsored + sponsoring;
         if (x < 0)
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::OwnerCounts::count : count less than zero");
             return 0;
+            // LCOV_EXCL_STOP
+        }
+
         if (x > std::numeric_limits<std::uint32_t>::max())
             return std::numeric_limits<std::uint32_t>::max();
         return static_cast<std::uint32_t>(x);
