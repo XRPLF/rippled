@@ -332,7 +332,9 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     return err;
                 }
 
-                if (auto const err = createMPToken(sb, mptID, accountId, {}, flags);
+                // AMM is a pseudo-account, so it is never reserve-sponsored.
+                if (auto const err = createMPToken(
+                        sb, mptID, ReserveContext::makeFromAccount(sb, acc, nullptr), flags);
                     !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.

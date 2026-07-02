@@ -155,8 +155,7 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    increaseOwnerCount(
-        view(), ReserveContext::makeFromAccount(view(), pseudoAcct, nullptr), -1, j_);
+    decreaseOwnerCount(view(), ReserveContext::makeFromAccount(view(), pseudoAcct, nullptr), 1, j_);
 
     view().erase(mpt);
 
@@ -215,7 +214,7 @@ VaultDelete::doApply()
     }
 
     // We are destroying Vault and PseudoAccount, hence decrease by 2
-    increaseOwnerCount(view(), ReserveContext::makeFromAccount(view(), owner, nullptr), -2, j_);
+    decreaseOwnerCount(view(), ReserveContext::makeFromAccount(view(), owner, nullptr), 2, j_);
 
     // Destroy the vault.
     view().erase(vault);

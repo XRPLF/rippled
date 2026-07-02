@@ -125,8 +125,7 @@ ownerCount(SLE::const_ref sle, beast::Journal j, std::int32_t ownerCountAdj = 0)
  *  and the sponsor's sponsoring count.
  *
  *  @param view The apply view for making changes
- *  @param accountSle The account's ledger entry
- *  @param sponsorSle The sponsor's ledger entry (if applicable)
+ *  @param reserveCtx The account and sponsor information
  *  @param count Amount to add to the owner count
  *  @param j Journal for logging
  */
@@ -145,8 +144,7 @@ increaseOwnerCount(
  *  sfSponsor field.
  *
  *  @param view The apply view for making changes
- *  @param accountSle The account's ledger entry
- *  @param sponsorSle The sponsor's ledger entry (if applicable)
+ *  @param reserveCtx The account and sponsor information
  *  @param count Amount to remove from the owner count
  *  @param j Journal for logging
  */
@@ -157,19 +155,23 @@ decreaseOwnerCount(
     std::uint32_t count,
     beast::Journal j);
 
-/** Decrease the owner counters of the account. If the object has a sponsor,
- *  adjust its counters too. Used primarily just before deleting the object.
+/** Decrease owner-count fields for an existing ledger object.
+ *
+ *  This helper derives the reserve sponsor from objectSle's sfSponsor field,
+ *  then updates the same owner-count fields as decreaseOwnerCount. Use this
+ *  when removing an existing object whose reserve sponsor is stored on that
+ *  object.
  *
  *  @param view The apply view for making changes
- *  @param ownerSle The account's ledger entry
+ *  @param accountSle The account's ledger entry
  *  @param objectSle The object's ledger entry
- *  @param count Positive amount to remove from the owner count
- *  @param j Journal for logging (default: null sink)
+ *  @param count Amount to remove from the owner count
+ *  @param j Journal for logging
  */
 void
 decreaseOwnerCountForObject(
     ApplyView& view,
-    SLE::pointer ownerSle,
+    SLE::ref accountSle,
     SLE::ref objectSle,
     std::uint32_t count,
     beast::Journal j);

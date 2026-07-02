@@ -727,8 +727,8 @@ finalizeClaimHelper(
             // Remove the claim id from the ledger
             outerSb.erase(sleClaimID);
 
-            increaseOwnerCount(
-                outerSb, ReserveContext::makeFromAccount(outerSb, sleOwner, nullptr), -1, j);
+            decreaseOwnerCount(
+                outerSb, ReserveContext::makeFromAccount(outerSb, sleOwner, nullptr), 1, j);
         }
     }
 

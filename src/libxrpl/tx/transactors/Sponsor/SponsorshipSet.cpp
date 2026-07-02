@@ -204,6 +204,7 @@ SponsorshipSet::doApply()
     auto const feeAmount = ctx_.tx[~sfFeeAmount];
     auto const maxFee = ctx_.tx[~sfMaxFee];
     auto const remainingOwnerCount = ctx_.tx[~sfRemainingOwnerCount];
+
     bool const hasPositiveFeeAmount = feeAmount.has_value() && *feeAmount > beast::kZero;
 
     auto const applyViewContext = ctx_.getApplyViewContext();

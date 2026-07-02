@@ -562,10 +562,10 @@ TrustSet::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            increaseOwnerCount(
+            decreaseOwnerCount(
                 view(),
                 ReserveContext::makeFromAccount(view(), sleLowAccount, currentLowSponsor),
-                -1,
+                1,
                 viewJ);
             uFlagsOut &= ~lsfLowReserve;
 
@@ -603,10 +603,10 @@ TrustSet::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            increaseOwnerCount(
+            decreaseOwnerCount(
                 view(),
                 ReserveContext::makeFromAccount(view(), sleHighAccount, currentHighSponsor),
-                -1,
+                1,
                 viewJ);
             uFlagsOut &= ~lsfHighReserve;
 
@@ -679,8 +679,7 @@ TrustSet::doApply()
 
         JLOG(j_.trace()) << "doTrustSet: Creating ripple line: " << to_string(k.key);
 
-        // Create a new ripple line. The ApplyViewContext overload derives the
-        // sponsor (XLS-68: only when the reserved account is the tx.Account).
+        // Create a new ripple line.
         terResult = trustCreate(
             applyViewContext,
             bHigh,

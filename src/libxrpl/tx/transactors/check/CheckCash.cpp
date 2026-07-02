@@ -591,11 +591,7 @@ CheckCash::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    increaseOwnerCount(
-        psb,
-        ReserveContext::makeFromAccount(psb, psb.peek(keylet::account(srcId)), sponsorCheckSle),
-        -1,
-        viewJ);
+    decreaseOwnerCountForObject(psb, psb.peek(keylet::account(srcId)), sleCheck, 1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

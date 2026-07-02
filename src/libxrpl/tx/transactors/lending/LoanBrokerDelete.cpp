@@ -197,7 +197,7 @@ LoanBrokerDelete::doApply()
         // Decreases the owner count by two: one for the LoanBroker object, and
         // one for the pseudo-account.
         // LoanBroker object can be sponsored
-        increaseOwnerCount(view(), ReserveContext::makeFromAccount(view(), owner, nullptr), -2, j_);
+        decreaseOwnerCount(view(), ReserveContext::makeFromAccount(view(), owner, nullptr), 2, j_);
     }
 
     associateAsset(*broker, vaultAsset);

@@ -925,10 +925,10 @@ TER
 createMPToken(
     ApplyView& view,
     MPTID const& mptIssuanceID,
-    AccountID const& account,
-    SLE::ref sponsorSle,
+    ReserveContext const& reserveCtx,
     std::uint32_t const flags)
 {
+    auto const account = reserveCtx.accountID();
     auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
 
     auto const ownerNode =
@@ -943,8 +943,7 @@ createMPToken(
     (*mptoken)[sfFlags] = flags;
     (*mptoken)[sfOwnerNode] = *ownerNode;
 
-    if (sponsorSle)
-        addSponsorToLedgerEntry(mptoken, sponsorSle);
+    addSponsorToLedgerEntry(mptoken, reserveCtx.sponsorSle);
 
     view.insert(mptoken);
 
@@ -969,8 +968,7 @@ checkCreateMPT(
     auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
     if (!view.exists(mptokenID))
     {
-        if (auto const err =
-                createMPToken(view, mptIssue.getMptID(), holder, reserveCtx.sponsorSle, 0);
+        if (auto const err = createMPToken(view, mptIssue.getMptID(), reserveCtx, 0);
             !isTesSuccess(err))
         {
             return err;

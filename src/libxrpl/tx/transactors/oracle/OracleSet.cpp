@@ -186,11 +186,20 @@ adjustOracleOwnerCount(ApplyContext& ctx, int count)
 {
     if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
-        increaseOwnerCount(
-            ctx.view(),
-            ReserveContext::makeFromAccount(ctx.view(), sleAccount, nullptr),
-            count,
-            ctx.journal);
+        auto reserveCtx = ctx.getApplyViewContext().txReserveContext;
+        XRPL_ASSERT(
+            !reserveCtx.isSponsored(),
+            "OracleSet::adjustOracleOwnerCount : OracleSet is not reserve-sponsored");
+        if (count > 0)
+        {
+            increaseOwnerCount(
+                ctx.view(), reserveCtx, static_cast<std::uint32_t>(count), ctx.journal);
+        }
+        else if (count < 0)
+        {
+            decreaseOwnerCount(
+                ctx.view(), reserveCtx, static_cast<std::uint32_t>(-count), ctx.journal);
+        }
         return true;
     }
 

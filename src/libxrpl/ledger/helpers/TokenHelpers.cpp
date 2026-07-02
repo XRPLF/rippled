@@ -725,8 +725,8 @@ directSendNoFeeIOU(
             auto const senderSle = view.peek(keylet::account(uSenderID));
             if (!senderSle)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
-            increaseOwnerCount(
-                view, ReserveContext::makeFromAccount(view, senderSle, currentSponsor), -1, j);
+            decreaseOwnerCount(
+                view, ReserveContext::makeFromAccount(view, senderSle, currentSponsor), 1, j);
 
             removeSponsorFromLedgerEntry(
                 sleRippleState, !bSenderHigh ? sfLowSponsor : sfHighSponsor);

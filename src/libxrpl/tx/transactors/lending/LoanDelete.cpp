@@ -110,7 +110,7 @@ LoanDelete::doApply()
     // Decrement the LoanBroker's owner count.
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
-    increaseOwnerCount(view, ReserveContext::makeFromAccount(view, brokerSle, nullptr), -1, j_);
+    decreaseOwnerCount(view, ReserveContext::makeFromAccount(view, brokerSle, nullptr), 1, j_);
 
     // If there are no loans left, then any remaining debt must be forgiven,
     // because there is no other way to pay it back.
@@ -131,7 +131,7 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    increaseOwnerCount(view, ReserveContext::makeFromAccount(view, borrowerSle, nullptr), -1, j_);
+    decreaseOwnerCount(view, ReserveContext::makeFromAccount(view, borrowerSle, nullptr), 1, j_);
 
     // These associations shouldn't do anything, but do them just to be safe
     associateAsset(*loanSle, vaultAsset);

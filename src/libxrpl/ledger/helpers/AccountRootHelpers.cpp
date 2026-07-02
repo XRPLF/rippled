@@ -296,7 +296,7 @@ decreaseOwnerCount(
 void
 decreaseOwnerCountForObject(
     ApplyView& view,
-    SLE::pointer ownerSle,
+    SLE::ref ownerSle,
     SLE::ref objectSle,
     std::uint32_t count,
     beast::Journal j)

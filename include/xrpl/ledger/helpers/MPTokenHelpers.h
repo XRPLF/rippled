@@ -242,8 +242,7 @@ TER
 createMPToken(
     ApplyView& view,
     MPTID const& mptIssuanceID,
-    AccountID const& account,
-    SLE::ref sponsorSle,
+    ReserveContext const& reserveCtx,
     std::uint32_t const flags);
 
 TER

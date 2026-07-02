@@ -378,7 +378,7 @@ updateTrustLine(
         // Clear the reserve of the sender, possibly delete the line!
         auto const currentSponsor =
             getLedgerEntryReserveSponsor(view, state, !bSenderHigh ? sfLowSponsor : sfHighSponsor);
-        increaseOwnerCount(view, ReserveContext::makeFromAccount(view, sle, currentSponsor), -1, j);
+        decreaseOwnerCount(view, ReserveContext::makeFromAccount(view, sle, currentSponsor), 1, j);
 
         // Clear reserve flag.
         state->clearFlag(senderReserveFlag);
@@ -725,10 +725,10 @@ removeEmptyHolding(
 
         auto const currentLowSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfLowSponsor);
 
-        increaseOwnerCount(
+        decreaseOwnerCount(
             ctx.view,
             ReserveContext::makeFromAccount(ctx.view, sleLowAccount, currentLowSponsor),
-            -1,
+            1,
             journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
@@ -746,10 +746,10 @@ removeEmptyHolding(
 
         auto const currentHighSponsor = getLedgerEntryReserveSponsor(ctx.view, line, sfHighSponsor);
 
-        increaseOwnerCount(
+        decreaseOwnerCount(
             ctx.view,
             ReserveContext::makeFromAccount(ctx.view, sleHighAccount, currentHighSponsor),
-            -1,
+            1,
             journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
@@ -812,8 +812,8 @@ deleteAMMTrustLine(
     if (!sleState->isFlag(uFlags))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    increaseOwnerCount(
-        view, ReserveContext::makeFromAccount(view, !ammLow ? sleLow : sleHigh, sponsorSle), -1, j);
+    decreaseOwnerCount(
+        view, ReserveContext::makeFromAccount(view, !ammLow ? sleLow : sleHigh, sponsorSle), 1, j);
 
     return tesSUCCESS;
 }

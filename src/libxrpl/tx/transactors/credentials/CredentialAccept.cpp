@@ -116,7 +116,7 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    increaseOwnerCount(view(), ReserveContext::makeFromAccount(view(), sleIssuer, nullptr), -1, j_);
+    decreaseOwnerCount(view(), ReserveContext::makeFromAccount(view(), sleIssuer, nullptr), 1, j_);
     increaseOwnerCount(view(), ReserveContext::makeFromAccount(view(), sleSubject, nullptr), 1, j_);
 
     return tesSUCCESS;

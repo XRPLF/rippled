@@ -196,24 +196,21 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!ctx.view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        auto const sponsorSle = ctx.txReserveContext.sponsorSle;
-
         if (auto const ret =
                 checkInsufficientReserve(ctx, sleDest, xrpBalance, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ter = createMPToken(ctx.view, mptID, receiver, sponsorSle, 0);
-            !isTesSuccess(ter))
+        auto const reserveCtx =
+            ReserveContext::makeFromAccount(ctx.view, sleDest, ctx.txReserveContext.sponsorSle);
+
+        if (auto const ter = createMPToken(ctx.view, mptID, reserveCtx, 0); !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
         }
 
         // update owner count.
-        increaseOwnerCount(
-            ctx.view, ReserveContext::makeFromAccount(ctx.view, sleDest, sponsorSle), 1, journal);
-        auto mptSle = ctx.view.peek(mptKeylet);
-        addSponsorToLedgerEntry(mptSle, sponsorSle);
+        increaseOwnerCount(ctx.view, reserveCtx, 1, journal);
     }
 
     if (!ctx.view.exists(mptKeylet) && !receiverIssuer)
