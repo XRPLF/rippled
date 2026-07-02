@@ -76,7 +76,11 @@ TicketCreate::doApply()
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
     std::uint32_t const ticketCount = ctx_.tx[sfTicketCount];
-    if (preFeeBalance_ < accountReserve(view(), sleAccountRoot, j_, ticketCount))
+    if (preFeeBalance_ < accountReserve(
+                             view(),
+                             sleAccountRoot,
+                             j_,
+                             {.ownerCountDelta = static_cast<std::int32_t>(ticketCount)}))
         return tecINSUFFICIENT_RESERVE;
 
     beast::Journal const viewJ{ctx_.registry.get().getJournal("View")};

@@ -92,12 +92,12 @@ PaymentChannelFund::doApply()
         auto const applyViewContext = ctx_.getApplyViewContext();
         auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
         if (auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(), sle, balance, sponsorSle, 0, 0, j_);
+                ctx_.getApplyViewContext(), sle, balance, sponsorSle, {}, j_);
             !isTesSuccess(ret))
             return ret;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx_.getApplyViewContext(), sle, balance - ctx_.tx[sfAmount], {}, 0, 0, j_);
+                ctx_.getApplyViewContext(), sle, balance - ctx_.tx[sfAmount], {}, {}, j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }

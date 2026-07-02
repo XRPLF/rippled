@@ -292,20 +292,15 @@ decreaseOwnerCountForObject(
         view, ReserveContext::makeFromObject(view, objectSle, ownerSle), ownerCountAdj, j);
 }
 XRPAmount
-accountReserve(
-    ReadView const& view,
-    SLE::const_ref sle,
-    beast::Journal j,
-    std::int32_t ownerCountAdj,
-    std::int32_t accountCountAdj)
+accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjustment adj)
 {
     if (!sle)
         Throw<std::runtime_error>("xrpl::accountReserve : valid sle");
     if (sle->getType() != ltACCOUNT_ROOT)
         Throw<std::logic_error>("xrpl::accountReserve : valid sle type");
 
-    std::uint32_t const currentOwnerCount = ownerCount(sle, j, ownerCountAdj);
-    std::uint32_t const currentAccountCount = accountCountImpl(sle, accountCountAdj, j);
+    std::uint32_t const currentOwnerCount = ownerCount(sle, j, adj.ownerCountDelta);
+    std::uint32_t const currentAccountCount = accountCountImpl(sle, adj.accountCountDelta, j);
 
     return view.fees().accountReserve(currentOwnerCount, currentAccountCount);
 }
@@ -316,8 +311,7 @@ checkInsufficientReserve(
     SLE::const_ref accSle,
     STAmount const& accBalance,
     SLE::const_ref sponsorSle,
-    std::int32_t ownerCountAdj,
-    std::int32_t accountCountAdj,
+    Adjustment adj,
     beast::Journal j)
 {
     if (sponsorSle)
@@ -335,21 +329,20 @@ checkInsufficientReserve(
         if (sle)
         {
             auto const ownerCountAllowed = sle->getFieldU32(sfRemainingOwnerCount);
-            if (ownerCountAllowed < ownerCountAdj)
+            if (adj.ownerCountDelta > 0 &&
+                ownerCountAllowed < static_cast<std::uint32_t>(adj.ownerCountDelta))
                 return tecINSUFFICIENT_RESERVE;
         }
 
         auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
-        STAmount const sponsorReserve =
-            accountReserve(ctx.view, sponsorSle, j, ownerCountAdj, accountCountAdj);
+        STAmount const sponsorReserve = accountReserve(ctx.view, sponsorSle, j, adj);
 
         if (sponsorBalance < sponsorReserve)
             return tecINSUFFICIENT_RESERVE;
     }
     else
     {
-        STAmount const reserve =
-            accountReserve(ctx.view, accSle, j, ownerCountAdj, accountCountAdj);
+        STAmount const reserve = accountReserve(ctx.view, accSle, j, adj);
         if (accBalance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

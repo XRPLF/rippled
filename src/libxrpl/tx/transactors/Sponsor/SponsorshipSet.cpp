@@ -226,10 +226,9 @@ SponsorshipSet::doApply()
         if (auto const ret = checkInsufficientReserve(
                 ctx_.getApplyViewContext(),
                 sponsorAccSle,
-                STAmount{sponsorBalanceAfterFee}.xrp(),
+                sponsorBalanceAfterFee.xrp(),
                 reserveSponsorAccSle,
-                1,
-                0,
+                {.ownerCountDelta = 1},
                 ctx_.journal);
             !isTesSuccess(ret))
             return tecUNFUNDED;
@@ -297,7 +296,7 @@ SponsorshipSet::doApply()
             if (auto const ret = checkInsufficientReserve(
                     ctx_.getApplyViewContext(),
                     sponsorAccSle,
-                    STAmount{sponsorBalanceAfterFee}.xrp(),
+                    sponsorBalanceAfterFee.xrp(),
                     reserveSponsorAccSle,
                     {},
                     ctx_.journal);

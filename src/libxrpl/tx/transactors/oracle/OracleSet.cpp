@@ -171,7 +171,8 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     if (pairs.size() > kMaxOracleDataSeries)
         return tecARRAY_TOO_LARGE;
 
-    auto const reserve = accountReserve(ctx.view, sleSetter, ctx.j, adjustReserve);
+    auto const reserve =
+        accountReserve(ctx.view, sleSetter, ctx.j, {.ownerCountDelta = adjustReserve});
     auto const& balance = sleSetter->getFieldAmount(sfBalance);
 
     if (balance < reserve)

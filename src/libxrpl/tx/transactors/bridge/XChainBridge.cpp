@@ -1028,7 +1028,7 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve = accountReserve(view, sleDoor, j, 1);
+            auto const reserve = accountReserve(view, sleDoor, j, {.ownerCountDelta = 1});
 
             if (balance < reserve)
                 return std::unexpected(tecINSUFFICIENT_RESERVE);
@@ -1435,7 +1435,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, 1);
+        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -1987,7 +1987,7 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, 1);
+        auto const reserve = accountReserve(ctx.view, sleAcc, ctx.j, {.ownerCountDelta = 1});
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
     }

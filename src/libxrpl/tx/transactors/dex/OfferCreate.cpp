@@ -832,7 +832,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount const reserve = accountReserve(sb, sleCreator, viewJ, 1);
+        XRPAmount const reserve = accountReserve(sb, sleCreator, viewJ, {.ownerCountDelta = 1});
         if (preFeeBalance_ < reserve)
         {
             // If we are here, the signing account had an insufficient reserve

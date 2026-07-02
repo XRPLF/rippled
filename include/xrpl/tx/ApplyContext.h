@@ -119,7 +119,9 @@ public:
     ApplyViewContext
     getApplyViewContext()
     {
-        XRPL_ASSERT(view_.has_value(), "Previous view exists");
+        XRPL_ASSERT(
+            view_.has_value(),
+            "xrpl::ApplyContext::getApplyViewContext : view_ emplaced in constructor");
         return ApplyViewContext::makeFromTx(*view_, tx);
     }
 
