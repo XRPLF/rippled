@@ -186,7 +186,7 @@ struct MantissaRange final
 
     class Access
     {
-        static constexpr MantissaRange const&
+        static MantissaRange const&
         mantissaRange(MantissaScale scale);
 
         friend Number;
