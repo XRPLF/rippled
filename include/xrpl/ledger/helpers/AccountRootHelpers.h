@@ -14,7 +14,6 @@
 
 #include <cstdint>
 #include <expected>
-#include <optional>
 #include <set>
 #include <vector>
 

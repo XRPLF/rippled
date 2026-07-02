@@ -418,13 +418,13 @@ struct ReserveContext
     SLE::pointer sponsorSle;
     SLE::pointer sponsorshipSle;
 
-    [[nodiscard]] AccountID const
+    [[nodiscard]] AccountID
     accountID() const
     {
         return accountSle->getAccountID(sfAccount);
     }
 
-    [[nodiscard]] std::optional<AccountID> const
+    [[nodiscard]] std::optional<AccountID>
     sponsorID() const
     {
         return sponsorSle ? std::optional<AccountID>{sponsorSle->getAccountID(sfAccount)}
