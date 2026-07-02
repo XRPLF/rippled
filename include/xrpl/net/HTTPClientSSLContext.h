@@ -126,8 +126,8 @@ public:
             if (!ec)
             {
                 strm.set_verify_callback(
-                    [host, this](bool preverified, boost::asio::ssl::verify_context& ctx) {
-                        return rfc6125Verify(host, preverified, ctx, j_);
+                    [host, j = j_](bool preverified, boost::asio::ssl::verify_context& ctx) {
+                        return rfc6125Verify(host, preverified, ctx, j);
                     },
                     ec);
             }
