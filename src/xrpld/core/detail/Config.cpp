@@ -926,7 +926,7 @@ Config::loadFromString(std::string const& fileContents)
                 ", must be: [0-9]+ [minutes|hours|days|weeks]");
         }
 
-        std::uint32_t const duration = beast::lexicalCastThrow<std::uint32_t>(match[1].str());
+        auto const duration = beast::lexicalCastThrow<std::uint32_t>(match[1].str());
 
         if (boost::iequals(match[2], "minutes"))
         {
