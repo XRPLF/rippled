@@ -1241,7 +1241,7 @@ template <typename T, typename V>
 void
 STObject::setFieldUsingSetValue(SField const& field, V value)
 {
-    static_assert(!std::is_lvalue_reference_v<V>, "");
+    static_assert(!std::is_lvalue_reference_v<V>);
 
     STBase* rf = getPField(field, true);
 

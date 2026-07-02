@@ -228,11 +228,11 @@ static_assert(sumOfFirstSquares(1).second == 1);
 static_assert(sumOfFirstSquares(2).first);
 static_assert(sumOfFirstSquares(2).second == 5);
 
-static_assert(sumOfFirstSquares(0x1FFFFF).first, "");
-static_assert(sumOfFirstSquares(0x1FFFFF).second == 0x2AAAA8AAAAB00000ul, "");
+static_assert(sumOfFirstSquares(0x1FFFFF).first);
+static_assert(sumOfFirstSquares(0x1FFFFF).second == 0x2AAAA8AAAAB00000ul);
 
-static_assert(!sumOfFirstSquares(0x200000).first, "");
-static_assert(sumOfFirstSquares(0x200000).second == std::numeric_limits<std::uint64_t>::max(), "");
+static_assert(!sumOfFirstSquares(0x200000).first);
+static_assert(sumOfFirstSquares(0x200000).second == std::numeric_limits<std::uint64_t>::max());
 
 }  // namespace detail
 
