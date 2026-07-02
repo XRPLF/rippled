@@ -135,14 +135,11 @@ PaymentChannelCreate::doApply()
             return tecEXPIRED;
     }
 
-    auto const sponsorSle = getTxReserveSponsor(ctx_.getApplyViewContext());
-    if (!sponsorSle)
-        return sponsorSle.error();  // LCOV_EXCL_LINE
+    auto const applyViewContext = ctx_.getApplyViewContext();
+    auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
 
     if (ctx_.view().rules().enabled(featureSponsor))
     {
-        auto const applyViewContext = ctx_.getApplyViewContext();
-        auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
         // First check: whoever is on the hook for the new owner increment
         // can cover it. When sponsored this hits the sponsor branch and
         // validates the sponsor's reserve + remaining credit. When
@@ -152,7 +149,7 @@ PaymentChannelCreate::doApply()
                 ctx_.getApplyViewContext(),
                 sle,
                 preFeeBalance_,
-                *sponsorSle,
+                sponsorSle,
                 {.ownerCountDelta = 1},
                 j_);
             !isTesSuccess(ret))
@@ -166,7 +163,7 @@ PaymentChannelCreate::doApply()
         // - sponsored:   adj=0  — sponsor covers the new owner increment,
         //                so the source only owes its base reserve.
         // - unsponsored: adj=1  — source owes base + the new increment.
-        std::int32_t const ownerCountAdj = *sponsorSle ? 0 : 1;
+        std::int32_t const ownerCountAdj = sponsorSle ? 0 : 1;
         if (auto const ret = checkInsufficientReserve(
                 ctx_.getApplyViewContext(),
                 sle,
@@ -225,8 +222,6 @@ PaymentChannelCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    auto const applyViewContext = ctx_.getApplyViewContext();
-    auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
     increaseOwnerCount(
         ctx_.view(),
         ReserveContext::makeFromAccount(ctx_.view(), sle, sponsorSle),

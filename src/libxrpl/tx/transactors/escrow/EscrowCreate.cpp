@@ -460,7 +460,7 @@ EscrowCreate::doApply()
         // - sponsored:   adj=0  — sponsor covers the new owner increment,
         //                so the source only owes its base reserve.
         // - unsponsored: adj=1  — source owes base + the new increment.
-        std::int32_t const ownerCountAdj = *sponsorSle ? 0 : 1;
+        std::int32_t const ownerCountAdj = sponsorSle ? 0 : 1;
         if (auto const ret = checkInsufficientReserve(
                 ctx_.getApplyViewContext(),
                 sle,

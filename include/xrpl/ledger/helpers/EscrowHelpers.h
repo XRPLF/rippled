@@ -193,7 +193,7 @@ escrowUnlockApplyHelper<MPTIssue>(
             !isTesSuccess(ret))
             return ret;
 
-        if (auto const ter = createMPToken(view, mptID, receiver, sponsorSle, 0);
+        if (auto const ter = createMPToken(ctx.view, mptID, receiver, sponsorSle, 0);
             !isTesSuccess(ter))
         {
             return ter;  // LCOV_EXCL_LINE
@@ -201,8 +201,8 @@ escrowUnlockApplyHelper<MPTIssue>(
 
         // update owner count.
         increaseOwnerCount(
-            view, ReserveContext::makeFromAccount(view, sleDest, sponsorSle), 1, journal);
-        auto mptSle = view.peek(mptKeylet);
+            ctx.view, ReserveContext::makeFromAccount(ctx.view, sleDest, sponsorSle), 1, journal);
+        auto mptSle = ctx.view.peek(mptKeylet);
         addSponsorToLedgerEntry(mptSle, sponsorSle);
     }
 
