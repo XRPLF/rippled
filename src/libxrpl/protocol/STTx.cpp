@@ -28,6 +28,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
@@ -604,6 +605,15 @@ STTx::getBatchTransactionIDs() const
         batchTxnIds_->size() == getFieldArray(sfRawTransactions).size(),
         "STTx::getBatchTransactionIDs : batch transaction IDs size mismatch");
     return *batchTxnIds_;
+}
+
+AccountID
+STTx::getFeePayerID() const
+{
+    if (isFieldPresent(sfSponsor) && ((getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u))
+        return at(sfSponsor);
+
+    return getInitiator();
 }
 
 //------------------------------------------------------------------------------

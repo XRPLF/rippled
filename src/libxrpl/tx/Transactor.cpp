@@ -1369,7 +1369,6 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
     {
         auto const sponsorID = tx.getAccountID(sfSponsor);
         auto const sponseeID = tx.getAccountID(sfAccount);
-        auto const hasSponsorSignature = tx.isFieldPresent(sfSponsorSignature);
         auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeID);
 
         // if pre-funded sponsorship exists, prefer it
@@ -1383,7 +1382,9 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
                 .type = FeePayerType::SponsorPreFunded};
         }
 
-        XRPL_ASSERT(hasSponsorSignature, "xrpl::getFeePayer valid sponsor signature");
+        // Checked in Transactor::checkSponsor
+        XRPL_ASSERT(
+            tx.isFieldPresent(sfSponsorSignature), "xrpl::getFeePayer valid sponsor signature");
 
         // co-signed
         return FeePayer{

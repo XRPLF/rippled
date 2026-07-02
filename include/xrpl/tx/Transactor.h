@@ -318,6 +318,7 @@ public:
 
     static NotTEC
     checkSponsor(ReadView const& view, STTx const& tx);
+
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
