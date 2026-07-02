@@ -232,6 +232,7 @@ SponsorshipSet::doApply()
             !isTesSuccess(ret))
             return tecUNFUNDED;
 
+        if (hasPositiveFeeAmount)
         {
             // New object: FeeAmount starts absent, so deduct and record the full amount
             (*newSle)[sfFeeAmount] = *feeAmount;
