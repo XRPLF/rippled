@@ -390,7 +390,7 @@ CheckCash::doApply()
                 optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
 
             auto applyViewContext = ApplyViewContext::makeFromTx(psb, ctx_.tx);
-            auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
+            auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
@@ -505,7 +505,7 @@ CheckCash::doApply()
                                 return tecINSUFFICIENT_RESERVE;
 
                             if (auto const err = checkCreateMPT(
-                                    psb, applyViewContext.reserveContext, mptID, accountID_, j_);
+                                    psb, applyViewContext.txReserveContext, mptID, accountID_, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;

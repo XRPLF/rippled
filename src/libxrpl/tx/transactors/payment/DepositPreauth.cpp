@@ -163,7 +163,7 @@ DepositPreauth::doApply()
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
         auto const applyViewContext = ctx_.getApplyViewContext();
-        auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
+        auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
         if (auto const ret = checkInsufficientReserve(
                 applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))
@@ -211,7 +211,7 @@ DepositPreauth::doApply()
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
         auto const applyViewContext = ctx_.getApplyViewContext();
-        auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
+        auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
         if (auto const ret = checkInsufficientReserve(
                 applyViewContext, sleOwner, preFeeBalance_, {.ownerCountDelta = 1}, j_);
             !isTesSuccess(ret))

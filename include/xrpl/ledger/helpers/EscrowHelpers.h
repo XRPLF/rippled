@@ -59,7 +59,7 @@ escrowUnlockApplyHelper<Issue>(
     if (!ctx.view.exists(trustLineKey) && createAsset)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsorSle = ctx.reserveContext.sponsorSle;
+        auto const sponsorSle = ctx.txReserveContext.sponsorSle;
 
         if (auto const ret =
                 checkInsufficientReserve(ctx, sleDest, xrpBalance, {.ownerCountDelta = 1}, journal);
@@ -186,7 +186,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     auto const mptKeylet = keylet::mptoken(issuanceKey.key, receiver);
     if (!ctx.view.exists(mptKeylet) && createAsset && !receiverIssuer)
     {
-        auto const sponsorSle = ctx.reserveContext.sponsorSle;
+        auto const sponsorSle = ctx.txReserveContext.sponsorSle;
 
         if (auto const ret =
                 checkInsufficientReserve(ctx, sleDest, xrpBalance, {.ownerCountDelta = 1}, journal);

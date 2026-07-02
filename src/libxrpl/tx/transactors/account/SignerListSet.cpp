@@ -320,7 +320,7 @@ SignerListSet::replaceSignerList()
     // allow dipping into the reserve to pay fees.  This behavior is consistent
     // with TicketCreate.
     auto const applyViewContext = ctx_.getApplyViewContext();
-    auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
+    auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
     if (auto const ret = checkInsufficientReserve(
             ctx_.getApplyViewContext(),
             sle,

@@ -443,12 +443,12 @@ struct ApplyViewContext
 {
     ApplyView& view;
     STTx const& tx;
-    ReserveContext reserveContext;
+    ReserveContext txReserveContext;
 
     static ApplyViewContext
     makeFromTx(ApplyView& view, STTx const& tx)
     {
-        return {.view = view, .tx = tx, .reserveContext = ReserveContext::makeFromTx(view, tx)};
+        return {.view = view, .tx = tx, .txReserveContext = ReserveContext::makeFromTx(view, tx)};
     }
 };
 

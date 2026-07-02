@@ -123,7 +123,7 @@ MPTokenIssuanceCreate::create(
     if (!acct)
         return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
-    SLE::pointer sponsorSle = isPseudoAccount(acct) ? nullptr : ctx.reserveContext.sponsorSle;
+    SLE::pointer sponsorSle = isPseudoAccount(acct) ? nullptr : ctx.txReserveContext.sponsorSle;
 
     if (args.priorBalance)
     {

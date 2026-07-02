@@ -207,7 +207,7 @@ SponsorshipSet::doApply()
     bool const hasPositiveFeeAmount = feeAmount.has_value() && *feeAmount > beast::kZero;
 
     auto const applyViewContext = ctx_.getApplyViewContext();
-    auto const reserveSponsorAccSle = applyViewContext.reserveContext.sponsorSle;
+    auto const reserveSponsorAccSle = applyViewContext.txReserveContext.sponsorSle;
 
     if (!sponsorshipSle)
     {

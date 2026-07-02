@@ -328,7 +328,7 @@ TrustSet::doApply()
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
     auto const applyViewContext = ctx_.getApplyViewContext();
-    auto const sponsorSle = applyViewContext.reserveContext.sponsorSle;
+    auto const sponsorSle = applyViewContext.txReserveContext.sponsorSle;
 
     std::uint32_t const uOwnerCount = ownerCount(sponsorSle ? sponsorSle : sle, j_);
 

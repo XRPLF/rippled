@@ -308,16 +308,16 @@ accountReserve(ReadView const& view, SLE::const_ref sle, beast::Journal j, Adjus
 TER
 checkInsufficientReserve(
     ApplyViewContext const& ctx,
-    // NOTE: we still need the accSle to be passed in as the ctx.reserveContext.accountSle may be
+    // NOTE: we still need the accSle to be passed in as the ctx.txReserveContext.accountSle may be
     // outdated
     SLE::const_ref accSle,
     STAmount const& accBalance,
     Adjustment adj,
     beast::Journal j)
 {
-    auto const sponsorSle = ctx.reserveContext.sponsorSle;  // should not be modified here
+    auto const sponsorSle = ctx.txReserveContext.sponsorSle;  // should not be modified here
     XRPL_ASSERT(
-        ctx.reserveContext.accountID() == accSle->getAccountID(sfAccount),
+        ctx.txReserveContext.accountID() == accSle->getAccountID(sfAccount),
         "xrpl::checkInsufficientReserve : account sle matches context");
     if (sponsorSle)
     {

@@ -160,8 +160,8 @@ authorizeMPToken(
     if (!sleAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const reserveCtx = account == ctx.reserveContext.accountID()
-        ? ctx.reserveContext
+    auto const reserveCtx = account == ctx.txReserveContext.accountID()
+        ? ctx.txReserveContext
         : ReserveContext::makeFromAccount(ctx.view, sleAcct, nullptr);
 
     // If the account that submitted the tx is a holder
