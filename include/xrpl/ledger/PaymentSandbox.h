@@ -1,11 +1,19 @@
 #pragma once
 
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/RawView.h>
-#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
 #include <map>
+#include <optional>
+#include <tuple>
 #include <utility>
 
 namespace xrpl {

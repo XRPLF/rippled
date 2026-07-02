@@ -20,7 +20,6 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -639,8 +638,8 @@ struct Credentials_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
 
-            env.fund(drops(baseAccountReserve(*env.current(), 1)), issuer);
-            env.fund(drops(baseAccountReserve(*env.current(), 0)), subject);
+            env.fund(drops(env.current()->fees().accountReserve(1, 1)), issuer);
+            env.fund(drops(env.current()->fees().accountReserve(0, 1)), subject);
             env.close();
 
             {

@@ -31,7 +31,6 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -464,7 +463,7 @@ private:
         // Provide micro amounts to compensate for fees to make results round
         // nice.
         auto const startingXrp =
-            XRP(100) + baseAccountReserve(*env.current(), 2) + env.current()->fees().base * 3;
+            XRP(100) + env.current()->fees().accountReserve(2, 1) + env.current()->fees().base * 3;
 
         env.fund(startingXrp, gw_, alice_);
         env.fund(XRP(2'000), bob_);

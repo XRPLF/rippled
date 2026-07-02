@@ -1,15 +1,21 @@
 #pragma once
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <cstdint>
 #include <expected>
+#include <optional>
 
 namespace xrpl {
 
@@ -140,7 +146,7 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
         case ltMPTOKEN_ISSUANCE:
             return sle->getAccountID(sfIssuer);
         case ltSIGNER_LIST: {
-            auto const signerList = view.read(keylet::signers(account));
+            auto const signerList = view.read(keylet::signerList(account));
             if (!signerList)
                 return std::nullopt;
             if (signerList->key() == sle->key())
@@ -170,6 +176,28 @@ getLedgerEntryOwner(ReadView const& view, T const& sle, AccountID const& account
         default:
             UNREACHABLE("Object is not supported by sponsorship.");
             return std::nullopt;
+    };
+}
+
+template <typename T>
+inline bool
+isLedgerEntrySupportedBySponsorship(T const& sle)
+{
+    switch (sle->getType())
+    {
+        case ltCHECK:
+        case ltESCROW:
+        case ltPAYCHAN:
+        case ltMPTOKEN:
+        case ltDELEGATE:
+        case ltDEPOSIT_PREAUTH:
+        case ltMPTOKEN_ISSUANCE:
+        case ltSIGNER_LIST:
+        case ltCREDENTIAL:
+        case ltRIPPLE_STATE:
+            return true;
+        default:
+            return false;
     };
 }
 

@@ -2,8 +2,14 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/SignerUtils.h>
+#include <test/jtx/JTx.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/STAmount.h>
+
+#include <cstdint>
+#include <optional>
 #include <utility>
 
 namespace xrpl::test::jtx::sponsor {

@@ -1,11 +1,20 @@
 #pragma once
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/ledger/CachedSLEs.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 
+#include <memory>
 #include <mutex>
+#include <optional>
 #include <type_traits>
+#include <unordered_map>
 
 namespace xrpl {
 

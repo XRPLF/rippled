@@ -20,7 +20,7 @@ class ClawbackBuilder;
  *
  * Type: ttCLAWBACK (30)
  * Delegable: Delegation::Delegable
- * Amendment: featureClawback
+ * Amendment: uint256{}
  * Privileges: NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.

@@ -144,7 +144,7 @@ verifyFeeObject(
     Rules const& rules,
     FeeSettingsFields const& expected)
 {
-    auto const feeObject = ledger->read(keylet::fees());
+    auto const feeObject = ledger->read(keylet::feeSettings());
     if (!feeObject)
         return false;
 

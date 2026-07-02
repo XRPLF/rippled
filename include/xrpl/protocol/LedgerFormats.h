@@ -3,9 +3,12 @@
 // NOLINTBEGIN(readability-identifier-naming)
 
 #include <xrpl/protocol/KnownFormats.h>
+#include <xrpl/protocol/SOTemplate.h>
 
+#include <cstdint>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -177,7 +180,8 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsfMPTCanEscrow, 0x00000008)                                                                                      \
         LSF_FLAG(lsfMPTCanTrade, 0x00000010)                                                                                       \
         LSF_FLAG(lsfMPTCanTransfer, 0x00000020)                                                                                    \
-        LSF_FLAG(lsfMPTCanClawback, 0x00000040))                                                                                   \
+        LSF_FLAG(lsfMPTCanClawback, 0x00000040)                                                                                    \
+        LSF_FLAG(lsfMPTCanHoldConfidentialBalance, 0x00000080))                                                                         \
                                                                                                                                    \
     LEDGER_OBJECT(MPTokenIssuanceMutable,                                                                                          \
         LSF_FLAG(lsmfMPTCanEnableCanLock, 0x00000002)                                                                              \
@@ -186,8 +190,9 @@ enum LedgerEntryType : std::uint16_t {
         LSF_FLAG(lsmfMPTCanEnableCanTrade, 0x00000010)                                                                             \
         LSF_FLAG(lsmfMPTCanEnableCanTransfer, 0x00000020)                                                                          \
         LSF_FLAG(lsmfMPTCanEnableCanClawback, 0x00000040)                                                                          \
+        LSF_FLAG(lsmfMPTCannotEnableCanHoldConfidentialBalance, 0x00000080)                                                                          \
         LSF_FLAG(lsmfMPTCanMutateMetadata, 0x00010000)                                                                             \
-        LSF_FLAG(lsmfMPTCanMutateTransferFee, 0x00020000))                                                                         \
+        LSF_FLAG(lsmfMPTCanMutateTransferFee, 0x00020000))                                                            \
                                                                                                                                    \
     LEDGER_OBJECT(MPToken,                                                                                                         \
         LSF_FLAG2(lsfMPTLocked, 0x00000001)                                                                                        \

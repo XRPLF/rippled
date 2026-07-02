@@ -1,12 +1,22 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 
 #include <boost/container/flat_set.hpp>
+
+#include <cstdint>
+#include <memory>
+#include <string>
 
 namespace xrpl {
 
