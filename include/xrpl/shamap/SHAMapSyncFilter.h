@@ -1,7 +1,10 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <cstdint>
 #include <optional>
 
 /** Callback for filtering SHAMap during sync. */

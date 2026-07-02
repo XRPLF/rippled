@@ -2,8 +2,12 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/Session.h>
+#include <xrpl/server/Writer.h>
 #include <xrpl/server/detail/Spawn.h>
 #include <xrpl/server/detail/io_list.h>
 
@@ -20,9 +24,12 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstddef>
+#include <cstring>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -392,7 +399,7 @@ BaseHTTPPeer<Handler, Impl>::write(void const* buf, std::size_t bytes)
     if ([&] {
             std::scoped_lock const lock(mutex_);
             wq_.emplace_back(buf, bytes);
-            return wq_.size() == 1 && wq2_.size() == 0;
+            return wq_.size() == 1 && wq2_.empty();
         }())
     {
         if (!strand_.running_in_this_thread())

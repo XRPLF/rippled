@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/xxhasher.h>
 
 #include <cstdint>
@@ -75,7 +74,7 @@ private:
     detail::seed_pair seeds_{detail::makeSeedPair<>()};
 
 public:
-    using result_type = typename HashAlgorithm::result_type;
+    using result_type = HashAlgorithm::result_type;
 
     HardenedHash() = default;
 

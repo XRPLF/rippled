@@ -7,9 +7,14 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/protocol/PublicKey.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <mutex>
+#include <optional>
 #include <set>
+#include <string>
+#include <type_traits>
 
 namespace xrpl {
 

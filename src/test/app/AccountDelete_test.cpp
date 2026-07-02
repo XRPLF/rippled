@@ -215,8 +215,8 @@ public:
             BEAST_EXPECT(env.closed()->exists(keylet::ownerDir(carol.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
             BEAST_EXPECT(env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
-            BEAST_EXPECT(env.closed()->exists(keylet::kTicket(carol.id(), carolTicketSeq)));
-            BEAST_EXPECT(env.closed()->exists(keylet::signers(carol.id())));
+            BEAST_EXPECT(env.closed()->exists(keylet::ticket(carol.id(), carolTicketSeq)));
+            BEAST_EXPECT(env.closed()->exists(keylet::signerList(carol.id())));
 
             // Delete carol's account even with stuff in her directory.  Show
             // that multisigning for the delete does not increase carol's fee.
@@ -229,8 +229,8 @@ public:
             BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(carol.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::depositPreauth(carol.id(), becky.id())));
             BEAST_EXPECT(!env.closed()->exists(keylet::offer(carol.id(), carolOfferSeq)));
-            BEAST_EXPECT(!env.closed()->exists(keylet::kTicket(carol.id(), carolTicketSeq)));
-            BEAST_EXPECT(!env.closed()->exists(keylet::signers(carol.id())));
+            BEAST_EXPECT(!env.closed()->exists(keylet::ticket(carol.id(), carolTicketSeq)));
+            BEAST_EXPECT(!env.closed()->exists(keylet::signerList(carol.id())));
 
             // Verify that Carol's XRP, minus the fee, was transferred to becky.
             BEAST_EXPECT(env.balance(becky) == carolOldBalance + beckyOldBalance - acctDelFee);
@@ -386,7 +386,7 @@ public:
         env(escrow::cancel(becky, alice, escrowSeq));
         env.close();
 
-        Keylet const alicePayChanKey{keylet::payChan(alice, becky, env.seq(alice))};
+        Keylet const alicePayChanKey{keylet::payChannel(alice, becky, env.seq(alice))};
 
         env(payChanCreate(alice, becky, XRP(57), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -417,7 +417,7 @@ public:
 
         // gw creates a PayChannel with alice as the destination, this should
         // prevent alice from deleting her account.
-        Keylet const gwPayChanKey{keylet::payChan(gw, alice, env.seq(gw))};
+        Keylet const gwPayChanKey{keylet::payChannel(gw, alice, env.seq(gw))};
 
         env(payChanCreate(gw, alice, XRP(68), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -662,7 +662,7 @@ public:
             BEAST_EXPECT(closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(closed->exists(keylet::kTicket(bob.id(), ticketSeq + i)));
+                BEAST_EXPECT(closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
             }
         }
 
@@ -681,7 +681,7 @@ public:
             BEAST_EXPECT(!closed->exists(keylet::account(bob.id())));
             for (std::uint32_t i = 0; i < 250; ++i)
             {
-                BEAST_EXPECT(!closed->exists(keylet::kTicket(bob.id(), ticketSeq + i)));
+                BEAST_EXPECT(!closed->exists(keylet::ticket(bob.id(), ticketSeq + i)));
             }
         }
     }

@@ -1,8 +1,15 @@
 #pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
+
+#include <exception>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl::RPC {
 

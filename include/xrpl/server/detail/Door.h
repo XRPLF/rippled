@@ -2,6 +2,8 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/detail/PlainHTTPPeer.h>
 #include <xrpl/server/detail/SSLHTTPPeer.h>
 #include <xrpl/server/detail/io_list.h>
@@ -18,6 +20,9 @@
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/container/flat_map.hpp>
 #include <boost/predef.h>
+
+#include <exception>
+#include <stdexcept>
 
 #if !BOOST_OS_WINDOWS
 #include <sys/resource.h>

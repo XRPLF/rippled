@@ -25,6 +25,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -390,12 +391,22 @@ TxQ::canBeHeld(
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
     std::scoped_lock<std::mutex> const& lock)
 {
+    // A Batch is never queued: its inner transactions can change the sequence
+    // numbers of multiple accounts, which the TxQ's per-account model cannot
+    // forecast. It must apply straight to the open ledger or not at all.
+    if (tx.getTxnType() == ttBATCH)
+        return telCAN_NOT_QUEUE;
+
     // PreviousTxnID is deprecated and should never be used.
     // AccountTxnID is not supported by the transaction
     // queue yet, but should be added in the future.
     // TapFailHard transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
         ((flags & TapFailHard) != 0u))
+        return telCAN_NOT_QUEUE;
+
+    // Disallow delegated transactions from being queued.
+    if (tx.isFieldPresent(sfDelegate))
         return telCAN_NOT_QUEUE;
 
     {
@@ -760,7 +771,7 @@ TxQ::apply(
     // If the transaction needs a Ticket is that Ticket in the ledger?
     SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
-    if (txSeqProx.isTicket() && !view.exists(keylet::kTicket(account, txSeqProx)))
+    if (txSeqProx.isTicket() && !view.exists(keylet::ticket(account, txSeqProx)))
     {
         if (txSeqProx.value() < acctSeqProx.value())
         {

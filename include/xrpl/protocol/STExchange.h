@@ -1,14 +1,15 @@
 #pragma once
 
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STObject.h>
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <stdexcept>

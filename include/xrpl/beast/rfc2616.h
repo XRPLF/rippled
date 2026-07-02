@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <iterator>
 #include <string>
 #include <vector>
@@ -102,7 +103,7 @@ Result
 split(FwdIt first, FwdIt last, Char delim)
 {
     using namespace detail;
-    using string = typename Result::value_type;
+    using string = Result::value_type;
 
     Result result;
 
