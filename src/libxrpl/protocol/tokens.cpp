@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <cstring>
 #include <expected>
+#include <ranges>
 #include <span>
 #include <string>
 #include <string_view>
@@ -272,10 +273,10 @@ decodeBase58(std::string const& s)
         if (carry == -1)
             return {};
         // Apply "b256 = b256 * 58 + carry".
-        for (auto iter = b256.rbegin(); iter != b256.rend(); ++iter)
+        for (unsigned char& byte : std::views::reverse(b256))
         {
-            carry += 58 * *iter;
-            *iter = carry % 256;
+            carry += 58 * byte;
+            byte = carry % 256;
             carry /= 256;
         }
         XRPL_ASSERT(carry == 0, "xrpl::b58_ref::detail::decodeBase58 : zero carry");

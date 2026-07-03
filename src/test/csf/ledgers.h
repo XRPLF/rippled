@@ -232,8 +232,8 @@ private:
 class LedgerOracle
 {
     using InstanceMap = boost::bimaps::bimap<
-        boost::bimaps::set_of<Ledger::Instance, xrpl::less<Ledger::Instance>>,
-        boost::bimaps::set_of<Ledger::ID, xrpl::less<Ledger::ID>>>;
+        boost::bimaps::set_of<Ledger::Instance, xrpl::less<>>,
+        boost::bimaps::set_of<Ledger::ID, xrpl::less<>>>;
     using InstanceEntry = InstanceMap::value_type;
 
     // Set of all known ledgers; note this is never pruned

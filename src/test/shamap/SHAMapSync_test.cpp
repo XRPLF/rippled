@@ -154,12 +154,12 @@ public:
             if (b.empty())
                 fail("", __FILE__, __LINE__);
 
-            for (std::size_t i = 0; i < b.size(); ++i)
+            for (auto& node : b)
             {
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                if (!destination.addKnownNode(b[i].first, makeSlice(b[i].second), nullptr)
+                if (!destination.addKnownNode(node.first, makeSlice(node.second), nullptr)
                          .isUseful())
                     fail("", __FILE__, __LINE__);
             }

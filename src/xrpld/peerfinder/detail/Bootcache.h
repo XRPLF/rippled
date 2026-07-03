@@ -62,11 +62,9 @@ private:
         int valence_;
     };
 
-    using left_t = boost::bimaps::unordered_set_of<
-        beast::IP::Endpoint,
-        boost::hash<beast::IP::Endpoint>,
-        xrpl::equal_to<beast::IP::Endpoint>>;
-    using right_t = boost::bimaps::multiset_of<Entry, xrpl::less<Entry>>;
+    using left_t = boost::bimaps::
+        unordered_set_of<beast::IP::Endpoint, boost::hash<beast::IP::Endpoint>, xrpl::equal_to<>>;
+    using right_t = boost::bimaps::multiset_of<Entry, xrpl::less<>>;
     using map_type = boost::bimap<left_t, right_t>;
     using value_type = map_type::value_type;
 

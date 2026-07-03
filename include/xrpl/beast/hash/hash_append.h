@@ -392,36 +392,12 @@ hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v)
 }
 // tuple
 
-namespace detail {
-
-inline void
-forEachItem(...) noexcept
-{
-}
-
-template <class Hasher, class T>
-inline int
-hashOne(Hasher& h, T const& t) noexcept
-{
-    hash_append(h, t);
-    return 0;
-}
-
-template <class Hasher, class... T, std::size_t... I>
-inline void
-tuple_hash(Hasher& h, std::tuple<T...> const& t, std::index_sequence<I...>) noexcept
-{
-    for_each_item(hash_one(h, std::get<I>(t))...);
-}
-
-}  // namespace detail
-
 template <class Hasher, class... T>
 inline void
 hash_append(Hasher& h, std::tuple<T...> const& t) noexcept
     requires(!IsContiguouslyHashable<std::tuple<T...>, Hasher>::value)
 {
-    detail::tuple_hash(h, t, std::index_sequence_for<T...>{});
+    std::apply([&h](auto const&... item) { (hash_append(h, item), ...); }, t);
 }
 
 // shared_ptr
