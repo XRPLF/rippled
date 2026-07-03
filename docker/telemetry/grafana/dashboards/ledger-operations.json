@@ -408,6 +408,7 @@
     "from": "now-1h",
     "to": "now"
   },
+  "description": "Ledger lifecycle: build rate and duration, validation rate, and close timing.",
   "title": "Ledger Operations",
   "uid": "xrpld-ledger-ops"
 }

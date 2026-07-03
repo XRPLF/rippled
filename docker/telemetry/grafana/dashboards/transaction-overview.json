@@ -1029,6 +1029,7 @@
     "from": "now-1h",
     "to": "now"
   },
+  "description": "Transaction pipeline overview: processing and receive rates, per-type latency, path distribution, apply-stage breakdown, and validation outcomes.",
   "title": "Transaction Overview",
   "uid": "xrpld-transactions"
 }

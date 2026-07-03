@@ -1142,6 +1142,7 @@
     "from": "now-1h",
     "to": "now"
   },
+  "description": "Consensus round health: round duration, proposal and validation rates, close-time agreement, and ledger-close cadence.",
   "title": "Consensus Health",
   "uid": "xrpld-consensus"
 }
