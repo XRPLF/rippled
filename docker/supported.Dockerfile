@@ -9,11 +9,11 @@ FROM ${BASE_IMAGE}
 COPY xrpld.deb /tmp/xrpld.deb
 
 RUN set -eux; \
-    id -u xrpld >/dev/null 2>&1 || \
-        useradd --system --no-create-home --shell /usr/sbin/nologin xrpld; \
     apt-get update; \
     apt-get install -y --no-install-recommends ca-certificates jq /tmp/xrpld.deb; \
     rm -rf /var/lib/apt/lists/* /tmp/xrpld.deb; \
+    id -u xrpld >/dev/null 2>&1 || \
+        useradd --system --home-dir /var/lib/xrpld --shell /sbin/nologin --user-group xrpld; \
     mkdir -p /var/log/xrpld /var/lib/xrpld; \
     chown -R xrpld:xrpld /var/log/xrpld /var/lib/xrpld; \
     # Symlink for consumers that exec /opt/xrpld/bin/xrpld.
