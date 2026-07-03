@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Requires trace_peer=1 in the [telemetry] config section.",
+  "description": "Peer-to-peer consensus traffic: rates of proposals and validations received from peers and their split between trusted and untrusted sources.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Peer Proposal Receive Rate",
-      "description": "Rate of consensus proposals received from network peers. The peer.proposal.receive span (PeerImp.cpp) fires in onMessage(TMProposeSet) for each incoming proposal. Records xrpl.peer.id (sending peer) and proposal_trusted (whether the proposer is in our UNL). Requires trace_peer=1 in the telemetry config.",
+      "description": "**What:** Rate of consensus proposals arriving from connected network peers.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Reflects how many validators' proposals reach this node each round.\n**Healthy range:** Workload-dependent; scales with peer count and network activity.\n**Watch for:** A sudden drop means loss of proposal flow; a sharp sustained spike from a single peer can indicate flooding.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMProposeSet)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -50,7 +50,7 @@
     },
     {
       "title": "Peer Validation Receive Rate",
-      "description": "Rate of ledger validations received from network peers. The peer.validation.receive span (PeerImp.cpp) fires in onMessage(TMValidation) for each incoming validation message. Records xrpl.peer.id (sending peer) and validation_trusted (whether the validator is trusted). Requires trace_peer=1 in the telemetry config.",
+      "description": "**What:** Rate of ledger validations arriving from connected network peers.\n**How it's computed:** Per-second rate over a 5-minute window, per node.\n**Reading it:** Reflects the volume of validation traffic reaching this node.\n**Healthy range:** Workload-dependent; scales with the number of validators and peers.\n**Watch for:** A drop starves the validation quorum; an abnormal spike from one peer can indicate abuse.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMValidation)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -89,7 +89,7 @@
     },
     {
       "title": "Proposals Trusted vs Untrusted",
-      "description": "Pie chart showing the ratio of proposals received from trusted validators (in our UNL) vs untrusted validators. Grouped by the proposal_trusted span attribute (true/false). A healthy node connected to a well-configured UNL should see a significant portion of trusted proposals. Note: proposals that fail early validation may not have the trusted attribute set.",
+      "description": "**What:** Share of received proposals from trusted validators (in this node's UNL) versus untrusted sources.\n**How it's computed:** Total counts split by trust status over a 5-minute window, shown as proportions.\n**Reading it:** A well-connected node with a good UNL sees a healthy trusted share.\n**Healthy range:** A substantial trusted proportion; exact mix is workload-dependent.\n**Watch for:** A collapse of the trusted share means poor connectivity to UNL validators; a flood of untrusted proposals can indicate abuse.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMProposeSet)",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -121,7 +121,7 @@
     },
     {
       "title": "Validations Trusted vs Untrusted",
-      "description": "Pie chart showing the ratio of validations received from trusted validators (in our UNL) vs untrusted validators. Grouped by the validation_trusted span attribute (true/false). Monitoring this helps detect if the node is receiving validations from the expected set of trusted validators. Note: validations that fail early checks may not have the trusted attribute set.",
+      "description": "**What:** Share of received validations from trusted validators (in this node's UNL) versus untrusted sources.\n**How it's computed:** Total counts split by trust status over a 5-minute window, shown as proportions.\n**Reading it:** Confirms the node is hearing from its expected trusted validator set.\n**Healthy range:** A substantial trusted proportion; exact mix is workload-dependent.\n**Watch for:** A shrinking trusted share risks the validation quorum; a surge of untrusted validations can indicate abuse.\n**Source:** src/xrpld/overlay/detail/PeerImp.cpp:PeerImp::onMessage(TMValidation)",
       "type": "piechart",
       "gridPos": {
         "h": 8,
@@ -153,7 +153,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["peer", "telemetry"],
+  "tags": ["network", "peer"],
   "templating": {
     "list": [
       {
@@ -219,7 +219,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
