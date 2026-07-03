@@ -550,7 +550,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "statsd", "rpc", "pathfinding"],
+  "tags": ["statsd", "rpc", "pathfinding"],
   "templating": {
     "list": [
       {

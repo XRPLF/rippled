@@ -1058,7 +1058,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "consensus"],
+  "tags": ["consensus"],
   "templating": {
     "list": [
       {

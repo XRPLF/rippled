@@ -305,7 +305,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "ledger"],
+  "tags": ["ledger"],
   "templating": {
     "list": [
       {

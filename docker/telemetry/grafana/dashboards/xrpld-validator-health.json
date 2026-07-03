@@ -916,7 +916,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "validator", "health"],
+  "tags": ["validator", "health"],
   "templating": {
     "list": [
       {
