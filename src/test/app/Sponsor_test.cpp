@@ -4398,6 +4398,60 @@ public:
         testTrustSet(cosigning);
     }
 
+    void
+    testZeroBalanceSponsoredPaymentFeePayerCheck()
+    {
+        // Zero-balance sponsored Payment: getFeePayer() consistency check
+        testcase("Sponsored Payment: minimal-balance account with sponsor-pays-fee");
+
+        using namespace jtx;
+        Env env{*this, testableAmendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        Account const dest("dest");
+
+        auto const baseFee = env.current()->fees().base;
+        auto const baseReserve = env.current()->fees().reserve;
+
+        // Fund sponsor and dest generously, alice with base reserve + 1 XRP for payment
+        env.fund(XRP(10000), sponsor, dest);
+        env.fund(baseReserve + XRP(1), alice);
+        env.close();
+
+        // Precondition: alice has base reserve + 1 XRP (enough for payment but not fee)
+        BEAST_EXPECT(env.balance(alice) == baseReserve + XRP(1));
+
+        // BUG SCENARIO (if it existed): Alice tries to send a Payment to dest
+        // where sponsor pays the fee via spfSponsorFee.
+        // If Payment.cpp used ctx_.tx.getFeePayer() (STTx version), it would
+        // incorrectly identify alice as the fee payer and check if alice has
+        // balance >= amount + fee + reserve, which would fail.
+        // FIX: Payment.cpp uses getFeePayer(view(), ctx_.tx) (Transactor version)
+        // which correctly identifies sponsor as the fee payer, so only checks
+        // if alice has balance >= amount + reserve (not including fee).
+
+        auto const preDest = env.balance(dest);
+        auto const preSponsor = env.balance(sponsor);
+
+        // Alice sends 1 XRP to dest, sponsor pays the fee
+        env(pay(alice, dest, XRP(1)),
+            sponsor::As(sponsor, spfSponsorFee),
+            Sig(sfSponsorSignature, sponsor),
+            Fee(baseFee),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // FIX VERIFIED: Payment succeeded
+        // Alice's balance decreased by 1 XRP (the payment amount, NOT the fee)
+        BEAST_EXPECT(env.balance(alice) == baseReserve);
+
+        // Dest received 1 XRP
+        BEAST_EXPECT(env.balance(dest) == preDest + XRP(1));
+
+        // Sponsor paid the fee (NOT alice)
+        BEAST_EXPECT(env.balance(sponsor) == preSponsor - baseFee);
+    }
+
 protected:
     void
     testSponsor()
@@ -4432,6 +4486,8 @@ protected:
         testSponsoredTrustLineNoFreeReserve();
         testCoSignReserveBoundedBySponsorshipBudget();
         testReserveSponsorGate();
+
+        testZeroBalanceSponsoredPaymentFeePayerCheck();
     }
 
     void
