@@ -34,14 +34,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m])))",
           "legendFormat": "p99 Wait"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m])))",
           "legendFormat": "p99 Exec"
         }
       ],
@@ -92,21 +92,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(xrpld_job_queued_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(xrpld_job_queued_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))",
           "legendFormat": "Queued/s [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(xrpld_job_started_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(xrpld_job_started_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))",
           "legendFormat": "Started/s [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(xrpld_job_finished_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(xrpld_job_finished_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))",
           "legendFormat": "Finished/s [{{exported_instance}}]"
         }
       ],
@@ -157,7 +157,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, rate(xrpld_job_queued_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "topk(10, rate(xrpld_job_queued_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))",
           "legendFormat": "{{job_type}} [{{exported_instance}}]"
         }
       ],
@@ -208,7 +208,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, rate(xrpld_job_finished_total{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))",
+          "expr": "topk(10, rate(xrpld_job_finished_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))",
           "legendFormat": "{{job_type}} [{{exported_instance}}]"
         }
       ],
@@ -254,14 +254,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m])))",
           "legendFormat": "p75 Wait [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_queued_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m])))",
           "legendFormat": "p99 Wait [{{exported_instance}}]"
         }
       ],
@@ -307,14 +307,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m])))",
           "legendFormat": "p75 Exec [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m])))",
           "legendFormat": "p99 Exec [{{exported_instance}}]"
         }
       ],
@@ -365,7 +365,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, histogram_quantile(0.99, sum by (le, job_type, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", job_type=~\"$job_type\"}[5m]))))",
+          "expr": "topk(10, histogram_quantile(0.99, sum by (le, job_type, exported_instance) (rate(xrpld_job_running_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", job_type=~\"$job_type\"}[5m]))))",
           "legendFormat": "{{job_type}} [{{exported_instance}}]"
         }
       ],
@@ -411,7 +411,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_jq_trans_overflow_total{exported_instance=~\"$node\"}[5m]) * 60",
+          "expr": "rate(xrpld_jq_trans_overflow_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m]) * 60",
           "legendFormat": "Overflows/min [{{exported_instance}}]"
         }
       ],
@@ -457,6 +457,66 @@
   "tags": ["xrpld", "job-queue"],
   "templating": {
     "list": [
+      {
+        "name": "service_name",
+        "label": "Service",
+        "description": "Filter by service.name (e.g. xrpld, pratik-xrpld)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
       {
         "name": "node",
         "label": "Node",
