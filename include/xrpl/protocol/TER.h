@@ -440,7 +440,7 @@ public:
     // Trait tells enable_if which types are allowed for construction.
     template <typename T>
     constexpr TERSubset(T rhs)
-        requires Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value
+        requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
         : code_(TERtoInt(rhs))
     {
     }
@@ -455,7 +455,7 @@ public:
     template <typename T>
     constexpr auto
     operator=(T rhs) -> TERSubset&
-        requires Trait<T>::value
+        requires(Trait<T>::value)
     {
         code_ = TERtoInt(rhs);
         return *this;

@@ -202,7 +202,7 @@ struct IsContiguouslyHashable<T[N], HashAlgorithm>
 template <class Hasher, class T>
 inline void
 hash_append(Hasher& h, T const& t) noexcept
-    requires IsContiguouslyHashable<T, Hasher>::value
+    requires(IsContiguouslyHashable<T, Hasher>::value)
 {
     // NOLINTNEXTLINE(bugprone-sizeof-expression)
     h(static_cast<void const*>(std::addressof(t)), sizeof(t));

@@ -11,7 +11,7 @@ namespace beast {
 template <class AgedContainer, class Rep, class Period>
 std::size_t
 expire(AgedContainer& c, std::chrono::duration<Rep, Period> const& age)
-    requires IsAgedContainer<AgedContainer>::value
+    requires(IsAgedContainer<AgedContainer>::value)
 {
     std::size_t n(0);
     auto const expired(c.clock().now() - age);
