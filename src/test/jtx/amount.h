@@ -93,19 +93,16 @@ public:
 
     /** drops */
     template <class T>
-    PrettyAmount(
-        T v,
-        std::enable_if_t<
-            sizeof(T) >= sizeof(int) && std::is_integral_v<T> && std::is_signed_v<T>>* = nullptr)
+    PrettyAmount(T v)
+        requires(sizeof(T) >= sizeof(int) && std::is_integral_v<T> && std::is_signed_v<T>)
         : amount_((v > 0) ? v : -v, v < 0)
     {
     }
 
     /** drops */
     template <class T>
-    PrettyAmount(
-        T v,
-        std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>>* = nullptr)
+    PrettyAmount(T v)
+        requires(sizeof(T) >= sizeof(int) && std::is_unsigned_v<T>)
         : amount_(v)
     {
     }
