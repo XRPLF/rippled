@@ -527,7 +527,7 @@ prefix=xrpld
 | `xrpld_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
 | `xrpld_jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (group `jobq`)    | 0–100 (healthy)                 |
 
-**Grafana dashboard**: _Node Health (System Metrics)_ (`xrpld-system-node-health`)
+**Grafana dashboard**: _Node Health_ (`xrpld-system-node-health`)
 
 ### 2.2 Counters
 
@@ -541,7 +541,7 @@ prefix=xrpld
 
 **Note**: With `server=otel`, `xrpld_warn` and `xrpld_drop` are properly exported as OTel Counter instruments. The previous StatsD `|m` type limitation no longer applies.
 
-**Grafana dashboard**: _RPC & Pathfinding (System Metrics)_ (`xrpld-system-rpc`)
+**Grafana dashboard**: _RPC & Pathfinding_ (`xrpld-system-rpc`)
 
 ### 2.3 Histograms (Event timers)
 
@@ -1211,13 +1211,13 @@ Lifetime validation agreement/miss tallies are exported as monotonic **Observabl
 
 ### New Grafana Dashboards (Phase 9)
 
-| Dashboard              | UID                      | Data Source | Key Panels                                                |
-| ---------------------- | ------------------------ | ----------- | --------------------------------------------------------- |
-| Fee Market & TxQ       | `xrpld-fee-market`       | Prometheus  | TxQ depth/capacity, fee levels, load factor breakdown     |
-| Job Queue Analysis     | `xrpld-job-queue`        | Prometheus  | Per-job rates, queue wait times, execution times          |
-| RPC Performance (OTel) | `xrpld-rpc-perf`         | Prometheus  | Per-method call rates, error rates, latency distributions |
-| Validator Health       | `xrpld-validator-health` | Prometheus  | Agreement %, validation rate, amendment/UNL, state        |
-| Peer Quality           | `xrpld-peer-quality`     | Prometheus  | P90 latency, insane peers, version awareness, disconnects |
+| Dashboard                            | UID                      | Data Source | Key Panels                                                                                                               |
+| ------------------------------------ | ------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Fee Market & TxQ                     | `xrpld-fee-market`       | Prometheus  | TxQ depth/capacity, fee levels, load factor breakdown                                                                    |
+| Job Queue Analysis                   | `xrpld-job-queue`        | Prometheus  | Per-job rates, queue wait times, execution times                                                                         |
+| RPC Performance (per-method section) | `xrpld-rpc-perf`         | Prometheus  | Per-method call rates, error rates, latency distributions (added as a section to the existing RPC Performance dashboard) |
+| Validator Health                     | `xrpld-validator-health` | Prometheus  | Agreement %, validation rate, amendment/UNL, state                                                                       |
+| Peer Quality                         | `xrpld-peer-quality`     | Prometheus  | P90 latency, insane peers, version awareness, disconnects                                                                |
 
 ### Updated Grafana Dashboards (Phase 9)
 

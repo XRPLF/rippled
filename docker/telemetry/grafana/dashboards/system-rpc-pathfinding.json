@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "RPC and pathfinding metrics from beast::insight System Metrics. Requires [insight] server=otel in rippled config.",
+  "description": "RPC request throughput and response timing, pathfinding cost, gRPC read traffic, and resource-manager enforcement for this node.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -10,8 +10,8 @@
   "links": [],
   "panels": [
     {
-      "title": "RPC Request Rate (System Metrics)",
-      "description": "Rate of RPC requests as counted by the beast::insight counter. Sourced from rpc.requests (ServerHandler.cpp) which increments on every HTTP and WebSocket RPC request. Compare with the span-based rpc.request rate in the RPC Performance dashboard for cross-validation.",
+      "title": "RPC Request Rate",
+      "description": "**What:** How many RPC requests the server counts per second.\n**How it's computed:** Per-second rate of the RPC request counter over 5 minutes, per node.\n**Reading it:** A steady line proportional to client demand; cross-checks the trace-based RPC dashboard.\n**Healthy range:** Workload-dependent; tracks client activity.\n**Watch for:** A sudden surge above baseline, consistent with a client flooding the RPC endpoint.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler ctor",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -42,8 +42,8 @@
       }
     },
     {
-      "title": "RPC Response Time (System Metrics)",
-      "description": "P95 of RPC response time from the beast::insight timer. Sourced from the rpc.time event (ServerHandler.cpp) which records elapsed milliseconds for each RPC response. This measures the full HTTP handler time, not just command execution. Compare with span-based rpc.request duration.",
+      "title": "RPC Response Time",
+      "description": "**What:** The 95th-percentile end-to-end RPC response time, including HTTP handling.\n**How it's computed:** 95th-percentile of measured response times over 5 minutes, per node.\n**Reading it:** Lower is better; this is broader than command-only latency.\n**Healthy range:** A few to tens of milliseconds; workload-dependent.\n**Watch for:** A sustained climb, indicating handler overload or slow downstream work.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler ctor",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -82,7 +82,7 @@
     },
     {
       "title": "RPC Response Size",
-      "description": "P95 of RPC response payload size in bytes. Sourced from the rpc.size event (ServerHandler.cpp) which records the byte length of each RPC JSON response. Large responses may indicate expensive queries (e.g. account_tx with many results) or API misuse.",
+      "description": "**What:** The 95th-percentile size of RPC response payloads in bytes.\n**How it's computed:** 95th-percentile of response payload sizes over 5 minutes, per node.\n**Reading it:** Smaller is cheaper; large responses cost bandwidth and memory.\n**Healthy range:** Workload-dependent; small for status queries, large for bulk data queries.\n**Watch for:** Growth in large responses, consistent with expensive queries or API misuse.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler ctor",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -121,7 +121,7 @@
     },
     {
       "title": "RPC Response Time Distribution",
-      "description": "Distribution of RPC response times from the beast::insight timer showing P90, P95, and P99 quantiles. Sourced from the rpc.time event (ServerHandler.cpp). Useful for detecting bimodal latency or long-tail requests.",
+      "description": "**What:** RPC response time at the 90th, 95th, and 99th percentiles together.\n**How it's computed:** Three response-time quantiles over 5 minutes, per node.\n**Reading it:** Lower is better; the gap between P90 and P99 shows the long tail.\n**Healthy range:** Percentiles clustered low; workload-dependent.\n**Watch for:** A widening P99, revealing long-tail or bimodal slow requests.\n**Source:** src/xrpld/rpc/detail/ServerHandler.cpp:ServerHandler ctor",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -174,7 +174,7 @@
     },
     {
       "title": "Pathfinding Fast Duration",
-      "description": "P95 of fast pathfinding execution time. Sourced from the pathfind_fast event (PathRequests.h) which records the duration of the fast pathfinding algorithm. Fast pathfinding uses a simplified search that trades accuracy for speed.",
+      "description": "**What:** The 95th-percentile time of the fast pathfinding search.\n**How it's computed:** 95th-percentile of fast pathfinding durations over 5 minutes, per node.\n**Reading it:** Lower is better; fast mode trades accuracy for speed.\n**Healthy range:** Typically a few to tens of milliseconds; workload-dependent.\n**Watch for:** A rising trend, indicating heavy pathfinding demand or an expensive order book.\n**Source:** src/xrpld/rpc/detail/PathRequestManager.h:ctor",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -213,7 +213,7 @@
     },
     {
       "title": "Pathfinding Full Duration",
-      "description": "P95 of full pathfinding execution time. Sourced from the pathfind_full event (PathRequests.h) which records the duration of the exhaustive pathfinding search. Full pathfinding is more expensive and can take significantly longer than fast mode.",
+      "description": "**What:** The 95th-percentile time of the full, exhaustive pathfinding search.\n**How it's computed:** 95th-percentile of full pathfinding durations over 5 minutes, per node.\n**Reading it:** Lower is better; full mode is much more expensive than fast mode.\n**Healthy range:** Tens to hundreds of milliseconds; workload-dependent.\n**Watch for:** Sustained high durations, consistent with pathfinding-heavy clients straining the node.\n**Source:** src/xrpld/rpc/detail/PathRequestManager.h:ctor",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -252,7 +252,7 @@
     },
     {
       "title": "Resource Warnings Rate",
-      "description": "Rate of resource warning events from the Resource Manager. Sourced from the warn meter (Logic.h) which increments when a consumer (peer or RPC client) exceeds the warning threshold for resource usage. A rising rate indicates aggressive clients that may need throttling. NOTE: This panel will show no data until the |m -> |c fix is applied in System MetricsCollector.cpp (Phase 6 Task 6.1).",
+      "description": "**What:** How often the resource manager warns a peer or client for excessive usage, per second.\n**How it's computed:** Per-second rate of resource-warning events over 5 minutes, per node.\n**Reading it:** Green near zero, yellow above 0.1/sec, red above 1/sec.\n**Healthy range:** Near zero in normal operation.\n**Watch for:** A rising rate, consistent with aggressive clients that may need throttling.\n**Source:** include/xrpl/resource/detail/Logic.h:Logic::Stats ctor",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -300,7 +300,7 @@
     },
     {
       "title": "Resource Drops Rate",
-      "description": "Rate of resource drop events from the Resource Manager. Sourced from the drop meter (Logic.h) which increments when a consumer is disconnected or blocked due to excessive resource usage. Non-zero values mean the node is actively rejecting abusive connections. NOTE: This panel will show no data until the |m -> |c fix is applied in System MetricsCollector.cpp (Phase 6 Task 6.1).",
+      "description": "**What:** How often the resource manager drops or blocks a peer or client for abuse, per second.\n**How it's computed:** Per-second rate of resource-drop events over 5 minutes, per node.\n**Reading it:** Green near zero, yellow above 0.01/sec, red above 0.1/sec.\n**Healthy range:** Zero when no abusive consumers are present.\n**Watch for:** Non-zero values, meaning the node is actively rejecting abusive connections.\n**Source:** include/xrpl/resource/detail/Logic.h:Logic::Stats ctor",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -348,7 +348,7 @@
     },
     {
       "title": "gRPC Request Rate by Method (Spans)",
-      "description": "Per-method gRPC call rate derived from the grpc.{Method} spans (GRPCServer.cpp). Covers the gRPC API used by reporting/Clio. Populated only when the node serves gRPC traffic.",
+      "description": "**What:** How many gRPC calls of each method the node serves per second.\n**How it's computed:** Per-second rate of gRPC calls over 5 minutes, grouped by method and node.\n**Reading it:** Non-zero only when reporting/Clio-style clients use the gRPC API.\n**Healthy range:** Workload-dependent; zero without gRPC traffic.\n**Watch for:** A single method spiking, consistent with a heavy or misbehaving gRPC consumer.\n**Source:** src/xrpld/app/main/GRPCServer.cpp:GRPCServerImpl::CallData::process",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -387,7 +387,7 @@
     },
     {
       "title": "gRPC Latency P95 by Method (Spans)",
-      "description": "p95 latency per gRPC method from grpc.{Method} span durations. Identifies slow gRPC read paths.",
+      "description": "**What:** The 95th-percentile latency of each gRPC method.\n**How it's computed:** 95th-percentile of gRPC call durations over 5 minutes, grouped by method and node.\n**Reading it:** Lower is better; identifies slow gRPC read paths.\n**Healthy range:** Workload-dependent; scales with ledger data volume served.\n**Watch for:** A method whose latency climbs, indicating an expensive read path.\n**Source:** src/xrpld/app/main/GRPCServer.cpp:GRPCServerImpl::CallData::process",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -426,7 +426,7 @@
     },
     {
       "title": "gRPC Error Rate by Status (Spans)",
-      "description": "Rate of gRPC spans broken down by grpc_status (success/error/resource_exhausted/failed_precondition). A rising error or resource_exhausted rate indicates gRPC clients hitting limits.",
+      "description": "**What:** gRPC call rate broken down by outcome status (success, error, resource-exhausted, failed-precondition).\n**How it's computed:** Per-second rate of gRPC calls over 5 minutes, grouped by status and node.\n**Reading it:** Success should dominate; error and resource-exhausted should stay low.\n**Healthy range:** Workload-dependent; errors near the floor.\n**Watch for:** A rising error or resource-exhausted rate, indicating gRPC clients hitting limits.\n**Source:** src/xrpld/app/main/GRPCServer.cpp:GRPCServerImpl::CallData::process",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -465,7 +465,7 @@
     },
     {
       "title": "Pathfinding Compute Duration (Spans)",
-      "description": "p95 of the pathfind.compute span, the per-request path computation. Complements the StatsD pathfind_fast/full timers with span-level visibility. Populated under pathfinding (book/path) RPC load.",
+      "description": "**What:** The 95th-percentile time to compute paths for a single request.\n**How it's computed:** 95th-percentile of path-computation durations over 5 minutes, per node.\n**Reading it:** Lower is better; complements the fast/full pathfinding timers with span-level detail.\n**Healthy range:** Workload-dependent; grows with order-book depth and request complexity.\n**Watch for:** A rising trend under pathfinding load, indicating expensive path computation.\n**Source:** src/xrpld/rpc/detail/PathRequest.cpp:PathRequest::doUpdate",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -504,7 +504,7 @@
     },
     {
       "title": "Pathfinding Request & Discovery Rate (Spans)",
-      "description": "Rate of pathfind.request (client path requests) and pathfind.discover (path-discovery passes) spans. Shows pathfinding demand and the discovery cost driver for subscription-heavy nodes.",
+      "description": "**What:** The rate of client path requests versus path-discovery passes.\n**How it's computed:** Per-second rates of path requests and discovery passes over 5 minutes, per node.\n**Reading it:** Discovery cost tracks request demand; useful for subscription-heavy nodes.\n**Healthy range:** Workload-dependent; both zero without pathfinding clients.\n**Watch for:** Discovery rate climbing out of proportion to requests, a cost driver for subscription-heavy nodes.\n**Source:** src/xrpld/rpc/handlers/orderbook/PathFind.cpp:doPathFind; src/xrpld/rpc/detail/PathRequest.cpp:PathRequest::findPaths",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -550,7 +550,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["statsd", "rpc", "pathfinding"],
+  "tags": ["rpc", "pathfinding"],
   "templating": {
     "list": [
       {
@@ -672,7 +672,7 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "RPC & Pathfinding (System Metrics)",
+  "title": "RPC & Pathfinding",
   "uid": "xrpld-system-rpc",
   "refresh": "5s"
 }

@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Fee market dynamics: TxQ depth/capacity, fee escalation levels, and load factor breakdown. Sourced from OTel MetricsRegistry observable gauges (Phase 9).",
+  "description": "Transaction queue depth and capacity, fee-escalation levels, and load-factor breakdown that together set the minimum fee to enter the open ledger.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Transaction Queue Depth",
-      "description": "Current number of transactions waiting in the queue vs. maximum capacity. Sourced from MetricsRegistry txq_metrics observable gauge with metric=txq_count and metric=txq_max_size.",
+      "description": "**What:** Transactions currently waiting in the transaction queue versus the queue's maximum capacity.\n**How it's computed:** Instantaneous gauge readings of current queue count and configured max size.\n**Reading it:** Queue depth well below capacity is normal; depth approaching capacity means the node is saturating.\n**Healthy range:** Depth near 0 in quiet periods; workload-dependent under load.\n**Watch for:** Depth pinned at capacity for sustained periods, which signals demand exceeding throughput or a fee-spam burst.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerTxqGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -59,7 +59,7 @@
     },
     {
       "title": "Transactions Per Ledger",
-      "description": "Transactions in the current open ledger vs. expected per-ledger count. Sourced from txq_metrics with metric=txq_in_ledger and metric=txq_per_ledger.",
+      "description": "**What:** Transactions already placed in the current open ledger versus the expected per-ledger target.\n**How it's computed:** Instantaneous gauge readings of in-ledger count and the target count that governs fee escalation.\n**Reading it:** Staying at or below the expected target is normal; exceeding it triggers open-ledger fee escalation.\n**Healthy range:** At or under the expected per-ledger target.\n**Watch for:** In-ledger count persistently above target, indicating sustained congestion pushing fees up.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerTxqGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -107,7 +107,7 @@
     },
     {
       "title": "Fee Escalation Levels",
-      "description": "Fee levels that control transaction queue admission. Reference fee level is the baseline; open ledger fee level triggers escalation. Sourced from txq_metrics observable gauge.",
+      "description": "**What:** The fee levels that govern queue admission: reference (baseline), minimum processing, median, and open-ledger levels.\n**How it's computed:** Instantaneous gauge readings of each fee level, shown on a log scale.\n**Reading it:** Open-ledger level near the reference level means cheap entry; a large gap above reference means escalation is active.\n**Healthy range:** Open-ledger level at or near reference during normal traffic.\n**Watch for:** Open-ledger level spiking far above reference, the hallmark of congestion or a fee-bidding war.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerTxqGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -173,7 +173,7 @@
     },
     {
       "title": "Load Factor Breakdown",
-      "description": "Decomposed load factor components: server (max of local, net, cluster), fee escalation, fee queue, and combined. Values are unitless multipliers where 1.0 = no load. Sourced from load_factor_metrics observable gauge.",
+      "description": "**What:** The combined load factor and its server, fee-escalation, and fee-queue contributors as unitless fee multipliers (1.0 = no load).\n**How it's computed:** Instantaneous gauge readings of each load-factor component.\n**Reading it:** Values at 1.0 mean base fees; higher values raise the fee to transact.\n**Healthy range:** Around 1.0 under normal conditions.\n**Watch for:** Combined factor climbing well above 1.0, showing the node is charging premium fees due to congestion or overload.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLoadFactorGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -251,7 +251,7 @@
     },
     {
       "title": "Load Factor Components",
-      "description": "Individual load factor contributors: local server load, network load, and cluster load. Only differ from 1.0 under load conditions. Sourced from load_factor_metrics observable gauge.",
+      "description": "**What:** The individual load-factor inputs, local server load, network load, and cluster load, as unitless multipliers.\n**How it's computed:** Instantaneous gauge readings of each component.\n**Reading it:** All at 1.0 means no load pressure from any source; a raised component identifies where load originates.\n**Healthy range:** Around 1.0 for each component.\n**Watch for:** A single component rising sharply, which pinpoints whether the pressure is local, network-wide, or cluster-driven.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLoadFactorGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -306,7 +306,7 @@
     },
     {
       "title": "Load Factor Attribution (Stacked Components)",
-      "description": "Stacked contribution of each load-factor component (fee escalation, queue, local, net, cluster) to the effective transaction cost. Shows WHICH component is driving the fee at any moment, which the aggregate load_factor hides.",
+      "description": "**What:** The stacked contribution of each load-factor component (fee escalation, queue, local, net, cluster) to the effective transaction cost.\n**How it's computed:** Instantaneous gauge readings of each component stacked to show relative share.\n**Reading it:** The tallest band identifies which component is driving the fee, detail the aggregate load factor hides.\n**Healthy range:** Thin bands near 1.0 total under normal traffic.\n**Watch for:** One band dominating during a fee spike, revealing the specific driver of elevated cost.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLoadFactorGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -378,7 +378,7 @@
     },
     {
       "title": "Queue Abandonment Rate (Expired)",
-      "description": "Rate of transactions expired out of the queue (LastLedgerSequence passed). Rising expiry means submitters under-bid the escalating fee and gave up \u2014 a demand-frustration signal.",
+      "description": "**What:** Transactions dropped from the queue because their last-ledger deadline passed before they could be included.\n**How it's computed:** Per-second rate of the cumulative expired-transaction counter over a 5-minute window.\n**Reading it:** Near zero is healthy; a rising rate means submitters under-bid the escalating fee and their transactions timed out.\n**Healthy range:** Near 0 expirations per second.\n**Watch for:** Sustained expiry rate, a demand-frustration signal often coinciding with fee spikes or spam that crowds out honest traffic.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:incrementTxqExpired (caller src/xrpld/app/misc/detail/TxQ.cpp)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -417,7 +417,7 @@
     },
     {
       "title": "Queue Admission Rejections (Dropped)",
-      "description": "Rate of transactions refused admission to the queue, by reason. queue_full means the queue is at capacity \u2014 admission-control backpressure distinct from expiry and from job-queue overflow.",
+      "description": "**What:** Transactions refused entry to the queue, broken down by reason such as queue_full.\n**How it's computed:** Per-second rate of the cumulative dropped-transaction counter over a 5-minute window, split by reason.\n**Reading it:** Near zero is healthy; queue_full rejections mean the queue is at capacity and applying backpressure.\n**Healthy range:** Near 0 rejections per second.\n**Watch for:** A burst of queue_full drops, distinct from expiry, indicating the node is being flooded faster than it can drain.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:incrementTxqDropped (caller src/xrpld/app/misc/detail/TxQ.cpp)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -456,7 +456,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["fee-market"],
+  "tags": ["transactions", "fees"],
   "templating": {
     "list": [
       {

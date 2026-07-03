@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Ledger data exchange and object fetch traffic from beast::insight System Metrics. Covers ledger sync, node data retrieval, and transaction set exchange. Requires [insight] server=otel in rippled config.",
+  "description": "Ledger data exchange and object-fetch traffic between this node and its peers: ledger sync, tree-node retrieval, and transaction-set exchange. Use it to see how much ledger data the node is pulling or serving and to spot catch-up activity.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Ledger Data Exchange (Bytes In)",
-      "description": "Inbound bytes for ledger data sub-categories. 'ledger_data' = aggregated ledger data, sub-types include Transaction_Set_candidate (proposed tx sets), Transaction_Node (tx tree nodes), and Account_State_Node (state tree nodes). High Account_State_Node traffic indicates state sync; high Transaction_Set_candidate indicates consensus catch-up. Sourced from TrafficCount.h ledger_data_* categories.",
+      "description": "**What:** Inbound bytes for ledger-data message categories, split into aggregate get/share plus the transaction-set, transaction-node, and account-state-node sub-types the node receives from peers.\n**How it's computed:** Per-category inbound byte counters, shown at their latest cumulative value per node.\n**Reading it:** Normally low and flat once synced. Account-state-node traffic dominates during state sync; transaction-set-candidate traffic dominates during consensus catch-up.\n**Healthy range:** workload-dependent; low and steady on a synced node.\n**Watch for:** Sustained high account-state or tx-node inbound bytes on a node that should be caught up (repeated re-sync, missing history), or a single peer driving all traffic.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -99,7 +99,7 @@
     },
     {
       "title": "Ledger Share/Get Traffic (Bytes)",
-      "description": "Legacy ledger share and get traffic by sub-type. These are the older ledger fetch protocol categories (as opposed to ledger_data_* which is the newer protocol). Sub-types: Transaction_Set_candidate, Transaction_node, Account_State_node, plus aggregate ledger_share and ledger_get. Sourced from TrafficCount.h ledger_* categories.",
+      "description": "**What:** Inbound bytes for the older ledger share/get message categories and their tx-set, tx-node, and account-state sub-types.\n**How it's computed:** Per-category inbound byte counters at their latest value per node.\n**Reading it:** Usually small; these legacy categories carry ledger-fetch traffic for peers using the older protocol.\n**Healthy range:** workload-dependent; low on a synced node.\n**Watch for:** Large sustained volumes indicating heavy fetch load or a peer repeatedly requesting the same data.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -187,7 +187,7 @@
     },
     {
       "title": "GetObject Traffic by Type (Bytes In)",
-      "description": "Object fetch traffic by object type. GetObject is the protocol for fetching specific SHAMap nodes. Types: Ledger (full ledger headers), Transaction (individual txs), Transaction_node (tx tree nodes), Account_State_node (state tree nodes), CAS (Content Addressable Storage objects), Fetch_Pack (batch fetch during catch-up), Transactions (bulk tx fetch). High Fetch_Pack traffic indicates a node is catching up. Sourced from TrafficCount.h getobject_* categories.",
+      "description": "**What:** Inbound bytes for object-fetch traffic broken down by object type: ledger headers, individual transactions, transaction-tree nodes, and state-tree nodes.\n**How it's computed:** Per-type inbound byte counters at their latest value per node.\n**Reading it:** Small during steady state; grows when the node fetches missing tree nodes.\n**Healthy range:** workload-dependent; low when synced.\n**Watch for:** A large share on state/tx nodes for long periods (persistent gap-filling), meaning the node keeps catching up.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -275,7 +275,7 @@
     },
     {
       "title": "GetObject Aggregate & Special Types (Bytes In)",
-      "description": "Aggregate getobject traffic plus special categories: CAS (Content Addressable Storage) for SHAMap node fetch, Fetch_Pack for bulk batch downloads during catch-up, Transactions for bulk tx fetch, and the aggregate getobject_get/getobject_share totals. Sourced from TrafficCount.h getobject_* categories.",
+      "description": "**What:** Aggregate object-fetch inbound bytes plus special buckets: content-addressed storage fetches, bulk fetch-pack downloads used during catch-up, and bulk transaction fetches.\n**How it's computed:** Per-category inbound byte counters at their latest value per node.\n**Reading it:** Fetch-pack rises sharply while catching up a range of ledgers; near zero when fully synced.\n**Healthy range:** workload-dependent; low when synced.\n**Watch for:** Continuous fetch-pack traffic (node never fully catches up) or unexpectedly high content-store volume.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -356,7 +356,7 @@
     },
     {
       "title": "GetObject Messages by Type",
-      "description": "Message counts for object fetch operations. Shows how many individual fetch requests and responses are exchanged per type. High message counts with low byte counts indicate small object fetches; the inverse indicates large batch transfers. Sourced from TrafficCount.h getobject_* categories.",
+      "description": "**What:** Count of individual object-fetch request/response messages per object type.\n**How it's computed:** Per-type inbound message counters at their latest value per node.\n**Reading it:** Many messages with few bytes means small piecemeal fetches; few messages with many bytes means large batch transfers.\n**Healthy range:** workload-dependent.\n**Watch for:** High message counts with tiny payloads sustained over time (inefficient per-node fetching).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -437,7 +437,7 @@
     },
     {
       "title": "Overlay Traffic Heatmap (All Categories, Bytes In)",
-      "description": "Bar gauge showing all overlay traffic categories ranked by inbound bytes. Provides a complete at-a-glance view of which protocol message types consume the most bandwidth across all 57+ traffic categories. Sourced from all TrafficCount.h categories via wildcard match.",
+      "description": "**What:** All overlay traffic categories ranked by inbound bytes, giving an at-a-glance view of which message types consume the most receive bandwidth.\n**How it's computed:** Top categories by latest inbound byte value across all traffic categories.\n**Reading it:** The longest bars are the biggest bandwidth consumers; on a synced node transactions, proposals, and validations usually lead.\n**Healthy range:** workload-dependent.\n**Watch for:** A single ledger-data or fetch category dominating (ongoing sync) or an unexpected category topping the list.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -493,7 +493,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["statsd", "ledger", "sync"],
+  "tags": ["ledger", "sync"],
   "templating": {
     "list": [
       {
@@ -595,7 +595,6 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "Ledger Data & Sync (System Metrics)",
-  "uid": "xrpld-system-ledger-sync",
-  "refresh": "5s"
+  "title": "Ledger Data & Sync",
+  "uid": "xrpld-system-ledger-sync"
 }

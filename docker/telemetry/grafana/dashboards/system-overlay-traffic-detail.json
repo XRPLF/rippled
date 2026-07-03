@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Detailed overlay traffic breakdown for categories not covered by the main Network Traffic dashboard. Includes squelch, overhead, validator lists, object fetch, ledger sync, and protocol negotiation traffic. Requires [insight] server=otel in rippled config.",
+  "description": "Fine-grained breakdown of peer-to-peer overlay traffic beyond the main network view: squelch relay control, protocol overhead, validator-list distribution, transaction-set exchange, transaction availability, ledger-proof and replay traffic, and unclassified messages.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Squelch Traffic (Messages)",
-      "description": "Squelch-related overlay messages. Squelch is the peer traffic management protocol that suppresses redundant message forwarding. 'squelch' = squelch control messages, 'squelch_suppressed' = messages suppressed by squelch, 'squelch_ignored' = squelch directives that were ignored. High suppressed counts indicate effective bandwidth savings; high ignored counts may indicate misconfigured peers. Sourced from TrafficCount.h squelch categories.",
+      "description": "**What:** Squelch relay-control messages in/out, plus messages suppressed by squelch and squelch directives that were ignored. Squelch reduces redundant message forwarding between peers.\n**How it's computed:** Current message counts for the squelch, squelch-suppressed, and squelch-ignored categories, in and out.\n**Reading it:** High suppressed counts mean squelch is saving bandwidth; ignored should stay low.\n**Healthy range:** workload-dependent; suppressed far above ignored.\n**Watch for:** High ignored counts (peers not honoring squelch) or squelch traffic itself dominating.\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -85,7 +85,7 @@
     },
     {
       "title": "Overhead Traffic Breakdown (Bytes)",
-      "description": "Overlay protocol overhead by sub-category. 'overhead' = base protocol overhead (ping, status, etc.), 'overhead_cluster' = intra-cluster communication overhead, 'overhead_manifest' = validator manifest distribution overhead. High cluster overhead may indicate frequent cluster state syncs; high manifest overhead occurs during UNL changes. Sourced from TrafficCount.h overhead categories.",
+      "description": "**What:** Overlay protocol overhead bytes split into base overhead, intra-cluster overhead, and validator-manifest distribution overhead.\n**How it's computed:** Current in/out byte counts for the overhead, overhead-cluster, and overhead-manifest categories.\n**Reading it:** Base overhead is routine; cluster and manifest rise around cluster syncs and manifest changes.\n**Healthy range:** workload-dependent; low and stable.\n**Watch for:** Sustained high cluster or manifest overhead (frequent cluster state churn or manifest reissue).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -159,7 +159,7 @@
     },
     {
       "title": "Validator List Traffic",
-      "description": "Validator list (UNL) distribution traffic. Validator lists are exchanged when peers share their trusted validator configurations. Spikes occur during UNL updates or when new peers connect. Sourced from TrafficCount.h validator_lists category.",
+      "description": "**What:** Bytes and messages exchanged distributing validator lists (trusted-list configuration) between peers.\n**How it's computed:** Current in/out byte and message counts for the validator-lists category.\n**Reading it:** Bursts when lists update or new peers connect; quiet otherwise.\n**Healthy range:** workload-dependent; occasional bursts.\n**Watch for:** Continuous high volume (repeated list re-fetching or churn).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -236,7 +236,7 @@
     },
     {
       "title": "Set Get/Share Traffic (Bytes)",
-      "description": "Transaction set get and share traffic. 'set_get' = requests to fetch transaction sets (sent during ledger close), 'set_share' = responses sharing transaction sets. High set_get traffic indicates peers frequently requesting missing transaction sets, which may signal sync delays. Sourced from TrafficCount.h set_get/set_share categories.",
+      "description": "**What:** Transaction-set fetch (get) and share bytes exchanged during ledger close.\n**How it's computed:** Current in/out byte counts for the set-get and set-share categories.\n**Reading it:** Some exchange each ledger is normal as peers reconcile transaction sets.\n**Healthy range:** workload-dependent.\n**Watch for:** High set-get (peers frequently missing transaction sets: possible sync delays).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -296,7 +296,7 @@
     },
     {
       "title": "Have/Requested Transactions (Messages)",
-      "description": "Transaction availability protocol messages. 'have_transactions' = advertisements that a peer has specific transactions available, 'requested_transactions' = explicit requests for transaction data. A high ratio of requested to have may indicate peers are behind on transaction propagation. Sourced from TrafficCount.h have_transactions/requested_transactions categories.",
+      "description": "**What:** Transaction-availability messages: advertisements that a peer has certain transactions, and explicit requests for transaction data.\n**How it's computed:** Current in/out message counts for the have-transactions and requested-transactions categories.\n**Reading it:** Compare requested versus have to gauge how well transactions are propagating.\n**Healthy range:** workload-dependent.\n**Watch for:** Requested far exceeding have (peers behind on transaction propagation).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -356,7 +356,7 @@
     },
     {
       "title": "Unknown / Unclassified Traffic",
-      "description": "Traffic that does not match any known overlay message category. Non-zero values may indicate protocol version mismatches, corrupted messages, or new message types not yet classified. Sourced from TrafficCount.h unknown category.",
+      "description": "**What:** Overlay traffic that matches no known message category, in bytes and messages.\n**How it's computed:** Current in/out byte and message counts for the unknown category.\n**Reading it:** Should be at or near zero.\n**Healthy range:** zero.\n**Watch for:** Any sustained non-zero value (protocol version mismatch, corrupted messages, or an unclassified new message type).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -433,7 +433,7 @@
     },
     {
       "title": "Proof Path Traffic",
-      "description": "Proof path request/response traffic for ledger state proof exchange. Used by peers to verify specific ledger entries without downloading the full ledger. High request volume may indicate peers validating state during catch-up. Sourced from TrafficCount.h proof_path_request/proof_path_response categories.",
+      "description": "**What:** Proof-path request/response bytes used to verify individual ledger entries without downloading the whole ledger.\n**How it's computed:** Current in/out byte counts for the proof-path request and response categories.\n**Reading it:** Rises when peers verify specific state, often during catch-up.\n**Healthy range:** workload-dependent.\n**Watch for:** High sustained request volume (heavy state-verification load).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -493,7 +493,7 @@
     },
     {
       "title": "Replay Delta Traffic",
-      "description": "Replay delta request/response traffic for ledger replay protocol. Used during catch-up to efficiently replay ledger state changes. Sourced from TrafficCount.h replay_delta_request/replay_delta_response categories.",
+      "description": "**What:** Replay-delta request/response bytes used to efficiently replay ledger state changes during catch-up.\n**How it's computed:** Current in/out byte counts for the replay-delta request and response categories.\n**Reading it:** Active during catch-up and replay; quiet when synced.\n**Healthy range:** workload-dependent; low when synced.\n**Watch for:** Continuous replay traffic (node repeatedly replaying rather than staying current).\n**Source:** src/xrpld/overlay/detail/OverlayImpl.cpp OverlayImpl ctor (TrafficGauges)",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -553,7 +553,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["statsd", "overlay", "network"],
+  "tags": ["network", "peer"],
   "templating": {
     "list": [
       {
@@ -655,7 +655,6 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "Overlay Traffic Detail (System Metrics)",
-  "uid": "xrpld-system-overlay-detail",
-  "refresh": "5s"
+  "title": "Overlay Traffic Detail",
+  "uid": "xrpld-system-overlay-detail"
 }

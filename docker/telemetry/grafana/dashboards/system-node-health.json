@@ -2,7 +2,7 @@
   "annotations": {
     "list": []
   },
-  "description": "Node health metrics from beast::insight System Metrics. Requires [insight] server=otel in rippled config.",
+  "description": "Operational health of an XRPL node: sync state, ledger progress, caches, storage, job queue, and network economy.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -11,7 +11,7 @@
   "panels": [
     {
       "title": "Validated Ledger Age",
-      "description": "Age of the most recently validated ledger in seconds. Sourced from the LedgerMaster.Validated_Ledger_Age gauge (LedgerMaster.h) which is updated every collection interval via the insight hook. Values above 20s indicate the node is falling behind the network.",
+      "description": "**What:** How old the most recently validated ledger is, in seconds.\n**How it's computed:** Current value of the validated-ledger-age gauge, refreshed each collection interval.\n**Reading it:** Lower is better; it should stay near the network close interval.\n**Healthy range:** Under about 7 seconds on a healthy node.\n**Watch for:** Values above 20 seconds mean the node is falling behind the network.\n**Source:** src/xrpld/app/ledger/LedgerMaster.h:LedgerMaster::Stats::collectMetrics",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -60,7 +60,7 @@
     },
     {
       "title": "Published Ledger Age",
-      "description": "Age of the most recently published ledger in seconds. Sourced from the LedgerMaster.Published_Ledger_Age gauge (LedgerMaster.h). Published ledger age should track close to validated ledger age. A growing gap indicates publish pipeline backlog.",
+      "description": "**What:** How old the most recently published ledger is, in seconds.\n**How it's computed:** Current value of the published-ledger-age gauge, refreshed each collection interval.\n**Reading it:** Lower is better; should track close to the validated ledger age.\n**Healthy range:** Under about 7 seconds on a healthy node.\n**Watch for:** A growing gap above the validated age indicates the publish pipeline is backing up.\n**Source:** src/xrpld/app/ledger/LedgerMaster.h:LedgerMaster::Stats::collectMetrics",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -109,7 +109,7 @@
     },
     {
       "title": "Operating Mode Duration",
-      "description": "Cumulative time spent in each operating mode (Disconnected, Connected, Syncing, Tracking, Full). Sourced from State_Accounting.*_duration gauges (NetworkOPs.cpp) which report microseconds. A healthy node should spend the vast majority of time in Full mode.",
+      "description": "**What:** Cumulative time the node has spent in each operating mode (Disconnected, Connected, Syncing, Tracking, Full).\n**How it's computed:** Current value of each per-mode duration counter, plotted as lines.\n**Reading it:** The Full line should climb steadily and dominate; other lines should be flat.\n**Healthy range:** Almost all accumulated time in Full mode.\n**Watch for:** Time accumulating in Syncing, Connected, or Disconnected means the node is not staying fully synced.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::Stats",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -162,7 +162,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "\u00b5s",
+          "unit": "µs",
           "custom": {
             "axisLabel": "Duration",
             "spanNulls": true,
@@ -176,7 +176,7 @@
     },
     {
       "title": "Operating Mode Transitions",
-      "description": "Count of transitions into each operating mode. Sourced from State_Accounting.*_transitions gauges (NetworkOPs.cpp). Frequent transitions out of Full mode indicate instability. Transitions to Disconnected or Syncing warrant investigation.",
+      "description": "**What:** Cumulative count of transitions into each operating mode.\n**How it's computed:** Current value of each per-mode transition counter, plotted as lines.\n**Reading it:** Flat lines are healthy; steps up mean the node changed mode.\n**Healthy range:** Few transitions once the node is stable in Full mode.\n**Watch for:** Frequent transitions out of Full, or into Disconnected or Syncing, indicate instability.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::Stats",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -243,7 +243,7 @@
     },
     {
       "title": "I/O Latency",
-      "description": "P95 of the I/O service loop latency in milliseconds. Sourced from the ios_latency event (Application.cpp) which measures how long it takes for the io_context to process a timer callback. Values above 10ms are logged; above 500ms trigger warnings. High values indicate thread pool saturation or blocking operations.",
+      "description": "**What:** Latency of the I/O service loop, at the 95th percentile in milliseconds.\n**How it's computed:** I/O loop latency samples aggregated to their 95th percentile per node over a 5-minute window.\n**Reading it:** Lower is better; it reflects how promptly queued I/O work runs.\n**Healthy range:** A few milliseconds; brief spikes are tolerable.\n**Watch for:** Sustained values above a few hundred ms indicate thread-pool saturation or blocking operations.\n**Source:** src/xrpld/app/main/Application.cpp:ApplicationImp",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -282,7 +282,7 @@
     },
     {
       "title": "Job Queue Depth",
-      "description": "Current number of jobs waiting in the job queue. Sourced from the job_count gauge (JobQueue.cpp). A sustained high value indicates the node cannot process work fast enough \u2014 common during ledger replay or heavy RPC load.",
+      "description": "**What:** Number of jobs currently waiting in the internal work queue.\n**How it's computed:** Current value of the job-count gauge, plotted over time.\n**Reading it:** Lower is better; a near-flat low line means the node keeps up with its workload.\n**Healthy range:** Low single digits at idle, brief bumps under load.\n**Watch for:** A sustained high depth means the node cannot process work fast enough, common during replay, heavy RPC, or a request flood.\n**Source:** src/libxrpl/core/detail/JobQueue.cpp:JobQueue",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -321,7 +321,7 @@
     },
     {
       "title": "Ledger Fetch Rate",
-      "description": "Rate of ledger fetch requests initiated by the node. Sourced from the ledger_fetches counter (InboundLedgers.cpp) which increments each time the node requests a ledger from a peer. High rates indicate the node is catching up or missing ledgers.",
+      "description": "**What:** How often the node requests a ledger from its peers.\n**How it's computed:** Per-second rate of ledger-fetch requests over a 5-minute window.\n**Reading it:** Near zero in steady state; elevated while catching up.\n**Healthy range:** Close to zero once fully synced.\n**Watch for:** A sustained high rate means the node is repeatedly missing ledgers and back-filling from peers.\n**Source:** src/xrpld/app/ledger/detail/InboundLedgers.cpp:InboundLedgersImp",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -354,7 +354,7 @@
     },
     {
       "title": "Ledger History Mismatches",
-      "description": "Rate of ledger history hash mismatches. Sourced from the ledger.history.mismatch counter (LedgerHistory.cpp) which increments when a built ledger hash does not match the expected validated hash. Non-zero values indicate consensus divergence or database corruption.",
+      "description": "**What:** Rate at which a locally built ledger hash fails to match the network-validated hash.\n**How it's computed:** Per-second rate of history-mismatch events over a 5-minute window.\n**Reading it:** Flat at zero is the only healthy reading.\n**Healthy range:** Zero.\n**Watch for:** Any nonzero value indicates consensus divergence or database corruption and warrants immediate investigation.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:incrementLedgerHistoryMismatch",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -398,7 +398,7 @@
       }
     },
     {
-      "title": "OTel: NodeStore I/O",
+      "title": "NodeStore I/O",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -411,7 +411,7 @@
     },
     {
       "title": "NodeStore Read/Write Totals",
-      "description": "Cumulative NodeStore read and write operation counts. Sourced from MetricsRegistry nodestore_state observable gauge with metric=node_reads_total, node_writes, node_reads_hit.",
+      "description": "**What:** Cumulative object-store read, cache-hit, and write operation counts.\n**How it's computed:** Current values of the read, cache-hit, and write counters, plotted as lines.\n**Reading it:** Steadily rising lines are normal; the slope reflects store activity.\n**Healthy range:** Reads and writes rising smoothly, with cache-hits tracking a good fraction of reads.\n**Watch for:** A sudden surge in reads or writes signals heavy back-end I/O, from sync, replay, or query load.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerNodeStoreGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -466,7 +466,7 @@
     },
     {
       "title": "NodeStore Write Load & Read Queue",
-      "description": "Instantaneous write load score and read queue depth. High write load indicates backend pressure. High read queue indicates prefetch thread saturation.",
+      "description": "**What:** Instantaneous write-load score and read-queue depth of the object store.\n**How it's computed:** Current values of the write-load and read-queue gauges, plotted over time.\n**Reading it:** Lower is better for both; short, flat lines are healthy.\n**Healthy range:** Write load near zero and read queue in low double digits or less.\n**Watch for:** High write load means back-end pressure; a high read queue means the prefetch threads are saturated.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerNodeStoreGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -530,7 +530,7 @@
     },
     {
       "title": "NodeStore Bytes Read/Written",
-      "description": "Cumulative bytes read and written by the NodeStore backend. Sourced from MetricsRegistry nodestore_state observable gauge with metric=node_written_bytes, node_read_bytes.",
+      "description": "**What:** Cumulative bytes read from and written to the object-store back end.\n**How it's computed:** Current values of the bytes-read and bytes-written counters, plotted as lines.\n**Reading it:** Steadily rising lines are normal; the slope shows throughput.\n**Healthy range:** Smooth growth consistent with ledger and query activity.\n**Watch for:** A sharp acceleration indicates a heavy I/O phase such as sync, replay, or large queries.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerNodeStoreGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -578,7 +578,7 @@
     },
     {
       "title": "NodeStore Read Threads & Duration",
-      "description": "Read thread utilization and cumulative read duration. read_threads_running/read_threads_total shows thread saturation. node_reads_duration_us tracks cumulative time spent in read I/O. read_request_bundle tracks bundled read operations.",
+      "description": "**What:** Read-thread utilization, bundled read count, and cumulative read time for the object store.\n**How it's computed:** Current values of the running/total read-thread gauges, read-bundle gauge, and cumulative read-duration counter, plotted as lines.\n**Reading it:** Running threads well below total means spare capacity; a rising duration line reflects time spent in read I/O.\n**Healthy range:** Running threads below the total count most of the time.\n**Watch for:** Running threads pinned at the total for long periods means read I/O is saturated.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerNodeStoreGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -619,14 +619,14 @@
             "type": "prometheus"
           },
           "expr": "xrpld_nodestore_state{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", metric=\"node_reads_duration_us\"}",
-          "legendFormat": "Read Duration (\u00b5s) [{{exported_instance}}]"
+          "legendFormat": "Read Duration (µs) [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
           "custom": {
-            "axisLabel": "Count / \u00b5s",
+            "axisLabel": "Count / µs",
             "drawStyle": "line",
             "lineWidth": 2,
             "fillOpacity": 10
@@ -639,7 +639,7 @@
       }
     },
     {
-      "title": "OTel: Cache Hit Rates",
+      "title": "Cache Hit Rates",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -652,7 +652,7 @@
     },
     {
       "title": "Cache Hit Rates",
-      "description": "Hit rates for SLE cache, Ledger cache, and AcceptedLedger cache. Values from 0.0 to 1.0. Low values indicate cache thrashing. Sourced from MetricsRegistry cache_metrics observable gauge.",
+      "description": "**What:** Hit rates for the SLE, Ledger, and AcceptedLedger caches, from 0 to 1.\n**How it's computed:** Current values of the per-cache hit-rate gauges, plotted as lines.\n**Reading it:** Higher is better; each line is the fraction of lookups served from cache.\n**Healthy range:** Above roughly 0.8 in steady state.\n**Watch for:** Low or falling hit rates indicate cache thrashing and extra back-end reads.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerCacheHitRateGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -713,7 +713,7 @@
     },
     {
       "title": "Cache Sizes",
-      "description": "TreeNode cache size, TreeNode track size, and FullBelow cache size. Sourced from MetricsRegistry cache_metrics observable gauge. Also includes AcceptedLedger (AL) cache size.",
+      "description": "**What:** Entry counts for the TreeNode cache and track set, the FullBelow cache, and the AcceptedLedger cache.\n**How it's computed:** Current values of the per-cache size gauges, plotted as lines.\n**Reading it:** Stable lines are normal; sizes grow with working set and shrink after sweeps.\n**Healthy range:** Stable within configured limits.\n**Watch for:** Unbounded growth suggests memory pressure or a cache not being swept.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerCacheHitRateGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -774,7 +774,7 @@
       }
     },
     {
-      "title": "OTel: Object Instance Counts",
+      "title": "Object Instance Counts",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -787,7 +787,7 @@
     },
     {
       "title": "Object Instance Counts",
-      "description": "Live instance counts for key internal object types tracked by CountedObject<T>. Sourced from MetricsRegistry object_count observable gauge. High counts may indicate memory pressure or object leaks.",
+      "description": "**What:** Live instance counts for the busiest internal object types.\n**How it's computed:** Current per-type instance counts, showing the top 15 types over time.\n**Reading it:** Stable lines are healthy; each line is one object type's live count.\n**Healthy range:** Steady counts that rise and fall with load.\n**Watch for:** A single type climbing without bound suggests memory pressure or a leak.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerObjectCountGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -832,7 +832,7 @@
       }
     },
     {
-      "title": "OTel: Server Info",
+      "title": "Server Info",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -845,7 +845,7 @@
     },
     {
       "title": "Server State",
-      "description": "Current operating mode: 0=DISCONNECTED, 1=CONNECTED, 2=SYNCING, 3=TRACKING, 4=FULL. Sourced from MetricsRegistry server_info observable gauge.",
+      "description": "**What:** The node's current operating mode, shown as a labeled state.\n**How it's computed:** Current value of the server-state gauge mapped to a mode name.\n**Reading it:** FULL (green) is the goal; lower states mean the node is not fully participating.\n**Healthy range:** FULL.\n**Watch for:** Sitting in SYNCING, CONNECTED, or DISCONNECTED means the node is not caught up to the network.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerServerInfoGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -925,7 +925,7 @@
     },
     {
       "title": "Uptime",
-      "description": "Time since server started, in seconds. Sourced from MetricsRegistry server_info observable gauge via UptimeClock.",
+      "description": "**What:** How long the server process has been running, in seconds.\n**How it's computed:** Current value of the uptime gauge.\n**Reading it:** Higher is generally better; a reset to a small value means the process restarted.\n**Healthy range:** Continuously increasing.\n**Watch for:** An unexpected drop to near zero indicates a restart or crash.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerServerInfoGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -958,7 +958,7 @@
     },
     {
       "title": "Peer Count",
-      "description": "Total connected peers (inbound + outbound). Sourced from MetricsRegistry server_info observable gauge via overlay().size().",
+      "description": "**What:** Total connected peers, inbound plus outbound.\n**How it's computed:** Current value of the peer-count gauge.\n**Reading it:** A stable count in the healthy range is good; too few limits connectivity.\n**Healthy range:** Workload- and config-dependent, typically 10 or more.\n**Watch for:** A sudden drop points to network or connectivity problems; an unusually high inbound count can indicate connection-flood pressure.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerServerInfoGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -991,7 +991,7 @@
     },
     {
       "title": "Validated Ledger Seq",
-      "description": "Sequence number of the most recently validated ledger. Returns 0 before first validation. Sourced from MetricsRegistry server_info observable gauge.",
+      "description": "**What:** Sequence number of the most recently validated ledger.\n**How it's computed:** Current value of the validated-ledger-sequence gauge.\n**Reading it:** Should climb steadily; reads 0 before the first validation.\n**Healthy range:** Continuously increasing at the network close cadence.\n**Watch for:** A flat sequence means the node has stopped validating new ledgers.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerServerInfoGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -1024,7 +1024,7 @@
     },
     {
       "title": "Last Close Info",
-      "description": "Proposers and convergence time from the last closed consensus round. Sourced from MetricsRegistry server_info observable gauge via getConsensusInfo().",
+      "description": "**What:** Proposer count and convergence time from the last closed consensus round.\n**How it's computed:** Current values of the last-close proposer-count and convergence-time gauges, plotted as lines.\n**Reading it:** A healthy proposer count with a low convergence time is good.\n**Healthy range:** Convergence time of a few seconds with the expected number of proposers.\n**Watch for:** A falling proposer count or rising convergence time signals degrading consensus conditions.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerServerInfoGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -1071,7 +1071,7 @@
     },
     {
       "title": "Build Version",
-      "description": "Build version info metric. Value is always 1; version string is in the 'version' label. Sourced from MetricsRegistry build_info observable gauge.",
+      "description": "**What:** The running server's build version string.\n**How it's computed:** Read from the version label of the build-info metric (its value is always 1).\n**Reading it:** Confirms which version each node is running.\n**Healthy range:** The expected release version across all nodes.\n**Watch for:** A node on an unexpected or mismatched version in a fleet.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerBuildInfoGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -1105,7 +1105,7 @@
     },
     {
       "title": "Current Ledger Index",
-      "description": "Current open ledger sequence number. The gap between this and validated_ledger_seq represents ledgers in flight.",
+      "description": "**What:** Sequence number of the current open ledger.\n**How it's computed:** Current value of the open-ledger index gauge.\n**Reading it:** Should climb steadily; the gap above the validated sequence is the ledgers in flight.\n**Healthy range:** One or two ahead of the validated sequence.\n**Watch for:** A large or growing gap above the validated sequence means validation is lagging behind ledger creation.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerServerInfoGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -1138,7 +1138,7 @@
     },
     {
       "title": "NuDB Storage Size",
-      "description": "NuDB backend file size in bytes. Sourced from MetricsRegistry storage_detail observable gauge. Tracks database growth over time.",
+      "description": "**What:** On-disk size of the NuDB object-store back end, in bytes.\n**How it's computed:** Current value of the NuDB storage-size gauge, plotted over time.\n**Reading it:** A smoothly growing line is normal; the slope is the data growth rate.\n**Healthy range:** Gradual growth consistent with retained ledger history.\n**Watch for:** A sudden jump in growth rate can indicate runaway storage or an unexpected back-fill.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerStorageDetailGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -1178,7 +1178,7 @@
       }
     },
     {
-      "title": "OTel: Complete Ledgers & DB",
+      "title": "Complete Ledgers & DB",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1191,7 +1191,7 @@
     },
     {
       "title": "Complete Ledger Ranges",
-      "description": "Start and end of each contiguous complete ledger range. Parsed from getLedgerMaster().getCompleteLedgers() string. Sourced from MetricsRegistry complete_ledgers observable gauge.",
+      "description": "**What:** The contiguous ranges of ledgers the node holds locally.\n**How it's computed:** Current start and end bounds of each complete range, listed as table rows.\n**Reading it:** Fewer ranges is better; one continuous range means an unbroken history.\n**Healthy range:** A single range covering the configured retention window.\n**Watch for:** Many fragmented ranges indicate gaps in stored history from missed or failed fetches.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerCompleteLedgersGauge",
       "type": "table",
       "gridPos": {
         "h": 8,
@@ -1223,7 +1223,7 @@
     },
     {
       "title": "Database Sizes",
-      "description": "SQLite database sizes in KB (total, ledger, transaction). Sourced from MetricsRegistry db_metrics observable gauge via getRelationalDatabase().getKBUsed*().",
+      "description": "**What:** Sizes of the relational databases in KB (total, ledger, transaction).\n**How it's computed:** Current values of the per-database size gauges, plotted as lines.\n**Reading it:** Smoothly growing lines are normal; the split shows where storage is used.\n**Healthy range:** Gradual growth consistent with retained history.\n**Watch for:** An abrupt change in growth rate can indicate storage pressure or a pruning issue.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerDbMetricsGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -1278,7 +1278,7 @@
     },
     {
       "title": "Historical Fetch Rate",
-      "description": "Historical ledger fetches per minute. Sourced from MetricsRegistry db_metrics observable gauge via getInboundLedgers().fetchRate().",
+      "description": "**What:** How many historical ledgers the node is back-filling per minute.\n**How it's computed:** Current value of the historical-fetch-per-minute gauge.\n**Reading it:** Near zero once history is complete; elevated while back-filling.\n**Healthy range:** Close to zero in steady state.\n**Watch for:** A sustained high rate means the node is still filling gaps in its stored history.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerDbMetricsGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -1311,7 +1311,7 @@
     },
     {
       "title": "Peer Disconnects (Resources)",
-      "description": "Cumulative count of peer disconnections due to resource limits. Sourced from MetricsRegistry server_info observable gauge via overlay().getPeerDisconnectCharges().",
+      "description": "**What:** Cumulative count of peers disconnected for exceeding resource limits.\n**How it's computed:** Current value of the resource-disconnect gauge, plotted over time.\n**Reading it:** A flat line is healthy; steps up mean peers were dropped for overuse.\n**Healthy range:** Flat or very slowly rising.\n**Watch for:** A rising line indicates peers are being throttled off, consistent with abusive or misbehaving peers.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerServerInfoGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -1350,7 +1350,7 @@
       }
     },
     {
-      "title": "OTel: Ledger Economy",
+      "title": "Ledger Economy",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1363,7 +1363,7 @@
     },
     {
       "title": "Base Fee (drops)",
-      "description": "Current network base transaction fee in drops. Sourced from MetricsRegistry ledger_economy observable gauge. 1 XRP = 1,000,000 drops.",
+      "description": "**What:** The current network base transaction fee, in drops (1 XRP = 1,000,000 drops).\n**How it's computed:** Current value of the base-fee economy gauge.\n**Reading it:** Stable at the network minimum is normal; rises reflect fee escalation under load.\n**Healthy range:** The network base fee (10 drops on mainnet) in normal conditions.\n**Watch for:** A climbing base fee indicates the network or node is under transaction load pressure.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLedgerEconomyGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -1396,7 +1396,7 @@
     },
     {
       "title": "Reserve Base (drops)",
-      "description": "Current account reserve base in drops. The minimum XRP balance required to maintain an account on the ledger.",
+      "description": "**What:** The minimum XRP balance required to keep an account on the ledger, in drops.\n**How it's computed:** Current value of the reserve-base economy gauge.\n**Reading it:** A stable value is expected; it changes only via network amendment or vote.\n**Healthy range:** The configured network reserve base.\n**Watch for:** An unexpected change outside a known amendment or fee vote.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLedgerEconomyGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -1429,7 +1429,7 @@
     },
     {
       "title": "Reserve Inc (drops)",
-      "description": "Current owner reserve increment in drops. Additional XRP required per owned object (trust lines, offers, etc.).",
+      "description": "**What:** The additional XRP reserve required per owned ledger object, in drops.\n**How it's computed:** Current value of the reserve-increment economy gauge.\n**Reading it:** A stable value is expected; it changes only via network amendment or vote.\n**Healthy range:** The configured network owner reserve increment.\n**Watch for:** An unexpected change outside a known amendment or fee vote.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLedgerEconomyGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -1462,7 +1462,7 @@
     },
     {
       "title": "Ledger Age",
-      "description": "Age of the current open ledger in seconds. Values growing beyond the expected ~4s close interval indicate the node is not closing ledgers on schedule.",
+      "description": "**What:** Age of the current open ledger, in seconds.\n**How it's computed:** Current value of the ledger-age economy gauge.\n**Reading it:** Lower is better; it should stay near the close interval.\n**Healthy range:** Under about 8 seconds.\n**Watch for:** Growth beyond the expected close interval means the node is not closing ledgers on schedule.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLedgerEconomyGauge",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -1511,7 +1511,7 @@
     },
     {
       "title": "Transaction Rate",
-      "description": "Current transaction throughput rate from ledger economy metrics. Shows the volume of transactions being processed per interval.",
+      "description": "**What:** The network transaction throughput reported by the ledger economy metrics.\n**How it's computed:** Current value of the transaction-rate economy gauge, plotted over time.\n**Reading it:** Reflects how many transactions are being processed; higher means busier.\n**Healthy range:** Workload-dependent.\n**Watch for:** A sudden sustained surge can indicate a transaction flood; a drop to zero can indicate the node stopped processing.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp:registerLedgerEconomyGauge",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -1555,7 +1555,7 @@
       }
     },
     {
-      "title": "Extended Metrics (Recovered from Phase 6)",
+      "title": "Extended Metrics",
       "type": "row",
       "gridPos": {
         "h": 1,
@@ -1568,7 +1568,7 @@
     },
     {
       "title": "Key Jobs Execution Time",
-      "description": "Execution time for critical job types at the selected quantile. Sourced from per-job-type events in JobTypeData (JobTypeData.h). Shows how long key consensus, transaction, and maintenance jobs take to execute. Spikes indicate processing bottlenecks.",
+      "description": "**What:** Execution time for the most critical job types at the selected quantile.\n**How it's computed:** Per-job-type execution durations aggregated to the chosen quantile per node over a 5-minute window.\n**Reading it:** Lower is better; each line is one job type's run time.\n**Healthy range:** A few to tens of milliseconds for most jobs; workload-dependent.\n**Watch for:** Spikes on key jobs (accept, transaction, write) indicate processing bottlenecks.\n**Source:** include/xrpl/core/JobTypeData.h:JobTypeData",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -1677,7 +1677,7 @@
     },
     {
       "title": "Key Jobs Dequeue Wait Time",
-      "description": "Time spent waiting in the job queue before execution for critical job types. Sourced from per-job-type dequeue events (JobTypeData.h). High dequeue times indicate the job queue is backlogged and jobs are waiting too long to be scheduled.",
+      "description": "**What:** Time critical jobs wait in the queue before running, at the selected quantile.\n**How it's computed:** Per-job-type queue-wait durations aggregated to the chosen quantile per node over a 5-minute window.\n**Reading it:** Lower is better; each line is one job type's wait time.\n**Healthy range:** Near zero to a few milliseconds when the queue is keeping up.\n**Watch for:** High waits mean the queue is backlogged and jobs are scheduled late.\n**Source:** include/xrpl/core/JobTypeData.h:JobTypeData",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -1786,7 +1786,7 @@
     },
     {
       "title": "FullBelowCache Size",
-      "description": "Number of entries in the FullBelowCache. Sourced from the TaggedCache size gauge (TaggedCache.h) for the Node family full below cache (NodeFamily.cpp). This cache tracks which SHAMap nodes have all children present locally, avoiding redundant fetches during ledger acquisition.",
+      "description": "**What:** Number of entries in the FullBelowCache, which tracks subtrees known to be fully present locally.\n**How it's computed:** Current value of the cache size gauge, plotted over time.\n**Reading it:** A stable size is normal; it grows during acquisition and is trimmed by sweeps.\n**Healthy range:** Stable within its configured bound.\n**Watch for:** Unbounded growth suggests the cache is not being swept.\n**Source:** include/xrpl/basics/TaggedCache.h:TaggedCache::Stats",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -1825,7 +1825,7 @@
     },
     {
       "title": "FullBelowCache Hit Rate",
-      "description": "Hit rate percentage for the FullBelowCache. Sourced from the TaggedCache hit_rate gauge (TaggedCache.h). A high hit rate means the node is efficiently reusing cached knowledge about complete SHAMap subtrees. Low hit rates during steady state warrant investigation.",
+      "description": "**What:** Hit-rate percentage for the FullBelowCache.\n**How it's computed:** Current value of the cache hit-rate gauge.\n**Reading it:** Higher is better; it shows how often cached subtree knowledge is reused.\n**Healthy range:** Above roughly 50 percent in steady state.\n**Watch for:** A low hit rate during steady state means redundant subtree work and warrants investigation.\n**Source:** include/xrpl/basics/TaggedCache.h:TaggedCache::Stats",
       "type": "gauge",
       "gridPos": {
         "h": 8,
@@ -1875,7 +1875,7 @@
     },
     {
       "title": "Ledger Publish Gap",
-      "description": "Difference between published and validated ledger ages. Computed as Published_Ledger_Age minus Validated_Ledger_Age. A value near zero means the publish pipeline keeps up with validation. A growing gap indicates the publish pipeline is falling behind, potentially causing stale data for subscribers.",
+      "description": "**What:** The lag between published and validated ledger ages, in seconds.\n**How it's computed:** Published ledger age minus validated ledger age, as a single derived value.\n**Reading it:** Near zero is healthy; a positive value is how far publishing trails validation.\n**Healthy range:** Close to zero.\n**Watch for:** A growing gap means the publish pipeline is falling behind and subscribers may see stale data.\n**Source:** src/xrpld/app/ledger/LedgerMaster.h:LedgerMaster::Stats::collectMetrics",
       "type": "stat",
       "gridPos": {
         "h": 8,
@@ -1923,7 +1923,7 @@
     },
     {
       "title": "State Duration Rate (Full vs Tracking)",
-      "description": "Rate of change of time spent in Full and Tracking operating modes, normalized to seconds. Sourced from State_Accounting duration gauges (NetworkOPs.cpp). In steady state the Full duration rate should be close to 1.0 (gaining one second of Full-mode time per wall-clock second). A drop below 1.0 means the node is spending time in other modes.",
+      "description": "**What:** Rate of change of time spent in Full and Tracking modes, normalized to seconds per second.\n**How it's computed:** Per-second rate of the Full and Tracking duration counters, scaled to seconds.\n**Reading it:** The Full line near 1.0 means the node gains a second of Full-mode time each wall-clock second.\n**Healthy range:** Full rate close to 1.0, Tracking near 0.\n**Watch for:** A Full rate below 1.0 means the node is spending time in other modes.\n**Source:** src/xrpld/app/misc/NetworkOPs.cpp:NetworkOPsImp::Stats",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -1969,7 +1969,7 @@
     },
     {
       "title": "All Jobs Execution Time (Detail)",
-      "description": "Execution time for ALL non-special job types at the selected quantile. Shows the complete picture of job execution performance. Use the Key Jobs panel for a focused view of the most critical jobs.",
+      "description": "**What:** Execution time for every non-special job type at the selected quantile.\n**How it's computed:** Per-job-type execution durations aggregated to the chosen quantile per node over a 5-minute window.\n**Reading it:** Lower is better; this is the full picture behind the Key Jobs view.\n**Healthy range:** A few to tens of milliseconds for most jobs.\n**Watch for:** Broad elevation across many job types indicates systemic processing load.\n**Source:** include/xrpl/core/JobTypeData.h:JobTypeData",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -2008,7 +2008,7 @@
     },
     {
       "title": "All Jobs Dequeue Wait (Detail)",
-      "description": "Dequeue wait time for ALL non-special job types at the selected quantile. Shows the complete picture of job queue waiting times. High wait times across many job types indicate systemic job queue congestion.",
+      "description": "**What:** Queue wait time for every non-special job type at the selected quantile.\n**How it's computed:** Per-job-type queue-wait durations aggregated to the chosen quantile per node over a 5-minute window.\n**Reading it:** Lower is better; this is the full picture behind the Key Jobs wait view.\n**Healthy range:** Near zero to a few milliseconds when the queue keeps up.\n**Watch for:** High waits across many job types indicate systemic queue congestion.\n**Source:** include/xrpl/core/JobTypeData.h:JobTypeData",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -2047,7 +2047,7 @@
     },
     {
       "title": "Ledger Acquire Duration (Inbound Fetch)",
-      "description": "p95 duration of the ledger.acquire span (InboundLedger): how long it takes to fetch a missing ledger from peers. A spike signals the node is falling behind or recovering from a fork. Populated under back-fill / sync activity.",
+      "description": "**What:** Time to fetch a missing ledger from peers, at the 95th percentile.\n**How it's computed:** Per-acquire durations aggregated to their 95th percentile per node over a 5-minute window.\n**Reading it:** Lower is better; populated mainly during sync or back-fill.\n**Healthy range:** Low when synced; higher and more active while catching up.\n**Watch for:** A spike signals the node is falling behind or recovering from a fork.\n**Source:** src/xrpld/app/ledger/detail/InboundLedger.cpp:InboundLedger::init",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -2086,7 +2086,7 @@
     },
     {
       "title": "Ledger Acquire Rate by Outcome",
-      "description": "Rate of completed ledger.acquire spans broken down by outcome (complete / failed). A rising failed rate indicates the node cannot fetch needed ledgers from its peers. Requires the outcome spanmetrics dimension.",
+      "description": "**What:** Rate of completed ledger fetches split by outcome (complete or failed).\n**How it's computed:** Per-second rate of finished acquisitions grouped by outcome, per node, over a 5-minute window.\n**Reading it:** Complete should dominate; the failed line should stay near zero.\n**Healthy range:** Complete tracking fetch demand, failed near zero.\n**Watch for:** A rising failed rate means the node cannot fetch needed ledgers from its peers.\n**Source:** src/xrpld/app/ledger/detail/InboundLedger.cpp:InboundLedger::init",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -2125,7 +2125,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["statsd", "node-health"],
+  "tags": ["node", "health"],
   "templating": {
     "list": [
       {
@@ -2281,7 +2281,7 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "Node Health (System Metrics)",
+  "title": "Node Health",
   "uid": "xrpld-system-node-health",
   "refresh": "5s"
 }
