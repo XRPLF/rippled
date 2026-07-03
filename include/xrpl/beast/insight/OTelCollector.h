@@ -77,6 +77,14 @@ public:
      *                    emitted as the `service.instance.id` OTel
      *                    resource attribute. Defaults to empty string
      *                    (attribute omitted when empty).
+     * @param serviceName Value for the `service.name` OTel resource
+     *                    attribute. When empty, defaults to "xrpld".
+     *                    Matches the trace exporter's service.name so
+     *                    metrics and traces share one service identity.
+     * @param networkType Value for the `xrpl.network.type` OTel resource
+     *                    attribute (e.g. "mainnet"). When empty, the
+     *                    attribute is omitted. Supplied by the node so
+     *                    metrics carry the same network label as traces.
      * @param journal     Journal for logging.
      * @return Shared pointer to the created Collector.
      */
@@ -85,6 +93,8 @@ public:
     New(std::string const& endpoint,
         std::string const& prefix,
         std::string const& instanceId,
+        std::string const& serviceName,
+        std::string const& networkType,
         Journal journal);
 };
 

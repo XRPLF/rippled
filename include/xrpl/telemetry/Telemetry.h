@@ -364,4 +364,15 @@ makeTelemetrySetup(
     std::string const& version,
     std::uint32_t networkId);
 
+/** Derive a human-readable network type label from the numeric network ID.
+
+    Shared by the trace and metric export paths so both stamp the same
+    `xrpl.network.type` resource attribute value.
+
+    @param networkId  The network identifier from [network_id] config.
+    @return "mainnet" (0), "testnet" (1), "devnet" (2), or "unknown".
+*/
+std::string
+networkTypeFromId(std::uint32_t networkId);
+
 }  // namespace xrpl::telemetry

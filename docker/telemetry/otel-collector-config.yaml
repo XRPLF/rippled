@@ -68,13 +68,38 @@ processors:
       - key: job
         value: xrpld
         action: upsert
+  # Deployment-tier tagging. Each collector serves ONE environment and ONE
+  # network, so it stamps both onto every signal it forwards. This lets a
+  # single Grafana stack hold data from many collectors and filter by tier.
+  #   - deployment.environment: the collector IS the environment (local, ci,
+  #     test, prod), so it is authoritative -> upsert (overwrite).
+  #   - xrpl.network.type: the xrpld node knows its own chain and already
+  #     stamps this, so the collector only fills it when absent -> insert.
+  #     This keeps a node's real network (e.g. a local node on mainnet)
+  #     from being overwritten by a collector's default.
+  # Replace the placeholder values per collector; see docker/telemetry
+  # tier examples.
+  resource/tier:
+    attributes:
+      - key: deployment.environment
+        value: local
+        action: upsert
+      - key: xrpl.network.type
+        value: mainnet
+        action: insert
 
 connectors:
   spanmetrics:
-    # Expose service.instance.id (node public key) as a Prometheus label so
-    # Grafana dashboards can filter metrics by individual node.
+    # Resource attributes that define the resource-metrics grouping key.
+    # All resource attributes are propagated onto the output metrics
+    # regardless; promotion to Prometheus labels is handled by the
+    # prometheus exporter's resource_to_telemetry_conversion. Listing the
+    # per-node id and the deployment-tier keys keeps series from distinct
+    # nodes/tiers grouped separately.
     resource_metrics_key_attributes:
       - service.instance.id
+      - deployment.environment
+      - xrpl.network.type
     histogram:
       explicit:
         buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s]
@@ -120,17 +145,23 @@ exporters:
     endpoint: http://loki:3100/otlp
   prometheus:
     endpoint: 0.0.0.0:8889
+    # Promote resource attributes (deployment.environment, xrpl.network.type,
+    # service.name, service.instance.id) to Prometheus labels. Without this
+    # the tier attributes stamped by resource/tier stay on the resource and
+    # never reach the metric series, so dashboards could not filter by them.
+    resource_to_telemetry_conversion:
+      enabled: true
 
 service:
   extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [resource/tier, batch]
       exporters: [debug, otlp/tempo, spanmetrics]
     metrics:
       receivers: [otlp, spanmetrics]
-      processors: [batch]
+      processors: [resource/tier, batch]
       exporters: [prometheus]
     # Phase 8: Log pipeline ingests xrpld debug.log via filelog receiver,
     # batches entries, and exports to Loki for log-trace correlation.
