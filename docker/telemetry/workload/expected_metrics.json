@@ -127,7 +127,6 @@
     "description": "All Grafana dashboards that must render data (UIDs as provisioned on disk under docker/telemetry/grafana/dashboards/).",
     "uids": [
       "xrpld-rpc-perf",
-      "xrpld-rpc-perf-otel",
       "xrpld-transactions",
       "xrpld-consensus",
       "xrpld-ledger-ops",
