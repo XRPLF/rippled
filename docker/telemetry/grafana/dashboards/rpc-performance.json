@@ -9,6 +9,19 @@
   "links": [],
   "panels": [
     {
+      "id": 11,
+      "type": "row",
+      "title": "Aggregate RPC (all commands)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "panels": []
+    },
+    {
       "title": "RPC Request Rate by Command",
       "description": "**What:** How many times each RPC command runs per second.\n**How it's computed:** Per-second rate of command executions over 5 minutes, grouped by command name and node.\n**Reading it:** Compare bars/lines across commands to see which endpoints drive load.\n**Healthy range:** Workload-dependent; dominated by whichever commands clients call most.\n**Watch for:** A single command spiking far above its norm, consistent with a client hammering one endpoint.\n**Source:** src/xrpld/rpc/detail/RPCHandler.cpp:callMethod",
       "type": "timeseries",
@@ -16,7 +29,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -45,7 +58,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 1
     },
     {
       "title": "RPC Latency P95 by Command",
@@ -55,7 +69,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 1
       },
       "options": {
         "tooltip": {
@@ -84,7 +98,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 2
     },
     {
       "title": "RPC Error Rate",
@@ -94,7 +109,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 9
       },
       "options": {
         "tooltip": {
@@ -132,7 +147,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 3
     },
     {
       "title": "RPC Latency Heatmap",
@@ -142,7 +158,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 9
       },
       "options": {
         "tooltip": {
@@ -168,7 +184,8 @@
         "defaults": {
           "unit": "ms"
         }
-      }
+      },
+      "id": 4
     },
     {
       "title": "Overall RPC Throughput",
@@ -178,7 +195,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -214,7 +231,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 5
     },
     {
       "title": "RPC Success vs Error",
@@ -224,7 +242,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 17
       },
       "options": {
         "tooltip": {
@@ -260,7 +278,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 6
     },
     {
       "title": "Top Commands by Volume",
@@ -270,7 +289,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 25
       },
       "options": {
         "tooltip": {
@@ -292,7 +311,8 @@
           "unit": "none"
         },
         "overrides": []
-      }
+      },
+      "id": 7
     },
     {
       "title": "WebSocket Message Rate",
@@ -302,7 +322,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 25
       },
       "options": {
         "tooltip": {
@@ -324,7 +344,8 @@
           "unit": "ops"
         },
         "overrides": []
-      }
+      },
+      "id": 8
     },
     {
       "title": "RPC Resource Cost by Command",
@@ -334,7 +355,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 33
       },
       "options": {
         "tooltip": {
@@ -368,7 +389,8 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 9
     },
     {
       "title": "Batch vs Single RPC Requests",
@@ -378,7 +400,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 40
+        "y": 41
       },
       "options": {
         "tooltip": {
@@ -414,7 +436,411 @@
           }
         },
         "overrides": []
-      }
+      },
+      "id": 10
+    },
+    {
+      "id": 12,
+      "type": "row",
+      "title": "Per-Method Detail",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 50
+      },
+      "panels": []
+    },
+    {
+      "title": "RPC Call Rate (All Methods)",
+      "description": "**What:** Overall rate of RPC method calls that started, finished, and errored, across all methods.\n**How it's computed:** Per-second rate of each counter over a 5-minute window, summed per node.\n**Reading it:** Started should closely track finished; errored should be a small fraction.\n**Healthy range:** Workload-dependent; started ≈ finished, errored near zero.\n**Watch for:** A growing gap between started and finished (calls hanging), or an errored line that rises with load.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp recordRpcStarted / recordRpcFinished / recordRpcErrored",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(xrpld_rpc_method_started_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m]))",
+          "legendFormat": "Started/s [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(xrpld_rpc_method_finished_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m]))",
+          "legendFormat": "Finished/s [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(xrpld_rpc_method_errored_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m]))",
+          "legendFormat": "Errored/s [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "axisLabel": "Operations / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 13
+    },
+    {
+      "title": "Per-Method Call Rate (Top 10)",
+      "description": "**What:** The ten busiest RPC methods by call rate.\n**How it's computed:** Per-second start rate over 5 minutes, per method, showing the top ten.\n**Reading it:** Identifies which methods dominate load; the mix shifts with client behaviour.\n**Healthy range:** Workload-dependent.\n**Watch for:** A single method suddenly dominating, which can signal a runaway client or abusive query pattern.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp recordRpcStarted",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 59
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(10, rate(xrpld_rpc_method_started_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m]))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "axisLabel": "Operations / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 14
+    },
+    {
+      "title": "Per-Method Error Rate (Top 10)",
+      "description": "**What:** The ten RPC methods producing the most errors.\n**How it's computed:** Per-second error rate over 5 minutes, per method, top ten.\n**Reading it:** Normally near zero; persistent errors point to a specific failing method.\n**Healthy range:** Near zero for well-behaved traffic.\n**Watch for:** Sustained errors concentrated on one method — a broken client, a bad input, or probing.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp recordRpcErrored",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 67
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(10, rate(xrpld_rpc_method_errored_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m]))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "axisLabel": "Operations / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 15
+    },
+    {
+      "title": "RPC Latency - All Methods",
+      "description": "**What:** Aggregate RPC handler latency across all methods (p75 and p99).\n**How it's computed:** Percentiles of the method-duration histogram over a 5-minute window.\n**Reading it:** p75 reflects typical responsiveness; p99 captures the slow tail.\n**Healthy range:** Sub-millisecond to low-millisecond for light commands; heavier commands run longer.\n**Watch for:** A rising p99 while p75 stays flat — a subset of calls degrading, often from expensive queries.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp recordRpcFinished",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 75
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.75, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m])))",
+          "legendFormat": "p75 [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m])))",
+          "legendFormat": "p99 [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "µs",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 5,
+            "axisLabel": "Duration (μs)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 16
+    },
+    {
+      "title": "Per-Method Latency (p99, Top 10 Slowest)",
+      "description": "**What:** The ten slowest RPC methods by tail latency.\n**How it's computed:** p99 of each method's duration histogram over 5 minutes, top ten.\n**Reading it:** Surfaces which specific methods are expensive.\n**Healthy range:** Method-dependent; ledger/account queries are heavier than status calls.\n**Watch for:** A method whose p99 climbs over time, or an unexpectedly cheap method appearing here.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp recordRpcFinished",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 83
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(10, histogram_quantile(0.99, sum by (le, method, exported_instance) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m]))))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "µs",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "axisLabel": "Duration (μs)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "id": 17
+    },
+    {
+      "title": "RPC Error Ratio by Method",
+      "description": "**What:** The methods with the highest error rates, for spotting failure hotspots.\n**How it's computed:** Per-second error rate over 5 minutes, per method, top ten.\n**Reading it:** Highlights where failures concentrate.\n**Healthy range:** Near zero.\n**Watch for:** One method with a persistently high error rate — malformed requests or targeted probing.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp recordRpcErrored",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 91
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(10, rate(xrpld_rpc_method_errored_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m]) / (rate(xrpld_rpc_method_started_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m]) > 0))",
+          "legendFormat": "{{method}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "axisLabel": "Error Ratio",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.05
+              },
+              {
+                "color": "red",
+                "value": 0.25
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "id": 18
+    },
+    {
+      "title": "Current RPC Latency (p99 Gauge)",
+      "description": "**What:** Current tail latency (p99) of RPC handling across all methods, as a live gauge.\n**How it's computed:** p99 of the method-duration histogram over the recent window.\n**Reading it:** A single at-a-glance number for current RPC responsiveness.\n**Healthy range:** Low-millisecond under normal load.\n**Watch for:** Sustained elevation, indicating the node is under query pressure.\n**Source:** src/xrpld/telemetry/MetricsRegistry.cpp recordRpcFinished",
+      "type": "gauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 99
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(xrpld_rpc_method_duration_us_bucket{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", method=~\"$method\"}[5m])))",
+          "legendFormat": "p99 Latency"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "µs",
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 100000
+              },
+              {
+                "color": "red",
+                "value": 1000000
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "id": 19
     }
   ],
   "schemaVersion": 39,
@@ -520,6 +946,26 @@
         "multi": true,
         "refresh": 2,
         "sort": 1
+      },
+      {
+        "name": "method",
+        "label": "RPC Method",
+        "description": "Filter by RPC method",
+        "type": "query",
+        "query": "label_values(xrpld_rpc_method_started_total, method)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
       }
     ]
   },
@@ -530,5 +976,5 @@
   "title": "RPC Performance",
   "uid": "xrpld-rpc-perf",
   "refresh": "5s",
-  "description": "RPC command traffic, latency, error rates, and request shape for this node."
+  "description": "Per-command and per-method RPC performance: call rates, error rates, and latency distributions."
 }
