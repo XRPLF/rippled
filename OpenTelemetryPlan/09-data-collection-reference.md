@@ -527,7 +527,7 @@ prefix=xrpld
 | `xrpld_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
 | `xrpld_jobq_job_count`                            | JobQueue.cpp          | Current job queue depth (group `jobq`)    | 0–100 (healthy)                 |
 
-**Grafana dashboard**: _Node Health (System Metrics)_ (`xrpld-system-node-health`)
+**Grafana dashboard**: _Node Health_ (`xrpld-system-node-health`)
 
 ### 2.2 Counters
 
@@ -541,7 +541,7 @@ prefix=xrpld
 
 **Note**: With `server=otel`, `xrpld_warn` and `xrpld_drop` are properly exported as OTel Counter instruments. The previous StatsD `|m` type limitation no longer applies.
 
-**Grafana dashboard**: _RPC & Pathfinding (System Metrics)_ (`xrpld-system-rpc`)
+**Grafana dashboard**: _RPC & Pathfinding_ (`xrpld-system-rpc`)
 
 ### 2.3 Histograms (Event timers)
 
