@@ -63,7 +63,7 @@ check_span() {
     local op="$1"
     local count
     count=$(curl -sf "$TEMPO/api/search" \
-        --data-urlencode "q={resource.service.name=\"rippled\" && name=\"$op\"}" \
+        --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
         --data-urlencode "limit=5" |
         jq '.traces | length' 2>/dev/null || echo 0)
     if [ "$count" -gt 0 ]; then
@@ -520,10 +520,10 @@ log "Verifying spans in Tempo..."
 # Check service registration
 services=$(curl -sf "$TEMPO/api/v2/search/tag/resource.service.name/values" |
     jq -r '.tagValues[].value' 2>/dev/null || echo "")
-if echo "$services" | grep -q "rippled"; then
-    ok "Service 'rippled' registered in Tempo"
+if echo "$services" | grep -q "xrpld"; then
+    ok "Service 'xrpld' registered in Tempo"
 else
-    fail "Service 'rippled' NOT found in Tempo (found: $services)"
+    fail "Service 'xrpld' NOT found in Tempo (found: $services)"
 fi
 
 log ""
