@@ -74,7 +74,7 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 8
       },
@@ -124,9 +124,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 8
+        "w": 24,
+        "x": 0,
+        "y": 16
       },
       "options": {
         "tooltip": {
@@ -176,7 +176,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 24
       },
       "options": {
         "tooltip": {
@@ -226,9 +226,9 @@
       "type": "timeseries",
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
+        "w": 24,
+        "x": 0,
+        "y": 32
       },
       "options": {
         "tooltip": {
@@ -278,7 +278,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 40
       },
       "options": {
         "tooltip": {
@@ -346,7 +346,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 48
       },
       "options": {
         "reduceOptions": {
