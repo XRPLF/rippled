@@ -50,6 +50,6 @@ ${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' BUILD.md
 ${SED_COMMAND} -i -E 's@xrpld \(`xrpld`\)@xrpld@g' BUILD.md
 ${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' CONTRIBUTING.md
 ${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' docs/build/install.md
-
+${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' cmake/XrplProtobufGo.cmake
 popd
 echo "Processing complete."

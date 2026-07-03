@@ -217,6 +217,7 @@ jobs:
           fi
 
       - name: Check Go protobuf bindings are up-to-date
+        if: ${{ runner.os == 'Linux' }}
         working-directory: ${{ env.BUILD_DIR }}
         env:
           GO_PROTO_DIR: proto/org/xrpl/rpc/v1

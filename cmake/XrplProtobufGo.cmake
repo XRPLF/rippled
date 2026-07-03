@@ -74,8 +74,8 @@ if(NOT GO_PROTOC OR NOT PROTOC_GEN_GO OR NOT PROTOC_GEN_GO_GRPC)
         "  protoc-gen-go-grpc: ${PROTOC_GEN_GO_GRPC}\n"
         "Enter the Nix environment (nix develop) to get the pinned toolchain, "
         "or install the plugins manually with:\n"
-        "  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest\n"
-        "  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest"
+        "  go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11\n"
+        "  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2"
     )
     return()
 endif()
