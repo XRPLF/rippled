@@ -328,7 +328,6 @@ private:
                     fail("handshake", ec);
                     return;
                 }
-#if 1
                 boost::asio::async_read_until(
                     stream,
                     buf,
@@ -339,9 +338,6 @@ private:
                             error_code const& ec, std::size_t bytesTransferred) {
                             self->onRead(ec, bytesTransferred);
                         }));
-#else
-                close();
-#endif
             }
 
             void
@@ -533,7 +529,6 @@ private:
                 }
                 write(buf, "HELLO\n");
 
-#if 1
                 boost::asio::async_write(
                     stream,
                     buf.data(),
@@ -543,11 +538,6 @@ private:
                             error_code const& ec, std::size_t bytesTransferred) {
                             self->onWrite(ec, bytesTransferred);
                         }));
-#else
-                stream_.async_shutdown(bind_executor(
-                    strand_,
-                    [self = shared_from_this()](error_code const& ec) { self->on_shutdown(ec); }));
-#endif
             }
 
             void
@@ -559,7 +549,6 @@ private:
                     fail("write", ec);
                     return;
                 }
-#if 1
                 boost::asio::async_read_until(
                     stream,
                     buf,
@@ -570,11 +559,6 @@ private:
                             error_code const& ec, std::size_t bytesTransferred) {
                             self->onRead(ec, bytesTransferred);
                         }));
-#else
-                stream_.async_shutdown(bind_executor(
-                    strand_,
-                    [self = shared_from_this()](error_code const& ec) { self->on_shutdown(ec); }));
-#endif
             }
 
             void
