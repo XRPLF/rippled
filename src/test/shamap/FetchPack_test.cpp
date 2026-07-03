@@ -6,7 +6,6 @@
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -26,7 +25,6 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 
 namespace xrpl::tests {
 
@@ -39,15 +37,6 @@ public:
     using Map = hash_map<SHAMapHash, Blob>;
     using Table = SHAMap;
     using Item = SHAMapItem;
-
-    struct Handler
-    {
-        void
-        operator()(std::uint32_t refNum) const
-        {
-            Throw<std::runtime_error>("missing node");
-        }
-    };
 
     struct TestFilter : SHAMapSyncFilter
     {
@@ -93,7 +82,7 @@ public:
     static void
     addRandomItems(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
-        while ((n--) != 0u)
+        for (std::size_t i = 0; i < n; ++i)
         {
             auto const result(t.addItem(SHAMapNodeType::TnAccountState, makeRandomItemMember(r)));
             assert(result);
@@ -111,56 +100,51 @@ public:
     void
     run() override
     {
-        using beast::Severity;
+        testFetchPack();
+    }
+
+    // Exercises a fetch-pack round trip: build a SHAMap, serialize every node
+    // into a pack keyed by node hash, then rebuild the map in a fresh SHAMap by
+    // sourcing every node from the pack through a SHAMapSyncFilter and comparing
+    // the result. This covers the filter-based reconstruction path (fetchRoot +
+    // getMissingNodes with a SHAMapSyncFilter), complementing SHAMapSync_test,
+    // which drives the getNodeFat/addKnownNode path.
+    void
+    testFetchPack()
+    {
         test::SuiteJournal journal("FetchPack_test", *this);
+        TestNodeFamily f(journal), f2(journal);
+        beast::xor_shift_engine r;
 
-        TestNodeFamily f(journal);
-        std::shared_ptr<Table> const t1(std::make_shared<Table>(SHAMapType::FREE, f));
+        // Build a source map. getHash() unshares the tree and computes every
+        // node hash; this must happen before serializing nodes below, otherwise
+        // inner nodes still carry stale cached hashes.
+        auto const source = std::make_shared<Table>(SHAMapType::FREE, f);
+        addRandomItems(kTableItems + kTableItemsExtra, *source, r);
+        source->setImmutable();
+        auto const rootHash = source->getHash();
 
-        pass();
+        // Turn the source into a fetch pack: node hash -> serialized node.
+        Map map;
+        source->visitNodes([this, &map](SHAMapTreeNode& node) {
+            Serializer s;
+            node.serializeWithPrefix(s);
+            onFetch(map, node.getHash(), s.getData());
+            return true;
+        });
 
-        //         beast::Random r;
-        //         add_random_items_ (tableItems, *t1, r);
-        //         std::shared_ptr <Table> t2 (t1->snapShot (true));
-        //
-        //         add_random_items_ (tableItemsExtra, *t1, r);
-        //         add_random_items_ (tableItemsExtra, *t2, r);
+        // Rebuild the map in a fresh family, sourcing every node from the pack
+        // through the SHAMapSyncFilter.
+        auto const rebuilt = std::make_shared<Table>(SHAMapType::FREE, rootHash.asUInt256(), f2);
+        TestFilter filter(map, journal);
+        rebuilt->setSynching();
+        BEAST_EXPECT(rebuilt->fetchRoot(rootHash, &filter));
 
-        // turn t1 into t2
-        //         Map map;
-        //         t2->getFetchPack (t1.get(), true, 1000000, std::bind (
-        //             &FetchPack_test::on_fetch, this, std::ref (map),
-        //             std::placeholders::_1, std::placeholders::_2));
-        //         t1->getFetchPack (nullptr, true, 1000000, std::bind (
-        //             &FetchPack_test::on_fetch, this, std::ref (map),
-        //             std::placeholders::_1, std::placeholders::_2));
+        // Everything should be in the pack, so no nodes should be missing.
+        BEAST_EXPECT(rebuilt->getMissingNodes(2048, &filter).empty());
+        rebuilt->clearSynching();
 
-        // try to rebuild t2 from the fetch pack
-        //         std::shared_ptr <Table> t3;
-        //         try
-        //         {
-        //             TestFilter filter (map, beast::Journal());
-        //
-        //             t3 = std::make_shared <Table> (SHAMapType::FREE,
-        //             t2->getHash (),
-        //                 fullBelowCache);
-        //
-        //             BEAST_EXPECT(t3->fetchRoot (t2->getHash (), &filter),
-        //             "unable to get root");
-        //
-        //             // everything should be in the pack, no hashes should be
-        //             needed std::vector <uint256> hashes =
-        //             t3->getNeededHashes(1, &filter);
-        //             BEAST_EXPECT(hashes.empty(), "missing hashes");
-        //
-        //             BEAST_EXPECT(t3->getHash () == t2->getHash (), "root
-        //             hashes do not match"); BEAST_EXPECT(t3->deepCompare
-        //             (*t2), "failed compare");
-        //         }
-        //         catch (std::exception const&)
-        //         {
-        //             fail ("unhandled exception");
-        //         }
+        BEAST_EXPECT(rebuilt->deepCompare(*source));
     }
 };
 

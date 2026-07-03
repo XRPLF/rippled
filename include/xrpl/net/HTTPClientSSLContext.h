@@ -13,7 +13,6 @@
 #include <openssl/err.h>
 #include <openssl/tls1.h>
 
-#include <functional>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -127,8 +126,9 @@ public:
             if (!ec)
             {
                 strm.set_verify_callback(
-                    std::bind(
-                        &rfc6125Verify, host, std::placeholders::_1, std::placeholders::_2, j_),
+                    [host, j = j_](bool preverified, boost::asio::ssl::verify_context& ctx) {
+                        return rfc6125Verify(host, preverified, ctx, j);
+                    },
                     ec);
             }
         }
