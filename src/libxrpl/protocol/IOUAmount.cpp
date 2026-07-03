@@ -181,7 +181,7 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
             hasRem = bool(sav - low * kPowerTable[mustShrink]);
     }
 
-    std::int64_t mantissa = low.convert_to<std::int64_t>();
+    auto mantissa = low.convert_to<std::int64_t>();
 
     // normalize before rounding
     if (neg)

@@ -97,7 +97,7 @@ public:
     //
 
     static constexpr std::size_t kBytes = Bits / 8;
-    static_assert(sizeof(data_) == kBytes, "");
+    static_assert(sizeof(data_) == kBytes);
 
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;

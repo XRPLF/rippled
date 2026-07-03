@@ -99,7 +99,7 @@ MantissaRange::getRanges()
     return kMap;
 }
 
-MantissaRange const&
+MantissaRange constexpr const&
 MantissaRange::getMantissaRange(MantissaScale scale)
 {
     return getRanges().at(scale);
@@ -1159,7 +1159,7 @@ operator rep() const
 
     if (g.isNegative())
     {
-        return -drops;
+        return -static_cast<rep>(drops);
     }
     return drops;
 }

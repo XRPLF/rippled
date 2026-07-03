@@ -199,7 +199,7 @@ struct MantissaRange final
     rep const internalMin{getInternalMin(scale, log)};
     CuspRoundingFix const cuspRoundingFixEnabled{isCuspFixEnabled(scale)};
 
-    static MantissaRange const&
+    static constexpr MantissaRange const&
     getMantissaRange(MantissaScale scale);
 
     static std::set<MantissaScale> const&
