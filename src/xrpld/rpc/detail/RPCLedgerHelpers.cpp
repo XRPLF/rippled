@@ -423,7 +423,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
             return std::unexpected(rpcError(RpcNotSynced));
         }
 
-        ledgerIndex = jsonIndex.asInt();
+        ledgerIndex = jsonIndex.asUInt();
         auto ledger = ledgerMaster.getValidatedLedger();
 
         if (ledgerIndex >= ledger->header().seq)
