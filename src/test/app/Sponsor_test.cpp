@@ -4421,15 +4421,8 @@ public:
         // Precondition: alice has base reserve + 1 XRP (enough for payment but not fee)
         BEAST_EXPECT(env.balance(alice) == baseReserve + XRP(1));
 
-        // BUG SCENARIO (if it existed): Alice tries to send a Payment to dest
-        // where sponsor pays the fee via spfSponsorFee.
-        // If Payment.cpp used ctx_.tx.getFeePayer() (STTx version), it would
-        // incorrectly identify alice as the fee payer and check if alice has
-        // balance >= amount + fee + reserve, which would fail.
-        // FIX: Payment.cpp uses getFeePayer(view(), ctx_.tx) (Transactor version)
-        // which correctly identifies sponsor as the fee payer, so only checks
-        // if alice has balance >= amount + reserve (not including fee).
-
+        // Alice tries to send a Payment to dest where sponsor pays the fee via spfSponsorFee.
+        // Passed even alice balance doesn't have enough to pay fee.
         auto const preDest = env.balance(dest);
         auto const preSponsor = env.balance(sponsor);
 
@@ -4437,11 +4430,10 @@ public:
         env(pay(alice, dest, XRP(1)),
             sponsor::As(sponsor, spfSponsorFee),
             Sig(sfSponsorSignature, sponsor),
-            Fee(baseFee),
-            Ter(tesSUCCESS));
+            Fee(baseFee));
         env.close();
 
-        // FIX VERIFIED: Payment succeeded
+        // Payment succeeded
         // Alice's balance decreased by 1 XRP (the payment amount, NOT the fee)
         BEAST_EXPECT(env.balance(alice) == baseReserve);
 
@@ -4461,11 +4453,8 @@ public:
         // reserve flag and snapshots the counterparty's asfDefaultRipple state into
         // the line's NoRipple bit; if the counterparty later toggles asfDefaultRipple
         // (the canonical issuer flow), the line and account flags disagree and on
-        // the submitter's next TrustSet the counterparty-side gate fires without
-        // the canonical tx[sfAccount] == account guard.
-        //
-        // With the fix: getTxReserveSponsor() checks if the account parameter
-        // matches tx[sfAccount], preventing sponsor misroute to counterparty.
+        // the submitter's next TrustSet the counterparty-side gate fires. Sponsor still will be
+        // checked if it can be applied to that end of the trustLine.
 
         testcase("TrustSet modify with sponsor does not misroute onto counterparty side");
 
@@ -4527,8 +4516,7 @@ public:
 
         // Holder modifies the trust line with Carol as sponsor
         // This should trigger the issuer's reserve gate because of the DefaultRipple mismatch
-        // WITHOUT the fix: Carol would be incorrectly applied to issuer's side
-        // WITH the fix: Carol should NOT be applied to issuer's side (issuer != tx submitter)
+        // Carol (sponsor) should NOT be applied to issuer's side (issuer != tx submitter)
         env(trust(holder, usd(2'000)),
             sponsor::As(carol, spfSponsorReserve),
             Sig(sfSponsorSignature, carol),
@@ -4539,7 +4527,6 @@ public:
         if (!BEAST_EXPECT(sleLineAfter))
             return;
 
-        // With the fix: Issuer's side should NOT have Carol as sponsor
         // Carol only agreed to back the holder, not the issuer
         BEAST_EXPECT(!sleLineAfter->isFieldPresent(issuerSponsorField));
 
