@@ -68,7 +68,7 @@ public:
         [[nodiscard]] std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
-            Map::iterator const it = map.find(nodeHash);
+            auto const it = map.find(nodeHash);
             if (it == map.end())
             {
                 JLOG(journal.fatal()) << "Test filter missing node";

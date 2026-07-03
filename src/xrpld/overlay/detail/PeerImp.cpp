@@ -2134,6 +2134,7 @@ PeerImp::onValidatorListMessage(
             publisherListSequences_[pubKey] = applyResult.sequence;
         }
         break;
+        // NOLINTNEXTLINE(bugprone-branch-clone): identical to the next branch only in Release
         case ListDisposition::SameSequence:
         case ListDisposition::KnownSequence:
 #ifndef NDEBUG
