@@ -15,22 +15,22 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 
 ### 5.1.2 Configuration Options Summary
 
-| Option                | Type   | Default                           | Description                               |
-| --------------------- | ------ | --------------------------------- | ----------------------------------------- |
-| `enabled`             | bool   | `false`                           | Enable/disable telemetry                  |
-| `endpoint`            | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint              |
-| `use_tls`             | bool   | `false`                           | Enable TLS for exporter connection        |
-| `tls_ca_cert`         | string | `""`                              | Path to CA certificate file               |
-| `batch_size`          | uint   | `512`                             | Spans per export batch                    |
-| `batch_delay_ms`      | uint   | `5000`                            | Max delay before sending batch (ms)       |
-| `max_queue_size`      | uint   | `2048`                            | Maximum queued spans                      |
-| `trace_transactions`  | bool   | `true`                            | Enable transaction tracing                |
-| `trace_consensus`     | bool   | `true`                            | Enable consensus tracing                  |
-| `trace_rpc`           | bool   | `true`                            | Enable RPC tracing                        |
-| `trace_peer`          | bool   | `true`                            | Enable peer message tracing (high volume) |
-| `trace_ledger`        | bool   | `true`                            | Enable ledger tracing                     |
-| `service_name`        | string | `"xrpld"`                         | Service name for traces                   |
-| `service_instance_id` | string | `<node_pubkey>`                   | Instance identifier                       |
+| Option                | Type   | Default                           | Description                                          |
+| --------------------- | ------ | --------------------------------- | ---------------------------------------------------- |
+| `enabled`             | bool   | `false`                           | Enable/disable telemetry                             |
+| `endpoint`            | string | `http://localhost:4318/v1/traces` | OTLP/HTTP collector endpoint                         |
+| `use_tls`             | bool   | `false`                           | Enable TLS for exporter connection                   |
+| `tls_ca_cert`         | string | `""`                              | Path to CA certificate file                          |
+| `batch_size`          | uint   | `512`                             | Spans per export batch                               |
+| `batch_delay_ms`      | uint   | `5000`                            | Max delay before sending batch (ms)                  |
+| `max_queue_size`      | uint   | `2048`                            | Maximum queued spans                                 |
+| `trace_transactions`  | bool   | `true`                            | Enable transaction tracing                           |
+| `trace_consensus`     | bool   | `true`                            | Enable consensus tracing                             |
+| `trace_rpc`           | bool   | `true`                            | Enable RPC tracing                                   |
+| `trace_peer`          | bool   | `true`                            | Enable peer message tracing (high volume)            |
+| `trace_ledger`        | bool   | `true`                            | Enable ledger tracing                                |
+| `service_name`        | string | `"xrpld"`                         | Service name (`service.name`) for traces and metrics |
+| `service_instance_id` | string | `<node_pubkey>`                   | Instance identifier                                  |
 
 **Planned (not yet implemented)**: the following options appear in the design
 documents but are not parsed by `TelemetryConfig.cpp` in Phase 1b and later
