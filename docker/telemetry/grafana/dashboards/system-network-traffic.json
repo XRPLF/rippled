@@ -771,7 +771,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "statsd", "network"],
+  "tags": ["statsd", "network"],
   "templating": {
     "list": [
       {

@@ -456,7 +456,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "fee-market"],
+  "tags": ["fee-market"],
   "templating": {
     "list": [
       {

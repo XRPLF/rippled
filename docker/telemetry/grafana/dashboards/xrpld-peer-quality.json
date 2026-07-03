@@ -363,7 +363,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "peer", "network"],
+  "tags": ["peer", "network"],
   "templating": {
     "list": [
       {

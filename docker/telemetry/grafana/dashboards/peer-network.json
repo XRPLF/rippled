@@ -245,7 +245,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "peer"],
+  "tags": ["peer"],
   "templating": {
     "list": [
       {

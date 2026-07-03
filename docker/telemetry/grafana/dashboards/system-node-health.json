@@ -2125,7 +2125,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["xrpld", "statsd", "node-health"],
+  "tags": ["statsd", "node-health"],
   "templating": {
     "list": [
       {
