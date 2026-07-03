@@ -106,6 +106,9 @@ if [ "${os}" = "linux" ] || [ "${os}" = "macos" ]; then
         check gpg
         # pre-commit, or its alternative implementation prek
         check pre-commit sh -c 'pre-commit --version || prek --version'
+        check protoc
+        check protoc-gen-go
+        check protoc-gen-go-grpc
         check run-clang-tidy run-clang-tidy --help
     fi
 fi

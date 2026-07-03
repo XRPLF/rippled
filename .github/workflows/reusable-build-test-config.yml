@@ -203,7 +203,7 @@ jobs:
             To fix this:
               1. Run: cmake --build . --target setup_code_gen
               2. Run: cmake --build . --target code_gen
-              3. Commit and push the regenerated files
+              3. Commit and push the regenerated files.
         run: |
           set -e
           cmake --build . --target setup_code_gen
@@ -212,6 +212,35 @@ jobs:
           if [ -n "${DIFF}" ]; then
               echo "::error::Generated protocol files are out of date"
               git -C .. diff -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen
+              echo "${MESSAGE}"
+              exit 1
+          fi
+
+      - name: Check Go protobuf bindings are up-to-date
+        working-directory: ${{ env.BUILD_DIR }}
+        env:
+          GO_PROTO_DIR: proto/org/xrpl/rpc/v1
+          MESSAGE: |
+
+            The generated Go protobuf bindings are out of date.
+
+            This happens when the .proto files under proto/org/xrpl/rpc/v1
+            changed but the committed .pb.go files were not regenerated, or when
+            they were generated with a different protoc / plugin version than
+            the one pinned in the Nix environment.
+
+            To fix this:
+              1. Enter the Nix environment (nix develop) so protoc and the
+                 protoc-gen-go* plugins match the pinned versions.
+              2. Run: cmake --build . --target go_protobuf
+              3. Commit and push the regenerated files.
+        run: |
+          set -e
+          cmake --build . --target go_protobuf
+          DIFF=$(git -C .. status --porcelain -- "${GO_PROTO_DIR}")
+          if [ -n "${DIFF}" ]; then
+              echo "::error::Generated Go protobuf bindings are out of date"
+              git -C .. diff -- "${GO_PROTO_DIR}"
               echo "${MESSAGE}"
               exit 1
           fi

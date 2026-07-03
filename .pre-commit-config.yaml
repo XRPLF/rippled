@@ -95,7 +95,9 @@ repos:
         exclude: |
           (?x)^(
               \.cspell\.config\.yaml|
-              include/xrpl/protocol_autogen/(transactions|ledger_entries)/.*
+              include/xrpl/protocol_autogen/(transactions|ledger_entries)/.*|
+              proto/org/xrpl/rpc/v1/go\.sum|
+              proto/org/xrpl/rpc/v1/.*\.pb\.go
           )$
       - id: cspell
         name: check commit message spelling

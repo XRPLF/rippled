@@ -137,6 +137,7 @@ endif()
 
 include(XrplCore)
 include(XrplProtocolAutogen)
+include(XrplProtobufGo)
 include(XrplInstall)
 include(XrplPackaging)
 include(XrplValidatorKeys)
