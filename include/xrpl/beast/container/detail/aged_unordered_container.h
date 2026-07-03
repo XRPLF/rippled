@@ -2319,7 +2319,6 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
     return iterator(iter);
 }
 
-#if 1  // Use insert() instead of insert_check() insert_commit()
 // set, map
 template <
     bool IsMulti,
@@ -2349,43 +2348,6 @@ AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>
     deleteElement(p);
     return std::make_pair(iterator(result.first), false);
 }
-#else   // As original, use insert_check() / insert_commit () pair.
-// set, map
-template <
-    bool IsMulti,
-    bool IsMap,
-    class Key,
-    class T,
-    class Clock,
-    class Hash,
-    class KeyEqual,
-    class Allocator>
-template <bool maybe_multi, class... Args>
-auto
-AgedUnorderedContainer<IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator>::emplace(
-    Args&&... args) -> std::pair<iterator, bool>
-    requires(!maybe_multi)
-{
-    maybe_rehash(1);
-    // VFALCO NOTE Its unfortunate that we need to
-    //             construct element here
-    element* const p(new_element(std::forward<Args>(args)...));
-    typename cont_type::insert_commit_data d;
-    auto const result(m_cont.insert_check(
-        extract(p->value),
-        std::cref(m_config.hashFunction()),
-        std::cref(m_config.keyValueEqual()),
-        d));
-    if (result.second)
-    {
-        auto const iter(m_cont.insert_commit(*p, d));
-        chronological.list.push_back(*p);
-        return std::make_pair(iterator(iter), true);
-    }
-    delete_element(p);
-    return std::make_pair(iterator(result.first), false);
-}
-#endif  // 0
 
 // multiset, multimap
 template <
