@@ -33,7 +33,7 @@ The authoritative `[telemetry]` example lives in `cfg/xrpld-example.cfg`. Teleme
 | `trace_ledger`             | bool   | `true`                            | Enable ledger tracing                                                                                      |
 | `tx_trace_strategy`        | string | `"deterministic"`                 | TX trace ID strategy: `"deterministic"` (trace_id = txHash[0:16]) or `"attribute"` (random)                |
 | `consensus_trace_strategy` | string | `"deterministic"`                 | Consensus trace ID strategy: `"deterministic"` (trace_id = prevLedgerHash[0:16]) or `"attribute"` (random) |
-| `service_name`             | string | `"xrpld"`                         | Service name for traces                                                                                    |
+| `service_name`             | string | `"xrpld"`                         | Service name (`service.name`) for traces and metrics                                                       |
 | `service_instance_id`      | string | `<node_pubkey>`                   | Instance identifier                                                                                        |
 
 **Planned (not yet implemented)**: the following options appear in the design
