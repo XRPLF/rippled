@@ -41,31 +41,41 @@ paired with the closest C++.
 
 ### Pure functions
 
-`def` defines a constant or a function. Every function is pure: no mutation, no
-side effects, the result depends only on the arguments. `if` is an expression
-with a value. `let` names an intermediate variable.
+`def` defines a constant or a function. Every function is pure: it takes values
+in, returns a value, and does nothing else. It cannot change its arguments or
+any outside state, and the same arguments always give the same result.
+The body is a single expression, so `if` yields one of two values, like the
+C++ conditional operator `?:`. `let` introduces a local name for an
+intermediate result, like a `const` local variable in C++, and it cannot be
+reassigned.
 
 ```lean
 def maxRep : UInt64 := 9223372036854775807
 
 def Number.toRat (n : Number) : ℚ :=
-  let sign : Int := if n.negative then -1 else 1  -- if returns a value
+  let sign : Int := if n.negative then -1 else 1
   ...
 ```
 
 ```cpp
 constexpr uint64_t maxRep = 9223372036854775807;
 
-int const sign = n.negative_ ? -1 : 1;  // like the ternary, but for any if
+double toRat(Number const& n)
+{
+    int const sign = n.negative_ ? -1 : 1;  // the ternary mirrors Lean's if
+    ...
+}
 ```
 
-`abbrev` is a transparent alias, like C++ `using`.
+`abbrev` is an alias, like C++ `using`.
 
 ### Do notation
 
-`do` opens a block that looks imperative: local mutation with `let mut`, `for`
-loops, early `return`. It is syntax only. The compiler turns the block into the
-same pure function calls, so nothing observable is mutated.
+Pure code has no assignment and no loops. When an algorithm is easier to write
+with them, `do` gives the C++ style back: `let mut` declares a variable that
+can be updated, `for` loops over a collection, and `return` exits early. The
+compiler translates the block into pure code, so nothing changes for the
+caller.
 
 ```lean
 def sumOfSquares (xs : List Nat) : Nat := Id.run do  -- run the block as pure code
@@ -87,7 +97,8 @@ uint64_t sumOfSquares(std::vector<uint64_t> const& xs)
 
 ### Numbers
 
-- `UInt64` wraps around, like `uint64_t`.
+- `UInt64` is a 64-bit unsigned integer, the same as `uint64_t`. Arithmetic
+  that goes past the maximum wraps around, `UInt64` max + 1 gives 0.
 - `Int` and `Nat` (integers and naturals) are arbitrary precision and never
   overflow.
 - `ℚ` is a rational number: an exact fraction of two integers.
@@ -97,8 +108,10 @@ The model mirrors the C++ fields with `UInt64`/`Int`. The specification
 
 ### Structures
 
-A `structure` is a C++ struct: fields, a constructor, dot access. `deriving`
-auto-generates code, here equality (`DecidableEq`) and debug printing (`Repr`).
+A `structure` is the Lean version of a C++ struct: named fields, a generated
+constructor, and dot access like `n.mantissa`. The `deriving` line asks the
+compiler to write boilerplate for the type. `DecidableEq` generates `==`, like
+`operator== = default` in C++. `Repr` generates debug printing.
 
 ```lean
 structure Number where
@@ -118,8 +131,10 @@ struct Number
 };
 ```
 
-A field can also hold a proof. An instance cannot be built without supplying
-it, so every value satisfies the invariant by construction:
+A field can also require a proof. In the structure below, `hrange` is not
+data, it is a claim about `min` and `max` that must be proven when a value is
+created. A range that violates the claim does not compile, so an invalid
+`MantissaRange` can never exist:
 
 ```lean
 structure MantissaRange where
@@ -130,53 +145,77 @@ structure MantissaRange where
 
 ### Inductive types
 
-An `inductive` type lists all the ways a value can be built. A `structure` is the special case
-with exactly one constructor. `Bool` itself is inductive, with constructors
-`true` and `false`. Code takes values apart with `match`, and proofs do it with
-case-splitting tactics like `rcases`.
+An `inductive` type declares a fixed set of options, like a C++ `enum class`.
+An option can also carry data, and the type then works like `std::variant`: a
+value holds exactly one of the listed options. A `structure` is the special
+case with exactly one option. `Bool` itself is inductive, with constructors
+`true` and `false`. `match` branches over the options, like a `switch` that
+can also read the carried data. Proofs do the same case split with the tactic
+`rcases`.
 
 ```lean
 inductive Sign where
   | negative
   | zero
   | positive
+
+def signFactor (s : Sign) : Int :=
+  match s with
+  | .negative => -1
+  | .zero => 0
+  | .positive => 1
 ```
 
 ```cpp
 enum class Sign { negative, zero, positive };
+
+int signFactor(Sign s)
+{
+    switch (s)
+    {
+        case Sign::negative: return -1;
+        case Sign::zero:     return 0;
+        case Sign::positive: return 1;
+    }
+}
 ```
 
 ### Type classes
 
-A type class is a compile-time interface, close to C++ concepts. An `instance`
-implements it for a concrete type, and the compiler picks the instance from the
-types at the call site. That is what `deriving DecidableEq, Repr` generates
-above, and it is how operators work: `a ≤ b` is notation for `LE.le a b`,
-resolved from the `LE` instance of the type of `a`.
+A type class declares an operation that many types can support. An `instance`
+implements it for one concrete type, like overloading a function for that type
+in C++. The compiler picks the right instance from the argument types at
+compile time, the same way C++ picks an overload.
 
 ```lean
-class LE (α : Type) where  -- simplified from the library
-  le : α → α → Prop
+class ToText (T : Type) where
+  toText : T → String  -- a function from T to String
+
+instance : ToText Sign where  -- Sign can now be turned into text
+  toText
+    | .negative => "-"
+    | .zero => "0"
+    | .positive => "+"
 ```
 
-The closest C++ shape is a template specialized per type:
-
 ```cpp
-template <typename T>
-struct LE;         // class LE
-
-template <>
-struct LE<Number>  // instance : LE Number
+std::string toText(Sign s)  // the "instance" for Sign
 {
-    static bool le(Number const& a, Number const& b);
-};
+    switch (s)
+    {
+        case Sign::negative: return "-";
+        case Sign::zero:     return "0";
+        case Sign::positive: return "+";
+    }
+}
 ```
 
 ### Bool vs Prop
 
-`Bool` is a runtime value code can branch on. `Prop` is a mathematical
-statement to be proven. It never executes. The symbols read: `∧` and, `∨` or,
-`¬` not, `↔` if-and-only-if.
+`Bool` is the ordinary `bool`: a value computed while the program runs. `Prop`
+is a statement about values, like "the mantissa is within bounds". A `Prop` is
+not computed but proven, once, at compile time, and it costs nothing at
+runtime. The symbols read: `∧` and, `∨` or, `¬` not, `↔` if-and-only-if.
 
 ```lean
 def Number.isnormal (n : Number) : Prop :=
@@ -185,18 +224,20 @@ def Number.isnormal (n : Number) : Prop :=
 ```
 
 ```cpp
-bool isnormal() const;  // C++ can only check at runtime, so it returns bool
+bool isnormal() const;  // the C++ version checks one value at runtime
 ```
 
-`isnormal` is a condition theorems assume, not code the model runs. That is why
-it is a `Prop` and not a `Bool`.
+The model never calls its `isnormal`. Theorems take it as an assumption, "for
+every normalized number ...", and stating an assumption is a job for a `Prop`,
+not a `Bool`.
 
 ### Theorems, lemmas and proofs
 
-`theorem` and `lemma` mean the same thing (lemma is used for small helpers).
-The statement is a `Prop`, hypotheses are named arguments, and what follows
-`:=` (or `by`) is the proof. If the file compiles, the proof is correct: the
-compiler is the proof checker, and there is nothing to run.
+A theorem is written like a function: the arguments are its assumptions, the
+return type is the statement it claims, and the body after `:=` is the proof.
+The compiler checks that the body really proves the statement, the same way it
+checks that a function returns its declared type. Nothing is run. If the file
+compiles, the theorem holds. `lemma` means the same, used for small helpers.
 
 ```lean
 theorem operator_lt_iff (x y : Number)
@@ -204,22 +245,6 @@ theorem operator_lt_iff (x y : Number)
     x.operator_lt y = true ↔ x.toRat < y.toRat :=  -- this statement holds
   operator_lt_iff_proof x y hx hy                  -- the proof
 ```
-
-### Tactics
-
-`by` switches to tactic mode, where a proof is built step by step. The ones
-used here:
-
-- `rw`: rewrite the goal with a known equality.
-- `simp`: apply a library of simplification rules.
-- `unfold`: inline a definition.
-- `by_cases`, `rcases`: split into cases.
-- `linarith`, `omega`, `norm_num`: close arithmetic goals.
-- `decide`: evaluate a finite statement outright (fills the `by decide` fields
-  of `MantissaRange`).
-- `calc`: chain equalities and inequalities like a paper computation.
-- `sorry`: placeholder for a missing proof. It fails the build, and its absence
-  is what "verified" means.
 
 ### Namespaces
 
