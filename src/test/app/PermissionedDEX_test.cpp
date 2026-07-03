@@ -2004,6 +2004,77 @@ class PermissionedDEX_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testDomainOfferInWrongBook(FeatureBitset features)
+    {
+        bool const fixEnabled = features[fixCleanup3_4_0];
+
+        testcase << "Domain offer indexed in the wrong domain book"
+                 << (fixEnabled ? " (fixCleanup3_4_0 enabled)" : " (fixCleanup3_4_0 disabled)");
+
+        // Bob (a member of domains A and B) places an offer in domain A's
+        // book, which we then corrupt to claim domain B while it stays in
+        // domain A's book. A payment routed through domain A meets this offer.
+        //
+        // - With fixCleanup3_4_0: OfferStream sees the offer's domain (B)
+        //   mismatch the book (A) and errors out -> tecPATH_PARTIAL.
+        // - Without it: OfferStream only checks the offer's own domain (B,
+        //   which Bob is in), so it is used; the invariant then catches the
+        //   mismatch -> tecINVARIANT_FAILED.
+        //
+        // Either way the payment fails and the offer is left untouched.
+
+        Env env(*this, features);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            PermissionedDEX(env);
+
+        // A second domain that Bob also belongs to.
+        Account const bobAcct = bob;
+        auto const domainID2 =
+            setupDomain(env, {bobAcct}, Account("permdex-domainOwner2"), "permdex-cred2");
+
+        // Bob places a domain offer in domain A's book.
+        auto const bobOfferSeq{env.seq(bob)};
+        env(offer(bob, XRP(10), USD(10)), Domain(domainID));
+        env.close();
+        BEAST_EXPECT(checkOffer(env, bob, bobOfferSeq, XRP(10), USD(10), 0, true));
+
+        // Corrupt the offer: point its sfDomainID at domain B while it stays
+        // indexed in domain A's book directory.
+        auto const offerKey = keylet::offer(bob.id(), bobOfferSeq);
+        env.app().getOpenLedger().modify([&offerKey, &domainID2](OpenView& view, beast::Journal) {
+            auto const sle = view.read(offerKey);
+            if (!sle)
+                return false;
+            auto replacement = std::make_shared<SLE>(*sle, sle->key());
+            replacement->setFieldH256(sfDomainID, domainID2);
+            view.rawReplace(replacement);
+            return true;
+        });
+
+        if (fixEnabled)
+        {
+            // With the fix: OfferStream rejects the mismatched offer.
+            env(pay(alice, carol, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(domainID),
+                Ter(tecPATH_PARTIAL));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+        }
+        else
+        {
+            // Without the fix: the offer is used, then the invariant
+            // rejects the whole transaction.
+            env(pay(alice, carol, USD(10)),
+                Path(~USD),
+                Sendmax(XRP(10)),
+                Domain(domainID),
+                Ter(tecINVARIANT_FAILED));
+            BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
+        }
+    }
+
 public:
     void
     run() override
@@ -2041,6 +2112,11 @@ public:
         // only after fixCleanup3_2_0.
         testCancelRegularOfferWithDomainCreate(all);
         testCancelRegularOfferWithDomainCreate(all - fixCleanup3_2_0);
+
+        // A domain offer indexed in the wrong domain book is caught only
+        // after fixCleanup3_4_0. (Not an existing bug, but defensive testing)
+        testDomainOfferInWrongBook(all);
+        testDomainOfferInWrongBook(all - fixCleanup3_4_0);
     }
 };
 

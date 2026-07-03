@@ -26,6 +26,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
 #include <optional>
@@ -248,6 +249,18 @@ TOfferStreamBase<TIn, TOut>::step()
             permRmOffer(entry->key());
             offer_ = TOffer<TIn, TOut>{};
             continue;
+        }
+
+        // Post-fixCleanup3_4_0 defensive check: an offer indexed in a domain
+        // book must claim that same domain. This can only happen if the book
+        // directory is corrupt (i.e. a separate book indexing bug). Rather
+        // than consume an offer from the wrong book, fail the strand with an
+        // internal error.
+        if (view_.rules().enabled(fixCleanup3_4_0) && book_.domain.has_value() &&
+            entry->isFieldPresent(sfDomainID) && entry->getFieldH256(sfDomainID) != *book_.domain)
+        {
+            JLOG(j_.error()) << "Offer " << entry->key() << " domain does not match book domain";
+            Throw<FlowException>(tecINTERNAL, "Offer domain does not match book domain.");
         }
 
         // Pre-fixCleanup3_3_0: validate domain membership for any book.
