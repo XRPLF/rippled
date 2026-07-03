@@ -61,10 +61,10 @@ constexpr std::uint32_t batchDelayMs = 5000u;
 constexpr std::uint32_t maxQueueSize = 2048u;
 }  // namespace dflt
 
-/** Derive a human-readable network type label from the numeric network ID.
-    @param networkId  The network identifier from [network_id] config.
-    @return "mainnet", "testnet", "devnet", or "unknown" for other values.
-*/
+}  // namespace
+
+// Declared in Telemetry.h; shared by the trace and metric export paths so
+// both stamp the same xrpl.network.type resource attribute value.
 std::string
 networkTypeFromId(std::uint32_t networkId)
 {
@@ -80,8 +80,6 @@ networkTypeFromId(std::uint32_t networkId)
             return "unknown";
     }
 }
-
-}  // namespace
 
 Telemetry::Setup
 makeTelemetrySetup(

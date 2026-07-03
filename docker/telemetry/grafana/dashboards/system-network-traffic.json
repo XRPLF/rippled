@@ -30,14 +30,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_Peer_Finder_Active_Inbound_Peers{exported_instance=~\"$node\"}",
+          "expr": "xrpld_Peer_Finder_Active_Inbound_Peers{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Inbound Peers [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_Peer_Finder_Active_Outbound_Peers{exported_instance=~\"$node\"}",
+          "expr": "xrpld_Peer_Finder_Active_Outbound_Peers{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Outbound Peers [{{exported_instance}}]"
         }
       ],
@@ -76,7 +76,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_Overlay_Peer_Disconnects{exported_instance=~\"$node\"}",
+          "expr": "xrpld_Overlay_Peer_Disconnects{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Disconnects [{{exported_instance}}]"
         }
       ],
@@ -115,14 +115,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_total_Bytes_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_total_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Bytes In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_total_Bytes_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_total_Bytes_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Bytes Out [{{exported_instance}}]"
         }
       ],
@@ -161,14 +161,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_total_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_total_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Messages In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_total_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_total_Messages_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Messages Out [{{exported_instance}}]"
         }
       ],
@@ -207,21 +207,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_transactions_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_transactions_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "TX Messages In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_transactions_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_transactions_Messages_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "TX Messages Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_transactions_duplicate_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_transactions_duplicate_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "TX Duplicate In [{{exported_instance}}]"
         }
       ],
@@ -260,28 +260,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_proposals_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_proposals_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Proposals In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_proposals_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_proposals_Messages_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Proposals Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_proposals_untrusted_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_proposals_untrusted_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Untrusted In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_proposals_duplicate_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_proposals_duplicate_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Duplicate In [{{exported_instance}}]"
         }
       ],
@@ -320,28 +320,28 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validations_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_validations_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Validations In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validations_Messages_Out{exported_instance=~\"$node\"}",
+          "expr": "xrpld_validations_Messages_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Validations Out [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validations_untrusted_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_validations_untrusted_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Untrusted In [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_validations_duplicate_Messages_In{exported_instance=~\"$node\"}",
+          "expr": "xrpld_validations_duplicate_Messages_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Duplicate In [{{exported_instance}}]"
         }
       ],
@@ -380,7 +380,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(10, {exported_instance=~\"$node\", __name__=~\"xrpld_.*_Bytes_In\", __name__!~\"xrpld_total_.*\"})",
+          "expr": "topk(10, {exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", __name__=~\"xrpld_.*_Bytes_In\", __name__!~\"xrpld_total_.*\"})",
           "legendFormat": "{{__name__}} [{{exported_instance}}]"
         }
       ],
@@ -677,42 +677,42 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_transactions_duplicate_Bytes_In{exported_instance=~\"$node\"}[5m])",
+          "expr": "rate(xrpld_transactions_duplicate_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
           "legendFormat": "TX Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_transactions_duplicate_Bytes_Out{exported_instance=~\"$node\"}[5m])",
+          "expr": "rate(xrpld_transactions_duplicate_Bytes_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
           "legendFormat": "TX Duplicate Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_proposals_duplicate_Bytes_In{exported_instance=~\"$node\"}[5m])",
+          "expr": "rate(xrpld_proposals_duplicate_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
           "legendFormat": "Proposals Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_proposals_duplicate_Bytes_Out{exported_instance=~\"$node\"}[5m])",
+          "expr": "rate(xrpld_proposals_duplicate_Bytes_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
           "legendFormat": "Proposals Duplicate Out"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_validations_duplicate_Bytes_In{exported_instance=~\"$node\"}[5m])",
+          "expr": "rate(xrpld_validations_duplicate_Bytes_In{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
           "legendFormat": "Validations Duplicate In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rate(xrpld_validations_duplicate_Bytes_Out{exported_instance=~\"$node\"}[5m])",
+          "expr": "rate(xrpld_validations_duplicate_Bytes_Out{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}[5m])",
           "legendFormat": "Validations Duplicate Out"
         }
       ],
@@ -751,7 +751,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "topk(15, rate({__name__=~\"xrpld_.*_Bytes_In\", __name__!~\"xrpld_total_{exported_instance=~\"$node\"}.*\"}[5m]))",
+          "expr": "topk(15, rate({__name__=~\"xrpld_.*_Bytes_In\", __name__!~\"xrpld_total_{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}.*\"}[5m]))",
           "legendFormat": "{{__name__}}"
         }
       ],
@@ -786,6 +786,66 @@
         "includeAll": false,
         "multi": false,
         "options": []
+      },
+      {
+        "name": "service_name",
+        "label": "Service",
+        "description": "Filter by service.name (e.g. xrpld, pratik-xrpld)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
       },
       {
         "name": "node",
