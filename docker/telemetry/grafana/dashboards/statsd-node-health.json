@@ -881,7 +881,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "statsd", "node-health", "telemetry"],
+  "tags": ["statsd", "node-health", "telemetry"],
   "templating": {
     "list": [
       {

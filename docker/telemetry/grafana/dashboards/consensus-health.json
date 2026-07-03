@@ -968,7 +968,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["rippled", "consensus", "telemetry"],
+  "tags": ["consensus", "telemetry"],
   "templating": {
     "list": [
       {
