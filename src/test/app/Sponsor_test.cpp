@@ -921,6 +921,14 @@ public:
                     sponsor::SponseeAcc(alice),
                     Ter(tecNO_PERMISSION));
             }
+            {
+                // The provided sfSponsee account does not exist
+                // when ending sponsorship.
+                Account const ghost("ghost");  // never funded, absent from ledger
+                env(sponsor::transfer(sponsor, tfSponsorshipEnd),
+                    sponsor::SponseeAcc(ghost),
+                    Ter(terNO_ACCOUNT));
+            }
         }
 
         {
@@ -1112,6 +1120,13 @@ public:
                 Ter(tecNO_PERMISSION));
             env.close();
 
+            // Reassign an object that is not sponsored yet
+            env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
+                sponsor::As(sponsor1, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor1),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
             // Valid Owner
             env(sponsor::transfer(alice, tfSponsorshipCreate, checkId),
                 sponsor::As(sponsor1, spfSponsorReserve),
@@ -1128,6 +1143,13 @@ public:
             auto const sle1 = env.le(keylet::unchecked(checkId));
             BEAST_EXPECT(sle1->isFieldPresent(sfSponsor));
             BEAST_EXPECT(sle1->getAccountID(sfSponsor) == sponsor1.id());
+
+            // Create on an object that is already sponsored
+            env(sponsor::transfer(alice, tfSponsorshipCreate, checkId),
+                sponsor::As(sponsor2, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor2),
+                Ter(tecNO_PERMISSION));
+            env.close();
 
             // transfer sponsor
             env(sponsor::transfer(alice, tfSponsorshipReassign, checkId),
