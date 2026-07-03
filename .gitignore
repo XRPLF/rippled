@@ -86,3 +86,6 @@ __pycache__
 
 # clangd cache
 /.cache
+
+# Env. file carrying environmental setup data for local or cloud runs.
+.env.*

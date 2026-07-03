@@ -17,6 +17,25 @@ processors:
   batch:
     timeout: 1s
     send_batch_size: 100
+  # Deployment-tier tagging. Each collector serves ONE environment and ONE
+  # network, so it stamps both onto every signal it forwards. This lets a
+  # single Grafana stack hold data from many collectors and filter by tier.
+  #   - deployment.environment: the collector IS the environment (local, ci,
+  #     test, prod), so it is authoritative -> upsert (overwrite).
+  #   - xrpl.network.type: the xrpld node knows its own chain and already
+  #     stamps this, so the collector only fills it when absent -> insert.
+  #     This keeps a node's real network (e.g. a local node on mainnet)
+  #     from being overwritten by a collector's default.
+  # Replace the placeholder values per collector; see docker/telemetry
+  # tier examples.
+  resource/tier:
+    attributes:
+      - key: deployment.environment
+        value: local
+        action: upsert
+      - key: xrpl.network.type
+        value: mainnet
+        action: insert
 
 exporters:
   debug:
@@ -35,5 +54,5 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [resource/tier, batch]
       exporters: [debug, otlp/tempo]
