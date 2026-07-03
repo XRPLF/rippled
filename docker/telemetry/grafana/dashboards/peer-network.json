@@ -30,7 +30,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"peer.proposal.receive\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.proposal.receive\"}[5m]))",
           "legendFormat": "Proposals Received / Sec [{{exported_instance}}]"
         }
       ],
@@ -69,7 +69,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"peer.validation.receive\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", span_name=\"peer.validation.receive\"}[5m]))",
           "legendFormat": "Validations Received / Sec [{{exported_instance}}]"
         }
       ],
@@ -108,7 +108,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (proposal_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[5m]))",
+          "expr": "sum by (proposal_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", proposal_trusted=~\"$proposal_trusted\", span_name=\"peer.proposal.receive\"}[5m]))",
           "legendFormat": "Trusted = {{proposal_trusted}} [{{exported_instance}}]"
         }
       ],
@@ -140,7 +140,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (validation_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[5m]))",
+          "expr": "sum by (validation_trusted, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\", validation_trusted=~\"$validation_trusted\", span_name=\"peer.validation.receive\"}[5m]))",
           "legendFormat": "Trusted = {{validation_trusted}} [{{exported_instance}}]"
         }
       ],
@@ -172,21 +172,21 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"selected_peers\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_reduce_relay_metrics{metric=\"selected_peers\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Selected [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"suppressed_peers\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_reduce_relay_metrics{metric=\"suppressed_peers\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Suppressed [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"not_enabled_peers\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_reduce_relay_metrics{metric=\"not_enabled_peers\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Not Enabled [{{exported_instance}}]"
         }
       ],
@@ -225,7 +225,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "xrpld_reduce_relay_metrics{metric=\"missing_tx_freq\",exported_instance=~\"$node\"}",
+          "expr": "xrpld_reduce_relay_metrics{metric=\"missing_tx_freq\",exported_instance=~\"$node\", deployment_environment=~\"$deployment_environment\", xrpl_network_type=~\"$xrpl_network_type\", service_name=~\"$service_name\"}",
           "legendFormat": "Missing Tx Freq [{{exported_instance}}]"
         }
       ],
@@ -248,6 +248,66 @@
   "tags": ["xrpld", "peer"],
   "templating": {
     "list": [
+      {
+        "name": "service_name",
+        "label": "Service",
+        "description": "Filter by service.name (e.g. xrpld, pratik-xrpld)",
+        "type": "query",
+        "query": "label_values(service_name)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "deployment_environment",
+        "label": "Environment",
+        "description": "Filter by deployment tier (local/ci/test/prod)",
+        "type": "query",
+        "query": "label_values(deployment_environment)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "xrpl_network_type",
+        "label": "Network",
+        "description": "Filter by XRPL network (mainnet/testnet/devnet)",
+        "type": "query",
+        "query": "label_values(xrpl_network_type)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
       {
         "name": "node",
         "label": "Node",
